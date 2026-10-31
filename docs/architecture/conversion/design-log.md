@@ -9270,9 +9270,11 @@ cluster` selects the POC lane; every existing invocation — CI's
    none, the DD-265 CoreDNS rewrite patched line-based (Corefile flavours
    differ — the regex over the `kubernetes` block broke on minikube's
    `cluster.local in-addr.arpa ip6.arpa` shape; the line-walker didn't),
-   images read from a stock render and `minikube image load`ed (no pull
-   secrets), and the DD-252 stuck-`pending-install` recovery scripted as
-   uninstall-and-reinstall.
+   images read from a stock render and loaded into the cluster (no pull
+   secrets) — digest pins under their chart-declared tag, since
+   `minikube image load` of a by-digest reference is a silent no-op, with the
+   digest name re-applied via `ctr images tag` in the node — and the DD-252
+   stuck-`pending-install` recovery scripted as uninstall-and-reinstall.
 
 **Alternatives.** (a) The smoke-suite add-on (the first sketch) — rejected
 by the user: a parallel bespoke suite guards only what it thinks to test;
@@ -9298,5 +9300,11 @@ per-suite rewiring (aux APIs, then webapp), the compose stacks' retirement,
 and the CI job shape. Two known watch-items ride that verdict: the nginx
 `atlas_api` limiter (300 r/m burst 100) against suite bursts through the
 edge, and minikube's memory headroom inside a CI pod — the latter is the
-rollout's problem, invisible locally.
+rollout's problem, invisible locally. The acceptance run (178 chart tests
+green both lanes; compose 37, cluster 37 warm-rerun 37, fail-fast negative
+green) caught one genuine deployment divergence the compose-only world had
+been hiding: the scenarios' tasks-disabled precondition (DD-081) is pinned
+in the compose stack but was never carried into the charts, so the minikube
+overlay gained the `TASKS_ENABLED=false` config value — the class of drift
+this whole increment exists to detect.
 Next free DD: 281.

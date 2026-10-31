@@ -107,10 +107,13 @@ def _cluster_dns(request: pytest.FixtureRequest) -> Iterator[None]:
     real = socket.getaddrinfo
 
     # The shim's signature is socket.getaddrinfo's own; Any is the honest type
-    # for a pass-through replacement (ANN401 waived here, not repo-wide).
+    # for a pass-through replacement (ANN401 waived here, not repo-wide). The
+    # host arrives as bytes from httpcore2's resolver and str from others, so
+    # both are matched.
     def patched(host: bytes | str | None, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
-        if isinstance(host, str) and host.endswith(".atlas.test"):
-            host = cluster["gateway_ip"]
+        name = host.decode() if isinstance(host, bytes) else host
+        if isinstance(name, str) and name.endswith(".atlas.test"):
+            host = cluster["gateway_ip"].encode() if isinstance(host, bytes) else cluster["gateway_ip"]
         return real(host, *args, **kwargs)
 
     socket.getaddrinfo = patched
