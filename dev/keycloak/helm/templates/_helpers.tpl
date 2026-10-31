@@ -194,8 +194,25 @@ URL, or host is set anywhere and the asset needs one.
 {{- end -}}
 {{- end -}}
 
+{{/* The Grafana host the grafana client's redirect URIs substitute for
+(CHT-82): same rule as the browser hosts above, so a standalone render
+derives what the umbrella's aurelius-atlas.grafanaHost would. */}}
+{{- define "atlas-keycloak.grafanaHost" -}}
+{{- if .Values.global.hosts.grafana.host -}}
+{{- .Values.global.hosts.grafana.host -}}
+{{- else if .Values.global.domain -}}
+{{- printf "grafana.%s" .Values.global.domain -}}
+{{- else -}}
+{{- printf "%s.localhost" .Release.Name -}}
+{{- end -}}
+{{- end -}}
+
 {{- define "atlas-keycloak.otelClientsSecretName" -}}
 {{- default (printf "%s-otel-clients" .Release.Name) .Values.realm.otelClientsSecretName -}}
+{{- end -}}
+
+{{- define "atlas-keycloak.grafanaOauthSecretName" -}}
+{{- default (printf "%s-grafana-oauth" .Release.Name) .Values.realm.grafanaOauthSecretName -}}
 {{- end -}}
 
 {{- define "atlas-keycloak.legacyTokenSecretName" -}}

@@ -109,6 +109,14 @@ own. */}}
 {{- default (printf "%s-grafana-admin" .Release.Name) .Values.grafana.adminPasswordSecret -}}
 {{- end -}}
 
+{{/* The Grafana OAuth client Secret (CHT-83/84, DD-275):
+<release>-grafana-oauth, the umbrella's generated credential the realm
+import reads too (its key is the ${GRAFANA_CLIENT_SECRET} placeholder);
+grafana.oauthSecretName brings your own. */}}
+{{- define "atlas-observability.grafanaOauthSecretName" -}}
+{{- default (printf "%s-grafana-oauth" .Release.Name) .Values.grafana.oauthSecretName -}}
+{{- end -}}
+
 {{/* The collector's TLS Secret (CHT-36): its own Certificate's output;
 tls.secretName brings your own. */}}
 {{- define "atlas-observability.tlsSecretName" -}}

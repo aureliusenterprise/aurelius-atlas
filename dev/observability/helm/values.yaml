@@ -158,10 +158,14 @@ grafana:
         size: 20Gi
     # The admin credential (DD-267): "" derives <release>-grafana-admin, the
     # umbrella's generated Secret (CHT-19 pattern); set to bring your own
-    # (keys user/password). The login form stays disabled either way —
-    # anonymous-Viewer is the deployed posture (the compose's), and the
-    # credential exists so the instance is never ship-defaulted.
+    # (keys user/password). The daily door is the realm login (CHT-84);
+    # this is the account-recovery admin, kept so the instance is never
+    # ship-defaulted.
     adminPasswordSecret: ""
+    # The OAuth client secret (CHT-84, DD-275): "" derives
+    # <release>-grafana-oauth (key client-secret), the umbrella's generated
+    # Secret the realm import reads too; set to bring your own.
+    oauthSecretName: ""
     # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
     # the default posture is kubectl port-forward (runbook).
     probes:

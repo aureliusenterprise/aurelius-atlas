@@ -132,6 +132,29 @@ curl -k https://keycloak.<domain>/realms/aurelius-atlas    # issuer reachable
 (The full smoke suite — login, entity write/read, lineage, telemetry — lands
 with increment 10.5.)
 
+### Grafana
+
+Grafana has no anonymous access: the login screen's **Keycloak** button goes
+to the `aurelius-atlas` realm (CHT-84, DD-275). Any realm user lands as
+**Viewer**; grant the `grafana` client's `editor` or `admin` client role in
+the Keycloak console to escalate (CHT-85). The default access path is a
+port-forward, and it works end-to-end — the client registers
+`http://localhost:3000/login/generic_oauth` and Grafana's root URL is
+request-derived (DD-276):
+
+```bash
+kubectl -n atlas port-forward deploy/atlas-observability-grafana 3000:3000
+# then open http://localhost:3000 and log in with Keycloak
+```
+
+With `global.hosts.grafana.enabled=true` the same login answers at
+`https://grafana.<domain>` (the edge route is already wired). The generated
+local admin (`<release>-grafana-admin`, keys `user`/`password` via
+`kubectl get secret`) is the account-recovery credential — use it only when
+the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana for
+the token exchange (CHT-86); if the login redirects but never completes,
+check that hop first.
+
 ## 3. Upgrade
 
 ```bash

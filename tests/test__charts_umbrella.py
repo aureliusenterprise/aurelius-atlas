@@ -94,6 +94,7 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         "atlas-keycloak-admin": {"user", "password"},
         "atlas-keycloak-database": {"user", "password"},
         "atlas-otel-clients": {"OTEL_INGEST_CLIENT_SECRET"},
+        "atlas-grafana-oauth": {"client-secret"},  # CHT-83: feeds the realm import and Grafana
     }
     assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
@@ -115,6 +116,43 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
     users = master_secrets["atlas-keycloak-users"]
     assert set(users["data"]) == {"writer-password", "reader-password"}
     assert all(len(v) >= 44 for v in users["data"].values())
+    # The master realm has no grafana client (CHT-81); the stock render's
+    # grafana-oauth rides the observability chart, so master keeps it (its
+    # Grafana still logs in) — a master-only install with obs off is the
+    # case with no consumer (test__grafana_oauth_secret_gates_on_consumers).
+    assert "atlas-grafana-oauth" in master_secrets
+
+
+@pytest.mark.covers(rules=["CHT-83"])
+def test__grafana_oauth_secret_gates_on_consumers() -> None:
+    """<release>-grafana-oauth generates for either consumer (CHT-83, DD-275).
+
+    The observability chart's Grafana joins it; a non-master keycloak install
+    feeds the realm import. With both consumers gone (obs disabled, keycloak
+    on master), nothing generates — CHT-80's unused-credential rule.
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-observability.enabled=false",),
+    )
+    # Keycloak still imports the prod realm: the import placeholder needs it.
+    assert "atlas-grafana-oauth" in names(docs, "Secret")
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-observability.enabled=false", "atlas-keycloak.realm.name=master"),
+    )
+    assert "atlas-grafana-oauth" not in names(docs, "Secret")
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("secrets.grafanaOauth.clientSecret=supplied-oauth",),
+    )
+    secret = find(docs, "Secret", "atlas-grafana-oauth")
+    assert secret["data"]["client-secret"] == "c3VwcGxpZWQtb2F1dGg="  # b64("supplied-oauth")
 
 
 @pytest.mark.covers(rules=["CHT-19"])

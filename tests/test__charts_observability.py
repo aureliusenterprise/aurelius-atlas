@@ -290,21 +290,75 @@ def test__loki_and_tempo_workload_shapes(obs_docs: list[dict[str, Any]]) -> None
 
 
 @pytest.mark.covers(rules=["CHT-40"])
-def test__grafana_anonymous_viewer_with_generated_admin(obs_docs: list[dict[str, Any]]) -> None:
-    """Anonymous Viewer + the <release>-grafana-admin join (CHT-40, DD-267).
+def test__grafana_admin_recovery_join(obs_docs: list[dict[str, Any]]) -> None:
+    """The <release>-grafana-admin join stays (CHT-40, DD-267).
 
-    The compose's anonymous-Viewer env with login disabled — R5's read
-    posture.
+    With the realm login as the daily door (CHT-84), the generated admin is
+    account recovery — the env pair survives 10.8 unchanged.
     """
     app = container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
     envs = env_map(app)
-    assert env_value(envs, "GF_AUTH_ANONYMOUS_ENABLED") == "true"
-    assert env_value(envs, "GF_AUTH_ANONYMOUS_ORG_ROLE") == "Viewer"
-    assert env_value(envs, "GF_AUTH_DISABLE_LOGIN_FORM") == "true"
-    assert env_value(envs, "GF_USERS_VIEWERS_CAN_EDIT") == "true"
     for key, name in (("user", "GF_SECURITY_ADMIN_USER"), ("password", "GF_SECURITY_ADMIN_PASSWORD")):
         assert envs[name]["valueFrom"]["secretKeyRef"] == {"name": "atlas-grafana-admin", "key": key}
     find(obs_docs, "PersistentVolumeClaim", f"{FULLNAME}-grafana")
+
+
+@pytest.mark.covers(rules=["CHT-84"])
+def test__grafana_logs_in_through_the_realm(obs_docs: list[dict[str, Any]]) -> None:
+    """Anonymous off, login form on, generic_oauth against the imported realm (CHT-84).
+
+    The auth URLs derive from the same issuer/realm facts as the collector's
+    OIDC receiver (CHT-74); the client secret joins from
+    <release>-grafana-oauth; GF_SERVER_ROOT_URL stays unset so a
+    port-forward completes the login (DD-276).
+    """
+    app = container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
+    envs = env_map(app)
+    assert env_value(envs, "GF_AUTH_ANONYMOUS_ENABLED") == "false"
+    assert env_value(envs, "GF_AUTH_DISABLE_LOGIN_FORM") == "false"
+    assert "GF_AUTH_ANONYMOUS_ORG_ROLE" not in envs
+    assert "GF_USERS_VIEWERS_CAN_EDIT" not in envs
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_ENABLED") == "true"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_NAME") == "Keycloak"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_CLIENT_ID") == "grafana"
+    assert envs["GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-grafana-oauth",
+        "key": "client-secret",
+    }
+    issuer = "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_AUTH_URL") == f"{issuer}/auth"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_TOKEN_URL") == f"{issuer}/token"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_API_URL") == f"{issuer}/userinfo"
+    assert "GF_SERVER_ROOT_URL" not in envs
+
+
+@pytest.mark.covers(rules=["CHT-84"])
+def test__grafana_oauth_urls_follow_the_realm_and_issuer() -> None:
+    """global.realm / global.issuer.url retarget the login (CHT-74's rule)."""
+    docs = helm_render(
+        OBS_CHART,
+        release="atlas",
+        value_files=TEST_VALUES,
+        sets=("global.realm=other-realm", "global.issuer.url=https://id.example/auth"),
+    )
+    envs = env_map(container(find(docs, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
+    issuer = "https://id.example/auth/realms/other-realm/protocol/openid-connect"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_AUTH_URL") == f"{issuer}/auth"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_TOKEN_URL") == f"{issuer}/token"
+
+
+@pytest.mark.covers(rules=["CHT-85"])
+def test__grafana_rbac_maps_grafana_client_roles(obs_docs: list[dict[str, Any]]) -> None:
+    """Viewer default, editor/admin client roles escalate (CHT-85, DD-275)."""
+    app = container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
+    envs = env_map(app)
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH") == (
+        'contains(resource_access.grafana.roles[*], "admin") ? "Admin" '
+        ': contains(resource_access.grafana.roles[*], "editor") ? "Editor" : "Viewer"'
+    )
+    # The realm is the boundary: no role-list path, no org allow-list.
+    assert "GF_AUTH_GENERIC_OAUTH_ROLE_LIST_PATH" not in envs
+    assert "GF_AUTH_GENERIC_OAUTH_ALLOWED_ORGANIZATIONS" not in envs
 
 
 @pytest.mark.covers(rules=["CHT-40"])

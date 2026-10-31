@@ -8340,7 +8340,8 @@ slice is not an umbrella component. Next free DD: 267.
 
 ### DD-267 — Grafana's admin password is a generated Secret and the login form stays disabled
 
-- **Status:** Accepted
+- **Status:** Accepted (the login-form-stays-disabled clause superseded by
+  [DD-276](#dd-276--grafana-logs-in-through-the-realm-with-a-request-derived-root-url))
 - **Increment:** 10.3b
 - **Date:** 2026-10-29
 
@@ -8716,6 +8717,99 @@ the 10.5 smoke catches the nonsense hosts. The parity question between the
 umbrella and KC host helpers is pinned by the umbrella suite's realm tests
 rather than a shared helper library (DD-290's chart-local rule holds).
 Next free DD: 275.
+
+### DD-275 — Grafana is a confidential realm RP; its client lives in the prod asset only
+
+- **Status:** Accepted
+- **Increment:** 10.8
+- **Date:** 2026-10-31
+
+**Context.** The pre-pentest finding H4: the cluster's Grafana answers with
+DD-267's anonymous-Viewer posture, so `global.hosts.grafana.enabled` —
+already wired end-to-end through the edge (10.3c) — would publish the
+dashboards read-public. 10.7 shipped the `aurelius-atlas` realm and the
+placeholder machinery; Grafana is the first workload whose login is a
+relying-party flow of its own rather than the webapp's existing one.
+
+**Decision.** A `grafana` client joins `files/aurelius-atlas.json` and the
+prod asset **only** (CHT-81): confidential (`clientAuthenticatorType:
+client-secret`, secret `${GRAFANA_CLIENT_SECRET}` — DD-256's
+replace-placeholders resolver, fed from `<release>-grafana-oauth` exactly as
+`${OTEL_INGEST_CLIENT_SECRET}` is), standard-flow + PKCE S256, ROPC off, no
+service account. RBAC comes from the token: `role_attribute_path` grants
+Viewer to every authenticated realm user and the client's `editor`/`admin`
+client roles escalate — the realm is the access boundary, and escalation is
+an explicit grant an operator makes in the Keycloak console. This is CHT-79's
+first named parity exception (prod client ids = dev's ∪ {`grafana`}): the dev
+compose Grafana stays anonymous-Viewer, a local dashboard over local
+telemetry (DV-111) — the same two-shape posture as DD-273's identity split,
+now with a concrete client proving the assets may diverge on purpose.
+
+**Alternatives.** (a) Grafana's own auth proxy or the edge's OIDC auth filter
+in front of it — rejected: the gateway filter would authenticate but not
+carry identity into Grafana (dashboards lose viewer attribution, and
+per-dashboard permissions stay Grafana's job anyway); generic_oauth is
+Grafana's native OIDC RP and needs no edge change. (b) Put the client in
+both realm assets — rejected: dev's Grafana is a compose convenience, and a
+client the dev stack never uses is drift bait for CHT-79. (c) Map realm
+_roles_ instead of client roles — rejected: realm roles would collide with
+`aurelius-write`'s namespace and make Grafana escalation a realm-wide grant;
+client roles scope it to Grafana's own console surface. (d) `admin` group
+mapping from Keycloak realm admins — rejected: realm-admin should not
+silently become Grafana-admin; explicit client roles keep escalation auditable.
+
+**Consequences.** The umbrella's `secrets.grafanaOauth` Secret serves two
+consumers (realm import + Grafana env) so the gate is either-consumer
+(CHT-83); a `master`-only install generates nothing, CHT-80's rule. The dev
+Grafana keeps DD-267's full anonymous posture — compose and cluster diverge
+by design, and the CHT-79 test now names the exception, so a future client
+added to one asset and not the other fails loudly and must be justified in
+the spec like this one. Next free DD: 276.
+
+### DD-276 — Grafana logs in through the realm, with a request-derived root URL
+
+- **Status:** Accepted (supersedes DD-267's login-form-stays-disabled clause)
+- **Increment:** 10.8
+- **Date:** 2026-10-31
+
+**Context.** Enabling the login (H4) has an operator cost DD-267 named
+obliquely: its reason paragraph said enabling the form would put a
+password surface behind a route with no Keycloak front — 10.8 removes that
+objection by putting Keycloak in front. The other half of DD-267 (the
+generated `-grafana-admin` Secret, never ship-defaulted) stands untouched
+and keeps its env joins; it becomes account recovery rather than a dormant
+credential.
+
+**Decision.** `GF_AUTH_*` swaps anonymous-off/login-form-on/OAuth-on
+(CHT-84); `GF_SERVER_ROOT_URL` **stays unset** and the client's
+`redirectUris` carry both `https://__GRAFANA_HOST__/login/generic_oauth` and
+`http://localhost:3000/login/generic_oauth` (CHT-82). Grafana derives the
+redirect from the request Host header when root_url is unset, so
+`kubectl port-forward` to the pod — the documented default access path —
+completes the full OIDC round-trip through Keycloak at the public issuer
+URL, while a browser reaching `grafana.<domain>` (if exposed) round-trips
+through the same client. The localhost entry is a fixed dev/operator URI,
+not a wildcard: an attacker who cannot land a browser on `localhost:3000` of
+the operator's machine cannot use it.
+
+**Alternatives.** (a) Pin `GF_SERVER_ROOT_URL` to `https://grafana.<domain>`
+— rejected: it breaks the port-forward path (Grafana would redirect the
+browser to a host that isn't listening) and pins the pod to one hostname;
+the umbrella's `hosts.grafana.enabled=false` default makes the request-
+derived form the correct general shape. (b) The `+` wildcard redirect —
+rejected: CHT-77 forbids `+` in a cluster asset, and a wildcard on a
+confidential client is the open-redirect shape the realm was hardened
+against. (c) A second `grafana-dev` client for the localhost path —
+rejected: one client, two exact URIs is less surface and one row of drift.
+
+**Consequences.** DD-267's table row and body carry the partial-supersession
+annotation; its generated-Secret half is unchanged. Keycloak's 8443 dialer
+set gains the Grafana pod (CHT-86) — the token exchange and JWKS fetches are
+new real traffic and the full-dialer-set philosophy (CHT-62) admits them
+without a flag. A render with `global.hosts.grafana.host` set to something
+unreachable still logs in fine over port-forward; the host entry is inert
+allow-list filler (CHT-82), not a dependency.
+Next free DD: 277.
 
 ### DD-283 — One chart per component under an umbrella, published as OCI artifacts
 
