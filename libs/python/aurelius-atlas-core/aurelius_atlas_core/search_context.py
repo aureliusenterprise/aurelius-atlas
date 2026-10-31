@@ -25,16 +25,12 @@ MARKER_END = -1
 MARKER_DELIMITER = ":"
 MARKER_WITH_OFFSET = "Marker can be used only if offset=0."
 INVALID_MARKER = "Invalid marker!"
-NOT_SUPPORTED = "Search by {name} is not supported yet"
 WILDCARD_CLASSIFICATIONS = "*"
 ALL_CLASSIFICATIONS = "_CLASSIFIED"
 NO_CLASSIFICATIONS = "_NOT_CLASSIFIED"
 ALL_CLASSIFICATION_TYPES = "_ALL_CLASSIFICATION_TYPES"
 _ANY_CLASSIFICATION = (WILDCARD_CLASSIFICATIONS, ALL_CLASSIFICATIONS, ALL_CLASSIFICATION_TYPES)
 WILDCARD_TAG_FILTERS = "TagFilters specified with wildcard tag name"
-
-_NOT_YET = (("term_name", "termName"),)
-"""The parameters 5.2 adds (DV-46)."""
 
 
 class ClassificationMode(StrEnum):
@@ -81,9 +77,6 @@ class SearchContext:
 
     def __init__(self, parameters: SearchParameters, registry: TypeRegistry) -> None:
         self.parameters = parameters
-        for field, name in _NOT_YET:
-            if getattr(parameters, field):
-                raise AtlasError(AtlasErrorCode.BAD_REQUEST, NOT_SUPPORTED.format(name=name))
         self.entity_types = _entity_types(parameters.type_name, registry)
         """The types given, in their order; ``ENTITY_ROOT`` alone for every entity (SRC-03)."""
         for entity_type in self.entity_types:

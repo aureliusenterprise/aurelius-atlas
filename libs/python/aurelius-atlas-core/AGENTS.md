@@ -46,7 +46,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   reads `like` patterns
 - `aurelius_atlas_core/entity_lineage_service.py` — `EntityLineageService`: lineage and lineage on demand over
   the `__Process.inputs` and `__Process.outputs` relationships (DD-245)
-- `aurelius_atlas_core/glossary_service.py` — `GlossaryService`: glossaries, categories and terms;
+- `aurelius_atlas_core/glossary_service.py` — `GlossaryService`: glossaries, categories, terms and their assignment;
   `glossary_category_utils.py` and `glossary_term_utils.py` write a category's and a term's relationships on
   `glossary_utils.py`, `glossary_dto.py` (`DataAccess`) keeps glossary objects as entities (DD-246)
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease

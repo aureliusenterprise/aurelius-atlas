@@ -1,0 +1,228 @@
+name: A glossary term is assigned to an entity, read on its header, searched for and removed
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/GlossaryREST.java#assignTermToEntities
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#getAssignedEntities
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryTermUtils.java#processTermAssignments
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryTermUtils.java#processTermDissociation
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapAssignedTerms
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onTermAdded
+    - repository/src/main/java/org/apache/atlas/discovery/SearchContext.java#getGlossaryTermVertex
+    - repository/src/main/java/org/apache/atlas/query/GremlinQueryComposer.java#addHasTerm
+    - repository/src/test/java/org/apache/atlas/glossary/GlossaryServiceTest.java#testTermAssignmentAndDissociation
+rules: [GTA-01, GTA-02, GTA-03, GTA-05, GTA-06, GTA-07]
+covers:
+    - aurelius_atlas_server.routes.glossary.assign_term_to_entities
+    - aurelius_atlas_server.routes.glossary.get_entities_assigned_with_term
+    - aurelius_atlas_server.routes.glossary.remove_term_assignment_from_entities
+stages:
+    - name: create a glossary named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary
+          json: { name: "scenario_assign_{run}" }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "scenario_assign_{run}"
+              name: "scenario_assign_{run}"
+          volatile:
+              - $.guid
+          save:
+              glossary: $.guid
+    - name: a term in it
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/term
+          json: { name: loan, anchor: { glossaryGuid: "{glossary}" } }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              qualifiedName: "loan@scenario_assign_{run}"
+              name: loan
+              anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+          volatile:
+              - $.guid
+              - $.anchor.relationGuid
+          save:
+              term: $.guid
+    - name: an asset to assign it to
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json: { entity: { typeName: Asset, attributes: { qualifiedName: "asset_{run}", name: "asset_{run}" } } }
+      response:
+          status: 200
+          json:
+              mutatedEntities: the created asset
+              guidAssignments: its GUID
+          volatile:
+              - $.mutatedEntities
+              - $.guidAssignments
+          save:
+              asset: $.mutatedEntities.CREATE[0].guid
+    - name: the term is assigned to the asset, with the assignment's attributes
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/terms/{term}/assignedEntities
+          json:
+              - guid: "{asset}"
+                typeName: Asset
+                relationshipAttributes: { attributes: { description: d, status: DEPRECATED, confidence: 5 } }
+      response:
+          status: 204
+    - name: the term's assigned entities are the asset
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/terms/{term}/assignedEntities
+      response:
+          status: 200
+          json:
+              - guid: "{asset}"
+                typeName: Asset
+                entityStatus: ACTIVE
+                displayText: "asset_{run}"
+                relationshipGuid: a relationship GUID
+                relationshipStatus: ACTIVE
+                relationshipAttributes:
+                    typeName: AtlasGlossarySemanticAssignment
+                    attributes:
+                        description: d
+                        expression: null
+                        status: DEPRECATED
+                        confidence: 5
+                        createdBy: null
+                        steward: null
+                        source: null
+                qualifiedName: "asset_{run}"
+                relationshipType: AtlasGlossarySemanticAssignment
+          volatile:
+              - $[0].relationshipGuid
+          save:
+              assignment: $[0].relationshipGuid
+    - name: the asset's header lists the term as a meaning
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/guid/{asset}/header
+      response:
+          status: 200
+          json:
+              typeName: Asset
+              attributes: { qualifiedName: "asset_{run}", name: "asset_{run}", description: "", owner: "" }
+              guid: "{asset}"
+              status: ACTIVE
+              displayText: "asset_{run}"
+              classificationNames: []
+              classifications: []
+              meaningNames: [loan]
+              meanings:
+                  - termGuid: "{term}"
+                    relationGuid: "{assignment}"
+                    description: d
+                    displayText: loan
+                    confidence: 5
+                    status: DEPRECATED
+                    qualifiedName: "loan@scenario_assign_{run}"
+              isIncomplete: false
+              labels: []
+    - name: a basic search by the term's qualified name finds the asset
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json: { termName: "loan@scenario_assign_{run}", excludeDeletedEntities: true }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters: the parameters as used
+              entities:
+                  - typeName: Asset
+                    attributes: { qualifiedName: "asset_{run}", name: "asset_{run}", description: "", owner: "" }
+                    guid: "{asset}"
+                    status: ACTIVE
+                    displayText: "asset_{run}"
+                    classificationNames: []
+                    meaningNames: [loan]
+                    meanings: the term's assignment, as on the header
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 1
+          volatile:
+              - $.searchParameters
+              - $.entities[0].meanings
+    - name: a basic search by a name no term has is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json: { termName: "nothing_{run}" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-06E
+              errorMessage: "nothing_{run}: Unknown/invalid glossary term"
+    - name: a DSL query by the term's qualified name finds the asset
+      request:
+          method: GET
+          url: /api/atlas/v2/search/dsl
+          params: { query: 'Asset hasTerm "loan@scenario_assign_{run}"' }
+      response:
+          status: 200
+          json:
+              queryType: DSL
+              queryText: 'Asset hasTerm "loan@scenario_assign_{run}"'
+              entities:
+                  - typeName: Asset
+                    attributes: { qualifiedName: "asset_{run}", name: "asset_{run}", description: "", owner: "" }
+                    guid: "{asset}"
+                    status: ACTIVE
+                    displayText: "asset_{run}"
+                    classificationNames: []
+                    classifications: []
+                    meaningNames: [loan]
+                    meanings: the term's assignment, as on the header
+                    isIncomplete: false
+                    labels: []
+              approximateCount: -1
+          volatile:
+              - $.entities[0].meanings
+    - name: removing it without the assignment's GUID is refused
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/terms/{term}/assignedEntities
+          json: [{ guid: "{asset}", typeName: Asset }]
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-078
+              errorMessage: "Missing mandatory attribute, TermAssignment relationship guid"
+    - name: removing it by the assignment's GUID
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/terms/{term}/assignedEntities
+          json: [{ guid: "{asset}", typeName: Asset, relationshipGuid: "{assignment}" }]
+      response:
+          status: 204
+    - name: the term is assigned to nothing
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/terms/{term}/assignedEntities
+      response:
+          status: 200
+          json: []
+    - name: deleting the glossary deletes its term
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/{glossary}
+      response:
+          status: 204
+    - name: the asset is deleted too
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{asset}
+      response:
+          status: 200
+          json:
+              mutatedEntities: the deleted asset
+          volatile:
+              - $.mutatedEntities

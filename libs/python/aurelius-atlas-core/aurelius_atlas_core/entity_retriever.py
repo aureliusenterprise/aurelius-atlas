@@ -18,6 +18,8 @@ from aurelius_atlas_model.instance import (
     AtlasObjectId,
     AtlasRelatedObjectId,
     AtlasStruct,
+    AtlasTermAssignmentHeader,
+    AtlasTermAssignmentStatus,
     EntityStatus,
     RelationshipStatus,
 )
@@ -28,6 +30,7 @@ from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.map_type import MapType
 from aurelius_atlas_typesystem.relationship_type import RelationshipType
+from pydantic.alias_generators import to_camel
 
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.graph_helper import (
@@ -48,6 +51,8 @@ DISPLAY_TEXT_FALLBACKS = ("name", "displayName", "qualifiedName")
 """The attributes ``getDisplayText`` tries, in order, after the type's display text attribute."""
 
 QUALIFIED_NAME = "qualifiedName"
+TERM_ASSIGNMENT = "AtlasGlossarySemanticAssignment"
+"""The relationship type of a term's assignment to an entity (``TERM_ASSIGNMENT_LABEL``, GTA-05)."""
 
 _REFERENCES = {TypeCategory.OBJECT_ID_TYPE, TypeCategory.ENTITY}
 
@@ -270,9 +275,9 @@ class _Reading:
             classification_names=[str(found.type_name) for found in await self.classifications(stored)],
             is_incomplete=stored.is_incomplete,
             labels=stored.labels or [],
-            meanings=[],
-            meaning_names=[],
         )
+        header.meanings = await self.meanings(stored)
+        header.meaning_names = [meaning.display_text for meaning in header.meanings if meaning.display_text is not None]
         for name, attribute in entity_type.header_attributes.items():
             value = await self._vertex_attribute(stored, attribute)
             header.set_attribute(name, "" if value is None else value)
@@ -280,6 +285,39 @@ class _Reading:
         if display_text is not None:
             header.display_text = java_string(display_text)
         return header
+
+    async def meanings(self, stored: StoredEntity) -> list[AtlasTermAssignmentHeader]:
+        """``mapAssignedTerms``: the terms assigned to the entity, by assignments in any state (GTA-05).
+
+        An assignment's status that is no ``AtlasTermAssignmentStatus`` is left out (DV-103).
+        """
+        assignments = [
+            found
+            for found in await self._relationships_of(stored)
+            if found.type_name == TERM_ASSIGNMENT and found.end2_guid == stored.guid
+        ]
+        await self._load(found.end1_guid for found in assignments)
+        meanings = []
+        for found in assignments:
+            term = self._stored.get(found.end1_guid)
+            attributes = {} if term is None else term.attributes
+            header = AtlasTermAssignmentHeader(
+                term_guid=found.end1_guid,
+                relation_guid=found.guid,
+                display_text=_text(attributes.get("AtlasGlossaryTerm.name")),
+                qualified_name=_text(attributes.get("AtlasGlossaryTerm.qualifiedName")),
+            )
+            values = found.attributes
+            for name in ("description", "expression", "created_by", "steward", "source"):
+                value = values.get(to_camel(name))
+                if isinstance(value, str):
+                    setattr(header, name, value)
+            if isinstance(values.get("confidence"), int):
+                header.confidence = values["confidence"]
+            if values.get("status") in AtlasTermAssignmentStatus.__members__:
+                header.status = AtlasTermAssignmentStatus(values["status"])
+            meanings.append(header)
+        return meanings
 
     async def object_id(self, stored: StoredEntity) -> AtlasObjectId | None:
         """``toAtlasObjectId``: GUID, type name and the unique attribute values that are not null (ERD-05)."""
@@ -590,3 +628,7 @@ def _references_of(values: Mapping[str, Any], attributes: Iterable[AtlasAttribut
             items = value.values() if isinstance(value, Mapping) else value if isinstance(value, list) else []
             guids += [str(item) for item in items if item is not None]
     return guids
+
+
+def _text(value: object) -> str | None:
+    return value if isinstance(value, str) else None

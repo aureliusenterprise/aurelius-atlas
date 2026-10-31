@@ -278,9 +278,11 @@ async def test__events_are_sorted_by_a_column_then_paged(audits: InMemoryEntityA
             "on_classifications_added",
             "on_classifications_updated",
             "on_classifications_deleted",
+            "on_term_added",
+            "on_term_deleted",
         )
     ),
-    rules=["AUD-02"],
+    rules=["AUD-02", "GTA-04"],
 )
 def test__the_audit_listener_is_an_entity_change_listener(audits: InMemoryEntityAuditRepository) -> None:
     """The notifier takes any ``EntityChangeListener``; the audit listener is the one Aurelius Atlas has."""

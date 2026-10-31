@@ -1,7 +1,8 @@
-"""``GlossaryTermUtils``: a term's anchor, related terms and categories (GTM-03 to GTM-05).
+"""``GlossaryTermUtils``: a term's anchor, related terms, categories and assignments (GTM-03 to GTM-05, GTA-02).
 
 A term's relationships are written apart from its entity, as Atlas's ``processTermRelations`` writes them; a change
-of anchor renames the term below its new glossary. Assigning terms to entities follows in 5.2c.
+of anchor renames the term below its new glossary. A term is assigned to an entity by a semantic assignment from the
+term to the entity, and dissociated by removing it.
 """
 
 from collections.abc import Iterable
@@ -13,7 +14,7 @@ from aurelius_atlas_model.glossary import (
     AtlasTermCategorizationHeader,
     Relation,
 )
-from aurelius_atlas_model.instance import AtlasRelationship
+from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelatedObjectId, AtlasRelationship
 
 from aurelius_atlas_core.glossary_utils import (
     GlossaryUtils,
@@ -25,6 +26,7 @@ from aurelius_atlas_core.glossary_utils import (
 
 TERM_ANCHOR = "AtlasGlossaryTermAnchor"
 TERM_CATEGORIZATION = "AtlasGlossaryTermCategorization"
+TERM_ASSIGNMENT = "AtlasGlossarySemanticAssignment"
 
 
 class GlossaryTermUtils(GlossaryUtils):
@@ -37,6 +39,44 @@ class GlossaryTermUtils(GlossaryUtils):
         await self._anchor(stored, updated, op)
         await self._related_terms(stored, updated, op)
         await self._categories(stored, updated, op)
+
+    async def process_term_assignments(self, term: AtlasGlossaryTerm, entities: Iterable[AtlasRelatedObjectId]) -> None:
+        """``processTermAssignments``: an assignment from the term to each entity not listed as assigned (GTA-02).
+
+        The entity's relationship attributes are the assignment's.
+        """
+        listed = [found.to_json() for found in term.assigned_entities or []]
+        for entity in entities:
+            if entity.to_json() in listed:
+                continue
+            created = relationship(TERM_ASSIGNMENT, term.guid, entity.guid)
+            created.end2 = AtlasObjectId(
+                guid=entity.guid, type_name=entity.type_name, unique_attributes=entity.unique_attributes
+            )
+            given = entity.relationship_attributes
+            for name, value in ((given.attributes or {}) if given is not None else {}).items():
+                created.set_attribute(name, value)
+            await self._get_or_create(created)
+
+    async def process_term_dissociation(
+        self, term: AtlasGlossaryTerm, entities: Iterable[AtlasRelatedObjectId]
+    ) -> None:
+        """``processTermDissociation``: each entity's assignment of the term removed, named by its GUID (GTA-03).
+
+        Raises:
+            AtlasError: ``TERM_DISSOCIATION_MISSING_RELATION_GUID`` without one, ``INVALID_TERM_DISSOCIATION`` for
+                one that is not the term's assignment to the entity (DV-102).
+        """
+        assigned = {found.guid: found for found in term.assigned_entities or []}
+        for entity in entities:
+            if entity.relationship_guid is None:
+                raise AtlasError(AtlasErrorCode.TERM_DISSOCIATION_MISSING_RELATION_GUID)
+            existing = assigned.get(entity.guid)
+            if existing is None or existing.relationship_guid != entity.relationship_guid:
+                raise AtlasError(
+                    AtlasErrorCode.INVALID_TERM_DISSOCIATION, entity.relationship_guid, term.guid, entity.guid
+                )
+            await self._delete(entity.relationship_guid)
 
     async def _anchor(self, stored: AtlasGlossaryTerm, updated: AtlasGlossaryTerm, op: RelationshipOperation) -> None:
         """``processTermAnchor``: a new anchor moves the term below its glossary."""
