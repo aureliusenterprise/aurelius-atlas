@@ -26,6 +26,10 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   `build_otlp_pipeline`, installed by the lib's `setup_telemetry` on the
   native OTel providers (DD-210: the app owns its export; the static env
   headers cannot carry a 60s JWT)
+- `aurelius_atlas_server/authentication.py` — `AuthenticationMiddleware`, `SessionStore`, `user_of`: each
+  request's user from its bearer token or browser session, the 401 or sign-in redirect, the CSRF check (6.1a,
+  DD-250); `oidc_client.py` — `OidcClient`: the confidential client's code flow, refresh and sign-out;
+  `routes/login.py` — `login.jsp` and `logout.html`. Tokens are verified by `aurelius-atlas-auth`
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
@@ -65,6 +69,12 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 keycloak.localhost:host-gateway` and the `otel-atlas-server` client imported
   (a long-lived dev Keycloak needs a recreate for a new client — see
   dev/keycloak/AGENTS.md).
+- Authentication (6.1a, DD-250): `AURELIUS_ATLAS_SERVER_AUTH_*` name the dev Keycloak's master realm and the
+  server's confidential client `aurelius-atlas-server` (`dev/keycloak/import/master.json`); its secret is
+  `ATLAS_SERVER_CLIENT_SECRET` in `dev/keycloak/.env.enc`, mirrored as `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET`
+  here and in the webapp's `.env.enc`. The e2e suite mints the writer's tokens with `DEV_USER_WRITER_PASSWORD`
+  and publishes the server on `127.0.0.1:21001`, the client's registered e2e return. Unit tests use the fake
+  provider in `tests/fake_issuer.py`.
 
 ## Commands
 

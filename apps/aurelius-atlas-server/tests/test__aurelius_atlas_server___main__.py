@@ -45,6 +45,8 @@ def test__run_serves_the_app_built_from_the_environment(
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE", str(certificate))
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE", str(key))
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_PORT", "21443")
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL", "https://keycloak.test")
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET", "client-secret")
     calls: list[dict[str, Any]] = []
     monkeypatch.setattr(__main__.uvicorn, "run", lambda app, **options: calls.append({"app": app, **options}))
 

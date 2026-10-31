@@ -3,8 +3,6 @@
 ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
 """
 
-import secrets
-import string
 from functools import cache
 from importlib.metadata import version
 from typing import Any
@@ -16,6 +14,7 @@ from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import PlainTextResponse
 
+from aurelius_atlas_server.authentication import Session, User, csrf_token
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import Body, Store, writer
 from aurelius_atlas_server.routes.types import validate_param_length
@@ -35,9 +34,6 @@ ACTIVE = "ACTIVE"
 LIVE = "Service is live"
 READY = "Service is ready to accept requests"
 NOT_READY = "Service not ready to accept client requests"
-
-CSRF_TOKEN_LENGTH = 20
-_CSRF_ALPHABET = string.ascii_letters + string.digits
 
 UI_SETTINGS: dict[str, Any] = {
     "atlas.rest-csrf.enabled": True,
@@ -65,11 +61,6 @@ def time_zones() -> list[str]:
     return sorted(available_timezones())
 
 
-def csrf_token() -> str:
-    """A new random token of 20 letters and digits, as ``AdminResource.getUserProfile`` makes one."""
-    return "".join(secrets.choice(_CSRF_ALPHABET) for _ in range(CSRF_TOKEN_LENGTH))
-
-
 @ADMIN.get("/version")
 async def get_version(request: Request) -> dict[str, str]:
     """The server's name, release and revision (ADM-01, DV-03)."""
@@ -90,19 +81,25 @@ async def get_status() -> dict[str, str]:
 
 @ADMIN.get("/session")
 async def get_session(request: Request) -> dict[str, Any]:
-    """The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+    """The user interface settings and the user of this session (ADM-05, AUT-09).
 
-    ``atlas.tasks.enabled`` is the server's ``tasks_enabled`` setting (DD-081).
+    The CSRF token is the session's, made on first ask; a request without a session gets a new one. The entity
+    permissions stay false until 6.2 (DV-105). ``atlas.tasks.enabled`` is the server's ``tasks_enabled`` setting
+    (DD-081).
     """
+    user: User | None = request.state.user
+    session: Session | None = request.state.session
+    if session is not None and session.csrf_token is None:
+        session.csrf_token = csrf_token()
     return {
         **UI_SETTINGS,
         "atlas.tasks.enabled": request.app.state.settings.tasks_enabled,
         "atlas.entity.update.allowed": False,
         "atlas.entity.create.allowed": False,
-        "userName": None,
-        "groups": [],
+        "userName": None if user is None else user.name,
+        "groups": [] if user is None else sorted(user.groups),
         "timezones": time_zones(),
-        "_csrfToken": csrf_token(),
+        "_csrfToken": csrf_token() if session is None else session.csrf_token,
     }
 
 

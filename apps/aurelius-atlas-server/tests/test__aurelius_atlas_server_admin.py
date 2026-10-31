@@ -8,8 +8,9 @@ from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument, S
 from aurelius_atlas_model.patches import TYPEDEF_PATCH_TYPE, AtlasPatch, PatchStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_server import ServerSettings, create_app
+from aurelius_atlas_server.authentication import csrf_token
 from aurelius_atlas_server.errors import ATLAS_JSON_MEDIA_TYPE
-from aurelius_atlas_server.routes.admin import csrf_token, time_zones
+from aurelius_atlas_server.routes.admin import time_zones
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from elasticsearch import AsyncElasticsearch
 
@@ -46,7 +47,9 @@ async def test__readiness_fails_while_the_store_is_unhealthy(client: httpx.Async
 
 
 @pytest.mark.covers(
-    "aurelius_atlas_server.routes.admin.get_session", "aurelius_atlas_server.routes.admin.csrf_token", rules=["ADM-05"]
+    "aurelius_atlas_server.routes.admin.get_session",
+    "aurelius_atlas_server.authentication.csrf_token",
+    rules=["ADM-05"],
 )
 async def test__session_gives_a_new_token_of_letters_and_digits(client: httpx.AsyncClient) -> None:
     """The CSRF token has 20 letters and digits and differs between sessions."""
@@ -71,7 +74,9 @@ async def test__session_lists_the_iana_time_zones(client: httpx.AsyncClient) -> 
 
 
 @pytest.mark.covers("aurelius_atlas_server.routes.admin.get_patches", rules=["ENS-10"])
-async def test__patches_lists_the_stored_patch_records_by_id(settings: ServerSettings, fake_es: FakeClient) -> None:
+async def test__patches_lists_the_stored_patch_records_by_id(
+    settings: ServerSettings, fake_es: FakeClient, auth_headers: dict[str, str]
+) -> None:
     """``getAtlasPatches``: ``{"patches": [...]}`` sorted by id, each as ``AtlasPatch`` writes it (DV-14)."""
     stored = ElasticsearchTypedefDocument(cast("AsyncElasticsearch", fake_es))
     await stored.prepare()
@@ -84,7 +89,9 @@ async def test__patches_lists_the_stored_patch_records_by_id(settings: ServerSet
 
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
-        async with httpx.AsyncClient(transport=transport, base_url="http://aurelius-atlas") as client:
+        async with httpx.AsyncClient(
+            transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+        ) as client:
             response = await client.get("/api/atlas/admin/patches")
 
     assert response.status_code == 200

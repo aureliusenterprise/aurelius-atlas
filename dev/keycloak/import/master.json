@@ -1504,6 +1504,39 @@
             ]
         },
         {
+            "attributes": {
+                "backchannel.logout.session.required": "true",
+                "display.on.consent.screen": "false",
+                "frontchannel.logout.session.required": "true",
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:21000/##https://localhost:21001/"
+            },
+            "authorizationServicesEnabled": false,
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-server",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "The Atlas server's confidential client (6.1a, DD-250): the vendored dashboards sign in through it (authorization code with PKCE), and its tokens are accepted by the server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas-server",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": ["https://localhost:21000/login.jsp", "https://localhost:21001/login.jsp"],
+            "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
+        },
+        {
             "alwaysDisplayInConsole": false,
             "attributes": {
                 "post.logout.redirect.uris": "+",

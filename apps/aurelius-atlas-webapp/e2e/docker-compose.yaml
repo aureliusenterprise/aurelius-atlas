@@ -81,6 +81,14 @@ services:
             AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+            # Authentication (6.1a, DD-250): the webapp's tokens, which the
+            # proxy forwards, verified against the e2e Keycloak's TLS listener.
+            # The server's own sign-in (its confidential client) is not used
+            # by this stack; its secret is mirrored in the webapp .env.
+            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
             # Export every second in test containers so Tempo read-back
             # probes land sooner (DD-225); mirrors the server e2e compose.
             OTEL_BSP_SCHEDULE_DELAY: "1000"

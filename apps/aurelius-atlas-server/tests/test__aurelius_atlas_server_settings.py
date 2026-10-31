@@ -15,6 +15,8 @@ def environment(monkeypatch: pytest.MonkeyPatch, ca_file: Path, tls_pair: tuple[
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS", str(ca_file))
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_TLS_CERT_FILE", str(certificate))
     monkeypatch.setenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE", str(key))
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL", "https://keycloak.test")
+    monkeypatch.setenv("AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET", "client-secret")
     return monkeypatch
 
 

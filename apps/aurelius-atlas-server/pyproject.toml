@@ -1,13 +1,16 @@
 [project]
 dependencies = [
+    "aurelius-atlas-auth",
     "aurelius-atlas-core",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-store-es",
     "fastapi>=0.162.0",
+    "httpx2>=2.0.0",
     "opentelemetry-instrumentation-fastapi>=0.65b0",
     "pydantic>=2.14.1",
     "pydantic-settings>=2.16.1",
+    "pyjwt[crypto]>=2.15.1",
     "python-multipart>=0.0.32",
     "tzdata>=2025.2",
     "uvicorn[standard]>=0.54.0",
@@ -27,6 +30,9 @@ packages = ["aurelius_atlas_server"]
 asyncio_default_fixture_loop_scope = "module"
 asyncio_mode = "auto"
 required_plugins = ["pytest-asyncio"]
+
+[tool.uv.sources.aurelius-atlas-auth]
+workspace = true
 
 [tool.uv.sources.aurelius-atlas-core]
 workspace = true

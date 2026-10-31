@@ -22,8 +22,8 @@ export type AtlasStatus = {
 
 /**
  * What `GET /api/atlas/admin/session` answers (ADM-05): the Atlas UI settings under
- * their dotted keys, plus this session's user — which is `null` until increment 6.1
- * (DV-04) — the time zone ids the date pickers list, and the CSRF token.
+ * their dotted keys, plus this session's user (AUT-09, since 6.1a), the time zone ids
+ * the date pickers list, and the CSRF token.
  */
 export type AtlasSession = {
     [setting: `atlas.${string}`]: string | boolean;

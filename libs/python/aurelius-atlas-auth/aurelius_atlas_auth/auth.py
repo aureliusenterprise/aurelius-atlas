@@ -73,6 +73,13 @@ class AuthConfig:
     fail_max: int = 5
     reset_timeout: float = 60.0
     ca_file: str | None = None
+    extra_audiences: tuple[str, ...] = ()
+    """Further accepted ``azp``/``aud`` values: the clients whose tokens the service also takes (AUT-10)."""
+
+    @property
+    def audiences(self) -> frozenset[str]:
+        """Every accepted ``azp``/``aud`` value: the audience and the extra ones (AUT-10)."""
+        return frozenset({self.audience, *self.extra_audiences})
 
 
 class _LoggingListener(CircuitBreakerListener):
@@ -130,6 +137,7 @@ class KeycloakAuth:
             http if http is not None else httpx.Client(timeout=HTTP_TIMEOUT_SECONDS, verify=_tls_context(config))
         )
         self._jwks = cast("dict[str, dict[str, RSAPublicKey]]", TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS))
+        self._discovery = cast("dict[str, dict]", TTLCache(maxsize=1, ttl=CACHE_TTL_SECONDS))
 
     def close(self) -> None:
         """Close the issuer HTTP client (the app calls it on shutdown)."""
@@ -153,12 +161,19 @@ class KeycloakAuth:
             raise HTTPException(status_code=503, detail="Authentication service unavailable") from e
         return response
 
+    def discovery(self) -> dict:
+        """The issuer's OpenID configuration: its endpoints, fetched once, cached an hour (AUT-10)."""
+        if self.base_url in self._discovery:
+            return self._discovery[self.base_url]
+        found = self._issuer_get(f"{self.base_url}/.well-known/openid-configuration").json()
+        self._discovery[self.base_url] = found
+        return found
+
     def _jwks_keys(self) -> dict[str, RSAPublicKey]:
         """The issuer's signing keys by ``kid``: fetched once, cached an hour."""
         if self.base_url in self._jwks:
             return self._jwks[self.base_url]
-        discovery = self._issuer_get(f"{self.base_url}/.well-known/openid-configuration").json()
-        jwks_uri = discovery["jwks_uri"]
+        jwks_uri = self.discovery()["jwks_uri"]
         keys = self._issuer_get(jwks_uri).json()["keys"]
         result = {key["kid"]: cast("RSAPublicKey", RSAAlgorithm.from_jwk(key)) for key in keys}
         self._jwks[self.base_url] = result
@@ -178,7 +193,13 @@ class KeycloakAuth:
 
     def user_info(self, auth: Annotated[HTTPAuthorizationCredentials, Depends(bearer_scheme)]) -> dict:
         """Verify the bearer token and return its claims (AUX-02, AUX-03)."""
-        token = auth.credentials
+        return self.verify(auth.credentials)
+
+    def verify(self, token: str) -> dict:
+        """Verify a token and return its claims, for callers outside a route dependency (AUX-02, AUT-10).
+
+        :raises HTTPException: 401 for a token that does not verify, 503 when the issuer cannot be reached
+        """
         try:
             headers = jwt.get_unverified_header(token)  # NOSONAR(S5659) the token is verified below
             alg = headers.get("alg", "RS256")
@@ -213,8 +234,10 @@ class KeycloakAuth:
             LOGGER.exception("Failed to verify authentication token")
             raise HTTPException(status_code=401, detail="Invalid authorization token") from e
 
-        if not _audience_matches(claims, self.config.audience):
-            LOGGER.warning("Token audience mismatch: expected %r in azp/aud claims", self.config.audience)
+        if not _audience_matches(claims, self.config.audiences):
+            LOGGER.warning(
+                "Token audience mismatch: expected one of %r in azp/aud claims", sorted(self.config.audiences)
+            )
             raise HTTPException(status_code=401, detail="Invalid token audience")
 
         return claims
@@ -253,8 +276,8 @@ class KeycloakAuth:
         return Depends(self.require_write_access)
 
 
-def _audience_matches(claims: dict, expected_audience: str) -> bool:
-    """Whether the expected audience appears in the token's ``azp`` or ``aud`` claim.
+def _audience_matches(claims: dict, expected_audiences: frozenset[str]) -> bool:
+    """Whether an expected audience appears in the token's ``azp`` or ``aud`` claim.
 
     Keycloak records the calling client in ``azp`` and only lists role-mapped
     clients in ``aud``, so accepting the union supports both plain client
@@ -268,7 +291,7 @@ def _audience_matches(claims: dict, expected_audience: str) -> bool:
             audiences.add(aud)
         case list() as aud_list:
             audiences.update(a for a in aud_list if isinstance(a, str))
-    return expected_audience in audiences
+    return not expected_audiences.isdisjoint(audiences)
 
 
 def _token_roles(claims: dict, *, client_id: str) -> set[str]:

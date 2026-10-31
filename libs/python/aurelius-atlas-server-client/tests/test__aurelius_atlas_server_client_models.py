@@ -31,7 +31,7 @@ def test__the_status_body_names_the_service_state() -> None:
 
 @pytest.mark.covers(rules=["CL-10", "CL-06"])
 def test__the_session_body_carries_the_settings_and_the_csrf_token() -> None:
-    """``userName``/``groups``/``timezones``/``_csrfToken``; the ``atlas.*`` settings ride as extras (ADM-05, DV-04)."""
+    """``userName``/``groups``/``timezones``/``_csrfToken``; ``atlas.*`` settings ride as extras (ADM-05, AUT-09)."""
     session = AtlasSessionInfo.model_validate(
         {
             "userName": "analyst",

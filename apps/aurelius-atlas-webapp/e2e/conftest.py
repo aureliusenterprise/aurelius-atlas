@@ -189,7 +189,7 @@ def compose(
             "aurelius-atlas-webapp": HttpWaitStrategy(port=WEBAPP_HOST_PORT, path="/en-US/")
             .using_tls()
             .for_status_code(200),
-            "atlas-server": HttpWaitStrategy(port=ATLAS_SERVER_HOST_PORT, path="/api/atlas/admin/version")
+            "atlas-server": HttpWaitStrategy(port=ATLAS_SERVER_HOST_PORT, path="/api/atlas/admin/status")
             .using_tls()
             .for_status_code(200),
         },

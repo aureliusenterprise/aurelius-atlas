@@ -61,7 +61,7 @@ def test__the_edge_span_rides_the_browser_trace_to_the_server(page: Page, root_u
     parent_id = secrets.token_hex(8)
 
     response = page.request.get(
-        f"{root_url}api/atlas/admin/version",
+        f"{root_url}api/atlas/admin/status",
         headers={"traceparent": f"00-{trace_id}-{parent_id}-01"},
     )
     assert response.status == 200
@@ -90,7 +90,7 @@ def test__the_edge_span_rides_the_browser_trace_to_the_server(page: Page, root_u
                 " — propagate did not extract"
             )
             assert attrs.get("http.method") == "GET"
-            assert attrs.get("http.target") == "/api/atlas/admin/version"
+            assert attrs.get("http.target") == "/api/atlas/admin/status"
             assert str(attrs.get("http.status_code")) == "200"
             assert attrs.get("http.route") == "/api/"
             assert attrs.get("net.sock.peer.addr"), "edge span carries no client address"
@@ -123,7 +123,7 @@ def test__edge_telemetry_is_producer_attributed(page: Page, root_url: str) -> No
     trace_id = secrets.token_hex(16)
 
     response = page.request.get(
-        f"{root_url}api/atlas/admin/version",
+        f"{root_url}api/atlas/admin/status",
         headers={"traceparent": f"00-{trace_id}-{secrets.token_hex(8)}-01"},
     )
     assert response.status == 200

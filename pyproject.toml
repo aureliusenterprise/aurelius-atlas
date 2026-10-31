@@ -192,6 +192,10 @@ extraPaths = ["apps/aurelius-atlas-lineage-model/tests"]
 root = "apps/aurelius-atlas-lineage-model"
 
 [[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-server/tests"]
+root = "apps/aurelius-atlas-server"
+
+[[tool.pyright.executionEnvironments]]
 extraPaths = ["libs/python/aurelius-atlas-server-client/tests"]
 root = "libs/python/aurelius-atlas-server-client"
 
