@@ -12,6 +12,7 @@
 #   up        cluster + prereqs + images + install + readiness (all of it)
 #   images    build the Aurelius images and load them + the infra pins
 #   status    release state, pod table, Gateway address
+#   hosts     refresh the fenced /etc/hosts block from the live Gateway IP (CHT-106)
 #   down      helm uninstall (+ --cluster to also minikube delete)
 #
 # Flags (env-overridable): --domain, --realm, --cpus, --memory, --skip-build.
@@ -36,11 +37,12 @@ PY="$ROOT/.venv/bin/python"
 [[ -x "$PY" ]] || PY=python3
 
 log() { printf '\033[1;36m[cluster]\033[0m %s\n' "$*"; }
+warn() { printf '\033[1;33m[cluster]\033[0m %s\n' "$*" >&2; }
 die() { printf '\033[1;31m[cluster] %s\033[0m\n' "$*" >&2; exit 1; }
 
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        up | images | status | down) ACTION="$1"; shift ;;
+        up | images | status | hosts | down) ACTION="$1"; shift ;;
         --domain) DOMAIN="$2"; shift 2 ;;
         --realm) REALM="$2"; shift 2 ;;
         --cpus) CPUS="$2"; shift 2 ;;
@@ -311,6 +313,61 @@ print(" ".join(bad))
     die "cluster did not go green within 900s"
 }
 
+gateway_address() {
+    # The Gateway's external address (minikube tunnel assigns it). Empty when
+    # the tunnel is down — the caller decides whether that is fatal.
+    kubectl -n "$NS" get gateway "$RELEASE" \
+        -o jsonpath='{.status.addresses[0].value}' 2>/dev/null || true
+}
+
+ensure_hosts() {
+    # CHT-106: the browser leg's DNS. Playwright and page.request resolve
+    # outside the Python process, so the resolver shim cannot carry them —
+    # a fenced /etc/hosts block maps the edge hostnames to the live Gateway.
+    # The block is ours alone: re-runs replace it, nothing outside moves.
+    local gateway_ip
+    gateway_ip="$(gateway_address)"
+    [[ -n "$gateway_ip" ]] ||
+        die "the Gateway carries no address — is minikube tunnel running? (install.sh up starts it)"
+    HOSTS_FILE="${ATLAS_CLUSTER_HOSTS_FILE:-/etc/hosts}" \
+        ATLAS_CLUSTER_GATEWAY_IP="$gateway_ip" \
+        ATLAS_CLUSTER_HOSTNAMES="${RELEASE}.${DOMAIN} keycloak.${DOMAIN}" \
+        ATLAS_CLUSTER_USER="$(id -un)" \
+        PYTHONPATH="$ROOT/libs/python/aurelius-atlas-cluster-lane${PYTHONPATH:+:$PYTHONPATH}" \
+        "$PY" - <<'PY'
+import os
+import sys
+
+from aurelius_atlas_cluster_lane.hosts import hosts_block
+
+path = os.environ["HOSTS_FILE"]
+gateway_ip = os.environ["ATLAS_CLUSTER_GATEWAY_IP"]
+names = os.environ["ATLAS_CLUSTER_HOSTNAMES"].split()
+# Never shadow the machine's own name: on the minikube node that deletes the
+# node's own hosts line and breaks DNS for every fall-through lookup.
+entries = {n: gateway_ip for n in names}
+try:
+    with open(path) as handle:
+        current = handle.read()
+except OSError as error:  # pragma: no cover - operator-run path
+    sys.exit(f"cannot read {path}: {error}")
+try:
+    updated = hosts_block(current, entries)
+except ValueError as error:
+    sys.exit(f"refusing to write the hosts block: {error}")
+if updated == current:
+    print(f"{path}: the block is current ({gateway_ip})", file=sys.stderr)
+else:
+    try:
+        with open(path, "w") as handle:
+            handle.write(updated)
+    except PermissionError:
+        user = os.environ.get("ATLAS_CLUSTER_USER", "?")
+        sys.exit(f"{path} is not writable by {user}: re-run with sudo (or set ATLAS_CLUSTER_HOSTS_FILE)")
+    print(f"{path}: {', '.join(names)} -> {gateway_ip}", file=sys.stderr)
+PY
+}
+
 # --- subcommands ---------------------------------------------------------------
 
 case "$ACTION" in
@@ -321,12 +378,19 @@ case "$ACTION" in
         load_images
         helm_install
         wait_ready
+        # CHT-106: the block is the browser leg's convenience — a read-only
+        # /etc/hosts (devcontainer users are often not root) must not fail an
+        # otherwise-green install; the suites ride the resolver shim.
+        ensure_hosts || warn "the hosts block was not written — the Python suites do not need it; for Playwright browsers run: sudo bash tools/cluster/install.sh hosts"
         kubectl -n "$NS" get gateway \
             -o jsonpath='{range .items[*]}{.metadata.name}{" -> "}{.status.addresses[0].value}{"\n"}{end}' 2>/dev/null || true
         ;;
     images)
         ensure_minikube
         load_images
+        ;;
+    hosts)
+        ensure_hosts
         ;;
     status)
         helm status "$RELEASE" -n "$NS" 2>/dev/null | head -6 || log "no release $RELEASE in $NS"

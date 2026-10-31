@@ -10,6 +10,7 @@ name = "Aurelius Enterprise"
 [dependency-groups]
 dev = [
     "aurelius-atlas-auth",
+    "aurelius-atlas-cluster-lane",
     "aurelius-atlas-core",
     "aurelius-atlas-data2model",
     "aurelius-atlas-data2model-client",
@@ -67,6 +68,9 @@ dev = [
 [tool.uv.sources.mike]
 git = "https://github.com/squidfunk/mike.git"
 rev = "2d4ad799442f4592db8ad53b179bfb33db8c69ac"
+
+[tool.uv.sources.aurelius-atlas-cluster-lane]
+workspace = true
 
 [tool.uv.sources.aurelius-atlas-core]
 workspace = true
@@ -139,6 +143,7 @@ members = [
     "apps/aurelius-atlas-fastapi-example",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
+    "libs/python/aurelius-atlas-cluster-lane",
     "libs/python/aurelius-atlas-core",
     "libs/python/aurelius-atlas-data2model-client",
     "libs/python/aurelius-atlas-example",
@@ -245,6 +250,17 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 # The server suite's cluster lane (10.5 POC) shells out to helm/kubectl with
 # fixed arguments and gates on asserts — same harness shape as the chart one.
 "apps/aurelius-atlas-server/e2e/conftest.py" = ["INP001", "S101", "S603", "S607"]
+# The lane library is that harness shape as a package: fixed-argument
+# helm/kubectl/curl calls and a fail-fast gate that asserts (CHT-103/104).
+# S105: the *_SECRET constants name Kubernetes Secrets, not passwords.
+# PLR0913: ServiceForward/mint_token are one-config-call shapes.
+"libs/python/aurelius-atlas-cluster-lane/aurelius_atlas_cluster_lane/*.py" = ["S101", "S105", "S603", "S607", "PLR0913"]
+# The twins' cluster lanes read mint passwords and Secret names the same way
+# the server lane gates on the deployment (CHT-104).
+"apps/aurelius-atlas-data2model/e2e/conftest.py" = ["INP001", "S101", "S105"]
+"apps/aurelius-atlas-validate-entity/e2e/conftest.py" = ["INP001", "S101", "S105"]
+# The core lane's cluster branch reads the elastic Secret name (CHT-104).
+"libs/python/aurelius-atlas-core/e2e/conftest.py" = ["INP001", "S101", "S105"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 # The digest guard is a CLI script: print is its output contract and the
 # docker imagetools call is fixed-argument (CHT-96).

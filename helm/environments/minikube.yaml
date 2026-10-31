@@ -25,3 +25,15 @@ atlas-server:
     # atlas.tasks.enabled=false too.
     config:
         AURELIUS_ATLAS_SERVER_TASKS_ENABLED: "false"
+
+# The aux twins accept the webapp-client audience on this environment (CHT-105,
+# DD-282): the e2e suites mint `azp=aurelius` tokens from the realm's public
+# `aurelius` client (CHT-79), and the cluster lane proves the twins with those
+# tokens. The shipped chart defaults stay per-service (a stock install keeps
+# the narrow audience); the override is environment configuration, CHT-04.
+atlas-data2model:
+    config:
+        AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
+atlas-validate-entity:
+    config:
+        AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius

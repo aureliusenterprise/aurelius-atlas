@@ -12,6 +12,17 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_validate_entity",
     "tags": [],
     "targets": {
+        "e2e-cluster": {
+            "cache": false,
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "(10.5b) Run this project's e2e suite against the Helm umbrella on minikube (ATLAS_E2E_TARGET=cluster) instead of the compose stack. Precondition: tools/cluster/install.sh up. Local-only lane: shared-cluster serialism — never run two e2e-cluster suites in parallel."
+            },
+            "options": {
+                "command": "ATLAS_E2E_TARGET=cluster uv run pytest e2e",
+                "cwd": "{projectRoot}"
+            }
+        },
         "serve": {
             "continuous": true,
             "dependsOn": [

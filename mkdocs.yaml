@@ -99,6 +99,7 @@ nav:
                 - Python:
                       - api-reference/libs/python/index.md
                       - aurelius-atlas-auth: api-reference/libs/python/aurelius-atlas-auth.md
+                      - aurelius-atlas-cluster-lane: api-reference/libs/python/aurelius-atlas-cluster-lane.md
                       - aurelius-atlas-core: api-reference/libs/python/aurelius-atlas-core.md
                       - aurelius-atlas-data2model-client: api-reference/libs/python/aurelius-atlas-data2model-client.md
                       - aurelius-atlas-example: api-reference/libs/python/aurelius-atlas-example.md

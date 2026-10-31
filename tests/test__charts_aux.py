@@ -12,6 +12,9 @@ from typing import Any
 import pytest
 from conftest import (
     AUX_CHARTS,
+    UMBRELLA_CHART,
+    WORKSPACE,
+    container,
     env_map,
     env_value,
     find,
@@ -224,3 +227,53 @@ def test__image_digest_override_replaces_the_tag(component: str) -> None:
     (deployment,) = find_all(docs, "Deployment")
     (app,) = pod_spec(deployment)["containers"]
     assert app["image"] == f"ghcr.io/aureliusenterprise/aurelius-atlas-{component}@sha256:" + "0" * 63 + "9"
+
+
+# The audience the e2e suites mint for (CHT-105): the public `aurelius`
+# client's tokens (CHT-79) carry azp=aurelius; the minikube environment —
+# nothing else — accepts them on the twins. Per-service key: the aux Service
+# name, its chart container name, the audience env, and the shipped default
+# audience (the settings default, DV-74/75 territory — untouched here).
+_MINIKUBE_VALUES = (WORKSPACE / "helm" / "environments" / "minikube.yaml",)
+
+_AUX_AUDIENCE = {
+    "data2model": (
+        "atlas-data2model",
+        "data2model",
+        "AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE",
+        "aurelius-atlas-data2model",
+    ),
+    "validate-entity": (
+        "atlas-validate-entity",
+        "validate-entity",
+        "AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE",
+        "aurelius-atlas-validate-entity",
+    ),
+}
+
+
+@pytest.mark.covers(rules=["CHT-105"])
+@pytest.mark.parametrize("component", ["data2model", "validate-entity"])
+def test__default_aux_audience_is_per_service(component: str) -> None:
+    """A stock render keeps the narrow per-service audience (CHT-105: no shipped default moved)."""
+    service, _, env_name, default_audience = _AUX_AUDIENCE[component]
+    chart = AUX_CHARTS[component]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    assert find(docs, "Service", service)  # the bare-chart service name matches the umbrella's
+    envs = env_map(_app(docs))
+    assert env_value(envs, env_name) == default_audience
+
+
+@pytest.mark.covers(rules=["CHT-105"])
+@pytest.mark.parametrize("component", ["data2model", "validate-entity"])
+def test__minikube_overlay_overrides_the_aux_audience(component: str) -> None:
+    """The minikube environment alone carries AUTH_AUDIENCE=aurelius on the twins (CHT-105).
+
+    The flat aux `config:` map coalesces key-by-key over the chart defaults
+    (verified live), so the overlay replaces only the audience — and the
+    default-render assertion above proves the shipped shape is untouched.
+    """
+    service, container_name, env_name, _ = _AUX_AUDIENCE[component]
+    docs = helm_render(UMBRELLA_CHART, value_files=_MINIKUBE_VALUES)
+    envs = env_map(container(find(docs, "Deployment", service), container_name))
+    assert env_value(envs, env_name) == "aurelius", service

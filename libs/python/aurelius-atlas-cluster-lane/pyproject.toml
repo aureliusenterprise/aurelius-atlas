@@ -1,0 +1,21 @@
+[project]
+dependencies = ["httpx2>=2.0.0", "pytest>=8.4.1"]
+description = "The e2e cluster lane: the shared pytest machinery for driving suites against the Helm umbrella (10.5b, DD-282)."
+name = "aurelius-atlas-cluster-lane"
+requires-python = ">=3.14"
+version = "0.1.0"
+
+[[project.authors]]
+name = "Aurelius Enterprise"
+
+[tool.hatch.build.targets.wheel]
+packages = ["aurelius_atlas_cluster_lane"]
+
+[tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "module"
+asyncio_mode = "auto"
+required_plugins = ["pytest-asyncio"]
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]

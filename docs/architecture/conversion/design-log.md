@@ -9359,4 +9359,91 @@ testcontainers transitive). The step runs **before** the suite migrations
 so the shared lane library (10.5b) never has to carry an outage-orchestration
 API nobody intends to use.
 
-Next free DD: 282.
+### DD-282 — The cluster lane becomes a library; the aux twins and the core store suite join the deployment
+
+- **Status:** Accepted
+- **Increment:** 10.5b (rollout step 1)
+- **Date:** 2026-10-31
+
+**Context.** The POC (DD-280) proved the server suite against the deployment
+with the lane machinery — env gate, fail-fast `cluster` gate, Gateway address
+read, chart-CA dump, the `socket.getaddrinfo` shim, the two port-forwards —
+written inline in the server's own `e2e/conftest.py`. The verdict was
+positive, so the rollout continues with the three suites whose compose
+coupling is smallest: the aux twins (`aurelius-atlas-data2model`,
+`aurelius-atlas-validate-entity`), whose compose coupling is the app URL plus
+a minted token, and the core store suite (`aurelius-atlas-core`), whose
+coupling is one `dev_settings` fixture pointed at Elasticsearch. Copy-pasting
+the POC's conftest three more times is the drift the increment exists to
+kill, and 10.5c/10.5d (webapp, lineage-model) are next in line to buy the
+same machinery — so the shape has to be a library before it is a pattern.
+
+**Decision.** Five calls:
+
+1. **The lane is a dev-group library, not a plugin** (CHT-103).
+   `libs/python/aurelius-atlas-cluster-lane` owns `lane_target()`, the
+   session `cluster` gate (helm `deployed` or fail-fast naming
+   `install.sh up`; Gateway address; chart CA from the
+   `aurelius-atlas-selfsigned-ca` Secret), the resolver shim,
+   `SecretReader`, and `ServiceForward`. It deliberately does **not** ship
+   a `pytest11` entry point: consumers call
+   `install_cluster_fixtures(pytest, certs_dir)` in their own conftest, so
+   the compose lane — CI's lane — never executes kubectl-shaped code at
+   collection time, and each project's lane wiring stays visible where it
+   is used.
+2. **Cluster dials use the Service's real name** (CHT-104).
+   `ServiceForward` port-forwards `svc/<name>` to a free loopback port, its
+   URL names the Service's real
+   `<service>.<ns>.svc.cluster.local` at that port, and the shim rewrites
+   the **host** onto `127.0.0.1` (a host-only mapping — the URL already
+   carries the forward's port). The rewrite is host-only because the async
+   HTTP stack (anyio, under httpx) resolves the name but connects on the
+   **URL's** port: a host+port rewrite is silently dropped there, and the
+   acceptance runs caught exactly that — five twin tests connecting to
+   `127.0.0.1:21001` beside their own forwards. The POC never met it
+   because its forwards were dialled as bare loopback URLs. The URL, SNI,
+   and verified SAN stay honest (the chart leaf carries the FQDN) while
+   nothing new is exposed to the host beyond the port-forward the developer
+   already asked for. Readiness probes go through the same name:
+   `curl --resolve` (Python's shim, twinned at the shell) rather than
+   dialling a bare loopback name — the single sanctioned loopback exception
+   stays the baked-dashboard Playwright dial under ADR 039's
+   `ignore_https_errors`, exactly as the POC left it.
+3. **The twins and core ride the lane with no seeding and one branch each.**
+   Both aux suites mint their `aurelius`-client token through
+   `https://keycloak.atlas.test` — the same issuer origin the pods verify
+   against — with the writer password read from the `atlas-keycloak-users`
+   Secret instead of compose env. The core suite swaps exactly one fixture:
+   `dev_settings` grows a cluster branch pointing at a port-forwarded
+   `svc/atlas-elasticsearch` with the `elastic` password from the
+   `atlas-elasticsearch` Secret and the chart CA; the namespaced-alias
+   discipline (DD-223) is what makes riding the shared cluster store safe.
+   No cluster-mode fixture seeds or self-cleans beyond what the compose
+   lane already did.
+4. **The audience mismatch is answered in the environment file** (CHT-105).
+   The suites mint `azp=aurelius` tokens and the aux charts default
+   `AUTH_AUDIENCE` to their own service name; the fix lives in
+   `helm/environments/minikube.yaml` (flat `config:` maps, CHT-04) and
+   nowhere else — shipped chart defaults untouched, the override pinned by
+   new render guards in `tests/test__charts_aux.py` that also pin the
+   per-service defaults so the overlay cannot silently become the product.
+5. **Browser DNS is the installer's job** (CHT-106). `install.sh` grows a
+   `hosts` action that rewrites a fenced `# BEGIN/END
+aurelius-atlas-cluster` block in `/etc/hosts` mapping
+   `atlas.<domain>`/`keycloak.<domain>` to the live Gateway address
+   (refusing to shadow the machine's own hostname); `up` runs it after
+   readiness and the devcontainer `postStartCommand` refreshes it
+   best-effort. The Python suites never need it — the shim covers them —
+   it exists for Playwright browsers, which is what lets 10.5c ride the
+   same install.
+
+**Consequences.** The server conftest is refactored onto the library with
+its 37 tests as the extraction's honesty check (byte-identical compose
+behaviour, green re-run on both lanes). `e2e-cluster` targets exist for
+data2model, validate-entity, and core beside the server's, all local-only:
+no CI workflow references them and the compose suites stay byte-identical
+regression bars. The POC's shapes — gate messages, pair-rewrite shim,
+Secret reads — are now single-sourced, so 10.5c/10.5d migrate by importing
+rather than copying, and the DD-280 watch-items (edge limiter bursts against
+suite traffic, minikube memory headroom) now apply to four suites on every
+cluster run. Next free DD: 283.

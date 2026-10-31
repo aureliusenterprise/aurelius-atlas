@@ -219,5 +219,8 @@
         "pre-commit": "bash .devcontainer/pre-commit.sh",
         "sops": "bash .devcontainer/sops.sh"
     },
+    "postStartCommand": {
+        "cluster-hosts": "bash tools/cluster/install.sh hosts || true"
+    },
     "runArgs": ["--add-host=keycloak.localhost:127.0.0.1"]
 }
