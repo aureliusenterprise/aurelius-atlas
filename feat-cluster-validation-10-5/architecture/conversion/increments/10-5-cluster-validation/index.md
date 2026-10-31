@@ -1,7 +1,7 @@
 # 10.5 Cluster validation (POC): install script + the server suite on the cluster
 
-- **Status:** in progress
-- **Pull request:** \#188 (stacked on the 10.11 line, \#186)
+- **Status:** in review
+- **Pull request:** \#187 (stacked on the 10.11 line, \#186)
 - **Records:** DD-280 (adds), DD-252 (relies on: the stuck-release recovery the script scripts), DD-265 (relies on: the split-horizon CoreDNS patch the script applies), DD-251 (relies on: the trial install whose lessons the script encodes), DD-247 (relies on: the chart-target plugin — the new target is hand-written, and named to stay outside it), DD-261/270 (relies on: the edge the POC lane finally drives)
 
 ## Scope
