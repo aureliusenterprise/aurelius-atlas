@@ -72,8 +72,10 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
     assert page.url.startswith(f"{server}{path}")
     assert await page.title() == "Atlas"
     assert broken == []
-    await page.goto(f"{server}/logout.html")
-    await page.wait_for_url(SIGN_IN_PAGE)
+    # The dashboard's own requests may navigate the page at the same moment, which aborts a goto; leave by the
+    # page's location instead and wait for where the sign-out ends.
+    await page.evaluate("window.location.assign('/logout.html')")
+    await page.wait_for_url(SIGN_IN_PAGE, timeout=30_000)
     await context.close()
 
 

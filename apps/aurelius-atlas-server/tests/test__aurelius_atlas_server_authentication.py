@@ -98,10 +98,8 @@ async def test__a_bearer_token_authenticates_alone(
 def test__a_user_is_named_by_the_configured_claims() -> None:
     """The principal claim, else ``sub``; the groups claim, else the realm roles."""
     claims = {"sub": "id-1", "preferred_username": "ann", "groups": ["/g"], "realm_access": {"roles": ["r"]}}
-    assert user_of(claims, principal_claim="preferred_username", groups_claim="groups") == user_of(
-        claims, principal_claim="preferred_username", groups_claim="groups"
-    )
-    assert user_of(claims, principal_claim="preferred_username", groups_claim="groups").groups == ("/g",)
+    found = user_of(claims, principal_claim="preferred_username", groups_claim="groups")
+    assert (found.name, found.groups) == ("ann", ("/g",))
     named = user_of(claims, principal_claim="email", groups_claim="missing")
     assert (named.name, named.groups) == ("id-1", ("r",))
     assert user_of({}, principal_claim="email", groups_claim="g").groups == ()
