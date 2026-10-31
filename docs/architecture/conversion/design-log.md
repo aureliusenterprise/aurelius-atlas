@@ -9307,4 +9307,56 @@ been hiding: the scenarios' tasks-disabled precondition (DD-081) is pinned
 in the compose stack but was never carried into the charts, so the minikube
 overlay gained the `TASKS_ENABLED=false` config value — the class of drift
 this whole increment exists to detect.
-Next free DD: 281.
+
+### DD-281 — The container-outage and edge-flood e2e proofs retire; the shipped limiter stays
+
+- **Status:** Accepted
+- **Increment:** 10.5 (rollout step 0)
+- **Date:** 2026-11-02
+
+**Context.** The 10.5 rollout (DD-280) moves the e2e suites onto the
+Helm/minikube lane, and three scenarios have no lane to migrate to. RSL-01
+(webapp suite) and RSL-02 (lineage chain) stop and start **compose
+containers** through the docker SDK, found by compose labels
+(`com.docker.compose.project`); a minikube pod has no counterpart to that
+handle, and rebuilding the arrangement on `kubectl delete pod` + restart
+buy back two browser-visible symptoms — a bell badge after a 502, an
+Atlas-shaped 502 body — that the unit suites already pin in-process (7.7's
+`HttpTestingController` alert chain, 8.5's fake-transport LM-12 suite).
+SRV-09's rate-limit test is worse: it proves the bucket by outspending it,
+which works only because `e2e/config/nginx.conf` ships a **test-sized**
+twin (60r/m burst 20) the live-flood can overflow in seconds; the shipped
+browser-sized bucket (300r/m burst 100, geo-allowlisted so suite traffic
+passes unlimited) is unprovable through a live flood at suite speed on any
+lane, and the cluster edge adds a second limiter layer on top.
+
+**Decision.** Delete the three proofs, in both lanes, and retire their
+rule ids rather than park them as skips:
+
+- `test__aurelius_atlas_webapp_resilience.py` keeps only the RSL-03
+  logout round-trip (browser-only, migrates cleanly in 10.5c); its outage
+  fixture, docker-SDK helpers, and RSL-01 test go.
+- `test__aurelius_atlas_lineage_model_resilience_e2e.py` goes whole; its
+  `covers` markers also named LM-12 and CL-30, which stay pinned by the
+  scenarios files and the client suites.
+- `test__aurelius_atlas_webapp_rate_limit.py` goes whole, and with it the
+  test-sized `atlas_api` zone in `e2e/config/nginx.conf` (a bucket with no
+  test keeps no config). RSL-03 and the `atlas_otel` zone (CHT-100,
+  chart-guarded) stay.
+
+**What stands.** The shipped limiter itself is untouched: both
+`nginx.conf.template` copies (image + helm byte-copy), the geo/map key
+pair, `limit_req_status 429`, DV-87, and the chart-render guards. SRV-09
+retires as an _e2e rule_ — the config remains part of the product, guarded
+where it is deterministic to guard (rendered manifests), and no longer
+where it was only ever provable against a fixture-sized twin.
+
+**Consequences.** 9.1 narrows to RSL-03; 9.3's limiter row carries the
+retirement note; the conversion index rows for 9.1/9.3 and the lineage
+conftest's timeout rationale follow. docker-py leaves the direct-use
+column (its two consumers were these files; it stays installed as a
+testcontainers transitive). The step runs **before** the suite migrations
+so the shared lane library (10.5b) never has to carry an outage-orchestration
+API nobody intends to use.
+
+Next free DD: 282.

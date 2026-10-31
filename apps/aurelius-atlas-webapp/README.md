@@ -184,14 +184,16 @@ startup instead of serving with template values (same pattern as the example
 app; see its README for the envsubst/kustomize recipe). E2E ships such a
 filled-in copy at `e2e/config/nginx.conf` (TLS + verified proxies, ADR 039).
 
-Both configs carry the **browser rate limit** on the `/api/` proxy (SRV-09,
-DD-238): a `limit_req` leaky bucket keyed on the client address — 300r/m,
-burst 100, refusals answered 429 — with the private ranges allowlisted
-(`geo`/`map` → empty key), so internal callers reaching the server directly
-are never limited and the server itself carries no limiter. A deployment with
-internal callers on public addresses extends the geo block (one `0` entry per
-range); the e2e bucket is deliberately test-sized (60r/m, burst 20) so the
-burst test can outspend it.
+The shipped config carries the **browser rate limit** on the `/api/` proxy
+(SRV-09, DD-238): a `limit_req` leaky bucket keyed on the client address —
+300r/m, burst 100, refusals answered 429 — with the private ranges
+allowlisted (`geo`/`map` → empty key), so internal callers reaching the
+server directly are never limited and the server itself carries no limiter. A
+deployment with internal callers on public addresses extends the geo block
+(one `0` entry per range). The e2e override carried a test-sized twin of the
+bucket for the live-flood proof; DD-281 retired that proof and the twin with
+it (the e2e `/api/` proxy is unlimited, as the shipped geo block leaves
+suite traffic anyway).
 
 Both configs also carry **native edge tracing** (SHL-15, DD-239). The image
 carries the OTel tracing module (`ngx_otel_module`, built in the Dockerfile's
