@@ -169,7 +169,7 @@
         },
         "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
             "helm": "4.3.1",
-            "minikube": "none",
+            "minikube": "1.39.0",
             "version": "1.37.1"
         },
         "ghcr.io/devcontainers/features/node:2": {
