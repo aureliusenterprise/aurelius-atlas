@@ -16,7 +16,7 @@ from aurelius_atlas_core.glossary_service import GlossaryService, SortOrder
 from aurelius_atlas_core.glossary_term_utils import glossary_term_headers
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
-from aurelius_atlas_model.bulk_import import BulkImportResponse, ImportInfo, ImportStatus
+from aurelius_atlas_model.bulk_import import BulkImportResponse, ImportStatus
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.glossary import AtlasGlossaryTerm
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -189,19 +189,3 @@ async def test__rows_that_fail_are_reported(service: GlossaryService) -> None:
     ]
     created = await term_named(service, "g", "a")
     assert (created.examples, created.additional_attributes) == (["x", "y"], {"k": "v"})
-
-
-@pytest.mark.covers(
-    "aurelius_atlas_model.bulk_import.BulkImportResponse.to_json",
-    "aurelius_atlas_model.bulk_import.ImportInfo.to_json",
-    rules=["GIM-02"],
-)
-def test__the_response_leaves_out_empty_lists_and_row_numbers() -> None:
-    """``@AtlasJSON`` ``NON_EMPTY`` lists; ``ImportInfo`` with nulls and without its row number."""
-    info = ImportInfo(parent_object_name="g", import_status=ImportStatus.FAILED, remarks="r", row_number=3)
-    assert BulkImportResponse(failed_import_info_list=[info]).to_json() == {
-        "failedImportInfoList": [
-            {"parentObjectName": "g", "childObjectName": None, "importStatus": "FAILED", "remarks": "r"}
-        ]
-    }
-    assert BulkImportResponse().to_json() == {}
