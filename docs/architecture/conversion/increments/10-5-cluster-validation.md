@@ -1,7 +1,7 @@
 # 10.5 Cluster validation (POC): install script + the server suite on the cluster
 
 - **Status:** in progress
-- **Pull request:** #188 (stacked on the 10.11 line, #186)
+- **Pull request:** #187 (stacked on the 10.11 line, #186)
 - **Records:** DD-280 (adds), DD-252 (relies on: the stuck-release recovery the
   script scripts), DD-265 (relies on: the split-horizon CoreDNS patch the
   script applies), DD-251 (relies on: the trial install whose lessons the
