@@ -4059,6 +4059,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5180,6 +5184,60 @@
     
   
   5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8313,7 +8371,7 @@ checks a PR must pass:</p>
 <td>Glossary import</td>
 <td>Glossary terms imported from CSV or Excel, and the import template</td>
 <td><code>GlossaryService#importGlossaryData</code>, <code>GlossaryTermUtils</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>5.3</td>
@@ -8323,10 +8381,17 @@ checks a PR must pass:</p>
 <td>planned</td>
 </tr>
 <tr>
-<td>6.1</td>
+<td>6.1a</td>
 <td>Authentication</td>
-<td>Keycloak OIDC, session endpoints</td>
+<td>Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user</td>
 <td><code>AtlasKeycloakAuthenticationProvider</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.1b</td>
+<td>The acting user on writes</td>
+<td><code>createdBy</code>, <code>updatedBy</code> and audit users of every write</td>
+<td><code>RequestContext#getUser</code></td>
 <td>planned</td>
 </tr>
 <tr>

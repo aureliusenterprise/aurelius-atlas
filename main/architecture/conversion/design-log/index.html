@@ -6319,6 +6319,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-249. Uploaded files are read with python-multipart, openpyxl and xlrd
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-250. The server authenticates requests itself against the identity provider
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-251-browser-sessions-are-kept-in-the-servers-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-251. Browser sessions are kept in the server's memory
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6398,6 +6431,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -7655,6 +7692,60 @@
     
   
   5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -12696,6 +12787,39 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-249. Uploaded files are read with python-multipart, openpyxl and xlrd
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-250. The server authenticates requests itself against the identity provider
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-251-browser-sessions-are-kept-in-the-servers-memory" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-251. Browser sessions are kept in the server's memory
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -14120,6 +14244,24 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships">DD-248</a></td>
 <td>An entity's meanings are read from its listed relationships</td>
 <td>5.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd">DD-249</a></td>
+<td>Uploaded files are read with python-multipart, openpyxl and xlrd</td>
+<td>5.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider">DD-250</a></td>
+<td>The server authenticates requests itself against the identity provider</td>
+<td>6.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-251-browser-sessions-are-kept-in-the-servers-memory">DD-251</a></td>
+<td>Browser sessions are kept in the server's memory</td>
+<td>6.1</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -20902,6 +21044,64 @@ write the entity too.</p>
 <p><strong>Consequences.</strong> A header costs a read of all the entity's relationships, also for an entity with many and no
 meanings; a header that reads relationship attributes pays it once. A term assigned to more entities than one
 search window holds is not searched beyond it.</p>
+<h3 id="dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd">DD-249. Uploaded files are read with python-multipart, openpyxl and xlrd<a class="headerlink" href="#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 5.2d</li>
+<li><strong>Date:</strong> 2026-10-31</li>
+</ul>
+<p><strong>Decision.</strong> The server reads a multipart upload with <code>python-multipart</code>, which FastAPI's form parsing
+requires. The core reads an <code>xlsx</code> workbook with <code>openpyxl</code> (read-only, cached values) and an <code>xls</code> workbook
+with <code>xlrd</code> 2, which reads only that format; a CSV file with the standard library's <code>csv</code> module. All three are
+pure Python.</p>
+<p><strong>Reason.</strong> Atlas reads CSV with opencsv and both Excel formats with Apache POI. Python has no single library
+for both Excel formats: openpyxl reads only the XML format, xlrd 2 only the binary one, and each is the
+maintained reader of its format.</p>
+<p><strong>Alternatives.</strong> pandas: reads both, but through these same engines and with numpy behind it. Dropping <code>xls</code>:
+Atlas's clients may upload it, and its error message names it.</p>
+<p><strong>Consequences.</strong> Three new runtime dependencies, in the SBOM. A value is read as Python gives it; DV-104 records
+where that differs from Atlas.</p>
+<h3 id="dd-250-the-server-authenticates-requests-itself-against-the-identity-provider">DD-250. The server authenticates requests itself against the identity provider<a class="headerlink" href="#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 6.1a</li>
+<li><strong>Date:</strong> 2026-10-31</li>
+</ul>
+<p><strong>Decision.</strong> The server verifies every request's credentials itself, in a middleware, with the shared verifier
+<code>aurelius-atlas-auth</code> (DD-197): a bearer token is an RS256 JWT of the provider's key set, of its issuer,
+unexpired, whose <code>azp</code> or <code>aud</code> names the server's client or a configured further client (the webapp's, which
+the auxiliary APIs forward). A browser without a token signs in through the server's own confidential client,
+<code>aurelius-atlas-server</code>, by the authorization code flow with PKCE, and keeps a session cookie. A user's name is
+the <code>preferred_username</code> claim by default and their groups the configured groups claim, else the realm roles,
+as Atlas's provider with <code>groups_claim</code> set.</p>
+<p><strong>Reason.</strong> Atlas authenticates in-process with Keycloak's Spring Security adapter: bearer tokens for clients,
+a login redirect and session for its dashboards, which the server still serves. Verifying tokens in the server
+keeps one path for every client, needs no proxy in front of it, and reuses the verifier the auxiliary APIs
+already run. The adapter names a user by <code>sub</code> unless <code>principal-attribute</code> is set, which deployments set to
+<code>preferred_username</code>, the name people know; it is a setting here too.</p>
+<p><strong>Alternatives.</strong> An authenticating proxy (oauth2-proxy) in front of the server: a second component on every
+deployment, and the server would trust a header. Bearer tokens only: the vendored dashboards could not sign in.
+Exchanging <code>Basic</code> credentials at the provider, as the adapter can: the server would handle passwords (DV-108).</p>
+<p><strong>Consequences.</strong> The server needs the provider's URL, realm, its client's secret and the further audiences;
+every client sends a token. The dev realm gains the confidential client; the e2e suites mint tokens and sign
+the browser in.</p>
+<h3 id="dd-251-browser-sessions-are-kept-in-the-servers-memory">DD-251. Browser sessions are kept in the server's memory<a class="headerlink" href="#dd-251-browser-sessions-are-kept-in-the-servers-memory" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 6.1a</li>
+<li><strong>Date:</strong> 2026-10-31</li>
+</ul>
+<p><strong>Decision.</strong> A browser's session — its user, its tokens, a sign-in under way and its CSRF token — is kept in
+the server's memory under a random id in the <code>ATLASSESSIONID</code> cookie (<code>HttpOnly</code>, <code>Secure</code>, <code>SameSite=Lax</code>),
+renewed at sign-in, ended after 60 minutes unused or when the provider refuses to refresh its token. At most
+10,000 sessions are kept, the least recently used dropped first.</p>
+<p><strong>Reason.</strong> Atlas keeps its sessions in Jetty's memory, with the same cookie and a 60-minute timeout. The
+session holds the tokens the server refreshes, so the browser never sees them.</p>
+<p><strong>Alternatives.</strong> A signed cookie holding the tokens: no server state, but the tokens leave the server and a
+signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survive restarts and serve several
+instances, at a store round-trip per request.</p>
+<p><strong>Consequences.</strong> A restart signs browsers out; they sign in again at once while their provider session lasts.
+Several server instances need sticky sessions.</p>
 
 
 
