@@ -247,6 +247,7 @@ nav:
                       - 10.2 Stateful platform charts: architecture/conversion/increments/10-2-stateful-platform.md
                       - 10.3a App and edge charts: architecture/conversion/increments/10-3-app-edge-charts.md
                       - 10.3b Observability chart: architecture/conversion/increments/10-3b-observability-chart.md
+                      - 10.5 Cluster validation POC: architecture/conversion/increments/10-5-cluster-validation.md
                       - 10.6 Network segmentation: architecture/conversion/increments/10-6-network-segmentation.md
                       - 10.7 Production identity realm: architecture/conversion/increments/10-7-prod-realm.md
                       - 10.8 Grafana realm login: architecture/conversion/increments/10-8-grafana-auth.md

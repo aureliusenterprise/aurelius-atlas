@@ -61,6 +61,12 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   the built dashboards (`aurelius-atlas-dashboard/dist`).
 - `e2e/docker-compose.yaml` — the image on the dev store's network, reached as `elasticsearch:9200`.
   Its OTLP export uses the shim settings; the mint rides the TLS `:8443`
+- `e2e/conftest.py` lanes — `ATLAS_E2E_TARGET` (compose default, cluster for
+  the 10.5 POC) picks the deployment the suite drives: the compose stack, or
+  the minikube umbrella installed by `tools/cluster/install.sh up` (dialing
+  `https://atlas.atlas.test` through the Gateway/nginx edge; CA from the
+  chart Secret; Tempo and the baked dashboard via port-forward). Cluster
+  mode fails fast without a deployed `atlas` release — never a silent skip.
   issuer, pinned to `/certs/ca.pem` (DD-202: every producer mints there, the
   collector validates both listeners), so the server needs `extra_hosts:
 keycloak.localhost:host-gateway` and the `otel-atlas-server` client imported
@@ -74,6 +80,7 @@ npx nx serve aurelius-atlas-server
 npx nx test aurelius-atlas-server -c ci
 npx nx e2e aurelius-atlas-server -c ci    # builds the image, starts the dev store
 uv run pytest apps/aurelius-atlas-server/tests
+tools/cluster/install.sh up && npx nx e2e-cluster aurelius-atlas-server  # POC: same suite, the Helm umbrella on minikube
 ```
 
 ## Helm chart
