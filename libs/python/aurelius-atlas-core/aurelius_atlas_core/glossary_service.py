@@ -1,12 +1,14 @@
-"""``GlossaryService``: glossaries, their categories and terms, and the terms' assignment to entities.
+"""``GlossaryService``: glossaries, their categories and terms, the terms' assignment to entities, and their import.
 
-GLS-01 to GLS-06, GCT-01 to GCT-07, GTM-01 to GTM-07 and GTA-01 to GTA-04.
+GLS-01 to GLS-06, GCT-01 to GCT-07, GTM-01 to GTM-07, GTA-01 to GTA-04 and GIM-01 to GIM-05.
 """
 
 import contextlib
 from collections.abc import Sequence
 from enum import Enum
 
+from aurelius_atlas_model import codec
+from aurelius_atlas_model.bulk_import import BulkImportResponse, ImportInfo, ImportStatus
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.glossary import (
     AtlasGlossary,
@@ -23,6 +25,7 @@ from aurelius_atlas_model.instance import AtlasRelatedObjectId
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.file_utils import java_split, read_file_data
 from aurelius_atlas_core.glossary_category_utils import GlossaryCategoryUtils
 from aurelius_atlas_core.glossary_dto import (
     ATLAS_GLOSSARY_CATEGORY_TYPENAME,
@@ -31,7 +34,7 @@ from aurelius_atlas_core.glossary_dto import (
     DataAccess,
     glossary_from,
 )
-from aurelius_atlas_core.glossary_term_utils import GlossaryTermUtils
+from aurelius_atlas_core.glossary_term_utils import GlossaryTermUtils, ImportCache
 from aurelius_atlas_core.glossary_utils import (
     RelationshipOperation,
     category_skeleton,
@@ -312,8 +315,12 @@ class GlossaryService:
             raise AtlasError(AtlasErrorCode.BAD_REQUEST, "glossaryTerm(s) is null/empty")
         return [await self.create_term(term) for term in terms]
 
-    async def update_term(self, term: AtlasGlossaryTerm | None) -> AtlasGlossaryTerm:
+    async def update_term(
+        self, term: AtlasGlossaryTerm | None, *, ignore_update_if_term_exists: bool = True
+    ) -> AtlasGlossaryTerm:
         """``updateTerm``: written when it differs, its relationships following, renamed on a new anchor (GTM-04).
+
+        An import does not check for a term listed twice in a relation (``ignoreUpdateIfTermExists``, GIM-05).
 
         Raises:
             AtlasError: ``BAD_REQUEST``, ``INVALID_DISPLAY_NAME``, ``GLOSSARY_TERM_ALREADY_EXISTS`` or those of the
@@ -322,7 +329,7 @@ class GlossaryService:
         if term is None:
             raise AtlasError(AtlasErrorCode.BAD_REQUEST, "atlasGlossaryTerm is null/empty")
         _check_name(term.name)
-        duplicate = await self._duplicate_related_term(term)
+        duplicate = await self._duplicate_related_term(term) if ignore_update_if_term_exists else None
         if duplicate:
             raise AtlasError(AtlasErrorCode.GLOSSARY_TERM_ALREADY_EXISTS, duplicate)
         stored = await self._data_access.load(term)
@@ -387,6 +394,71 @@ class GlossaryService:
             await self._notifier.on_term_deleted_from_entities(
                 term, [str(entity.guid) for entity in entities], user=self._user
             )
+
+    async def import_glossary_data(self, file_name: str | None, content: bytes) -> BulkImportResponse:
+        """``importGlossaryData``: the file's terms created, then their relations written (GIM-01 to GIM-05).
+
+        Raises:
+            AtlasError: ``INVALID_FILE_TYPE``, ``NOT_VALID_FILE`` or ``NO_DATA_FOUND`` for the file;
+                ``GLOSSARY_IMPORT_FAILED`` when no term was created.
+        """
+        if file_name is None or not file_name.strip():
+            raise AtlasError(AtlasErrorCode.INVALID_FILE_TYPE, file_name)
+        rows = read_file_data(file_name, content)
+        response, cache = BulkImportResponse(), ImportCache()
+        terms = await self._term_utils.glossary_term_data_without_relations(rows, response, cache)
+        await self._create_glossary_terms(terms, response)
+        terms = await self._term_utils.glossary_term_data_with_relations(rows, response, cache)
+        await self._update_glossary_terms_relation(terms, response, cache)
+        return response
+
+    async def _create_glossary_terms(self, terms: list[AtlasGlossaryTerm], response: BulkImportResponse) -> None:
+        """``createGlossaryTerms``: each term created, or reported failed; none created fails the import (GIM-03)."""
+        for term in terms:
+            name, glossary_name = term.name, _glossary_name(term)
+            try:
+                created = await self.create_term(term)
+            except AtlasError as error:
+                response.failed_import_info_list.append(
+                    ImportInfo(
+                        parent_object_name=glossary_name,
+                        child_object_name=name,
+                        import_status=ImportStatus.FAILED,
+                        remarks=error.message,
+                    )
+                )
+                continue
+            header = {"termGuid": created.guid, "qualifiedName": created.qualified_name}
+            response.success_import_info_list.append(
+                ImportInfo(
+                    parent_object_name=glossary_name,
+                    child_object_name=name,
+                    import_status=ImportStatus.SUCCESS,
+                    remarks=codec.dumps(header).decode(),
+                )
+            )
+        if not response.success_import_info_list:
+            raise AtlasError(AtlasErrorCode.GLOSSARY_IMPORT_FAILED)
+
+    async def _update_glossary_terms_relation(
+        self, terms: list[AtlasGlossaryTerm], response: BulkImportResponse, cache: ImportCache
+    ) -> None:
+        """``updateGlossaryTermsRelation``: each term with relations updated, or reported failed (GIM-04, GIM-05)."""
+        for term in terms:
+            await self._term_utils.update_glossary_term_relations(term, cache)
+            if not term.related_terms():
+                continue
+            try:
+                await self.update_term(term, ignore_update_if_term_exists=False)
+            except AtlasError as error:
+                response.failed_import_info_list.append(
+                    ImportInfo(
+                        parent_object_name=_glossary_name(term),
+                        child_object_name=term.name,
+                        import_status=ImportStatus.FAILED,
+                        remarks=error.message,
+                    )
+                )
 
     async def get_glossary_terms_headers(
         self, guid: str, offset: int, limit: int, sort_order: SortOrder
@@ -524,6 +596,12 @@ def _sorted_page(
         headers or [], key=lambda header: header.display_text or "", reverse=sort_order is SortOrder.DESCENDING
     )
     return paginate(found, offset, limit)
+
+
+def _glossary_name(term: AtlasGlossaryTerm) -> str:
+    """``getGlossaryName``: what follows the ``@`` of the term's qualified name, when it has one ``@``."""
+    parts = java_split(term.qualified_name or "", "@")
+    return parts[1] if len(parts) == 2 else ""  # noqa: PLR2004 - the term and its glossary
 
 
 def _check_name(name: str | None) -> None:

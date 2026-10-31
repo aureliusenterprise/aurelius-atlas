@@ -245,6 +245,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-246](#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores)                  | Glossary objects are entities written through the entity and relationship stores                                                  | 5.2           | Proposed         |
 | [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                          | Journal writes do not wait for a refresh                                                                                          | cross-cutting | Proposed         |
 | [DD-248](#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships)                                        | An entity's meanings are read from its listed relationships                                                                       | 5.2           | Proposed         |
+| [DD-249](#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd)                                   | Uploaded files are read with python-multipart, openpyxl and xlrd                                                                  | 5.2           | Proposed         |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7514,3 +7515,24 @@ write the entity too.
 **Consequences.** A header costs a read of all the entity's relationships, also for an entity with many and no
 meanings; a header that reads relationship attributes pays it once. A term assigned to more entities than one
 search window holds is not searched beyond it.
+
+### DD-249. Uploaded files are read with python-multipart, openpyxl and xlrd
+
+- **Status:** Proposed
+- **Increment:** 5.2d
+- **Date:** 2026-10-31
+
+**Decision.** The server reads a multipart upload with `python-multipart`, which FastAPI's form parsing
+requires. The core reads an `xlsx` workbook with `openpyxl` (read-only, cached values) and an `xls` workbook
+with `xlrd` 2, which reads only that format; a CSV file with the standard library's `csv` module. All three are
+pure Python.
+
+**Reason.** Atlas reads CSV with opencsv and both Excel formats with Apache POI. Python has no single library
+for both Excel formats: openpyxl reads only the XML format, xlrd 2 only the binary one, and each is the
+maintained reader of its format.
+
+**Alternatives.** pandas: reads both, but through these same engines and with numpy behind it. Dropping `xls`:
+Atlas's clients may upload it, and its error message names it.
+
+**Consequences.** Three new runtime dependencies, in the SBOM. A value is read as Python gives it; DV-104 records
+where that differs from Atlas.

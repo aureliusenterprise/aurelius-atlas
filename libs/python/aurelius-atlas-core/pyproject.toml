@@ -5,6 +5,8 @@ dependencies = [
     "aurelius-atlas-store-es",
     "aurelius-atlas-typesystem",
     "elasticsearch[async]>=9.5.1,<10",
+    "openpyxl>=3.1.5",
+    "xlrd>=2.0.2",
 ]
 description = "Atlas stores and services for Aurelius Atlas: the typedef store."
 name = "aurelius-atlas-core"

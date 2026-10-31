@@ -1,0 +1,124 @@
+name: Glossary terms are imported from a CSV file, and the template downloads
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/GlossaryREST.java#importGlossaryData
+    - webapp/src/main/java/org/apache/atlas/web/rest/GlossaryREST.java#produceTemplate
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryService.java#importGlossaryData
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryTermUtils.java#getGlossaryTermDataWithoutRelations
+    - repository/src/main/java/org/apache/atlas/glossary/GlossaryTermUtils.java#getGlossaryTermDataWithRelations
+    - repository/src/main/java/org/apache/atlas/util/FileUtils.java#readCSV
+    - intg/src/main/java/org/apache/atlas/bulkimport/BulkImportResponse.java
+    - repository/src/test/java/org/apache/atlas/glossary/GlossaryServiceTest.java#testImportGlossaryData
+rules: [GIM-01, GIM-02, GIM-03, GIM-04, GIM-06]
+covers:
+    - aurelius_atlas_server.routes.glossary.produce_template
+    - aurelius_atlas_server.routes.glossary.import_glossary_data
+stages:
+    - name: the template is the header line of the term columns (testGetTemplate)
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/import/template
+      response:
+          status: 200
+          headers: { content-type: application/octet-stream }
+          text: >-
+              GlossaryName, TermName, ShortDescription, LongDescription, Examples, Abbreviation, Usage,
+              AdditionalAttributes, TranslationTerms, ValidValuesFor, Synonyms, ReplacedBy, ValidValues,
+              ReplacementTerms, SeeAlso, TranslatedTerms, IsA, Antonyms, Classifies, PreferredToTerms, PreferredTerms
+    - name: a file of two terms of a new glossary, the second related to the first
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/import
+          headers: { content-type: "multipart/form-data; boundary=scenario" }
+          text: "--scenario\r\nContent-Disposition: form-data; name=\"file\"; filename=\"terms.csv\"\r\n\
+              Content-Type: text/csv\r\n\r\nGlossaryName, TermName\r\nscenario_import_{run},first,short\r\n\
+              scenario_import_{run},second,,,,,,,,,,,,,scenario_import_{run}:first\r\n--scenario--\r\n"
+      response:
+          status: 200
+          json:
+              successImportInfoList:
+                  - parentObjectName: "scenario_import_{run}"
+                    childObjectName: first
+                    importStatus: SUCCESS
+                    remarks: the term's GUID and qualified name, as JSON
+                  - parentObjectName: "scenario_import_{run}"
+                    childObjectName: second
+                    importStatus: SUCCESS
+                    remarks: the term's GUID and qualified name, as JSON
+          volatile:
+              - $.successImportInfoList[0].remarks
+              - $.successImportInfoList[1].remarks
+    - name: the glossary it created
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/uniqueAttribute/type/AtlasGlossary
+          params: { "attr:qualifiedName": "scenario_import_{run}" }
+      response:
+          status: 200
+          json:
+              entity: the glossary's entity
+              referredEntities: its terms
+          volatile:
+              - $.entity
+              - $.referredEntities
+          save:
+              glossary: $.entity.guid
+    - name: the glossary's terms, the second related to the first
+      request:
+          method: GET
+          url: /api/atlas/v2/glossary/{glossary}/terms
+      response:
+          status: 200
+          json:
+              - guid: a term GUID
+                qualifiedName: "first@scenario_import_{run}"
+                name: first
+                shortDescription: short
+                anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+                seeAlso: [the second term's header]
+              - guid: a term GUID
+                qualifiedName: "second@scenario_import_{run}"
+                name: second
+                shortDescription: ""
+                longDescription: ""
+                abbreviation: ""
+                usage: ""
+                anchor: { glossaryGuid: "{glossary}", relationGuid: a relationship GUID }
+                seeAlso: [the first term's header]
+          volatile:
+              - $[0].guid
+              - $[0].anchor.relationGuid
+              - $[0].seeAlso
+              - $[1].guid
+              - $[1].anchor.relationGuid
+              - $[1].seeAlso
+    - name: the same file again creates nothing and fails
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/import
+          headers: { content-type: "multipart/form-data; boundary=scenario" }
+          text: "--scenario\r\nContent-Disposition: form-data; name=\"file\"; filename=\"terms.csv\"\r\n\
+              Content-Type: text/csv\r\n\r\nGlossaryName, TermName\r\nscenario_import_{run},first,short\r\n\
+              scenario_import_{run},second,,,,,,,,,,,,,scenario_import_{run}:first\r\n--scenario--\r\n"
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-011
+              errorMessage: Glossary import failed
+    - name: a file of another type is refused (testFileExtension)
+      request:
+          method: POST
+          url: /api/atlas/v2/glossary/import
+          headers: { content-type: "multipart/form-data; boundary=scenario" }
+          text: "--scenario\r\nContent-Disposition: form-data; name=\"file\"; filename=\"terms.py\"\r\n\r\nx\r\n\
+              --scenario--\r\n"
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-098
+              errorMessage: "The provided file type: terms.py is not supported. Expected file formats are .csv and .xls."
+    - name: deleting the glossary deletes its terms
+      request:
+          method: DELETE
+          url: /api/atlas/v2/glossary/{glossary}
+      response:
+          status: 204

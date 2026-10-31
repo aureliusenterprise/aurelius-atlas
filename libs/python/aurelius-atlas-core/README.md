@@ -61,7 +61,9 @@ their categories, as entities of Atlas's glossary model (DD-246). Since
 [5.2b](../../../docs/architecture/conversion/increments/5-2-glossary-terms.md): glossary terms, their related
 terms and categories. Since
 [5.2c](../../../docs/architecture/conversion/increments/5-2-term-assignment.md): terms assigned to entities, as
-meanings on their headers, audited, and searched by `termName` and `hasTerm` (DD-248).
+meanings on their headers, audited, and searched by `termName` and `hasTerm` (DD-248). Since
+[5.2d](../../../docs/architecture/conversion/increments/5-2-glossary-import.md): glossary terms imported from
+CSV and Excel files (DD-249).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -186,6 +188,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.glossary_dto
 
 ::: aurelius_atlas_core.term_search_processor
+
+::: aurelius_atlas_core.file_utils
 
 ::: aurelius_atlas_core.identifier_helper
 

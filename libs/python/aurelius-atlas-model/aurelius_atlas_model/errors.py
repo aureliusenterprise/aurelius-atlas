@@ -173,6 +173,13 @@ class AtlasErrorCode(Enum):
     )
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
     INVALID_QUERY_LENGTH = (400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit")
+    INVALID_FILE_TYPE = (
+        400,
+        "ATLAS-400-00-098",
+        "The provided file type: {0} is not supported. Expected file formats are .csv and .xls.",
+    )
+    NO_DATA_FOUND = (400, "ATLAS-400-00-09B", "No data found in the uploaded file")
+    NOT_VALID_FILE = (400, "ATLAS-400-00-09C", "Invalid {0} file")
     LINEAGE_ON_DEMAND_NOT_ENABLED = (400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled")
     UNEXPECTED_TYPE = (400, "ATLAS-400-00-00F", "expected type {0}; found {1}")
     UNKNOWN_GLOSSARY_TERM = (400, "ATLAS-400-00-06E", "{0}: Unknown/invalid glossary term")
@@ -387,6 +394,7 @@ class AtlasErrorCode(Enum):
         "ATLAS-409-00-00A",
         "Glossary category with qualifiedName {0} already exists",
     )
+    GLOSSARY_IMPORT_FAILED = (409, "ATLAS-409-00-011", "Glossary import failed")
     INVALID_LINEAGE_ENTITY_TYPE = (
         404,
         "ATLAS-404-00-011",

@@ -1,15 +1,17 @@
 """The glossary, category and term endpoints of ``GlossaryREST`` under ``/api/atlas/v2/glossary``.
 
-GLS-01 to GLS-06, GCT-01 to GCT-07, GTM-01 to GTM-07 and GTA-01 to GTA-04; glossary import (5.2d) follows.
+GLS-01 to GLS-06, GCT-01 to GCT-07, GTM-01 to GTM-07, GTA-01 to GTA-04 and GIM-01 to GIM-06.
 """
 
 from typing import Any
 
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.glossary_service import GlossaryService, SortOrder
+from aurelius_atlas_core.glossary_term_utils import glossary_term_headers
 from aurelius_atlas_model.glossary import AtlasGlossary, AtlasGlossaryCategory, AtlasGlossaryTerm
 from aurelius_atlas_model.instance import AtlasRelatedObjectId
 from fastapi import APIRouter, Request, Response
+from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import (
@@ -74,6 +76,20 @@ async def get_glossaries(request: Request, store: Store) -> AtlasJSONResponse:
 async def create_glossary(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``createGlossary`` (GLS-02)."""
     return _json((await _service(request, store).create_glossary(_glossary(body))).to_json())
+
+
+@GLOSSARY.get("/import/template")
+async def produce_template() -> Response:
+    """``produceTemplate``: the import template's header line, as a download (GIM-06)."""
+    return Response(content=glossary_term_headers().encode(), media_type="application/octet-stream")
+
+
+@GLOSSARY.post("/import")
+async def import_glossary_data(request: Request, store: Store) -> AtlasJSONResponse:
+    """``importGlossaryData``: the form's ``file``, a CSV or Excel file of terms; no file is no file type (DV-104)."""
+    upload = (await request.form()).get("file")
+    file_name, content = (upload.filename, await upload.read()) if isinstance(upload, UploadFile) else (None, b"")
+    return _json((await _service(request, store).import_glossary_data(file_name, content)).to_json())
 
 
 @GLOSSARY.get("/term/{term_guid}")
