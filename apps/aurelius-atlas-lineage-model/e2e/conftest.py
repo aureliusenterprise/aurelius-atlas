@@ -32,11 +32,11 @@ CLIENT_TIMEOUT_SECONDS = 2 * UPSTREAM_TIMEOUT_SECONDS
 """The e2e clients' request budget — above the app's own upstream budget.
 
 The app may spend its full ``UPSTREAM_TIMEOUT_SECONDS`` before it answers the
-LM-12 502 (RSL-02's outage: on shared CI runners a stopped container drops
-packets instead of refusing them, so the app's upstream call rides its read
-timeout). httpx's 5 s default would kill the request before that 502 arrives
-— the client would raise its own ``ReadTimeout`` where the scenario expects
-the app's Atlas-shaped 502.
+LM-12 502: on shared CI runners a strained upstream can drop packets instead
+of refusing them, so the app's upstream call rides its read timeout. httpx's
+5 s default would kill the request before that 502 arrives — the client
+would raise its own ``ReadTimeout`` where the scenario expects the app's
+Atlas-shaped 502.
 """
 
 MINT_TIMEOUT_SECONDS = 120.0
