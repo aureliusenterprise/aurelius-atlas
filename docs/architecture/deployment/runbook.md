@@ -1,10 +1,11 @@
 # Deployment runbook
 
-> [!WARNING]
-> **Skeleton (increment 10.1).** The charts in this tree render and lint in
-> CI, and their workloads land in increments 10.2–10.3; the install steps
-> below are the shape the runbook will take, and the publish + validated
-> install arrive in 10.4–10.5. Do not follow this against production.
+> [!NOTE]
+> **The sequence below is scripted** for minikube:
+> `tools/cluster/install.sh up|status|down` (10.5) converges §0–1 —
+> prereqs, images, install, and the stuck-release recovery — idempotently.
+> The prose stays the reference for what the script does and for clusters
+> that are not minikube.
 
 Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the
 reasoning behind it are in the [deployment reference](index.md); this page is
@@ -164,8 +165,9 @@ curl -k https://atlas.<domain>/api/atlas/admin/liveness
 curl -k https://keycloak.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
-(The full smoke suite — login, entity write/read, lineage, telemetry — lands
-with increment 10.5.)
+(The 10.5 POC runs the server's own e2e suite against this install —
+`ATLAS_E2E_TARGET=cluster uv run pytest apps/aurelius-atlas-server/e2e`,
+after `tools/cluster/install.sh up`; see the [10.5 spec](../conversion/increments/10-5-cluster-validation.md).)
 
 ### Grafana
 

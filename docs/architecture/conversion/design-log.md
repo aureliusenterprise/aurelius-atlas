@@ -9220,3 +9220,91 @@ table says so. The fork guard means external contributions run only the
 lint/render jobs until the policy question is settled — accepted. The
 Keycloak/Postgres loopback deferrals are open items with a named blocker
 (compose-network rework) for a future increment. Next free DD: 280.
+
+### DD-280 — The deployment is the test environment: cluster e2e POC, compose lane kept
+
+- **Status:** Accepted
+- **Increment:** 10.5
+- **Date:** 2026-10-31
+
+**Context.** The legacy Helm chart's disease was drift with no detector:
+rendered manifests looked right and installed wrong, because nothing ever
+ran the deployment. Everything through 10.11 guards charts by _rendering_
+them (the contract suite) while the e2e suites exercise docker compose — a
+second, unguarded deployment. The first sketch for this increment (early in
+the session, superseded before code) kept that split and added a third
+system: a bespoke smoke suite riding the cluster alongside the unchanged
+compose e2e. The user's correction re-pointed the goal: the cure for drift
+is the existing suites running against the real deployment — "not to add an
+additional e2e smoke test … rewire the current e2e tests to use the helm
+deployment rather than docker compose" — trialled on one project, and
+scoped to local runs: "no CI integration yet as this is just a poc."
+
+**Decision.** Three calls:
+
+1. **Trial on `aurelius-atlas-server`.** Its nine modules (37 tests) are the
+   only suite whose entire compose coupling is three fixtures — the server
+   URL, the CA file, the Tempo URL — with no browser, no auth (H1 deferred),
+   and no direct store access. The webapp's Playwright suite (login drives
+   host-keycloak flows, its resilience test stops compose containers) is the
+   hardest migration and goes last; the aux APIs copy the server pattern as
+   the rollout. The suite dials `https://atlas.atlas.test` — the whole edge
+   (Gateway HTTPRoute → webapp nginx `/api/` proxy → backend TLS → server),
+   not a port-forward bypass: the point is the deployment, so the data path
+   takes the deployment's shape. Two surfaces port-forward because the
+   cluster publishes nothing to the host: Tempo's query API, and the
+   server's baked legacy dashboard (the edge's `/` belongs to the SPA).
+2. **Dual-mode, env-gated, default compose** (CHT-53). `ATLAS_E2E_TARGET=
+cluster` selects the POC lane; every existing invocation — CI's
+   `affected -t e2e` included — keeps byte-identical compose behaviour, so
+   the POC is purely additive and revertible, and the compose lane survives
+   as the reference the cluster lane is compared against. The `e2e-cluster`
+   target is hand-written and deliberately named outside the Python
+   plugin's inference so no workflow can reach it. The POC lane never
+   silently skips: no deployed release fails fast naming
+   `tools/cluster/install.sh up`. A process-local `getaddrinfo` shim maps
+   `*.atlas.test` to the Gateway IP — real hostnames through HTTPRoute
+   match, SNI, and SAN verification, no `/etc/hosts` mutation (CHT-54/56).
+3. **`tools/cluster/install.sh` is the runbook §0–2 as code** (CHT-50/51/52,
+   the promise 10.2–10.11 deferred here): the EG GatewayClass EG ships
+   none, the DD-265 CoreDNS rewrite patched line-based (Corefile flavours
+   differ — the regex over the `kubernetes` block broke on minikube's
+   `cluster.local in-addr.arpa ip6.arpa` shape; the line-walker didn't),
+   images read from a stock render and loaded into the cluster (no pull
+   secrets) — digest pins under their chart-declared tag, since
+   `minikube image load` of a by-digest reference is a silent no-op, with the
+   digest name re-applied via `ctr images tag` in the node — and the DD-252
+   stuck-`pending-install` recovery scripted as uninstall-and-reinstall.
+
+**Alternatives.** (a) The smoke-suite add-on (the first sketch) — rejected
+by the user: a parallel bespoke suite guards only what it thinks to test;
+the real suites _are_ the coverage. Its half-written `tests/cluster/` was
+deleted, its Tempo/CA helper shapes moved into the conftest. (b) Replace
+outright (delete the compose lane) — rejected for a POC: the comparison
+needs the incumbent, and the rollout deletes it per-suite only after the
+verdict. (c) Port-forward the server Service instead of the edge —
+rejected: it bypasses exactly the parts (Gateway, nginx proxy, backend TLS,
+client-IP trust) the legacy chart got wrong. (d) CI wiring now (Shape B
+runner, workflow) — deferred by the user's scope cut: the POC's questions
+(fidelity, boot time, image-load cost, edge limiter behaviour) answer
+locally; the rollout increment carries the CI design and its runner shape.
+
+**Consequences.** The server suite carries two lane-shaped fixtures and a
+DNS shim; its 37 tests are untouched, and their `covers` markers unchanged
+— CHT-50..56 name the script and conftest as reviewed-as-code (the CHT-95
+precedent), no new Atlas semantics. `e2e-cluster` is the workspace's only
+cluster target and no CI references it, which is the deviation this entry
+records against our CI-first convention, accepted deliberately. The POC's
+verdict (this increment's acceptance run) is the gate on every follow-up:
+per-suite rewiring (aux APIs, then webapp), the compose stacks' retirement,
+and the CI job shape. Two known watch-items ride that verdict: the nginx
+`atlas_api` limiter (300 r/m burst 100) against suite bursts through the
+edge, and minikube's memory headroom inside a CI pod — the latter is the
+rollout's problem, invisible locally. The acceptance run (178 chart tests
+green both lanes; compose 37, cluster 37 warm-rerun 37, fail-fast negative
+green) caught one genuine deployment divergence the compose-only world had
+been hiding: the scenarios' tasks-disabled precondition (DD-081) is pinned
+in the compose stack but was never carried into the charts, so the minikube
+overlay gained the `TASKS_ENABLED=false` config value — the class of drift
+this whole increment exists to detect.
+Next free DD: 281.
