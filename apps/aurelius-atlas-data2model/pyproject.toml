@@ -7,7 +7,7 @@ dependencies = [
     "opentelemetry-instrumentation-fastapi>=0.65b0",
     "opentelemetry-instrumentation-httpx>=0.65b0",
     "pydantic>=2.14.1",
-    "pydantic-settings>=2.15.0",
+    "pydantic-settings>=2.16.2",
     "uvicorn[standard]>=0.54.0",
 ]
 description = "The Aurelius Atlas data2model API: tabular data and rules in, an archimate3 model out."
