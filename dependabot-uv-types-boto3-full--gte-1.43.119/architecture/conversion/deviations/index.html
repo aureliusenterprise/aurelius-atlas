@@ -4065,6 +4065,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5105,6 +5115,141 @@
     
   
   5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -7848,16 +7993,6 @@
 <p>Every behaviour of Aurelius Atlas that a client could observe and that differs from Apache Atlas
 2.4.0 (<a href="../../adr/046-the-catalogue-keeps-its-public-contract/">ADR 046</a>). The parity report links
 each tolerated difference to its entry here; a difference without an entry is a defect.</p>
-<details class="info">
-<summary>DV-04 is temporary</summary>
-<p>The most visible row in this table — "no endpoint needs a login" — is the current state of a
-planned sequence, not a security posture: authentication arrives with increment 6.1 and the
-deviation is removed then. Until 6.1, read every anonymous call in this repository as
-development-arrangement behaviour, not production design
-(<a href="../../adr/039-data-is-protected-where-it-travels-and-where-it-rests/">ADR 039</a> names the
-boundary; <a href="../../adr/046-the-catalogue-keeps-its-public-contract/">ADR 046</a> keeps the shape
-Atlas clients expect when it lands).</p>
-</details>
 <table>
 <thead>
 <tr>
@@ -7892,14 +8027,6 @@ Atlas clients expect when it lands).</p>
 <td><code>version</code> names Apache Atlas 2.4.0 and its build revision</td>
 <td>Names Aurelius Atlas, its release and its revision</td>
 <td>A client must be able to tell which implementation answers</td>
-<td>0.5</td>
-</tr>
-<tr>
-<td>DV-04</td>
-<td>Authentication</td>
-<td>Every endpoint except <code>admin/status</code> needs a login; the session reports the user, groups and permissions</td>
-<td>Until 6.1, no endpoint needs a login; the session reports no user, no groups and no entity permissions</td>
-<td>Authentication arrives in 6.1; removed then</td>
 <td>0.5</td>
 </tr>
 <tr>
@@ -8493,6 +8620,94 @@ Atlas clients expect when it lands).</p>
 <td>A step that reads every entity found reads at most 10,000</td>
 <td>A bounded request (DD-243)</td>
 <td>4.4</td>
+</tr>
+<tr>
+<td>DV-99</td>
+<td>Glossary</td>
+<td>A glossary list's <code>limit</code> or <code>offset</code> that is no number escapes as an internal error (<code>Integer.parseInt</code>)</td>
+<td><code>BAD_REQUEST</code>, as DV-39</td>
+<td>A client error should say what is wrong</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DV-100</td>
+<td>Glossary</td>
+<td>Glossaries are listed by <code>Referenceable.qualifiedName</code>, which a glossary lacks: in no order</td>
+<td>By their qualified name</td>
+<td>A stable answer and stable pages</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DV-101</td>
+<td>Glossary</td>
+<td>A term's assigned entities are sorted by display text in a copy, then the unsorted set is paged: in no order</td>
+<td>By display text, paged</td>
+<td>A stable answer and stable pages</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DV-102</td>
+<td>Glossary</td>
+<td>Removing an assignment the term does not have, or assigning a term to an entity there is not, fails on a null: an internal error</td>
+<td><code>INVALID_TERM_DISSOCIATION</code>, <code>RELATIONSHIP_END_IS_NULL</code></td>
+<td>A client error should say what is wrong</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DV-103</td>
+<td>Glossary</td>
+<td>An assignment whose status is no <code>AtlasTermAssignmentStatus</code> (<code>DRAFT</code>, <code>ACTIVE</code>) fails every read of its entity's header</td>
+<td>The meaning without a status</td>
+<td>One bad attribute should not hide the entity</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DV-104</td>
+<td>Glossary</td>
+<td>A glossary import without a file part, of an unreadable <code>xlsx</code> file or of an empty sheet fails with an internal error; so does an Excel cell that is not text; opencsv takes a backslash as an escape character</td>
+<td><code>INVALID_FILE_TYPE</code>, <code>NOT_VALID_FILE</code>, <code>NO_DATA_FOUND</code>; the cell's text; the backslash is kept</td>
+<td>A client error should say what is wrong; a number is a value</td>
+<td>5.2</td>
+</tr>
+<tr>
+<td>DV-105</td>
+<td>Authentication</td>
+<td>The session reports whether the user may create and update entities, as the authorizer decides</td>
+<td>Until 6.2, <code>atlas.entity.create.allowed</code> and <code>atlas.entity.update.allowed</code> are false</td>
+<td>Authorization arrives in 6.2; removed then</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>DV-106</td>
+<td>Authentication</td>
+<td>Any request without credentials but an <code>XMLHttpRequest</code> is redirected to the login page; a 401 carries Jetty's HTML error page</td>
+<td>A request below <code>/api/</code> is answered 401 too; a 401 has no body</td>
+<td>A script or client is told it needs a token, not sent to a page it cannot use</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>DV-107</td>
+<td>Authentication</td>
+<td>Every browser request with an unsafe method needs the CSRF header, a bearer-authenticated one too</td>
+<td>Only a request authenticated by its session cookie needs it</td>
+<td>A browser sends a cookie unasked, never a bearer token; the webapp sends no CSRF header</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>DV-108</td>
+<td>Authentication</td>
+<td>The Keycloak adapter can exchange <code>Basic</code> credentials for a token (<code>enable-basic-auth</code>)</td>
+<td>No basic authentication; clients obtain tokens from the provider</td>
+<td>The server never sees a password (<a href="../../adr/007-one-shared-identity-provider/">ADR 007</a>)</td>
+<td>6.1</td>
+</tr>
+<tr>
+<td>DV-109</td>
+<td>Audit</td>
+<td>An audit event names the user who made the change</td>
+<td>Until 6.1b, no user</td>
+<td>The acting user reaches the writes in 6.1b; removed then</td>
+<td>6.1</td>
 </tr>
 </tbody>
 </table>

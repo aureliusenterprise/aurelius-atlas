@@ -73,9 +73,13 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 4.4a | DSL search of entities | `search/dsl` answering entities: sources, conditions, order, paging; declared unsupported forms | `GremlinQueryComposer` (replaced), `TraversalBasedExecutor` | in progress |
 | 4.4b | DSL projections and traversals | `select`, `groupby`, aggregates; referred entities and classification attributes | `SelectClauseComposer`, `SelectClauseProjections` | in progress |
 | 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | in progress |
-| 5.2 | Glossary | Glossaries, terms, categories, term assignment | `GlossaryREST`, `GlossaryService` | planned |
+| 5.2a | Glossaries and categories | Glossary and category CRUD, category hierarchy and qualified names | `GlossaryService`, `GlossaryCategoryUtils` | in progress |
+| 5.2b | Glossary terms | Term CRUD, related terms, term categorization | `GlossaryService`, `GlossaryTermUtils` | in progress |
+| 5.2c | Term assignment | Terms assigned to entities, meanings on headers, DSL `hasTerm` | `GlossaryService`, `GlossaryTermUtils` | in progress |
+| 5.2d | Glossary import | Glossary terms imported from CSV or Excel, and the import template | `GlossaryService#importGlossaryData`, `GlossaryTermUtils` | in progress |
 | 5.3 | Business metadata and labels | Business metadata attributes, labels | `EntityREST` | planned |
-| 6.1 | Authentication | Keycloak OIDC, session endpoints | `AtlasKeycloakAuthenticationProvider` | planned |
+| 6.1a | Authentication | Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user | `AtlasKeycloakAuthenticationProvider` | in progress |
+| 6.1b | The acting user on writes | `createdBy`, `updatedBy` and audit users of every write | `RequestContext#getUser` | planned |
 | 4.5 | Saved searches and user profile | Saved search CRUD; after 6.1, its owners being users (DD-244) | `UserProfileService` | planned |
 | 6.2 | Authorization | Simple authorizer policies on every endpoint | `atlas-simple-authz-policy` | planned |
 | 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |

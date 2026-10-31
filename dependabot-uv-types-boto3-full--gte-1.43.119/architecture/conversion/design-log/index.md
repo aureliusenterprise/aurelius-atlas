@@ -238,7 +238,12 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-243](<#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps>) | DSL traversals and projections are evaluated in steps | 4.4 | Proposed |
 | [DD-244](<#dd-244-saved-searches-wait-for-authentication>) | Saved searches wait for authentication | 4.5 | Accepted |
 | [DD-245](<#dd-245-lineage-walks-the-relationships-of-the-process-edges>) | Lineage walks the relationships of the process edges | 5.1 | Proposed |
+| [DD-246](<#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores>) | Glossary objects are entities written through the entity and relationship stores | 5.2 | Proposed |
 | [DD-247](<#dd-247-journal-writes-do-not-wait-for-a-refresh>) | Journal writes do not wait for a refresh | cross-cutting | Proposed |
+| [DD-248](<#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships>) | An entity's meanings are read from its listed relationships | 5.2 | Proposed |
+| [DD-249](<#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd>) | Uploaded files are read with python-multipart, openpyxl and xlrd | 5.2 | Proposed |
+| [DD-250](<#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider>) | The server authenticates requests itself against the identity provider | 6.1 | Proposed |
+| [DD-251](<#dd-251-browser-sessions-are-kept-in-the-servers-memory>) | Browser sessions are kept in the server's memory | 6.1 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3290,6 +3295,20 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** A lineage costs two reads per entity it reaches (the entity and its relationships); the 9,000 relation cap bounds it. Lineage on demand, off by default as in Atlas, is answered once the setting is on.
 
+### DD-246. Glossary objects are entities written through the entity and relationship stores
+
+- **Status:** Proposed
+- **Increment:** 5.2
+- **Date:** 2026-10-30
+
+**Decision.** Glossaries and categories (and from 5.2b terms) are entities of Atlas's glossary model (`0011-glossary_model`), as `DataAccess` and the glossary DTOs keep them: an object is saved by creating or updating its entity with `EntityWriter`, which also writes a category's mandatory `anchor`, and loaded back from the entity and its relationship attributes with `EntityRetriever`; the relationships between glossary objects (anchors, the category hierarchy, term categorizations) are written with the `RelationshipStore` as `GlossaryCategoryUtils` writes them, `getOrCreate` taking an existing relationship of the type and ends, and a removed one deleted for good. 5.2 is split by the user into 5.2a (glossaries and categories), 5.2b (terms) and 5.2c (term assignment); glossary import is a later increment.
+
+**Reason.** Atlas's glossary is entities and relationships of internal types, read and written through its stores; the stores here already keep entities, relationships, unique qualified names and internal types' hard deletes as Atlas does, so the glossary's behaviour follows from them without a store of its own.
+
+**Alternatives.** Glossary documents of their own index: simpler reads, but the glossary would no longer be entities the entity API, search and lineage see, as they are in Atlas.
+
+**Consequences.** A glossary write is several entity and relationship writes, each all or nothing on its own, as in Atlas within its graph transaction only when the graph commits; a failure part way leaves what was written. The server's models carry `0011-glossary_model`, as they do with every model loaded.
+
 ### DD-247. Journal writes do not wait for a refresh
 
 - **Status:** Proposed
@@ -3303,3 +3322,59 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 **Alternatives.** A shorter refresh interval: every write still pays for refreshes no reader needs. Trimming the glossary's writes: helps one feature, and departs from Atlas's sequence of writes.
 
 **Consequences.** A journal entry may be missing from a search for up to the refresh interval after it is written; nothing but recovery searches it. ENS-11's text names the journal as unrefreshed.
+
+### DD-248. An entity's meanings are read from its listed relationships
+
+- **Status:** Proposed
+- **Increment:** 5.2c
+- **Date:** 2026-10-31
+
+**Decision.** An entity header's `meanings` (GTA-05) are read from the relationships the entity lists (DD-061): those of type `AtlasGlossarySemanticAssignment` whose second end is the entity, in the order listed, with their terms read in one request. The relationships are read once per response, as the header's relationship attributes already read them. Basic search's `termName` and the DSL's `hasTerm` read the terms' listed relationships the same way and search the entities by GUID, as a DSL condition on referred entities does (DD-243).
+
+**Reason.** Atlas reads the entity's incoming edges with the assignment's label. The listing is the one place an entity's relationships are known by real-time `get`s, so a header read right after an assignment shows it, as every other relationship attribute does.
+
+**Alternatives.** A search of the relationship index by type and end: one request per page of headers, but it sees an assignment only after a refresh. A field of meanings on the entity document: every assignment would write the entity too.
+
+**Consequences.** A header costs a read of all the entity's relationships, also for an entity with many and no meanings; a header that reads relationship attributes pays it once. A term assigned to more entities than one search window holds is not searched beyond it.
+
+### DD-249. Uploaded files are read with python-multipart, openpyxl and xlrd
+
+- **Status:** Proposed
+- **Increment:** 5.2d
+- **Date:** 2026-10-31
+
+**Decision.** The server reads a multipart upload with `python-multipart`, which FastAPI's form parsing requires. The core reads an `xlsx` workbook with `openpyxl` (read-only, cached values) and an `xls` workbook with `xlrd` 2, which reads only that format; a CSV file with the standard library's `csv` module. All three are pure Python.
+
+**Reason.** Atlas reads CSV with opencsv and both Excel formats with Apache POI. Python has no single library for both Excel formats: openpyxl reads only the XML format, xlrd 2 only the binary one, and each is the maintained reader of its format.
+
+**Alternatives.** pandas: reads both, but through these same engines and with numpy behind it. Dropping `xls`: Atlas's clients may upload it, and its error message names it.
+
+**Consequences.** Three new runtime dependencies, in the SBOM. A value is read as Python gives it; DV-104 records where that differs from Atlas.
+
+### DD-250. The server authenticates requests itself against the identity provider
+
+- **Status:** Proposed
+- **Increment:** 6.1a
+- **Date:** 2026-10-31
+
+**Decision.** The server verifies every request's credentials itself, in a middleware, with the shared verifier `aurelius-atlas-auth` (DD-197): a bearer token is an RS256 JWT of the provider's key set, of its issuer, unexpired, whose `azp` or `aud` names the server's client or a configured further client (the webapp's, which the auxiliary APIs forward). A browser without a token signs in through the server's own confidential client, `aurelius-atlas-server`, by the authorization code flow with PKCE, and keeps a session cookie. A user's name is the `preferred_username` claim by default and their groups the configured groups claim, else the realm roles, as Atlas's provider with `groups_claim` set.
+
+**Reason.** Atlas authenticates in-process with Keycloak's Spring Security adapter: bearer tokens for clients, a login redirect and session for its dashboards, which the server still serves. Verifying tokens in the server keeps one path for every client, needs no proxy in front of it, and reuses the verifier the auxiliary APIs already run. The adapter names a user by `sub` unless `principal-attribute` is set, which deployments set to `preferred_username`, the name people know; it is a setting here too.
+
+**Alternatives.** An authenticating proxy (oauth2-proxy) in front of the server: a second component on every deployment, and the server would trust a header. Bearer tokens only: the vendored dashboards could not sign in. Exchanging `Basic` credentials at the provider, as the adapter can: the server would handle passwords (DV-108).
+
+**Consequences.** The server needs the provider's URL, realm, its client's secret and the further audiences; every client sends a token. The dev realm gains the confidential client; the e2e suites mint tokens and sign the browser in.
+
+### DD-251. Browser sessions are kept in the server's memory
+
+- **Status:** Proposed
+- **Increment:** 6.1a
+- **Date:** 2026-10-31
+
+**Decision.** A browser's session — its user, its tokens, a sign-in under way and its CSRF token — is kept in the server's memory under a random id in the `ATLASSESSIONID` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`), renewed at sign-in, ended after 60 minutes unused or when the provider refuses to refresh its token. At most 10,000 sessions are kept, the least recently used dropped first.
+
+**Reason.** Atlas keeps its sessions in Jetty's memory, with the same cookie and a 60-minute timeout. The session holds the tokens the server refreshes, so the browser never sees them.
+
+**Alternatives.** A signed cookie holding the tokens: no server state, but the tokens leave the server and a signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survive restarts and serve several instances, at a store round-trip per request.
+
+**Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts. Several server instances need sticky sessions.

@@ -4124,6 +4124,16 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5164,6 +5174,141 @@
     
   
   5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8213,6 +8358,36 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>LineageREST</code>, <code>EntityLineageService</code> (<code>getLineageInfoV2</code>, on demand), <code>AtlasLineageInfo</code>, <code>LineageOnDemandConstraints</code></td>
 <td><code>aurelius_atlas_server.routes.lineage</code>, <code>aurelius_atlas_core.entity_lineage_service</code>, <code>aurelius_atlas_model.lineage</code></td>
 <td>5.1</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>GlossaryREST</code> (glossaries, categories), <code>GlossaryService</code>, <code>GlossaryCategoryUtils</code>, <code>GlossaryUtils</code>, <code>DataAccess</code>, <code>AtlasGlossaryDTO</code>, <code>AtlasGlossaryCategoryDTO</code>, <code>AtlasGlossary</code>, <code>AtlasGlossaryCategory</code></td>
+<td><code>aurelius_atlas_server.routes.glossary</code>, <code>aurelius_atlas_core.glossary_service</code>, <code>aurelius_atlas_core.glossary_category_utils</code>, <code>aurelius_atlas_core.glossary_dto</code>, <code>aurelius_atlas_model.glossary</code></td>
+<td>5.2a</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>GlossaryREST</code> (terms), <code>GlossaryService</code> (terms), <code>GlossaryTermUtils</code>, <code>GlossaryUtils</code>, <code>AtlasGlossaryTermDTO</code>, <code>AtlasGlossaryTerm</code>, <code>AtlasTermCategorizationHeader</code>, <code>DeleteHandlerV1#deleteEdgeReference</code> (internal types)</td>
+<td><code>aurelius_atlas_server.routes.glossary</code>, <code>aurelius_atlas_core.glossary_service</code>, <code>aurelius_atlas_core.glossary_term_utils</code>, <code>aurelius_atlas_core.glossary_utils</code>, <code>aurelius_atlas_core.glossary_dto</code>, <code>aurelius_atlas_model.glossary</code>, <code>aurelius_atlas_core.relationship_mapper</code></td>
+<td>5.2b</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>GlossaryREST</code> (<code>assignedEntities</code>), <code>GlossaryService</code> (assignment), <code>GlossaryTermUtils#processTermAssignments</code>, <code>#processTermDissociation</code>, <code>AtlasEntityChangeNotifier#onTermAddedToEntities</code>, <code>#onTermDeletedFromEntities</code>, <code>EntityAuditListenerV2#onTermAdded</code>, <code>#onTermDeleted</code>, <code>EntityGraphRetriever#mapAssignedTerms</code>, <code>SearchContext</code> (term), <code>TermSearchProcessor</code>, <code>GremlinQueryComposer#addHasTerm</code></td>
+<td><code>aurelius_atlas_server.routes.glossary</code>, <code>aurelius_atlas_core.glossary_service</code>, <code>aurelius_atlas_core.glossary_term_utils</code>, <code>aurelius_atlas_core.entity_change_notifier</code>, <code>aurelius_atlas_core.entity_audit_listener</code>, <code>aurelius_atlas_core.entity_retriever</code>, <code>aurelius_atlas_core.term_search_processor</code>, <code>aurelius_atlas_core.dsl_query_composer</code></td>
+<td>5.2c</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>GlossaryREST#produceTemplate</code>, <code>#importGlossaryData</code>, <code>GlossaryService#importGlossaryData</code>, <code>GlossaryTermUtils</code> (import), <code>FileUtils</code>, <code>BulkImportResponse</code></td>
+<td><code>aurelius_atlas_server.routes.glossary</code>, <code>aurelius_atlas_core.glossary_service</code>, <code>aurelius_atlas_core.glossary_term_utils</code>, <code>aurelius_atlas_core.file_utils</code>, <code>aurelius_atlas_model.bulk_import</code></td>
+<td>5.2d</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>AtlasKeycloakAuthenticationProvider</code>, <code>AtlasSecurityConfig</code> (open paths, Keycloak filters, logout), Keycloak's <code>KeycloakAuthenticationEntryPoint</code>, <code>KeycloakAuthenticationProcessingFilter</code>, <code>KeycloakLogoutHandler</code>, <code>AtlasCSRFPreventionFilter</code>, <code>AdminResource#getUserProfile</code> (user, groups, CSRF token)</td>
+<td><code>aurelius_atlas_server.authentication</code>, <code>aurelius_atlas_server.oidc_client</code>, <code>aurelius_atlas_server.routes.login</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.auth</code></td>
+<td>6.1a</td>
 <td>in progress</td>
 </tr>
 <tr>

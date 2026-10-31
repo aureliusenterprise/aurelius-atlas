@@ -2,18 +2,11 @@
 
 Every behaviour of Aurelius Atlas that a client could observe and that differs from Apache Atlas 2.4.0 ([ADR 046](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/adr/046-the-catalogue-keeps-its-public-contract/index.md>)). The parity report links each tolerated difference to its entry here; a difference without an entry is a defect.
 
-> [!NOTE]
->
-> **DV-04 is temporary**
->
-> The most visible row in this table — "no endpoint needs a login" — is the current state of a planned sequence, not a security posture: authentication arrives with increment 6.1 and the deviation is removed then. Until 6.1, read every anonymous call in this repository as development-arrangement behaviour, not production design ([ADR 039](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>) names the boundary; [ADR 046](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/adr/046-the-catalogue-keeps-its-public-contract/index.md>) keeps the shape Atlas clients expect when it lands).
-
 | \# | Area | Apache Atlas behaviour | Aurelius Atlas behaviour | Reason | Increment |
 | --- | --- | --- | --- | --- | --- |
 | DV-01 | Notifications | Publishes entity changes to Kafka; consumes hook messages | Not supported | Out of scope ([ADR 050](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>)) | 0.1 |
 | DV-02 | Authorization | Ranger or simple authorizer | Simple authorizer only | Out of scope; Ranger needs its own server | 0.1 |
 | DV-03 | Admin | `version` names Apache Atlas 2.4.0 and its build revision | Names Aurelius Atlas, its release and its revision | A client must be able to tell which implementation answers | 0.5 |
-| DV-04 | Authentication | Every endpoint except `admin/status` needs a login; the session reports the user, groups and permissions | Until 6.1, no endpoint needs a login; the session reports no user, no groups and no entity permissions | Authentication arrives in 6.1; removed then | 0.5 |
 | DV-05 | Admin | The session's `timezones` are Java's `TimeZone.getAvailableIDs()` | The IANA time zone ids of the server's tz database, sorted | Java's list includes legacy three-letter ids the IANA database does not have | 0.5 |
 | DV-06 | Types | A type definition's `createdBy` and `updatedBy` name the user who created and last updated it | Until 6.1, absent | There is no login until 6.1; removed then | 1.4 |
 | DV-07 | Types | The built-in model types and the patch records name the operating system account the server runs as | Name no user | The account is an accident of deployment, and is the same for every type a process loads | 1.5 |
@@ -88,3 +81,14 @@ Every behaviour of Aurelius Atlas that a client could observe and that differs f
 | DV-95 | Search | `hasTerm`, arithmetic, aggregates or a bare name as a condition, an expression after `isa`, a `where` before any source fail with an internal error, a malformed traversal or no condition | `INVALID_DSL_QUERY` with a reason (`hasTerm` until 5.2) | A client error should say what is wrong | 4.4 |
 | DV-97 | Search | A DSL select's rows and groups come in no order (a `HashSet`, Gremlin's map) | Rows in the order of the entities found, groups by their value | A stable answer and stable pages | 4.4 |
 | DV-98 | Search | A DSL query follows every edge, aggregates and groups every vertex | A step that reads every entity found reads at most 10,000 | A bounded request (DD-243) | 4.4 |
+| DV-99 | Glossary | A glossary list's `limit` or `offset` that is no number escapes as an internal error (`Integer.parseInt`) | `BAD_REQUEST`, as DV-39 | A client error should say what is wrong | 5.2 |
+| DV-100 | Glossary | Glossaries are listed by `Referenceable.qualifiedName`, which a glossary lacks: in no order | By their qualified name | A stable answer and stable pages | 5.2 |
+| DV-101 | Glossary | A term's assigned entities are sorted by display text in a copy, then the unsorted set is paged: in no order | By display text, paged | A stable answer and stable pages | 5.2 |
+| DV-102 | Glossary | Removing an assignment the term does not have, or assigning a term to an entity there is not, fails on a null: an internal error | `INVALID_TERM_DISSOCIATION`, `RELATIONSHIP_END_IS_NULL` | A client error should say what is wrong | 5.2 |
+| DV-103 | Glossary | An assignment whose status is no `AtlasTermAssignmentStatus` (`DRAFT`, `ACTIVE`) fails every read of its entity's header | The meaning without a status | One bad attribute should not hide the entity | 5.2 |
+| DV-104 | Glossary | A glossary import without a file part, of an unreadable `xlsx` file or of an empty sheet fails with an internal error; so does an Excel cell that is not text; opencsv takes a backslash as an escape character | `INVALID_FILE_TYPE`, `NOT_VALID_FILE`, `NO_DATA_FOUND`; the cell's text; the backslash is kept | A client error should say what is wrong; a number is a value | 5.2 |
+| DV-105 | Authentication | The session reports whether the user may create and update entities, as the authorizer decides | Until 6.2, `atlas.entity.create.allowed` and `atlas.entity.update.allowed` are false | Authorization arrives in 6.2; removed then | 6.1 |
+| DV-106 | Authentication | Any request without credentials but an `XMLHttpRequest` is redirected to the login page; a 401 carries Jetty's HTML error page | A request below `/api/` is answered 401 too; a 401 has no body | A script or client is told it needs a token, not sent to a page it cannot use | 6.1 |
+| DV-107 | Authentication | Every browser request with an unsafe method needs the CSRF header, a bearer-authenticated one too | Only a request authenticated by its session cookie needs it | A browser sends a cookie unasked, never a bearer token; the webapp sends no CSRF header | 6.1 |
+| DV-108 | Authentication | The Keycloak adapter can exchange `Basic` credentials for a token (`enable-basic-auth`) | No basic authentication; clients obtain tokens from the provider | The server never sees a password ([ADR 007](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/adr/007-one-shared-identity-provider/index.md>)) | 6.1 |
+| DV-109 | Audit | An audit event names the user who made the change | Until 6.1b, no user | The acting user reaches the writes in 6.1b; removed then | 6.1 |
