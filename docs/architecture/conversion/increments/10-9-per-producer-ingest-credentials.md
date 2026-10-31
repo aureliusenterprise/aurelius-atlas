@@ -1,7 +1,7 @@
 # 10.9 Per-producer ingest credentials
 
 - **Status:** in review
-- **Pull request:** #183 (stacked on #182)
+- **Pull request:** [#183](https://github.com/aureliusenterprise/aurelius-atlas/pull/183) (stacked on #182)
 - **Records:** DD-196 (completes its deferral), DD-273/DD-274/DD-275 (relies on),
   DD-277 (adds)
 
