@@ -67,8 +67,12 @@ that prefixes the chart name yields the bare chart name.
 {{- $registry := default "ghcr.io" .Values.global.image.registry -}}
 {{- $namespace := default "aureliusenterprise" .Values.global.image.namespace -}}
 {{- $name := required "image.name is required (the published image name, e.g. aurelius-atlas-lineage-model)" .Values.image.name -}}
-{{- $tag := default .Chart.AppVersion .Values.image.tag -}}
-{{- printf "%s/%s/%s:%s" $registry $namespace $name $tag -}}
+{{- $base := printf "%s/%s/%s" $registry $namespace $name -}}
+{{- with .Values.image.digest -}}
+{{- printf "%s@%s" $base . -}}
+{{- else -}}
+{{- printf "%s:%s" $base (default .Chart.AppVersion $.Values.image.tag) -}}
+{{- end -}}
 {{- end -}}
 
 {{/* The Keycloak realm the OTLP mint URL names (CHT-74): global.realm, whose

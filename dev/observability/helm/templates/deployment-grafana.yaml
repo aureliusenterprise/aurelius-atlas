@@ -51,7 +51,7 @@ spec:
                 {{- toYaml .Values.podSecurityContext | nindent 16 }}
             containers:
                 -   name: grafana
-                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.grafana.image.repository "tag" .Values.grafana.image.tag "defaultTag" "13-debian13") | quote }}
+                    image: {{ include "atlas-observability.componentImage" (dict "repository" .Values.grafana.image.repository "tag" .Values.grafana.image.tag "digest" .Values.grafana.image.digest "defaultTag" "13-debian13") | quote }}
                     imagePullPolicy: IfNotPresent
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}

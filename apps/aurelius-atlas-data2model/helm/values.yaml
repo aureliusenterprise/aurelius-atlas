@@ -42,6 +42,9 @@ port: 21001
 image:
     name: aurelius-atlas-data2model
     tag: ""
+    # Operator override (CHT-92): a set digest always wins over the tag;
+    # the release's own bytes are attested by the chart signature (CHT-94).
+    digest: ""
 
 resources:
     requests:

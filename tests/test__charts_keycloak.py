@@ -24,6 +24,7 @@ from conftest import (
     helm_render_fails,
     names,
     peer_labels,
+    pinned_ref,
     pod_spec,
     policy_peers_by_port,
 )
@@ -36,6 +37,7 @@ def test__prod_mode_boot_and_workload_shapes(kc_docs: list[dict[str, Any]]) -> N
     StatefulSet + ClusterIP + the RSS headless Service for JGroups discovery.
     """
     ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    assert container(ss, "keycloak")["image"] == pinned_ref("dhi.io/keycloak")  # CHT-93
     command = container(ss, "keycloak")["command"]
     assert "start" in command
     assert "--import-realm" in command
@@ -221,7 +223,7 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
     deployment = find(docs, "Deployment", "atlas-keycloak-metrics-puller")
     app = container(deployment, "metrics-puller")
-    assert app["image"] == "dhi.io/opentelemetry-collector:0-debian13-contrib"
+    assert app["image"] == pinned_ref("dhi.io/opentelemetry-collector")  # CHT-93
     psc = pod_spec(deployment)["securityContext"]
     assert psc["runAsUser"] == 65532
     assert psc["fsGroup"] == 65532
@@ -352,6 +354,7 @@ def test__bundled_postgres_boot(kc_docs: list[dict[str, Any]]) -> None:
     ss = find(kc_docs, "StatefulSet", "atlas-keycloak-postgres")
     spec = pod_spec(ss)
     c = container(ss, "postgres")
+    assert c["image"] == pinned_ref("dhi.io/postgres")  # CHT-93
     boot = c["command"][2]
     assert "mktemp -d" in boot
     assert "install -m 600 /certs/tls.crt" in boot
@@ -851,3 +854,21 @@ def test__demo_user_placeholders_are_master_only() -> None:
     master_text = (KC_CHART / "files/master.json").read_text()
     assert "${DEV_USER_WRITER_PASSWORD}" in master_text
     assert "${OTEL_INGEST_CLIENT_SECRET}" in master_text  # master's asset shares one
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__digest_wins_over_tag_at_keycloak_and_postgres() -> None:
+    """image.digest / postgres.image.digest render <repo>@<digest> (CHT-92).
+
+    The digest always wins whatever produced the tag; the repository stays
+    dhi.io. Third-party digests are committed (CHT-93), so this exercises the
+    override path an operator uses to pin a hand-picked patch level.
+    """
+    docs = helm_render(
+        KC_CHART,
+        sets=(f"image.digest=sha256:{1:064d}", f"postgres.image.digest=sha256:{2:064d}"),
+    )
+    ss = find(docs, "StatefulSet", "atlas-keycloak")
+    assert container(ss, "keycloak")["image"] == "dhi.io/keycloak@sha256:" + "0" * 63 + "1"
+    pg = find(docs, "StatefulSet", "atlas-keycloak-postgres")
+    assert container(pg, "postgres")["image"] == "dhi.io/postgres@sha256:" + "0" * 63 + "2"

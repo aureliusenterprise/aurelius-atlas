@@ -107,6 +107,29 @@ helm install atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
 `helm install atlas helm -f …` from a checkout, after
 `helm dep update helm`.)
 
+Before installing a version, verify the chart artifact carries this
+project's publish-workflow signature (CHT-95 — the same keyless identity
+the release's images carry):
+
+```bash
+cosign verify ghcr.io/aureliusenterprise/charts/aurelius-atlas:<chart-version> \
+    --certificate-identity-regexp '^https://github\.com/aureliusenterprise/aurelius-atlas/\.github/workflows/publish\.yaml@' \
+    --certificate-oidc-issuer-regexp '^https://token\.actions\.githubusercontent\.com$'
+```
+
+What that attests, and what pins bytes (CHT-92..94): the published chart's
+nine third-party images (Keycloak, Postgres, Elasticsearch, Prometheus,
+Loki, Tempo, Grafana, the collector, curl) are digest-pinned inside it, so
+an install pulls exactly those manifests. Aurelius images stay
+tag-referenced (`:<release>` tags written only by the signed publish chain)
+— the chart signature names the release, and the chart version itself is
+immutable in the registry. An operator who wants to freeze one own image
+to a digest can set its `image.digest` (e.g. `atlas-server.image.digest=
+sha256:<hex>`); the field exists for that, and a set digest always wins
+over the tag. Enforcing signatures **at admission** (a cluster policy
+rejecting unverified images) is deliberately left to the operator: the
+mechanism is cluster posture, not chart content.
+
 The umbrella generates the credentials (Elasticsearch password, Keycloak
 admin/DB passwords, the OTel ingest client secrets, legacy token) at first
 install and preserves them across upgrades; retrieve them with

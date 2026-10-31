@@ -55,8 +55,12 @@ fullnameOverride: ""
 replicas: 1
 
 image:
+    # Digest-pinned (CHT-93, DD-278): bump tag and digest together — the
+    # digest wins in the render (CHT-92), and the registry-drift guard
+    # (CHT-96) fails a tag bump whose digest was not refreshed.
     repository: dhi.io/keycloak
     tag: "26.7-debian13"
+    digest: sha256:d585d342ea3b9b2aa5b8f3216e88fa04f2eb1846d6986caa4227a6a887296bf6
 
 # The browser hostname the issuer pins to (KC_HOSTNAME): https://<hostname>.
 hostname: ""
@@ -123,11 +127,13 @@ telemetry:
         image:
             repository: dhi.io/opentelemetry-collector
             tag: "0-debian13-contrib"
+            digest: sha256:79de5a3a0319b189dfb428d3fa36a39b8d83ee6605e106089ce78153f7f5ac6e
         # The issuer-wait init image (CHT-37's pattern, DD-226).
         issuerWait:
             image:
                 repository: dhi.io/curl
                 tag: "8"
+                digest: sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862
         resources:
             requests:
                 cpu: 50m
@@ -153,6 +159,7 @@ postgres:
     image:
         repository: dhi.io/postgres
         tag: "18-alpine3.23"
+        digest: sha256:c075241e0b60eca5cb40e61484feb582b17bd756e8c48a482d93321607a332ce
     auth:
         database: keycloak
     persistence:

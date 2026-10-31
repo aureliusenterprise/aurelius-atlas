@@ -168,3 +168,18 @@ def test__server_network_policy_off_changes_nothing_else() -> None:
         return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
 
     assert rest(on) == rest(off)
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__image_digest_override_replaces_the_tag() -> None:
+    """image.digest renders <base>@<digest>, tag ignored (CHT-92).
+
+    Aurelius images ship the field empty (CHT-94: release integrity rides
+    the signed chart artifact, not a digest), so this is the operator
+    override path — the base registry/namespace/name stays put.
+    """
+    docs = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=(f"image.digest=sha256:{5:064d}",))
+    deployment = find(docs, "Deployment", "atlas-server")
+    assert container(deployment, "server")["image"] == (
+        "ghcr.io/aureliusenterprise/aurelius-atlas-server@sha256:" + "0" * 63 + "5"
+    )

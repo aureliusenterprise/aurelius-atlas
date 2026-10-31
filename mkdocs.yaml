@@ -251,6 +251,7 @@ nav:
                       - 10.7 Production identity realm: architecture/conversion/increments/10-7-prod-realm.md
                       - 10.8 Grafana realm login: architecture/conversion/increments/10-8-grafana-auth.md
                       - 10.9 Per-producer ingest credentials: architecture/conversion/increments/10-9-per-producer-ingest-credentials.md
+                      - 10.10 Digest-pinned images and signed charts: architecture/conversion/increments/10-10-digest-pinning-chart-signing.md
           - Deployment:
                 - architecture/deployment/index.md
                 - Runbook: architecture/deployment/runbook.md

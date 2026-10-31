@@ -63,7 +63,7 @@ spec:
                 # is not answering yet; the compose absorbs that with an
                 # unbounded restart, Kubernetes gets this wait.
                 - name: issuer-wait
-                  image: {{ printf "%s:%s" .Values.telemetry.issuerWait.image.repository .Values.telemetry.issuerWait.image.tag | quote }}
+                  image: {{ include "atlas-elasticsearch.componentImage" (dict "repository" .Values.telemetry.issuerWait.image.repository "tag" .Values.telemetry.issuerWait.image.tag "digest" .Values.telemetry.issuerWait.image.digest) | quote }}
                   imagePullPolicy: IfNotPresent
                   # curl retries natively — the hardened image has no shell for a
                   # loop (DD-269; busybox's wget cannot handshake Keycloak's TLS).
@@ -89,7 +89,7 @@ spec:
                           type: RuntimeDefault
             containers:
                 - name: metrics-puller
-                  image: {{ printf "%s:%s" .Values.telemetry.image.repository .Values.telemetry.image.tag | quote }}
+                  image: {{ include "atlas-elasticsearch.componentImage" (dict "repository" .Values.telemetry.image.repository "tag" .Values.telemetry.image.tag "digest" .Values.telemetry.image.digest) | quote }}
                   imagePullPolicy: IfNotPresent
                   securityContext:
                       allowPrivilegeEscalation: false

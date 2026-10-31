@@ -38,6 +38,10 @@ image:
     name: aurelius-atlas-server
     # "" takes the chart's appVersion, which the release sets to the image tag (DD-245).
     tag: ""
+    # Operator override (CHT-92): a set digest always wins over the tag.
+    # Aurelius images ship it empty — the release's own bytes are attested
+    # by the chart's cosign signature (CHT-94/95), not a pinned digest.
+    digest: ""
 
 resources:
     requests:

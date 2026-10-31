@@ -114,6 +114,24 @@ carries the helpers its templates use, following the same naming convention
 shared library — a library chart is a component with no runtime, which is the
 abstraction this tree rejects.
 
+## Image digests and chart signing (CHT-92..97)
+
+Every image block in every `values.yaml` carries a `digest` field and every
+image helper branches on it: `<base>@<digest>` when set, `<base>:<tag>`
+otherwise — the digest always wins (CHT-92). The nine third-party dhi.io
+pins carry **committed digests** (CHT-93): bump `tag` and `digest` together,
+or `uv run python tools/images/chart_digests.py --check` (weekly workflow +
+dispatchable refresh PR, CHT-96) fails CI's drift job. A new pin needs its
+digest in the values file and in `conftest.PINNED` (the umbrella guard,
+CHT-97, classifies every rendered image against that map). **Aurelius images
+stay tag-referenced** — their `digest: ""` is a deliberate non-pin (DD-278:
+own tags are written only by the signed publish chain, and the published
+chart version is immutable and cosign-signed), so keep those fields empty;
+an operator override sets them per deployment. The same plugin infers
+`helm-sign`/`helm-verify` (keyless cosign over the pushed OCI chart, the
+image chain's identity contract, CHT-95) — publish.yaml runs the pair after
+`helm-publish`; nothing bakes digests into the chart tree at release time.
+
 ## Network segmentation (CHT-60..73)
 
 Two owners, never overlapping (DD-271): the umbrella renders the namespace
@@ -174,7 +192,8 @@ absent; read optional component blocks as`index .Values "x" | default dict`.
    OCI repository); quote the `description` (an em-dash + colon breaks YAML);
    `version: 0.1.0`, `appVersion: "latest"` (the release rewrites both). No
    `project.json` — the plugin merges `helm-lint`/`helm-template`/
-   `helm-publish` onto the owning project from the `Chart.yaml` glob (DD-250).
+   `helm-publish`/`helm-sign`/`helm-verify` onto the owning project from the
+   `Chart.yaml` glob (DD-250).
    The owner needs no release config when it has a `pyproject.toml` (python.ts
    wires the composite module); chart-only owners (no pyproject) set
    `release.version.versionActions: tools/plugins/chart-yaml-version-actions.ts`
