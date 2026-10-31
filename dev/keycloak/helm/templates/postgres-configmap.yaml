@@ -16,6 +16,10 @@ data:
     pg_hba.conf: |
         # TLS-only client authentication: local socket connections stay open for the
         # container healthcheck's sibling tools; every TCP connection must present TLS.
+        # Kept with note (CHT-101 triage): the `trust` rule cannot be reached from
+        # outside this pod — the socket lives only on the container's filesystem, and
+        # every network path is the hostssl line below (TLS + scram-sha-256). The
+        # healthcheck peer is a sibling process in the same container, not a client.
         # Mounted read-only; hba_file points at the copy made at startup.
         local all all trust
         hostssl all all all scram-sha-256

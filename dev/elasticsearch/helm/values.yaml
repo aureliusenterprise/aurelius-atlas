@@ -191,7 +191,10 @@ containerSecurityContext:
 # Network segmentation (CHT-64, DD-271): the ingress allow for the store —
 # the server and this chart's metrics puller (when telemetry is on). 9300
 # (transport) gets no rule: single-node has no peers (DD-006). peers.<peer>
-# renames a peer's pods for a diverging deployment.
+# renames a peer's pods for a diverging deployment. Kept with note (CHT-101
+# triage): 9300 is bound by the image but serves nothing in this shape — the
+# NetPol omission is containment, not oversight; a cluster deployment would
+# add the peer rule, not expose 9300.
 networkPolicy:
     enabled: true
     peers:

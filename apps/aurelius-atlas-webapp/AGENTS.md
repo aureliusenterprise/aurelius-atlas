@@ -95,10 +95,11 @@ The shipped nginx template rides the chart as a **byte copy**
 (`helm/files/nginx.conf.template` — a test asserts it matches this project's
 `nginx.conf.template`, so the drift guard is the chart test); Helm never
 substitutes a placeholder. The `resolve-nginx-config` init container (same
-image, `/bin/sh -ec`) `sed`s the twelve `${AURELIUS_ATLAS_WEBAPP_*}` placeholders
-into the emptyDir nginx reads, and `grep`s the output to fail the pod on any
-left unresolved (DD-262 — Helm cannot render them without re-drawing the
-umbrella's generated token). The twelve are the chart's join contract (CHT-25):
+image, `/bin/sh -ec`) `sed`s the thirteen `${AURELIUS_ATLAS_WEBAPP_*}`
+placeholders into the memory-backed emptyDir nginx reads, and `grep`s the output
+to fail the pod on any left unresolved (DD-262 — Helm cannot render them without
+re-drawing the umbrella's generated token). The thirteen are the chart's join
+contract (CHT-25):
 `API_UPSTREAM`/`_NAME` (the server Service) and `OTEL_UPSTREAM`/`_NAME` +
 `OTLP_ENDPOINT` (the collector legs) default to **cluster FQDNs** — the
 template's `proxy_pass` is a variable, which forces nginx's stub resolver, and
@@ -108,7 +109,9 @@ that resolver ignores `resolv.conf`'s search list (a short Service name 502s on
 `DNS_RESOLVER`, `TLS_CA_FILE` (the CA mount), `TLS_CERT_FILE`/`TLS_KEY_FILE`
 (the listener leaf mount, DD-270 — `tls.certSecretName` brings your own and
 the chart's `Certificate` renders nothing), `REALIP_BLOCK` (DD-261, from
-`nginx.trustedProxyCIDRs`), and `OTEL_INGEST_TOKEN` — which arrives from the
+`nginx.trustedProxyCIDRs`), `HSTS_HEADER` (CHT-99, the whole
+`add_header Strict-Transport-Security` directive from `nginx.hsts.*`, empty when
+disabled), and `OTEL_INGEST_TOKEN` — which arrives from the
 `<release>-collector-legacy` Secret at pod start, never rendered. `/config.json`
 is a ConfigMap rendered from values and mounted at the SPA's bootstrap path
 (`config.apiBaseUrl` `/api`, `config.keycloak.url`, `config.otelExporterUrl`).
@@ -116,7 +119,9 @@ is a ConfigMap rendered from values and mounted at the SPA's bootstrap path
 on emptyDirs (the read-only-rootfs nginx needs them writable — and _tmp_
 specifically: the image bakes `/var/lib/nginx/logs` and `/var/lib/nginx/modules`
 as symlinks, and an emptyDir over `/var/lib/nginx` hides them, which breaks
-`load_module` at boot). Chart-contract
+`load_module` at boot); the `nginx-conf` emptyDir is `medium: Memory` (CHT-98 —
+it holds the resolved config with the ingest bearer; the pid/temp/log emptyDirs
+carry no secret and stay disk-backed). Chart-contract
 tests: `tests/test__charts_webapp.py`. Conventions in `helm/AGENTS.md`.
 
 ```bash
