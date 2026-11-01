@@ -66,6 +66,34 @@ spec:
                     volumeMounts:
                         - name: agent
                           mountPath: /agent
+                -   name: config-seed
+                    # The read-only root's config seed (DD-282 Tier 3): the
+                    # image's config tree (jvm.options, log4j2.*, the role
+                    # files) copied onto an emptyDir that the container then
+                    # mounts as config/ — the one directory ES writes into at
+                    # runtime besides its data/logs (the keystore, from
+                    # ELASTIC_PASSWORD). The chart's elasticsearch.yml and the
+                    # TLS Secret re-mount over the seed, exactly as they did
+                    # over the image's tree. Same image, same uid, sh + cp.
+                    image: {{ include "atlas-elasticsearch.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - /bin/sh
+                        - -c
+                        - cp -r /usr/share/elasticsearch/config/. /seed/
+                    securityContext:
+                        runAsNonRoot: true
+                        runAsUser: 1000
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                            drop:
+                                - ALL
+                        readOnlyRootFilesystem: true
+                    resources:
+                        {{- toYaml .Values.configSeed.resources | nindent 24 }}
+                    volumeMounts:
+                        - name: config
+                          mountPath: /seed
             containers:
                 -   name: elasticsearch
                     image: {{ include "atlas-elasticsearch.image" . | quote }}
@@ -90,9 +118,22 @@ spec:
                         - name: data
                           mountPath: /usr/share/elasticsearch/data
                         - name: config
+                          # The seeded config dir (writable: the keystore
+                          # lands here, DD-282 Tier 3).
+                          mountPath: /usr/share/elasticsearch/config
+                        - name: chart-config
                           mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
                           subPath: elasticsearch.yml
                           readOnly: true
+                        - name: logs
+                          # GC + server logs off the (read-only) root (DD-282
+                          # Tier 3); not persisted — the cluster's logs ride
+                          # OTLP, these are the JVM's scratch.
+                          mountPath: /usr/share/elasticsearch/logs
+                        - name: tmp
+                          # jansi's .so, hsperfdata, the geoip scratch dir
+                          # (the JVM's own temp tree).
+                          mountPath: /tmp
                         - name: tls
                           mountPath: {{ .Values.tls.mountPath | quote }}
                           readOnly: true
@@ -135,8 +176,16 @@ spec:
                         {{- toYaml .Values.resources | nindent 24 }}
             volumes:
                 -   name: config
+                    # The config-seed init fills this; the StatefulSet mounts
+                    # it at the image's ES_PATH_CONF (DD-282 Tier 3).
+                    emptyDir: {}
+                -   name: chart-config
                     configMap:
                         name: {{ $fullname }}
+                -   name: logs
+                    emptyDir: {}
+                -   name: tmp
+                    emptyDir: {}
                 -   name: tls
                     secret:
                         # The cert-manager Certificate's Secret (CHT-12), or a

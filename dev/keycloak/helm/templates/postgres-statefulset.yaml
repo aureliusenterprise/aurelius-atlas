@@ -83,6 +83,8 @@ spec:
                         - name: conf
                           mountPath: /conf
                           readOnly: true
+                        - name: run
+                          mountPath: /run/postgresql
                         - name: tmp
                           mountPath: /tmp
                         - name: data
@@ -130,7 +132,11 @@ spec:
                         {{- toYaml .Values.postgres.resources | nindent 24 }}
                     securityContext:
                         allowPrivilegeEscalation: false
-                        readOnlyRootFilesystem: false
+                        # KSV-0014 closed (DD-282 Tier 3): the server's root-FS
+                        # writes are the unix socket (run) and the cert-copy
+                        # mktemp (tmp, medium=Memory for its mode pin) — both
+                        # emptyDirs; the data dir rides the PVC.
+                        readOnlyRootFilesystem: true
                         capabilities:
                             drop:
                                 - ALL
@@ -141,6 +147,9 @@ spec:
                 -   name: conf
                     configMap:
                         name: {{ $pg }}
+                -   name: run
+                    # The unix-socket dir (/.s.PGSQL.5432, the live overlay).
+                    emptyDir: {}
                 -   name: tmp
                     emptyDir:
                         medium: Memory

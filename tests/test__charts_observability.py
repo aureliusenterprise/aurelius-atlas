@@ -410,7 +410,13 @@ def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None
 
 @pytest.mark.covers(rules=["CHT-44"])
 def test__every_workload_runs_as_65532_dropped_and_unprivileged(obs_docs: list[dict[str, Any]]) -> None:
-    """Pod uid/fsGroup 65532 + RuntimeDefault; containers drop ALL, no escalation (DD-257, CHT-44)."""
+    """Pod uid/fsGroup 65532 + RuntimeDefault; containers drop ALL and run read-only.
+
+    No escalation anywhere (DD-257, CHT-44, DD-282 Tier 3). The shared
+    securityContext covers all five Tier 3 workloads: none of them
+    writes to its root (the live overlay's write map — every writable path
+    rides a volume; the collector's home cache gets its own emptyDir).
+    """
     for deployment in find_all(obs_docs, "Deployment"):
         spec = pod_spec(deployment)
         psc = spec["securityContext"]
@@ -422,6 +428,21 @@ def test__every_workload_runs_as_65532_dropped_and_unprivileged(obs_docs: list[d
             sc = app["securityContext"]
             assert sc["allowPrivilegeEscalation"] is False
             assert sc["capabilities"]["drop"] == ["ALL"]
+            assert sc["readOnlyRootFilesystem"] is True, deployment["metadata"]["name"]
+
+
+@pytest.mark.covers(rules=["CHT-33"])
+def test__collector_cache_empty_dir_backs_the_read_only_root(obs_docs: list[dict[str, Any]]) -> None:
+    """The collector's one root-FS write rides an emptyDir.
+
+    The contrib image's ~/.cache (the live overlay) — DD-282 Tier 3.
+    """
+    deployment = find(obs_docs, "Deployment", FULLNAME)
+    app = container(deployment, "observability")
+    cache_mount = next(m for m in app["volumeMounts"] if m["name"] == "cache")
+    assert cache_mount["mountPath"] == "/home/nonroot/.cache"
+    volumes = {v["name"]: v for v in pod_spec(deployment)["volumes"]}
+    assert "emptyDir" in volumes["cache"]
 
 
 @pytest.mark.covers(rules=["CHT-44"])

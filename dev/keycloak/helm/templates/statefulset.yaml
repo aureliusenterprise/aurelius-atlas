@@ -41,8 +41,48 @@ spec:
             {{- end }}
             securityContext:
                 {{- toYaml .Values.podSecurityContext | nindent 16 }}
-            {{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
             initContainers:
+                # The read-only root's build stage (DD-282 Tier 3): the image's
+                # persisted build options (h2, health off, /auth) differ from
+                # this chart's runtime env, so a bare `kc.sh start` re-runs the
+                # Quarkus build at every boot — rewriting all of /opt/keycloak
+                #/lib (the live overlay shows it). This stage copies the image
+                # tree to an emptyDir and builds THERE with the chart's own
+                # build-time options, so the container's start finds a current
+                # build, writes nothing outside data/ + /tmp, and its whole
+                # writable surface is the kc-home emptyDir. The three options
+                # below are exactly the ones the runtime warns are unpersisted
+                # (kc.db, kc.health-enabled, kc.http-relative-path — the
+                # cluster validation's log line); a contract test pins the
+                # parity pairs with the container's env (test__charts_keycloak).
+                -   name: kc-build
+                    image: {{ include "atlas-keycloak.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - /bin/sh
+                        - -c
+                        - >-
+                            cp -r /opt/keycloak/. /kc-home/ &&
+                            /kc-home/bin/kc.sh build --http-relative-path=/
+                    env:
+                        -   name: KC_DB
+                            value: postgres
+                        -   name: KC_HEALTH_ENABLED
+                            value: "true"
+                    securityContext:
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                            drop:
+                                - ALL
+                        readOnlyRootFilesystem: true
+                    resources:
+                        {{- toYaml .Values.kcBuild.resources | nindent 24 }}
+                    volumeMounts:
+                        -   name: kc-home
+                            mountPath: /kc-home
+                        -   name: tmp
+                            mountPath: /tmp
+                {{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
                 # The compose's `depends_on: condition: service_healthy` for the
                 # database (DD-258). Kubernetes has no readiness-gated start, so
                 # this waits for the headless Service to publish the database
@@ -211,6 +251,17 @@ spec:
                           containerPort: 7800
                           protocol: TCP
                     volumeMounts:
+                        - name: kc-home
+                          # The kc-build stage's output, mounted as the
+                          # runtime home (DD-282 Tier 3): the whole tree is
+                          # writable, but a current build means the runtime
+                          # writes only data/ (Narayana's recovery logs) and
+                          # /tmp — never lib/ again.
+                          mountPath: /opt/keycloak
+                        - name: tmp
+                          # hsperfdata, vertx-cache, uploads (the live
+                          # overlay's tmp tree).
+                          mountPath: /tmp
                         - name: tls
                           mountPath: {{ .Values.tls.mountPath | quote }}
                           readOnly: true
@@ -249,11 +300,20 @@ spec:
                         {{- toYaml .Values.resources | nindent 24 }}
                     securityContext:
                         allowPrivilegeEscalation: false
-                        readOnlyRootFilesystem: false
+                        # KSV-0014 closed (DD-282 Tier 3): the writable tree
+                        # is the kc-home emptyDir, not the image root.
+                        readOnlyRootFilesystem: true
                         capabilities:
                             drop:
                                 - ALL
             volumes:
+                -   name: kc-home
+                    # The kc-build output (DD-282 Tier 3): a fresh build per
+                    # pod — the same shape as the image's own startup build,
+                    # just no longer against the root filesystem.
+                    emptyDir: {}
+                -   name: tmp
+                    emptyDir: {}
                 -   name: tls
                     secret:
                         secretName: {{ include "atlas-keycloak.tlsSecretName" . }}

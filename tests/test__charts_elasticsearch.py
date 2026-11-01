@@ -53,7 +53,8 @@ def test__elasticsearch_yml_contract(es_docs: list[dict[str, Any]]) -> None:
     """The hardened settings file is the store's only settings channel (CHT-11).
 
     Security on, TLS-only HTTP, transport TLS off, ML off, mmap off,
-    single-node discovery — and the file mounts over the image's own, because
+    single-node discovery — and the file mounts over the seeded config dir
+    (the config-seed init's copy of the image's own, DD-282 Tier 3), because
     the hardened image ignores dotted env vars.
     """
     cm = find(es_docs, "ConfigMap", "atlas-elasticsearch")
@@ -67,7 +68,7 @@ def test__elasticsearch_yml_contract(es_docs: list[dict[str, Any]]) -> None:
     ss = find(es_docs, "StatefulSet", "atlas-elasticsearch")
     config_volumes = [v for v in pod_spec(ss)["volumes"] if "configMap" in v]
     assert any(v["configMap"]["name"] == "atlas-elasticsearch" for v in config_volumes)
-    config_mount = next(vm for vm in container(ss, "elasticsearch")["volumeMounts"] if vm["name"] == "config")
+    config_mount = next(vm for vm in container(ss, "elasticsearch")["volumeMounts"] if vm["name"] == "chart-config")
     assert config_mount["subPath"] == "elasticsearch.yml"
     assert config_mount["mountPath"] == "/usr/share/elasticsearch/config/elasticsearch.yml"
 
@@ -222,12 +223,13 @@ def test__runs_as_image_uid_with_fs_group(es_docs: list[dict[str, Any]]) -> None
 
 @pytest.mark.covers(rules=["CHT-44"])
 def test__agent_and_store_security_contexts_are_hardened(es_docs: list[dict[str, Any]]) -> None:
-    """The agent init runs non-root/dropped/read-only; the store drops ALL (DD-282 follow-up).
+    """Every container in the store pod runs non-root/dropped/read-only (DD-282 Tier 3).
 
-    The agent only cp's its jar to the shared emptyDir — a read-only root is
-    free. The store container gets runAsNonRoot (the image's uid 1000, CHT-44)
-    and drop-ALL; its writable root stays the documented Tier 3 deferral
-    (it writes logs outside the data volume).
+    The agent only cp's its jar to the shared emptyDir and the config-seed
+    only cp's the config tree — read-only roots are free. The store container
+    gets runAsNonRoot (the image's uid 1000, CHT-44), drop-ALL, and the
+    read-only root: its three root-FS write sites (keystore, logs, /tmp) all
+    ride emptyDirs.
     """
     ss = find(es_docs, "StatefulSet", "atlas-elasticsearch")
     asc = pod_spec(ss)["initContainers"][0]["securityContext"]
@@ -238,9 +240,37 @@ def test__agent_and_store_security_contexts_are_hardened(es_docs: list[dict[str,
     csc = container(ss, "elasticsearch")["securityContext"]
     assert csc["runAsNonRoot"] is True
     assert csc["capabilities"]["drop"] == ["ALL"]
-    # The Tier 3 deferral, pinned as a decision: the store root stays writable
-    # until the logs-emptyDir increment (DD-282).
-    assert "readOnlyRootFilesystem" not in csc
+    assert csc["readOnlyRootFilesystem"] is True
+
+
+@pytest.mark.covers(rules=["CHT-11", "CHT-44"])
+def test__config_seed_and_writable_dirs_back_the_read_only_root(es_docs: list[dict[str, Any]]) -> None:
+    """The read-only root's config seed + logs/tmp emptyDirs (DD-282 Tier 3).
+
+    The store's keystore lands in config/, the GC/server logs in logs/, the
+    JVM's scratch in /tmp (the live overlay's write map) — each is an emptyDir,
+    and the config-seed init pre-fills the config dir with the image's own
+    tree (jvm.options etc.) since a read-only root cannot seed it itself.
+    """
+    ss = find(es_docs, "StatefulSet", "atlas-elasticsearch")
+    spec = pod_spec(ss)
+    (seed,) = [c for c in spec["initContainers"] if c["name"] == "config-seed"]
+    assert seed["image"] == pinned_ref("dhi.io/elasticsearch")
+    # -r, never -a: preserving the source's ownership/timestamps on the
+    # emptyDir mountpoint is EPERM for the non-root copy user.
+    assert "cp -r /usr/share/elasticsearch/config/. /seed/" in " ".join(seed["command"])
+    assert seed["securityContext"]["readOnlyRootFilesystem"] is True
+    assert seed["securityContext"]["runAsUser"] == 1000
+    assert seed["resources"]["limits"]["memory"] == "64Mi"
+    volumes = {v["name"]: v for v in spec["volumes"]}
+    for name in ("config", "logs", "tmp"):
+        assert "emptyDir" in volumes[name], name
+    assert "configMap" in volumes["chart-config"]
+    mounts = {m["name"]: m for m in container(ss, "elasticsearch")["volumeMounts"]}
+    assert mounts["config"]["mountPath"] == "/usr/share/elasticsearch/config"
+    assert mounts["chart-config"]["mountPath"] == "/usr/share/elasticsearch/config/elasticsearch.yml"
+    assert mounts["logs"]["mountPath"] == "/usr/share/elasticsearch/logs"
+    assert mounts["tmp"]["mountPath"] == "/tmp"  # noqa: S108  # a mountPath assertion, not a temp-file use
 
 
 @pytest.mark.covers(rules=["CHT-18"])
@@ -325,8 +355,8 @@ def test__puller_containers_have_read_only_roots() -> None:
     """Both puller containers pin a read-only root filesystem (DD-282 follow-up).
 
     The puller reads its ConfigMap/Certificates and writes nothing (no
-    file_storage extension), and curl writes nothing — KSV-0014 stays closed
-    here even though the stateful workloads keep their own root decisions.
+    file_storage extension), and curl writes nothing — KSV-0014 closed here
+    with the store's own read-only root (DD-282 Tier 3).
     """
     docs = helm_render(ES_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
     deployment = find(docs, "Deployment", "atlas-elasticsearch-metrics-puller")

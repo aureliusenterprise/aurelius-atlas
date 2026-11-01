@@ -261,8 +261,8 @@ def test__puller_containers_have_read_only_roots() -> None:
     """Both puller containers pin a read-only root filesystem (DD-282 follow-up).
 
     The puller reads its ConfigMap/Certificates and writes nothing (no
-    file_storage extension), and curl writes nothing — unlike the stateful
-    keycloak/postgres workloads, which keep their explicit writable roots.
+    file_storage extension), and curl writes nothing — the same posture the
+    stateful keycloak/postgres workloads joined with the Tier 3 close.
     """
     docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
     deployment = find(docs, "Deployment", "atlas-keycloak-metrics-puller")
@@ -277,16 +277,56 @@ def test__puller_containers_have_read_only_roots() -> None:
 def test__wait_for_postgres_is_a_read_only_bounded_gate(kc_docs: list[dict[str, Any]]) -> None:
     """The DB boot gate runs read-only with bounded resources (DD-282 follow-up).
 
-    bash's /dev/tcp opens no files, so unlike the keycloak container (whose
-    writable root is its documented decision), the gate takes a read-only root.
+    bash's /dev/tcp opens no files, so the gate takes a read-only root like
+    every other container in the pod (the Tier 3 close).
     """
     ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
-    (init,) = pod_spec(ss)["initContainers"]
-    assert init["name"] == "wait-for-postgres"
+    init = next(c for c in pod_spec(ss)["initContainers"] if c["name"] == "wait-for-postgres")
     sc = init["securityContext"]
     assert sc["readOnlyRootFilesystem"] is True
     assert sc["capabilities"]["drop"] == ["ALL"]
     assert init["resources"]["limits"]["memory"] == "128Mi"
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__kc_build_init_backs_the_read_only_root(kc_docs: list[dict[str, Any]]) -> None:
+    """The kc-build stage persists the chart's build options into the kc-home emptyDir.
+
+    The read-only-rooted runtime then never rebuilds (DD-282 Tier 3). The
+    image ships a build whose options (h2, health off, /auth) differ from
+    this chart's runtime env, so a bare start re-runs the Quarkus build and
+    rewrites /opt/keycloak/lib — the live overlay's write map. The stage runs
+    the same build with the chart's own options; the pins below are the
+    parity pairs with the runtime container's env — drift here and the
+    runtime rebuilds again (the cluster boot log's "build time options ...-
+    differ" warning is the live control).
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    spec = pod_spec(ss)
+    (build,) = [c for c in spec["initContainers"] if c["name"] == "kc-build"]
+    assert build["image"] == pinned_ref("dhi.io/keycloak")
+    script = " ".join(build["command"])
+    # -r, never -a: preserving the source's ownership/timestamps on the
+    # emptyDir mountpoint is EPERM for the non-root copy user.
+    assert "cp -r /opt/keycloak/. /kc-home/" in script
+    assert "kc.sh build --http-relative-path=/" in script
+    assert build["securityContext"]["readOnlyRootFilesystem"] is True
+    assert build["resources"]["limits"]["memory"] == "512Mi"
+    # Parity: the build stage's options are the runtime's own.
+    app = container(ss, "keycloak")
+    assert env_value(env_map(build), "KC_DB") == env_value(env_map(app), "KC_DB")
+    assert env_value(env_map(build), "KC_HEALTH_ENABLED") == env_value(env_map(app), "KC_HEALTH_ENABLED")
+    assert "--http-relative-path=/" in " ".join(app["command"])
+    # The runtime home is the emptyDir the stage fills; the root is read-only.
+    mounts = {m["name"]: m for m in app["volumeMounts"]}
+    assert mounts["kc-home"]["mountPath"] == "/opt/keycloak"
+    assert mounts["tmp"]["mountPath"] == "/tmp"  # noqa: S108  # a mountPath assertion, not a temp-file use
+    assert app["securityContext"]["readOnlyRootFilesystem"] is True
+    volumes = {v["name"]: v for v in spec["volumes"]}
+    assert "emptyDir" in volumes["kc-home"]
+    assert "emptyDir" in volumes["tmp"]
+    # The bundled-DB gate rides after the build stage.
+    assert [c["name"] for c in spec["initContainers"]] == ["kc-build", "wait-for-postgres"]
 
 
 @pytest.mark.covers(rules=["CHT-90", "CHT-91"])
@@ -376,8 +416,9 @@ def test__bundled_flavor_waits_for_the_database(kc_docs: list[dict[str, Any]]) -
     """A wait-for-postgres init container ports the compose depends_on (DD-258)."""
     ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
     inits = pod_spec(ss)["initContainers"]
-    assert [c["name"] for c in inits] == ["wait-for-postgres"]
-    script = " ".join(inits[0]["command"])
+    assert "wait-for-postgres" in [c["name"] for c in inits]
+    gate = next(c for c in inits if c["name"] == "wait-for-postgres")
+    script = " ".join(gate["command"])
     assert "/dev/tcp/atlas-keycloak-postgres/5432" in script
 
 
@@ -395,8 +436,12 @@ def test__bundled_postgres_boot(kc_docs: list[dict[str, Any]]) -> None:
     assert "-c hba_file=/conf/pg_hba.conf" in boot
     volumes = {v["name"]: v for v in spec["volumes"]}
     assert volumes["tmp"]["emptyDir"].get("medium") == "Memory"
+    assert "emptyDir" in volumes["run"]  # the unix-socket dir (DD-282 Tier 3)
     assert volumes["certs"]["secret"]["secretName"] == "atlas-keycloak-postgres-tls"
     assert volumes["conf"]["configMap"]["name"] == "atlas-keycloak-postgres"
+    assert container(ss, "postgres")["securityContext"]["readOnlyRootFilesystem"] is True
+    run_mount = next(m for m in container(ss, "postgres")["volumeMounts"] if m["name"] == "run")
+    assert run_mount["mountPath"] == "/run/postgresql"
     envs = env_map(c)
     assert env_value(envs, "POSTGRES_HOST_AUTH_METHOD") == "scram-sha-256"
     assert envs["POSTGRES_USER"]["valueFrom"]["secretKeyRef"] == {"name": "atlas-keycloak-database", "key": "user"}
@@ -427,7 +472,8 @@ def test__external_flavor_renders_no_postgres() -> None:
     """flavor=external drops every Postgres resource and takes the URL (CHT-17).
 
     The wait-for-postgres init is bundled-only too — an external database is
-    somebody else's availability contract.
+    somebody else's availability contract (the kc-build stage is not: the
+    read-only root needs it for every flavour).
     """
     docs = helm_render(
         KC_CHART,
@@ -437,7 +483,7 @@ def test__external_flavor_renders_no_postgres() -> None:
         ),
     )
     ss = find(docs, "StatefulSet", "atlas-keycloak")
-    assert "initContainers" not in pod_spec(ss)
+    assert [c["name"] for c in pod_spec(ss)["initContainers"]] == ["kc-build"]
     pg_names = {"atlas-keycloak-postgres", "atlas-keycloak-postgres-tls"}
     assert not pg_names & names(docs, "StatefulSet")
     assert not pg_names & names(docs, "Service")

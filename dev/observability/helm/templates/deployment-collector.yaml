@@ -71,10 +71,11 @@ spec:
                         - "5"
                         - {{ printf "%s/.well-known/openid-configuration" (printf "%s/realms/%s" (include "atlas-observability.issuerUrl" .) (include "atlas-observability.realm" .)) | quote }}
                     {{- with .Values.securityContext }}
-                    # The shared posture plus a read-only root: curl writes
-                    # nothing, and the value stays chart-local so the Tier 3
-                    # workloads sharing .Values.securityContext keep their
-                    # per-workload root decision (DD-282 follow-up: KSV-0014).
+                    # The shared posture plus an explicit read-only root: curl
+                    # writes nothing, and the value stays chart-local so the
+                    # gate pins its own root regardless of the shared value's
+                    # future (DD-282: KSV-0014 — the shared value now carries
+                    # the flip, so the merge is a defensive no-op).
                     securityContext:
                         {{- toYaml (merge (dict "readOnlyRootFilesystem" true) .) | nindent 24 }}
                     {{- end }}
@@ -143,10 +144,17 @@ spec:
                             mountPath: /etc/otelcol-contrib/config.yaml
                             subPath: config.yaml
                             readOnly: true
+                        -   name: cache
+                            # The contrib image's home cache dir (the live
+                            # overlay: ~/.cache/snowflake) — the collector's
+                            # one root-FS write (DD-282 Tier 3).
+                            mountPath: /home/nonroot/.cache
                         -   name: tls
                             mountPath: {{ .Values.tls.mountPath }}
                             readOnly: true
             volumes:
+                -   name: cache
+                    emptyDir: {}
                 -   name: config
                     configMap:
                         name: {{ $fullname }}

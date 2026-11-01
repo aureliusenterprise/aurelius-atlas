@@ -238,11 +238,17 @@ podSecurityContext:
     seccompProfile:
         type: RuntimeDefault
 
+# Shared by the five Tier 3 workloads (collector, grafana, loki, prometheus,
+# tempo): the read-only root closes KSV-0014 (DD-282 Tier 3). The live
+# overlay's write audit: none of the five writes to its root — every writable
+# path already rides a volume (PVC data, mounted configs); the collector's one
+# root-FS write (the contrib image's ~/.cache) gets its own emptyDir.
 securityContext:
     allowPrivilegeEscalation: false
     capabilities:
         drop:
             - ALL
+    readOnlyRootFilesystem: true
 
 # Network segmentation (CHT-67/68/69, DD-271): the collector's per-leg
 # ingress allows, and the Prometheus/Loki/Tempo scrape/export/panel joins.

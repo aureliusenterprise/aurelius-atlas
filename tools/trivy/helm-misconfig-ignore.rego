@@ -79,31 +79,13 @@ ignore {
 	input.ID == "KSV-0011"
 }
 
-# --- KSV-0014 (HIGH): writable root filesystem -------------------------------
-# DEFERRAL, scoped to the eight stateful servers that write outside their
-# volumes: elasticsearch (logs), keycloak (+ its bundled postgres - the chart
-# documents `readOnlyRootFilesystem: false` explicitly), and the five
-# observability servers. Each needs per-workload emptyDirs for logs/tmp before
-# a read-only root boots - the cluster-validated follow-up increment (DD-282).
-# Every stateless container (apps, webapp nginx + init, both pullers, the
-# collector's issuer-wait, the coredump-agent, wait-for-postgres) pins a
-# read-only root and stays live here: a flip-back to writable fires.
-ignore {
-	input.ID == "KSV-0014"
-	msg := input.Message
-	startswith(msg, "Container '")
-	cname := substring(msg, 11, indexof(substring(msg, 11, -1), "'"))
-	stateful := {"elasticsearch", "grafana", "keycloak", "loki", "observability", "postgres", "prometheus", "tempo"}
-	stateful[cname]
-}
-
 # --- KSV-0020 (LOW) / KSV-0021 (LOW): uid <= 10000 / gid <= 10000 -----------
-# The image-declared users: the ES pod + coredump-agent run as the hardened
-# image's uid/gid 1000, bundled Postgres as uid/gid 70 - both non-root, both
-# fixed by the upstream images (DD-257: the chart runs the image's declared
-# user, never a forked one). Scoped to those three container names; every
-# 65532 workload (apps, keycloak, observability) satisfies KSV-0021's 1000
-# floor and stays live for regressions.
+# The image-declared users: the ES pod + coredump-agent + config-seed run as
+# the hardened image's uid/gid 1000, bundled Postgres as uid/gid 70 - both
+# non-root, both fixed by the upstream images (DD-257: the chart runs the
+# image's declared user, never a forked one). Scoped to those container names;
+# every 65532 workload (apps, keycloak, observability) satisfies KSV-0021's
+# 1000 floor and stays live for regressions.
 ignore {
 	input.ID == "KSV-0020"
 	flagged_uid(input.Message)
@@ -114,10 +96,14 @@ ignore {
 	flagged_uid(input.Message)
 }
 
-# The three image-user containers: ES pod + coredump-agent (uid/gid 1000),
-# bundled Postgres (uid/gid 70).
+# The image-user containers: ES pod + coredump-agent + config-seed (uid/gid
+# 1000), bundled Postgres (uid/gid 70).
 flagged_uid(msg) {
 	startswith(msg, "Container 'coredump-agent'")
+}
+
+flagged_uid(msg) {
+	startswith(msg, "Container 'config-seed'")
 }
 
 flagged_uid(msg) {

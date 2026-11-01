@@ -159,6 +159,19 @@ waitForPostgres:
         limits:
             memory: 128Mi
 
+# The kc-build init container (DD-282 Tier 3): copies the image's Keycloak
+# home to an emptyDir and runs the Quarkus build there with the chart's
+# build-time options, so the read-only-rooted runtime finds a current build
+# and rewrites nothing at start. A boot stage, not a workload — but the build
+# is a JVM: the request/limit pair is the heap's headroom.
+kcBuild:
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 512Mi
+
 database:
     # "bundled" renders the Postgres below; "external" uses the url.
     flavor: bundled
@@ -275,8 +288,8 @@ podAnnotations: {}
 podLabels: {}
 
 # The hardened Keycloak image runs as its fixed non-root user (uid 65532
-# "nonroot") and owns /opt/keycloak/lib/quarkus, where `kc.sh start` writes the
-# re-augmented runtime (DD-257) — run as that uid. fsGroup matches.
+# "nonroot") — run as that uid. fsGroup matches (it is what makes the kc-home
+# and tmp emptyDirs group-writable, DD-282 Tier 3).
 podSecurityContext:
     runAsNonRoot: true
     runAsUser: 65532
