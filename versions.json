@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase6-6.2-authorization",
+    "title": "phase6-6.2-authorization",
+    "aliases": []
+  },
+  {
     "version": "phase4-4.4b-dsl-projections",
     "title": "phase4-4.4b-dsl-projections",
     "aliases": []
