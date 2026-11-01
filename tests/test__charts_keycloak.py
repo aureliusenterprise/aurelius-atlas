@@ -1,0 +1,996 @@
+"""Chart-contract suite for ``atlas-keycloak`` (CHT-16..18, 10.2).
+
+Keycloak's cluster shape asserted at the render: prod-mode boot, the issuer
+hostname chain, the RSS companion, the realm asset and its placeholder
+resolution, the management-port probes, and the bundled Postgres — the cert-
+copy boot, the pg_hba, the verify-full JDBC pin (the dev compose sibling is
+the reference, ``dev/keycloak/docker-compose.yaml``).
+"""
+
+import json
+from typing import Any
+
+import pytest
+import yaml
+from conftest import (
+    KC_CHART,
+    OTEL_CLIENT_IDS,
+    WORKSPACE,
+    container,
+    env_map,
+    env_value,
+    find,
+    helm_render,
+    helm_render_fails,
+    names,
+    peer_labels,
+    pinned_ref,
+    pod_spec,
+    policy_peers_by_port,
+)
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__prod_mode_boot_and_workload_shapes(kc_docs: list[dict[str, Any]]) -> None:
+    """``kc.sh start --import-realm``, never start-dev (CHT-16).
+
+    StatefulSet + ClusterIP + the RSS headless Service for JGroups discovery.
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    assert container(ss, "keycloak")["image"] == pinned_ref("dhi.io/keycloak")  # CHT-93
+    command = container(ss, "keycloak")["command"]
+    assert "start" in command
+    assert "--import-realm" in command
+    assert not any("start-dev" in part for part in command)
+    assert ss["spec"]["serviceName"] == "atlas-keycloak-rss"
+    assert find(kc_docs, "Service", "atlas-keycloak")["spec"]["type"] == "ClusterIP"
+    rss = find(kc_docs, "Service", "atlas-keycloak-rss")
+    assert rss["spec"]["clusterIP"] == "None"
+    assert rss["spec"]["publishNotReadyAddresses"] is True
+    assert any("-Djgroups.dns.query=atlas-keycloak-rss" in part for part in command)
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__runs_as_image_uid_with_fs_group(kc_docs: list[dict[str, Any]]) -> None:
+    """The pod runs the image's uid (65532), which owns the Quarkus build dir.
+
+    DD-257: the hardened image does no privilege drop; `kc.sh start` re-augments
+    in place, so a foreign uid cannot write it. fsGroup matches for the data.
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    psc = pod_spec(ss)["securityContext"]
+    assert psc["runAsNonRoot"] is True
+    assert psc["runAsUser"] == 65532
+    assert psc["fsGroup"] == 65532
+    assert psc["seccompProfile"] == {"type": "RuntimeDefault"}
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__replicas_above_one_fails_render() -> None:
+    """Multi-node Keycloak is a later increment, so replicas 2 fails the render."""
+    error = helm_render_fails(KC_CHART, sets=("replicas=2",))
+    assert "replicas > 1" in error
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__hostname_chain() -> None:
+    """KC_HOSTNAME: explicit hostname, then issuer.url's host, then the domain."""
+
+    def hostname(sets: tuple[str, ...]) -> str:
+        ss = find(helm_render(KC_CHART, sets=sets), "StatefulSet", "atlas-keycloak")
+        return env_value(env_map(container(ss, "keycloak")), "KC_HOSTNAME")
+
+    assert hostname(("hostname=kc.example.com",)) == "kc.example.com"
+    assert hostname(("global.issuer.url=https://auth.example.com/", "hostname=")) == "auth.example.com"
+    assert hostname(("global.domain=atlas.example", "hostname=", "global.issuer.url=")) == "keycloak.atlas.example"
+
+
+@pytest.mark.covers(rules=["CHT-16", "CHT-80", "CHT-89", "CHT-110"])
+def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> None:
+    """Every credential arrives via secretKeyRef, none inline (CHT-16/19).
+
+    Admin, database, and otel-client credentials point at the
+    <release>-<purpose> Secret names the umbrella generates; the demo-user
+    pair rides the master realm only (CHT-80), asserted on the master render.
+    CHT-89 (DD-277): the prod import carries one placeholder per otel client
+    (CHT-87), so the pod feeds one env per client id joined on the client's
+    key; master's asset shares one placeholder and keeps the single env.
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    envs = env_map(container(ss, "keycloak"))
+    refs = {
+        "KC_BOOTSTRAP_ADMIN_USERNAME": ("atlas-keycloak-admin", "user"),
+        "KC_BOOTSTRAP_ADMIN_PASSWORD": ("atlas-keycloak-admin", "password"),
+        "KC_DB_USERNAME": ("atlas-keycloak-database", "user"),
+        "KC_DB_PASSWORD": ("atlas-keycloak-database", "password"),
+    }
+    for client in OTEL_CLIENT_IDS:
+        envs_name = f"{client.upper().replace('-', '_')}_CLIENT_SECRET"
+        refs[envs_name] = ("atlas-otel-clients", client)
+    for name, (secret, key) in refs.items():
+        ref = envs[name]["valueFrom"]["secretKeyRef"]
+        assert ref == {"name": secret, "key": key}, name
+        assert "value" not in envs[name], name
+    # The prod asset spells no shared placeholder (CHT-87): no env feeds it.
+    assert "OTEL_INGEST_CLIENT_SECRET" not in envs
+    # The hardened realm seeds no users, so its pod carries no DEV_USER env.
+    assert not [n for n in envs if n.startswith("DEV_USER_")]
+    # CHT-83: the grafana placeholder feeds the prod asset's client (CHT-81).
+    ref = envs["GRAFANA_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-grafana-oauth", "key": "client-secret"}
+    # CHT-110 (10.12): the server client's placeholder feeds both assets'
+    # client (master's since 6.1a/DD-250) — joined on every realm, unlike
+    # grafana's prod-only credential.
+    ref = envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-server-client", "key": "client-secret"}
+
+    master = find(helm_render(KC_CHART, sets=("realm.name=master",)), "StatefulSet", "atlas-keycloak")
+    master_envs = env_map(container(master, "keycloak"))
+    for name, key in (("DEV_USER_WRITER_PASSWORD", "writer-password"), ("DEV_USER_READER_PASSWORD", "reader-password")):
+        ref = master_envs[name]["valueFrom"]["secretKeyRef"]
+        assert ref == {"name": "atlas-keycloak-users", "key": key}, name
+    # master's asset shares one placeholder: the single shared env (CHT-89).
+    ref = master_envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
+    # CHT-110: the server client's env rides master too — its asset carries
+    # the same ${ATLAS_SERVER_CLIENT_SECRET} placeholder.
+    ref = master_envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-server-client", "key": "client-secret"}
+    assert not [
+        n
+        for n in master_envs
+        if n.endswith("_CLIENT_SECRET") and n not in ("OTEL_INGEST_CLIENT_SECRET", "ATLAS_SERVER_CLIENT_SECRET")
+    ]
+    # master's asset has no grafana client: no env, no credential (CHT-80's rule).
+    assert "GRAFANA_CLIENT_SECRET" not in master_envs
+
+
+@pytest.mark.covers(rules=["CHT-16", "CHT-78"])
+def test__realm_configmap_byte_copies_the_dev_import() -> None:
+    """The master asset renders byte-identical to the dev import (the drift guard).
+
+    DD-256: one authored realm file; editing the dev import means re-running
+    the copy, and this test is what enforces it. CHT-78: selecting master
+    keeps that path exactly — the asset carries no host tokens, so the
+    substitution is a no-op on it.
+    """
+    docs = helm_render(KC_CHART, sets=("realm.name=master",))
+    cm = find(docs, "ConfigMap", "atlas-keycloak-realm")
+    asset = (KC_CHART / "files/master.json").read_bytes()
+    assert cm["data"]["master.json"].encode() == asset
+    dev_import = (WORKSPACE / "dev/keycloak/import/master.json").read_bytes()
+    assert asset == dev_import
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__realm_mounts_at_import_dir_with_placeholder_flag(kc_docs: list[dict[str, Any]]) -> None:
+    """The realm mounts at the import dir and Keycloak resolves the placeholders.
+
+    The ``${...}`` secrets resolve via the JVM's own
+    replace-placeholders flag (DD-256), never by Helm substitution.
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    mount = next(vm for vm in container(ss, "keycloak")["volumeMounts"] if vm["name"] == "realm")
+    assert mount["mountPath"] == "/opt/keycloak/data/import"
+    volumes = {v["name"]: v for v in pod_spec(ss)["volumes"]}
+    assert volumes["realm"]["configMap"]["name"] == "atlas-keycloak-realm"
+    envs = env_map(container(ss, "keycloak"))
+    assert "-Dkeycloak.migration.replace-placeholders=true" in env_value(envs, "JAVA_OPTS")
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__telemetry_renders_only_when_pointed_at_a_collector() -> None:
+    """No endpoint means no telemetry env (CHT-16)."""
+    bare = find(helm_render(KC_CHART), "StatefulSet", "atlas-keycloak")
+    bare_envs = env_map(container(bare, "keycloak"))
+    assert not [n for n in bare_envs if n.startswith("OTEL_EXPORTER") or n == "OTEL_SERVICE_NAME"]
+
+    docs = helm_render(KC_CHART, sets=("telemetry.endpoint=https://collector:4320",))
+    ss = find(docs, "StatefulSet", "atlas-keycloak")
+    envs = env_map(container(ss, "keycloak"))
+    assert env_value(envs, "OTEL_SERVICE_NAME") == "keycloak"
+    assert env_value(envs, "OTEL_EXPORTER_OTLP_ENDPOINT") == "https://collector:4320"
+    assert env_value(envs, "OTEL_EXPORTER_OTLP_CERTIFICATE") == "/etc/aurelius-atlas/tls/ca.crt"
+    header = envs["OTEL_EXPORTER_OTLP_HEADERS"]["valueFrom"]["secretKeyRef"]
+    assert header == {"name": "atlas-collector-legacy", "key": "otel-header"}
+
+
+@pytest.mark.covers(rules=["CHT-42"])
+def test__telemetry_enabled_derives_the_sibling_collector() -> None:
+    """telemetry.enabled derives the sibling collector endpoint by the name rule (CHT-42).
+
+    The umbrella cannot template a values file — legacy gRPC :4320, 0.1
+    sampler. Quarkus' OTLP sender ignores the generic CERTIFICATE var, so the
+    chart also renders the runtime trust-cert knob (dev's p12 workaround).
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    envs = env_map(container(find(docs, "StatefulSet", "atlas-keycloak"), "keycloak"))
+    assert env_value(envs, "OTEL_EXPORTER_OTLP_ENDPOINT") == "https://atlas-observability:4320"
+    assert env_value(envs, "QUARKUS_OTEL_EXPORTER_OTLP_TRUST_CERT_CERTS") == "/etc/aurelius-atlas/tls/ca.crt"
+    assert env_value(envs, "OTEL_TRACES_SAMPLER_ARG") == "0.1"
+
+
+@pytest.mark.covers(rules=["CHT-41"])
+def test__service_answers_the_https_standard_port(kc_docs: list[dict[str, Any]]) -> None:
+    """The Service answers the https standard port (CHT-41, DD-265).
+
+    443 beside 8443 (both → the browser listener) so the public issuer URL
+    dials in-cluster without a port suffix.
+    """
+    service = find(kc_docs, "Service", "atlas-keycloak")
+    ports = {p["port"]: p["targetPort"] for p in service["spec"]["ports"]}
+    assert ports == {8443: "https", 443: "https"}
+    # The issuer host stays the browser hostname — the chart adds no
+    # hostname-v2 option; the claim follows the request's Host (CHT-41).
+    envs = env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))
+    assert "KC_HOSTNAME_URL" not in envs
+
+
+@pytest.mark.covers(rules=["CHT-43"])
+def test__metrics_puller_renders_when_telemetry_enabled() -> None:
+    """telemetry.enabled renders the puller (CHT-43, DD-266).
+
+    The contrib image, the dev config's keycloak-infra service.name, the db +
+    client joins, the public mint URL, and the per-service collector target.
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    deployment = find(docs, "Deployment", "atlas-keycloak-metrics-puller")
+    app = container(deployment, "metrics-puller")
+    assert app["image"] == pinned_ref("dhi.io/opentelemetry-collector")  # CHT-93
+    psc = pod_spec(deployment)["securityContext"]
+    assert psc["runAsUser"] == 65532
+    assert psc["fsGroup"] == 65532
+
+    config = yaml.safe_load(find(docs, "ConfigMap", "atlas-keycloak-metrics-puller")["data"]["config.yaml"])
+    (upsert,) = config["processors"]["resource"]["attributes"]
+    assert upsert["value"] == "keycloak-infra"  # the dashboard's exported_job pin
+    receiver = config["receivers"]["postgresql"]
+    assert receiver["endpoint"] == "atlas-keycloak-postgres:5432"
+    assert receiver["databases"] == ["keycloak"]
+    assert config["exporters"]["otlp"]["endpoint"] == "https://atlas-observability:4317"
+    oauth = config["extensions"]["oauth2client"]
+    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
+    assert oauth["client_id"] == "otel-keycloak"
+
+    envs = env_map(app)
+    assert envs["KEYCLOAK_DATABASE_USERNAME"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-keycloak-database",
+        "key": "user",
+    }
+    assert envs["KEYCLOAK_DATABASE_PASSWORD"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-keycloak-database",
+        "key": "password",
+    }
+    # CHT-90: the puller's join is its own client key on the prod realm; the
+    # container-facing env name (and the config's ${env:...} reference) stay.
+    assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-otel-clients",
+        "key": "otel-keycloak",
+    }
+
+
+@pytest.mark.covers(rules=["CHT-44"])
+def test__puller_containers_have_read_only_roots() -> None:
+    """Both puller containers pin a read-only root filesystem (DD-282 follow-up).
+
+    The puller reads its ConfigMap/Certificates and writes nothing (no
+    file_storage extension), and curl writes nothing — the same posture the
+    stateful keycloak/postgres workloads joined with the Tier 3 close.
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    deployment = find(docs, "Deployment", "atlas-keycloak-metrics-puller")
+    (init,) = pod_spec(deployment)["initContainers"]
+    assert init["securityContext"]["readOnlyRootFilesystem"] is True
+    assert init["resources"]["limits"]["memory"] == "32Mi"  # KSV-0015/16/18 (DD-282)
+    app = container(deployment, "metrics-puller")
+    assert app["securityContext"]["readOnlyRootFilesystem"] is True
+
+
+@pytest.mark.covers(rules=["CHT-17"])
+def test__wait_for_postgres_is_a_read_only_bounded_gate(kc_docs: list[dict[str, Any]]) -> None:
+    """The DB boot gate runs read-only with bounded resources (DD-282 follow-up).
+
+    bash's /dev/tcp opens no files, so the gate takes a read-only root like
+    every other container in the pod (the Tier 3 close).
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    init = next(c for c in pod_spec(ss)["initContainers"] if c["name"] == "wait-for-postgres")
+    sc = init["securityContext"]
+    assert sc["readOnlyRootFilesystem"] is True
+    assert sc["capabilities"]["drop"] == ["ALL"]
+    assert init["resources"]["limits"]["memory"] == "128Mi"
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__kc_build_init_backs_the_read_only_root(kc_docs: list[dict[str, Any]]) -> None:
+    """The kc-build stage persists the chart's build options into the kc-home emptyDir.
+
+    The read-only-rooted runtime then never rebuilds (DD-282 Tier 3). The
+    image ships a build whose options (h2, health off, /auth) differ from
+    this chart's runtime env, so a bare start re-runs the Quarkus build and
+    rewrites /opt/keycloak/lib — the live overlay's write map. The stage runs
+    the same build with the chart's own options; the pins below are the
+    parity pairs with the runtime container's env — drift here and the
+    runtime rebuilds again (the cluster boot log's "build time options ...-
+    differ" warning is the live control).
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    spec = pod_spec(ss)
+    (build,) = [c for c in spec["initContainers"] if c["name"] == "kc-build"]
+    assert build["image"] == pinned_ref("dhi.io/keycloak")
+    script = " ".join(build["command"])
+    # -r, never -a: preserving the source's ownership/timestamps on the
+    # emptyDir mountpoint is EPERM for the non-root copy user.
+    assert "cp -r /opt/keycloak/. /kc-home/" in script
+    assert "kc.sh build --http-relative-path=/" in script
+    assert build["securityContext"]["readOnlyRootFilesystem"] is True
+    assert build["resources"]["limits"]["memory"] == "512Mi"
+    # Parity: the build stage's options are the runtime's own.
+    app = container(ss, "keycloak")
+    assert env_value(env_map(build), "KC_DB") == env_value(env_map(app), "KC_DB")
+    assert env_value(env_map(build), "KC_HEALTH_ENABLED") == env_value(env_map(app), "KC_HEALTH_ENABLED")
+    assert "--http-relative-path=/" in " ".join(app["command"])
+    # The runtime home is the emptyDir the stage fills; the root is read-only.
+    mounts = {m["name"]: m for m in app["volumeMounts"]}
+    assert mounts["kc-home"]["mountPath"] == "/opt/keycloak"
+    assert mounts["tmp"]["mountPath"] == "/tmp"  # noqa: S108  # a mountPath assertion, not a temp-file use
+    assert app["securityContext"]["readOnlyRootFilesystem"] is True
+    volumes = {v["name"]: v for v in spec["volumes"]}
+    assert "emptyDir" in volumes["kc-home"]
+    assert "emptyDir" in volumes["tmp"]
+    # The bundled-DB gate rides after the build stage.
+    assert [c["name"] for c in spec["initContainers"]] == ["kc-build", "wait-for-postgres"]
+
+
+@pytest.mark.covers(rules=["CHT-90", "CHT-91"])
+def test__puller_master_realm_join_falls_back_to_the_shared_key() -> None:
+    """global.realm=master restores the shared ingest key on the puller join (CHT-90/91)."""
+    docs = helm_render(
+        KC_CHART,
+        sets=("global.domain=atlas.test", "telemetry.enabled=true", "realm.name=master"),
+    )
+    app = container(find(docs, "Deployment", "atlas-keycloak-metrics-puller"), "metrics-puller")
+    envs = env_map(app)
+    assert envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
+        "name": "atlas-otel-clients",
+        "key": "OTEL_INGEST_CLIENT_SECRET",
+    }
+
+
+@pytest.mark.covers(rules=["CHT-43"])
+def test__puller_gates_on_telemetry_and_bundled_database() -> None:
+    """The puller gates on telemetry and the bundled database (CHT-43).
+
+    Default off; external flavour (no bundled Postgres to watch) renders no
+    puller even with telemetry on.
+    """
+    assert "atlas-keycloak-metrics-puller" not in names(helm_render(KC_CHART), "Deployment")
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "global.domain=atlas.test",
+            "telemetry.enabled=true",
+            "database.flavor=external",
+            "database.url=jdbc:postgresql://db.example:5432/keycloak?sslmode=verify-full&sslrootcert=/etc/aurelius-atlas/tls/ca.crt",
+        ),
+    )
+    assert "atlas-keycloak-metrics-puller" not in names(docs, "Deployment")
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__management_port_probes_and_tls_listener(kc_docs: list[dict[str, Any]]) -> None:
+    """HTTPS management probes, TLS browser listener, no dev truststore (CHT-16).
+
+    Prod mode puts TLS on the management interface too (DD-260), so the
+    probes' scheme is HTTPS — the plaintext probe the dev healthcheck uses
+    only worked on the compose's named relaxation (ADR 039).
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    c = container(ss, "keycloak")
+    for probe in ("startupProbe", "readinessProbe", "livenessProbe"):
+        assert c[probe]["httpGet"]["port"] == "management"
+        assert c[probe]["httpGet"]["path"] == "/health/ready"
+        assert c[probe]["httpGet"]["scheme"] == "HTTPS"
+    assert c["startupProbe"]["failureThreshold"] * c["startupProbe"]["periodSeconds"] >= 300
+    ports = {p["name"]: p["containerPort"] for p in c["ports"]}
+    assert ports == {"https": 8443, "management": 9000, "jgroups": 7800}
+    envs = env_map(c)
+    assert env_value(envs, "KC_HTTPS_CERTIFICATE_FILE") == "/etc/aurelius-atlas/tls/tls.crt"
+    assert env_value(envs, "KC_HTTP_ENABLED") == "false"
+    assert "trustStore" not in yaml.dump(ss)
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__certificate_covers_issuer_and_cluster_names() -> None:
+    """The Certificate SANs are the issuer host plus the in-cluster names."""
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.example",))
+    cert = find(docs, "Certificate", "atlas-keycloak")
+    sans = set(cert["spec"]["dnsNames"])
+    assert "keycloak.atlas.example" in sans
+    assert {"atlas-keycloak", "atlas-keycloak.atlas.svc.cluster.local", "atlas-keycloak-rss"} <= sans
+    assert cert["spec"]["secretName"] == "atlas-keycloak-tls"
+
+
+@pytest.mark.covers(rules=["CHT-17"])
+def test__postgres_certificate_covers_probe_and_jdbc_names(kc_docs: list[dict[str, Any]]) -> None:
+    """The database Certificate SANs are the JDBC names plus the probe's dial.
+
+    The pg_isready probes dial 127.0.0.1 under verify-full, so the loopback
+    address must be a SAN (DD-258 — the dev tls.json lists it for this).
+    """
+    cert = find(kc_docs, "Certificate", "atlas-keycloak-postgres")
+    sans = set(cert["spec"]["dnsNames"])
+    assert {"atlas-keycloak-postgres", "atlas-keycloak-postgres.atlas.svc.cluster.local"} <= sans
+    assert cert["spec"]["ipAddresses"] == ["127.0.0.1"]
+
+
+@pytest.mark.covers(rules=["CHT-16"])
+def test__bundled_flavor_waits_for_the_database(kc_docs: list[dict[str, Any]]) -> None:
+    """A wait-for-postgres init container ports the compose depends_on (DD-258)."""
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    inits = pod_spec(ss)["initContainers"]
+    assert "wait-for-postgres" in [c["name"] for c in inits]
+    gate = next(c for c in inits if c["name"] == "wait-for-postgres")
+    script = " ".join(gate["command"])
+    assert "/dev/tcp/atlas-keycloak-postgres/5432" in script
+
+
+@pytest.mark.covers(rules=["CHT-17"])
+def test__bundled_postgres_boot(kc_docs: list[dict[str, Any]]) -> None:
+    """The cert-copy boot, tmpfs /tmp, scram, and the shared Secret (CHT-17)."""
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak-postgres")
+    spec = pod_spec(ss)
+    c = container(ss, "postgres")
+    assert c["image"] == pinned_ref("dhi.io/postgres")  # CHT-93
+    boot = c["command"][2]
+    assert "mktemp -d" in boot
+    assert "install -m 600 /certs/tls.crt" in boot
+    assert "-c ssl=on" in boot
+    assert "-c hba_file=/conf/pg_hba.conf" in boot
+    volumes = {v["name"]: v for v in spec["volumes"]}
+    assert volumes["tmp"]["emptyDir"].get("medium") == "Memory"
+    assert "emptyDir" in volumes["run"]  # the unix-socket dir (DD-282 Tier 3)
+    assert volumes["certs"]["secret"]["secretName"] == "atlas-keycloak-postgres-tls"
+    assert volumes["conf"]["configMap"]["name"] == "atlas-keycloak-postgres"
+    assert container(ss, "postgres")["securityContext"]["readOnlyRootFilesystem"] is True
+    run_mount = next(m for m in container(ss, "postgres")["volumeMounts"] if m["name"] == "run")
+    assert run_mount["mountPath"] == "/run/postgresql"
+    envs = env_map(c)
+    assert env_value(envs, "POSTGRES_HOST_AUTH_METHOD") == "scram-sha-256"
+    assert envs["POSTGRES_USER"]["valueFrom"]["secretKeyRef"] == {"name": "atlas-keycloak-database", "key": "user"}
+    assert env_value(envs, "POSTGRES_DB") == "keycloak"
+    # The probes pin verify-full against the issuer CA.
+    for probe in ("startupProbe", "readinessProbe", "livenessProbe"):
+        script = " ".join(c[probe]["exec"]["command"])
+        assert "PGSSLMODE=verify-full" in script, probe
+        assert "pg_isready" in script, probe
+
+
+@pytest.mark.covers(rules=["CHT-17"])
+def test__pg_hba_and_jdbc_verify_full(kc_docs: list[dict[str, Any]]) -> None:
+    """The pg_hba is local-trust + hostssl-scram; the JDBC URL pins verify-full."""
+    cm = find(kc_docs, "ConfigMap", "atlas-keycloak-postgres")
+    hba = cm["data"]["pg_hba.conf"]
+    assert "local all all trust" in hba
+    assert "hostssl all all all scram-sha-256" in hba
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    jdbc = env_value(env_map(container(ss, "keycloak")), "KC_DB_URL")
+    assert jdbc.startswith("jdbc:postgresql://atlas-keycloak-postgres:5432/keycloak?")
+    assert "sslmode=verify-full" in jdbc
+    assert "sslrootcert=/etc/aurelius-atlas/tls/ca.crt" in jdbc
+
+
+@pytest.mark.covers(rules=["CHT-17"])
+def test__external_flavor_renders_no_postgres() -> None:
+    """flavor=external drops every Postgres resource and takes the URL (CHT-17).
+
+    The wait-for-postgres init is bundled-only too — an external database is
+    somebody else's availability contract (the kc-build stage is not: the
+    read-only root needs it for every flavour).
+    """
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "database.flavor=external",
+            "database.url=jdbc:postgresql://db.example:5432/keycloak?sslmode=verify-full&sslrootcert=/etc/aurelius-atlas/tls/ca.crt",
+        ),
+    )
+    ss = find(docs, "StatefulSet", "atlas-keycloak")
+    assert [c["name"] for c in pod_spec(ss)["initContainers"]] == ["kc-build"]
+    pg_names = {"atlas-keycloak-postgres", "atlas-keycloak-postgres-tls"}
+    assert not pg_names & names(docs, "StatefulSet")
+    assert not pg_names & names(docs, "Service")
+    assert not pg_names & names(docs, "Certificate")
+    ss = find(docs, "StatefulSet", "atlas-keycloak")
+    jdbc = env_value(env_map(container(ss, "keycloak")), "KC_DB_URL")
+    assert jdbc.startswith("jdbc:postgresql://db.example:5432/")
+
+    error = helm_render_fails(KC_CHART, sets=("database.flavor=external",))
+    assert "database.url" in error
+
+
+@pytest.mark.covers(rules=["CHT-18"])
+def test__pdbs_for_stateful_pair(kc_docs: list[dict[str, Any]]) -> None:
+    """Keycloak and its database each get a minAvailable-1 PDB (CHT-18)."""
+    for name in ("atlas-keycloak", "atlas-keycloak-postgres"):
+        pdb = find(kc_docs, "PodDisruptionBudget", name)
+        assert pdb["spec"]["minAvailable"] == 1
+
+
+@pytest.mark.covers(rules=["CHT-18"])
+def test__postgres_volume_claim_storage_class() -> None:
+    """The PG claim omits storageClassName at "" and carries it when set."""
+    bare = find(helm_render(KC_CHART), "StatefulSet", "atlas-keycloak-postgres")
+    assert "storageClassName" not in bare["spec"]["volumeClaimTemplates"][0]["spec"]
+    docs = helm_render(KC_CHART, sets=("global.storageClass=fast-ssd",))
+    ss = find(docs, "StatefulSet", "atlas-keycloak-postgres")
+    assert ss["spec"]["volumeClaimTemplates"][0]["spec"]["storageClassName"] == "fast-ssd"
+
+
+@pytest.mark.covers(rules=["CHT-62", "CHT-71"])
+def test__keycloak_admits_the_in_cluster_dialers(kc_docs: list[dict[str, Any]]) -> None:
+    """8443 accepts every credential-holder; 7800 only Keycloak; never 9000 (CHT-62/71).
+
+    The dialer set is the full one — the four apps, the collector (JWKS and
+    issuer-wait, DD-265's split-horizon), and the ES puller (its mint URL) —
+    not a per-flag negotiation the chart cannot see. The management port
+    appears in no rule; kubelet probes ride the node.
+    """
+    policy = find(kc_docs, "NetworkPolicy", "atlas-keycloak-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak")
+    assert policy_peers_by_port(kc_docs, "atlas-keycloak-ingress") == {
+        8443: {
+            "atlas-server",
+            "atlas-data2model",
+            "atlas-lineage-model",
+            "atlas-validate-entity",
+            "atlas-observability",
+            "atlas-elasticsearch-metrics-puller",
+        },
+        7800: {"atlas-keycloak"},
+    }
+    collector = [
+        e["podSelector"]["matchLabels"]
+        for r in policy["spec"]["ingress"]
+        for e in r["from"]
+        if e["podSelector"]["matchLabels"]["app.kubernetes.io/name"] == "atlas-observability"
+    ]
+    # CHT-86: Grafana's generic_oauth login (token exchange + JWKS) dials too.
+    assert sorted(c.get("app.kubernetes.io/component") or "" for c in collector) == ["grafana", "observability"]
+    ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
+    assert ports == {8443, 7800}  # CHT-71: no management 9000
+
+
+@pytest.mark.covers(rules=["CHT-62", "CHT-63"])
+def test__telemetry_adds_the_keycloak_puller_to_both_policies() -> None:
+    """The chart's own puller (telemetry-gated) dials Keycloak and Postgres."""
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    dialers = policy_peers_by_port(docs, "atlas-keycloak-ingress")
+    assert dialers[8443] == {
+        "atlas-server",
+        "atlas-data2model",
+        "atlas-lineage-model",
+        "atlas-validate-entity",
+        "atlas-observability",
+        "atlas-elasticsearch-metrics-puller",
+        "atlas-keycloak-metrics-puller",
+    }
+    assert dialers[7800] == {"atlas-keycloak"}
+    assert policy_peers_by_port(docs, "atlas-keycloak-postgres-ingress") == {
+        5432: {"atlas-keycloak", "atlas-keycloak-metrics-puller"}
+    }
+
+
+@pytest.mark.covers(rules=["CHT-63"])
+def test__bundled_postgres_admits_only_keycloak(kc_docs: list[dict[str, Any]]) -> None:
+    """5432 accepts the Keycloak pods only (CHT-63, bare render)."""
+    policy = find(kc_docs, "NetworkPolicy", "atlas-keycloak-postgres-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak-postgres")
+    assert policy_peers_by_port(kc_docs, "atlas-keycloak-postgres-ingress") == {5432: {"atlas-keycloak"}}
+    ports = {p["port"] for r in policy["spec"]["ingress"] for p in r["ports"]}
+    assert ports == {5432}
+
+
+@pytest.mark.covers(rules=["CHT-63"])
+def test__external_database_renders_no_postgres_policy() -> None:
+    """An external database moves the target off-cluster — no policy here (CHT-63)."""
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "global.domain=atlas.test",
+            "database.flavor=external",
+            "database.url=jdbc:postgresql://db.example:5432/keycloak?sslmode=verify-full&sslrootcert=/etc/aurelius-atlas/tls/ca.crt",
+        ),
+    )
+    assert names(docs, "NetworkPolicy") == {"atlas-keycloak-ingress"}
+
+
+@pytest.mark.covers(rules=["CHT-70"])
+def test__puller_peers_follow_the_release_prefix() -> None:
+    """fullname-derived peers carry the release-qualified pod name (CHT-70)."""
+    docs = helm_render(KC_CHART, release="foo", sets=("global.domain=atlas.test", "telemetry.enabled=true"))
+    peers = [
+        e["podSelector"]["matchLabels"]
+        for r in find(docs, "NetworkPolicy", "foo-atlas-keycloak-ingress")["spec"]["ingress"]
+        if r["ports"][0]["port"] == 8443
+        for e in r["from"]
+    ]
+    assert peer_labels("foo-atlas-keycloak-metrics-puller", instance="foo") in peers
+    assert peer_labels("atlas-server", instance="foo") in peers
+    pg_peers = [
+        e["podSelector"]["matchLabels"]
+        for r in find(docs, "NetworkPolicy", "foo-atlas-keycloak-postgres-ingress")["spec"]["ingress"]
+        for e in r["from"]
+    ]
+    assert peer_labels("foo-atlas-keycloak-metrics-puller", instance="foo") in pg_peers
+    assert peer_labels("atlas-keycloak", instance="foo") in pg_peers
+
+
+@pytest.mark.covers(rules=["CHT-62", "CHT-72"])
+def test__keycloak_network_policy_off_changes_nothing_else() -> None:
+    """The disable switch removes both policies and nothing else (CHT-72)."""
+    on = helm_render(KC_CHART)
+    off = helm_render(KC_CHART, sets=("networkPolicy.enabled=false",))
+    assert names(on, "NetworkPolicy") == {"atlas-keycloak-ingress", "atlas-keycloak-postgres-ingress"}
+    assert names(off, "NetworkPolicy") == set()
+
+    def rest(docs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
+
+    assert rest(on) == rest(off)
+
+
+# --------------------------------------------------------------------------
+# 10.7 — the production identity realm (CHT-74..80).
+
+
+def _rendered_asset(docs: list[dict[str, Any]], realm: str = "aurelius-atlas") -> dict[str, Any]:
+    """The imported realm asset, parsed out of the rendered ConfigMap."""
+    cm = find(docs, "ConfigMap", "atlas-keycloak-realm")
+    return json.loads(cm["data"][f"{realm}.json"])
+
+
+def _dev_asset() -> dict[str, Any]:
+    return json.loads((KC_CHART / "files/master.json").read_text())
+
+
+@pytest.mark.covers(rules=["CHT-74"])
+def test__stock_import_selects_the_production_realm(kc_docs: list[dict[str, Any]]) -> None:
+    """The chart's default realm is aurelius-atlas, asset and stamp alike.
+
+    CHT-74: files/<global.realm>.json is what Keycloak imports, and the file
+    stamps realm/id = that name — a renamed global.realm selects the peer
+    asset in the same render.
+    """
+    asset = _rendered_asset(kc_docs)
+    assert asset["realm"] == "aurelius-atlas"
+
+    docs = helm_render(KC_CHART, sets=("global.realm=master",))
+    assert find(docs, "ConfigMap", "atlas-keycloak-realm")["data"].keys() == {"master.json"}
+
+    # realm.name overrides global.realm (the chart-level pin wins).
+    docs = helm_render(KC_CHART, sets=("global.realm=master", "realm.name=aurelius-atlas"))
+    assert find(docs, "ConfigMap", "atlas-keycloak-realm")["data"].keys() == {"aurelius-atlas.json"}
+
+
+@pytest.mark.covers(rules=["CHT-78"])
+def test__unknown_realm_fails_the_render() -> None:
+    """A realm with no shipped asset is a render error, never a silent no-import."""
+    error = helm_render_fails(KC_CHART, sets=("realm.name=does-not-exist",))
+    assert "not a shipped realm asset" in error
+
+
+@pytest.mark.covers(rules=["CHT-75", "CHT-110"])
+def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str, Any]]) -> None:
+    """Minimal authoring: the app's clients/roles/scope, no Keycloak built-ins.
+
+    CHT-75: Keycloak recreates its own per-realm defaults when the realm is
+    imported, so the asset never carries them (and never master's admin
+    composites); no end-users are seeded — the hardened realm is empty of
+    people, an operator provisions them.
+    """
+    asset = _rendered_asset(kc_docs)
+    client_ids = {c["clientId"] for c in asset["clients"]}
+    otel = {
+        "otel-atlas-server",
+        "otel-data2model",
+        "otel-elasticsearch",
+        "otel-keycloak",
+        "otel-lineage-model",
+        "otel-postgres",
+        "otel-validate-entity",
+    }
+    assert (
+        client_ids == {"aurelius", "aurelius-atlas-server", "grafana"} | otel
+    )  # grafana: CHT-81; server client: CHT-110, both realms
+    assert (
+        not {
+            "account",
+            "account-console",
+            "admin-cli",
+            "broker",
+            "security-admin-console",
+            "realm-management",
+            "master-realm",
+        }
+        & client_ids
+    )
+    assert not asset.get("users")
+    assert "defaultRole" not in asset
+    assert not asset.get("realmRoles")
+    assert [s["name"] for s in asset["clientScopes"]] == ["otel-ingest"]
+    assert not asset.get("components")
+    assert not asset.get("authenticationFlows")
+    roles = asset["roles"]["client"]
+    assert {r["name"] for r in roles["aurelius"]} == {"aurelius-write"}
+    assert {r["name"] for r in roles["grafana"]} == {"admin", "editor"}  # CHT-81
+    assert set(roles) == {"aurelius", "grafana"}
+
+
+@pytest.mark.covers(rules=["CHT-76", "CHT-110"])
+def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
+    """The pentest H3 list, read off the imported asset.
+
+    Realm flags: TLS everywhere, brute force on, self-service off, a real
+    password policy, events on. The aurelius browser client stays public +
+    standard-flow, loses ROPC, gains PKCE S256, and pins its post-logout
+    URIs; the otel-* accounts stay confidential service accounts with one
+    per-client placeholder secret each (CHT-87, DD-277 — never a rendered
+    secret).
+    """
+    asset = _rendered_asset(kc_docs)
+    assert asset["sslRequired"] == "all"
+    assert asset["bruteForceProtected"] is True
+    assert asset["failureFactor"] <= 30
+    assert asset["registrationAllowed"] is False
+    assert asset["resetPasswordAllowed"] is False
+    assert asset["rememberMe"] is False
+    assert "length(" in asset["passwordPolicy"]
+    assert "complexity(" in asset["passwordPolicy"]
+    assert asset["eventsEnabled"] is True
+    assert asset["adminEventsEnabled"] is True
+
+    (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
+    assert aur["publicClient"] is True
+    assert aur["standardFlowEnabled"] is True
+    assert aur["directAccessGrantsEnabled"] is False
+    assert aur["bearerOnly"] is False
+    assert aur["serviceAccountsEnabled"] is False
+    assert aur["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert aur["attributes"]["post.logout.redirect.uris"] != "*"  # dev's pin, replaced by hosts
+
+    # CHT-110 (10.12): the server client is the confidential RP of its own
+    # API — auth-code + PKCE, no ROPC, no service account, placeholder secret.
+    (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
+    assert srv["publicClient"] is False
+    assert srv["standardFlowEnabled"] is True
+    assert srv["directAccessGrantsEnabled"] is False
+    assert srv["bearerOnly"] is False
+    assert srv["serviceAccountsEnabled"] is False
+    assert srv["clientAuthenticatorType"] == "client-secret"
+    assert srv["secret"] == "${ATLAS_SERVER_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
+    assert srv["attributes"]["pkce.code.challenge.method"] == "S256"
+
+    for client in asset["clients"]:
+        if not client["clientId"].startswith("otel-"):
+            continue
+        assert client["publicClient"] is False
+        assert client["serviceAccountsEnabled"] is True
+        assert client["standardFlowEnabled"] is False
+        # CHT-87: one placeholder per client, derived from the client id.
+        env = client["clientId"].upper().replace("-", "_")
+        assert client["secret"] == f"${{{env}_CLIENT_SECRET}}"  # the placeholder rule, never a secret
+
+
+@pytest.mark.covers(rules=["CHT-77", "CHT-110"])
+def test__browser_origins_carry_the_deployed_hosts() -> None:
+    """Host tokens substitute to real hosts; localhost never reaches a cluster.
+
+    CHT-77: values hosts win, else <name>.<domain>; the bare render falls
+    back to <release>.localhost so lint/template succeed. Credential
+    placeholders survive substitution verbatim (DD-256's rule).
+    """
+    docs = helm_render(KC_CHART, sets=("global.domain=atlas.example",))
+    asset = _rendered_asset(docs)
+    (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
+    assert aur["redirectUris"] == ["https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"]
+    assert aur["webOrigins"] == ["https://atlas.atlas.example", "https://dashboard.atlas.example"]
+    post_logout = aur["attributes"]["post.logout.redirect.uris"].splitlines()
+    assert set(post_logout) == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
+    # CHT-110 (10.12): the server client's AUT-05 return leg lands on its own
+    # login.jsp — the browser hosts, per-host.
+    (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
+    assert srv["redirectUris"] == ["https://atlas.atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
+    srv_post_logout = set(srv["attributes"]["post.logout.redirect.uris"].splitlines())
+    assert srv_post_logout == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
+
+    docs = helm_render(
+        KC_CHART,
+        sets=(
+            "global.domain=atlas.example",
+            "global.hosts.atlas.host=docs.example",
+            "global.hosts.dashboard.host=dash.example",
+        ),
+    )
+    text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+    assert "https://docs.example/*" in text
+    assert "https://dash.example" in text
+    assert "atlas.atlas.example" not in text
+
+    # No cluster render of the prod asset carries a localhost browser origin
+    # or a + — the aurelius client's, checked per-client since the grafana
+    # client deliberately registers a localhost redirect (CHT-82, DD-276).
+    for rendered in (
+        docs,
+        helm_render(KC_CHART, sets=("global.domain=atlas.example",)),
+    ):
+        text = find(rendered, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+        (a,) = [c for c in json.loads(text)["clients"] if c["clientId"] == "aurelius"]
+        uris = a["redirectUris"] + a["webOrigins"] + a["attributes"]["post.logout.redirect.uris"].splitlines()
+        assert not [u for u in uris if "localhost" in u or "127.0.0.1" in u or u == "+"], uris
+        assert "127.0.0.1" not in text
+        assert '"+"' not in text
+    # CHT-87: every per-client placeholder survives substitution verbatim.
+    for client in OTEL_CLIENT_IDS:
+        env = client.upper().replace("-", "_")
+        assert f"${{{env}_CLIENT_SECRET}}" in text  # the placeholder, never a secret
+    assert "${OTEL_INGEST_CLIENT_SECRET}" not in text  # the shared spelling is gone
+
+
+@pytest.mark.covers(rules=["CHT-81", "CHT-82"])
+def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
+    """The grafana relying-party client: confidential, placeholder secret, host + localhost redirects.
+
+    CHT-81: the one client the dev asset lacks — publicClient off,
+    standard flow on, ROPC/device/CIBA off, ${GRAFANA_CLIENT_SECRET} as its
+    secret, PKCE S256, and the editor/admin client roles. CHT-82: its
+    redirects are the substituted grafana host plus the deliberate
+    localhost port-forward entry.
+    """
+    prod_text = (KC_CHART / "files/aurelius-atlas.json").read_text()
+    assert "${GRAFANA_CLIENT_SECRET}" in prod_text  # the placeholder, never a secret
+    assert "grafana" not in (KC_CHART / "files/master.json").read_text()
+    assert "grafana" not in (WORKSPACE / "dev/keycloak/import/master.json").read_text()
+
+    asset = _rendered_asset(helm_render(KC_CHART, sets=("global.domain=atlas.example",)))
+    (g,) = [c for c in asset["clients"] if c["clientId"] == "grafana"]
+    assert g["publicClient"] is False
+    assert g["standardFlowEnabled"] is True
+    assert g["implicitFlowEnabled"] is False
+    assert g["directAccessGrantsEnabled"] is False
+    assert g["serviceAccountsEnabled"] is False
+    assert g["clientAuthenticatorType"] == "client-secret"
+    assert g["secret"] == "${GRAFANA_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
+    assert g["attributes"]["pkce.code.challenge.method"] == "S256"
+    assert g["redirectUris"] == [
+        "https://grafana.atlas.example/login/generic_oauth",
+        "http://localhost:3000/login/generic_oauth",
+    ]
+    assert g["webOrigins"] == ["https://grafana.atlas.example"]
+
+    roles = {r["name"]: r for r in asset["roles"]["client"]["grafana"]}
+    assert set(roles) == {"admin", "editor"}
+    for role in roles.values():
+        assert role["clientRole"] is True
+        assert role["containerId"] == g["id"]
+
+
+@pytest.mark.covers(rules=["CHT-82"])
+def test__grafana_host_token_follows_the_host_rule() -> None:
+    """__GRAFANA_HOST__ substitutes like the browser hosts (CHT-82).
+
+    Values override wins, else grafana.<domain>; the bare render falls back
+    to <release>.localhost so lint/template succeed.
+    """
+    docs = helm_render(
+        KC_CHART,
+        sets=("global.domain=atlas.example", "global.hosts.grafana.host=metrics.example"),
+    )
+    text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+    assert "https://metrics.example/login/generic_oauth" in text
+    assert "grafana.atlas.example" not in text
+
+    bare = helm_render(KC_CHART, release="foo")
+    text = find(bare, "ConfigMap", "foo-atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
+    assert "https://foo.localhost/login/generic_oauth" in text
+
+
+@pytest.mark.covers(rules=["CHT-79", "CHT-110"])
+def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
+    """The two-realm drift guard (CHT-79): application peers must match.
+
+    Structural, not byte — the prod asset is minimally authored (DD-273):
+    the otel-* clients and the otel-ingest scope equal their dev peers
+    exactly (modulo ids), and the aurelius client differs only in the
+    hardening fields. An identity change in the dev realm that is neither
+    mirrored here nor named in its commit fails this test. CHT-81's grafana
+    client is the one named exception: prod-only (the dev compose Grafana
+    stays anonymous, DV-113), so the prod set is the dev set plus it.
+    CHT-87 (DD-277) amends the rule once more: the otel peers equal minus
+    id *and* secret — the prod secret is deliberately the per-client
+    placeholder where dev shares one, and the delta itself is pinned.
+    """
+    prod = json.loads((KC_CHART / "files/aurelius-atlas.json").read_text())
+    dev = _dev_asset()
+    dev_by_id = {c["clientId"]: c for c in dev["clients"]}
+    prod_by_id = {c["clientId"]: c for c in prod["clients"]}
+
+    assert set(prod_by_id) - {"aurelius", "aurelius-atlas-server", "grafana"} == {
+        c for c in dev_by_id if c.startswith("otel-")
+    }
+    assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
+    for name in set(prod_by_id) - {"aurelius", "aurelius-atlas-server", "grafana"}:
+        prod_client, dev_client = prod_by_id[name], dev_by_id[name]
+        # CHT-87: the secret is the one allowed delta, spelled per client.
+        env = name.upper().replace("-", "_")
+        assert prod_client["secret"] == f"${{{env}_CLIENT_SECRET}}"
+        assert dev_client["secret"] == "${OTEL_INGEST_CLIENT_SECRET}"  # noqa: S105
+        assert {k: v for k, v in prod_client.items() if k != "secret"} == {
+            k: v for k, v in dev_client.items() if k != "secret"
+        }, name
+
+    def strip_ids(obj: dict[str, Any]) -> dict[str, Any]:
+        out = {k: v for k, v in obj.items() if k != "id"}
+        if "protocolMappers" in out:
+            out["protocolMappers"] = [{k: v for k, v in pm.items() if k != "id"} for pm in out["protocolMappers"]]
+        return out
+
+    dev_scope = next(s for s in dev["clientScopes"] if s["name"] == "otel-ingest")
+    (prod_scope,) = prod["clientScopes"]
+    assert strip_ids(prod_scope) == strip_ids(dev_scope)
+
+    dev_aur, prod_aur = dev_by_id["aurelius"], prod_by_id["aurelius"]
+    assert set(dev_aur) == set(prod_aur)
+    hardened = {"id", "directAccessGrantsEnabled", "attributes", "redirectUris", "webOrigins"}
+    changed = {k for k in dev_aur if dev_aur[k] != prod_aur[k]}
+    assert changed <= hardened, changed
+    # CHT-110 (10.12): the server client carries the same drift rule — the
+    # localhost pins become host tokens, its secret placeholder is the one
+    # spelling both assets share (6.1a/DD-250's client, unchanged otherwise).
+    dev_srv, prod_srv = dev_by_id["aurelius-atlas-server"], prod_by_id["aurelius-atlas-server"]
+    assert set(dev_srv) == set(prod_srv)
+    assert dev_srv["secret"] == prod_srv["secret"] == "${ATLAS_SERVER_CLIENT_SECRET}"  # noqa: S105
+    srv_changed = {k for k in dev_srv if dev_srv[k] != prod_srv[k]}
+    assert srv_changed <= {"attributes", "redirectUris"}, srv_changed
+    # The aurelius-write role is dev's, re-pointed at the prod client id.
+    dev_role = next(r for r in dev["roles"]["client"]["aurelius"] if r["name"] == "aurelius-write")
+    (prod_role,) = prod["roles"]["client"]["aurelius"]
+    (prod_client,) = [c for c in prod["clients"] if c["clientId"] == "aurelius"]
+    assert strip_ids(prod_role) == {**strip_ids(dev_role), "containerId": prod_client["id"]}
+
+
+@pytest.mark.covers(rules=["CHT-80", "CHT-87"])
+def test__demo_user_placeholders_are_master_only() -> None:
+    """The prod asset carries only the otel placeholders (no user secrets).
+
+    CHT-87 (DD-277) amended the otel side: seven per-client placeholders
+    replace the single shared one; master's asset keeps the shared spelling.
+    """
+    prod_text = (KC_CHART / "files/aurelius-atlas.json").read_text()
+    for client in OTEL_CLIENT_IDS:
+        env = client.upper().replace("-", "_")
+        assert f"${{{env}_CLIENT_SECRET}}" in prod_text  # placeholders, never secrets
+    assert "${OTEL_INGEST_CLIENT_SECRET}" not in prod_text  # the shared spelling is prod-free now
+    assert "${DEV_USER_WRITER_PASSWORD}" not in prod_text
+    assert "${DEV_USER_READER_PASSWORD}" not in prod_text
+    master_text = (KC_CHART / "files/master.json").read_text()
+    assert "${DEV_USER_WRITER_PASSWORD}" in master_text
+    assert "${OTEL_INGEST_CLIENT_SECRET}" in master_text  # master's asset shares one
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__digest_wins_over_tag_at_keycloak_and_postgres() -> None:
+    """image.digest / postgres.image.digest render <repo>@<digest> (CHT-92).
+
+    The digest always wins whatever produced the tag; the repository stays
+    dhi.io. Third-party digests are committed (CHT-93), so this exercises the
+    override path an operator uses to pin a hand-picked patch level.
+    """
+    docs = helm_render(
+        KC_CHART,
+        sets=(f"image.digest=sha256:{1:064d}", f"postgres.image.digest=sha256:{2:064d}"),
+    )
+    ss = find(docs, "StatefulSet", "atlas-keycloak")
+    assert container(ss, "keycloak")["image"] == "dhi.io/keycloak@sha256:" + "0" * 63 + "1"
+    pg = find(docs, "StatefulSet", "atlas-keycloak-postgres")
+    assert container(pg, "postgres")["image"] == "dhi.io/postgres@sha256:" + "0" * 63 + "2"

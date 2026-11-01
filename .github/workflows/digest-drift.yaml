@@ -1,0 +1,82 @@
+name: Chart digest drift
+
+on:
+    schedule:
+        # Mondays 06:00 — after Dependabot's weekly bumps have landed, so a
+        # tag bump whose digest was not refreshed is caught in the same week
+        # (CHT-96, DD-278).
+        - cron: "0 6 * * 1"
+    workflow_dispatch:
+        inputs:
+            mode:
+                description: "check fails on drift; refresh opens a fix PR"
+                type: choice
+                default: check
+                options:
+                    - check
+                    - refresh
+
+permissions:
+    contents: read
+
+jobs:
+    digest-drift:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  python: "true"
+                  # dhi.io and ghcr.io logins: the resolver reads manifests
+                  # from both (imagetools inspect is an authenticated pull).
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Check chart image digests
+              if: github.event.inputs.mode != 'refresh'
+              run: uv run python tools/images/chart_digests.py --check
+
+    # The PR-opening path exists only for a manual dispatch, and it is the
+    # only job in the workflow that holds write access — the scheduled check
+    # job above never can push.
+    refresh:
+        if: github.event.inputs.mode == 'refresh'
+        runs-on: ubuntu-latest
+
+        permissions:
+            contents: write
+            pull-requests: write
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v6
+
+            - name: Setup toolchain
+              uses: ./.github/actions/setup-toolchain
+              with:
+                  python: "true"
+                  dockerhub-username: ${{ secrets.DOCKERHUB_USER }}
+                  dockerhub-token: ${{ secrets.DOCKERHUB_PASSWORD }}
+                  github-token: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Refresh digests and open a PR
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  uv run python tools/images/chart_digests.py --fix
+                  if git diff --quiet; then
+                      echo "no drift to refresh"
+                      exit 0
+                  fi
+                  BRANCH="chore/chart-digest-refresh-$(date -u +%Y%m%d)"
+                  git checkout -b "$BRANCH"
+                  git config user.email "info@aureliusenterprise.com"
+                  git config user.name "Aurelius Enterprise"
+                  git commit -am "chore(charts): refresh pinned image digests"
+                  git push -u origin "$BRANCH"
+                  gh pr create --fill --title "chore(charts): refresh pinned image digests" --body "Opened by the chart digest drift workflow (\`workflow_dispatch mode=refresh\`, CHT-96). Reviewers: these are the registry's current manifests for the chart-pinned tags — merge like any dependency bump."

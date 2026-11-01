@@ -71,3 +71,32 @@ jobs:
               env:
                   VERSION: ${{ github.ref_name }}
                   IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/aurelius-atlas/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"
+
+            # Charts publish after images (CHT-05, ADR 057): the release's
+            # OCI chart set lands in the same registry namespace as the
+            # images it deploys. Chart versions carry the release semver
+            # WITHOUT the leading v (helm's constraint; DD-288), and the
+            # umbrella's helm-publish cascades to the component charts it
+            # embeds, so one target publishes the tested combination
+            # (CHT-07). Aurelius images stay tag-referenced in the charts
+            # (CHT-94): what the release published is attested by the chart
+            # signature below, and a chart digest bake would only pin the
+            # release to itself.
+            - name: Publish charts
+              run: npx nx run-many -t helm-publish -- --version "${VERSION#v}"
+              env:
+                  VERSION: ${{ github.ref_name }}
+
+            # The chart artifacts ride the same keyless identity as the
+            # images (CHT-95): the publish workflow's OIDC identity, verified
+            # against the same pinned identity/issuer regexps.
+            - name: Sign charts
+              run: npx nx run-many -t helm-sign -- --version "${VERSION#v}"
+              env:
+                  VERSION: ${{ github.ref_name }}
+
+            - name: Verify chart signatures
+              run: npx nx run-many -t helm-verify -- --version "${VERSION#v}" --identity "$IDENTITY" --issuer "^https://token\.actions\.githubusercontent\.com$"
+              env:
+                  VERSION: ${{ github.ref_name }}
+                  IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/aurelius-atlas/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"

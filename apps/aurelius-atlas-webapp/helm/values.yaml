@@ -1,0 +1,222 @@
+# The webapp chart — its runtime contract (CHT-02).
+# apps/aurelius-atlas-webapp ships an nginx whose shipped config is a TEMPLATE:
+# the deployment resolves it and mounts the result over
+# /etc/nginx/conf.d/default.conf, and serves /config.json for bootstrap
+# (SHL-02: the prod build bundles neither). This chart owns both ConfigMaps;
+# 10.3 renders them. The reference resolution is the e2e stack's
+# apps/aurelius-atlas-webapp/e2e/config/nginx.conf.
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    # The umbrella's dnsResolver: nginx's per-request upstream resolution
+    # (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER).
+    dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm config.json's keycloak.realm
+    # carries. "" takes the chart default (aurelius-atlas).
+    realm: ""
+    trust:
+        # The issuer whose root this nginx trusts as a TLS client (DD-259).
+        # caSecretName "" defaults to "<issuerRef.name>-ca", the umbrella's
+        # trust-root Secret (the webapp mounts the CA only — it presents
+        # nothing, CHT-25).
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+        caSecretName: ""
+
+enabled: true
+component: webapp
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 2
+port: 8080
+
+image:
+    name: aurelius-atlas-webapp
+    tag: ""
+    # Operator override (CHT-92): a set digest always wins over the tag;
+    # the release's own bytes are attested by the chart signature (CHT-94).
+    digest: ""
+
+resources:
+    requests:
+        cpu: 50m
+        memory: 64Mi
+    limits:
+        memory: 256Mi
+
+# The resolve-nginx-config init (a sed over one template file, KSV-0011/
+# 0015/0016/0018): memory-capped, no CPU limit (the house posture, DD-282
+# follow-up).
+initResources:
+    requests:
+        cpu: 10m
+        memory: 32Mi
+    limits:
+        memory: 64Mi
+
+# nginx's resolver (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER). "" takes the chart
+# default 10.96.0.10 (the ClusterIP default); the runbook reads the live
+# cluster value: kubectl -n kube-system get svc kube-dns -o jsonpath.
+dnsResolver: ""
+
+# The upstreams the nginx template names (placeholders _API_UPSTREAM,
+# _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME). "" defaults in
+# 10.3: server/collector service DNS in this namespace. _NAME is the
+# proxy_ssl_name — it must match the upstream certificate's SAN (DD-286).
+nginx:
+    apiUpstream: ""
+    apiUpstreamName: ""
+    otelUpstream: ""
+    otelUpstreamName: ""
+    # Override for the edge exporter's endpoint — the template's
+    # _OTLP_ENDPOINT, nginx's own edge-span leg (DD-239). "" derives
+    # https://<collector>:<collector.legacyGrpcPort> (CHT-25). The SPA's
+    # endpoint is a different leg: config.otelExporterUrl.
+    otlpEndpoint: ""
+    # CSP connect-src/frame-src additions — the Keycloak origins (the template's
+    # ${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}); "" derives from the issuer URL.
+    keycloakOrigins: ""
+    # The proxy hop(s) whose X-Forwarded-For nginx trusts (DD-261): the
+    # Gateway's network(s), CIDR list — the in-cluster edge is two hops
+    # (Gateway → nginx → server), and the browser's address only survives
+    # the first when the second hop resolves the header. [] trusts no hop
+    # (stock render: every client shares the Gateway's address for the
+    # limiter); the environment overlays name their clusters (minikube:
+    # ["10.244.0.0/16"]). Rendered into the template's realip block, which
+    # the init container substitutes as a contiguous nginx-directive string.
+    trustedProxyCIDRs: []
+    # HSTS (CHT-99): the listener is TLS-only (DD-270), so the header's one
+    # job is the hop in front of it. The chart renders the whole add_header
+    # into the template's placeholder; false (or the compose/e2e shape)
+    # substitutes nothing — test posture, the server's dev HSTS_ENABLED=false
+    # twin. maxAge is the one-year browser default the server stamps too.
+    hsts:
+        enabled: true
+        maxAge: 31536000
+
+# /config.json (SHL-02): served at bootstrap, shape in src/app/config.ts.
+# "" values derive in 10.3: keycloak.url from the umbrella's issuer URL,
+# appVersion from the release tag.
+config:
+    apiBaseUrl: /api
+    appName: "Aurelius Atlas Data Governance"
+    appCopyright: 2026
+    appVersion: ""
+    keycloak:
+        clientId: aurelius
+        url: ""
+    otelExporterUrl: /otel/v1/traces
+    otelMetricsExporterUrl: /otel/v1/metrics
+
+probes:
+    # HTTPS: the container serves 8080 with TLS (DD-270); the Gateway dials it
+    # over TLS too (BackendTLSPolicy). The liveness probe answers when nginx
+    # is up; kubelet skips cert verification on HTTPS probes.
+    livenessPath: /
+    readinessPath: /config.json
+    initialDelaySeconds: 5
+    periodSeconds: 30
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# The upstreams this nginx dials (CHT-25): "" derives each chart's Service
+# name in this release (the CHT-13 name rule), set it to point elsewhere.
+# The collector's workload is 10.3b — the join renders now and may point at
+# nothing until then; nginx resolves upstream names per request, by design
+# (the template's resolver comment: a missing backend answers 502, the SPA
+# still boots).
+server:
+    service: ""
+    port: 21000
+collector:
+    service: ""
+    # The browser leg (OTLP/HTTP + OIDC) — the /otel/ proxy's upstream
+    # (DD-193: the SPA pushes with its Keycloak JWT).
+    browserPort: 4318
+    # The legacy leg (gRPC + static bearer) — nginx's own edge-span export
+    # (DD-239; the token from <release>-collector-legacy).
+    legacyGrpcPort: 4320
+
+tls:
+    # The CA the nginx proxy verifies the API/collector upstreams against
+    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}). "" derives the
+    # umbrella's <issuerRef.name>-ca (DD-259); secretName brings your own
+    # trust root. The dead caConfigMap value of the skeleton is retired
+    # (DD-294's finding — nothing ever mounted it).
+    secretName: ""
+    caPath: /etc/aurelius-atlas/tls/ca.crt
+    # The leaf this nginx serves its TLS listener with (DD-270): the
+    # Gateway's BackendTLSPolicy validates it with the Service name as SNI.
+    # certSecretName brings your own (tls.crt/tls.key keys) and the chart's
+    # Certificate renders nothing; "" uses the chart-issued one.
+    certSecretName: ""
+    certPath: /etc/aurelius-atlas/tls/leaf/tls.crt
+    keyPath: /etc/aurelius-atlas/tls/leaf/tls.key
+
+# The webapp's listener certificate (DD-270, CHT-22's SAN rule): cert-manager
+# issues it from the umbrella's CA issuer; the SANs are the Service names the
+# Gateway's BackendTLSPolicy dials (and a browser never reaches this name —
+# the edge leaf covers the browser hosts, CHT-29).
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
+
+service:
+    type: ClusterIP
+    port: 8080
+
+serviceAccount:
+    create: true
+    name: ""
+
+# The legacy-leg ingest token (DD-239): the nginx otel module's export
+# credential. Browser-reachable by design (DD-287) — a public ingest
+# constant, not a secret to protect. From <release>-collector-legacy.
+otelIngestToken:
+    # "" derives <release>-collector-legacy (the umbrella generates it,
+    # CHT-31).
+    secret: ""
+    key: token
+
+configMapRefs: []
+extraEnv: []
+extraVolumes: []
+extraVolumeMounts: []
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+# The image's declared user (DD-257): dhi.io/nginx runs as `nginx`
+# (uid/gid 65532, verified from the image) with no privilege drop. The root
+# filesystem is read-only; nginx's writable paths (pid in /run/nginx, temp
+# dirs under /var/lib/nginx/tmp — its compiled-in defaults) ride emptyDirs,
+# and fsGroup makes those group-writable for the image user (CHT-23).
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+required: []

@@ -1,0 +1,21 @@
+{{/*
+Tempo's ConfigMap (CHT-39): a byte-copy of dev/observability/config/tempo.yaml
+(DD-256). Environment-free: the OTLP receivers (gRPC :4317, HTTP :4318) and
+the HTTP/API :3200 bind inside the pod, storage under /var/tempo (the PVC's
+mount). The cluster-internal Service exposes the two the collector and
+Grafana dial (4318, 3200); :4317 stays unused in-cluster (CHT-36: only the
+collector's receivers are ingest).
+*/}}
+{{- if .Values.tempo.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-tempo
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    config.yaml: |
+        {{- .Files.Get "files/tempo.yaml" | nindent 8 }}
+{{- end }}

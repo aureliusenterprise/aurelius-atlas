@@ -1,0 +1,160 @@
+{{/*
+The Deployment. TLS is a cert/key pair (the apps accept both-set or
+both-unset, the settings module enforces it); the chart mounts the pair when
+tls.enabled, and the probes' scheme follows it. The Secret is the chart's own
+Certificate's output, which carries ca.crt beside the pair — the CA files the
+AUTH_CA_FILE/OTEL_CA_FILE settings name live in this same mount (CHT-27,
+DD-294). The two required upstream URLs (ATLAS_BASE_URL, DATA2MODEL_URL)
+render as joins to the co-deployed siblings (CHT-28: settings.py requires
+both, no defaults — the hand check boots this pod with no out-of-band
+values).
+*/}}
+{{- $fullname := include "atlas-lineage-model.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-lineage-model.labels" . | nindent 8 }}
+spec:
+    replicas: {{ int .Values.replicaCount }}
+    selector:
+        matchLabels:
+            {{- include "atlas-lineage-model.selectorLabels" . | nindent 12 }}
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-lineage-model.labels" . | nindent 16 }}
+                {{- with .Values.podLabels }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
+            {{- with .Values.podAnnotations }}
+            annotations:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+        spec:
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: {{ .Values.component }}
+                    image: {{ include "atlas-lineage-model.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    ports:
+                        - name: https
+                          containerPort: {{ int .Values.port }}
+                          protocol: TCP
+                    env:
+                        - name: {{ .Values.componentEnvPrefix }}HOST
+                          value: "0.0.0.0"
+                        - name: {{ .Values.componentEnvPrefix }}PORT
+                          value: {{ int .Values.port | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}AUTH_SERVER_URL
+                          value: {{ include "atlas-lineage-model.issuerUrl" . | quote }}
+                        {{- /* CHT-111 (10.12): the realm is the CHT-74 one fact
+                        — an env join, never a static config literal (a static
+                        "master" verified prod-realm tokens against the wrong
+                        issuer). */}}
+                        - name: {{ .Values.componentEnvPrefix }}AUTH_REALM
+                          value: {{ include "atlas-lineage-model.realm" . | quote }}
+                        {{- if .Values.telemetry.enabled }}
+                        {{/* The per-service OTLP leg (CHT-42, DD-196): a
+                        minted client JWT against the issuer's public realm
+                        token endpoint (CHT-41/DD-265), exported to the
+                        collector's HTTP+OIDC leg. */}}
+                        {{- $collector := include "atlas-lineage-model.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.telemetry.service) }}
+                        - name: {{ .Values.componentEnvPrefix }}OTEL_ENDPOINT
+                          value: {{ printf "https://%s:%d" $collector (int .Values.telemetry.port) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}OTEL_TOKEN_URL
+                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-lineage-model.issuerUrl" .) (include "atlas-lineage-model.realm" .) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}OTEL_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ printf "%s-otel-clients" .Release.Name }}
+                                  {{- /* CHT-90: own key on the prod realm, the
+                                  shared key on master (CHT-88). */}}
+                                  {{- if eq (include "atlas-lineage-model.realm" .) "master" }}
+                                  key: OTEL_INGEST_CLIENT_SECRET
+                                  {{- else }}
+                                  key: {{ include "atlas-lineage-model.otelClientId" . | quote }}
+                                  {{- end }}
+                        {{- end }}
+                        # The upstream joins (CHT-28, DD-294): settings.py
+                        # requires both URLs; each derives from the
+                        # co-deployed chart's Service unless overridden.
+                        {{- $atlas := include "atlas-lineage-model.siblingService" (dict "name" "atlas-server" "release" .Release.Name "override" .Values.atlas.service) }}
+                        {{- $d2m := include "atlas-lineage-model.siblingService" (dict "name" "atlas-data2model" "release" .Release.Name "override" .Values.data2model.service) }}
+                        - name: {{ .Values.componentEnvPrefix }}ATLAS_BASE_URL
+                          value: {{ printf "https://%s:%d/" $atlas (int .Values.atlas.port) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}DATA2MODEL_URL
+                          value: {{ printf "https://%s:%d/" $d2m (int .Values.data2model.port) | quote }}
+                        {{- with .Values.config }}
+                        {{- range $key, $value := . }}
+                        - name: {{ $key }}
+                          value: {{ $value | quote }}
+                        {{- end }}
+                        {{- end }}
+                        {{- with .Values.secretRefs }}
+                        {{- range . }}
+                        - name: {{ .name }}
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ .secret }}
+                                  key: {{ .key }}
+                        {{- end }}
+                        {{- end }}
+                        {{- with .Values.extraEnv }}
+                        {{- toYaml . | nindent 24 }}
+                        {{- end }}
+                    {{- if .Values.tls.enabled }}
+                    volumeMounts:
+                        - name: tls
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                    {{- end }}
+                    readinessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.readinessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: {{ ternary "HTTPS" "HTTP" .Values.tls.enabled }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    livenessProbe:
+                        httpGet:
+                            path: {{ .Values.probes.livenessPath }}
+                            port: {{ int .Values.port }}
+                            scheme: {{ ternary "HTTPS" "HTTP" .Values.tls.enabled }}
+                        initialDelaySeconds: {{ int .Values.probes.initialDelaySeconds }}
+                        periodSeconds: {{ int .Values.probes.periodSeconds }}
+                        timeoutSeconds: {{ int .Values.probes.timeoutSeconds }}
+                        failureThreshold: {{ int .Values.probes.failureThreshold }}
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            {{- if .Values.tls.enabled }}
+            volumes:
+                -   name: tls
+                    secret:
+                        secretName: {{ default (printf "%s-tls" $fullname) .Values.tls.secretName }}
+            {{- end }}
+            {{- with .Values.nodeSelector }}
+            nodeSelector:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.tolerations }}
+            tolerations:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            {{- with .Values.affinity }}
+            affinity:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}

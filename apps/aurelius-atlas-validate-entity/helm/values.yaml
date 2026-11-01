@@ -1,0 +1,136 @@
+# The validate-entity chart — its runtime contract (CHT-02).
+# apps/aurelius-atlas-validate-entity: FastAPI, prefix AURELIUS_ATLAS_VALIDATE_ENTITY_,
+# port 21003. Verifies Keycloak bearer tokens (audience aurelius-atlas-validate-entity)
+# and exports OTLP with its own ingest identity. Shares the service shape with
+# data2model and lineage-model by design — each chart owns its templates
+# (DD-290).
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm the OTLP mint URL names.
+    # "" takes the chart default (aurelius-atlas).
+    realm: ""
+    trust:
+        # The issuer the chart's Certificate is signed by (umbrella default;
+        # DD-286/DD-259). Standalone renders need it present.
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+
+enabled: true
+component: validate-entity
+componentEnvPrefix: AURELIUS_ATLAS_VALIDATE_ENTITY_
+nameOverride: ""
+fullnameOverride: ""
+replicaCount: 1
+port: 21003
+
+image:
+    name: aurelius-atlas-validate-entity
+    tag: ""
+    # Operator override (CHT-92): a set digest always wins over the tag;
+    # the release's own bytes are attested by the chart signature (CHT-94).
+    digest: ""
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 256Mi
+    limits:
+        memory: 512Mi
+
+probes:
+    livenessPath: /liveness
+    readinessPath: /liveness
+    initialDelaySeconds: 10
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+tls:
+    # The mounted Secret is the Certificate's output below, which carries
+    # ca.crt beside the pair — cert-manager's contract — so the
+    # AUTH_CA_FILE/OTEL_CA_FILE paths in config exist (DD-294: the dead
+    # caConfigMap/caPath pair retired; nothing ever mounted them).
+    enabled: true
+    secretName: ""
+
+# The Certificate cert-manager issues for this Service (CHT-27): SANs are the
+# Service name and its FQDNs. cert-manager is a cluster prerequisite
+# (runbook), never installed by the chart; tls.secretName brings your own and
+# this renders nothing.
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
+
+service:
+    type: ClusterIP
+    port: 21003
+
+serviceAccount:
+    create: true
+    name: ""
+
+# The per-service OTLP leg (CHT-42, DD-196): with telemetry.enabled the
+# deployment joins the collector endpoint, the issuer's realm token URL
+# (CHT-41's public URL, split-horizon-resolved — DD-265), and the ingest
+# client secret. The config CLIENT_ID/CA_FILE keys are the defaults; the
+# app's export stays off while otel_token_url is None (its settings).
+telemetry:
+    enabled: false
+    # The collector Service; "" derives this release's atlas-observability
+    # chart name (the siblingService name rule, as the server chart).
+    service: ""
+    # The per-service leg (HTTP + OIDC, DD-196).
+    port: 4319
+
+config:
+    AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius-atlas-validate-entity
+    AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info
+    AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
+    AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
+    AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_ID: otel-validate-entity
+    AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
+    OTEL_SEMCONV_STABILITY_OPT_IN: http
+
+secretRefs: []
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    # The image's declared user (DD-257): dhi.io/python-3.14-alpine runs as
+    # `nonroot` (uid/gid 65532, verified from the image), no privilege drop.
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+# The issuer guard is the chart's own (validate.yaml): AUTH_SERVER_URL may
+# arrive as global.issuer.url (the umbrella) or derive from global.domain.
+required: []

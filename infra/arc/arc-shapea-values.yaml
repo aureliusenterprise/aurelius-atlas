@@ -100,7 +100,12 @@ template:
         # dockerd also creates bind-mount sources root:root without it.
         initContainers:
             - name: cache-init
-              image: ghcr.io/actions/actions-runner:latest
+              # Digest-pinned (CHT-102, pentest L6c): a third-party image on
+              # a privileged-adjacent pod — :latest here means the pool's
+              # boot sequence changes whenever upstream retags. Bump with the
+              # pool (docker buildx imagetools inspect ghcr.io/actions/
+              # actions-runner:latest --format '{{.Manifest.Digest}}').
+              image: ghcr.io/actions/actions-runner@sha256:759a1d94a15b05941aba5196974ff43fe15b4cbba29b694b35cbc32a1166b232
               securityContext:
                   runAsUser: 0
                   runAsGroup: 0
@@ -177,10 +182,13 @@ template:
                     mountPath: /work
         containers:
             - name: runner
-              # The dev container image; the deploy-time tag comes from the
-              # CI_SHAPEA_IMAGE_TAG repo var (install.sh; set it to
+              # The dev container image; the deploy-time reference comes from
+              # the CI_SHAPEA_IMAGE_TAG repo var (install.sh; set it to
               # sha-<full-sha> to run a branch build's image, :main is the
-              # merged default).
+              # merged default, or spell a sha256: digest to pin bytes —
+              # install.sh joins digests with @, tags with :; CHT-102).
+              # This one is our own build, signed by publish (cosign) and
+              # verifiable pre-deploy, so the tag is the operator's choice.
               image: ghcr.io/aureliusenterprise/atlas-ci-runner:main
               securityContext:
                   privileged: true # dockerd (see header)

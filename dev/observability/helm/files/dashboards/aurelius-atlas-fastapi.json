@@ -1,0 +1,449 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "Metrics emitted by the FastAPI example via OpenTelemetry (OTLP), exported to Prometheus, logs in Loki, traces in Tempo. Count panels show raw requests per auto-sized time bucket; Duration p95 and Response Bytes/s use rate() over the current window. Long-lived SSE streams are excluded from request duration and in-flight and shown in their own row. Stable HTTP semantic conventions (DD-222): http.server.request.duration (seconds, scaled to ms in the panels), http_route and http_response_status_code labels.",
+    "id": null,
+    "panels": [
+        {
+            "datasource": {
+                "type": "loki",
+                "uid": "loki"
+            },
+            "description": "Application logs from the service container (Loki): access lines, warnings and Python tracebacks. Click a line to expand it; errors link visually to the error rate above.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "dedupStrategy": "none",
+                "enableLogDetails": true,
+                "prettifyLogMessage": false,
+                "showCommonLabels": false,
+                "showLabels": true,
+                "showTime": true,
+                "wrapLogMessage": true
+            },
+            "targets": [
+                {
+                    "direction": "backward",
+                    "expr": "{service_name=\"aurelius-atlas-fastapi-example\"}",
+                    "queryType": "range",
+                    "refId": "A"
+                }
+            ],
+            "title": "Logs",
+            "type": "logs"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Number of requests per time bucket (Prometheus increase() over one Grafana time step, summed over all routes and status codes). The bucket adapts to the selected range and panel width (1-minute floor): short ranges bucket per minute, week-long ranges per tens of minutes. Buckets are adjacent, not overlapping, so values sum to the total; the rightmost bucket may still be partial.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 10
+            },
+            "id": 2,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum(histogram_count(increase(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\"}[$__interval])))",
+                    "interval": "1m",
+                    "legendFormat": "requests/s",
+                    "refId": "A"
+                }
+            ],
+            "title": "Requests per bucket",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Server-side failures (HTTP 5xx) counted per time bucket (Prometheus increase()). Whole requests, not a rate: a value of 2 means two 5xx responses arrived in that bucket. Flat 0 means no server errors in the window.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 10
+            },
+            "id": 3,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum(histogram_count(increase(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_response_status_code=~\"5..\"}[$__interval]))) or vector(0)",
+                    "interval": "1m",
+                    "legendFormat": "5xx",
+                    "refId": "A"
+                }
+            ],
+            "title": "5xx Errors per bucket",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "95th percentile server handling time over the last 5 minutes, EXCLUDING GET /entities/sse: an SSE stream records one duration observation for its whole lifetime when it closes (minutes to hours), which would dominate the quantile. Long-lived streams get their own row below. Fractions in ms are a rate() average, not split requests.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 10
+            },
+            "id": 4,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_route!=\"/entities/sse\"}[5m]))) * 1000",
+                    "legendFormat": "p95",
+                    "refId": "A"
+                }
+            ],
+            "title": "Request Duration p95 (ms, excl. SSE)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Requests being handled right now (live gauge) minus the SSE streams gauge below: one open stream counts as one in-flight request forever, which hides normal concurrency. The SSE share is graphed separately; brief 0s can occur while the two series update.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 18
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "clamp_min(sum(http_server_active_requests{exported_job=\"aurelius-atlas-fastapi-example\"}) - sum(aurelius_sse_connections{exported_job=\"aurelius-atlas-fastapi-example\"}), 0)",
+                    "legendFormat": "active",
+                    "refId": "A"
+                }
+            ],
+            "title": "In-Flight Requests (excl. SSE)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Response payload bytes sent per second, averaged over the current window (rate). A closed SSE stream reports its whole accumulated payload at once, so bytes can spike when a long stream ends. Fractions mean small traffic divided by a long window.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "Bps"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 18
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum(histogram_sum(rate(http_server_response_body_size_bytes{exported_job=\"aurelius-atlas-fastapi-example\"}[5m])))",
+                    "legendFormat": "out",
+                    "refId": "A"
+                }
+            ],
+            "title": "Response Bytes/s",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Requests per time bucket split by route (Prometheus increase(), grouped on http_target). Whole counts per route. '(no route)' groups requests that matched no route - typically 404s, probes or scanner traffic hitting unknown paths.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 18
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (http_route) (label_replace(histogram_count(increase(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\"}[$__interval])), \"http_route\", \"(no route)\", \"http_route\", \"^$\"))",
+                    "interval": "1m",
+                    "legendFormat": "{{http_target}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Requests by Route (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "Long-lived GET /entities/sse streams: open count plus the stream-duration distribution (recorded when a stream closes). Excluded from the request-duration and in-flight panels above.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 26
+            },
+            "id": 200,
+            "panels": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "description": "Server-sent-event streams currently connected (app gauge, read at collection time - it cannot drift). One per browser tab with the entities view open; drops when the tab closes or the proxy times the stream out.",
+                    "fieldConfig": {
+                        "defaults": {
+                            "custom": {
+                                "drawStyle": "line",
+                                "fillOpacity": 10,
+                                "lineWidth": 2,
+                                "showPoints": "never"
+                            },
+                            "unit": "short"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 0,
+                        "y": 27
+                    },
+                    "id": 201,
+                    "options": {
+                        "legend": {
+                            "displayMode": "list",
+                            "placement": "bottom"
+                        },
+                        "tooltip": {
+                            "mode": "multi"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "prometheus"
+                            },
+                            "expr": "sum(aurelius_sse_connections{exported_job=\"aurelius-atlas-fastapi-example\"})",
+                            "legendFormat": "open streams",
+                            "refId": "A"
+                        }
+                    ],
+                    "title": "Open SSE Streams",
+                    "type": "timeseries"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "description": "How long SSE streams ran, from the same duration histogram filtered to http_target=\"/sse\". A stream is observed only when it closes, so the graph is sparse: a flat/empty stretch just means nothing disconnected in that window.",
+                    "fieldConfig": {
+                        "defaults": {
+                            "custom": {
+                                "drawStyle": "line",
+                                "fillOpacity": 10,
+                                "lineWidth": 2,
+                                "showPoints": "never"
+                            },
+                            "unit": "ms"
+                        },
+                        "overrides": []
+                    },
+                    "gridPos": {
+                        "h": 8,
+                        "w": 12,
+                        "x": 12,
+                        "y": 27
+                    },
+                    "id": 202,
+                    "options": {
+                        "legend": {
+                            "displayMode": "list",
+                            "placement": "bottom"
+                        },
+                        "tooltip": {
+                            "mode": "multi"
+                        }
+                    },
+                    "targets": [
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "prometheus"
+                            },
+                            "expr": "histogram_quantile(0.5, sum(rate(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_route=\"/entities/sse\"}[5m]))) * 1000",
+                            "legendFormat": "p50",
+                            "refId": "A"
+                        },
+                        {
+                            "datasource": {
+                                "type": "prometheus",
+                                "uid": "prometheus"
+                            },
+                            "expr": "histogram_quantile(0.95, sum(rate(http_server_request_duration_seconds{exported_job=\"aurelius-atlas-fastapi-example\",http_route=\"/entities/sse\"}[5m]))) * 1000",
+                            "legendFormat": "p95",
+                            "refId": "B"
+                        }
+                    ],
+                    "title": "SSE Stream Duration p50 / p95 (ms)",
+                    "type": "timeseries"
+                }
+            ],
+            "title": "Server-Sent Events (SSE)",
+            "type": "row"
+        },
+        {
+            "collapsed": false,
+            "description": "FastAPI request traces in Tempo (OTel instrumentation). Open a row for the span waterfall; search covers the recent ingest window.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 35
+            },
+            "id": 210,
+            "panels": [],
+            "title": "Traces (Tempo)",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "tempo",
+                "uid": "tempo"
+            },
+            "description": "Recent traces of incoming requests (root span = the FastAPI request): open a row to see the handler, its database queries (psycopg spans) and the calling browser span \u2014 joined via W3C traceparent. Search covers the recent ingest window.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 36
+            },
+            "id": 8,
+            "options": {
+                "showHeader": true
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "tempo"
+                    },
+                    "limit": 20,
+                    "query": "{resource.service.name = \"aurelius-atlas-fastapi-example\"}",
+                    "queryType": "traceql",
+                    "refId": "A"
+                }
+            ],
+            "title": "FastAPI Request Traces",
+            "type": "table"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "fastapi", "observability"],
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Aurelius FastAPI",
+    "uid": "aurelius-atlas-fastapi-obsv",
+    "version": 1
+}

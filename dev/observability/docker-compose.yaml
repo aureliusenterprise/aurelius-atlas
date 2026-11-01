@@ -85,7 +85,9 @@ services:
             timeout: 5s
             retries: 5
         ports:
-            - "9090:9090"
+            # Loopback-pinned (CHT-101): a dev host's LAN must not serve the
+            # metrics DB. Grafana/scrapers reach it in-network as prometheus:9090.
+            - "127.0.0.1:9090:9090"
         volumes:
             - ./config/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
             - prometheus-data:/var/prometheus
@@ -100,7 +102,8 @@ services:
                 hard: 65536
         command: ["-config.file=/etc/loki/config.yaml"]
         ports:
-            - "3100:3100"
+            # Loopback-pinned (CHT-101); the collector exports in-network as loki:3100.
+            - "127.0.0.1:3100:3100"
         volumes:
             - ./config/loki.yaml:/etc/loki/config.yaml:ro
             - loki-data:/loki
@@ -120,7 +123,8 @@ services:
             timeout: 5s
             retries: 5
         ports:
-            - "3200:3200"
+            # Loopback-pinned (CHT-101); the e2e probes read traces here already.
+            - "127.0.0.1:3200:3200"
         volumes:
             - ./config/tempo.yaml:/etc/tempo/config.yaml:ro
             - tempo-data:/var/tempo

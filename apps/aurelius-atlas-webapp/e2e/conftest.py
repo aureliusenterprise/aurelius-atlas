@@ -323,7 +323,7 @@ def authenticated(
 
     Self-healing: when the page lands on the login form anyway — the shared
     session died (the resilience suite's logout test ends the realm session,
-    DD-153/RSL-02) — the fixture runs the form login and refreshes the shared
+    DD-153/RSL-03) — the fixture runs the form login and refreshes the shared
     state, so the next test replays from a live session again.
     """
     context = browser.new_context(storage_state=_storage_state, **browser_context_args)

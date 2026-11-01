@@ -25,6 +25,10 @@ rather than to each backend.
 - Collector pipelines, Prometheus/Tempo/Loki configs live under `config/`
 - `scripts/init-grafana.sh` provisions Grafana datasources on first start
 - Containers run as the unprivileged `65532` user
+- `helm/` ships the same stack as the `atlas-observability` chart for
+  clusters (CHT-33..44): the collector, the four backends, and their
+  cross-links, wired from chart values instead of compose. Enabling it in
+  the umbrella turns every other workload's telemetry joins on (CHT-42).
 
 ## Running
 
