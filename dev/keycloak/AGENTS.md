@@ -48,6 +48,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
       (carries the `aurelius-write` client role on the `aurelius` client — the
       FastAPI example's write gate, `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`) and
       `aurelius-reader` (read-only), so the authorization model is declarative —
+      the Atlas server's roles (`atlas-read`, `-write`, `-types`, `-admin` on the
+      `aurelius-atlas-server` client, DD-253) go to the writer all and the reader
+      `atlas-read`, and are scope-mapped into the `aurelius` client's tokens —
       no init sidecar. Passwords are `${DEV_USER_*_PASSWORD}` placeholders
       resolved from the container env (`.env.enc`, `${VAR:?}` guards) by the same
       `replace-placeholders` flag as the client secrets; the apps' `.env` files

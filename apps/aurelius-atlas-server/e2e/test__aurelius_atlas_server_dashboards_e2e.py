@@ -6,7 +6,7 @@ import os
 import re
 import secrets
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 
 import httpx2 as httpx
 import pytest
@@ -184,3 +184,17 @@ async def test__the_api_needs_a_token_of_the_dev_realm(anonymous: httpx.AsyncCli
     refused = await anonymous.get(SESSION)
     assert (refused.status_code, refused.headers["www-authenticate"]) == (401, 'Bearer realm="atlas.com"')
     assert (await client.get(SESSION)).json()["userName"] == USERNAME
+
+
+@pytest.mark.covers(rules=["AUZ-01", "AUZ-03", "AUZ-04", "AUZ-06"])
+async def test__the_reader_may_read_types_but_not_change_them(
+    anonymous: httpx.AsyncClient, reader_token: Callable[[], str]
+) -> None:
+    """The dev realm's reader holds ``atlas-read``: a type change is refused, the session allows no writes."""
+    reader = {"Authorization": f"Bearer {reader_token()}"}
+    session = (await anonymous.get(SESSION, headers=reader)).json()
+    assert (session["userName"], session["atlas.entity.create.allowed"]) == ("aurelius-reader", False)
+    definition = {"entityDefs": [{"name": f"e2e_refused_{secrets.token_hex(4)}", "superTypes": []}]}
+    refused = await anonymous.post("/api/atlas/v2/types/typedefs", json=definition, headers=reader)
+    assert (refused.status_code, refused.json()["errorCode"]) == (403, "ATLAS-403-00-001")
+    assert (await anonymous.get("/api/atlas/v2/types/typedef/name/Asset", headers=reader)).status_code == 200

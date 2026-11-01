@@ -147,7 +147,9 @@ class OidcClient:
     async def _apply(self, session: Session, tokens: Tokens) -> None:
         """The session as its tokens make it: the access token's user, its expiry, the other tokens kept."""
         claims = await self._verify(tokens.access_token)
-        session.user = user_of(claims, principal_claim=self._principal_claim, groups_claim=self._groups_claim)
+        session.user = user_of(
+            claims, principal_claim=self._principal_claim, groups_claim=self._groups_claim, client_id=self._client_id
+        )
         session.access_token = tokens.access_token
         session.access_expires = self._clock() + tokens.expires_in
         session.refresh_token = tokens.refresh_token or session.refresh_token

@@ -51,11 +51,13 @@ def _environment() -> None:
 
 
 class UserToken:
-    """The writer's access token from the dev realm, by the password grant of the webapp's client; minted anew
-    when it is about to expire (6.1a, AUT-02).
+    """A dev user's access token from the dev realm, by the password grant of the webapp's client; minted anew
+    when it is about to expire (6.1a, AUT-02). The writer by default; the reader holds ``atlas-read`` only (6.2a).
     """  # noqa: D205 - one sentence
 
-    def __init__(self) -> None:
+    def __init__(self, username: str = USERNAME, password_variable: str = "DEV_USER_WRITER_PASSWORD") -> None:  # noqa: S107 - the name of the variable, not a password
+        self._username = username
+        self._password_variable = password_variable
         self._token = ""
         self._expires = 0.0
 
@@ -66,8 +68,8 @@ class UserToken:
                 {
                     "grant_type": "password",
                     "client_id": "aurelius",
-                    "username": USERNAME,
-                    "password": os.environ["DEV_USER_WRITER_PASSWORD"],
+                    "username": self._username,
+                    "password": os.environ[self._password_variable],
                 }
             ).encode()
             request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310 - the https issuer
@@ -93,6 +95,12 @@ class Bearer(httpx.Auth):
 def user_token() -> UserToken:
     """The writer's tokens, shared by the suite."""
     return UserToken()
+
+
+@pytest.fixture(scope="session")
+def reader_token() -> UserToken:
+    """The reader's tokens: ``atlas-read`` only (6.2a)."""
+    return UserToken("aurelius-reader", "DEV_USER_READER_PASSWORD")
 
 
 @pytest_asyncio.fixture(loop_scope="function")

@@ -12,7 +12,7 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any
 
-from aurelius_atlas_auth import KeycloakAuth
+from aurelius_atlas_auth import KeycloakAuth, client_roles
 from fastapi import HTTPException, Request, Response
 from fastapi.responses import PlainTextResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
@@ -61,22 +61,23 @@ EXPIRY_MARGIN_SECONDS = 10
 
 @dataclass(frozen=True)
 class User:
-    """An authenticated user: their name and groups (``Authentication``'s name and authorities)."""
+    """An authenticated user: their name, groups (``Authentication``'s name and authorities) and roles (AUZ-01)."""
 
     name: str
     groups: tuple[str, ...] = ()
+    roles: frozenset[str] = frozenset()
 
 
-def user_of(claims: dict[str, Any], *, principal_claim: str, groups_claim: str) -> User:
+def user_of(claims: dict[str, Any], *, principal_claim: str, groups_claim: str, client_id: str = "") -> User:
     """The user a token's claims name: the principal claim, falling back to ``sub``; the groups claim, else the
-    realm roles (AUT-03).
+    realm roles (AUT-03); the roles of the server's client ``client_id`` (AUZ-01).
     """  # noqa: D205 - one sentence
     name = claims.get(principal_claim) or claims.get("sub") or ""
     groups = claims.get(groups_claim)
     if not isinstance(groups, list):
         realm_access = claims.get("realm_access")
         groups = realm_access.get("roles") if isinstance(realm_access, dict) else None
-    return User(str(name), tuple(str(group) for group in groups or []))
+    return User(str(name), tuple(str(group) for group in groups or []), client_roles(claims, client_id))
 
 
 def acting_user(request: Request) -> str | None:
@@ -213,7 +214,10 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             return Response(status_code=error.status_code) if error.status_code != 401 else _unauthorized()  # noqa: PLR2004 - the issuer's outage stays 503
         settings = request.app.state.settings
         request.state.user = user_of(
-            claims, principal_claim=settings.auth_principal_claim, groups_claim=settings.auth_groups_claim
+            claims,
+            principal_claim=settings.auth_principal_claim,
+            groups_claim=settings.auth_groups_claim,
+            client_id=settings.auth_client_id,
         )
         return await call_next(request)
 

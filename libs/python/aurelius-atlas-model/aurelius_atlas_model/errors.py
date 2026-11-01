@@ -386,6 +386,7 @@ class AtlasErrorCode(Enum):
             "or '_' characters"
         ),
     )
+    UNAUTHORIZED_ACCESS = (403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}")
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     INSTANCE_GUID_DELETED = (404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted")
     SAVED_SEARCH_ALREADY_EXISTS = (409, "ATLAS-409-00-006", "search named {0} already exists for user {1}")
