@@ -4240,6 +4240,8 @@
       
         
       
+        
+      
     
     
     
@@ -5523,6 +5525,33 @@
     
   
   6.2b Authorization, entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/6-2-authorization-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2c Authorization, search
 
     
   </span>
@@ -8907,13 +8936,15 @@
 
 <h1 id="038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are">038. What a person may do is decided in one place, apart from who they are<a class="headerlink" href="#038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are" title="Permanent link">&para;</a></h1>
 <ul>
-<li><strong>Status:</strong> Proposed</li>
-<li><strong>Date:</strong> 2026-10-07</li>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Date:</strong> 2026-10-07; accepted 2026-11-01</li>
 <li><strong>Deciders:</strong> Aurelius Enterprise</li>
 </ul>
-<p>Acceptance trigger (swept 2026-10-19): increment 6.2 makes the authorizer's policy the one
-permission answer on every endpoint; accepted in that pull request. Until then the record's stated
-condition stands: every admitted person may do everything.</p>
+<p>Accepted with increment 6.2c, as its acceptance trigger set (swept 2026-10-19): with 6.2a to 6.2c the
+server's authorizer answers every endpoint the server serves, as Atlas's checks do. The named mechanism is
+DD-300: four roles of the server's client in the identity provider, and what each grants is fixed in the
+server's <code>authorization</code> module. The spine holds both the mechanism and the roles, in the dev realm and in
+the cluster's.</p>
 <p>The answer to "what is this person allowed to do?" lives in one named place,
 apart from the answer to "who is this person?". Surfaces ask and act; they do
 not invent permission rules in code.</p>
@@ -8923,8 +8954,10 @@ allowed to do?" is held and enforced in one named place, deliberately apart
 from the answer to "who is this person?" (<a href=".././007-one-shared-identity-provider/">007</a>).
 Surfaces ask that place and act on the answer; <strong>they do not invent their own
 rules in code.</strong></p>
-<p>Until this record is accepted, every authenticated person can do everything on
-every surface, and that is <strong>a stated condition, not a security property.</strong></p>
+<p>Until this record was accepted, every authenticated person could do everything on
+every surface, and that was <strong>a stated condition, not a security property.</strong> The
+answer now lives in the identity provider's role assignments, read by one
+authorizer in the server (<a href="../../platform/security/access-management/">access management</a>).</p>
 <h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
 <p>The system already knows who a person is: one identity provider admits people
 and every surface verifies what it issues, so no surface keeps its own account
@@ -9051,6 +9084,13 @@ question; this record's posture
 refuses promises it can't keep in either direction. The posture it takes
 is the obligation: the behaviour is a named design decision at the seam,
 not an accident of timeout handling.</p>
+<p><strong>Answered on acceptance: closed.</strong> The roles travel in the access token the
+identity provider signs, and the server reads them in-process (DD-300), so
+there is no separate authorizer to lose. When the identity provider is
+unreachable no new token is issued, and a request without a valid token is
+refused. The price is R2's timing: withdrawing a role takes effect when the
+user's current access token expires, at most the realm's access-token
+lifespan (15 minutes on clusters).</p>
 </details>
 
 

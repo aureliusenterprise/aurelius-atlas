@@ -4097,6 +4097,8 @@
       
         
       
+        
+      
     
     
     
@@ -5380,6 +5382,33 @@
     
   
   6.2b Authorization, entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/6-2-authorization-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2c Authorization, search
 
     
   </span>
@@ -8995,9 +9024,9 @@ checks a PR must pass:</p>
 <tr>
 <td>6.2c</td>
 <td>Authorization: search and lineage</td>
-<td>Search results and lineage scrubbed of what a user may not read; ADR 038 accepted</td>
-<td><code>AtlasAuthorizationUtils#scrubSearchResults</code>, <code>EntityLineageService</code></td>
-<td>planned</td>
+<td>Search results scrubbed, lineage checked, type listings filtered, the cluster realm's roles; ADR 038 accepted</td>
+<td><code>AtlasAuthorizationUtils#scrubSearchResults</code>, <code>#filterTypesDef</code>, <code>EntityLineageService</code></td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>6.3</td>

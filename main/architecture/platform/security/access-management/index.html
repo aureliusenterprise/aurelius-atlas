@@ -4095,6 +4095,8 @@
       
         
       
+        
+      
     
     
     
@@ -5378,6 +5380,33 @@
     
   
   6.2b Authorization, entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../conversion/increments/6-2-authorization-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2c Authorization, search
 
     
   </span>
@@ -8265,6 +8294,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Access Management
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -8280,6 +8326,70 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-role-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The role model
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What is checked
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#granting-and-revoking" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Granting and revoking
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where it runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -8440,6 +8550,58 @@
   
     
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-role-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The role model
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-checked" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What is checked
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#granting-and-revoking" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Granting and revoking
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-it-runs" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where it runs
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -8611,12 +8773,80 @@
 
 
 <h1 id="access-management">Access Management<a class="headerlink" href="#access-management" title="Permanent link">&para;</a></h1>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 6.2, from the increment's semantics spec. See the <a href="../">filling
-map</a> for the page scope and the <a href="../../../conversion/">conversion roadmap</a>
-for increment status.</p>
-</div>
+<p>This page explains what a signed-in person may do, as decided by the permission record
+(<a href="../../../adr/038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are/">ADR 038</a>). Who the
+person is comes from the identity provider (<a href="../../../adr/007-one-shared-identity-provider/">ADR 007</a>,
+<a href="../identity-management/">identity management</a>). What they may do comes from the roles the identity provider
+gives them, read by one authorizer in the catalogue server. The rules and their tests are in the increment
+specs <a href="../../../conversion/increments/6-2-authorization/">6.2a</a>,
+<a href="../../../conversion/increments/6-2-authorization-entities/">6.2b</a> and
+<a href="../../../conversion/increments/6-2-authorization-search/">6.2c</a>.</p>
+<h2 id="the-role-model">The role model<a class="headerlink" href="#the-role-model" title="Permanent link">&para;</a></h2>
+<p>Four roles of the server's client (<code>aurelius-atlas-server</code>) grant Apache Atlas's privileges (DD-300). Who
+holds a role is decided in the identity provider only. What a role grants is fixed in the server's
+<code>authorization</code> module.</p>
+<table>
+<thead>
+<tr>
+<th>Role</th>
+<th>Grants</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atlas-read</code></td>
+<td>Reading types, entities and their classifications</td>
+</tr>
+<tr>
+<td><code>atlas-write</code></td>
+<td>Creating, updating and deleting entities, their classifications, labels, business metadata and relationships</td>
+</tr>
+<tr>
+<td><code>atlas-types</code></td>
+<td>Creating, updating and deleting type definitions, and reading them</td>
+</tr>
+<tr>
+<td><code>atlas-admin</code></td>
+<td>Purge, export, import and the admin audits</td>
+</tr>
+</tbody>
+</table>
+<p>A person usually holds several roles. A data steward needs <code>atlas-read</code> and <code>atlas-write</code>, and a modeller
+also needs <code>atlas-types</code>. The roles are read from the access token's <code>resource_access.aurelius-atlas-server.roles</code>.
+They are mapped into the webapp client's (<code>aurelius</code>) scope, so a browser session's token carries them,
+as does a token the auxiliary APIs forward.</p>
+<p>Atlas's own authorizer takes a policy file of regular expressions over types, entities and classifications.
+This one has four fixed roles instead (DV-114). A role grants its privileges on every type and entity or on
+none.</p>
+<h2 id="what-is-checked">What is checked<a class="headerlink" href="#what-is-checked" title="Permanent link">&para;</a></h2>
+<p>The checks sit where Apache Atlas 2.4.0's sit, with the same action texts:</p>
+<ul>
+<li><strong>Changes</strong> — every type definition, entity, classification, relationship and glossary change, the saved
+  searches, and the admin purge. A request without the privilege is refused with
+  403 <code>ATLAS-403-00-001</code>, <code>&lt;user&gt; is not authorized to perform &lt;action&gt;</code>. A missing object is reported as
+  missing (404) before the check.</li>
+<li><strong>Reading one object</strong> — an entity, its header, its classifications, its audit, its lineage, and one type
+  definition. Refused in the same way.</li>
+<li><strong>Listings</strong> — searches do not refuse: each entity the user may not read comes back scrubbed, with GUID
+  <code>-1</code> and no attributes, classifications or meanings. Type listings leave out the definitions the user may
+  not read.</li>
+</ul>
+<p>Type definition changes are checked before the definitions are validated, where Atlas validates first
+(DV-115).</p>
+<h2 id="granting-and-revoking">Granting and revoking<a class="headerlink" href="#granting-and-revoking" title="Permanent link">&para;</a></h2>
+<p>Granting or withdrawing a role is one act in the identity provider's admin console, with no release of any
+surface (ADR 038's R2). A change takes effect with the person's next access token. A token already issued
+keeps its roles until it expires, at most the realm's access-token lifespan (15 minutes on clusters).</p>
+<p>If the identity provider cannot be reached, no new token is issued and requests without a valid token are
+refused: the arrangement fails closed.</p>
+<h2 id="where-it-runs">Where it runs<a class="headerlink" href="#where-it-runs" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>Development</strong> — the dev realm (<code>dev/keycloak/import/master.json</code>) gives <code>aurelius-writer</code> all four roles
+  and <code>aurelius-reader</code> <code>atlas-read</code>. The parity suites run as the writer, and the authorization tests run
+  as the reader and as users with no role.</li>
+<li><strong>Clusters</strong> — the production realm asset carries the four roles and their scope mapping, but no users.
+  An operator grants the roles. Until then, a fresh install refuses every catalogue request.</li>
+</ul>
 
 
 

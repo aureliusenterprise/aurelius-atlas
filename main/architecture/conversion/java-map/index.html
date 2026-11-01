@@ -4168,6 +4168,8 @@
       
         
       
+        
+      
     
     
     
@@ -5451,6 +5453,33 @@
     
   
   6.2b Authorization, entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-2-authorization-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2c Authorization, search
 
     
   </span>
@@ -8989,6 +9018,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>The checks of <code>AtlasEntityStoreV2</code> (reads, writes, deletes, classifications), <code>AtlasRelationshipStoreV2</code> (<code>createRelationship</code>, <code>updateRelationship</code>, <code>deleteById</code>), <code>DataAccess</code>, <code>GlossaryService#getGlossaries</code>, <code>EntityREST#getAuditEvents</code></td>
 <td><code>aurelius_atlas_core.authorization</code>, <code>aurelius_atlas_core.entity_writer</code>, <code>aurelius_atlas_core.entity_classifications</code>, <code>aurelius_atlas_core.relationship_store</code>, <code>aurelius_atlas_core.data_access</code>, <code>aurelius_atlas_server.routes.entity</code></td>
 <td>6.2b</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>AtlasAuthorizationUtils#scrubSearchResults</code>, <code>#filterTypesDef</code>, <code>AtlasAuthorizer#scrubEntityHeader</code>, <code>AtlasSimpleAuthorizer#scrubSearchResults</code>, <code>#filterTypesDef</code>, <code>EntityLineageService#validateEntityTypeAndCheckIfDataSet</code> (the check)</td>
+<td><code>aurelius_atlas_core.authorization</code>, <code>aurelius_atlas_core.discovery_service</code>, <code>aurelius_atlas_core.entity_lineage_service</code>, <code>aurelius_atlas_server.routes.types</code></td>
+<td>6.2c</td>
 <td>in progress</td>
 </tr>
 <tr>

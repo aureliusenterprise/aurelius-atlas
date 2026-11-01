@@ -4099,6 +4099,8 @@
       
         
       
+        
+      
     
     
     
@@ -5486,6 +5488,33 @@
     
   
   6.2b Authorization, entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-2-authorization-search/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2c Authorization, search
 
     
   </span>
@@ -8888,6 +8917,8 @@
       
         
       
+        
+      
     
     
     
@@ -8992,7 +9023,7 @@ token's roles of a client, public. In <code>dev/keycloak</code>, the four roles,
 </tr>
 <tr>
 <td>AUZ-04</td>
-<td>Creating, updating or deleting type definitions needs the privilege for each, checked in the order of the request's kinds (enums, structs, classifications, entities, relationships, business metadata), as <code>create entity-def &lt;name&gt;</code>, <code>update entity-def &lt;name&gt;</code>, <code>delete entity-def &lt;name&gt;</code>; reading one definition by name or GUID needs <code>TYPE_READ</code>, <code>read type &lt;name or GUID&gt;</code>. Listing definitions and their headers needs none</td>
+<td>Creating, updating or deleting type definitions needs the privilege for each, checked in the order of the request's kinds (enums, structs, classifications, entities, relationships, business metadata), as <code>create entity-def &lt;name&gt;</code>, <code>update entity-def &lt;name&gt;</code>, <code>delete entity-def &lt;name&gt;</code>; reading one definition by name or GUID needs <code>TYPE_READ</code>, <code>read type &lt;name or GUID&gt;</code>. Listing definitions and their headers is filtered by <code>TYPE_READ</code> (amended by AUZ-14, 6.2c)</td>
 </tr>
 <tr>
 <td>AUZ-05</td>
