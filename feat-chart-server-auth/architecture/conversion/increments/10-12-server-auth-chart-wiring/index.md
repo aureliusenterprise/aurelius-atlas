@@ -1,7 +1,7 @@
 # 10.12 Server authentication, chart wiring
 
 - **Status:** in review
-- **Pull request:** TBD
+- **Pull request:** \#195
 - **Records:** DD-296, DD-297 (relies on: DD-250/251 on main — 6.1a's auth settings and session; DD-256's placeholder resolver; CHT-74's realm contract, CHT-87's per-client placeholder rule, CHT-88's realm-shaped secrets)
 
 ## Scope
@@ -34,9 +34,9 @@ None new. (Apache Atlas ships a static properties file per deployment; Aurelius 
 
 ## Acceptance
 
-Chart-contract suites (run: `uv run pytest tests/test__charts_server.py tests/test__charts_keycloak.py tests/test__charts_umbrella.py tests/test__charts_data2model.py tests/test__charts_lineage_model.py tests/test__charts_validate_entity.py`):
+Chart-contract suites (run: `uv run pytest tests/test__charts_server.py tests/test__charts_keycloak.py tests/test__charts_umbrella.py tests/test__charts_aux.py`):
 
 - `test__charts_server.py` — CHT-108: the auth env block on the stock render (issuer URL, realm, client id, audiences, CA path, secret join); the issuer guard fails a render with no domain/issuer; `credentialSecrets.serverClient` renames the Secret.
 - `test__charts_keycloak.py` — CHT-110: the prod asset's client roster gains `aurelius-atlas-server`; its hardened fields; host substitution and the placeholder's verbatim survival; the CHT-79 peer delta stays inside the hardened set; CHT-109/110: the StatefulSet carries `ATLAS_SERVER_CLIENT_SECRET` on **both** the prod and master renders.
 - `test__charts_umbrella.py` — CHT-109: `<release>-server-client` in the generated roster with its one key; it renders for the keycloak-only and server-only installs and not for neither; CHT-111: server + aux `AUTH_REALM` equal the imported realm.
-- `test__charts_data2model.py` (+ lineage/validate twins) — CHT-111: `AUTH_REALM` follows `global.realm` (prod default and the master hatch).
+- `test__charts_aux.py` (parametrised over the three aux charts) — CHT-111: `AUTH_REALM` follows `global.realm` (prod default and the master hatch).

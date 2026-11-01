@@ -4091,6 +4091,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5123,6 +5127,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../5-1-lineage/" class="md-nav__link">
         
   
@@ -5266,6 +5297,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8764,6 +8822,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -8817,7 +8879,7 @@ resolve the host.</p>
 <ul>
 <li>A new <code>grafana</code> client joins <code>files/aurelius-atlas.json</code> — the first client in
   the <strong>prod asset only</strong>: the dev compose Grafana keeps the anonymous-Viewer
-  posture (DD-275, DV-111), so CHT-79's structural parity rule gains its first
+  posture (DD-275, DV-113), so CHT-79's structural parity rule gains its first
   named exception (prod client set = dev set ∪ {<code>grafana</code>}).</li>
 <li>The observability chart's Grafana deployment swaps the anonymous env for the
   <code>GF_AUTH_GENERIC_OAUTH_*</code> set: issuer URLs derived from
@@ -8839,7 +8901,7 @@ resolve the host.</p>
 Grafana exposure by default (<code>global.hosts.grafana.enabled</code> stays <code>false</code> —
 this increment makes exposing safe, not automatic), any change to the dev
 compose stack (its Grafana stays anonymous-Viewer — a local dashboard over
-local telemetry, DV-111), or alerting/contact-points (out of scope entirely).</p>
+local telemetry, DV-113), or alerting/contact-points (out of scope entirely).</p>
 <h2 id="semantics">Semantics<a class="headerlink" href="#semantics" title="Permanent link">&para;</a></h2>
 <p>Grafana is a <strong>browser-facing relying party</strong> like the <code>aurelius</code> webapp client,
 except confidential: it has a client Secret, a fixed redirect path
@@ -8884,7 +8946,7 @@ realm.</p>
 pre-pentest review's finding H4 and Grafana's <code>generic_oauth</code> (OAuth2/OIDC)
 auth provider.</p>
 <h2 id="deviations">Deviations<a class="headerlink" href="#deviations" title="Permanent link">&para;</a></h2>
-<p>None against Atlas. DV-111 records the deliberate dev↔prod divergence: the dev
+<p>None against Atlas. DV-113 records the deliberate dev↔prod divergence: the dev
 compose Grafana stays anonymous-Viewer (a local dashboard over local telemetry,
 same two-shape posture as DD-273's identity split), while the cluster Grafana
 is Keycloak-gated — the first client that lives in one realm asset and not the
@@ -8914,7 +8976,7 @@ clause (its generated-admin-Secret half stands).</p>
 <li>Runbook: the Grafana section documents the Keycloak login, the role map, and
   the port-forward path. <code>dev/observability/AGENTS.md</code>, <code>dev/keycloak/AGENTS.md</code>,
   and <code>helm/AGENTS.md</code> record the new client/Secret/join. <code>deviations.md</code> gains
-  DV-111. The 10.5 hand-check note extends: a stock umbrella's Grafana redirects
+  DV-113. The 10.5 hand-check note extends: a stock umbrella's Grafana redirects
   to the realm's login at <code>keycloak.atlas.test</code> and an authenticated realm user
   lands as Viewer.</li>
 <li>Hand check: not run in CI here (no live Keycloak); proven by render.</li>

@@ -4091,6 +4091,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5123,6 +5127,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../5-1-lineage/" class="md-nav__link">
         
   
@@ -5266,6 +5297,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8764,6 +8822,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -8800,7 +8862,7 @@
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> <a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/157">#157</a></li>
 <li><strong>Records:</strong> <a href="../../../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/">ADR 057</a>,
-  DD-252, DD-283..294</li>
+  DD-298, DD-283..294</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>The deployment shape of the system, specified once and scaffolded completely: one chart per
@@ -8883,7 +8945,7 @@ examples for a Kafka/JanusGraph/Cassandra topology that does not exist here.</p>
   images) reaches <code>deployed</code> and the three aux Deployments go Ready on their HTTPS <code>/liveness</code>
   probes; <code>helm upgrade</code> is a clean no-op. Two aux-chart gaps found by the trial — the unbacked
   <code>ca.crt</code> mount and lineage-model's missing upstream URLs — are deferred to 10.3 (DD-294);
-  the <code>--wait</code> stuck-release recovery joins the runbook (DD-252).</li>
+  the <code>--wait</code> stuck-release recovery joins the runbook (DD-298).</li>
 <li>The plugin targets are visible on the owning projects (<code>npx nx show project
 aurelius-atlas-server</code> shows <code>helm-lint</code>/<code>helm-template</code>/<code>helm-publish</code>, DD-293)
   and <code>-c ci</code> selects the CI configuration (CHT-05 wiring).</li>

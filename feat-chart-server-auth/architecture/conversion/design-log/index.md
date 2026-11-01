@@ -244,7 +244,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-249](<#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd>) | Uploaded files are read with python-multipart, openpyxl and xlrd | 5.2 | Proposed |
 | [DD-250](<#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider>) | The server authenticates requests itself against the identity provider | 6.1 | Proposed |
 | [DD-251](<#dd-251-browser-sessions-are-kept-in-the-servers-memory>) | Browser sessions are kept in the server's memory | 6.1 | Proposed |
-| [DD-252](<#dd-252--a-stuck-pending-install-release-is-cleared-by-uninstall>) | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns | 10.1 | Accepted |
+| [DD-252](<#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos>) | DataAccess carries every model object through a registry of DTOs | 4.5 | Proposed |
 | [DD-253](<#dd-253--the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli>) | The chart-contract suite lives at the workspace root (`tests/`) and asserts rendered manifests via the `helm` CLI | 10.2 | Accepted |
 | [DD-254](<#dd-254--deploy-time-credential-generation-lands-in-102-with-publish-and-rotation-in-104>) | The umbrella's `randAlphaNum` + `lookup` credential generation ships in 10.2; retrieval/rotation polish stays in 10.4 | 10.2 | Accepted |
 | [DD-255](<#dd-255--the-coredump-agent-ships-as-its-own-image-project>) | The ES coredump agent ships as the `aurelius-atlas-elasticsearch-agent` image, not a ConfigMap-embedded jar | 10.2 | Accepted |
@@ -280,6 +280,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-295](<#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges>) | Chart-track id collisions with main renumber above both ranges | — | Accepted |
 | [DD-296](<#dd-296-61as-required-auth-settings-land-in-the-charts-as-joins>) | 6.1a's required server-auth settings land in the charts as issuer/realm/secret joins; the dashboards' browser leg stays dashboard-host-gated | 10.12 | Accepted |
 | [DD-297](<#dd-297-the-aux-apis-auth_realm-joins-globalrealm>) | The aux APIs' AUTH\_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74) | 10.12 | Accepted |
+| [DD-298](<#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall>) | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns | 10.1 | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3415,17 +3416,19 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts. Several server instances need sticky sessions.
 
-### DD-252 — A stuck pending-install release is cleared by uninstall
+### DD-252. DataAccess carries every model object through a registry of DTOs
 
-- **Status:** Accepted
-- **Increment:** 10.1 (trial)
-- **Date:** 2026-10-28
+- **Status:** Proposed
+- **Increment:** 4.5
+- **Date:** 2026-11-01
 
-**Decision.** The runbook's install/upgrade sections warn: `helm install --wait` (or `--atomic`) against a workload that never reaches Ready — a crash-loop, a missing Secret — burns the full `--timeout` and leaves the release `pending-install`; every later `helm upgrade` then fails with "another operation (install/upgrade/rollback) is in progress" until `helm uninstall` clears it. Fix the cause, inspect with `helm history`, and uninstall rather than waiting the release out.
+**Decision.** `DataAccess` moves out of the glossary's module into `data_access`, generic over a registry of data transfer objects by the object's class, as Atlas's `DataAccess` and `DTORegistry` are. A DTO names the entity type, makes the object's entities (its own first, then those it refers to) and reads the object back from its entity and the entities read with it, and gives the unique attributes a new object is found by. The glossary's three DTOs and the user profile's two register there; each service builds its `DataAccess` from its registry.
 
-**Reason.** Observed twice in the trial of DD-294: the first install timed out on the crash-looping aux pods and the stuck release blocked the fix-and-retry path with a confusing error unrelated to the actual defect. It is helm's documented behaviour, not a chart bug, so it belongs in the runbook, and mid-roadmap installs (subcharts that render no workloads yet, workloads whose wiring lands in a later increment) are exactly when an operator meets it.
+**Reason.** 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and written like the glossary's objects (DD-246). Atlas has one `DataAccess` for both; a second copy for profiles would duplicate the save, load, type and deletion checks the glossary's already has.
 
-**Consequences.** The runbook gains the note and the `helm history` / `helm uninstall` recovery lines; 10.5's install script scripts the recovery (guard the wait with a pre-flight, or clean up on timeout) rather than discovering it again. Next free DD: 253.
+**Alternatives.** A profile store written apart: the same checks twice. One registry of every DTO: services would carry DTOs they never use.
+
+**Consequences.** The glossary's `DataAccess` is `glossary_data_access`; its tests name the generic methods.
 
 ### DD-253 — The chart-contract suite lives at the workspace root and renders with the helm CLI
 
@@ -3661,7 +3664,7 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Decision.** The issuer-wait init ships as `dhi.io/curl:8` (uid 65532, as busybox did) with `curl -sSf --insecure --retry 0 --retry-connrefused --retry-delay 5 <well-known>` — an infinite native retry, no `sh` needed (the hardened curl image has no shell), exit 0 the moment the realm answers.
 
-**Alternatives.** (a) A richer init image with a shell (alpine-class) — rejected: one more base image to harden for a six-line poll, and the retry semantics are identical. (b) A TCP-only wait (`nc -z`) — rejected: a listening socket does not mean the realm's JWKS endpoint answers, and the OIDC extension reads exactly that endpoint (DD-195's race is an HTTP-level one). (c) Keep busybox, retry the init from Kubernetes instead of in-process — rejected: a backoff-waiting Pod is exactly what the init container exists to prevent (DD-252's lesson applies to crash-looping inits too).
+**Alternatives.** (a) A richer init image with a shell (alpine-class) — rejected: one more base image to harden for a six-line poll, and the retry semantics are identical. (b) A TCP-only wait (`nc -z`) — rejected: a listening socket does not mean the realm's JWKS endpoint answers, and the OIDC extension reads exactly that endpoint (DD-195's race is an HTTP-level one). (c) Keep busybox, retry the init from Kubernetes instead of in-process — rejected: a backoff-waiting Pod is exactly what the init container exists to prevent (DD-298's lesson applies to crash-looping inits too).
 
 **Consequences.** CHT-37's rule text names the image honestly; the chart tests pin `dhi.io/curl:8` and the command shape (no shell, `--retry-connrefused`). The `--insecure` flag stays scoped to a boot gate (the collector verifies the issuer CA-pinned, DD-216). Next free DD: 270.
 
@@ -3719,7 +3722,7 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Alternatives.** (a) One realm for everything, hardened — rejected: it breaks the dev login rig (Playwright's ROPC grants and localhost origins are the suite's contract, DD-206's shape) and drags dev into the first-boot hostname pin. (b) A pruned export of master as the prod asset — rejected as unverifiable offline (composite transplant, above). (c) Seed prod users from values — rejected: a cluster realm with no users is the pentest-clean shape; operator provisioning through the admin console is the normal path, and placeholder-fed demo identities in a prod chart re-create the finding.
 
-**Consequences.** The CHT-79 structural-parity test is the two-asset drift guard: the otel-\* clients and the otel-ingest scope must equal their dev peers and the aurelius client may differ only in the hardened fields, so an identity change in dev must be mirrored in the prod asset or named in its commit. The two shapes are deliberate (DV-110): a reviewer comparing the dev stack's login behaviour to the cluster's should expect them to differ.
+**Consequences.** The CHT-79 structural-parity test is the two-asset drift guard: the otel-\* clients and the otel-ingest scope must equal their dev peers and the aurelius client may differ only in the hardened fields, so an identity change in dev must be mirrored in the prod asset or named in its commit. The two shapes are deliberate (DV-112): a reviewer comparing the dev stack's login behaviour to the cluster's should expect them to differ.
 
 ### DD-274 — `global.realm` as the values contract; host tokens substituted chart-side
 
@@ -3743,7 +3746,7 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Context.** The pre-pentest finding H4: the cluster's Grafana answers with DD-267's anonymous-Viewer posture, so `global.hosts.grafana.enabled` — already wired end-to-end through the edge (10.3c) — would publish the dashboards read-public. 10.7 shipped the `aurelius-atlas` realm and the placeholder machinery; Grafana is the first workload whose login is a relying-party flow of its own rather than the webapp's existing one.
 
-**Decision.** A `grafana` client joins `files/aurelius-atlas.json` and the prod asset **only** (CHT-81): confidential (`clientAuthenticatorType: client-secret`, secret `${GRAFANA_CLIENT_SECRET}` — DD-256's replace-placeholders resolver, fed from `<release>-grafana-oauth` exactly as `${OTEL_INGEST_CLIENT_SECRET}` is), standard-flow + PKCE S256, ROPC off, no service account. RBAC comes from the token: `role_attribute_path` grants Viewer to every authenticated realm user and the client's `editor`/`admin` client roles escalate — the realm is the access boundary, and escalation is an explicit grant an operator makes in the Keycloak console. This is CHT-79's first named parity exception (prod client ids = dev's ∪ {`grafana`}): the dev compose Grafana stays anonymous-Viewer, a local dashboard over local telemetry (DV-111) — the same two-shape posture as DD-273's identity split, now with a concrete client proving the assets may diverge on purpose.
+**Decision.** A `grafana` client joins `files/aurelius-atlas.json` and the prod asset **only** (CHT-81): confidential (`clientAuthenticatorType: client-secret`, secret `${GRAFANA_CLIENT_SECRET}` — DD-256's replace-placeholders resolver, fed from `<release>-grafana-oauth` exactly as `${OTEL_INGEST_CLIENT_SECRET}` is), standard-flow + PKCE S256, ROPC off, no service account. RBAC comes from the token: `role_attribute_path` grants Viewer to every authenticated realm user and the client's `editor`/`admin` client roles escalate — the realm is the access boundary, and escalation is an explicit grant an operator makes in the Keycloak console. This is CHT-79's first named parity exception (prod client ids = dev's ∪ {`grafana`}): the dev compose Grafana stays anonymous-Viewer, a local dashboard over local telemetry (DV-113) — the same two-shape posture as DD-273's identity split, now with a concrete client proving the assets may diverge on purpose.
 
 **Alternatives.** (a) Grafana's own auth proxy or the edge's OIDC auth filter in front of it — rejected: the gateway filter would authenticate but not carry identity into Grafana (dashboards lose viewer attribution, and per-dashboard permissions stay Grafana's job anyway); generic\_oauth is Grafana's native OIDC RP and needs no edge change. (b) Put the client in both realm assets — rejected: dev's Grafana is a compose convenience, and a client the dev stack never uses is drift bait for CHT-79. (c) Map realm *roles* instead of client roles — rejected: realm roles would collide with `aurelius-write`'s namespace and make Grafana escalation a realm-wide grant; client roles scope it to Grafana's own console surface. (d) `admin` group mapping from Keycloak realm admins — rejected: realm-admin should not silently become Grafana-admin; explicit client roles keep escalation auditable.
 
@@ -4037,7 +4040,7 @@ Next free DD: 282.
 - **Increment:** — (merge hygiene; lands with the rebase of the 10.x chart track onto the 4.3–6.1 merges, PRs \#157–\#191)
 - **Date:** 2026-11-01
 
-**Decision.** The 4.3–6.1 track on main (DSL, lineage, glossaries, auth) and the 10.x chart track branched at DD-239/DV-87 and minted ids in parallel: main took DD-240..251 and DV-88..109, the chart track took DD-240..252 (12 colliding ids — the same numbers, different decisions) plus DV-88/89 in its 10.7/10.8 increments, its children continuing at DD-253..282. The rebase renumbers the **chart side of the collision**: DD-240..251 → DD-283..294 in ascending order, and DV-88/89 → DV-110/111 — and this entry (DD-295) records it. Main's ids keep their numbers. The chart track's DD-252..282 already sit above both ranges and are untouched; the 10.1 chain citation `DD-240..252` becomes the explicit list `DD-252, DD-283..294`. The citation sweep rewrote every chart spec, doc, chart template, plugin comment, CI workflow, and test on the chart side; DD-177 is the precedent for the method.
+**Decision.** The 4.3–6.1 track on main (DSL, lineage, glossaries, auth) and the 10.x chart track branched at DD-239/DV-87 and minted ids in parallel: main took DD-240..251 and DV-88..109, the chart track took DD-240..252 (12 colliding ids — the same numbers, different decisions) plus DV-88/89 in its 10.7/10.8 increments, its children continuing at DD-253..282. The rebase renumbers the **chart side of the collision**: DD-240..251 → DD-283..294 in ascending order, and DV-88/89 → DV-112/113 — and this entry (DD-295) records it. Main's ids keep their numbers. The chart track's DD-252..282 already sit above both ranges and are untouched; the 10.1 chain citation `DD-240..252` becomes the explicit list `DD-298, DD-283..294`. The citation sweep rewrote every chart spec, doc, chart template, plugin comment, CI workflow, and test on the chart side; DD-177 is the precedent for the method.
 
 **Reason.** Main's 4.3–6.1 decisions are merged and cited by merged code — they are the accepted record, and the ledger's rule (numbers are never reused, accepted entries are never edited) protects them. The chart track is the in-progress side of the same ledger, so it is the side allowed to move; moving 12+2 ids in one mechanical, reviewable sweep costs less than living with ids that mean two things. The new range starts above the chart track's own DD-282, so the track's later ids keep their citations.
 
@@ -4047,9 +4050,11 @@ Next free DD: 282.
 | --- | --- | --- | --- | --- | --- |
 | DD-240 | DD-283 | DD-245 | DD-288 | DD-250 | DD-293 |
 | DD-241 | DD-284 | DD-246 | DD-289 | DD-251 | DD-294 |
-| DD-242 | DD-285 | DD-247 | DD-290 | DV-88 | DV-110 |
-| DD-243 | DD-286 | DD-248 | DD-291 | DV-89 | DV-111 |
+| DD-242 | DD-285 | DD-247 | DD-290 | DV-88 | DV-112 |
+| DD-243 | DD-286 | DD-248 | DD-291 | DV-89 | DV-113 |
 | DD-244 | DD-287 | DD-249 | DD-292 | — | — |
+
+**Addendum (2026-11-01, this merge).** 4.5 (\#194) then minted main’s `DD-252` and `DV-110`, so ids this entry left in place collided: they move to `DD-298` and `DV-112`, and the paired `DV-111` shifts with it to `DV-113` — one sweep, same rule. Chart `DD-252` → `DD-298`, `DV-110/111` → `DV-112/113`; main keeps `DD-252` and `DV-110`.
 
 ### DD-296. 6.1a's required auth settings land in the charts as joins
 
@@ -4074,3 +4079,15 @@ Next free DD: 282.
 **Reason.** CHT-74's rule is that `global.realm` is the one realm fact and every consumer derives from it; a literal is a second source of truth by definition. The `master` escape hatch keeps working — it retargets the same one fact — and the settings' own default (`master`) stays the standalone default for compose/dev, which the charts never relied on anyway.
 
 **Consequences.** `AUTH_REALM` leaves the aux charts' `config:` maps, which are for verbatim operator settings, not derived joins. Any future realm-bearing env joins the same enumeration (the umbrella suite's `/realms/...` sweep plus the named AUTH\_REALM pins).
+
+### DD-298 — A stuck pending-install release is cleared by uninstall
+
+- **Status:** Accepted
+- **Increment:** 10.1 (trial)
+- **Date:** 2026-10-28
+
+**Decision.** The runbook's install/upgrade sections warn: `helm install --wait` (or `--atomic`) against a workload that never reaches Ready — a crash-loop, a missing Secret — burns the full `--timeout` and leaves the release `pending-install`; every later `helm upgrade` then fails with "another operation (install/upgrade/rollback) is in progress" until `helm uninstall` clears it. Fix the cause, inspect with `helm history`, and uninstall rather than waiting the release out.
+
+**Reason.** Observed twice in the trial of DD-294: the first install timed out on the crash-looping aux pods and the stuck release blocked the fix-and-retry path with a confusing error unrelated to the actual defect. It is helm's documented behaviour, not a chart bug, so it belongs in the runbook, and mid-roadmap installs (subcharts that render no workloads yet, workloads whose wiring lands in a later increment) are exactly when an operator meets it.
+
+**Consequences.** The runbook gains the note and the `helm history` / `helm uninstall` recovery lines; 10.5's install script scripts the recovery (guard the wait with a pre-flight, or clean up on timeout) rather than discovering it again. Next free DD: 253.

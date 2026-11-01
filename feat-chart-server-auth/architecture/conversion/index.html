@@ -4089,6 +4089,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5121,6 +5125,33 @@
   
   
     <li class="md-nav__item">
+      <a href="./increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="./increments/5-1-lineage/" class="md-nav__link">
         
   
@@ -5264,6 +5295,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8853,14 +8911,14 @@ checks a PR must pass:</p>
 <td>The acting user on writes</td>
 <td><code>createdBy</code>, <code>updatedBy</code> and audit users of every write</td>
 <td><code>RequestContext#getUser</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>4.5</td>
 <td>Saved searches and user profile</td>
 <td>Saved search CRUD; after 6.1, its owners being users (DD-244)</td>
 <td><code>UserProfileService</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>6.2</td>
@@ -9089,7 +9147,7 @@ checks a PR must pass:</p>
 <tr>
 <td>9.1</td>
 <td>Targeted resilience e2e</td>
-<td>Logout round-trip at the real Idp (RSL-03, DD-125/214); the server-down and chain-outage scenarios retired with their tests (RSL-01/RSL-02, DD-281 — their shapes stay unit-pinned)</td>
+<td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
 <td>— (no Java twin; Atlas ships no resilience e2e)</td>
 <td>in progress</td>
 </tr>
@@ -9103,7 +9161,7 @@ checks a PR must pass:</p>
 <tr>
 <td>9.3</td>
 <td>Search cost and client IP</td>
-<td>Refresh moves from reads to writes, uvicorn client-IP trust (ENS-11, SRV-10, DD-237/238); the nginx-edge browser limiter ships (DV-87) but its e2e proof retired (SRV-09, DD-281)</td>
+<td>Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87)</td>
 <td>— (Atlas refreshes nothing on reads, JanusGraph; no limiter to port)</td>
 <td>in progress</td>
 </tr>
@@ -9117,7 +9175,7 @@ checks a PR must pass:</p>
 <tr>
 <td>10.1</td>
 <td>Deployment chart foundation</td>
-<td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-252, DD-283..294)</td>
+<td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-298, DD-283..294)</td>
 <td>— (Atlas ships compose/k8s examples for a topology this is not)</td>
 <td>in progress</td>
 </tr>
@@ -9202,7 +9260,7 @@ checks a PR must pass:</p>
 <td>10.12</td>
 <td>Server authentication, chart wiring</td>
 <td>6.1a's required <code>AUTH_*</code> settings land as chart joins: the prod realm gains the <code>aurelius-atlas-server</code> confidential client (host-tokenised <code>login.jsp</code> redirects), <code>&lt;release&gt;-server-client</code> mints once for both the realm-import placeholder and the server's <code>AUTH_CLIENT_SECRET</code>, and the aux APIs' <code>AUTH_REALM</code> joins <code>global.realm</code> (CHT-108..111, DD-296/297)</td>
-<td>TBD</td>
+<td>#195</td>
 <td>in review</td>
 </tr>
 </tbody>

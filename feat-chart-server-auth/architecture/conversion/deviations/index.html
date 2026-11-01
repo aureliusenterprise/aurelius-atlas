@@ -4101,6 +4101,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5133,6 +5137,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../increments/5-1-lineage/" class="md-nav__link">
         
   
@@ -5276,6 +5307,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8499,14 +8557,6 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>0.5</td>
 </tr>
 <tr>
-<td>DV-06</td>
-<td>Types</td>
-<td>A type definition's <code>createdBy</code> and <code>updatedBy</code> name the user who created and last updated it</td>
-<td>Until 6.1, absent</td>
-<td>There is no login until 6.1; removed then</td>
-<td>1.4</td>
-</tr>
-<tr>
 <td>DV-07</td>
 <td>Types</td>
 <td>The built-in model types and the patch records name the operating system account the server runs as</td>
@@ -8568,14 +8618,6 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td><code>admin/patches</code> lists the typedef patches and the Java patches that repair JanusGraph and Solr indexes</td>
 <td>Lists the typedef patches only</td>
 <td>The Java patches repair indexes Elasticsearch does not have</td>
-<td>2.2</td>
-</tr>
-<tr>
-<td>DV-15</td>
-<td>Entities</td>
-<td>An entity's <code>createdBy</code> and <code>updatedBy</code> name the logged-in user</td>
-<td>Until 6.1, absent</td>
-<td>There is no login until 6.1</td>
 <td>2.2</td>
 </tr>
 <tr>
@@ -9163,46 +9205,15 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>6.1</td>
 </tr>
 <tr>
-<td>DV-109</td>
-<td>Audit</td>
-<td>An audit event names the user who made the change</td>
-<td>Until 6.1b, no user</td>
-<td>The acting user reaches the writes in 6.1b; removed then</td>
-<td>6.1</td>
-</tr>
-<tr>
-<td>??? INFO "DV-04 is temporary"</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
-</table>
-<div class="codehilite"><pre><span></span><code><span class="nt">The</span><span class="w"> </span><span class="nt">most</span><span class="w"> </span><span class="nt">visible</span><span class="w"> </span><span class="nt">row</span><span class="w"> </span><span class="nt">in</span><span class="w"> </span><span class="nt">this</span><span class="w"> </span><span class="nt">table</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="s2">"no endpoint needs a login"</span><span class="w"> </span><span class="err">—</span><span class="w"> </span><span class="nt">is</span><span class="w"> </span><span class="nt">the</span><span class="w"> </span><span class="nt">current</span><span class="w"> </span><span class="nt">state</span><span class="w"> </span><span class="nt">of</span><span class="w"> </span><span class="nt">a</span>
-<span class="nt">planned</span><span class="w"> </span><span class="nt">sequence</span><span class="o">,</span><span class="w"> </span><span class="nt">not</span><span class="w"> </span><span class="nt">a</span><span class="w"> </span><span class="nt">security</span><span class="w"> </span><span class="nt">posture</span><span class="o">:</span><span class="w"> </span><span class="nt">authentication</span><span class="w"> </span><span class="nt">arrives</span><span class="w"> </span><span class="nt">with</span><span class="w"> </span><span class="nt">increment</span><span class="w"> </span><span class="nt">6</span><span class="p">.</span><span class="nc">1</span><span class="w"> </span><span class="nt">and</span><span class="w"> </span><span class="nt">the</span>
-<span class="nt">deviation</span><span class="w"> </span><span class="nt">is</span><span class="w"> </span><span class="nt">removed</span><span class="w"> </span><span class="nt">then</span><span class="o">.</span><span class="w"> </span><span class="nt">Until</span><span class="w"> </span><span class="nt">6</span><span class="p">.</span><span class="nc">1</span><span class="o">,</span><span class="w"> </span><span class="nt">read</span><span class="w"> </span><span class="nt">every</span><span class="w"> </span><span class="nt">anonymous</span><span class="w"> </span><span class="nt">call</span><span class="w"> </span><span class="nt">in</span><span class="w"> </span><span class="nt">this</span><span class="w"> </span><span class="nt">repository</span><span class="w"> </span><span class="nt">as</span>
-<span class="nt">development-arrangement</span><span class="w"> </span><span class="nt">behaviour</span><span class="o">,</span><span class="w"> </span><span class="nt">not</span><span class="w"> </span><span class="nt">production</span><span class="w"> </span><span class="nt">design</span>
-<span class="o">(</span><span class="cp">[</span><span class="nx">ADR</span><span class="w"> </span><span class="mi">039</span><span class="cp">]</span><span class="o">(../</span><span class="nt">adr</span><span class="o">/</span><span class="nt">039-data-is-protected-where-it-travels-and-where-it-rests</span><span class="p">.</span><span class="nc">md</span><span class="o">)</span><span class="w"> </span><span class="nt">names</span><span class="w"> </span><span class="nt">the</span>
-<span class="nt">boundary</span><span class="o">;</span><span class="w"> </span><span class="cp">[</span><span class="nx">ADR</span><span class="w"> </span><span class="mi">046</span><span class="cp">]</span><span class="o">(../</span><span class="nt">adr</span><span class="o">/</span><span class="nt">046-the-catalogue-keeps-its-public-contract</span><span class="p">.</span><span class="nc">md</span><span class="o">)</span><span class="w"> </span><span class="nt">keeps</span><span class="w"> </span><span class="nt">the</span><span class="w"> </span><span class="nt">shape</span>
-<span class="nt">Atlas</span><span class="w"> </span><span class="nt">clients</span><span class="w"> </span><span class="nt">expect</span><span class="w"> </span><span class="nt">when</span><span class="w"> </span><span class="nt">it</span><span class="w"> </span><span class="nt">lands</span><span class="o">).</span>
-</code></pre></div>
-
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Area</th>
-<th>Apache Atlas behaviour</th>
-<th>Aurelius Atlas behaviour</th>
-<th>Reason</th>
-<th>Increment</th>
-</tr>
-</thead>
-<tbody>
-<tr>
 <td>DV-110</td>
+<td>Search</td>
+<td>Saving or updating without a search, or running a saved search without parameters, fails on a null: an internal error</td>
+<td><code>BAD_REQUEST</code></td>
+<td>A client error should say what is wrong</td>
+<td>4.5</td>
+</tr>
+<tr>
+<td>DV-112</td>
 <td>Identity</td>
 <td>One realm serves every shape of the deployment</td>
 <td>Two realm shapes: clusters install the hardened <code>aurelius-atlas</code> realm (no seeded users, real hosts, ROPC off, PKCE S256); the dev compose and the four e2e suites keep the <code>master</code> realm (localhost origins, ROPC, demo users) and <code>realm.name: master</code> stays a supported cluster escape hatch</td>
@@ -9210,7 +9221,7 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>10.7</td>
 </tr>
 <tr>
-<td>DV-111</td>
+<td>DV-113</td>
 <td>Identity</td>
 <td>One Grafana auth posture everywhere</td>
 <td>The cluster's Grafana logs in through the realm (confidential <code>grafana</code> client, Viewer default with client-role escalation); the dev compose's Grafana keeps the anonymous-Viewer posture, and the <code>grafana</code> client exists only in the prod realm asset — CHT-79's first named parity exception</td>

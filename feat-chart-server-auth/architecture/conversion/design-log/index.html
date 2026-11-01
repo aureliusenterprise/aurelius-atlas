@@ -6357,10 +6357,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dd-252-a-stuck-pending-install-release-is-cleared-by-uninstall" class="md-nav__link">
+  <a href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        DD-252 — A stuck pending-install release is cleared by uninstall
+        DD-252. DataAccess carries every model object through a registry of DTOs
       </span>
     </span>
   </a>
@@ -6851,6 +6851,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-298-a-stuck-pending-install-release-is-cleared-by-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-298 — A stuck pending-install release is cleared by uninstall
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6930,6 +6941,10 @@
       
         
           
+        
+      
+        
+      
         
       
         
@@ -8124,6 +8139,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../increments/5-1-lineage/" class="md-nav__link">
         
   
@@ -8267,6 +8309,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -13775,10 +13844,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dd-252-a-stuck-pending-install-release-is-cleared-by-uninstall" class="md-nav__link">
+  <a href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        DD-252 — A stuck pending-install release is cleared by uninstall
+        DD-252. DataAccess carries every model object through a registry of DTOs
       </span>
     </span>
   </a>
@@ -14263,6 +14332,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         DD-297. The aux APIs' AUTH_REALM joins global.realm
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dd-298-a-stuck-pending-install-release-is-cleared-by-uninstall" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-298 — A stuck pending-install release is cleared by uninstall
       </span>
     </span>
   </a>
@@ -15716,10 +15796,10 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td>Proposed</td>
 </tr>
 <tr>
-<td><a href="#dd-252--a-stuck-pending-install-release-is-cleared-by-uninstall">DD-252</a></td>
-<td><code>helm install --wait</code> against a never-Ready workload leaves the release <code>pending-install</code> until uninstalled — runbook warns</td>
-<td>10.1</td>
-<td>Accepted</td>
+<td><a href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos">DD-252</a></td>
+<td>DataAccess carries every model object through a registry of DTOs</td>
+<td>4.5</td>
+<td>Proposed</td>
 </tr>
 <tr>
 <td><a href="#dd-253--the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli">DD-253</a></td>
@@ -15929,6 +16009,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-297-the-aux-apis-auth_realm-joins-globalrealm">DD-297</a></td>
 <td>The aux APIs' AUTH_REALM was a static <code>master</code> config literal; it joins <code>global.realm</code> like every other realm-bearing env (CHT-74)</td>
 <td>10.12</td>
+<td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall">DD-298</a></td>
+<td><code>helm install --wait</code> against a never-Ready workload leaves the release <code>pending-install</code> until uninstalled — runbook warns</td>
+<td>10.1</td>
 <td>Accepted</td>
 </tr>
 </tbody>
@@ -22769,29 +22855,24 @@ signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survi
 instances, at a store round-trip per request.</p>
 <p><strong>Consequences.</strong> A restart signs browsers out; they sign in again at once while their provider session lasts.
 Several server instances need sticky sessions.</p>
-<h3 id="dd-252-a-stuck-pending-install-release-is-cleared-by-uninstall">DD-252 — A stuck pending-install release is cleared by uninstall<a class="headerlink" href="#dd-252-a-stuck-pending-install-release-is-cleared-by-uninstall" title="Permanent link">&para;</a></h3>
+<h3 id="dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos">DD-252. DataAccess carries every model object through a registry of DTOs<a class="headerlink" href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos" title="Permanent link">&para;</a></h3>
 <ul>
-<li><strong>Status:</strong> Accepted</li>
-<li><strong>Increment:</strong> 10.1 (trial)</li>
-<li><strong>Date:</strong> 2026-10-28</li>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.5</li>
+<li><strong>Date:</strong> 2026-11-01</li>
 </ul>
-<p><strong>Decision.</strong> The runbook's install/upgrade sections warn: <code>helm install
---wait</code> (or <code>--atomic</code>) against a workload that never reaches Ready — a
-crash-loop, a missing Secret — burns the full <code>--timeout</code> and leaves the
-release <code>pending-install</code>; every later <code>helm upgrade</code> then fails with
-"another operation (install/upgrade/rollback) is in progress" until <code>helm
-uninstall</code> clears it. Fix the cause, inspect with <code>helm history</code>, and
-uninstall rather than waiting the release out.</p>
-<p><strong>Reason.</strong> Observed twice in the trial of DD-294: the first install timed out
-on the crash-looping aux pods and the stuck release blocked the fix-and-retry
-path with a confusing error unrelated to the actual defect. It is helm's
-documented behaviour, not a chart bug, so it belongs in the runbook, and
-mid-roadmap installs (subcharts that render no workloads yet, workloads whose
-wiring lands in a later increment) are exactly when an operator meets it.</p>
-<p><strong>Consequences.</strong> The runbook gains the note and the <code>helm history</code> /
-<code>helm uninstall</code> recovery lines; 10.5's install script scripts the recovery
-(guard the wait with a pre-flight, or clean up on timeout) rather than
-discovering it again. Next free DD: 253.</p>
+<p><strong>Decision.</strong> <code>DataAccess</code> moves out of the glossary's module into <code>data_access</code>, generic over a registry of
+data transfer objects by the object's class, as Atlas's <code>DataAccess</code> and <code>DTORegistry</code> are. A DTO names the
+entity type, makes the object's entities (its own first, then those it refers to) and reads the object back
+from its entity and the entities read with it, and gives the unique attributes a new object is found by. The
+glossary's three DTOs and the user profile's two register there; each service builds its <code>DataAccess</code> from its
+registry.</p>
+<p><strong>Reason.</strong> 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and
+written like the glossary's objects (DD-246). Atlas has one <code>DataAccess</code> for both; a second copy for profiles
+would duplicate the save, load, type and deletion checks the glossary's already has.</p>
+<p><strong>Alternatives.</strong> A profile store written apart: the same checks twice. One registry of every DTO: services
+would carry DTOs they never use.</p>
+<p><strong>Consequences.</strong> The glossary's <code>DataAccess</code> is <code>glossary_data_access</code>; its tests name the generic methods.</p>
 <h3 id="dd-253-the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli">DD-253 — The chart-contract suite lives at the workspace root and renders with the helm CLI<a class="headerlink" href="#dd-253-the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Accepted</li>
@@ -23533,7 +23614,7 @@ socket does not mean the realm's JWKS endpoint answers, and the OIDC extension
 reads exactly that endpoint (DD-195's race is an HTTP-level one). (c) Keep
 busybox, retry the init from Kubernetes instead of in-process — rejected: a
 backoff-waiting Pod is exactly what the init container exists to prevent
-(DD-252's lesson applies to crash-looping inits too).</p>
+(DD-298's lesson applies to crash-looping inits too).</p>
 <p><strong>Consequences.</strong> CHT-37's rule text names the image honestly; the chart tests
 pin <code>dhi.io/curl:8</code> and the command shape (no shell, <code>--retry-connrefused</code>).
 The <code>--insecure</code> flag stays scoped to a boot gate (the collector verifies the
@@ -23726,7 +23807,7 @@ placeholder-fed demo identities in a prod chart re-create the finding.</p>
 guard: the otel-* clients and the otel-ingest scope must equal their dev
 peers and the aurelius client may differ only in the hardened fields, so an
 identity change in dev must be mirrored in the prod asset or named in its
-commit. The two shapes are deliberate (DV-110): a reviewer comparing the dev
+commit. The two shapes are deliberate (DV-112): a reviewer comparing the dev
 stack's login behaviour to the cluster's should expect them to differ.</p>
 <h3 id="dd-274-globalrealm-as-the-values-contract-host-tokens-substituted-chart-side">DD-274 — <code>global.realm</code> as the values contract; host tokens substituted chart-side<a class="headerlink" href="#dd-274-globalrealm-as-the-values-contract-host-tokens-substituted-chart-side" title="Permanent link">&para;</a></h3>
 <ul>
@@ -23797,7 +23878,7 @@ client roles escalate — the realm is the access boundary, and escalation is
 an explicit grant an operator makes in the Keycloak console. This is CHT-79's
 first named parity exception (prod client ids = dev's ∪ {<code>grafana</code>}): the dev
 compose Grafana stays anonymous-Viewer, a local dashboard over local
-telemetry (DV-111) — the same two-shape posture as DD-273's identity split,
+telemetry (DV-113) — the same two-shape posture as DD-273's identity split,
 now with a concrete client proving the assets may diverge on purpose.</p>
 <p><strong>Alternatives.</strong> (a) Grafana's own auth proxy or the edge's OIDC auth filter
 in front of it — rejected: the gateway filter would authenticate but not
@@ -24669,10 +24750,10 @@ main took DD-240..251 and DV-88..109, the chart track took DD-240..252 (12
 colliding ids — the same numbers, different decisions) plus DV-88/89 in its
 10.7/10.8 increments, its children continuing at DD-253..282. The rebase
 renumbers the <strong>chart side of the collision</strong>: DD-240..251 → DD-283..294 in
-ascending order, and DV-88/89 → DV-110/111 — and this entry (DD-295) records
+ascending order, and DV-88/89 → DV-112/113 — and this entry (DD-295) records
 it. Main's ids keep their numbers. The chart track's DD-252..282 already sit
 above both ranges and are untouched; the 10.1 chain citation <code>DD-240..252</code>
-becomes the explicit list <code>DD-252, DD-283..294</code>. The citation sweep rewrote
+becomes the explicit list <code>DD-298, DD-283..294</code>. The citation sweep rewrote
 every chart spec, doc, chart template, plugin comment, CI workflow, and test
 on the chart side; DD-177 is the precedent for the method.</p>
 <p><strong>Reason.</strong> Main's 4.3–6.1 decisions are merged and cited by merged code —
@@ -24721,7 +24802,7 @@ merged record.</p>
 <td>DD-247</td>
 <td>DD-290</td>
 <td>DV-88</td>
-<td>DV-110</td>
+<td>DV-112</td>
 </tr>
 <tr>
 <td>DD-243</td>
@@ -24729,7 +24810,7 @@ merged record.</p>
 <td>DD-248</td>
 <td>DD-291</td>
 <td>DV-89</td>
-<td>DV-111</td>
+<td>DV-113</td>
 </tr>
 <tr>
 <td>DD-244</td>
@@ -24741,6 +24822,11 @@ merged record.</p>
 </tr>
 </tbody>
 </table>
+<p><strong>Addendum (2026-11-01, this merge).</strong> 4.5 (#194) then minted main’s <code>DD-252</code>
+and <code>DV-110</code>, so ids this entry left in place collided: they move to <code>DD-298</code>
+and <code>DV-112</code>, and the paired <code>DV-111</code> shifts with it to <code>DV-113</code> — one sweep,
+same rule. Chart <code>DD-252</code> → <code>DD-298</code>, <code>DV-110/111</code> → <code>DV-112/113</code>; main keeps
+<code>DD-252</code> and <code>DV-110</code>.</p>
 <h3 id="dd-296-61as-required-auth-settings-land-in-the-charts-as-joins">DD-296. 6.1a's required auth settings land in the charts as joins<a class="headerlink" href="#dd-296-61as-required-auth-settings-land-in-the-charts-as-joins" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Accepted</li>
@@ -24809,6 +24895,29 @@ default for compose/dev, which the charts never relied on anyway.</p>
 are for verbatim operator settings, not derived joins. Any future
 realm-bearing env joins the same enumeration (the umbrella suite's
 <code>/realms/...</code> sweep plus the named AUTH_REALM pins).</p>
+<h3 id="dd-298-a-stuck-pending-install-release-is-cleared-by-uninstall">DD-298 — A stuck pending-install release is cleared by uninstall<a class="headerlink" href="#dd-298-a-stuck-pending-install-release-is-cleared-by-uninstall" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 10.1 (trial)</li>
+<li><strong>Date:</strong> 2026-10-28</li>
+</ul>
+<p><strong>Decision.</strong> The runbook's install/upgrade sections warn: <code>helm install
+--wait</code> (or <code>--atomic</code>) against a workload that never reaches Ready — a
+crash-loop, a missing Secret — burns the full <code>--timeout</code> and leaves the
+release <code>pending-install</code>; every later <code>helm upgrade</code> then fails with
+"another operation (install/upgrade/rollback) is in progress" until <code>helm
+uninstall</code> clears it. Fix the cause, inspect with <code>helm history</code>, and
+uninstall rather than waiting the release out.</p>
+<p><strong>Reason.</strong> Observed twice in the trial of DD-294: the first install timed out
+on the crash-looping aux pods and the stuck release blocked the fix-and-retry
+path with a confusing error unrelated to the actual defect. It is helm's
+documented behaviour, not a chart bug, so it belongs in the runbook, and
+mid-roadmap installs (subcharts that render no workloads yet, workloads whose
+wiring lands in a later increment) are exactly when an operator meets it.</p>
+<p><strong>Consequences.</strong> The runbook gains the note and the <code>helm history</code> /
+<code>helm uninstall</code> recovery lines; 10.5's install script scripts the recovery
+(guard the wait with a pre-flight, or clean up on timeout) rather than
+discovering it again. Next free DD: 253.</p>
 
 
 

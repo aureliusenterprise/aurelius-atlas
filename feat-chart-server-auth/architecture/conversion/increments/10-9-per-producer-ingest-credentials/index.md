@@ -35,7 +35,7 @@ None — this increment ports no Apache Atlas behaviour. The reference is the pr
 
 ## Deviations
 
-None against Atlas. The dev↔prod divergence deepens along the line DV-110 drew: the realm assets now differ in credential shape as well as hardening — the prod asset's seven per-client placeholders against master's shared one — and CHT-79's drift guard carries the second named exception for exactly this field (the first was 10.8's `grafana` client). DD-277 records the design: one Secret with per-client keys over seven Secrets, realm-conditional keys keeping the `master` hatch fully functional over prod-only keys, and dev staying shared.
+None against Atlas. The dev↔prod divergence deepens along the line DV-112 drew: the realm assets now differ in credential shape as well as hardening — the prod asset's seven per-client placeholders against master's shared one — and CHT-79's drift guard carries the second named exception for exactly this field (the first was 10.8's `grafana` client). DD-277 records the design: one Secret with per-client keys over seven Secrets, realm-conditional keys keeping the `master` hatch fully functional over prod-only keys, and dev staying shared.
 
 ## Acceptance
 

@@ -1931,6 +1931,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_parity.run_scenario(known)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;known
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -2799,6 +2810,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;client
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_parity.run.run_scenario(known)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;known
       </span>
     </span>
   </a>
@@ -5579,6 +5601,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -6611,6 +6637,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../../architecture/conversion/increments/5-1-lineage/" class="md-nav__link">
         
   
@@ -6754,6 +6807,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -10020,6 +10100,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_parity.run_scenario(known)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;known
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -10888,6 +10979,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;client
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_parity.run.run_scenario(known)" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-parameter"></code>&nbsp;known
       </span>
     </span>
   </a>
@@ -12312,7 +12414,7 @@
 
   
       pydantic-model
-   (aurelius_atlas_parity.scenario.Scenario)" href="./#aurelius_atlas_parity.scenario.Scenario">Scenario</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="client (aurelius_atlas_parity.run_scenario(client))" href="./#aurelius_atlas_parity.run_scenario(client)">client</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+   (aurelius_atlas_parity.scenario.Scenario)" href="./#aurelius_atlas_parity.scenario.Scenario">Scenario</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="client (aurelius_atlas_parity.run_scenario(client))" href="./#aurelius_atlas_parity.run_scenario(client)">client</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="known (aurelius_atlas_parity.run_scenario(known))" href="./#aurelius_atlas_parity.run_scenario(known)">known</a></span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -12341,6 +12443,16 @@
           –
           <div class="doc-md-description">
             <p>Talks to the application under test, in-process or over HTTP; the caller owns it.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h4 id="aurelius_atlas_parity.run_scenario(known)" class="doc doc-heading doc-heading-parameter">              <b><code>known</code></b>
+<a href="#aurelius_atlas_parity.run_scenario(known)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Values known before the first stage, such as <code>{user}</code>, the user the client acts as (USR-04).</p>
           </div>
         </li>
     </ul>
@@ -15619,7 +15731,7 @@ stages do not run.</p>
 
   
       pydantic-model
-   (aurelius_atlas_parity.scenario.Scenario)" href="./#aurelius_atlas_parity.scenario.Scenario">Scenario</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="client (aurelius_atlas_parity.run.run_scenario(client))" href="./#aurelius_atlas_parity.run.run_scenario(client)">client</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+   (aurelius_atlas_parity.scenario.Scenario)" href="./#aurelius_atlas_parity.scenario.Scenario">Scenario</a></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="client (aurelius_atlas_parity.run.run_scenario(client))" href="./#aurelius_atlas_parity.run.run_scenario(client)">client</a></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="known (aurelius_atlas_parity.run.run_scenario(known))" href="./#aurelius_atlas_parity.run.run_scenario(known)">known</a></span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -15648,6 +15760,16 @@ stages do not run.</p>
           –
           <div class="doc-md-description">
             <p>Talks to the application under test, in-process or over HTTP; the caller owns it.</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
+<h4 id="aurelius_atlas_parity.run.run_scenario(known)" class="doc doc-heading doc-heading-parameter">              <b><code>known</code></b>
+<a href="#aurelius_atlas_parity.run.run_scenario(known)" class="headerlink" title="Permanent link">&para;</a></h4>              (<code><span title="collections.abc.Mapping">Mapping</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>] | None</code>, default:
+                  <code>None</code>
+)
+          –
+          <div class="doc-md-description">
+            <p>Values known before the first stage, such as <code>{user}</code>, the user the client acts as (USR-04).</p>
           </div>
         </li>
     </ul>

@@ -4091,6 +4091,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5123,6 +5127,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../5-1-lineage/" class="md-nav__link">
         
   
@@ -5266,6 +5297,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8764,6 +8822,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -8798,7 +8860,7 @@
 <h1 id="1012-server-authentication-chart-wiring">10.12 Server authentication, chart wiring<a class="headerlink" href="#1012-server-authentication-chart-wiring" title="Permanent link">&para;</a></h1>
 <ul>
 <li><strong>Status:</strong> in review</li>
-<li><strong>Pull request:</strong> TBD</li>
+<li><strong>Pull request:</strong> #195</li>
 <li><strong>Records:</strong> DD-296, DD-297 (relies on: DD-250/251 on main — 6.1a's auth
   settings and session; DD-256's placeholder resolver; CHT-74's realm contract,
   CHT-87's per-client placeholder rule, CHT-88's realm-shaped secrets)</li>
@@ -8872,8 +8934,7 @@ established in 10.1–10.3, extended here.)</p>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <p>Chart-contract suites (run: <code>uv run pytest tests/test__charts_server.py
 tests/test__charts_keycloak.py tests/test__charts_umbrella.py
-tests/test__charts_data2model.py tests/test__charts_lineage_model.py
-tests/test__charts_validate_entity.py</code>):</p>
+tests/test__charts_aux.py</code>):</p>
 <ul>
 <li><code>test__charts_server.py</code> — CHT-108: the auth env block on the stock render
   (issuer URL, realm, client id, audiences, CA path, secret join); the issuer
@@ -8888,7 +8949,7 @@ tests/test__charts_validate_entity.py</code>):</p>
   generated roster with its one key; it renders for the keycloak-only and
   server-only installs and not for neither; CHT-111: server + aux <code>AUTH_REALM</code>
   equal the imported realm.</li>
-<li><code>test__charts_data2model.py</code> (+ lineage/validate twins) — CHT-111:
+<li><code>test__charts_aux.py</code> (parametrised over the three aux charts) — CHT-111:
   <code>AUTH_REALM</code> follows <code>global.realm</code> (prod default and the master hatch).</li>
 </ul>
 

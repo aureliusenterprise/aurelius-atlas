@@ -4087,6 +4087,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -5119,6 +5123,33 @@
   
   
     <li class="md-nav__item">
+      <a href="../../conversion/increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../conversion/increments/5-1-lineage/" class="md-nav__link">
         
   
@@ -5262,6 +5293,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8771,7 +8829,7 @@ With <code>--wait</code> (or <code>--atomic</code>), a workload that never reach
 crash-loop, a Secret the chart expects but nobody created — burns the full
 <code>--timeout</code> and leaves the release stuck at <code>pending-install</code>; every later
 <code>helm upgrade</code> then fails with "another operation … is in progress" until
-<code>helm uninstall atlas -n atlas</code> clears it (DD-252). Fix the cause (check
+<code>helm uninstall atlas -n atlas</code> clears it (DD-298). Fix the cause (check
 <code>kubectl -n atlas get pods</code> / <code>helm history atlas -n atlas</code>), then
 uninstall and reinstall — do not wait the release out.</p>
 </blockquote>
