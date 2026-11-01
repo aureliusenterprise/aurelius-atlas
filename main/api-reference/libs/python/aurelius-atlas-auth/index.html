@@ -1830,6 +1830,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_auth.auth.client_roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;client_roles
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -4492,6 +4503,8 @@
       
         
       
+        
+      
     
     
     
@@ -5721,6 +5734,33 @@
     
   
   6.1b The acting user on writes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/conversion/increments/6-2-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2a Authorization, types and admin
 
     
   </span>
@@ -9102,6 +9142,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_auth.auth.client_roles" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;client_roles
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -9361,6 +9412,18 @@ shared across applications.</p>
 
 
 
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            client_roles (aurelius_atlas_auth.auth.client_roles)" href="./#aurelius_atlas_auth.auth.client_roles">client_roles</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The roles a token carries of one client, <code>resource_access.&lt;client_id&gt;.roles</code> (AUZ-01).</p>
+            </div>
+          </li>
+    </ul>
+
+
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
@@ -9472,7 +9535,7 @@ shared across applications.</p>
   </span>
 
 <a href="#aurelius_atlas_auth.auth.__all__" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'AuthConfig'</span><span class="p">,</span> <span class="s1">'KeycloakAuth'</span><span class="p">,</span> <span class="s1">'bearer_scheme'</span><span class="p">]</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'AuthConfig'</span><span class="p">,</span> <span class="s1">'KeycloakAuth'</span><span class="p">,</span> <span class="s1">'bearer_scheme'</span><span class="p">,</span> <span class="s1">'client_roles'</span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -10338,6 +10401,27 @@ enforce.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_auth.auth.client_roles" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">client_roles</span>
+
+
+<a href="#aurelius_atlas_auth.auth.client_roles" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">client_roles</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_auth.auth.client_roles(claims)">claims</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_auth.auth.client_roles(client_id)">client_id</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The roles a token carries of one client, <code>resource_access.&lt;client_id&gt;.roles</code> (AUZ-01).</p>
+<p>Keycloak namespaces client roles per client, so another client's same-named role is not among them.</p>
+
+
+    </div>
+
+</div>
 
 
 

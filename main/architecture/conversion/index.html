@@ -4093,6 +4093,8 @@
       
         
       
+        
+      
     
     
     
@@ -5322,6 +5324,33 @@
     
   
   6.1b The acting user on writes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/6-2-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2a Authorization, types and admin
 
     
   </span>
@@ -8921,10 +8950,24 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
-<td>6.2</td>
-<td>Authorization</td>
-<td>Simple authorizer policies on every endpoint</td>
-<td><code>atlas-simple-authz-policy</code></td>
+<td>6.2a</td>
+<td>Authorization: authorizer, types, admin</td>
+<td>The roles that grant Atlas's privileges, the session's permissions, type definition and purge checks</td>
+<td><code>AtlasAuthorizationUtils</code>, <code>AtlasSimpleAuthorizer</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.2b</td>
+<td>Authorization: entities</td>
+<td>Entity, classification, label, business metadata, relationship and glossary checks</td>
+<td><code>AtlasEntityStoreV2</code>, <code>AtlasRelationshipStoreV2</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>6.2c</td>
+<td>Authorization: search and lineage</td>
+<td>Search results and lineage scrubbed of what a user may not read; ADR 038 accepted</td>
+<td><code>AtlasAuthorizationUtils#scrubSearchResults</code>, <code>EntityLineageService</code></td>
 <td>planned</td>
 </tr>
 <tr>

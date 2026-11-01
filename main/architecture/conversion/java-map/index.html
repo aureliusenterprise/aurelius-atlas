@@ -4164,6 +4164,8 @@
       
         
       
+        
+      
     
     
     
@@ -5393,6 +5395,33 @@
     
   
   6.1b The acting user on writes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-2-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2a Authorization, types and admin
 
     
   </span>
@@ -8919,6 +8948,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>DiscoveryREST</code> (<code>saved</code>), <code>EntityDiscoveryService</code> (saved searches, <code>checkSavedSearchOwnership</code>), <code>UserProfileService</code>, <code>DataAccess</code>, <code>DTORegistry</code>, <code>AtlasUserProfileDTO</code>, <code>AtlasSavedSearchDTO</code>, <code>AtlasUserProfile</code>, <code>AtlasUserSavedSearch</code></td>
 <td><code>aurelius_atlas_server.routes.discovery</code>, <code>aurelius_atlas_core.discovery_service</code>, <code>aurelius_atlas_core.user_profile_service</code>, <code>aurelius_atlas_core.data_access</code>, <code>aurelius_atlas_core.user_profile_dto</code>, <code>aurelius_atlas_model.profile</code></td>
 <td>4.5</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>AtlasPrivilege</code>, <code>AtlasAuthorizationUtils#verifyAccess</code>, <code>#isAccessAllowed</code>, <code>AtlasSimpleAuthorizer</code> (roles in place of its policy), the type-definition stores' and <code>purgeByIds</code>' checks, <code>AdminResource#getUserProfile</code> (permissions)</td>
+<td><code>aurelius_atlas_server.authorization</code>, <code>aurelius_atlas_server.routes.types</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.client_roles</code></td>
+<td>6.2a</td>
 <td>in progress</td>
 </tr>
 <tr>

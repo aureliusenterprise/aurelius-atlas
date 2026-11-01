@@ -35,6 +35,12 @@ Classes:
 
   One service's Keycloak verifier: dependencies for FastAPI routers.
 
+Functions:
+
+- **`client_roles`** –
+
+  The roles a token carries of one client, `resource_access.<client_id>.roles` (AUZ-01).
+
 Attributes:
 
 - **`bearer_scheme`** –
@@ -66,7 +72,7 @@ LOGGER = logging.getLogger('aurelius-atlas-auth')
 ### \_\_all\_\_
 
 ```
-__all__ = ['AuthConfig', 'KeycloakAuth', 'bearer_scheme']
+__all__ = ['AuthConfig', 'KeycloakAuth', 'bearer_scheme', 'client_roles']
 ```
 
 ### bearer\_scheme
@@ -311,3 +317,13 @@ verify(token: str) -> dict
 Verify a token and return its claims, for callers outside a route dependency (AUX-02, AUT-10).
 
 :raises HTTPException: 401 for a token that does not verify, 503 when the issuer cannot be reached
+
+### client\_roles
+
+```
+client_roles(claims: dict, client_id: str) -> frozenset[str]
+```
+
+The roles a token carries of one client, `resource_access.<client_id>.roles` (AUZ-01).
+
+Keycloak namespaces client roles per client, so another client's same-named role is not among them.

@@ -4105,6 +4105,8 @@
       
         
       
+        
+      
     
     
     
@@ -5334,6 +5336,33 @@
     
   
   6.1b The acting user on writes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-2-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2a Authorization, types and admin
 
     
   </span>
@@ -9173,14 +9202,6 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>5.2</td>
 </tr>
 <tr>
-<td>DV-105</td>
-<td>Authentication</td>
-<td>The session reports whether the user may create and update entities, as the authorizer decides</td>
-<td>Until 6.2, <code>atlas.entity.create.allowed</code> and <code>atlas.entity.update.allowed</code> are false</td>
-<td>Authorization arrives in 6.2; removed then</td>
-<td>6.1</td>
-</tr>
-<tr>
 <td>DV-106</td>
 <td>Authentication</td>
 <td>Any request without credentials but an <code>XMLHttpRequest</code> is redirected to the login page; a 401 carries Jetty's HTML error page</td>
@@ -9227,6 +9248,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The cluster's Grafana logs in through the realm (confidential <code>grafana</code> client, Viewer default with client-role escalation); the dev compose's Grafana keeps the anonymous-Viewer posture, and the <code>grafana</code> client exists only in the prod realm asset — CHT-79's first named parity exception</td>
 <td>A local dashboard over local telemetry needs no IdP, and a client the dev stack never uses is drift bait; the pentest H4 exposure is a cluster fact, and DD-275 records the exception so the parity guard still catches unintentional divergence</td>
 <td>10.8</td>
+</tr>
+<tr>
+<td>DV-114</td>
+<td>Authorization</td>
+<td>Privileges are granted by a policy of regular expressions over types, entities, classifications and labels, per user and group (<code>atlas-simple-authz-policy.json</code>, or Ranger)</td>
+<td>By four fixed roles of the server's client in the identity provider</td>
+<td>Who may do what is managed in one place, the identity provider (DD-300)</td>
+<td>6.2</td>
+</tr>
+<tr>
+<td>DV-115</td>
+<td>Authorization</td>
+<td>Type definitions are validated before their privileges are checked</td>
+<td>Their privileges are checked first: an invalid definition from a user without them is refused as unauthorized</td>
+<td>The checks sit at the endpoint, before the store</td>
+<td>6.2</td>
 </tr>
 </tbody>
 </table>

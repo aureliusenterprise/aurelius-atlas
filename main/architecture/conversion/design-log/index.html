@@ -6873,6 +6873,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-300. Four fixed roles of the server's client grant Atlas's privileges
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6952,6 +6963,8 @@
       
         
           
+        
+      
         
       
         
@@ -8347,6 +8360,33 @@
     
   
   6.1b The acting user on writes
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-2-authorization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2a Authorization, types and admin
 
     
   </span>
@@ -14371,6 +14411,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-300. Four fixed roles of the server's client grant Atlas's privileges
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -16043,6 +16094,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template">DD-299</a></td>
 <td><code>helm-lint</code> runs <code>helm dep update</code> before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values</td>
 <td>10.12</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges">DD-300</a></td>
+<td>Four fixed roles of the server's client grant Atlas's privileges</td>
+<td>6.2</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -24971,6 +25028,29 @@ the machine, so the prefix is uniform and cheap.</p>
 <p><strong>Consequences.</strong> #205's <code>Lint &amp; render charts</code> step goes green on a clean
 runner; the plugin's three render-family targets now share one provenance
 rule: never trust <code>helm/charts/</code> to exist. Next free DD: 300.</p>
+<h3 id="dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges">DD-300. Four fixed roles of the server's client grant Atlas's privileges<a class="headerlink" href="#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 6.2a</li>
+<li><strong>Date:</strong> 2026-11-01</li>
+</ul>
+<p><strong>Decision.</strong> The server's authorizer grants Atlas's privileges (<code>AtlasPrivilege</code>) by four roles of its own
+client in the identity provider, read from the token's <code>resource_access.&lt;client&gt;.roles</code>: <code>atlas-read</code> (type,
+entity and classification reads), <code>atlas-write</code> (entity, classification, label, business metadata and
+relationship changes), <code>atlas-types</code> (type definition changes, and reads) and <code>atlas-admin</code> (purge, export,
+import, admin audits). What each role grants is fixed in the server; who holds a role is decided in the identity
+provider only. Checks sit where Atlas's sit, with its action texts and <code>UNAUTHORIZED_ACCESS</code>. The user chose this
+on 2026-11-01 over porting Atlas's simple-authz policy file.</p>
+<p><strong>Reason.</strong> ADR 038 asks for one place that answers what a person may do, apart from who they are, where
+revoking is one act. The identity provider already holds who someone is (ADR 007, DD-250); holding their roles
+there too makes granting and revoking one act in one console, with no policy file to deploy. Four roles cover
+the distinctions Atlas's default policy draws (readers, stewards, type owners, administrators).</p>
+<p><strong>Alternatives.</strong> Atlas's simple-authz policy (regular expressions over types, entities and classifications,
+mapped from users and groups): Atlas-compatible and finer, but a second place to manage and a file to deploy.
+An external policy engine: one more service to run everywhere it is validated.</p>
+<p><strong>Consequences.</strong> No permission finer than a role: a user may change every entity type or none (DV-114). The
+roles are client roles, so a client that forwards a user's token (the webapp's) maps them into its scope. The
+dev realm gives the writer every role and the reader <code>atlas-read</code>.</p>
 
 
 
