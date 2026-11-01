@@ -286,6 +286,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-297](#dd-297-the-aux-apis-auth_realm-joins-globalrealm)                                                         | The aux APIs' AUTH_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74)                                                                                              | 10.12         | Accepted             |
 | [DD-298](#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall)                                          | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns                                                                                                     | 10.1          | Accepted             |
 | [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                        | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
+| [DD-300](#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                    | Four fixed roles of the server's client grant Atlas's privileges                                                                                                                                                                | 6.2           | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -9848,3 +9849,30 @@ the machine, so the prefix is uniform and cheap.
 **Consequences.** #205's `Lint & render charts` step goes green on a clean
 runner; the plugin's three render-family targets now share one provenance
 rule: never trust `helm/charts/` to exist. Next free DD: 300.
+
+### DD-300. Four fixed roles of the server's client grant Atlas's privileges
+
+- **Status:** Proposed
+- **Increment:** 6.2a
+- **Date:** 2026-11-01
+
+**Decision.** The server's authorizer grants Atlas's privileges (`AtlasPrivilege`) by four roles of its own
+client in the identity provider, read from the token's `resource_access.<client>.roles`: `atlas-read` (type,
+entity and classification reads), `atlas-write` (entity, classification, label, business metadata and
+relationship changes), `atlas-types` (type definition changes, and reads) and `atlas-admin` (purge, export,
+import, admin audits). What each role grants is fixed in the server; who holds a role is decided in the identity
+provider only. Checks sit where Atlas's sit, with its action texts and `UNAUTHORIZED_ACCESS`. The user chose this
+on 2026-11-01 over porting Atlas's simple-authz policy file.
+
+**Reason.** ADR 038 asks for one place that answers what a person may do, apart from who they are, where
+revoking is one act. The identity provider already holds who someone is (ADR 007, DD-250); holding their roles
+there too makes granting and revoking one act in one console, with no policy file to deploy. Four roles cover
+the distinctions Atlas's default policy draws (readers, stewards, type owners, administrators).
+
+**Alternatives.** Atlas's simple-authz policy (regular expressions over types, entities and classifications,
+mapped from users and groups): Atlas-compatible and finer, but a second place to manage and a file to deploy.
+An external policy engine: one more service to run everywhere it is validated.
+
+**Consequences.** No permission finer than a role: a user may change every entity type or none (DV-114). The
+roles are client roles, so a client that forwards a user's token (the webapp's) maps them into its scope. The
+dev realm gives the writer every role and the reader `atlas-read`.

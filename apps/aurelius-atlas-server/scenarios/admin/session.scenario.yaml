@@ -8,7 +8,7 @@ source:
     - distro/src/conf/users-credentials.properties (user admin in group ADMIN)
     - webapp/src/main/java/org/apache/atlas/web/dao/UserDao.java#loadUserByUsername (the group is the authority)
     - webapp/src/main/java/org/apache/atlas/web/security/AtlasKeycloakAuthenticationProvider.java (the groups claim)
-rules: [ADM-05, SRV-05, AUT-09]
+rules: [ADM-05, SRV-05, AUT-09, AUZ-06]
 covers: [aurelius_atlas_server.routes.admin.get_session]
 stages:
     - name: as the admin user of a default Atlas installation
@@ -42,7 +42,5 @@ stages:
           # for the user who asks (AUT-03, AUT-09), checked by the unit tests and the e2e sign-in.
           volatile: [$._csrfToken, $.timezones, $.groups]
           deviations:
-              - { id: DV-105, path: "$['atlas.entity.update.allowed']", value: false }
-              - { id: DV-105, path: "$['atlas.entity.create.allowed']", value: false }
               # The ids differ (DV-05) and are compared as volatile; their content is checked by the unit tests.
               - { id: DV-05, path: $.timezones, value: "IANA time zone ids" }

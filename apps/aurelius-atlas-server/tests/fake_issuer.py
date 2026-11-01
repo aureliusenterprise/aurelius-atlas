@@ -24,6 +24,8 @@ CLIENT_ID = "aurelius-atlas-server"
 CLIENT_SECRET = "test-client-secret"  # noqa: S105 - the fake provider's own
 WEBAPP = "aurelius"
 KID = "test-key"
+ATLAS_ROLES = ("atlas-read", "atlas-write", "atlas-types", "atlas-admin")
+"""Every role of the server's client (AUZ-02): a token holds them all unless a test says otherwise."""
 TOKEN_ENDPOINT = f"{ISSUER}/protocol/openid-connect/token"
 AUTHORIZATION_ENDPOINT = f"{ISSUER}/protocol/openid-connect/auth"
 END_SESSION_ENDPOINT = f"{ISSUER}/protocol/openid-connect/logout"
@@ -51,6 +53,7 @@ class FakeIssuer:
         issuer: str = ISSUER,
         expires_in: int | None = None,
         roles: list[str] | None = None,
+        atlas_roles: tuple[str, ...] = ATLAS_ROLES,
         key: rsa.RSAPrivateKey | None = None,
         **claims: Any,  # noqa: ANN401 - further claims
     ) -> str:
@@ -64,6 +67,7 @@ class FakeIssuer:
             "exp": now + (self.lifetime if expires_in is None else expires_in),
             "preferred_username": user,
             "realm_access": {"roles": roles if roles is not None else ["default-roles-master"]},
+            "resource_access": {CLIENT_ID: {"roles": list(atlas_roles)}},
             **claims,
         }
         return jwt.encode(body, key if key is not None else _KEY, algorithm="RS256", headers={"kid": KID})

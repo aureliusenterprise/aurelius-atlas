@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from pydantic import ValidationError
 
 from aurelius_atlas_server.authentication import acting_user
+from aurelius_atlas_server.authorization import AtlasPrivilege, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 
 TYPES = APIRouter(prefix="/api/atlas/v2/types", tags=["Types"])
@@ -71,17 +72,21 @@ def _json(content: Any) -> AtlasJSONResponse:  # noqa: ANN401 - Atlas JSON
 
 
 @TYPES.get("/typedef/name/{name}")
-async def get_typedef_by_name(name: str, store: Store) -> AtlasJSONResponse:
-    """``getTypeDefByName``: the definition of any kind with that name (TYR-01)."""
+async def get_typedef_by_name(name: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getTypeDefByName``: the definition of any kind with that name, if the user may read it (TYR-01, AUZ-04)."""
     validate_param_length("name", name)
-    return _json(store.get_by_name(name).to_json())
+    found = store.get_by_name(name)
+    verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, name)
+    return _json(found.to_json())
 
 
 @TYPES.get("/typedef/guid/{guid}")
-async def get_typedef_by_guid(guid: str, store: Store) -> AtlasJSONResponse:
-    """``getTypeDefByGuid``: the definition of any kind with that GUID (TYR-02)."""
+async def get_typedef_by_guid(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getTypeDefByGuid``: the definition of any kind with that GUID, if the user may read it (TYR-02, AUZ-04)."""
     validate_param_length("guid", guid)
-    return _json(store.get_by_guid(guid).to_json())
+    found = store.get_by_guid(guid)
+    verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, guid)
+    return _json(found.to_json())
 
 
 @TYPES.get("/typedefs/headers")
@@ -100,39 +105,46 @@ async def get_all_typedefs(request: Request, store: Store) -> AtlasJSONResponse:
 
 @TYPES.post("/typedefs")
 async def create_typedefs(request: Request, types_def: Body, store: Store) -> AtlasJSONResponse:
-    """``createAtlasTypeDefs``: create the definitions, all or none, as the request's user (TYR-09, USR-02)."""
+    """``createAtlasTypeDefs``: create the definitions, all or none, as the request's user (TYR-09, USR-02, AUZ-04)."""
+    _verify_each(request, types_def, AtlasPrivilege.TYPE_CREATE, "create")
     return _json((await store.create_types_def(types_def, user=acting_user(request))).to_json())
 
 
 @TYPES.put("/typedefs")
 async def update_typedefs(request: Request, types_def: Body, store: Store) -> AtlasJSONResponse:
-    """``updateAtlasTypeDefs``: update the definitions, all or none, as the request's user (TYR-09, USR-02)."""
+    """``updateAtlasTypeDefs``: update the definitions, all or none, as the request's user (TYR-09, USR-02, AUZ-04)."""
+    _verify_each(request, types_def, AtlasPrivilege.TYPE_UPDATE, "update")
     return _json((await store.update_types_def(types_def, user=acting_user(request))).to_json())
 
 
 @TYPES.delete("/typedefs", status_code=204)
-async def delete_typedefs(types_def: Body, store: Store) -> Response:
-    """``deleteAtlasTypeDefs``: delete the definitions, all or none (TYR-10)."""
+async def delete_typedefs(request: Request, types_def: Body, store: Store) -> Response:
+    """``deleteAtlasTypeDefs``: delete the definitions, all or none (TYR-10, AUZ-04)."""
+    _verify_each(request, types_def, AtlasPrivilege.TYPE_DELETE, "delete")
     await store.delete_types_def(types_def)
     return Response(status_code=204)
 
 
 @TYPES.delete("/typedef/name/{type_name}", status_code=204)
-async def delete_typedef_by_name(type_name: str, store: Store) -> Response:
-    """``deleteAtlasTypeByName``: delete the named definition (TYR-10)."""
+async def delete_typedef_by_name(type_name: str, request: Request, store: Store) -> Response:
+    """``deleteAtlasTypeByName``: delete the named definition (TYR-10, AUZ-04)."""
+    found = store.get_by_name(type_name)
+    verify_access(request, AtlasPrivilege.TYPE_DELETE, f"delete {KIND_TEXT[found.category]} ", type_name)
     await store.delete_type_by_name(type_name)
     return Response(status_code=204)
 
 
-type Lookup = Callable[[str, TypedefStore], Awaitable[AtlasJSONResponse]]
+type Lookup = Callable[[str, Request, TypedefStore], Awaitable[AtlasJSONResponse]]
 
 
 def kind_by_name(kind: TypeCategory) -> Lookup:
     """The endpoint answering ``kind``'s definition with a name (``get{Kind}DefByName``, TYR-03)."""
 
-    async def lookup(name: str, store: Store) -> AtlasJSONResponse:
+    async def lookup(name: str, request: Request, store: Store) -> AtlasJSONResponse:
         validate_param_length("name", name)
-        return _json(store.get_def_by_name(kind, name).to_json())
+        found = store.get_def_by_name(kind, name)
+        verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, name)
+        return _json(found.to_json())
 
     return lookup
 
@@ -140,9 +152,11 @@ def kind_by_name(kind: TypeCategory) -> Lookup:
 def kind_by_guid(kind: TypeCategory) -> Lookup:
     """The endpoint answering ``kind``'s definition with a GUID (``get{Kind}DefByGuid``, TYR-03)."""
 
-    async def lookup(guid: str, store: Store) -> AtlasJSONResponse:
+    async def lookup(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
         validate_param_length("guid", guid)
-        return _json(store.get_def_by_guid(kind, guid).to_json())
+        found = store.get_def_by_guid(kind, guid)
+        verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, guid)
+        return _json(found.to_json())
 
     return lookup
 
@@ -150,3 +164,33 @@ def kind_by_guid(kind: TypeCategory) -> Lookup:
 for _path, _kind in KIND_PATHS.items():
     TYPES.add_api_route(f"/{_path}/name/{{name}}", kind_by_name(_kind), methods=["GET"], name=f"{_path}_by_name")
     TYPES.add_api_route(f"/{_path}/guid/{{guid}}", kind_by_guid(_kind), methods=["GET"], name=f"{_path}_by_guid")
+
+
+READ_TYPE = "read type "
+KIND_TEXT = {
+    TypeCategory.ENUM: "enum-def",
+    TypeCategory.STRUCT: "struct-def",
+    TypeCategory.CLASSIFICATION: "classification-def",
+    TypeCategory.ENTITY: "entity-def",
+    TypeCategory.RELATIONSHIP: "relationship-def",
+    TypeCategory.BUSINESS_METADATA: "businessMetadata-def",
+}
+"""How the definition stores name their kind in the actions they check (AUZ-04)."""
+
+
+def _verify_each(request: Request, types_def: AtlasTypesDef, privilege: AtlasPrivilege, verb: str) -> None:
+    """The privilege for each definition, in the order the stores write the kinds (AUZ-04).
+
+    Raises:
+        AtlasError: ``UNAUTHORIZED_ACCESS`` for the first the user may not change.
+    """
+    for kind, definitions in (
+        (TypeCategory.ENUM, types_def.enum_defs),
+        (TypeCategory.STRUCT, types_def.struct_defs),
+        (TypeCategory.CLASSIFICATION, types_def.classification_defs),
+        (TypeCategory.ENTITY, types_def.entity_defs),
+        (TypeCategory.RELATIONSHIP, types_def.relationship_defs),
+        (TypeCategory.BUSINESS_METADATA, types_def.business_metadata_defs),
+    ):
+        for definition in definitions or []:
+            verify_access(request, privilege, f"{verb} {KIND_TEXT[kind]} ", definition.name)

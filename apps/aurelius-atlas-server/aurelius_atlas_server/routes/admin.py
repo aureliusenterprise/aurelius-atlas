@@ -15,6 +15,7 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import PlainTextResponse
 
 from aurelius_atlas_server.authentication import Session, User, csrf_token
+from aurelius_atlas_server.authorization import AtlasPrivilege, privileges, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import Body, Store, writer
 from aurelius_atlas_server.routes.types import validate_param_length
@@ -84,18 +85,19 @@ async def get_session(request: Request) -> dict[str, Any]:
     """The user interface settings and the user of this session (ADM-05, AUT-09).
 
     The CSRF token is the session's, made on first ask; a request without a session gets a new one. The entity
-    permissions stay false until 6.2 (DV-105). ``atlas.tasks.enabled`` is the server's ``tasks_enabled`` setting
+    permissions are the user's (AUZ-06). ``atlas.tasks.enabled`` is the server's ``tasks_enabled`` setting
     (DD-081).
     """
     user: User | None = request.state.user
     session: Session | None = request.state.session
+    allowed = privileges(user)
     if session is not None and session.csrf_token is None:
         session.csrf_token = csrf_token()
     return {
         **UI_SETTINGS,
         "atlas.tasks.enabled": request.app.state.settings.tasks_enabled,
-        "atlas.entity.update.allowed": False,
-        "atlas.entity.create.allowed": False,
+        "atlas.entity.update.allowed": AtlasPrivilege.ENTITY_UPDATE in allowed,
+        "atlas.entity.create.allowed": AtlasPrivilege.ENTITY_CREATE in allowed,
         "userName": None if user is None else user.name,
         "groups": [] if user is None else sorted(user.groups),
         "timezones": time_zones(),
@@ -143,6 +145,8 @@ async def purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONR
     guids = list(dict.fromkeys(body or []))
     for guid in guids:
         validate_param_length("guid", guid)
+    if guids:
+        verify_access(request, AtlasPrivilege.ADMIN_PURGE, "purge entity: guids=", guids)  # AUZ-05
     return AtlasJSONResponse(content=(await writer(request, store).purge_by_ids(guids)).to_json())
 
 

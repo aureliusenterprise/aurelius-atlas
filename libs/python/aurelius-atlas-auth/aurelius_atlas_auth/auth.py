@@ -294,6 +294,21 @@ def _audience_matches(claims: dict, expected_audiences: frozenset[str]) -> bool:
     return not expected_audiences.isdisjoint(audiences)
 
 
+def client_roles(claims: dict, client_id: str) -> frozenset[str]:
+    """The roles a token carries of one client, ``resource_access.<client_id>.roles`` (AUZ-01).
+
+    Keycloak namespaces client roles per client, so another client's same-named role is not among them.
+    """
+    resource_access = claims.get("resource_access")
+    if not isinstance(resource_access, dict):
+        return frozenset()
+    match resource_access.get(client_id):
+        case {"roles": list() as roles}:
+            return frozenset(role for role in roles if isinstance(role, str))
+        case _:
+            return frozenset()
+
+
 def _token_roles(claims: dict, *, client_id: str) -> set[str]:
     """The roles a token carries for *this* service.
 
@@ -324,4 +339,5 @@ __all__ = [
     "AuthConfig",
     "KeycloakAuth",
     "bearer_scheme",
+    "client_roles",
 ]

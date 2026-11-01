@@ -9,7 +9,7 @@ from typing import Any
 
 import httpx2 as httpx
 import pytest
-from aurelius_atlas_auth.auth import AuthConfig, KeycloakAuth
+from aurelius_atlas_auth.auth import AuthConfig, KeycloakAuth, client_roles
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
@@ -359,3 +359,15 @@ def test__discovery_is_fetched_once(
     auth.discovery()
     assert [path.rsplit("/", 1)[-1] for path in calls] == ["openid-configuration", "certs"]
     auth.close()
+
+
+@pytest.mark.covers("aurelius_atlas_auth.auth.client_roles", rules=["AUZ-01"])
+def test__a_clients_roles_are_its_own_only() -> None:
+    """``resource_access.<client>.roles``; another client's and the realm's roles are not among them."""
+    claims = {
+        "realm_access": {"roles": ["realm-role"]},
+        "resource_access": {"server": {"roles": ["atlas-read", 1]}, "other": {"roles": ["atlas-write"]}},
+    }
+    assert client_roles(claims, "server") == frozenset({"atlas-read"})
+    assert client_roles(claims, "missing") == frozenset()
+    assert client_roles({}, "server") == frozenset()
