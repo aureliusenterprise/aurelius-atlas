@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** to follow
-- **Records:** DD-254; relies on DD-253, ADR 038 (accepted with 6.2c)
+- **Records:** DD-301; relies on DD-300, ADR 038 (accepted with 6.2c)
 
 6.2a granted Atlas's privileges by four roles and checked the type definitions and the purge. This part makes the checks Atlas's entity and relationship stores make, at the same points and with the same action texts: reading, creating, updating and deleting entities, their classifications and the relationships between them. The glossary and the saved searches are stored as entities and relationships, so they are checked through the same stores, as Atlas's `DataAccess` and `GlossaryService` are. Labels and business metadata are not served yet; their checks come with them in 5.3. Search results and lineage are scrubbed in 6.2c.
 
@@ -24,7 +24,7 @@ In `aurelius-atlas-core`, `authorization` (Atlas's privileges, the `Authorizer` 
 
 | Id | Rule |
 | --- | --- |
-| AUZ-07 | Creating or updating entities needs `ENTITY_CREATE` for each entity the request creates, `create entity: type=<type>`, then `ENTITY_UPDATE` for each it changes, `update entity: type=<type>`; an entity the request leaves unchanged is not checked. A partial update by unique attributes needs `update entity ByUniqueAttributes` once the entity is found, and setting one attribute `update entity ByUniqueAttributes : guid=<guid>` once it is found. Deleting needs `ENTITY_DELETE` for each entity found, `delete entity: guid=<guid>`, or `delete entity: typeName=<type>, uniqueAttributes={<name>=<value>}`; a missing one is skipped unchecked. Nothing is written when a check refuses. A store built without an authorizer checks nothing (DD-254) |
+| AUZ-07 | Creating or updating entities needs `ENTITY_CREATE` for each entity the request creates, `create entity: type=<type>`, then `ENTITY_UPDATE` for each it changes, `update entity: type=<type>`; an entity the request leaves unchanged is not checked. A partial update by unique attributes needs `update entity ByUniqueAttributes` once the entity is found, and setting one attribute `update entity ByUniqueAttributes : guid=<guid>` once it is found. Deleting needs `ENTITY_DELETE` for each entity found, `delete entity: guid=<guid>`, or `delete entity: typeName=<type>, uniqueAttributes={<name>=<value>}`; a missing one is skipped unchecked. Nothing is written when a check refuses. A store built without an authorizer checks nothing (DD-301) |
 | AUZ-08 | Reading an entity's classifications needs `ENTITY_READ`, `get classifications: guid=<guid>` or `get classification: guid=<guid>, classification=<name>`, once the entity is found. Adding, updating and removing need `ENTITY_ADD_CLASSIFICATION`, `ENTITY_UPDATE_CLASSIFICATION` and `ENTITY_REMOVE_CLASSIFICATION` for each classification, `<add, update or remove> classification: guid=<guid>, classification=<name>`, before the classifications are validated; removing one propagated from another entity is not checked. Setting classifications reads the current ones unchecked, and a refused change makes its step `(Partial)` |
 | AUZ-09 | Adding a relationship needs `RELATIONSHIP_ADD` once it is validated and found new, unless its type has a legacy attribute end, whose change is the entity's update; updating needs `RELATIONSHIP_UPDATE` once it is validated; removing needs `RELATIONSHIP_REMOVE` once it is found and not deleted. These checks name no action: the message ends after `is not authorized to perform` |
 | AUZ-10 | Glossary objects, profiles and saved searches are checked as the entities and relationships they are stored as: saving one as `AUZ-07`'s creates and updates, deleting one as its deletes, assigning a term as `AUZ-09`'s add; loading one needs `ENTITY_READ`, `read entity: guid=<guid>`, or for an object found by unique attributes `read entity: typeName=<type>, uniqueAttributes={...}`; listing glossaries needs it for each listed, `read entity: guid=<guid>`. A bulk load leaves out what it may not read |
@@ -42,7 +42,7 @@ Apache Atlas `release-2.4.0`:
 
 ## Deviations
 
-None. Atlas also checks `RELATIONSHIP_ADD` for each relationship an entity write creates; under DD-253 only `atlas-write` grants it, together with the entity privileges checked first, so the outcome is the same (DD-254).
+None. Atlas also checks `RELATIONSHIP_ADD` for each relationship an entity write creates; under DD-300 only `atlas-write` grants it, together with the entity privileges checked first, so the outcome is the same (DD-301).
 
 ## Acceptance
 
