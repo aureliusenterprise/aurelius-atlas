@@ -222,15 +222,23 @@ class EntityWriter:
                 raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
+    def _record_labels(self, created: StoredEntity) -> None:
+        """``setLabels`` of a created entity: its labels told as added once it is written (LBL-05)."""
+        if created.labels:
+            self._record.added_labels.append((created.guid, list(created.labels)))
+
     async def _mutated(self, response: EntityMutationResponse) -> EntityMutationResponse:
         """``onEntitiesMutated``: the response pruned, as Atlas answers it, and told to the notifier (AUD-02).
 
-        The classifications created entities were given come first, the propagations after (CAU-02, CAU-05).
+        The labels and classifications created entities were given come first, the propagations after (LBL-05,
+        CAU-02, CAU-05).
         """
         prune_response(response)
         record, self._record = self._record, RequestRecord()
         notifier = self._notifier
         if notifier is not None:
+            for guid, labels in record.added_labels:
+                await notifier.on_labels_updated(guid, labels, [], user=self._user)
             for guids, instance in record.added_classifications:
                 await notifier.on_classifications_added(guids, [instance], user=self._user)
             await notifier.on_entities_mutated(response, user=self._user)
@@ -377,6 +385,7 @@ class EntityWriter:
         for entity, entity_type in mutation.created:
             await relationships.map(entity, entity_type, str(entity.guid), EntityOperation.CREATE)
             written[str(entity.guid)] = mapper.create(entity, entity_type, str(entity.guid))
+            self._record_labels(written[str(entity.guid)])
             if entity.classifications:
                 written[str(entity.guid)], added = self._classified(written[str(entity.guid)], entity.classifications)
                 classified += [ClassificationChange(instance) for instance in added]

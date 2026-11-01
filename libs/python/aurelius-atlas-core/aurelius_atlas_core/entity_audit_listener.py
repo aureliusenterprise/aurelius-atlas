@@ -1,7 +1,8 @@
 """``EntityAuditListener``: an audit event for each entity, classification and term change (AUD-03 to AUD-05, CAU-01).
 
 Atlas's ``EntityAuditListenerV2``: ``onEntitiesAdded``, ``onEntitiesUpdated``, ``onEntitiesDeleted``,
-``onEntitiesPurged``, ``getAuditEventDetail``, the classification methods, ``onTermAdded`` and ``onTermDeleted``.
+``onEntitiesPurged``, ``getAuditEventDetail``, the classification methods, ``onTermAdded``, ``onTermDeleted``,
+``onLabelsAdded`` and ``onLabelsDeleted``.
 """
 
 from collections.abc import Callable, Mapping, Sequence
@@ -24,6 +25,8 @@ ADDED = {True: "Added classification: ", False: "Added propagated classification
 DELETED = {True: "Deleted classification: ", False: "Deleted propagated classification: "}
 UPDATED_OWN = "Updated classification: "
 UPDATED_PROPAGATED = "Updated propagated classification: "
+ADDED_LABELS = "Added labels: "
+DELETED_LABELS = "Deleted labels: "
 """The details' prefixes of classification events, by whether the entity is the classification's own (CAU-01)."""
 
 _PREFIXES = {
@@ -132,6 +135,16 @@ class EntityAuditListener:
         """``onTermDeleted``: ``TERM_DELETE`` on each entity, ``Deleted term: `` and the audit string (GTA-04)."""
         details = _PREFIXES[EntityAuditActionV2.TERM_DELETE] + term_audit_string(term)
         await self._put_events([(guid, EntityAuditActionV2.TERM_DELETE, details) for guid in guids], user)
+
+    async def on_labels_added(self, guid: str, labels: Sequence[str], *, user: str | None) -> None:
+        """``onLabelsAdded``: ``LABEL_ADD``, ``Added labels: `` and the labels apart by a space (LBL-05)."""
+        if labels:
+            await self._put_events([(guid, EntityAuditActionV2.LABEL_ADD, ADDED_LABELS + " ".join(labels))], user)
+
+    async def on_labels_deleted(self, guid: str, labels: Sequence[str], *, user: str | None) -> None:
+        """``onLabelsDeleted``: ``LABEL_DELETE``, ``Deleted labels: `` and the labels apart by a space (LBL-05)."""
+        if labels:
+            await self._put_events([(guid, EntityAuditActionV2.LABEL_DELETE, DELETED_LABELS + " ".join(labels))], user)
 
     async def _put(
         self, items: Sequence[tuple[AtlasEntity, EntityAuditActionV2, str | None]], user: str | None
