@@ -95,17 +95,17 @@ def _discovery(request: Request, store: EntityStore) -> EntityDiscoveryService:
     return EntityDiscoveryService(store, authorizer=authorizer(request))
 
 
-async def _search(store: Store, parameters: SearchParameters) -> AtlasJSONResponse:
-    result = await EntityDiscoveryService(store).search_with_parameters(parameters)
+async def _search(request: Request, store: Store, parameters: SearchParameters) -> AtlasJSONResponse:
+    result = await _discovery(request, store).search_with_parameters(parameters)
     return AtlasJSONResponse(content=result.to_json())
 
 
 @DISCOVERY.post("/basic")
-async def search_with_parameters(body: Body, store: Store) -> AtlasJSONResponse:
+async def search_with_parameters(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``searchWithParameters``: the entities the body's search finds, validated first (SRC-02, SRC-09)."""
     parameters = model_body(SearchParameters, body) or SearchParameters()
     validate_basic_search_parameters(parameters)
-    return await _search(store, parameters)
+    return await _search(request, store, parameters)
 
 
 @DISCOVERY.get("/basic")
@@ -124,7 +124,7 @@ async def search_using_basic(request: Request, store: Store) -> AtlasJSONRespons
         marker=first_value(request, "marker"),
     )
     _validate_lengths(parameters)
-    return await _search(store, parameters)
+    return await _search(request, store, parameters)
 
 
 @DISCOVERY.get("/fulltext")
@@ -190,8 +190,8 @@ def validate_quick_search_parameters(parameters: QuickSearchParameters) -> None:
     _validate_lengths(parameters.search_parameters())
 
 
-async def _quick(store: Store, parameters: QuickSearchParameters) -> AtlasJSONResponse:
-    result = await EntityDiscoveryService(store).quick_search(parameters)
+async def _quick(request: Request, store: Store, parameters: QuickSearchParameters) -> AtlasJSONResponse:
+    result = await _discovery(request, store).quick_search(parameters)
     return AtlasJSONResponse(content=result.to_json())
 
 
@@ -210,15 +210,15 @@ async def quick_search_using_query(request: Request, store: Store) -> AtlasJSONR
         sort_by=first_value(request, "sortBy"),
         sort_order=None if sort_order is None else parsed_value("sortOrder", sort_order, SortOrder),
     )
-    return await _quick(store, parameters)
+    return await _quick(request, store, parameters)
 
 
 @DISCOVERY.post("/quick")
-async def quick_search(body: Body, store: Store) -> AtlasJSONResponse:
+async def quick_search(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``quickSearch`` of ``QuickSearchParameters``, validated first (QSR-01 to QSR-04)."""
     parameters = model_body(QuickSearchParameters, body) or QuickSearchParameters()
     validate_quick_search_parameters(parameters)
-    return await _quick(store, parameters)
+    return await _quick(request, store, parameters)
 
 
 @DISCOVERY.get("/suggestions")
@@ -258,7 +258,7 @@ async def search_using_attribute(request: Request, store: Store) -> AtlasJSONRes
         offset=java_number(request, "offset", 0, INT_RANGE),
     )
     validate_basic_search_parameters(parameters)
-    return await _search(store, parameters)
+    return await _search(request, store, parameters)
 
 
 NO_SAVED_SEARCH = "The saved search is missing"

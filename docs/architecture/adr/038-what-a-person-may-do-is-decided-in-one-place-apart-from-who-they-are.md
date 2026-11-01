@@ -1,12 +1,14 @@
 # 038. What a person may do is decided in one place, apart from who they are
 
-- **Status:** Proposed
-- **Date:** 2026-10-07
+- **Status:** Accepted
+- **Date:** 2026-10-07; accepted 2026-11-01
 - **Deciders:** Aurelius Enterprise
 
-Acceptance trigger (swept 2026-10-19): increment 6.2 makes the authorizer's policy the one
-permission answer on every endpoint; accepted in that pull request. Until then the record's stated
-condition stands: every admitted person may do everything.
+Accepted with increment 6.2c, as its acceptance trigger set (swept 2026-10-19): with 6.2a to 6.2c the
+server's authorizer answers every endpoint the server serves, as Atlas's checks do. The named mechanism is
+DD-300: four roles of the server's client in the identity provider, and what each grants is fixed in the
+server's `authorization` module. The spine holds both the mechanism and the roles, in the dev realm and in
+the cluster's.
 
 The answer to "what is this person allowed to do?" lives in one named place,
 apart from the answer to "who is this person?". Surfaces ask and act; they do
@@ -20,8 +22,10 @@ from the answer to "who is this person?" ([007](./007-one-shared-identity-provid
 Surfaces ask that place and act on the answer; **they do not invent their own
 rules in code.**
 
-Until this record is accepted, every authenticated person can do everything on
-every surface, and that is **a stated condition, not a security property.**
+Until this record was accepted, every authenticated person could do everything on
+every surface, and that was **a stated condition, not a security property.** The
+answer now lives in the identity provider's role assignments, read by one
+authorizer in the server ([access management](../platform/security/access-management.md)).
 
 ## Context
 
@@ -111,3 +115,11 @@ Any acceptable arrangement must deliver:
     refuses promises it can't keep in either direction. The posture it takes
     is the obligation: the behaviour is a named design decision at the seam,
     not an accident of timeout handling.
+
+    **Answered on acceptance: closed.** The roles travel in the access token the
+    identity provider signs, and the server reads them in-process (DD-300), so
+    there is no separate authorizer to lose. When the identity provider is
+    unreachable no new token is issued, and a request without a valid token is
+    refused. The price is R2's timing: withdrawing a role takes effect when the
+    user's current access token expires, at most the realm's access-token
+    lifespan (15 minutes on clusters).

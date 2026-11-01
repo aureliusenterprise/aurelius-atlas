@@ -22,6 +22,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   dev asset has had it since 6.1a/DD-250, so it lands in **both** assets and
   its `${ATLAS_SERVER_CLIENT_SECRET}` env is not realm-gated (unlike
   grafana's); the umbrella's `<release>-server-client` feeds it (CHT-109).
+  6.2c gives it the four `atlas-*` roles and their scope mapping into
+  `aurelius`, equal to the dev asset's (DD-300); no one holds them until an
+  operator grants them, so a fresh cluster refuses every Atlas request.
 
 ## Wiring Checklist
 
