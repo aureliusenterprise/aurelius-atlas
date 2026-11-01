@@ -230,6 +230,65 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       ],
 >       "default": null,
 >       "title": "Otel Ca File"
+>     },
+>     "auth_server_url": {
+>       "format": "uri",
+>       "maxLength": 2083,
+>       "minLength": 1,
+>       "title": "Auth Server Url",
+>       "type": "string"
+>     },
+>     "auth_realm": {
+>       "default": "master",
+>       "title": "Auth Realm",
+>       "type": "string"
+>     },
+>     "auth_client_id": {
+>       "default": "aurelius-atlas-server",
+>       "title": "Auth Client Id",
+>       "type": "string"
+>     },
+>     "auth_client_secret": {
+>       "format": "password",
+>       "title": "Auth Client Secret",
+>       "type": "string",
+>       "writeOnly": true
+>     },
+>     "auth_audiences": {
+>       "items": {
+>         "type": "string"
+>       },
+>       "title": "Auth Audiences",
+>       "type": "array"
+>     },
+>     "auth_principal_claim": {
+>       "default": "preferred_username",
+>       "title": "Auth Principal Claim",
+>       "type": "string"
+>     },
+>     "auth_groups_claim": {
+>       "default": "groups",
+>       "title": "Auth Groups Claim",
+>       "type": "string"
+>     },
+>     "auth_ca_file": {
+>       "anyOf": [
+>         {
+>           "format": "file-path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Auth Ca File"
+>     },
+>     "session_timeout_seconds": {
+>       "default": 3600,
+>       "exclusiveMinimum": 0,
+>       "title": "Session Timeout Seconds",
+>       "type": "integer"
 >     }
 >   },
 >   "required": [
@@ -237,7 +296,9 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >     "tls_key_file",
 >     "elasticsearch_hosts",
 >     "elasticsearch_password",
->     "elasticsearch_ca_certs"
+>     "elasticsearch_ca_certs",
+>     "auth_server_url",
+>     "auth_client_secret"
 >   ],
 >   "title": "ServerSettings",
 >   "type": "object"
@@ -279,6 +340,79 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `otel_client_secret` (`SecretStr | None`)
 > - `otel_endpoint` (`str`)
 > - `otel_ca_file` (`FilePath | None`)
+> - `auth_server_url` (`HttpUrl`)
+> - `auth_realm` (`str`)
+> - `auth_client_id` (`str`)
+> - `auth_client_secret` (`SecretStr`)
+> - `auth_audiences` (`list[str]`)
+> - `auth_principal_claim` (`str`)
+> - `auth_groups_claim` (`str`)
+> - `auth_ca_file` (`FilePath | None`)
+> - `session_timeout_seconds` (`int`)
+>
+> ### auth\_audiences
+>
+> ```
+> auth_audiences: list[str]
+> ```
+>
+> Further clients whose tokens the server accepts: the webapp's, which the auxiliary APIs forward (AUT-02, AUT-10).
+>
+> ### auth\_ca\_file
+>
+> ```
+> auth_ca_file: FilePath | None = None
+> ```
+>
+> PEM CA verifying the provider's TLS; unset uses the system trust store.
+>
+> ### auth\_client\_id
+>
+> ```
+> auth_client_id: str = 'aurelius-atlas-server'
+> ```
+>
+> The server's confidential client: browsers sign in with it, and its tokens are accepted (AUT-05).
+>
+> ### auth\_client\_secret
+>
+> ```
+> auth_client_secret: SecretStr
+> ```
+>
+> The secret of `auth_client_id`; never shown in logs.
+>
+> ### auth\_groups\_claim
+>
+> ```
+> auth_groups_claim: str = 'groups'
+> ```
+>
+> The claim a user's groups are read from, else the realm roles: `atlas.authentication.method.keycloak .groups_claim` (AUT-03).
+>
+> ### auth\_principal\_claim
+>
+> ```
+> auth_principal_claim: str = 'preferred_username'
+> ```
+>
+> The claim a user's name is read from: Atlas's Keycloak `principal-attribute` (AUT-03, DD-250).
+>
+> ### auth\_realm
+>
+> ```
+> auth_realm: str = 'master'
+> ```
+>
+> The realm the tokens are issued from.
+>
+> ### auth\_server\_url
+>
+> ```
+> auth_server_url: HttpUrl
+> ```
+>
+> The identity provider's root (Keycloak), which tokens are verified against and browsers sign in at (AUT-02, AUT-05; ADR 007).
 >
 > ### dashboard\_dir
 >
@@ -462,6 +596,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > The source revision the server was built from, reported by `admin/version` (ADM-01).
 >
+> ### session\_timeout\_seconds
+>
+> ```
+> session_timeout_seconds: int = 3600
+> ```
+>
+> How long a browser session lasts unused: Atlas's `web.xml` session timeout, 60 minutes (AUT-06).
+>
 > ### task\_poll\_seconds
 >
 > ```
@@ -553,6 +695,12 @@ The FastAPI application: settings, the store's lifetime, error handling and rout
 
 Functions:
 
+- **`build_auth`** –
+
+  The token verifier: the provider's tokens for the server's client and the further audiences (AUT-02).
+- **`build_oidc`** –
+
+  The server's client at the provider, which browsers sign in with (AUT-05).
 - **`create_app`** –
 
   Build the application.
@@ -588,10 +736,32 @@ LOGGER = logging.getLogger(NAME)
 NAME = 'aurelius-atlas-server'
 ```
 
+### build\_auth
+
+```
+build_auth(settings: ServerSettings, http: Client | None = None) -> KeycloakAuth
+```
+
+The token verifier: the provider's tokens for the server's client and the further audiences (AUT-02).
+
+### build\_oidc
+
+```
+build_oidc(settings: ServerSettings, auth: KeycloakAuth, http: AsyncClient | None = None) -> OidcClient
+```
+
+The server's client at the provider, which browsers sign in with (AUT-05).
+
 ### create\_app
 
 ```
-create_app(settings: ServerSettings, store: ElasticsearchStore | None = None) -> FastAPI
+create_app(
+    settings: ServerSettings,
+    store: ElasticsearchStore | None = None,
+    *,
+    auth: KeycloakAuth | None = None,
+    oidc_http: AsyncClient | None = None,
+) -> FastAPI
 ```
 
 Build the application.
@@ -608,6 +778,16 @@ Parameters:
   (`ElasticsearchStore | None`, default: `None` ) –
 
   The store to use; by default one built from the settings. It is opened when the application starts, which fails when the store cannot be opened (SRV-02), and closed when it stops.
+- #### **`auth`**
+
+  (`KeycloakAuth | None`, default: `None` ) –
+
+  The token verifier; by default one for the settings' provider (AUT-02).
+- #### **`oidc_http`**
+
+  (`AsyncClient | None`, default: `None` ) –
+
+  The HTTP client the sign-in calls the provider with; by default one of its own (AUT-05).
 
 The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
 
@@ -713,9 +893,6 @@ ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
 
 Functions:
 
-- **`csrf_token`** –
-
-  A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
 - **`delete_task`** –
 
   `deleteTask`: remove the tasks of the `guids` given (TSK-06).
@@ -730,7 +907,7 @@ Functions:
   Whether the server can serve requests: its store must be healthy (ADM-04).
 - **`get_session`** –
 
-  The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+  The user interface settings and the user of this session (ADM-05, AUT-09).
 - **`get_status`** –
 
   The service state, which is always `ACTIVE` while the server runs (ADM-02).
@@ -753,7 +930,6 @@ Attributes:
 
   The only service state: Aurelius Atlas has no high-availability states.
 - **`ADMIN`** –
-- **`CSRF_TOKEN_LENGTH`** –
 - **`DESCRIPTION`** –
 
   What `admin/version` reports instead of Apache Atlas's name and description (DV-03).
@@ -778,12 +954,6 @@ The only service state: Aurelius Atlas has no high-availability states.
 
 ```
 ADMIN = APIRouter(prefix='/api/atlas/admin', tags=['Admin'])
-```
-
-### CSRF\_TOKEN\_LENGTH
-
-```
-CSRF_TOKEN_LENGTH = 20
 ```
 
 ### DESCRIPTION
@@ -847,14 +1017,6 @@ UI_SETTINGS: dict[str, Any] = {
 
 The session's settings at the defaults of Atlas 2.4.0 (`AdminResource`, `AtlasCSRFPreventionFilter`, `AtlasConfiguration`).
 
-### csrf\_token
-
-```
-csrf_token() -> str
-```
-
-A new random token of 20 letters and digits, as `AdminResource.getUserProfile` makes one.
-
 ### delete\_task
 
 ```
@@ -899,9 +1061,9 @@ Raises:
 get_session(request: Request) -> dict[str, Any]
 ```
 
-The user interface settings and the user of this session; no user until 6.1 (ADM-05, DV-04).
+The user interface settings and the user of this session (ADM-05, AUT-09).
 
-`atlas.tasks.enabled` is the server's `tasks_enabled` setting (DD-081).
+The CSRF token is the session's, made on first ask; a request without a session gets a new one. The entity permissions stay false until 6.2 (DV-105). `atlas.tasks.enabled` is the server's `tasks_enabled` setting (DD-081).
 
 ### get\_status
 

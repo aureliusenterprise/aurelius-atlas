@@ -844,6 +844,8 @@ recover() -> int
 
 Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
 
+The journal's listing may lag its writes (DD-247): each entry is acted on as it is now, one already deleted or still leased left alone.
+
 A committed write only releases what it no longer holds; any other is undone: an entity is restored only while it carries the write's id, a reservation released only while the write holds it.
 
 #### referring
@@ -1370,16 +1372,19 @@ Methods:
   Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
 - **`delete_journal`** –
 
-  Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).
+  Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).
 - **`get`** –
 
   `mget` of the entity index: real time, as a get by id is (ENS-04).
+- **`get_journal`** –
+
+  The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
 - **`get_linked`** –
 
   `mget` of the kind's index: real time (DD-061, DD-070).
 - **`journal`** –
 
-  The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).
+  The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
 - **`list_tasks`** –
 
   Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
@@ -1388,7 +1393,7 @@ Methods:
   Create each index behind its alias unless it exists (ENS-01).
 - **`put_journal`** –
 
-  Index the entry under its write id; recovery's search reads it (ENS-11).
+  Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
 - **`referring`** –
 
   Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
@@ -1471,7 +1476,7 @@ Count the entities of the type (DD-048): every write refreshes, so the count is 
 delete_journal(write_id: str) -> None
 ```
 
-Delete the entry; one already gone is fine. The delete is refreshed for recovery's search (ENS-11).
+Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).
 
 #### get
 
@@ -1480,6 +1485,14 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 ```
 
 `mget` of the entity index: real time, as a get by id is (ENS-04).
+
+#### get\_journal
+
+```
+get_journal(write_id: str) -> JournalEntry | None
+```
+
+The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
 
 #### get\_linked
 
@@ -1495,7 +1508,7 @@ get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, Do
 journal() -> list[JournalEntry]
 ```
 
-The entries of the journal: a journal write refreshes, so none written a moment ago is missed (ENS-11).
+The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has passed, long after the index's own refresh (DD-247), and acts on each as `get_journal` reads it.
 
 #### list\_tasks
 
@@ -1521,7 +1534,7 @@ An existing entity index gets the fields it lacks mapped, as `references` (EDL-1
 put_journal(entry: JournalEntry) -> None
 ```
 
-Index the entry under its write id; recovery's search reads it (ENS-11).
+Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
 
 #### referring
 
@@ -1629,12 +1642,15 @@ Methods:
 - **`get`** –
 
   The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
+- **`get_journal`** –
+
+  The journal entry of a write as of now, None when there is none.
 - **`get_linked`** –
 
   The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 - **`journal`** –
 
-  Every journal entry.
+  Every journal entry, as the last refresh shows them.
 - **`list_tasks`** –
 
   Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
@@ -1720,6 +1736,14 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 
 The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
 
+#### get\_journal
+
+```
+get_journal(write_id: str) -> JournalEntry | None
+```
+
+The journal entry of a write as of now, None when there is none.
+
 #### get\_linked
 
 ```
@@ -1734,7 +1758,7 @@ The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are
 journal() -> list[JournalEntry]
 ```
 
-Every journal entry.
+Every journal entry, as the last refresh shows them.
 
 #### list\_tasks
 

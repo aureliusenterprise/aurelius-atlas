@@ -262,6 +262,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/template/</loc>
       </url>
       <url>
@@ -311,6 +314,39 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/1-6-types-rest/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-1-chart-foundation/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-10-digest-pinning-chart-signing/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-11-low-findings-hardening/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-12-server-auth-chart-wiring/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-2-stateful-platform/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-3-app-edge-charts/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-3b-observability-chart/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-6-network-segmentation/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-7-prod-realm/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-8-grafana-auth/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/10-9-per-producer-ingest-credentials/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/2-1-entity-models/</loc>
@@ -382,7 +418,28 @@
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/4-4-dsl-projections/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/4-5-saved-searches/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/5-1-lineage/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/5-2-glossaries-and-categories/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/5-2-glossary-import/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/5-2-glossary-terms/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/5-2-term-assignment/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/6-1-acting-user/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/6-1-authentication/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/conversion/increments/7-0-webapp-foundation/</loc>
@@ -509,6 +566,15 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/data-lifecycle-management/data-storage/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/deployment/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/deployment/runbook/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/deployment/secret-storage/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/platform/</loc>

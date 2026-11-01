@@ -64,6 +64,7 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [054](<https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/054-the-server-api-is-the-webapps-one-data-plane/index.md>) | The server API is the webapp's one data plane - the successor of the legacy app-search/Atlas split; other surfaces (identity, telemetry) stay allowed. | Proposed |
 | [055](<https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/055-the-lineage-chain-is-a-named-data-surface/index.md>) | The lineage chain is a named data surface: the auxiliary APIs (lineage-model, data2model, validate-entity) join the server's surface set as a second family, superseding DD-140's lineage/validate exclusion. | Proposed |
 | [056](<https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>) | Behaviour is proven by executed tests, not by a trace gate; the `covers` marker stays as a review convention. | Accepted |
+| [057](<https://aureliusenterprise.github.io/dependabot-github_actions-dot-github-workflows-actions-cache-6/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>) | The system ships as Helm charts — one per component, one umbrella — that a deployment installs; the repository names the path, not the cluster. | Accepted |
 
 ## Why record decisions
 
