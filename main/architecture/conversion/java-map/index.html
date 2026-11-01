@@ -4134,6 +4134,8 @@
       
         
       
+        
+      
     
     
     
@@ -5309,6 +5311,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8388,6 +8417,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>AtlasKeycloakAuthenticationProvider</code>, <code>AtlasSecurityConfig</code> (open paths, Keycloak filters, logout), Keycloak's <code>KeycloakAuthenticationEntryPoint</code>, <code>KeycloakAuthenticationProcessingFilter</code>, <code>KeycloakLogoutHandler</code>, <code>AtlasCSRFPreventionFilter</code>, <code>AdminResource#getUserProfile</code> (user, groups, CSRF token)</td>
 <td><code>aurelius_atlas_server.authentication</code>, <code>aurelius_atlas_server.oidc_client</code>, <code>aurelius_atlas_server.routes.login</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.auth</code></td>
 <td>6.1a</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>RequestContext#getUser</code> (<code>createdBy</code>, <code>updatedBy</code>, audit user), <code>ClassificationTask</code> (the task's user)</td>
+<td><code>aurelius_atlas_server.authentication.acting_user</code>, the writing routes of <code>aurelius_atlas_server.routes</code></td>
+<td>6.1b</td>
 <td>in progress</td>
 </tr>
 <tr>

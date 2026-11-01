@@ -4075,6 +4075,8 @@
       
         
       
+        
+      
     
     
     
@@ -5250,6 +5252,33 @@
     
   
   6.1a Authentication
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-1-acting-user/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1b The acting user on writes
 
     
   </span>
@@ -8038,14 +8067,6 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>0.5</td>
 </tr>
 <tr>
-<td>DV-06</td>
-<td>Types</td>
-<td>A type definition's <code>createdBy</code> and <code>updatedBy</code> name the user who created and last updated it</td>
-<td>Until 6.1, absent</td>
-<td>There is no login until 6.1; removed then</td>
-<td>1.4</td>
-</tr>
-<tr>
 <td>DV-07</td>
 <td>Types</td>
 <td>The built-in model types and the patch records name the operating system account the server runs as</td>
@@ -8107,14 +8128,6 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td><code>admin/patches</code> lists the typedef patches and the Java patches that repair JanusGraph and Solr indexes</td>
 <td>Lists the typedef patches only</td>
 <td>The Java patches repair indexes Elasticsearch does not have</td>
-<td>2.2</td>
-</tr>
-<tr>
-<td>DV-15</td>
-<td>Entities</td>
-<td>An entity's <code>createdBy</code> and <code>updatedBy</code> name the logged-in user</td>
-<td>Until 6.1, absent</td>
-<td>There is no login until 6.1</td>
 <td>2.2</td>
 </tr>
 <tr>
@@ -8699,14 +8712,6 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The Keycloak adapter can exchange <code>Basic</code> credentials for a token (<code>enable-basic-auth</code>)</td>
 <td>No basic authentication; clients obtain tokens from the provider</td>
 <td>The server never sees a password (<a href="../../adr/007-one-shared-identity-provider/">ADR 007</a>)</td>
-<td>6.1</td>
-</tr>
-<tr>
-<td>DV-109</td>
-<td>Audit</td>
-<td>An audit event names the user who made the change</td>
-<td>Until 6.1b, no user</td>
-<td>The acting user reaches the writes in 6.1b; removed then</td>
 <td>6.1</td>
 </tr>
 </tbody>

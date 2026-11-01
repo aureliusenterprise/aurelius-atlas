@@ -79,7 +79,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 5.2d | Glossary import | Glossary terms imported from CSV or Excel, and the import template | `GlossaryService#importGlossaryData`, `GlossaryTermUtils` | in progress |
 | 5.3 | Business metadata and labels | Business metadata attributes, labels | `EntityREST` | planned |
 | 6.1a | Authentication | Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user | `AtlasKeycloakAuthenticationProvider` | in progress |
-| 6.1b | The acting user on writes | `createdBy`, `updatedBy` and audit users of every write | `RequestContext#getUser` | planned |
+| 6.1b | The acting user on writes | `createdBy`, `updatedBy` and audit users of every write | `RequestContext#getUser` | in progress |
 | 4.5 | Saved searches and user profile | Saved search CRUD; after 6.1, its owners being users (DD-244) | `UserProfileService` | planned |
 | 6.2 | Authorization | Simple authorizer policies on every endpoint | `atlas-simple-authz-policy` | planned |
 | 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |
