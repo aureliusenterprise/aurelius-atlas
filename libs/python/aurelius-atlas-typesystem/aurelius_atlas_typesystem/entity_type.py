@@ -466,7 +466,29 @@ def _root_entity_def() -> AtlasEntityDef:
     )
 
 
-ENTITY_ROOT = EntityType(_root_entity_def())
+class _RootEntityType(EntityType):
+    """``AtlasRootEntityType``: the system attributes, and every business attribute of the registry that resolved it
+    last, as basic and DSL search name them (THY-05, BMS-02).
+    """  # noqa: D205 - one sentence
+
+    def __init__(self) -> None:
+        super().__init__(_root_entity_def())
+        self._registry: TypeRegistry | None = None
+
+    def _resolve_references(self, registry: TypeRegistry) -> None:
+        super()._resolve_references(registry)
+        self._registry = registry
+
+    def business_attribute(self, metadata_name: str, attribute_name: str) -> BusinessAttribute | None:
+        """``getBusinessAttribute``: the attribute of the business metadata of that name, whatever it applies to."""
+        from aurelius_atlas_typesystem.business_metadata_type import BusinessAttribute  # noqa: PLC0415 - a cycle
+
+        found = None if self._registry is None else self._registry.business_metadata_type(metadata_name)
+        attribute = None if found is None else found.all_attributes.get(attribute_name)
+        return attribute if isinstance(attribute, BusinessAttribute) else None
+
+
+ENTITY_ROOT: EntityType = _RootEntityType()
 """``__ENTITY_ROOT``; not registered, resolved by every registry (THY-05)."""
 
 

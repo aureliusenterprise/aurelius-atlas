@@ -111,14 +111,18 @@ def search_fields(
     entity_type: EntityType,
     classifications: Mapping[str, StoredClassification] | None = None,
 ) -> dict[str, Any]:
-    """The entity's search fields: its attributes' values, its system attributes' and its classifications' names,
-    those without one left out; ``classifications`` holds the instances it lists (CSR-05, DD-090).
+    """The entity's search fields: its attributes' and business attributes' values, its system attributes' and its
+    classifications' names, those without one left out; ``classifications`` holds the instances it lists (CSR-05,
+    DD-090, BMS-01).
     """  # noqa: D205 - one sentence
     fields: dict[str, Any] = {}
     for name, read in _SYSTEM.items():
         _put(fields, ENTITY_ROOT.all_attributes[name], read(entity))
     for attribute in entity_type.all_attributes.values():
         _put(fields, attribute, entity.attributes.get(attribute.qualified_name))
+    for business_attributes in entity_type.business_attributes.values():
+        for attribute in business_attributes.values():
+            _put(fields, attribute, entity.attributes.get(attribute.qualified_name))
     listed = [found for guid in entity.classification_guids or [] if (found := (classifications or {}).get(guid))]
     attached = [found.type_name for found in listed if found.entity_guid == entity.guid]
     propagated = [found.type_name for found in listed if found.entity_guid != entity.guid]

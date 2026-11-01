@@ -229,6 +229,7 @@ nav:
                       - 5.3a Labels: architecture/conversion/increments/5-3-labels.md
                       - 5.3b Business metadata: architecture/conversion/increments/5-3-business-metadata.md
                       - 5.3c Business metadata import: architecture/conversion/increments/5-3-business-metadata-import.md
+                      - 5.3d Business metadata in search: architecture/conversion/increments/5-3-business-metadata-search.md
                       - 6.1a Authentication: architecture/conversion/increments/6-1-authentication.md
                       - 6.1b The acting user on writes: architecture/conversion/increments/6-1-acting-user.md
                       - 6.2a Authorization, types and admin: architecture/conversion/increments/6-2-authorization.md
