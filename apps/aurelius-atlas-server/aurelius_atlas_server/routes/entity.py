@@ -13,6 +13,7 @@ from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository, list_events_sorted
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
+from aurelius_atlas_core.entity_labels import EntityLabels
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -120,6 +121,13 @@ def classifications(request: Request, store: EntityStore) -> EntityClassificatio
         tasks=tasks_enabled(request),
         notifier=notifier(request, store),
         authorizer=authorizer(request),
+    )
+
+
+def labels(request: Request, store: EntityStore) -> EntityLabels:
+    """Label changes as the request's user, audited (LBL-05) and checked (AUZ-16)."""
+    return EntityLabels(
+        store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
     )
 
 
@@ -238,6 +246,17 @@ def classifications_body(body: Any) -> list[AtlasClassification] | None:  # noqa
         raise AtlasError(
             AtlasErrorCode.BAD_REQUEST, f"Invalid list of AtlasClassification: {error.errors()[0]['msg']}"
         ) from error
+
+
+def labels_body(body: Any) -> list[str] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a JSON array of labels, or None for no body (LBL-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is no array of strings (DV-10).
+    """
+    if body is not None and (not isinstance(body, list) or not all(isinstance(label, str) for label in body)):
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, "Invalid body: a JSON array of labels is expected")
+    return body
 
 
 def ensure_classification_type(store: EntityStore, name: str) -> None:
@@ -531,6 +550,51 @@ async def set_classifications(request: Request, body: Body, store: Store) -> Res
     )
     summary = await associator.set_classifications(None if headers is None else headers.guid_header_map)
     return Response(content=summary, media_type="application/json")
+
+
+@ENTITY.post("/guid/{guid}/labels")
+async def set_labels(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``setLabels``: the entity's labels become those of the body (LBL-01, LBL-02)."""
+    await labels(request, store).set_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.put("/guid/{guid}/labels")
+async def add_labels(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``addLabels``: the body's labels added to the entity's (LBL-01, LBL-03)."""
+    await labels(request, store).add_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/labels")
+async def remove_labels(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``removeLabels``: the body's labels taken from the entity's (LBL-01, LBL-04)."""
+    await labels(request, store).remove_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/uniqueAttribute/type/{type_name}/labels")
+async def set_labels_by_unique_attribute(type_name: str, request: Request, body: Body, store: Store) -> Response:
+    """``setLabels`` of the entity holding the ``attr:`` values (LBL-01, LBL-02)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await labels(request, store).set_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.put("/uniqueAttribute/type/{type_name}/labels")
+async def add_labels_by_unique_attribute(type_name: str, request: Request, body: Body, store: Store) -> Response:
+    """``addLabels`` to the entity holding the ``attr:`` values (LBL-01, LBL-03)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await labels(request, store).add_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/uniqueAttribute/type/{type_name}/labels")
+async def remove_labels_by_unique_attribute(type_name: str, request: Request, body: Body, store: Store) -> Response:
+    """``removeLabels`` from the entity holding the ``attr:`` values (LBL-01, LBL-04)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await labels(request, store).remove_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.get("/{guid}/audit")
