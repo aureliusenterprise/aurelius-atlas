@@ -52,8 +52,8 @@ Not in scope:
 
 Rules ADM-01 to ADM-05 are those of `AdminResource`; their parity scenarios cite it method by method.
 SRV-02 makes a server that cannot reach its only store fail at start-up rather than answer every
-request with an error ([DD-016](../design-log.md#dd-016-the-server-does-not-start-without-its-store)); the
-application layout is [DD-015](../design-log.md#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource).
+request with an error ([DD-016](design.md#dd-016-the-server-does-not-start-without-its-store)); the
+application layout is [DD-015](design.md#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource).
 
 ## Java origin
 
@@ -69,9 +69,11 @@ Apache Atlas `release-2.4.0`:
 
 ## Deviations
 
-- [DV-03](../deviations.md): `version` reports Aurelius Atlas, not Apache Atlas.
-- [DV-04](../deviations.md): no authentication until 6.1; the session has no user.
-- [DV-05](../deviations.md): the session's time zone ids come from the IANA database.
+- [DV-03][dev]: `version` reports Aurelius Atlas, not Apache Atlas.
+- [DV-04][dev]: no authentication until 6.1; the session has no user.
+- [DV-05][dev]: the session's time zone ids come from the IANA database.
+
+[dev]: ../../../../docs/architecture/conversion/deviations.md
 
 ## Acceptance
 

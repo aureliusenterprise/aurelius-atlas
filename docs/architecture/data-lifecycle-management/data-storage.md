@@ -23,7 +23,7 @@ opens. A deployment runs and monitors the cluster; the development arrangement r
 
 Type definitions move as **one unit of storage**: the store replaces all definitions whole under a
 concurrency guard, so a change to several definitions lands atomically, with one version number
-for all types ([DD-028](../conversion/design-log.md#dd-028-the-type-definitions-are-one-elasticsearch-document)).
+for all types (`DD-028` (the record: `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`)).
 This is a property the type system needs — Atlas changes several definitions in one transaction,
 a create stores all of a request or none — stated here, implemented there: the alias names,
 write-index mechanics, and size trade-offs are the design documentation's. The unit loads into

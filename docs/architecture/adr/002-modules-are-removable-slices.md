@@ -23,7 +23,7 @@ not take it at all.
     The spine is listed in the root `AGENTS.md`: the server, dashboard, store,
     parity, and trace projects, the dev infrastructure, and the template's
     example apps — which stay in the spine until increment 6.4 retires them as
-    their own slice ([DD-019](../conversion/design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)).
+    their own slice (`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)).
     The template's Kafka streaming and AWS Lambda slices and its Java tooling
     were the first capabilities to leave this way
     ([050](./050-the-system-carries-only-what-the-catalogue-needs.md)).

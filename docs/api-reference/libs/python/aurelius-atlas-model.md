@@ -3,11 +3,11 @@
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-model)
 
 Atlas data shapes for Aurelius Atlas, without I/O
-([DD-002](../../../architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
-Since increment [1.1](../../../architecture/conversion/increments/1-1-typedef-models.md): the Apache
+(`DD-002` (the record: `specs/0-1-adopt-template/design.md`)).
+Since increment `1.1` (the spec: `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/spec.md`): the Apache
 Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata),
 their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since
-[1.5](../../../architecture/conversion/increments/1-5-builtin-models.md): the patch record `AtlasPatch`.
+`1.5` (the spec: `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/spec.md`): the patch record `AtlasPatch`.
 Since [2.1a](../../../architecture/conversion/increments/2-1-entity-models.md): the entity models of
 `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`,
 `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON

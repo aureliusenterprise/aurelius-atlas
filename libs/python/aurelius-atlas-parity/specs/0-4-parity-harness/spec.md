@@ -4,9 +4,12 @@
 - **Pull request:** –
 - **Records:** ADR 052 (supersedes ADR 048, becomes Accepted), DD-012, DD-013, DD-014
 
+This page is the `aurelius-atlas-parity` part of increment 0.4; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-trace`](../../../aurelius-atlas-trace/specs/0-4-parity-harness/spec.md).
+
 ## Scope
 
-Make [ADR 052](../../adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md)
+Make [ADR 052](../../../../../docs/architecture/conversion/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md)
 executable: an endpoint's behaviour is written down as scenarios — requests and the responses Apache
 Atlas 2.4.0 gives, read from its source and its own tests — and every scenario runs as a test against
 Aurelius Atlas, with its result in the test report.
@@ -17,8 +20,6 @@ Aurelius Atlas, with its result in the test report.
       scenario, and `run_scenario`, which sends its requests through an `httpx.AsyncClient` and
       compares the responses;
     - a pytest plugin that records each scenario's endpoints and deviations as test properties.
-- **`aurelius-atlas-trace`**: the trace file carries test properties; `check` refuses a scenario that
-  names an unknown deviation; `report` gets a section per endpoint.
 - **Proof**: the harness's own tests run scenarios against a small sample ASGI application.
 
 Not in scope:
@@ -58,7 +59,7 @@ Not in scope:
 | Id     | Rule                                                                                                                                                                                                                                                                                              |
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | SCN-12 | The expectation in a scenario is the Atlas response; a deliberate difference is a `deviations` entry of the stage's response with a `DV-NN` id, a path, and the Aurelius `value` or `absent: true`, applied to the expectation before comparing; a deviation that changes nothing fails the stage |
-| SCN-13 | `aurelius-atlas-trace check` lists every scenario that names a deviation id the [deviations](../deviations.md) table does not define                                                                                                                                                              |
+| SCN-13 | `aurelius-atlas-trace check` lists every scenario that names a deviation id the [deviations](../../../../../docs/architecture/conversion/deviations.md) table does not define                                                                                                                     |
 
 ### The report
 
@@ -70,11 +71,11 @@ Not in scope:
 
 Rule SCN-01 is ADR 052 R1: a scenario without a citation is not a scenario. The format borrows the stage
 shape of Tavern, and scenarios run as ordinary parametrised pytest tests
-([DD-012](../design-log.md#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)).
+([DD-012](design.md#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)).
 Rules SCN-09 and SCN-10 make the comparison exact
-([DD-013](../design-log.md#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)),
+([DD-013](design.md#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)),
 and SCN-14 carries scenario facts to the report through the trace file
-([DD-014](../design-log.md#dd-014-scenario-facts-reach-the-report-as-test-properties)).
+([DD-014](../../../aurelius-atlas-trace/specs/0-4-parity-harness/design.md#dd-014-scenario-facts-reach-the-report-as-test-properties)).
 
 ## Java origin
 
@@ -92,6 +93,3 @@ None: nothing in this increment is visible through the Atlas REST API.
 - `libs/python/aurelius-atlas-parity/tests/` — the format and its errors (SCN-01 to SCN-04), the
   comparison (SCN-05 to SCN-12) against a sample ASGI application, and the properties (SCN-14) with
   `pytester`.
-- `libs/python/aurelius-atlas-trace/tests/` — properties in the trace file (SCN-14), unknown deviations
-  in the check (SCN-13), and the endpoint section of the report (SCN-15).
-- `uv run aurelius-atlas-trace check` exits zero on this branch.

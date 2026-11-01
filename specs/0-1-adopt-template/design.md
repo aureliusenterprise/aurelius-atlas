@@ -1,0 +1,111 @@
+# Design decisions
+
+The `DD-NNN` entries of the increment specified in [`spec.md`](./spec.md), moved
+from the
+[Design Log](../../docs/architecture/conversion/design-log.md). Its
+[rules](../../docs/architecture/conversion/design-log.md#rules) still apply: an accepted
+entry is never edited except its status line, and a changed decision is a new
+entry that supersedes the old one.
+
+## Entries
+
+### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-09
+
+**Decision.** The behaviour to reproduce is that of the `release-2.4.0` tag of Apache Atlas. Both of
+its user interfaces are served unchanged at the paths Atlas uses: `dashboardv2` at `/` and
+`dashboardv3` at `/n/`. End-to-end tests cover `dashboardv3` in depth and `dashboardv2` with a smoke
+test.
+
+**Reason.** Parity tests need one fixed reference ([ADR 048](../../docs/architecture/conversion/adr/048-behaviour-is-proven-against-the-reference-before-it-is-accepted.md)),
+and 2.4.0 is the latest Apache Atlas release. Atlas 2.4.0 serves the classic interface at the root and
+the newer one under `/n/`, and each links to the other; serving both keeps every bookmark and link
+working at the cost of one more static build, whereas dropping one would be a visible deviation.
+
+**Alternatives.** Track Atlas `master`: unstable fixtures, no released artefact to compare against.
+Serve only `dashboardv3` and redirect `/` to `/n/`: one build less, but breaks the switch-back link and
+existing bookmarks, and would need a deviation entry.
+
+**Consequences.** A move to a later Atlas release is a new entry plus a re-recording of all fixtures.
+Features used only by `dashboardv2` still need backend support; they are found by its smoke test.
+
+### DD-002. Atlas code lives in aurelius-atlas projects split by layer
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-09
+
+**Decision.** Atlas code is split into workspace projects by layer, all prefixed `aurelius-atlas-`
+(Python packages `aurelius_atlas_*`): `-model` (data shapes, no I/O), `-typesystem` (type registry and
+validation), `-store-es` (Elasticsearch access), `-core` (stores and services), `-dsl` (query language),
+`apps/aurelius-atlas-server` (REST), `apps/aurelius-atlas-dashboard` (UI),
+`reports/aurelius-atlas-test-report`, plus `dev/elasticsearch` and `dev/atlas-reference`.
+
+**Reason.** Layers that do not do I/O can be unit-tested without infrastructure; the dependency
+direction (model ← typesystem ← core → store-es; server → core) keeps each increment's change local,
+and each project follows an existing template recipe. The `aurelius` prefix keeps the organisation's
+naming convention.
+
+**Alternatives.** One large package mirroring the Java module tree: simpler imports, but every change
+touches the same project and nothing can be tested in isolation. A package per Java module (`intg`,
+`repository`, `webapp`): mirrors history rather than the dependency structure we want.
+
+**Consequences.** Projects are created by the increment that first needs them, not up front.
+
+### DD-003. Template projects are renamed to the aurelius-atlas prefix
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-17
+
+**Decision.** All workspace projects inherited from the template carry the `aurelius-atlas-` prefix
+(directories, Nx names, uv/npm package names, Python import packages, env-var prefixes, Sonar keys,
+compose project and network names, Grafana dashboards). The org handle `aureliusenterprise`, the npm
+scope `@aurelius`, the Keycloak client/realm ids (`aurelius`, `master`), and the DB name (`aurelius`)
+are identities of the organisation/Keycloak and stay unchanged.
+
+**Reason.** DD-002 fixes the `aurelius-atlas-` prefix for the Atlas projects; renaming the template
+examples now, while they are the only content, avoids two naming generations in one repo and the
+churn of renaming them piecemeal once Atlas code lands beside them.
+
+**Alternatives.** Rename only new Atlas projects: leaves `aurelius-*` and `aurelius-atlas-*` side by
+side, which reads as two projects with different ownership. Keep the template names entirely: makes
+the eventual atlas-vs-template distinction implicit rather than visible in the project graph.
+
+**Consequences.** Docker image names change (`ghcr.io/aureliusenterprise/aurelius-atlas-*`); Sonar
+projects, Chromatic, and any external CI references must be created/renamed to match. `.env.enc`
+files were re-encrypted with the new prefixed keys. Old locally built images are stale and should be
+pruned (`docker image prune` / rebuild via `nx e2e`).
+
+### DD-004. The SPA keeps tokens in memory and renews them silently
+
+- **Status:** Accepted
+- **Increment:** 0.1
+- **Date:** 2026-10-17
+
+**Decision.** The Angular SPA uses Keycloak's default in-memory token store (`tokenStore: "default"`
+in `provideKeycloak`, `apps/aurelius-atlas-frontend-example/src/app/app.config.ts`) with
+`onLoad: "check-sso"` and a silent-SSO redirect (`/silent-check-sso.html`). Access and refresh tokens
+never touch `localStorage` or any other persistent browser storage.
+
+**Reason.** `localStorage` is readable by any script that achieves XSS on the origin, and is also
+exposed to browser extensions with host permissions; a stolen refresh token there is a durable
+session hijack. With the in-memory store, injected script can read the current access token but the
+attacker's code dies with the page, and a reload forces a fresh authentication check against
+Keycloak rather than replaying stored secrets.
+
+**Alternatives.** `tokenStore: "sessionStorage"`: survives reload in the tab, but every XSS or
+extension read is still one `getItem` away — same theft surface, no meaningful gain.
+`tokenStore: "localStorage"`: survives tab close; strongest theft value, rejected. A confidential
+client with a BFF holding tokens server-side: the right answer at scale, deferred as its own
+increment — it changes the auth topology (new service, cookie session) rather than a setting.
+
+**Consequences.** A page reload re-mints tokens via silent SSO; the user sees no login unless the
+Keycloak SSO session itself has ended. Silent SSO relies on a third-party-cookie-acceptable (or
+same-site) Keycloak deployment: where browsers block the framing cookie, `check-sso` degrades to a
+not-signed-in state and the app falls back to a full redirect login (`login()`), which still works.
+If per-tab token durability becomes a product requirement, supersede this entry by adding the BFF —
+not by moving the tokens to storage.

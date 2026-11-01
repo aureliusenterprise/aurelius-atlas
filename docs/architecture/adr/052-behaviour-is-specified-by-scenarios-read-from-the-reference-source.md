@@ -77,7 +77,7 @@ Any acceptable arrangement must deliver:
 ### Watch
 
 - Current reference: the `release-2.4.0` tag of Apache Atlas
-  ([DD-001](../conversion/design-log.md#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)).
+  (`DD-001` (the record: `specs/0-1-adopt-template/design.md`)).
 - The scenario format, runner, and comparison are test tooling; results appear
   in the published test report
   ([049](./049-every-function-and-rule-is-traceable-to-a-test.md)).

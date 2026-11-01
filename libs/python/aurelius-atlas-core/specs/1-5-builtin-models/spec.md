@@ -10,15 +10,15 @@ When the server starts, it loads Atlas's built-in type definitions (`addons/mode
 into the typedef store of 1.4, as `AtlasTypeDefStoreInitializer` does:
 
 - the 2.4.0 models, vendored unchanged into `aurelius-atlas-core`
-  ([DD-032](../design-log.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)),
+  ([DD-032](design.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)),
   read from a directory the server can be pointed at (`AURELIUS_ATLAS_SERVER_MODELS_DIR`);
 - each model file creates the types not yet stored and updates those whose `typeVersion` is newer
   (`createUpdateTypesDef`);
 - the typedef patches, with the nine patch actions of Atlas 2.4.0, and the record of each patch's
   outcome, kept in the typedef document
-  ([DD-031](../design-log.md#dd-031-the-patch-records-live-in-the-typedef-document));
+  ([DD-031](design.md#dd-031-the-patch-records-live-in-the-typedef-document));
 - processes that start together apply each file and each patch once
-  ([DD-033](../design-log.md#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)).
+  ([DD-033](design.md#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)).
 
 No endpoint changes: the loaded types are served by `/v2/types` in 1.6.
 

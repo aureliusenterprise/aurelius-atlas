@@ -2,7 +2,7 @@
 
 `dashboardv2/` and `dashboardv3/` are the Apache Atlas `release-2.4.0` source (commit 4787b75 of
 `github.com/apache/atlas`). These are the only changes made to them (DSH-05,
-[DD-017](../../docs/architecture/conversion/design-log.md#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)).
+[DD-017](specs/0-6-dashboards/design.md#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)).
 Each patch is one commit; `git log -- apps/aurelius-atlas-dashboard/dashboardv2 apps/aurelius-atlas-dashboard/dashboardv3`
 lists them.
 
