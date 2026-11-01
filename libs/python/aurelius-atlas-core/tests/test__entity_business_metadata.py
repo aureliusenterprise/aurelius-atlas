@@ -13,7 +13,7 @@ from typing import Any
 import pytest
 from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
-from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata
+from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata, business_metadata_headers
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
@@ -30,6 +30,7 @@ E = f"{B}.EntityBusinessMetadata"
 UPDATE = EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE
 ON_T = '["t"]'
 TYPES = {
+    "enumDefs": [{"name": "e", "elementDefs": [{"value": "A", "ordinal": 0}, {"value": "B", "ordinal": 1}]}],
     "entityDefs": [
         {"name": "t", "attributeDefs": [{"name": "qualifiedName", "typeName": "string", "isUnique": True}]},
         {"name": "u", "attributeDefs": []},
@@ -46,6 +47,13 @@ TYPES = {
                     "options": {"applicableEntityTypes": ON_T, "maxStrLength": "5"},
                 },
                 {"name": "n", "typeName": "int", "isOptional": True, "options": {"applicableEntityTypes": ON_T}},
+                {
+                    "name": "ns",
+                    "typeName": "array<int>",
+                    "isOptional": True,
+                    "options": {"applicableEntityTypes": ON_T},
+                },
+                {"name": "es", "typeName": "array<e>", "isOptional": True, "options": {"applicableEntityTypes": ON_T}},
             ],
         },
         {
@@ -290,3 +298,61 @@ async def test__each_created_entity_tells_its_classifications_then_its_business_
         (first, create),
         (second, create),
     ]
+
+
+CSV = b"""EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue
+t,q,bm.s,hello
+t,q,bm.ns,1|x|3
+t,q,bm.es,A|C
+t,missing,bm.s,x
+nope,q,bm.s,x
+t,q,bm.zz,x
+t,q,,x
+t,q,bm.s,x,nope
+t,w,req.m,abc
+"""
+
+
+@pytest.mark.covers(
+    f"{E}.bulk_create_or_update_business_attributes",
+    f"{B}.business_metadata_headers",
+    rules=["BMI-01", "BMI-02", "BMI-03", "BMI-04", "BMI-05"],
+)
+async def test__business_attributes_are_imported_from_a_file(
+    store: EntityStore, audits: InMemoryEntityAuditRepository
+) -> None:
+    """The rows that fail first, in order; then each entity overwritten with its stored and imported values."""
+    guid = await entity(store, audits, bm={"n": 1})
+    other = await entity_without(store)
+
+    found = (await service(store, audits).bulk_create_or_update_business_attributes("bm.csv", CSV)).to_json()
+
+    assert business_metadata_headers().startswith("EntityType,EntityUniqueAttributeValue,")
+    *rows, failed = found["failedImportInfoList"]
+    assert [(row["parentObjectName"], row["remarks"]) for row in rows] == [
+        ("", "Provided value x is Integer of Long type at line #2"),
+        ("", "Provided value C is Enumeration of Long type at line #3"),
+        ("", "Line #5: no t entity found with qualifiedName=missing"),
+        ("", "Line #6: invalid entity-type 'nope'"),
+        ("", "Line #7: invalid business-metadata 'bm.zz' for entity type 't'"),
+        ("", "Line #8: missing fields. [t, q, , x]"),
+        ("", "Line #9: attribute 'nope' not found in entity-type 't'"),
+    ]
+    assert (failed["parentObjectName"], failed["childObjectName"], failed["importStatus"]) == (
+        other,
+        "{req={m=abc}}",
+        "FAILED",
+    )
+    assert failed["remarks"].startswith("Invalid instance creation/updation parameters passed : [t.req.m")
+    assert found["successImportInfoList"] == [
+        {
+            "parentObjectName": guid,
+            "childObjectName": "{bm={n=1, s=hello, ns=[1, 3], es=[A]}}",
+            "importStatus": "SUCCESS",
+            "remarks": "",
+        }
+    ]
+    assert await read(store, guid) == {"bm": {"s": "hello", "n": 1, "ns": [1, 3], "es": ["A"]}}
+    with pytest.raises(AtlasError) as blank:
+        await service(store, audits).bulk_create_or_update_business_attributes(" ", CSV)
+    assert blank.value.code is AtlasErrorCode.FILE_NAME_NOT_FOUND

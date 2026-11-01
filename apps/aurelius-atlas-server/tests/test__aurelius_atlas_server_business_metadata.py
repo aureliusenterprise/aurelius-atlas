@@ -111,3 +111,42 @@ async def test__a_reader_changes_no_business_attributes(client: httpx.AsyncClien
         f"reader is not authorized to perform remove business-metadata: guid={guid}, business-metadata=bm_a"
     )
     assert await business(client, guid) == {"bm_a": {"n": 1}}
+
+
+@pytest.mark.covers(f"{R}.produce_template", rules=["BMI-01"])
+async def test__the_import_template_is_its_header_line(client: httpx.AsyncClient) -> None:
+    """A download named ``template_business_metadata``."""
+    found = await client.get(f"{ENTITY}/businessmetadata/import/template")
+    assert found.status_code == 200
+    assert found.headers["content-type"] == "application/octet-stream"
+    assert found.headers["content-disposition"] == 'attachment; filename="template_business_metadata"'
+    assert found.text == (
+        "EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue,"
+        "EntityUniqueAttributeName[optional]"
+    )
+
+
+@pytest.mark.covers(f"{R}.import_bm_attributes", rules=["BMI-02", "BMI-04", "BMI-05", "AUZ-17"])
+async def test__business_attributes_are_imported_from_an_upload(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
+    """Each entity's outcome; a reader's entity fails unauthorized; no file is a blank file name (DV-119)."""
+    guid = await entity(client)
+    url = f"{ENTITY}/businessmetadata/import"
+    csv = b"EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue\nt_bmd,q,bm_a.n,4\n"
+
+    imported = (await client.post(url, files={"file": ("bm.csv", csv)})).json()
+    reader = {"Authorization": f"Bearer {issuer.token('reader', atlas_roles=('atlas-read',))}"}
+    refused = (await client.post(url, files={"file": ("bm.csv", csv.replace(b",4", b",5"))}, headers=reader)).json()
+
+    assert imported == {
+        "successImportInfoList": [
+            {"parentObjectName": guid, "childObjectName": "{bm_a={n=4}}", "importStatus": "SUCCESS", "remarks": ""}
+        ]
+    }
+    assert refused["failedImportInfoList"][0]["remarks"] == (
+        f"reader is not authorized to perform add/update business-metadata: guid={guid}, business-metadata-name=bm_a"
+    )
+    assert await business(client, guid) == {"bm_a": {"n": 4}}
+    blank = await client.post(url, data={"other": "x"})
+    assert (blank.status_code, blank.json()["errorCode"]) == (404, "ATLAS-404-00-014")
+    wrong = await client.post(url, files={"file": ("bm.txt", csv)})
+    assert (wrong.status_code, wrong.json()["errorCode"]) == (400, "ATLAS-400-00-098")

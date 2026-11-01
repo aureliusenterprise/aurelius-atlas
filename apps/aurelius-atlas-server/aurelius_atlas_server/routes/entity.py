@@ -11,7 +11,7 @@ from aurelius_atlas_core.classification_associator import ClassificationAssociat
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository, list_events_sorted
-from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata
+from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata, business_metadata_headers
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_labels import EntityLabels
@@ -34,6 +34,7 @@ from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.entity_type import EntityType
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import TypeAdapter, ValidationError
+from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
@@ -622,6 +623,27 @@ async def remove_business_attributes_of(
     given = {bm_name: attributes_body(body)}
     await business_metadata(request, store).remove_business_attributes(guid, given)
     return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.get("/businessmetadata/import/template")
+async def produce_template() -> Response:
+    """``produceTemplate``: the business metadata import template's header line, as a download (BMI-01)."""
+    return Response(
+        content=business_metadata_headers().encode(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": 'attachment; filename="template_business_metadata"'},
+    )
+
+
+@ENTITY.post("/businessmetadata/import")
+async def import_bm_attributes(request: Request, store: Store) -> AtlasJSONResponse:
+    """``importBMAttributes``: the form's ``file``, a CSV or Excel file of business attribute values (BMI-02 to
+    BMI-05); no file is a blank file name (DV-119).
+    """  # noqa: D205 - one sentence
+    upload = (await request.form()).get("file")
+    file_name, content = (upload.filename, await upload.read()) if isinstance(upload, UploadFile) else (None, b"")
+    found = await business_metadata(request, store).bulk_create_or_update_business_attributes(file_name, content)
+    return _json(found.to_json())
 
 
 @ENTITY.post("/guid/{guid}/labels")
