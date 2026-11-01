@@ -19,10 +19,22 @@ def test__load_config_checks_every_member_not_excluded(make_workspace: Callable[
     assert project.packages == (workspace.package,)
     assert project.test_dirs == (workspace.project / "tests", workspace.project / "e2e")
     assert config.members == (workspace.project, workspace.root / "libs" / "template")
-    assert config.spec_dir == workspace.root / "specs"
+    assert config.spec_dirs == (workspace.root / "specs",)
     assert config.enforce_from == Increment(0, 2)
     assert config.excluded_subpackages == ("testing",)
     assert config.deviations == workspace.root / "deviations.md"
+
+
+@pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["TRC-07"])
+def test__load_config_reads_several_spec_roots(make_workspace: Callable[..., SampleWorkspace]) -> None:
+    """``specs`` is a list of project roots when the specifications live with their projects."""
+    workspace = make_workspace(code="", tests="")
+    pyproject = workspace.root / "pyproject.toml"
+    text = pyproject.read_text()
+
+    pyproject.write_text(text.replace('specs = "specs"', 'specs = ["specs", "libs/sample/specs"]'))
+
+    assert load_config(workspace.root).spec_dirs == (workspace.root / "specs", workspace.project / "specs")
 
 
 @pytest.mark.covers("aurelius_atlas_trace.config.load_config", rules=["SCN-13"])

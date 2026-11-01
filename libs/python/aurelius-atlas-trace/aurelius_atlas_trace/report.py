@@ -172,7 +172,7 @@ def build_report(config: TraceConfig) -> Report:
                 outcomes[trace.rootdir.resolve(), test.nodeid] = test.outcome
 
     coverage = read_coverage(path for member in config.members for path in sorted(member.glob(COVERAGE_GLOB)))
-    rules = read_rules(config.spec_dir, config.enforce_from)
+    rules = read_rules(config.spec_dirs, config.enforce_from)
     return Report(
         totals=read_junit(path for member in config.members for path in sorted(member.glob(JUNIT_GLOB))),
         rules=tuple(_rule_rows(rules.values(), collected, outcomes, config.workspace)),
