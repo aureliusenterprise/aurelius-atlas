@@ -133,6 +133,17 @@ property survives the replacement and says what replaced it.
 - Never edit the decision of an accepted record. When the business situation
   changes, write a new record that supersedes it and update the old record's
   status line only.
+- A shape sweep is not a decision edit. It moves or drops implementation
+  detail so a record matches the fixed skeleton, and touches no decision,
+  requirement, status, or trigger. Two records were swept on 2026-11-01,
+  their implementation facts kept in the project documentation that owns
+  them: [013](./013-services-prove-who-they-are-at-every-boundary.md) and
+  [039](./039-data-is-protected-where-it-travels-and-where-it-rests.md) lost
+  a trailing `## Implementation` section, and
+  [055](./055-the-lineage-chain-is-a-named-data-surface.md), still Proposed,
+  renamed its `## Consequences` section to `## Tradeoffs`. Any later sweep
+  follows the same rule: keep the facts where the as-built docs already
+  carry them, and name the change here.
 - When a record is superseded, check the records that cite it: a requirement
   borrowed from a superseded record no longer has a foundation, so the
   dependent record either adopts the requirement in its own words, cites the
@@ -203,18 +214,23 @@ defer — is what acceptance adds.
 
 ??? INFO "Which records are Proposed"
 
-    Eight: [023](./023-storage-schema-changes-by-recorded-migration.md),
+    Ten: [023](./023-storage-schema-changes-by-recorded-migration.md),
     [025](./025-data-has-a-stated-lifetime.md),
     [026](./026-the-system-can-be-brought-back-from-a-named-snapshot.md),
     [027](./027-every-stream-carries-a-stated-delivery-guarantee.md) (its slice
     removed by [050](./050-the-system-carries-only-what-the-catalogue-needs.md)),
-    [040](./040-the-system-raises-its-hand-when-it-is-broken.md),
-    [042](./042-every-dataset-has-an-owner-who-answers-for-it.md),
+    [040](./040-the-system-raises-its-hand-when-it-is-broken.md), and
+    [042](./042-every-dataset-has-an-owner-who-answers-for-it.md) — the
+    governance mechanisms that need an enforcement point before they are
+    decisions the system keeps — plus
     [052](./052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md),
-    and [053](./053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice.md)
-    — the governance mechanisms that need an enforcement point before they are
-    decisions the system keeps; 052's harness arrives with increment 0.4, and 053's
-    first slice with increment 7.1. Each is listed in the log above as Proposed.
+    [053](./053-the-webapp-is-rewritten-in-angular-idiom-slice-by-slice.md),
+    [054](./054-the-server-api-is-the-webapps-one-data-plane.md), and
+    [055](./055-the-lineage-chain-is-a-named-data-surface.md) — the conversion
+    decisions whose surfaces arrive with the increments they name (052's
+    harness with 0.4, 053's first slice with 7.1, 054's server with 4.1, 055's
+    auxiliary APIs with 8.0 to 8.4). Each is listed in the log above as
+    Proposed.
 
 The gaps also sequence the work: taking on real stored data needs the
 migration path ([023](./023-storage-schema-changes-by-recorded-migration.md))

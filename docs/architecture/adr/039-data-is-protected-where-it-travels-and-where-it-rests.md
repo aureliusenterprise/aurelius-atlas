@@ -103,45 +103,6 @@ Any acceptable arrangement must deliver:
 - The event-platform paths this record's first implementation listed (broker,
   registry, connectors) left with the streaming slice
   ([050](./050-the-system-carries-only-what-the-catalogue-needs.md)). The
-  posture and its mechanisms stand for the paths the catalogue keeps, below.
-
-## Implementation
-
-The mechanisms that make the posture checkable (R2, R5), all part of the spine:
-
-- **Issuance.** Each project that serves or consumes TLS owns a `tls.json`
-  listing the certificates it needs. `nx certgen` (custom plugin,
-  `tools/plugins/tls.ts`) issues them from a local `mkcert` certificate
-  authority into the project's gitignored `certs/` — leaf keypairs, PKCS12
-  keystores, a JVM truststore where needed, a `ca.pem` copy for pure clients.
-  Generation is on demand: every `serve`/`e2e` target that mounts `certs/`
-  declares a `certgen` dependency. `mkcert -uninstall` drops the CA.
-  **Certificates are development material only — deployments bring their own.**
-- **Stores.** PostgreSQL runs with `ssl=on` and a TLS-only client
-  authentication file; clients connect `sslmode=verify-full` against the CA —
-  and unit-test database containers enforce the same posture with an ephemeral
-  per-run CA, so TLS regressions fail the test suite. Elasticsearch — the
-  system of record ([047](./047-one-search-store-is-the-system-of-record.md)) —
-  serves its REST layer over TLS with certificate verification against the CA.
-- **Services.** The FastAPI example serves HTTPS and verifies Keycloak and the
-  store against the CA. The OpenTelemetry collector's OTLP receivers are TLS,
-  and every exporter in the arrangement trusts the CA. TLS proves the channel;
-  the receivers additionally require a credential (DD-193): server-side
-  producers present a shared ingest token as a bearer token on the service
-  leg, and browsers push their own Keycloak user token on the browser leg
-  (validated via OIDC), passed through the `/otel/` proxies untouched — ingest
-  is never anonymous, and a browser push is attributable to its user.
-- **The named relaxation (R4).** In the local development arrangement, Keycloak
-  additionally serves a plaintext HTTP listener so the developer browser opens a
-  familiar URL, and browser-facing developer surfaces (the SPA dev-server,
-  Grafana) stay plaintext. **CI and E2E run every one of those paths over TLS
-  and verify it** — the deviation exists only on a developer machine, and each
-  occurrence carries a comment naming this record.
-
-??? question "Why is a plaintext listener a named exception and not a defect?"
-
-    Because it is a developer convenience on a wire that never leaves the
-    machine (R4), and R1's rule is that such relaxations are written down, not
-    implied. The line R4 guards: the same plaintext path outside the
-    development arrangement — the localhost URL copied into a deployment — is a
-    defect, which is why each occurrence carries a comment naming this record.
+  posture stands for the paths the catalogue keeps; the mechanisms that
+  make it checkable are in
+  [TLS Certificates](../../contributor-guide/tls-certificates.md).
