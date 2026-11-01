@@ -32,6 +32,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   `AtlasEntityStoreV2` and `EntityGraphMapper`; `stored_classification.py` holds the stored instance (DD-070)
 - `aurelius_atlas_core/entity_labels.py` — `EntityLabels`: the label methods of `AtlasEntityStoreV2` and
   `EntityGraphMapper`; labels live on the stored entity, and their changes reach the audit through the notifier
+- `aurelius_atlas_core/entity_business_metadata.py` — `EntityBusinessMetadata`: the business attribute
+  methods of `AtlasEntityStoreV2` and `EntityGraphMapper`; values live in the entity's `attributes` under
+  `<bm>.<attr>` (DD-302)
 - `aurelius_atlas_core/tag_propagation.py` — `TagPropagation`: classification propagation over a request's view,
   whose entity changes the caller writes with the request (DD-075, DD-077), or the tasks it defers them to
 - `aurelius_atlas_core/entity_change_notifier.py` — `EntityChangeNotifier`: prunes a writer's response and tells
