@@ -2489,6 +2489,15 @@ A constraint on an attribute, such as `ownedRef` or `inverseRef`.
 }
 ```
 
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
 Fields:
 
 - `type` (`str | None`)
@@ -8459,15 +8468,6 @@ The record of one applied typedef patch; the times are epoch milliseconds.
   "type": "object"
 }
 ```
-
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
 
 Fields:
 

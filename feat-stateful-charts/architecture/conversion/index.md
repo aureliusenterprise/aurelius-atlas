@@ -69,13 +69,18 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 4.1b | Classification search | Classification filters, wildcards, sub classifications | `ClassificationSearchProcessor` | in progress |
 | 4.2a | Free text | Free-text index, basic search `query`, `search/fulltext` | `FreeTextSearchProcessor`, `SolrIndexHelper` | in progress |
 | 4.2b | Quick search and suggestions | `search/quick` with facets, `search/suggestions` | `AtlasDiscoveryService`, `SearchAggregatorImpl` | in progress |
-| 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | planned |
-| 4.4 | DSL execution | AST to search queries; declared unsupported forms | `GremlinQueryComposer` (replaced) | planned |
-| 4.5 | Saved searches and user profile | Saved search CRUD | `UserProfileService` | planned |
-| 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | planned |
-| 5.2 | Glossary | Glossaries, terms, categories, term assignment | `GlossaryREST`, `GlossaryService` | planned |
+| 4.3 | DSL parser | Atlas DSL grammar to AST | `AtlasDSLParser.g4`, `query/` | in progress |
+| 4.4a | DSL search of entities | `search/dsl` answering entities: sources, conditions, order, paging; declared unsupported forms | `GremlinQueryComposer` (replaced), `TraversalBasedExecutor` | in progress |
+| 4.4b | DSL projections and traversals | `select`, `groupby`, aggregates; referred entities and classification attributes | `SelectClauseComposer`, `SelectClauseProjections` | in progress |
+| 5.1 | Lineage | Process inputs/outputs, depth, direction, on-demand lineage | `EntityLineageService` | in progress |
+| 5.2a | Glossaries and categories | Glossary and category CRUD, category hierarchy and qualified names | `GlossaryService`, `GlossaryCategoryUtils` | in progress |
+| 5.2b | Glossary terms | Term CRUD, related terms, term categorization | `GlossaryService`, `GlossaryTermUtils` | in progress |
+| 5.2c | Term assignment | Terms assigned to entities, meanings on headers, DSL `hasTerm` | `GlossaryService`, `GlossaryTermUtils` | in progress |
+| 5.2d | Glossary import | Glossary terms imported from CSV or Excel, and the import template | `GlossaryService#importGlossaryData`, `GlossaryTermUtils` | in progress |
 | 5.3 | Business metadata and labels | Business metadata attributes, labels | `EntityREST` | planned |
-| 6.1 | Authentication | Keycloak OIDC, session endpoints | `AtlasKeycloakAuthenticationProvider` | planned |
+| 6.1a | Authentication | Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user | `AtlasKeycloakAuthenticationProvider` | in progress |
+| 6.1b | The acting user on writes | `createdBy`, `updatedBy` and audit users of every write | `RequestContext#getUser` | planned |
+| 4.5 | Saved searches and user profile | Saved search CRUD; after 6.1, its owners being users (DD-244) | `UserProfileService` | planned |
 | 6.2 | Authorization | Simple authorizer policies on every endpoint | `atlas-simple-authz-policy` | planned |
 | 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |
 | 6.4 | Hardening | Metrics, observability, load test, index tuning | `AdminResource` metrics | planned |
@@ -112,9 +117,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 9.2 | Server hardening | TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86) | `AtlasBaseExceptionMapper` (cause echo, superseded for 5xx); no header filter to port | in progress |
 | 9.3 | Search cost and client IP | Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87) | — (Atlas refreshes nothing on reads, JanusGraph; no limiter to port) | in progress |
 | 9.4 | Edge tracing | The webapp's nginx exports `/api/` spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239) | — (no Java twin; nginx/OTLP are Aurelius infrastructure) | in progress |
-| 10.1 | Deployment chart foundation | Component charts in their project folders (`apps/<app>/helm`, `dev/<name>/helm`) + the `helm/` umbrella at the workspace root, the `helm` Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-240..252) | — (Atlas ships compose/k8s examples for a topology this is not) | in progress |
+| 10.1 | Deployment chart foundation | Component charts in their project folders (`apps/<app>/helm`, `dev/<name>/helm`) + the `helm/` umbrella at the workspace root, the `helm` Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-252, DD-283..294) | — (Atlas ships compose/k8s examples for a topology this is not) | in progress |
 | 10.2 | Stateful platform charts | Elasticsearch, Keycloak and its Postgres as self-managed workloads: storage, trust, health, the GKE coredump agent, deploy-time credentials, the root chart-contract suite (CHT-10..19, DD-253..260) | – | in review |
-| 10.3 | App and edge charts | Server, webapp (resolved nginx config + `/config.json`), the three auxiliary APIs, observability; the Gateway API edge at the umbrella; the aux charts' CA mount and lineage-model's upstream URLs (DD-251) (CHT-20..34) | – | planned |
+| 10.3 | App and edge charts | Server, webapp (resolved nginx config + `/config.json`), the three auxiliary APIs, observability; the Gateway API edge at the umbrella; the aux charts' CA mount and lineage-model's upstream URLs (DD-294) (CHT-20..34) | – | planned |
 | 10.4 | Secrets and chart publishing | The remaining deploy-time credentials (the collector/observability and edge secrets), chart OCI publish, the operator runbook (CHT-40..47; DD-254 moves the stateful five to 10.2) | – | planned |
 | 10.5 | Cluster validation | minikube install script and the smoke suite that proves the install end to end (CHT-50..59) | – | planned |
 
