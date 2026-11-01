@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4040,6 +4069,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4972,6 +5019,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8394,6 +8684,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -8429,7 +8737,7 @@
 <ul>
 <li><strong>Status:</strong> in review</li>
 <li><strong>Pull request:</strong> #160</li>
-<li><strong>Records:</strong> ADR 016, ADR 034, DD-193..196, DD-202, DD-226, DD-239, DD-244,
+<li><strong>Records:</strong> ADR 016, ADR 034, DD-193..196, DD-202, DD-226, DD-239, DD-287,
   DD-254, DD-256, DD-257, DD-265..268</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
@@ -8489,11 +8797,11 @@ publish polish and scripted installs (10.4/10.5).</p>
 </tr>
 <tr>
 <td>CHT-35</td>
-<td>Ingest auth renders as in dev: the browser and per-service legs use the <code>oidc</code> extension (<code>issuer</code> + <code>jwks_url</code> + <code>audience: otel-collector</code>, DD-193/DD-196); the legacy leg uses <code>bearertokenauth</code> whose token arrives from <code>&lt;release&gt;-collector-legacy</code> (key <code>token</code>, DD-239/DD-244) via env — never rendered into the ConfigMap (R5). Receiver TLS uses the chart's own <code>Certificate</code> Secret mounted at <code>/certs</code>.</td>
+<td>Ingest auth renders as in dev: the browser and per-service legs use the <code>oidc</code> extension (<code>issuer</code> + <code>jwks_url</code> + <code>audience: otel-collector</code>, DD-193/DD-196); the legacy leg uses <code>bearertokenauth</code> whose token arrives from <code>&lt;release&gt;-collector-legacy</code> (key <code>token</code>, DD-239/DD-287) via env — never rendered into the ConfigMap (R5). Receiver TLS uses the chart's own <code>Certificate</code> Secret mounted at <code>/certs</code>.</td>
 </tr>
 <tr>
 <td>CHT-36</td>
-<td>The collector <code>Certificate</code> (CHT-14 name-rule join, umbrella chain issuer) carries only cluster names — the Service's bare/<code>.svc</code>/<code>.svc.cluster.local</code> forms — never a browser host: the collector is producer-facing only (DD-242's audience split). Grafana, Prometheus, Loki, and Tempo serve plaintext on ClusterIP Services; only the collector speaks TLS (ADR 034's seam terminates at its receivers; the stack behind it is one network namespace of trust, DD-242).</td>
+<td>The collector <code>Certificate</code> (CHT-14 name-rule join, umbrella chain issuer) carries only cluster names — the Service's bare/<code>.svc</code>/<code>.svc.cluster.local</code> forms — never a browser host: the collector is producer-facing only (DD-285's audience split). Grafana, Prometheus, Loki, and Tempo serve plaintext on ClusterIP Services; only the collector speaks TLS (ADR 034's seam terminates at its receivers; the stack behind it is one network namespace of trust, DD-285).</td>
 </tr>
 <tr>
 <td>CHT-37</td>

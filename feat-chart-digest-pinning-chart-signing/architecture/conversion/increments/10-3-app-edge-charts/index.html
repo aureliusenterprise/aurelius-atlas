@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4040,6 +4069,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4972,6 +5019,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8372,6 +8662,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -8407,14 +8715,14 @@
 <ul>
 <li><strong>Status:</strong> in review</li>
 <li><strong>Pull request:</strong> #159</li>
-<li><strong>Records:</strong> ADR 057, DD-238, DD-242, DD-243, DD-251, DD-256, DD-259, DD-261..264, DD-270</li>
+<li><strong>Records:</strong> ADR 057, DD-238, DD-285, DD-286, DD-294, DD-256, DD-259, DD-261..264, DD-270</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>The five stateless app charts (<code>atlas-server</code>, <code>atlas-webapp</code>,
 <code>atlas-data2model</code>, <code>atlas-lineage-model</code>, <code>atlas-validate-entity</code>) gain their
 workload wiring, and the umbrella gains the edge: the Gateway, one HTTPRoute
-per browser host, and the browser-host certificates (DD-242's shape, never yet
-rendered). This closes DD-251 in full — the aux charts' dead CA mount and
+per browser host, and the browser-host certificates (DD-285's shape, never yet
+rendered). This closes DD-294 in full — the aux charts' dead CA mount and
 lineage-model's unrendered upstream URLs were both assigned here — and DD-253's
 suite grows one file per chart. The observability stack is split out to 10.3b
 (its own increment, own PR); 10.3's hand check therefore runs the apps with
@@ -8435,7 +8743,7 @@ until the chain needed it.</p>
   <code>nginx.conf.template</code> resolved <strong>at pod start</strong> (init container, <code>sh</code> +
   <code>sed</code> — the image has neither <code>envsubst</code> nor Helm-time substitution,
   DD-262), and <code>/config.json</code> from values.</li>
-<li>Aux chart completion (all three, DD-251): each gets its own <code>Certificate</code>
+<li>Aux chart completion (all three, DD-294): each gets its own <code>Certificate</code>
   (service-name SANs) and a real <code>ca.crt</code> in the mounted TLS volume
   (cert-manager already puts <code>ca.crt</code> in the issued Secret — the dead
   <code>tls.caConfigMap</code>/<code>tls.caPath</code> values become honest or go away);
@@ -8478,7 +8786,7 @@ polish (10.4), scripted minikube install + smoke (10.5).</p>
 </tr>
 <tr>
 <td>CHT-23</td>
-<td>The webapp runs as a Deployment + Service on 8080 with a TLS listener and a chart-issued <code>Certificate</code> (Service-name SANs, CHT-22's rule; the Gateway's BackendTLSPolicy validates it, DD-270 — supersedes DD-242's plaintext-backend clause); HTTPS probes; the image's nginx uid with <code>fsGroup</code> only where a writable volume needs it (cache/run dirs as emptyDir).</td>
+<td>The webapp runs as a Deployment + Service on 8080 with a TLS listener and a chart-issued <code>Certificate</code> (Service-name SANs, CHT-22's rule; the Gateway's BackendTLSPolicy validates it, DD-270 — supersedes DD-285's plaintext-backend clause); HTTPS probes; the image's nginx uid with <code>fsGroup</code> only where a writable volume needs it (cache/run dirs as emptyDir).</td>
 </tr>
 <tr>
 <td>CHT-24</td>
@@ -8494,11 +8802,11 @@ polish (10.4), scripted minikube install + smoke (10.5).</p>
 </tr>
 <tr>
 <td>CHT-27</td>
-<td>Each aux Deployment gets a <code>Certificate</code> (its Service-name SANs) and mounts its Secret whole at <code>tls.mountPath</code> — <code>tls.crt</code>, <code>tls.key</code>, and <code>ca.crt</code> all present (DD-251: the <code>AUTH_CA_FILE</code>/<code>OTEL_CA_FILE</code> defaults point at <code>ca.crt</code> inside that mount; the dead <code>caConfigMap</code> value is retired).</td>
+<td>Each aux Deployment gets a <code>Certificate</code> (its Service-name SANs) and mounts its Secret whole at <code>tls.mountPath</code> — <code>tls.crt</code>, <code>tls.key</code>, and <code>ca.crt</code> all present (DD-294: the <code>AUTH_CA_FILE</code>/<code>OTEL_CA_FILE</code> defaults point at <code>ca.crt</code> inside that mount; the dead <code>caConfigMap</code> value is retired).</td>
 </tr>
 <tr>
 <td>CHT-28</td>
-<td>lineage-model renders <code>ATLAS_BASE_URL=https://&lt;server-svc&gt;:&lt;port&gt;/</code> and <code>DATA2MODEL_URL=https://&lt;data2model-svc&gt;:&lt;port&gt;/</code> from the co-deployed siblings (DD-251's second finding — required settings, no defaults; the hand check boots it with no out-of-band values); the auth audience defaults per app to its <code>settings.py</code> default (<code>aurelius-atlas-lineage-model</code> et al.) and is a values knob — the dev <code>aurelius</code> audience stays the dev deployment's values choice, not the chart's (DV-74/DV-75 name the split).</td>
+<td>lineage-model renders <code>ATLAS_BASE_URL=https://&lt;server-svc&gt;:&lt;port&gt;/</code> and <code>DATA2MODEL_URL=https://&lt;data2model-svc&gt;:&lt;port&gt;/</code> from the co-deployed siblings (DD-294's second finding — required settings, no defaults; the hand check boots it with no out-of-band values); the auth audience defaults per app to its <code>settings.py</code> default (<code>aurelius-atlas-lineage-model</code> et al.) and is a values knob — the dev <code>aurelius</code> audience stays the dev deployment's values choice, not the chart's (DV-74/DV-75 name the split).</td>
 </tr>
 <tr>
 <td>CHT-29</td>
@@ -8506,7 +8814,7 @@ polish (10.4), scripted minikube install + smoke (10.5).</p>
 </tr>
 <tr>
 <td>CHT-30</td>
-<td>One <code>HTTPRoute</code> per listener, hostname-pinned to the host helper, one backend (webapp / keycloak / server / grafana) — routing stays coarse (DD-242: the webapp's <code>/api</code>+<code>/otel</code> proxy is the tested data path, the gateway does not duplicate it). TLS backends (server, keycloak, webapp — DD-270) get a <code>BackendTLSPolicy</code> pinned to the trust root (<code>global.trust.caSecretName</code> / the BYO <code>caBundle</code> Secret); the plaintext one (grafana, DD-267) none.</td>
+<td>One <code>HTTPRoute</code> per listener, hostname-pinned to the host helper, one backend (webapp / keycloak / server / grafana) — routing stays coarse (DD-285: the webapp's <code>/api</code>+<code>/otel</code> proxy is the tested data path, the gateway does not duplicate it). TLS backends (server, keycloak, webapp — DD-270) get a <code>BackendTLSPolicy</code> pinned to the trust root (<code>global.trust.caSecretName</code> / the BYO <code>caBundle</code> Secret); the plaintext one (grafana, DD-267) none.</td>
 </tr>
 <tr>
 <td>CHT-31</td>

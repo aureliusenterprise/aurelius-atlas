@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4040,6 +4069,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4972,6 +5019,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8394,6 +8684,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -8430,24 +8738,24 @@
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> <a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/157">#157</a></li>
 <li><strong>Records:</strong> <a href="../../../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/">ADR 057</a>,
-  DD-240..252</li>
+  DD-252, DD-283..294</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>The deployment shape of the system, specified once and scaffolded completely: one chart per
 deployable component, landing in the component's own project (<code>apps/&lt;app&gt;/helm/</code>,
-<code>dev/&lt;name&gt;/helm/</code>, DD-247), composed by an umbrella chart, an Nx plugin that
+<code>dev/&lt;name&gt;/helm/</code>, DD-290), composed by an umbrella chart, an Nx plugin that
 lints/renders/publishes charts the way <code>tools/plugins/docker.ts</code> does images, and the CI wiring
 that proves every chart renders on every change.</p>
 <p>This increment delivers:</p>
 <ul>
 <li><code>helm/</code> — the umbrella <code>aurelius-atlas</code>: composes the component charts, owns the edge
   (Gateway API), the trust model (cert-manager issuers), and the generated secrets. The one
-  chart without an owning project, so it sits at the workspace root (DD-249).</li>
+  chart without an owning project, so it sits at the workspace root (DD-292).</li>
 <li><code>apps/aurelius-atlas-{server,webapp,data2model,lineage-model,validate-entity}/helm</code> and
   <code>dev/{elasticsearch,keycloak,observability}/helm</code> — the component charts: each owns its
   component's runtime contract (ports, probes, settings, identity) and its own helpers
-  (DD-247 — no library charts; the naming convention is the dedupe). A chart is not a
-  project (DD-250): the plugin infers its targets onto the owning project — the chart
+  (DD-290 — no library charts; the naming convention is the dedupe). A chart is not a
+  project (DD-293): the plugin infers its targets onto the owning project — the chart
   dir's parent — keyed at the owner's root, and wires release there. No <code>project.json</code>
   ships for a chart.</li>
 <li><code>tools/plugins/helm.ts</code> — inferred <code>helm-lint</code>, <code>helm-template</code>, <code>helm-publish</code> targets from
@@ -8512,10 +8820,10 @@ examples for a Kafka/JanusGraph/Cassandra topology that does not exist here.</p>
 <li>A trial <code>helm install</code> of the umbrella on minikube (the <code>minikube.yaml</code> overlay, locally built
   images) reaches <code>deployed</code> and the three aux Deployments go Ready on their HTTPS <code>/liveness</code>
   probes; <code>helm upgrade</code> is a clean no-op. Two aux-chart gaps found by the trial — the unbacked
-  <code>ca.crt</code> mount and lineage-model's missing upstream URLs — are deferred to 10.3 (DD-251);
+  <code>ca.crt</code> mount and lineage-model's missing upstream URLs — are deferred to 10.3 (DD-294);
   the <code>--wait</code> stuck-release recovery joins the runbook (DD-252).</li>
 <li>The plugin targets are visible on the owning projects (<code>npx nx show project
-aurelius-atlas-server</code> shows <code>helm-lint</code>/<code>helm-template</code>/<code>helm-publish</code>, DD-250)
+aurelius-atlas-server</code> shows <code>helm-lint</code>/<code>helm-template</code>/<code>helm-publish</code>, DD-293)
   and <code>-c ci</code> selects the CI configuration (CHT-05 wiring).</li>
 <li>Chart tree and umbrella dependencies match the component list of the release (CHT-01, CHT-07) —
   checked by review of <code>helm/Chart.yaml</code> against this spec's Scope.</li>

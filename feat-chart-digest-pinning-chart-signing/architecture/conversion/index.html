@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4038,6 +4067,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4970,6 +5017,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./increments/6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8435,35 +8725,56 @@ checks a PR must pass:</p>
 <td>DSL parser</td>
 <td>Atlas DSL grammar to AST</td>
 <td><code>AtlasDSLParser.g4</code>, <code>query/</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
-<td>4.4</td>
-<td>DSL execution</td>
-<td>AST to search queries; declared unsupported forms</td>
-<td><code>GremlinQueryComposer</code> (replaced)</td>
-<td>planned</td>
+<td>4.4a</td>
+<td>DSL search of entities</td>
+<td><code>search/dsl</code> answering entities: sources, conditions, order, paging; declared unsupported forms</td>
+<td><code>GremlinQueryComposer</code> (replaced), <code>TraversalBasedExecutor</code></td>
+<td>in progress</td>
 </tr>
 <tr>
-<td>4.5</td>
-<td>Saved searches and user profile</td>
-<td>Saved search CRUD</td>
-<td><code>UserProfileService</code></td>
-<td>planned</td>
+<td>4.4b</td>
+<td>DSL projections and traversals</td>
+<td><code>select</code>, <code>groupby</code>, aggregates; referred entities and classification attributes</td>
+<td><code>SelectClauseComposer</code>, <code>SelectClauseProjections</code></td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>5.1</td>
 <td>Lineage</td>
 <td>Process inputs/outputs, depth, direction, on-demand lineage</td>
 <td><code>EntityLineageService</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
-<td>5.2</td>
-<td>Glossary</td>
-<td>Glossaries, terms, categories, term assignment</td>
-<td><code>GlossaryREST</code>, <code>GlossaryService</code></td>
-<td>planned</td>
+<td>5.2a</td>
+<td>Glossaries and categories</td>
+<td>Glossary and category CRUD, category hierarchy and qualified names</td>
+<td><code>GlossaryService</code>, <code>GlossaryCategoryUtils</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>5.2b</td>
+<td>Glossary terms</td>
+<td>Term CRUD, related terms, term categorization</td>
+<td><code>GlossaryService</code>, <code>GlossaryTermUtils</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>5.2c</td>
+<td>Term assignment</td>
+<td>Terms assigned to entities, meanings on headers, DSL <code>hasTerm</code></td>
+<td><code>GlossaryService</code>, <code>GlossaryTermUtils</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>5.2d</td>
+<td>Glossary import</td>
+<td>Glossary terms imported from CSV or Excel, and the import template</td>
+<td><code>GlossaryService#importGlossaryData</code>, <code>GlossaryTermUtils</code></td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>5.3</td>
@@ -8473,10 +8784,24 @@ checks a PR must pass:</p>
 <td>planned</td>
 </tr>
 <tr>
-<td>6.1</td>
+<td>6.1a</td>
 <td>Authentication</td>
-<td>Keycloak OIDC, session endpoints</td>
+<td>Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user</td>
 <td><code>AtlasKeycloakAuthenticationProvider</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.1b</td>
+<td>The acting user on writes</td>
+<td><code>createdBy</code>, <code>updatedBy</code> and audit users of every write</td>
+<td><code>RequestContext#getUser</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>4.5</td>
+<td>Saved searches and user profile</td>
+<td>Saved search CRUD; after 6.1, its owners being users (DD-244)</td>
+<td><code>UserProfileService</code></td>
 <td>planned</td>
 </tr>
 <tr>
@@ -8734,7 +9059,7 @@ checks a PR must pass:</p>
 <tr>
 <td>10.1</td>
 <td>Deployment chart foundation</td>
-<td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-240..252)</td>
+<td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-252, DD-283..294)</td>
 <td>— (Atlas ships compose/k8s examples for a topology this is not)</td>
 <td>in progress</td>
 </tr>
@@ -8746,9 +9071,16 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>10.5</td>
+<td>Cluster validation</td>
+<td>minikube install script and the smoke suite that proves the install end to end (CHT-50..59)</td>
+<td>–</td>
+<td>planned</td>
+</tr>
+<tr>
 <td>10.3a</td>
 <td>App and edge charts</td>
-<td>Server, webapp (boot-resolved nginx config + <code>/config.json</code>), the three auxiliary APIs (DD-251 closure: the CA mounts, lineage-model upstream URLs); the Gateway API edge at the umbrella (routes, browser certs, BackendTLSPolicy, DD-261 client-IP trust) (CHT-20..32, DD-261..264)</td>
+<td>Server, webapp (boot-resolved nginx config + <code>/config.json</code>), the three auxiliary APIs (DD-294 closure: the CA mounts, lineage-model upstream URLs); the Gateway API edge at the umbrella (routes, browser certs, BackendTLSPolicy, DD-261 client-IP trust) (CHT-20..32, DD-261..264)</td>
 <td>–</td>
 <td>in review</td>
 </tr>
@@ -8762,16 +9094,9 @@ checks a PR must pass:</p>
 <tr>
 <td>10.3c</td>
 <td>Webapp backend TLS</td>
-<td>The webapp's listener serves TLS behind the gateway (DD-270): chart Certificate + leaf mount, <code>listen 8080 ssl</code>, the webapp BackendTLSPolicy, HTTPS probes; supersedes DD-242's plaintext-backend clause (CHT-23/25/30 amended)</td>
+<td>The webapp's listener serves TLS behind the gateway (DD-270): chart Certificate + leaf mount, <code>listen 8080 ssl</code>, the webapp BackendTLSPolicy, HTTPS probes; supersedes DD-285's plaintext-backend clause (CHT-23/25/30 amended)</td>
 <td>#161</td>
 <td>in review</td>
-</tr>
-<tr>
-<td>10.5</td>
-<td>Cluster validation</td>
-<td>minikube install script and the smoke suite that proves the install end to end (CHT-50..59)</td>
-<td>–</td>
-<td>planned</td>
 </tr>
 <tr>
 <td>10.6</td>

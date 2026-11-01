@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4040,6 +4069,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4972,6 +5019,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8394,6 +8684,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -8429,8 +8737,8 @@
 <ul>
 <li><strong>Status:</strong> in progress</li>
 <li><strong>Pull request:</strong> #184 (stacked on #183)</li>
-<li><strong>Records:</strong> DD-278 (adds), DD-245 (relies on: the <code>appVersion</code> chain),
-  DD-247/DD-250 (relies on: plugin-inferred chart targets), CHT-05/07 (relies
+<li><strong>Records:</strong> DD-278 (adds), DD-288 (relies on: the <code>appVersion</code> chain),
+  DD-290/DD-293 (relies on: plugin-inferred chart targets), CHT-05/07 (relies
   on: the publish cascade)</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
@@ -8503,7 +8811,7 @@ is the mechanism here).</p>
 </tr>
 <tr>
 <td>CHT-95</td>
-<td><code>helm-sign</code> cosign-keyless-signs the pushed chart artifact (<code>ghcr.io/aureliusenterprise/charts/&lt;chart&gt;:&lt;version&gt;</code>); <code>helm-verify</code> verifies it with the same <code>--certificate-identity-regex</code>/<code>--certificate-oidc-issuer-regexp</code> contract as <code>docker-verify</code> (defaults <code>.*</code>, overridden by the workflow's pinned identity/issuer). publish.yaml runs both after <code>helm-publish</code>, same runner, same id-token identity as the image chain. The targets are inferred by the helm plugin (DD-247's mechanism) for every chart owner.</td>
+<td><code>helm-sign</code> cosign-keyless-signs the pushed chart artifact (<code>ghcr.io/aureliusenterprise/charts/&lt;chart&gt;:&lt;version&gt;</code>); <code>helm-verify</code> verifies it with the same <code>--certificate-identity-regex</code>/<code>--certificate-oidc-issuer-regexp</code> contract as <code>docker-verify</code> (defaults <code>.*</code>, overridden by the workflow's pinned identity/issuer). publish.yaml runs both after <code>helm-publish</code>, same runner, same id-token identity as the image chain. The targets are inferred by the helm plugin (DD-290's mechanism) for every chart owner.</td>
 </tr>
 <tr>
 <td>CHT-96</td>

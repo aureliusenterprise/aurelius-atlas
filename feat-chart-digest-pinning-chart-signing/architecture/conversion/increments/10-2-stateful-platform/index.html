@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4040,6 +4069,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4972,6 +5019,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8394,6 +8684,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -8429,7 +8737,7 @@
 <ul>
 <li><strong>Status:</strong> in review</li>
 <li><strong>Pull request:</strong> <a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/158">#158</a></li>
-<li><strong>Records:</strong> ADR 057, DD-243, DD-244, DD-247, DD-253..260</li>
+<li><strong>Records:</strong> ADR 057, DD-286, DD-287, DD-290, DD-253..260</li>
 </ul>
 <h2 id="scope">Scope<a class="headerlink" href="#scope" title="Permanent link">&para;</a></h2>
 <p>The three stateful platform components become installable workloads: the
@@ -8456,12 +8764,12 @@ rendered manifests start real containers on a cluster.</p>
 600</code>, tmpfs <code>/tmp</code> pinned), the <code>pg_hba</code> ConfigMap, VCT, probes.</li>
 <li><code>helm/templates/issuer.yaml</code> — the chart-managed trust root: self-signed
   bootstrap <code>Issuer</code> → <code>isCA</code> root <code>Certificate</code> → <code>ca</code>-type <code>Issuer</code>, all
-  namespaced (DD-243 as corrected by DD-259 — one CA for every leaf, so
+  namespaced (DD-286 as corrected by DD-259 — one CA for every leaf, so
   cross-component verification works).</li>
 <li><code>helm/templates/secrets.yaml</code> — the deploy-time credential generation with
-  upgrade preservation (DD-244) for the five secrets 10.2's workloads
+  upgrade preservation (DD-287) for the five secrets 10.2's workloads
   consume: <code>&lt;release&gt;-elasticsearch</code>, <code>-keycloak-admin</code>, <code>-keycloak-database</code>,
-  <code>-keycloak-users</code>, <code>-otel-clients</code> (DD-254 re-slices this part of DD-244's
+  <code>-keycloak-users</code>, <code>-otel-clients</code> (DD-254 re-slices this part of DD-287's
   promise out of 10.4). The remaining secrets (collector legacy token, and the
   rest 10.3/10.4 consumers need) land with their consumers.</li>
 <li>A chart-contract pytest suite at the repo root (<code>tests/</code>, root project)
@@ -8496,7 +8804,7 @@ values, and 10.2 renders none).</p>
 </tr>
 <tr>
 <td>CHT-12</td>
-<td>The store's HTTP certificate is a cert-manager <code>Certificate</code> (the umbrella's issuer, DD-243) with SANs covering <code>&lt;service&gt;.&lt;ns&gt;</code>, <code>&lt;service&gt;.&lt;ns&gt;.svc</code>, <code>&lt;service&gt;.&lt;ns&gt;.svc.cluster.local</code>; it mounts at <code>config/tls</code> (never <code>config/certs</code> — auto-configuration's directory), as PEM (<code>&lt;node&gt;.pem</code>/<code>&lt;node&gt;-key.pem</code>) plus the issuer CA as <code>ca.pem</code>.</td>
+<td>The store's HTTP certificate is a cert-manager <code>Certificate</code> (the umbrella's issuer, DD-286) with SANs covering <code>&lt;service&gt;.&lt;ns&gt;</code>, <code>&lt;service&gt;.&lt;ns&gt;.svc</code>, <code>&lt;service&gt;.&lt;ns&gt;.svc.cluster.local</code>; it mounts at <code>config/tls</code> (never <code>config/certs</code> — auto-configuration's directory), as PEM (<code>&lt;node&gt;.pem</code>/<code>&lt;node&gt;-key.pem</code>) plus the issuer CA as <code>ca.pem</code>.</td>
 </tr>
 <tr>
 <td>CHT-13</td>
@@ -8512,7 +8820,7 @@ values, and 10.2 renders none).</p>
 </tr>
 <tr>
 <td>CHT-16</td>
-<td>Keycloak starts in prod mode (<code>kc.sh start --import-realm</code>, never <code>start-dev</code>) as the hardened image's uid (65532, which owns the Quarkus build dir — DD-257), <code>KC_HOSTNAME</code> = the keycloak host (from <code>global.domain</code>/host value — the issuer-pinning warning in the values file and runbook stands), an RSS headless Service for JGroups, HTTPS probes on the management port's <code>/health/ready</code> (prod mode puts TLS there too — DD-260), and a <code>Certificate</code> for the browser hostname. With the bundled database, the pod waits for it before starting — a <code>wait-for-postgres</code> init container, the Kubernetes port of the compose's <code>depends_on: condition: service_healthy</code> (DD-258). The realm <code>ConfigMap</code> mounts at the import directory. The JVM trusts the cluster CA through the mounted issuer <code>ca.crt</code> — <code>-Djavax.net.ssl.trustStore</code> is the dev mkcert workaround and is never rendered (the DD-243 trust model); native OTLP export renders only when a collector endpoint is configured (values default: unset — the observability wiring is 10.3).</td>
+<td>Keycloak starts in prod mode (<code>kc.sh start --import-realm</code>, never <code>start-dev</code>) as the hardened image's uid (65532, which owns the Quarkus build dir — DD-257), <code>KC_HOSTNAME</code> = the keycloak host (from <code>global.domain</code>/host value — the issuer-pinning warning in the values file and runbook stands), an RSS headless Service for JGroups, HTTPS probes on the management port's <code>/health/ready</code> (prod mode puts TLS there too — DD-260), and a <code>Certificate</code> for the browser hostname. With the bundled database, the pod waits for it before starting — a <code>wait-for-postgres</code> init container, the Kubernetes port of the compose's <code>depends_on: condition: service_healthy</code> (DD-258). The realm <code>ConfigMap</code> mounts at the import directory. The JVM trusts the cluster CA through the mounted issuer <code>ca.crt</code> — <code>-Djavax.net.ssl.trustStore</code> is the dev mkcert workaround and is never rendered (the DD-286 trust model); native OTLP export renders only when a collector endpoint is configured (values default: unset — the observability wiring is 10.3).</td>
 </tr>
 <tr>
 <td>CHT-17</td>
@@ -8524,7 +8832,7 @@ values, and 10.2 renders none).</p>
 </tr>
 <tr>
 <td>CHT-19</td>
-<td>The umbrella's <code>secrets.yaml</code> generates every empty credential with <code>randAlphaNum 32</code> and preserves it across upgrades via <code>lookup</code> (DD-244's pattern); 10.2's scope is the five secrets its workloads consume (DD-254). The <code>Certificate</code>s and the self-signed issuer chain are the trust model of DD-243 as corrected by DD-259 — the chart-managed root is a namespaced <code>Issuer</code> whose one CA signs every leaf; cert-manager is a prerequisite, never installed by the chart.</td>
+<td>The umbrella's <code>secrets.yaml</code> generates every empty credential with <code>randAlphaNum 32</code> and preserves it across upgrades via <code>lookup</code> (DD-287's pattern); 10.2's scope is the five secrets its workloads consume (DD-254). The <code>Certificate</code>s and the self-signed issuer chain are the trust model of DD-286 as corrected by DD-259 — the chart-managed root is a namespaced <code>Issuer</code> whose one CA signs every leaf; cert-manager is a prerequisite, never installed by the chart.</td>
 </tr>
 </tbody>
 </table>
@@ -8540,8 +8848,8 @@ decided: no <code>metrics-puller</code> sidecars in-cluster (the observability s
 pullers are a 10.3 decision — cluster-native scraping is the shape there), no
 <code>mem_limit</code> (the resource block replaces it), prod-mode Keycloak with no
 <code>keycloak.localhost</code> network alias (the issuer is the environment's host,
-DD-243), and the issuer CA mount instead of the dev truststore workaround
-(the DD-243 trust model, CHT-16).</p>
+DD-286), and the issuer CA mount instead of the dev truststore workaround
+(the DD-286 trust model, CHT-16).</p>
 <h2 id="acceptance">Acceptance<a class="headerlink" href="#acceptance" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>npx nx run-many -t helm-lint helm-template</code> green (CHT-06) — the three

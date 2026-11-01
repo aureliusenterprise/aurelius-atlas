@@ -1350,6 +1350,8 @@
       
         
       
+        
+      
     
     
     
@@ -1472,6 +1474,33 @@
     
   
   aurelius-atlas-data2model-client
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-dsl/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-dsl
 
     
   </span>
@@ -4036,6 +4065,24 @@
       
         
       
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4968,6 +5015,249 @@
     
   
   4.2b Quick search
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/4-3-dsl-parser/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.3 DSL parser
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/4-4-dsl-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4a DSL search of entities
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/4-4-dsl-projections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/5-1-lineage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.1 Lineage
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/5-2-glossaries-and-categories/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2a Glossaries and categories
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/5-2-glossary-terms/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2b Glossary terms
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/5-2-term-assignment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2c Term assignment
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/5-2-glossary-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../conversion/increments/6-1-authentication/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.1a Authentication
 
     
   </span>
@@ -8278,7 +8568,7 @@
 <h1 id="secret-storage-alternatives-and-tradeoffs">Secret storage — alternatives and tradeoffs<a class="headerlink" href="#secret-storage-alternatives-and-tradeoffs" title="Permanent link">&para;</a></h1>
 <p>Status: <strong>analysis, decision pending</strong> (pre-pentest review, 2026-10-29).
 This page analyses where the system's runtime credentials should live. It
-changes nothing: today's behaviour is DD-244's (the umbrella generates every
+changes nothing: today's behaviour is DD-287's (the umbrella generates every
 empty credential with <code>randAlphaNum</code>, preserves it across upgrades with
 <code>lookup</code>, and writes one Secret per consumer). The pentest review flagged
 that Helm release storage ends up being the system's secret store, and an
@@ -8289,7 +8579,7 @@ release Secret and into every <code>helm get values</code> output, in plaintext:
 <ul>
 <li>The chart-contract posture is deliberate: a stock install needs <strong>no
   external secret system</strong>, which is what makes <code>helm upgrade --install atlas
-  helm -f environments/minikube.yaml</code> work at all (CHT/ADR 057).</li>
+helm -f environments/minikube.yaml</code> work at all (CHT/ADR 057).</li>
 <li>The cost: every credential is readable by anyone with <code>get secrets</code> on
   <code>&lt;release&gt;-*</code> or on Helm's release Secret (<code>sh.helm.release.v1.*</code>), a
   rotation means editing values and re-rendering, and <code>--set secrets.x=…</code>
@@ -8361,7 +8651,7 @@ release Secret and into every <code>helm get values</code> output, in plaintext:
 <li><strong>Rotation is the audit question.</strong> Only B and E answer "change it in one
   place, workloads converge" without re-rendering the release.</li>
 <li><strong>Fit with the existing contract.</strong> The chart's whole credential surface is
-  Secret <em>names</em> (DD-244's <code>*SecretName</code> values exist exactly for this); B
+  Secret <em>names</em> (DD-287's <code>*SecretName</code> values exist exactly for this); B
   needs no chart redesign — it needs the generation gate fixed and a runbook
   section.</li>
 <li><strong>Git-hygiene.</strong> C and D keep ciphertext in git; B/E keep nothing in git.</li>
@@ -8369,7 +8659,7 @@ release Secret and into every <code>helm get values</code> output, in plaintext:
 <h2 id="recommendation-pending">Recommendation (pending)<a class="headerlink" href="#recommendation-pending" title="Permanent link">&para;</a></h2>
 <p>Split by audience, keep both first-class:</p>
 <ol>
-<li><strong>Stock/dev installs keep DD-244 generation</strong> (zero-dependency install is
+<li><strong>Stock/dev installs keep DD-287 generation</strong> (zero-dependency install is
    a feature, not an accident).</li>
 <li><strong>Production takes option B</strong>: ESO (or Vault External Operator over the
    org's store) owns the <code>&lt;release&gt;-&lt;purpose&gt;</code> Secret objects; the umbrella's
@@ -8387,7 +8677,7 @@ generated-credential shape; E is B plus cost. B is the smallest system change
 that answers the audit question.</p>
 <h2 id="references">References<a class="headerlink" href="#references" title="Permanent link">&para;</a></h2>
 <ul>
-<li>DD-244 (deploy-time credentials, generation + lookup-preserve), CHT-19,
+<li>DD-287 (deploy-time credentials, generation + lookup-preserve), CHT-19,
   DD-254/DD-256 (secret-per-consumer joins, realm placeholder import).</li>
 <li><code>helm/AGENTS.md</code> — the values contract for <code>credentialSecrets.*</code> /
   <code>*SecretName</code> bring-your-own fields.</li>

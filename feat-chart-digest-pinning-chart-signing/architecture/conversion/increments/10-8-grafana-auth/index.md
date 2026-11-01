@@ -10,13 +10,13 @@ The pre-pentest review's **H4**: Grafana ships with no authentication of its own
 
 This increment makes Grafana a **confidential OAuth2/OIDC relying party of the `aurelius-atlas` realm** (10.7's asset):
 
-- A new `grafana` client joins `files/aurelius-atlas.json` — the first client in the **prod asset only**: the dev compose Grafana keeps the anonymous-Viewer posture (DD-275, DV-89), so CHT-79's structural parity rule gains its first named exception (prod client set = dev set ∪ {`grafana`}).
+- A new `grafana` client joins `files/aurelius-atlas.json` — the first client in the **prod asset only**: the dev compose Grafana keeps the anonymous-Viewer posture (DD-275, DV-111), so CHT-79's structural parity rule gains its first named exception (prod client set = dev set ∪ {`grafana`}).
 - The observability chart's Grafana deployment swaps the anonymous env for the `GF_AUTH_GENERIC_OAUTH_*` set: issuer URLs derived from `atlas-observability.issuerUrl` + `atlas-observability.realm` (CHT-74's plumbing, reused), client id `grafana`, and a client Secret joined from the umbrella's new `<release>-grafana-oauth` Secret — the same placeholder plumbing as `${OTEL_INGEST_CLIENT_SECRET}` (DD-256's resolver, `${GRAFANA_CLIENT_SECRET}`).
 - RBAC is role-mapped, not free-for-all: any authenticated realm user gets **Viewer**; the `grafana` client's `editor` / `admin` client roles escalate to **Editor** / **Admin** (`role_attribute_path`, DD-275).
 - The port-forward path stays alive: the client registers `http://localhost:3000/login/generic_oauth` next to the host-based redirect, and `GF_SERVER_ROOT_URL` stays unset (request-derived), so `kubectl port-forward` to the Grafana pod completes an OAuth login (DD-276).
 - Keycloak's network policy admits Grafana to the 8443 mint port (Grafana dials Keycloak for the token exchange and JWKS; CHT-62's full-dialer-set rule).
 
-This increment does **not** deliver: per-producer telemetry credentials (M5), Grafana exposure by default (`global.hosts.grafana.enabled` stays `false` — this increment makes exposing safe, not automatic), any change to the dev compose stack (its Grafana stays anonymous-Viewer — a local dashboard over local telemetry, DV-89), or alerting/contact-points (out of scope entirely).
+This increment does **not** deliver: per-producer telemetry credentials (M5), Grafana exposure by default (`global.hosts.grafana.enabled` stays `false` — this increment makes exposing safe, not automatic), any change to the dev compose stack (its Grafana stays anonymous-Viewer — a local dashboard over local telemetry, DV-111), or alerting/contact-points (out of scope entirely).
 
 ## Semantics
 
@@ -37,7 +37,7 @@ None — this increment ports no Apache Atlas behaviour. The reference is the pr
 
 ## Deviations
 
-None against Atlas. DV-89 records the deliberate dev↔prod divergence: the dev compose Grafana stays anonymous-Viewer (a local dashboard over local telemetry, same two-shape posture as DD-273's identity split), while the cluster Grafana is Keycloak-gated — the first client that lives in one realm asset and not the other. DD-275 records the relying-party design (confidential client, prod-asset only, Viewer-default RBAC with client-role escalation); DD-276 records the request-derived `root_url` + localhost redirect that keeps the port-forward operator path working, and supersedes DD-267's "login form stays disabled" clause (its generated-admin-Secret half stands).
+None against Atlas. DV-111 records the deliberate dev↔prod divergence: the dev compose Grafana stays anonymous-Viewer (a local dashboard over local telemetry, same two-shape posture as DD-273's identity split), while the cluster Grafana is Keycloak-gated — the first client that lives in one realm asset and not the other. DD-275 records the relying-party design (confidential client, prod-asset only, Viewer-default RBAC with client-role escalation); DD-276 records the request-derived `root_url` + localhost redirect that keeps the port-forward operator path working, and supersedes DD-267's "login form stays disabled" clause (its generated-admin-Secret half stands).
 
 ## Acceptance
 
@@ -46,5 +46,5 @@ None against Atlas. DV-89 records the deliberate dev↔prod divergence: the dev 
 - `tests/test__charts_observability.py` names CHT-84/85 (anonymous off, login form on, OAuth on with `/realms/aurelius-atlas/…` URLs, role-attribute-path, the oauth Secret join, `GF_SERVER_ROOT_URL` absent; admin env retained).
 - `tests/test__charts_umbrella.py` names CHT-83 (stock install generates `<release>-grafana-oauth` with key set {`client-secret`}; values override; absent when both consumers are gone — observability disabled **and** the keycloak chart on `master`).
 - `tests/test__charts_keycloak.py`'s 8443 dialer-set test names CHT-86 (grafana pod selectors among the mint dialers).
-- Runbook: the Grafana section documents the Keycloak login, the role map, and the port-forward path. `dev/observability/AGENTS.md`, `dev/keycloak/AGENTS.md`, and `helm/AGENTS.md` record the new client/Secret/join. `deviations.md` gains DV-89. The 10.5 hand-check note extends: a stock umbrella's Grafana redirects to the realm's login at `keycloak.atlas.test` and an authenticated realm user lands as Viewer.
+- Runbook: the Grafana section documents the Keycloak login, the role map, and the port-forward path. `dev/observability/AGENTS.md`, `dev/keycloak/AGENTS.md`, and `helm/AGENTS.md` record the new client/Secret/join. `deviations.md` gains DV-111. The 10.5 hand-check note extends: a stock umbrella's Grafana redirects to the realm's login at `keycloak.atlas.test` and an authenticated realm user lands as Viewer.
 - Hand check: not run in CI here (no live Keycloak); proven by render.
