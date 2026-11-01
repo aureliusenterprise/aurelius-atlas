@@ -11,6 +11,7 @@ from aurelius_atlas_core.classification_associator import ClassificationAssociat
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository, list_events_sorted
+from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_labels import EntityLabels
@@ -127,6 +128,13 @@ def classifications(request: Request, store: EntityStore) -> EntityClassificatio
 def labels(request: Request, store: EntityStore) -> EntityLabels:
     """Label changes as the request's user, audited (LBL-05) and checked (AUZ-16)."""
     return EntityLabels(
+        store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
+    )
+
+
+def business_metadata(request: Request, store: EntityStore) -> EntityBusinessMetadata:
+    """Business attribute changes as the request's user, audited (BMD-06) and checked (AUZ-17)."""
+    return EntityBusinessMetadata(
         store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
     )
 
@@ -256,6 +264,33 @@ def labels_body(body: Any) -> list[str] | None:  # noqa: ANN401 - any JSON value
     """
     if body is not None and (not isinstance(body, list) or not all(isinstance(label, str) for label in body)):
         raise AtlasError(AtlasErrorCode.BAD_REQUEST, "Invalid body: a JSON array of labels is expected")
+    return body
+
+
+def attributes_body(body: Any) -> dict[str, Any] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a JSON object of attribute values, or None for no body (BMD-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for any other body (DV-10).
+    """
+    if body is not None and not isinstance(body, dict):
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, "Invalid body: a JSON object of attribute values is expected")
+    return body
+
+
+def business_attributes_body(body: Any) -> dict[str, dict[str, Any] | None] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a JSON object of attribute values by business metadata, or None for no body (BMD-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for any other body (DV-10).
+    """
+    if body is not None and (
+        not isinstance(body, dict) or not all(v is None or isinstance(v, dict) for v in body.values())
+    ):
+        raise AtlasError(
+            AtlasErrorCode.BAD_REQUEST,
+            "Invalid body: a JSON object of attribute values by business metadata is expected",
+        )
     return body
 
 
@@ -550,6 +585,43 @@ async def set_classifications(request: Request, body: Body, store: Store) -> Res
     )
     summary = await associator.set_classifications(None if headers is None else headers.guid_header_map)
     return Response(content=summary, media_type="application/json")
+
+
+@ENTITY.post("/guid/{guid}/businessmetadata")
+async def add_or_update_business_attributes(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``addOrUpdateBusinessAttributes``: the body's values set, or with ``isOverwrite`` all replaced (BMD-01)."""
+    given = business_attributes_body(body)
+    await business_metadata(request, store).add_or_update_business_attributes(
+        guid, given, is_overwrite=flag(request, "isOverwrite")
+    )
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/businessmetadata")
+async def remove_business_attributes(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``removeBusinessAttributes``: the body's attributes removed (BMD-01, BMD-05)."""
+    await business_metadata(request, store).remove_business_attributes(guid, business_attributes_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/guid/{guid}/businessmetadata/{bm_name}")
+async def add_or_update_business_attributes_of(
+    guid: str, bm_name: str, request: Request, body: Body, store: Store
+) -> Response:
+    """``addOrUpdateBusinessAttributes`` of one business metadata: the body's values set (BMD-01, BMD-03)."""
+    given = {bm_name: attributes_body(body)}
+    await business_metadata(request, store).add_or_update_business_attributes(guid, given)
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/businessmetadata/{bm_name}")
+async def remove_business_attributes_of(
+    guid: str, bm_name: str, request: Request, body: Body, store: Store
+) -> Response:
+    """``removeBusinessAttributes`` of one business metadata: the body's attributes, or all, removed (BMD-05)."""
+    given = {bm_name: attributes_body(body)}
+    await business_metadata(request, store).remove_business_attributes(guid, given)
+    return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.post("/guid/{guid}/labels")
