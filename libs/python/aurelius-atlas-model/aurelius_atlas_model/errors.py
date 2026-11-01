@@ -171,6 +171,7 @@ class AtlasErrorCode(Enum):
             "supertypes entityTypes"
         ),
     )
+    SAVED_SEARCH_CHANGE_USER = (400, "ATLAS-400-00-056", "saved-search {0} can not be moved from user {1} to {2}")
     INVALID_QUERY_PARAM_LENGTH = (400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit")
     INVALID_QUERY_LENGTH = (400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit")
     INVALID_FILE_TYPE = (
@@ -387,6 +388,7 @@ class AtlasErrorCode(Enum):
     )
     TYPE_NAME_NOT_FOUND = (404, "ATLAS-404-00-001", "Given typename {0} was invalid")
     INSTANCE_GUID_DELETED = (404, "ATLAS-404-00-012", "Given instance guid {0} has been deleted")
+    SAVED_SEARCH_ALREADY_EXISTS = (409, "ATLAS-409-00-006", "search named {0} already exists for user {1}")
     GLOSSARY_ALREADY_EXISTS = (409, "ATLAS-409-00-007", "Glossary with name {0} already exists")
     GLOSSARY_TERM_ALREADY_EXISTS = (409, "ATLAS-409-00-009", "Glossary term with qualifiedName {0} already exists")
     GLOSSARY_CATEGORY_ALREADY_EXISTS = (

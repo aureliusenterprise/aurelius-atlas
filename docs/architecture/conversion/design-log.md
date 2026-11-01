@@ -248,7 +248,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-249](#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd)                                   | Uploaded files are read with python-multipart, openpyxl and xlrd                                                                  | 5.2           | Proposed             |
 | [DD-250](#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider)                            | The server authenticates requests itself against the identity provider                                                            | 6.1           | Proposed             |
 | [DD-251](#dd-251-browser-sessions-are-kept-in-the-servers-memory)                                                   | Browser sessions are kept in the server's memory                                                                                  | 6.1           | Proposed             |
-| [DD-252](#dd-252--a-stuck-pending-install-release-is-cleared-by-uninstall)                                          | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns       | 10.1          | Accepted             |
+| [DD-252](#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos)                                  | DataAccess carries every model object through a registry of DTOs                                                                  | 4.5           | Proposed             |
 | [DD-283](#dd-283--one-chart-per-component-under-an-umbrella-published-as-oci-artifacts)                             | One chart per component under an umbrella, published as OCI artifacts from `charts/`                                              | 10.1          | Superseded by DD-290 |
 | [DD-284](#dd-284--helm-targets-are-inferred-from-chartyaml-by-a-plugin-mirroring-dockerts)                          | Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts`                                                     | 10.1          | Superseded by DD-293 |
 | [DD-285](#dd-285--the-edge-is-gateway-api-not-ingress-nginx)                                                        | The edge is Gateway API, not ingress-nginx (retired March 2026); instrumentation and Istio are out                                | 10.1          | Accepted             |
@@ -262,6 +262,7 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-293](#dd-293--helm-targets-merge-onto-the-owning-project-a-chart-is-not-a-project)                              | Helm targets merge onto the owning project: a chart is not a project                                                              | 10.1          | Accepted             |
 | [DD-294](#dd-294--the-minikube-trial-findings-in-the-aux-charts-land-in-103)                                        | The minikube trial's two aux-chart findings (unbackable CA mount, lineage-model upstream URLs) are fixed in 10.3                  | 10.1          | Accepted             |
 | [DD-295](#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges)                                    | Chart-track id collisions with main renumber above both ranges                                                                    | —             | Accepted             |
+| [DD-298](#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall)                                          | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns       | 10.1          | Accepted             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7602,31 +7603,27 @@ instances, at a store round-trip per request.
 **Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts.
 Several server instances need sticky sessions.
 
-### DD-252 — A stuck pending-install release is cleared by uninstall
+### DD-252. DataAccess carries every model object through a registry of DTOs
 
-- **Status:** Accepted
-- **Increment:** 10.1 (trial)
-- **Date:** 2026-10-28
+- **Status:** Proposed
+- **Increment:** 4.5
+- **Date:** 2026-11-01
 
-**Decision.** The runbook's install/upgrade sections warn: `helm install
---wait` (or `--atomic`) against a workload that never reaches Ready — a
-crash-loop, a missing Secret — burns the full `--timeout` and leaves the
-release `pending-install`; every later `helm upgrade` then fails with
-"another operation (install/upgrade/rollback) is in progress" until `helm
-uninstall` clears it. Fix the cause, inspect with `helm history`, and
-uninstall rather than waiting the release out.
+**Decision.** `DataAccess` moves out of the glossary's module into `data_access`, generic over a registry of
+data transfer objects by the object's class, as Atlas's `DataAccess` and `DTORegistry` are. A DTO names the
+entity type, makes the object's entities (its own first, then those it refers to) and reads the object back
+from its entity and the entities read with it, and gives the unique attributes a new object is found by. The
+glossary's three DTOs and the user profile's two register there; each service builds its `DataAccess` from its
+registry.
 
-**Reason.** Observed twice in the trial of DD-294: the first install timed out
-on the crash-looping aux pods and the stuck release blocked the fix-and-retry
-path with a confusing error unrelated to the actual defect. It is helm's
-documented behaviour, not a chart bug, so it belongs in the runbook, and
-mid-roadmap installs (subcharts that render no workloads yet, workloads whose
-wiring lands in a later increment) are exactly when an operator meets it.
+**Reason.** 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and
+written like the glossary's objects (DD-246). Atlas has one `DataAccess` for both; a second copy for profiles
+would duplicate the save, load, type and deletion checks the glossary's already has.
 
-**Consequences.** The runbook gains the note and the `helm history` /
-`helm uninstall` recovery lines; 10.5's install script scripts the recovery
-(guard the wait with a pre-flight, or clean up on timeout) rather than
-discovering it again. Next free DD: 253.
+**Alternatives.** A profile store written apart: the same checks twice. One registry of every DTO: services
+would carry DTOs they never use.
+
+**Consequences.** The glossary's `DataAccess` is `glossary_data_access`; its tests name the generic methods.
 
 ### DD-283 — One chart per component under an umbrella, published as OCI artifacts
 
@@ -8159,7 +8156,7 @@ renumbers the **chart side of the collision**: DD-240..251 → DD-283..294 in
 ascending order, and DV-88/89 → DV-110/111 — and this entry (DD-295) records
 it. Main's ids keep their numbers. The chart track's DD-252..282 already sit
 above both ranges and are untouched; the 10.1 chain citation `DD-240..252`
-becomes the explicit list `DD-252, DD-283..294`. The citation sweep rewrote
+becomes the explicit list `DD-298, DD-283..294`. The citation sweep rewrote
 every chart spec, doc, chart template, plugin comment, CI workflow, and test
 on the chart side; DD-177 is the precedent for the method.
 
@@ -8184,3 +8181,34 @@ merged record.
 | DD-242 | DD-285 | DD-247 | DD-290 | DV-88  | DV-110 |
 | DD-243 | DD-286 | DD-248 | DD-291 | DV-89  | DV-111 |
 | DD-244 | DD-287 | DD-249 | DD-292 | —      | —      |
+
+**Addendum (2026-11-01, this merge).** 4.5 (#194) then minted main's `DD-252`,
+so the chart entry the paragraph above left in place collided: it moves to
+`DD-298` — one sweep, same rule. Chart `DD-252` → `DD-298`; main keeps
+`DD-252`.
+
+### DD-298 — A stuck pending-install release is cleared by uninstall
+
+- **Status:** Accepted
+- **Increment:** 10.1 (trial)
+- **Date:** 2026-10-28
+
+**Decision.** The runbook's install/upgrade sections warn: `helm install
+--wait` (or `--atomic`) against a workload that never reaches Ready — a
+crash-loop, a missing Secret — burns the full `--timeout` and leaves the
+release `pending-install`; every later `helm upgrade` then fails with
+"another operation (install/upgrade/rollback) is in progress" until `helm
+uninstall` clears it. Fix the cause, inspect with `helm history`, and
+uninstall rather than waiting the release out.
+
+**Reason.** Observed twice in the trial of DD-294: the first install timed out
+on the crash-looping aux pods and the stuck release blocked the fix-and-retry
+path with a confusing error unrelated to the actual defect. It is helm's
+documented behaviour, not a chart bug, so it belongs in the runbook, and
+mid-roadmap installs (subcharts that render no workloads yet, workloads whose
+wiring lands in a later increment) are exactly when an operator meets it.
+
+**Consequences.** The runbook gains the note and the `helm history` /
+`helm uninstall` recovery lines; 10.5's install script scripts the recovery
+(guard the wait with a pre-flight, or clean up on timeout) rather than
+discovering it again. Next free DD: 253.

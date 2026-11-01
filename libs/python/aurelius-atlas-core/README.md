@@ -63,7 +63,9 @@ terms and categories. Since
 [5.2c](../../../docs/architecture/conversion/increments/5-2-term-assignment.md): terms assigned to entities, as
 meanings on their headers, audited, and searched by `termName` and `hasTerm` (DD-248). Since
 [5.2d](../../../docs/architecture/conversion/increments/5-2-glossary-import.md): glossary terms imported from
-CSV and Excel files (DD-249).
+CSV and Excel files (DD-249). Since
+[4.5](../../../docs/architecture/conversion/increments/4-5-saved-searches.md): users' saved searches and profiles,
+through the generic `DataAccess` (DD-252).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -186,6 +188,12 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 ::: aurelius_atlas_core.glossary_term_utils
 
 ::: aurelius_atlas_core.glossary_dto
+
+::: aurelius_atlas_core.data_access
+
+::: aurelius_atlas_core.user_profile_service
+
+::: aurelius_atlas_core.user_profile_dto
 
 ::: aurelius_atlas_core.term_search_processor
 

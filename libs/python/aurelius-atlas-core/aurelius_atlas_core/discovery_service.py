@@ -19,6 +19,7 @@ from aurelius_atlas_model.discovery import (
 )
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasEntityHeader, AtlasObjectId
+from aurelius_atlas_model.profile import AtlasUserSavedSearch, SavedSearchType
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.atlas_type import resolved
@@ -35,6 +36,7 @@ from aurelius_atlas_core.search_context import SearchContext, encode_marker
 from aurelius_atlas_core.search_fields import vertex_property
 from aurelius_atlas_core.search_query import SearchQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.user_profile_service import UserProfileService
 
 DEFAULT_LIMIT = 100
 """``atlas.search.defaultlimit``."""
@@ -45,6 +47,10 @@ MAX_LIMIT = 10_000
 def normalized(limit: int, offset: int) -> tuple[int, int]:
     """``getNormalizedParams``: a limit of 1 to 10,000, else 100; an offset of at least 0 (SRC-07)."""
     return (limit if 0 < limit <= MAX_LIMIT else DEFAULT_LIMIT), max(offset, 0)
+
+
+INVALID_DATA = "invalid data"
+"""What a saved search of another user, or a read naming another user, fails with (SVS-02, SVS-04)."""
 
 
 class EntityDiscoveryService:
@@ -163,6 +169,66 @@ class EntityDiscoveryService:
             query_str += f" isa {classification}"
         return query_str
 
+    async def add_saved_search(
+        self, current_user: str | None, saved_search: AtlasUserSavedSearch
+    ) -> AtlasUserSavedSearch:
+        """``addSavedSearch``: owned by the current user unless it names its owner, which must be them (SVS-02).
+
+        Raises:
+            AtlasError: ``BAD_REQUEST`` for another owner, or as ``UserProfileService.add_saved_search``.
+        """
+        _own(current_user, saved_search)
+        return await UserProfileService(self._store, user=current_user).add_saved_search(saved_search)
+
+    async def update_saved_search(
+        self, current_user: str | None, saved_search: AtlasUserSavedSearch
+    ) -> AtlasUserSavedSearch:
+        """``updateSavedSearch``: as ``add_saved_search`` checks its owner (SVS-03)."""
+        _own(current_user, saved_search)
+        return await UserProfileService(self._store, user=current_user).update_saved_search(saved_search)
+
+    async def get_saved_searches(
+        self, current_user: str | None, user_name: str | None
+    ) -> list[AtlasUserSavedSearch] | None:
+        """``getSavedSearches``: the current user's; another user's fail with ``BAD_REQUEST`` (SVS-04)."""
+        user_name = _of_current(current_user, user_name)
+        return await UserProfileService(self._store, user=current_user).get_saved_searches(user_name)
+
+    async def get_saved_search_by_name(
+        self, current_user: str | None, user_name: str | None, search_name: str
+    ) -> AtlasUserSavedSearch:
+        """``getSavedSearchByName``: the current user's of the name (SVS-04)."""
+        user_name = _of_current(current_user, user_name)
+        return await UserProfileService(self._store, user=current_user).get_saved_search_by_name(user_name, search_name)
+
+    async def get_saved_search_by_guid(self, current_user: str | None, guid: str) -> AtlasUserSavedSearch:
+        """``getSavedSearchByGuid``: the search, if the current user owns it (SVS-04)."""
+        found = await UserProfileService(self._store, user=current_user).get_saved_search(guid)
+        _check_ownership(current_user, found)
+        return found
+
+    async def delete_saved_search(self, current_user: str | None, guid: str) -> None:
+        """``deleteSavedSearch``: the search, if the current user owns it (SVS-05)."""
+        service = UserProfileService(self._store, user=current_user)
+        _check_ownership(current_user, await service.get_saved_search(guid))
+        await service.delete_saved_search(guid)
+
+    async def execute_saved_search(self, saved_search: AtlasUserSavedSearch) -> AtlasSearchResult:
+        """``executeSavedSearch``: an ``ADVANCED`` search as its DSL query, any other as its basic search (SVS-06).
+
+        Raises:
+            AtlasError: ``BAD_REQUEST`` for a search without parameters (DV-110).
+        """
+        parameters = saved_search.search_parameters
+        if parameters is None:
+            raise AtlasError(AtlasErrorCode.BAD_REQUEST, "The saved search has no search parameters")
+        if saved_search.search_type is SavedSearchType.ADVANCED:
+            query = self.get_dsl_query_using_type_name_classification(
+                parameters.query, parameters.type_name, parameters.classification
+            )
+            return await self.search_using_dsl_query(query, parameters.limit, parameters.offset)
+        return await self.search_with_parameters(parameters)
+
     async def _headers(self, context: SearchContext, found: list[StoredEntity], result: AtlasSearchResult) -> None:
         """Each entity's header with the result attributes, and the headers of the entities they refer to (SRC-09)."""
         parameters = context.parameters
@@ -209,3 +275,29 @@ def _table(context: SearchContext, found: list[StoredEntity]) -> AttributeSearch
     attributes: list[AtlasAttribute | None] = [None if first is None else first.attribute(name) for name in names]
     rows = [[vertex_property(stored, attribute) for attribute in attributes] for stored in found]
     return AttributeSearchResult(name=names, values=rows)
+
+
+def _own(current_user: str | None, saved_search: AtlasUserSavedSearch) -> None:
+    """The current user as the owner of a search naming none; ``checkSavedSearchOwnership`` (SVS-02)."""
+    if not saved_search.owner_name:
+        saved_search.owner_name = current_user
+    _check_ownership(current_user, saved_search)
+
+
+def _of_current(current_user: str | None, user_name: str | None) -> str | None:
+    """The user a read is of: the current user, named or not (SVS-04).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` ``invalid data`` for another user.
+    """
+    if not user_name:
+        return current_user
+    if user_name != current_user:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_DATA)
+    return user_name
+
+
+def _check_ownership(current_user: str | None, saved_search: AtlasUserSavedSearch) -> None:
+    """``checkSavedSearchOwnership``: another user's search fails with ``BAD_REQUEST`` ``invalid data``."""
+    if saved_search.owner_name != current_user:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_DATA)

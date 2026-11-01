@@ -220,6 +220,7 @@ nav:
                       - 4.3 DSL parser: architecture/conversion/increments/4-3-dsl-parser.md
                       - 4.4a DSL search of entities: architecture/conversion/increments/4-4-dsl-entities.md
                       - 4.4b DSL projections and traversals: architecture/conversion/increments/4-4-dsl-projections.md
+                      - 4.5 Saved searches and user profile: architecture/conversion/increments/4-5-saved-searches.md
                       - 5.1 Lineage: architecture/conversion/increments/5-1-lineage.md
                       - 5.2a Glossaries and categories: architecture/conversion/increments/5-2-glossaries-and-categories.md
                       - 5.2b Glossary terms: architecture/conversion/increments/5-2-glossary-terms.md
