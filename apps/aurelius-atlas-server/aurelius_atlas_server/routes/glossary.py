@@ -14,6 +14,7 @@ from fastapi import APIRouter, Request, Response
 from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import acting_user
+from aurelius_atlas_server.authorization import authorizer
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import (
     INT_RANGE,
@@ -45,9 +46,16 @@ def _json(content: Any) -> AtlasJSONResponse:  # noqa: ANN401 - Atlas JSON
 
 
 def _service(request: Request, store: EntityStore) -> GlossaryService:
-    """The service, its term assignments propagating as ``tasks_enabled`` says and audited (GTA-02, GTA-04)."""
+    """The service, its term assignments propagating as ``tasks_enabled`` says and audited (GTA-02, GTA-04).
+
+    Each read and change is checked as the entity and relationship stores check it (AUZ-10).
+    """
     return GlossaryService(
-        store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
+        store,
+        user=acting_user(request),
+        tasks=tasks_enabled(request),
+        notifier=notifier(request, store),
+        authorizer=authorizer(request),
     )
 
 

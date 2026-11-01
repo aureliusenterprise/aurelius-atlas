@@ -12,6 +12,7 @@ from aurelius_atlas_model.errors import AtlasError, java_string
 from aurelius_atlas_model.instance import AtlasClassification, AtlasEntityHeader, AtlasEntityHeaders
 from aurelius_atlas_typesystem.entity_type import EntityType
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
@@ -50,7 +51,7 @@ class ClassificationRetriever:
 class ClassificationAssociator:
     """``Updater`` over the entities of ``store``, changing them as ``user``; ``tasks`` defers propagation (TSK-02).
 
-    ``notifier`` is told the changes (CAU-02).
+    ``notifier`` is told the changes (CAU-02); ``authorizer`` checks each change as the entity store does (AUZ-08).
     """
 
     def __init__(
@@ -60,9 +61,12 @@ class ClassificationAssociator:
         user: str | None = None,
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
-        self._classifications = EntityClassifications(store, user=user, tasks=tasks, notifier=notifier)
+        self._classifications = EntityClassifications(
+            store, user=user, tasks=tasks, notifier=notifier, authorizer=authorizer
+        )
         self._summary: list[str] = []
 
     async def set_classifications(self, headers: Mapping[str, AtlasEntityHeader] | None) -> str:
@@ -86,7 +90,7 @@ class ClassificationAssociator:
             self._summary.append(f"Entity:{entity_type.type_name}:{name}:[Not found]:{SKIPPED}")
             return
         guid = found.entity.guid
-        current = await self._classifications.get_classifications(guid)
+        current = await EntityRetriever(self._store).classifications(guid)
         incoming = _filter(header.guid, header.classifications)
         stored = _filter(guid, current)
         if not incoming and not stored:

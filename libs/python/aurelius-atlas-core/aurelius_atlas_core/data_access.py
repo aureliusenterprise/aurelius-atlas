@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity, AtlasEntityWithExtInfo, EntityStatus
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
@@ -49,16 +50,22 @@ type Registry = Mapping[type, DataTransferObject[Any]]
 
 
 class DataAccess:
-    """``DataAccess``: the objects ``dtos`` carry, as the entities of ``store``, written as ``user``."""
+    """``DataAccess``: the objects ``dtos`` carry, as the entities of ``store``, written as ``user``.
 
-    def __init__(self, store: EntityStore, dtos: Registry, *, user: str | None = None) -> None:
+    ``authorizer`` checks each read and write as the entity store does (AUZ-07, AUZ-10).
+    """
+
+    def __init__(
+        self, store: EntityStore, dtos: Registry, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
+    ) -> None:
         self._store = store
         self._dtos = dtos
         self._user = user
+        self._authorizer = authorizer
 
     async def save[T: ModelObject](self, obj: T) -> T:
         """``save``: create or update the object's entities, its new GUID taken, and load it back."""
-        response = await EntityWriter(self._store, user=self._user).create_or_update(
+        response = await self._writer().create_or_update(
             AtlasEntitiesWithExtInfo(entities=self._dto(obj).to_entities(obj))
         )
         assigned = (response.guid_assignments or {}).get(obj.guid)
@@ -74,18 +81,24 @@ class DataAccess:
         """``load``: by GUID, or by its unique attributes for a new object.
 
         Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` or ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``, ``UNEXPECTED_TYPE``
-                for another type, ``INSTANCE_GUID_DELETED`` for a deleted one.
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` or ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``,
+                ``UNAUTHORIZED_ACCESS``, ``UNEXPECTED_TYPE`` for another type, ``INSTANCE_GUID_DELETED`` for a deleted
+                one.
         """
         dto = self._dto(obj)
         retriever = EntityRetriever(self._store)
         if obj.guid and not obj.guid.startswith("-"):
             found = await retriever.entity_with_ext_info(obj.guid)
+            self._authorizer.verify_access(AtlasPrivilege.ENTITY_READ, "read entity: guid=", obj.guid)
         else:
             entity_type = self._store.registry.entity_type(dto.type_name)
             if entity_type is None:  # pragma: no cover - the base and glossary models are loaded with the server
                 raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, dto.type_name)
-            found = await retriever.entity_by_unique_attributes(entity_type, dto.unique_attributes(obj))
+            values = dto.unique_attributes(obj)
+            found = await retriever.entity_by_unique_attributes(entity_type, values)
+            self._authorizer.verify_access(
+                AtlasPrivilege.ENTITY_READ, "read entity: typeName=", dto.type_name, ", uniqueAttributes=", values
+            )
         entity = found.entity
         if entity is None:  # pragma: no cover - a read answers the entity
             raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, obj.guid)
@@ -107,7 +120,10 @@ class DataAccess:
 
     async def delete(self, guid: str) -> None:
         """``delete``: the entity, as the server deletes entities."""
-        await EntityWriter(self._store, user=self._user).delete_by_id(guid, DeleteType.DEFAULT)
+        await self._writer().delete_by_id(guid, DeleteType.DEFAULT)
+
+    def _writer(self) -> EntityWriter:
+        return EntityWriter(self._store, user=self._user, authorizer=self._authorizer)
 
     def _dto[T: ModelObject](self, obj: T) -> DataTransferObject[T]:
         return self._dtos[type(obj)]

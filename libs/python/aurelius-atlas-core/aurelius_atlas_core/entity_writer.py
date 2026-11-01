@@ -28,6 +28,7 @@ from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.values import relationship_type_of
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.delete_handler import DeleteHandler
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier, RequestRecord, prune_response
@@ -108,10 +109,11 @@ type Candidates = Callable[[], Awaitable[list[VersionedEntity]]]
 class EntityWriter:
     """Writes entities of a request into ``store``, as ``user``; ``delete_type`` is the default delete (EDL-04).
 
-    ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told what each request changed (DD-084).
+    ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told what each request changed (DD-084);
+    ``authorizer`` checks each entity created, updated or deleted (AUZ-07).
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
         store: EntityStore,
         *,
@@ -119,9 +121,11 @@ class EntityWriter:
         delete_type: DeleteType = DeleteType.SOFT,
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
         self._user = user
+        self._authorizer = authorizer
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
         self._tasks = tasks
         self._notifier = notifier
@@ -135,7 +139,7 @@ class EntityWriter:
         """
         if not guid:
             raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
-        return await self._delete(lambda: self._stored([guid]), delete_type)
+        return await self._delete(lambda: self._deletable([guid]), delete_type)
 
     async def delete_by_ids(
         self, guids: Sequence[str], delete_type: DeleteType = DeleteType.DEFAULT
@@ -147,7 +151,7 @@ class EntityWriter:
         """
         if not guids:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUIDS)
-        return await self._delete(lambda: self._stored(guids), delete_type)
+        return await self._delete(lambda: self._deletable(guids), delete_type)
 
     async def delete_by_unique_attributes(
         self, entity_type: EntityType, values: Mapping[str, Any], delete_type: DeleteType = DeleteType.DEFAULT
@@ -162,7 +166,16 @@ class EntityWriter:
 
         async def holder() -> list[VersionedEntity]:
             found = await self._store.find_by_unique_attributes(entity_type, values)
-            return [] if found is None else [found]
+            if found is None:
+                return []
+            self._authorizer.verify_access(
+                AtlasPrivilege.ENTITY_DELETE,
+                "delete entity: typeName=",
+                entity_type.type_name,
+                ", uniqueAttributes=",
+                dict(values),
+            )
+            return [found]
 
         return await self._delete(holder, delete_type)
 
@@ -179,6 +192,13 @@ class EntityWriter:
             return [found for found in await self._stored(guids) if found.entity.state is EntityStatus.DELETED]
 
         return await self._delete(deleted, DeleteType.HARD, purge=True)
+
+    async def _deletable(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The stored entities of the GUIDs, each needing ``ENTITY_DELETE`` (AUZ-07)."""
+        found = await self._stored(guids)
+        for candidate in found:
+            self._authorizer.verify_access(AtlasPrivilege.ENTITY_DELETE, "delete entity: guid=", candidate.entity.guid)
+        return found
 
     async def _stored(self, guids: Sequence[str]) -> list[VersionedEntity]:
         found = await self._store.get_many(guids)
@@ -263,6 +283,7 @@ class EntityWriter:
                 AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entity_type.type_name, java_string(dict(values))
             )
         entity_info.entity.guid = found.entity.guid
+        self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes")
         return await self._run(_stream(entity_info), partial=True)
 
     async def update_attribute_by_guid(self, guid: str, name: str | None, value: object) -> EntityMutationResponse:
@@ -274,6 +295,7 @@ class EntityWriter:
         found = await self._store.get(guid)
         if found is None:
             raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+        self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity ByUniqueAttributes : guid=", guid)
         type_name = found.entity.type_name
         entity_type = self._store.registry.entity_type(type_name)
         attribute = None
@@ -320,6 +342,7 @@ class EntityWriter:
         context = await discovery.discover()
         mutation = await self._prepare(discovery, context, partial=partial)
         skipped = await self._unchanged(mutation)
+        self._verify_changes(mutation, skipped)
         now = self._store.now()
         mapper = EntityMapper(
             self._store.registry,
@@ -532,6 +555,14 @@ class EntityWriter:
             context.resolved_guids[entity.guid] = found
             return found
         return None
+
+    def _verify_changes(self, mutation: _Mutation, skipped: set[str]) -> None:
+        """Each entity created needs ``ENTITY_CREATE``, then each changed one ``ENTITY_UPDATE`` (AUZ-07)."""
+        for entity, _ in mutation.created:
+            self._authorizer.verify_access(AtlasPrivilege.ENTITY_CREATE, "create entity: type=", entity.type_name)
+        for entity, _, _ in mutation.updated:
+            if entity.guid not in skipped:
+                self._authorizer.verify_access(AtlasPrivilege.ENTITY_UPDATE, "update entity: type=", entity.type_name)
 
     async def _unchanged(self, mutation: _Mutation) -> set[str]:
         """The updated entities the comparator finds unchanged; they are neither written nor reported (EWR-08)."""

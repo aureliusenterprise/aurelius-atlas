@@ -6,6 +6,7 @@ SVS-07).
 """
 
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
+from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
 from aurelius_atlas_core.suggestions_provider import SuggestionsProvider
 from aurelius_atlas_model.discovery import FilterCriteria, Operator, QuickSearchParameters, SearchParameters, SortOrder
@@ -14,6 +15,7 @@ from aurelius_atlas_model.profile import AtlasUserSavedSearch
 from fastapi import APIRouter, Request, Response
 
 from aurelius_atlas_server.authentication import acting_user
+from aurelius_atlas_server.authorization import authorizer
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import (
     INT_RANGE,
@@ -88,6 +90,11 @@ def validate_query_length(query: str | None) -> None:
         raise AtlasError(AtlasErrorCode.INVALID_QUERY_LENGTH, MAX_FULLTEXT_QUERY_STR_LENGTH)
 
 
+def _discovery(request: Request, store: EntityStore) -> EntityDiscoveryService:
+    """The discovery service of a request, its saved searches checked as the entity store checks them (AUZ-10)."""
+    return EntityDiscoveryService(store, authorizer=authorizer(request))
+
+
 async def _search(store: Store, parameters: SearchParameters) -> AtlasJSONResponse:
     result = await EntityDiscoveryService(store).search_with_parameters(parameters)
     return AtlasJSONResponse(content=result.to_json())
@@ -125,7 +132,7 @@ async def search_using_full_text(request: Request, store: Store) -> AtlasJSONRes
     """``searchUsingFullText``: the entities matching ``query``, best first, with their scores (FTX-05)."""
     query = first_value(request, "query") or ""
     validate_query_length(query)
-    result = await EntityDiscoveryService(store).search_using_full_text(
+    result = await _discovery(request, store).search_using_full_text(
         query,
         exclude_deleted_entities=flag(request, "excludeDeletedEntities"),
         limit=java_number(request, "limit", 0, INT_RANGE),
@@ -141,7 +148,7 @@ async def search_using_dsl(request: Request, store: Store) -> AtlasJSONResponse:
     type_name = first_value(request, "typeName")
     classification = first_value(request, "classification")
     validate_dsl_search_parameters(query, type_name, classification)
-    service = EntityDiscoveryService(store)
+    service = _discovery(request, store)
     result = await service.search_using_dsl_query(
         service.get_dsl_query_using_type_name_classification(query, type_name, classification),
         java_number(request, "limit", 0, INT_RANGE),
@@ -289,21 +296,21 @@ def _validate_user(request: Request) -> str | None:
 @DISCOVERY.post("/saved")
 async def add_saved_search(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``addSavedSearch``: the body's search, saved for the acting user (SVS-02)."""
-    found = await EntityDiscoveryService(store).add_saved_search(acting_user(request), _saved_search(body))
+    found = await _discovery(request, store).add_saved_search(acting_user(request), _saved_search(body))
     return AtlasJSONResponse(content=found.to_json())
 
 
 @DISCOVERY.put("/saved")
 async def update_saved_search(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
     """``updateSavedSearch``: the acting user's search of the body's GUID (SVS-03)."""
-    found = await EntityDiscoveryService(store).update_saved_search(acting_user(request), _saved_search(body))
+    found = await _discovery(request, store).update_saved_search(acting_user(request), _saved_search(body))
     return AtlasJSONResponse(content=found.to_json())
 
 
 @DISCOVERY.get("/saved")
 async def get_saved_searches(request: Request, store: Store) -> Response:
     """``getSavedSearches``: the acting user's searches, nothing (204) without a profile (SVS-04)."""
-    found = await EntityDiscoveryService(store).get_saved_searches(acting_user(request), _validate_user(request))
+    found = await _discovery(request, store).get_saved_searches(acting_user(request), _validate_user(request))
     if found is None:
         return Response(status_code=204)
     return AtlasJSONResponse(content=[saved.to_json() for saved in found])
@@ -313,7 +320,7 @@ async def get_saved_searches(request: Request, store: Store) -> Response:
 async def execute_saved_search_by_guid(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
     """``executeSavedSearchByGuid``: the acting user's search of the GUID, run (SVS-06)."""
     validate_param_length("guid", guid)
-    service = EntityDiscoveryService(store)
+    service = _discovery(request, store)
     found = await service.get_saved_search_by_guid(acting_user(request), guid)
     return AtlasJSONResponse(content=(await service.execute_saved_search(found)).to_json())
 
@@ -322,7 +329,7 @@ async def execute_saved_search_by_guid(guid: str, request: Request, store: Store
 async def execute_saved_search_by_name(name: str, request: Request, store: Store) -> AtlasJSONResponse:
     """``executeSavedSearchByName``: the acting user's search of the name, run (SVS-06)."""
     validate_param_length("name", name)
-    service = EntityDiscoveryService(store)
+    service = _discovery(request, store)
     found = await service.get_saved_search_by_name(acting_user(request), _validate_user(request), name)
     return AtlasJSONResponse(content=(await service.execute_saved_search(found)).to_json())
 
@@ -331,7 +338,7 @@ async def execute_saved_search_by_name(name: str, request: Request, store: Store
 async def get_saved_search(name: str, request: Request, store: Store) -> AtlasJSONResponse:
     """``getSavedSearch``: the acting user's search of the name (SVS-04)."""
     validate_param_length("name", name)
-    found = await EntityDiscoveryService(store).get_saved_search_by_name(
+    found = await _discovery(request, store).get_saved_search_by_name(
         acting_user(request), _validate_user(request), name
     )
     return AtlasJSONResponse(content=found.to_json())
@@ -341,5 +348,5 @@ async def get_saved_search(name: str, request: Request, store: Store) -> AtlasJS
 async def delete_saved_search(guid: str, request: Request, store: Store) -> Response:
     """``deleteSavedSearch``: the acting user's search of the GUID (SVS-05)."""
     validate_param_length("guid", guid)
-    await EntityDiscoveryService(store).delete_saved_search(acting_user(request), guid)
+    await _discovery(request, store).delete_saved_search(acting_user(request), guid)
     return Response(status_code=204)
