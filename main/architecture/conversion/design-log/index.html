@@ -6884,6 +6884,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-301-the-stores-check-through-the-authorizer-they-are-given" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-301. The stores check through the authorizer they are given
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6963,6 +6974,8 @@
       
         
           
+        
+      
         
       
         
@@ -8387,6 +8400,33 @@
     
   
   6.2a Authorization, types and admin
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/6-2-authorization-entities/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  6.2b Authorization, entities
 
     
   </span>
@@ -14422,6 +14462,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-301-the-stores-check-through-the-authorizer-they-are-given" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-301. The stores check through the authorizer they are given
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -16099,6 +16150,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <tr>
 <td><a href="#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges">DD-300</a></td>
 <td>Four fixed roles of the server's client grant Atlas's privileges</td>
+<td>6.2</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-301-the-stores-check-through-the-authorizer-they-are-given">DD-301</a></td>
+<td>The stores check through the authorizer they are given</td>
 <td>6.2</td>
 <td>Proposed</td>
 </tr>
@@ -25051,6 +25108,32 @@ An external policy engine: one more service to run everywhere it is validated.</
 <p><strong>Consequences.</strong> No permission finer than a role: a user may change every entity type or none (DV-114). The
 roles are client roles, so a client that forwards a user's token (the webapp's) maps them into its scope. The
 dev realm gives the writer every role and the reader <code>atlas-read</code>.</p>
+<h3 id="dd-301-the-stores-check-through-the-authorizer-they-are-given">DD-301. The stores check through the authorizer they are given<a class="headerlink" href="#dd-301-the-stores-check-through-the-authorizer-they-are-given" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 6.2b</li>
+<li><strong>Date:</strong> 2026-11-01</li>
+</ul>
+<p><strong>Decision.</strong> The privileges and the checks live in <code>aurelius-atlas-core</code> (<code>authorization</code>): each store that
+reads or writes entities and relationships for a request (<code>EntityWriter</code>, <code>EntityClassifications</code>,
+<code>RelationshipStore</code>, <code>DataAccess</code> and the services built on them) takes an <code>Authorizer</code> and asks it at the
+points where Atlas's entity and relationship stores call <code>AtlasAuthorizationUtils.verifyAccess</code>, with the same
+action texts. The server builds one per request from its user's privileges (<code>Granted</code>, DD-300). A store built
+without one is given <code>ALLOW_ALL</code>, which checks nothing. The relationship checks Atlas makes inside an entity
+write (<code>EntityGraphMapper</code> creating relationship edges through <code>createRelationship</code>) are not made.</p>
+<p><strong>Reason.</strong> Atlas checks inside its stores, after it has found what a request names and before it writes; the
+same placement keeps the same order of not-found and unauthorized answers, and covers the glossary and saved
+searches, which write through those stores, without a check of their own. The core library knows no users or
+roles; it is handed the decision. Allowing everything by default keeps the stores' own tests, the model loading
+at startup and other internal writes free of a user they do not have. Under DD-300 only <code>atlas-write</code> grants
+<code>RELATIONSHIP_ADD</code>, together with <code>ENTITY_CREATE</code> and <code>ENTITY_UPDATE</code>, which an entity write checks first, so
+the relationship checks within it could never refuse what the entity checks allowed.</p>
+<p><strong>Alternatives.</strong> Checks in the routes before the stores run: simpler, but they would answer unauthorized for
+a missing entity, and every glossary and saved-search route would need its own. A required authorizer with no
+default: every internal caller and test would have to make one up.</p>
+<p><strong>Consequences.</strong> Every store a route builds must be given <code>authorizer(request)</code>; the server's tests refuse each
+kind of change for a reader, which catches a route that forgets. Should roles ever grant privileges per type
+(DV-111), the relationship checks inside entity writes are to be added.</p>
 
 
 

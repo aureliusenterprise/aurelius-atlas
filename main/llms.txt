@@ -166,6 +166,7 @@
 - [5.2c Term assignment](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/5-2-term-assignment/index.md>)
 - [6.1b The acting user on writes](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/6-1-acting-user/index.md>)
 - [6.1a Authentication](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/6-1-authentication/index.md>)
+- [6.2b Authorization, entities](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/6-2-authorization-entities/index.md>)
 - [6.2a Authorization, types and admin](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/6-2-authorization/index.md>)
 - [7.0 Webapp foundation (umbrella)](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-0-webapp-foundation/index.md>)
 - [7.1 Webapp shell and localisation](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/7-1-webapp-shell/index.md>)

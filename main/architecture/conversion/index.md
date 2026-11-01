@@ -77,12 +77,12 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 5.2b | Glossary terms | Term CRUD, related terms, term categorization | `GlossaryService`, `GlossaryTermUtils` | in progress |
 | 5.2c | Term assignment | Terms assigned to entities, meanings on headers, DSL `hasTerm` | `GlossaryService`, `GlossaryTermUtils` | in progress |
 | 5.2d | Glossary import | Glossary terms imported from CSV or Excel, and the import template | `GlossaryService#importGlossaryData`, `GlossaryTermUtils` | in progress |
-| 5.3 | Business metadata and labels | Business metadata attributes, labels | `EntityREST` | planned |
+| 5.3 | Business metadata and labels | Business metadata attributes, labels, with their checks (6.2b) | `EntityREST` | planned |
 | 6.1a | Authentication | Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user | `AtlasKeycloakAuthenticationProvider` | in progress |
 | 6.1b | The acting user on writes | `createdBy`, `updatedBy` and audit users of every write | `RequestContext#getUser` | in progress |
 | 4.5 | Saved searches and user profile | Saved search CRUD; after 6.1, its owners being users (DD-244) | `UserProfileService` | in progress |
 | 6.2a | Authorization: authorizer, types, admin | The roles that grant Atlas's privileges, the session's permissions, type definition and purge checks | `AtlasAuthorizationUtils`, `AtlasSimpleAuthorizer` | in progress |
-| 6.2b | Authorization: entities | Entity, classification, label, business metadata, relationship and glossary checks | `AtlasEntityStoreV2`, `AtlasRelationshipStoreV2` | planned |
+| 6.2b | Authorization: entities | Entity, classification, relationship and glossary checks | `AtlasEntityStoreV2`, `AtlasRelationshipStoreV2` | in progress |
 | 6.2c | Authorization: search and lineage | Search results and lineage scrubbed of what a user may not read; ADR 038 accepted | `AtlasAuthorizationUtils#scrubSearchResults`, `EntityLineageService` | planned |
 | 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |
 | 6.4 | Hardening | Metrics, observability, load test, index tuning | `AdminResource` metrics | planned |
