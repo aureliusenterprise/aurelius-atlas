@@ -4111,6 +4111,8 @@
       
         
       
+        
+      
     
     
     
@@ -5286,6 +5288,33 @@
     
   
   5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-labels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3a Labels
 
     
   </span>
@@ -9322,6 +9351,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Their privileges are checked first: an invalid definition from a user without them is refused as unauthorized</td>
 <td>The checks sit at the endpoint, before the store</td>
 <td>6.2</td>
+</tr>
+<tr>
+<td>DV-116</td>
+<td>Entities</td>
+<td>An entity's labels, and those a label audit event lists, come in the hash order of a <code>HashSet</code></td>
+<td>In the order first given: a set's labels as given, an add's new labels after the entity's own (DD-021)</td>
+<td>Hash order is an artefact of Java's set, not a meaning; the given order is stable and readable</td>
+<td>5.3</td>
 </tr>
 </tbody>
 </table>
