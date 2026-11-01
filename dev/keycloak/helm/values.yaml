@@ -94,6 +94,11 @@ realm:
     # (CHT-83, DD-275). The placeholder is inert when the imported realm
     # has no grafana client (master), so this env is not realm-gated.
     grafanaOauthSecretName: ""
+    # The Atlas server's confidential-client secret: <release>-server-client
+    # (key client-secret) feeds the ${ATLAS_SERVER_CLIENT_SECRET} import
+    # placeholder (CHT-109/110, 10.12). Both shipped assets carry the client
+    # (master's since 6.1a/DD-250), so the env renders on every realm.
+    serverClientSecretName: ""
 
 # Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so
 # its own OTLP cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on

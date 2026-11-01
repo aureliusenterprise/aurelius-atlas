@@ -282,6 +282,8 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 | [DD-293](#dd-293--helm-targets-merge-onto-the-owning-project-a-chart-is-not-a-project)                              | Helm targets merge onto the owning project: a chart is not a project                                                                                                                                                            | 10.1          | Accepted             |
 | [DD-294](#dd-294--the-minikube-trial-findings-in-the-aux-charts-land-in-103)                                        | The minikube trial's two aux-chart findings (unbackable CA mount, lineage-model upstream URLs) are fixed in 10.3                                                                                                                | 10.1          | Accepted             |
 | [DD-295](#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges)                                    | Chart-track id collisions with main renumber above both ranges                                                                                                                                                                  | —             | Accepted             |
+| [DD-296](#dd-296-61as-required-auth-settings-land-in-the-charts-as-joins)                                           | 6.1a's required server-auth settings land in the charts as issuer/realm/secret joins; the dashboards' browser leg stays dashboard-host-gated                                                                                    | 10.12         | Accepted             |
+| [DD-297](#dd-297-the-aux-apis-auth_realm-joins-globalrealm)                                                         | The aux APIs' AUTH_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74)                                                                                              | 10.12         | Accepted             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -9714,3 +9716,77 @@ merged record.
 | DD-242 | DD-285 | DD-247 | DD-290 | DV-88  | DV-110 |
 | DD-243 | DD-286 | DD-248 | DD-291 | DV-89  | DV-111 |
 | DD-244 | DD-287 | DD-249 | DD-292 | —      | —      |
+
+### DD-296. 6.1a's required auth settings land in the charts as joins
+
+- **Status:** Accepted
+- **Increment:** 10.12
+- **Date:** 2026-11-01
+
+**Decision.** 6.1a (main, #188; DD-250) made `auth_server_url` and
+`auth_client_secret` required settings with no defaults: a server pod that
+boots without them dies at settings load. The chart track forked before that
+merge, so the 10.x charts render no `AUTH_*` env and an umbrella install of a
+post-6.1a image crash-loops. This increment lands the auth block as joins,
+never literals (CHT-108): `AUTH_SERVER_URL` from the chart's CHT-03 issuer
+helper (whose required-guard now fires on every render, so an authless render
+fails at the gate rather than at the pod), `AUTH_REALM` from `global.realm`
+(CHT-74), `AUTH_CLIENT_ID`/`_AUTH_AUDIENCES` from the server chart's `auth`
+values block (the server's own confidential client plus the webapp's `aurelius`
+client — AUT-02/AUT-10), `AUTH_CA_FILE` from the Certificate's mounted
+`ca.crt`, and `AUTH_CLIENT_SECRET` from the new `<release>-server-client`
+Secret (CHT-109), the same Secret the Keycloak chart feeds the realm import's
+`${ATLAS_SERVER_CLIENT_SECRET}` (CHT-110) — both shipped realm assets carry
+the placeholder (master's client since 6.1a), so unlike the grafana
+credential (CHT-83) this one is not realm-gated. The prod realm asset gains
+the `aurelius-atlas-server` client, hardened and host-tokenised like its
+`aurelius` peer, its `login.jsp` redirects naming both browser hosts.
+
+**Reason.** The webapp's nginx `/api/` proxy already forwards the browser's
+bearer token, so the API leg authenticates end-to-end with no chart change —
+the gap is only the server's own boot. The dashboards' sign-in leg
+(`login.jsp`, AUT-05) lands on the server's host, and the dashboard host
+stays `enabled: false` by default (ADR 054): the browser leg therefore works
+exactly where it is exposed, and nothing in the stock shape changes for
+operators who never enable it. The secret rides the CHT-87/88 placeholder
+mechanism (one client, one placeholder, one key — rotation story like every
+other client credential), and the CHT-79 drift guard keeps the two realm
+assets' server clients peer-faithful the way they keep the otel-* ones.
+
+**Consequences.** The umbrella's generated-secret roster gains
+`<release>-server-client` (lookup/preserve/override, gated on either
+consumer). The server chart's values gain the `auth` block and
+`credentialSecrets.serverClient`. Any cluster install of a post-6.1a image
+before this increment crash-loops — the charts and the app must ship as one
+release. The webapp's own login flow (keycloak-js against the `aurelius`
+public client) is 7.x behaviour and unchanged.
+
+### DD-297. The aux APIs' AUTH_REALM joins global.realm
+
+- **Status:** Accepted
+- **Increment:** 10.12
+- **Date:** 2026-11-01
+
+**Decision.** The three aux charts (data2model, lineage-model,
+validate-entity) carried `AUTH_REALM: master` as a static entry in their
+`config:` values blocks — written when their settings were authored, while
+the cluster's only realm was still `master`. 10.7 (CHT-74) moved the
+cluster's default realm to `aurelius-atlas` and enumerated the
+realm-bearing envs; the aux `AUTH_REALM` was missed, so on a prod-realm
+cluster the aux APIs fetched discovery/JWKS from `/realms/master` and every
+browser token (issued by `aurelius-atlas`) failed verification — a latent
+drift no render-time test caught, because the value was a literal. It now
+renders as a deployment join from each chart's existing realm helper
+(CHT-111), and the umbrella suite pins the server's and the three aux pods'
+`AUTH_REALM` against the realm the Keycloak chart imports.
+
+**Reason.** CHT-74's rule is that `global.realm` is the one realm fact and
+every consumer derives from it; a literal is a second source of truth by
+definition. The `master` escape hatch keeps working — it retargets the same
+one fact — and the settings' own default (`master`) stays the standalone
+default for compose/dev, which the charts never relied on anyway.
+
+**Consequences.** `AUTH_REALM` leaves the aux charts' `config:` maps, which
+are for verbatim operator settings, not derived joins. Any future
+realm-bearing env joins the same enumeration (the umbrella suite's
+`/realms/...` sweep plus the named AUTH_REALM pins).

@@ -7,6 +7,8 @@ Secrets, issuer URL), never a literal; the Certificate's SANs are exactly the
 names the webapp's nginx pins with proxy_ssl_name (CHT-25's twin).
 """
 
+import json
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -17,6 +19,7 @@ from conftest import (
     env_value,
     find,
     helm_render,
+    helm_render_fails,
     names,
     peer_labels,
     pod_spec,
@@ -139,6 +142,64 @@ def test__certificate_sans_are_the_service_names(server_docs: list[dict[str, Any
         "atlas-server.atlas.svc.cluster.local",
     ]
     assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
+
+
+@pytest.mark.covers(rules=["CHT-108"])
+def test__auth_env_block_joins_issuer_realm_and_secret(server_docs: list[dict[str, Any]]) -> None:
+    """6.1a's required settings render as joins, unconditionally (CHT-108).
+
+    The server refuses to boot without AUTH_SERVER_URL/AUTH_CLIENT_SECRET,
+    so the block is not opt-in like telemetry: the issuer is the CHT-03
+    join, the realm the CHT-74 fact, the audiences the webapp's client
+    (AUT-02/10), the CA the Certificate's mounted ca.crt, and the secret the
+    <release>-server-client join the realm import resolves (CHT-109).
+    """
+    envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.test"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
+    join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "atlas-server-client", "key": "client-secret"}
+
+    # The realm fact retargets the auth realm with everything else (CHT-74).
+    master = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=("global.realm=master",))
+    master_envs = env_map(container(find(master, "Deployment", "atlas-server"), "server"))
+    assert env_value(master_envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "master"
+
+
+@pytest.mark.covers(rules=["CHT-108"])
+def test__auth_block_values_and_brought_secret_override(tmp_path: Path) -> None:
+    """auth.clientId/_audiences are values; credentialSecrets.serverClient brings your own."""
+    values = tmp_path / "auth.yaml"
+    values.write_text(
+        "auth:\n"
+        "    clientId: atlas-srv\n"
+        "    audiences:\n"
+        "        - aurelius\n"
+        "        - grafana\n"
+        "credentialSecrets:\n"
+        "    serverClient: my-auth-secret\n"
+    )
+    docs = helm_render(SERVER_CHART, value_files=(*TEST_VALUES, values))
+    envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "atlas-srv"
+    assert set(json.loads(env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES"))) == {"aurelius", "grafana"}
+    join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "my-auth-secret", "key": "client-secret"}
+
+
+@pytest.mark.covers(rules=["CHT-108"])
+def test__authless_render_fails_the_render() -> None:
+    """No issuer to verify against fails the render, not the pod (CHT-108).
+
+    AUTH_SERVER_URL is required since 6.1a, so the issuer guard (CHT-03's
+    required on global.domain/issuer.url) now fires on every render — the
+    authless-server crash cannot reach a cluster.
+    """
+    error = helm_render_fails(SERVER_CHART, value_files=TEST_VALUES, sets=("global.issuer.url=", "global.domain="))
+    assert "issuer" in error.lower()
 
 
 @pytest.mark.covers(rules=["CHT-22"])

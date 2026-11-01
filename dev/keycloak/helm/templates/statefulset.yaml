@@ -210,6 +210,15 @@ spec:
                                   name: {{ include "atlas-keycloak.grafanaOauthSecretName" . }}
                                   key: client-secret
                         {{- end }}
+                        {{- /* CHT-110 (10.12): the server client's placeholder —
+                        both shipped assets carry it (the master asset since
+                        6.1a/DD-250), so unlike grafana's (prod-only) this env
+                        renders on every realm. */}}
+                        - name: ATLAS_SERVER_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.serverClientSecretName" . }}
+                                  key: client-secret
                         {{- with (include "atlas-keycloak.telemetryEndpoint" .) }}
                         {{- /* Legacy-leg OTLP only, when telemetry resolves to
                         an endpoint (CHT-16/42): Keycloak is the issuer, so it

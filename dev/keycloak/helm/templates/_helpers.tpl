@@ -243,6 +243,15 @@ chart-contract suite pins it against files/aurelius-atlas.json. */}}
 {{- default (printf "%s-grafana-oauth" .Release.Name) .Values.realm.grafanaOauthSecretName -}}
 {{- end -}}
 
+{{/* The server client's Secret (CHT-109, 10.12): feeds the realm import's
+${ATLAS_SERVER_CLIENT_SECRET}, carried by BOTH shipped assets (the master
+asset has had the client since 6.1a/DD-250), so unlike the master-only users
+(CHT-80) or the prod-only grafana credential (CHT-83) this placeholder needs
+its env on every realm. */}}
+{{- define "atlas-keycloak.serverClientSecretName" -}}
+{{- default (printf "%s-server-client" .Release.Name) .Values.realm.serverClientSecretName -}}
+{{- end -}}
+
 {{- define "atlas-keycloak.legacyTokenSecretName" -}}
 {{- default (printf "%s-collector-legacy" .Release.Name) .Values.telemetry.tokenSecretName -}}
 {{- end -}}

@@ -118,6 +118,32 @@ def test__telemetry_join_names_collector_and_public_issuer(component: str) -> No
     assert secret == {"name": "atlas-otel-clients", "key": _OTEL_CLIENT_IDS[component]}
 
 
+@pytest.mark.covers(rules=["CHT-111"])
+@pytest.mark.parametrize("component", AUX)
+def test__auth_realm_follows_the_global_realm(component: str) -> None:
+    """AUTH_REALM joins global.realm — never a static config literal (CHT-111, 10.12).
+
+    The aux APIs verify tokens against /realms/<realm> under the same CHT-74
+    one-fact contract as every other realm-bearing env: a static "master"
+    would verify prod-realm tokens against the wrong issuer (latent since
+    10.7, closed here). The master hatch retargets it from the same one fact.
+    """
+    chart = AUX_CHARTS[component]
+    prefix = _PREFIXES[component]
+
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    assert env_value(envs, f"{prefix}AUTH_REALM") == "aurelius-atlas"
+
+    docs = helm_render(
+        chart,
+        value_files=(chart / "tests/values.test.yaml",),
+        sets=("global.realm=master",),
+    )
+    envs = env_map(_app(docs))
+    assert env_value(envs, f"{prefix}AUTH_REALM") == "master"
+
+
 @pytest.mark.covers(rules=["CHT-90", "CHT-91"])
 @pytest.mark.parametrize("component", AUX)
 def test__master_realm_join_falls_back_to_the_shared_key(component: str) -> None:

@@ -13,6 +13,7 @@ this time.
 {{- $ns := default .Release.Namespace .Values.global.namespace -}}
 {{- $esSecret := default (printf "%s-elasticsearch" .Release.Name) .Values.credentialSecrets.elasticsearch -}}
 {{- $otelSecret := default (printf "%s-otel-clients" .Release.Name) .Values.credentialSecrets.otelClients -}}
+{{- $authSecret := default (printf "%s-server-client" .Release.Name) .Values.credentialSecrets.serverClient -}}
 {{- $store := include "atlas-server.storeService" . -}}
 apiVersion: apps/v1
 kind: Deployment
@@ -67,6 +68,28 @@ spec:
                                   key: elastic-password
                         - name: AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS
                           value: {{ .Values.forwardedAllowIps | quote }}
+                        {{- /* The auth join (CHT-108, 6.1a/DD-250): the
+                        settings are required since 6.1a — a pod without them
+                        fails at boot — so the block renders unconditionally.
+                        The issuer URL is the chart's CHT-03 join (its
+                        required-guard now always fires); the realm is the
+                        CHT-74 one fact; the client id/audiences come from the
+                        auth values block; the CA rides the Certificate's
+                        whole-Secret mount; the secret is <release>-server-client
+                        (CHT-109), the same Secret the realm import resolves. */}}
+                        - name: AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL
+                          value: {{ include "atlas-server.issuerUrl" . | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_AUTH_REALM
+                          value: {{ include "atlas-server.realm" . | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID
+                          value: {{ .Values.auth.clientId | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES
+                          value: {{ .Values.auth.audiences | toJson | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ $authSecret }}
+                                  key: client-secret
                         {{- if .Values.telemetry.enabled }}
                         # The per-service OTLP leg (DD-196): a minted client JWT
                         # against the issuer, exported to the collector (10.3b).

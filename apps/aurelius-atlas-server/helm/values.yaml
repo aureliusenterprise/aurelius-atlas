@@ -97,9 +97,24 @@ telemetry:
 
 # Credential Secret names (DD-287): "" derives <release>-<purpose>, the
 # umbrella's generated names. Set to bring your own (CHT-21's joins).
+# serverClient is 6.1a's auth join (CHT-108/109): <release>-server-client,
+# the same Secret the realm import resolves ${ATLAS_SERVER_CLIENT_SECRET} from.
 credentialSecrets:
     elasticsearch: ""
     otelClients: ""
+    serverClient: ""
+
+# The 6.1a authentication join (CHT-108): the confidential client the server
+# verifies (its own — the dashboards sign in through it, DD-250) and the
+# further audiences whose tokens it accepts — the webapp's client, whose
+# tokens the browser presents at /api/ and the aux APIs forward (AUT-02/10).
+# AUTH_SERVER_URL/AUTH_REALM arrive from the issuer/realm joins;
+# AUTH_CLIENT_SECRET from credentialSecrets.serverClient; AUTH_CA_FILE from
+# the mounted Certificate (config below).
+auth:
+    clientId: aurelius-atlas-server
+    audiences:
+        - aurelius
 
 # Client-IP trust (SRV-10, DD-238, DD-261): which peers may rewrite the client
 # address via X-Forwarded-For, passed to uvicorn. Loopback only in a stock
@@ -127,6 +142,9 @@ config:
     AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /etc/aurelius-atlas/tls/tls.key
     AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /etc/aurelius-atlas/tls/ca.crt
+    # The issuer trust for the auth leg (CHT-108): the same CA file, the
+    # issuer's TLS is the cluster's own (DD-286's one trust root).
+    AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     # Client-IP trust: the top-level forwardedAllowIps (CHT-21, DD-261).
     # OTLP export on the per-service leg (DD-196): a minted client JWT, not a
     # static header. The joins render when telemetry.enabled (CHT-21).

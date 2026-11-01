@@ -59,6 +59,12 @@ spec:
                           value: {{ int .Values.port | quote }}
                         - name: {{ .Values.componentEnvPrefix }}AUTH_SERVER_URL
                           value: {{ include "atlas-lineage-model.issuerUrl" . | quote }}
+                        {{- /* CHT-111 (10.12): the realm is the CHT-74 one fact
+                        — an env join, never a static config literal (a static
+                        "master" verified prod-realm tokens against the wrong
+                        issuer). */}}
+                        - name: {{ .Values.componentEnvPrefix }}AUTH_REALM
+                          value: {{ include "atlas-lineage-model.realm" . | quote }}
                         {{- if .Values.telemetry.enabled }}
                         {{/* The per-service OTLP leg (CHT-42, DD-196): a
                         minted client JWT against the issuer's public realm

@@ -82,8 +82,13 @@ generated like every other credential (DD-254) and gated on either consumer.
 realm import's `${GRAFANA_CLIENT_SECRET}` placeholder (keycloak chart, non-
 master only) and the observability chart's `GF_AUTH_GENERIC_OAUTH_CLIENT_
 SECRET`; disabling observability alone keeps it (the import still needs it),
-master plus no-observability drops it.
-`<release>-otel-clients` is **realm-shaped** (CHT-88, DD-277, 10.9): the
+master plus no-observability drops it.`<release>-server-client` (CHT-109, 10.12) is 6.1a's server-auth credential:
+the realm import's `${ATLAS_SERVER_CLIENT_SECRET}` placeholder (both shipped
+assets carry the client — master's since 6.1a/DD-250 — so this one is **not**
+realm-gated, unlike grafana's) and the server chart's
+`AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET` join. Either consumer (keycloak or
+server) keeps it; disabling both drops it. Override with
+`secrets.serverClient.clientSecret`.`<release>-otel-clients` is **realm-shaped** (CHT-88, DD-277, 10.9): the
 hardened realm gets one key per ingest client id (`otel-atlas-server`, …,
 each generated/preserved/overridden independently via
 `secrets.otelClients.clients.<client-id>`), `master` keeps the single

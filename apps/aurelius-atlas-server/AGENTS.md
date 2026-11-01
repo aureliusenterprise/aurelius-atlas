@@ -98,7 +98,14 @@ the webapp's nginx pins with `proxy_ssl_name`). `telemetry.enabled` is off by
 default — with it on, the collector leg joins (`:4319`, client `otel-atlas-server`,
 Secret `atlas-otel-clients`; the join key is the client id on the prod realm,
 the shared `OTEL_INGEST_CLIENT_SECRET` on `global.realm=master` — CHT-90,
-DD-277). `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
+DD-277). 10.12 adds the **auth block** (CHT-108, 6.1a's required settings):
+`AUTH_SERVER_URL`/`_AUTH_REALM` join the issuer and `global.realm`,
+`_AUTH_CLIENT_ID`/`_AUTH_AUDIENCES` are the `auth` values block (default
+`aurelius-atlas-server` + `["aurelius"]`), `AUTH_CLIENT_SECRET` joins
+`<release>-server-client` (`credentialSecrets.serverClient` brings your own),
+`AUTH_CA_FILE` rides the Certificate's mounted ca.crt — and because
+`AUTH_SERVER_URL` has no default in the app, the issuer guard fails an
+authless render. `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
 — stock render is loopback-only; the environment overlays name the pod CIDRs
 (the two-hop client-IP trust, DD-261/CHT-32). The chart renders standalone
 (test values) and through the umbrella (`helm/`); the chart-contract tests are

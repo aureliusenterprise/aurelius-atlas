@@ -20,6 +20,7 @@ from conftest import (
     UMBRELLA_CHART,
     container,
     env_map,
+    env_value,
     find,
     find_all,
     helm_render,
@@ -108,6 +109,7 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         "atlas-keycloak-database": {"user", "password"},
         "atlas-otel-clients": set(OTEL_CLIENT_IDS),  # CHT-88: realm-shaped keys
         "atlas-grafana-oauth": {"client-secret"},  # CHT-83: feeds the realm import and Grafana
+        "atlas-server-client": {"client-secret"},  # CHT-109: the realm import and the server's auth join
     }
     assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
@@ -115,7 +117,7 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         assert set(secrets[name]["data"]) == keys, name
     # Generated credentials are 32 random chars (b64 >= 44); the usernames are
     # short values by design, so only the secret-bearing keys are length-checked.
-    for name in ("atlas-elasticsearch", "atlas-otel-clients"):
+    for name in ("atlas-elasticsearch", "atlas-otel-clients", "atlas-server-client"):
         assert all(len(v) >= 44 for v in secrets[name]["data"].values()), name
     for name in ("atlas-keycloak-admin", "atlas-keycloak-database"):
         assert len(secrets[name]["data"]["password"]) >= 44, name
@@ -140,6 +142,9 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
     # Grafana still logs in) — a master-only install with obs off is the
     # case with no consumer (test__grafana_oauth_secret_gates_on_consumers).
     assert "atlas-grafana-oauth" in master_secrets
+    # CHT-109/110: master's asset carries the server client too (since
+    # 6.1a/DD-250), so its credential rides both realms.
+    assert set(master_secrets["atlas-server-client"]["data"]) == {"client-secret"}
 
 
 @pytest.mark.covers(rules=["CHT-88"])
@@ -216,6 +221,73 @@ def test__grafana_oauth_secret_gates_on_consumers() -> None:
     )
     secret = find(docs, "Secret", "atlas-grafana-oauth")
     assert secret["data"]["client-secret"] == "c3VwcGxpZWQtb2F1dGg="  # b64("supplied-oauth")
+
+
+@pytest.mark.covers(rules=["CHT-109"])
+def test__server_client_secret_gates_on_both_consumers() -> None:
+    """<release>-server-client generates for either consumer (CHT-109, 10.12).
+
+    The Keycloak import placeholder rides both shipped realm assets (not
+    realm-gated, unlike grafana's), and the server chart joins the same
+    Secret for AUTH_CLIENT_SECRET. Either consumer alone keeps it; with both
+    disabled nothing generates. A supplied value wins verbatim.
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-server.enabled=false",),
+    )
+    assert "atlas-server-client" in names(docs, "Secret")  # keycloak's import alone
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-keycloak.enabled=false",),
+    )
+    assert "atlas-server-client" in names(docs, "Secret")  # the server's join alone
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-keycloak.enabled=false", "atlas-server.enabled=false"),
+    )
+    assert "atlas-server-client" not in names(docs, "Secret")
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("secrets.serverClient.clientSecret=supplied-srv",),
+    )
+    secret = find(docs, "Secret", "atlas-server-client")
+    assert secret["data"]["client-secret"] == "c3VwcGxpZWQtc3J2"  # b64("supplied-srv")
+
+
+@pytest.mark.covers(rules=["CHT-108", "CHT-109"])
+def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The composed render closes the loop: server join == import env == Secret.
+
+    6.1a made AUTH_SERVER_URL/AUTH_CLIENT_SECRET required, so a stock
+    umbrella must boot the server: the AUTH_* block renders from the issuer,
+    the realm, and the same <release>-server-client the realm import reads
+    (CHT-108/109/110 — one client, both ends of the secret).
+    """
+    deployment = find(umbrella_docs, "Deployment", "atlas-server")
+    envs = env_map(container(deployment, "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.example"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
+    join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "atlas-server-client", "key": "client-secret"}
+
+    ss = find(umbrella_docs, "StatefulSet", "atlas-keycloak")
+    kc_envs = env_map(container(ss, "keycloak"))
+    assert kc_envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == join
+
+    # The credential itself: one Secret, 32 random chars (CHT-19's pattern).
+    secret = find(umbrella_docs, "Secret", "atlas-server-client")
+    assert len(base64.b64decode(secret["data"]["client-secret"])) == 32
 
 
 @pytest.mark.covers(rules=["CHT-19"])
@@ -357,6 +429,19 @@ def test__every_consumer_names_the_imported_realm(umbrella_docs: list[dict[str, 
 
     webapp = find(umbrella_docs, "ConfigMap", "atlas-webapp-config")
     assert yaml.safe_load(webapp["data"]["config.json"])["keycloak"]["realm"] == realm
+
+    # CHT-111 (10.12): the auth realm is a realm-bearing env too — the server
+    # and the three aux APIs verify against the imported realm, never a
+    # static literal.
+    for kind, name, prefix, container_name in (
+        ("Deployment", "atlas-server", "AURELIUS_ATLAS_SERVER_", "server"),
+        ("Deployment", "atlas-data2model", "AURELIUS_ATLAS_DATA2MODEL_", "data2model"),
+        ("Deployment", "atlas-lineage-model", "AURELIUS_ATLAS_LINEAGE_MODEL_", "lineage-model"),
+        ("Deployment", "atlas-validate-entity", "AURELIUS_ATLAS_VALIDATE_ENTITY_", "validate-entity"),
+    ):
+        workload = find(umbrella_docs, kind, name)
+        auth_realm = env_value(env_map(container(workload, container_name)), f"{prefix}AUTH_REALM")
+        assert auth_realm == realm, name
 
     named = set()
     for doc in umbrella_docs:

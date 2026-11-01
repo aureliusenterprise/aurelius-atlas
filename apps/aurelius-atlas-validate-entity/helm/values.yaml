@@ -97,7 +97,6 @@ telemetry:
     port: 4319
 
 config:
-    AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: master
     AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius-atlas-validate-entity
     AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info

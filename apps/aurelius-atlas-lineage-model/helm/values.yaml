@@ -110,7 +110,6 @@ telemetry:
     port: 4319
 
 config:
-    AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: aurelius-atlas-lineage-model
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info

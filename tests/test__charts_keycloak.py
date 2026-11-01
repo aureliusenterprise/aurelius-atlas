@@ -118,6 +118,11 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
     # CHT-83: the grafana placeholder feeds the prod asset's client (CHT-81).
     ref = envs["GRAFANA_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert ref == {"name": "atlas-grafana-oauth", "key": "client-secret"}
+    # CHT-110 (10.12): the server client's placeholder feeds both assets'
+    # client (master's since 6.1a/DD-250) — joined on every realm, unlike
+    # grafana's prod-only credential.
+    ref = envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-server-client", "key": "client-secret"}
 
     master = find(helm_render(KC_CHART, sets=("realm.name=master",)), "StatefulSet", "atlas-keycloak")
     master_envs = env_map(container(master, "keycloak"))
@@ -127,7 +132,15 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
     # master's asset shares one placeholder: the single shared env (CHT-89).
     ref = master_envs["OTEL_INGEST_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert ref == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
-    assert not [n for n in master_envs if n.endswith("_CLIENT_SECRET") and n != "OTEL_INGEST_CLIENT_SECRET"]
+    # CHT-110: the server client's env rides master too — its asset carries
+    # the same ${ATLAS_SERVER_CLIENT_SECRET} placeholder.
+    ref = master_envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-server-client", "key": "client-secret"}
+    assert not [
+        n
+        for n in master_envs
+        if n.endswith("_CLIENT_SECRET") and n not in ("OTEL_INGEST_CLIENT_SECRET", "ATLAS_SERVER_CLIENT_SECRET")
+    ]
     # master's asset has no grafana client: no env, no credential (CHT-80's rule).
     assert "GRAFANA_CLIENT_SECRET" not in master_envs
 
@@ -687,7 +700,9 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         "otel-postgres",
         "otel-validate-entity",
     }
-    assert client_ids == {"aurelius", "grafana"} | otel  # grafana: CHT-81, prod-only
+    assert (
+        client_ids == {"aurelius", "aurelius-atlas-server", "grafana"} | otel
+    )  # grafana: CHT-81; server client: CHT-110, both realms
     assert (
         not {
             "account",
@@ -744,6 +759,18 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
     assert aur["attributes"]["pkce.code.challenge.method"] == "S256"
     assert aur["attributes"]["post.logout.redirect.uris"] != "*"  # dev's pin, replaced by hosts
 
+    # CHT-110 (10.12): the server client is the confidential RP of its own
+    # API — auth-code + PKCE, no ROPC, no service account, placeholder secret.
+    (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
+    assert srv["publicClient"] is False
+    assert srv["standardFlowEnabled"] is True
+    assert srv["directAccessGrantsEnabled"] is False
+    assert srv["bearerOnly"] is False
+    assert srv["serviceAccountsEnabled"] is False
+    assert srv["clientAuthenticatorType"] == "client-secret"
+    assert srv["secret"] == "${ATLAS_SERVER_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
+    assert srv["attributes"]["pkce.code.challenge.method"] == "S256"
+
     for client in asset["clients"]:
         if not client["clientId"].startswith("otel-"):
             continue
@@ -770,6 +797,12 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
     assert aur["webOrigins"] == ["https://atlas.atlas.example", "https://dashboard.atlas.example"]
     post_logout = aur["attributes"]["post.logout.redirect.uris"].splitlines()
     assert set(post_logout) == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
+    # CHT-110 (10.12): the server client's AUT-05 return leg lands on its own
+    # login.jsp — the browser hosts, per-host.
+    (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
+    assert srv["redirectUris"] == ["https://atlas.atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
+    srv_post_logout = set(srv["attributes"]["post.logout.redirect.uris"].splitlines())
+    assert srv_post_logout == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
 
     docs = helm_render(
         KC_CHART,
@@ -882,9 +915,11 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     dev_by_id = {c["clientId"]: c for c in dev["clients"]}
     prod_by_id = {c["clientId"]: c for c in prod["clients"]}
 
-    assert set(prod_by_id) - {"aurelius", "grafana"} == {c for c in dev_by_id if c.startswith("otel-")}
+    assert set(prod_by_id) - {"aurelius", "aurelius-atlas-server", "grafana"} == {
+        c for c in dev_by_id if c.startswith("otel-")
+    }
     assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
-    for name in set(prod_by_id) - {"aurelius", "grafana"}:
+    for name in set(prod_by_id) - {"aurelius", "aurelius-atlas-server", "grafana"}:
         prod_client, dev_client = prod_by_id[name], dev_by_id[name]
         # CHT-87: the secret is the one allowed delta, spelled per client.
         env = name.upper().replace("-", "_")
@@ -909,6 +944,14 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     hardened = {"id", "directAccessGrantsEnabled", "attributes", "redirectUris", "webOrigins"}
     changed = {k for k in dev_aur if dev_aur[k] != prod_aur[k]}
     assert changed <= hardened, changed
+    # CHT-110 (10.12): the server client carries the same drift rule — the
+    # localhost pins become host tokens, its secret placeholder is the one
+    # spelling both assets share (6.1a/DD-250's client, unchanged otherwise).
+    dev_srv, prod_srv = dev_by_id["aurelius-atlas-server"], prod_by_id["aurelius-atlas-server"]
+    assert set(dev_srv) == set(prod_srv)
+    assert dev_srv["secret"] == prod_srv["secret"] == "${ATLAS_SERVER_CLIENT_SECRET}"  # noqa: S105
+    srv_changed = {k for k in dev_srv if dev_srv[k] != prod_srv[k]}
+    assert srv_changed <= {"attributes", "redirectUris"}, srv_changed
     # The aurelius-write role is dev's, re-pointed at the prod client id.
     dev_role = next(r for r in dev["roles"]["client"]["aurelius"] if r["name"] == "aurelius-write")
     (prod_role,) = prod["roles"]["client"]["aurelius"]
