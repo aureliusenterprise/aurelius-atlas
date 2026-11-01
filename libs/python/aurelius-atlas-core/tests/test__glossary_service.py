@@ -62,8 +62,9 @@ async def failure(awaitable: object) -> AtlasErrorCode:
 @pytest.mark.covers(
     f"{S}.create_glossary",
     f"{S}.get_glossary",
-    f"{D}.DataAccess.save",
-    f"{D}.DataAccess.load",
+    "aurelius_atlas_core.data_access.DataAccess.save",
+    "aurelius_atlas_core.data_access.DataAccess.load",
+    "aurelius_atlas_core.glossary_dto.glossary_data_access",
     f"{D}.glossary_from",
     f"{D}.to_entity",
     f"{U}.glossary_skeleton",
@@ -147,8 +148,8 @@ async def test__a_read_of_another_entity_fails(service: GlossaryService) -> None
     f"{S}.create_category",
     f"{S}.get_category",
     f"{S}.get_detailed_glossary",
-    f"{D}.DataAccess.load_all",
-    f"{D}.DataAccess.save_all",
+    "aurelius_atlas_core.data_access.DataAccess.load_all",
+    "aurelius_atlas_core.data_access.DataAccess.save_all",
     f"{D}.category_from",
     f"{D}.related_category_header",
     f"{D}.related_term_header",
@@ -271,7 +272,10 @@ async def test__a_category_update_needs_a_valid_name_and_keeps_its_name(service:
 
 
 @pytest.mark.covers(
-    f"{S}.delete_category", f"{S}.delete_glossary", f"{D}.DataAccess.delete", rules=["GCT-06", "GLS-04"]
+    f"{S}.delete_category",
+    f"{S}.delete_glossary",
+    "aurelius_atlas_core.data_access.DataAccess.delete",
+    rules=["GCT-06", "GLS-04"],
 )
 async def test__deletes_remove_categories_then_the_glossary(service: GlossaryService) -> None:
     """``testDeleteGlossary``: a deleted category is gone from its glossary; internal types are deleted for good."""
