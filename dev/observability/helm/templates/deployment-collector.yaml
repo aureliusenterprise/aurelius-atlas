@@ -78,6 +78,8 @@ spec:
                     securityContext:
                         {{- toYaml (merge (dict "readOnlyRootFilesystem" true) .) | nindent 24 }}
                     {{- end }}
+                    resources:
+                        {{- toYaml .Values.collector.issuerWait.resources | nindent 24 }}
             {{- end }}
             containers:
                 -   name: {{ .Values.component }}

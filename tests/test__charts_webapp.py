@@ -78,6 +78,10 @@ def test__nginx_uid_with_writable_emptydirs(webapp_docs: list[dict[str, Any]]) -
     assert psc["runAsUser"] == 65532
     assert psc["runAsNonRoot"] is True
     assert psc["fsGroup"] == 65532
+    # The resolve-nginx-config init carries its own bounded resources
+    # (KSV-0011/0015/0016/0018, DD-282 follow-up).
+    (init,) = spec["initContainers"]
+    assert init["resources"]["limits"]["memory"] == "64Mi"
     assert (
         container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")["securityContext"][
             "readOnlyRootFilesystem"

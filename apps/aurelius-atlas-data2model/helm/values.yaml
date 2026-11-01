@@ -134,6 +134,7 @@ podSecurityContext:
     # `nonroot` (uid/gid 65532, verified from the image), no privilege drop.
     runAsNonRoot: true
     runAsUser: 65532
+    runAsGroup: 65532
     fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault

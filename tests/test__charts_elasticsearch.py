@@ -220,6 +220,29 @@ def test__runs_as_image_uid_with_fs_group(es_docs: list[dict[str, Any]]) -> None
     assert init["securityContext"]["runAsUser"] == 1000
 
 
+@pytest.mark.covers(rules=["CHT-44"])
+def test__agent_and_store_security_contexts_are_hardened(es_docs: list[dict[str, Any]]) -> None:
+    """The agent init runs non-root/dropped/read-only; the store drops ALL (DD-282 follow-up).
+
+    The agent only cp's its jar to the shared emptyDir — a read-only root is
+    free. The store container gets runAsNonRoot (the image's uid 1000, CHT-44)
+    and drop-ALL; its writable root stays the documented Tier 3 deferral
+    (it writes logs outside the data volume).
+    """
+    ss = find(es_docs, "StatefulSet", "atlas-elasticsearch")
+    asc = pod_spec(ss)["initContainers"][0]["securityContext"]
+    assert asc["runAsNonRoot"] is True
+    assert asc["capabilities"]["drop"] == ["ALL"]
+    assert asc["readOnlyRootFilesystem"] is True
+    assert pod_spec(ss)["initContainers"][0]["resources"]["limits"]["memory"] == "64Mi"
+    csc = container(ss, "elasticsearch")["securityContext"]
+    assert csc["runAsNonRoot"] is True
+    assert csc["capabilities"]["drop"] == ["ALL"]
+    # The Tier 3 deferral, pinned as a decision: the store root stays writable
+    # until the logs-emptyDir increment (DD-282).
+    assert "readOnlyRootFilesystem" not in csc
+
+
 @pytest.mark.covers(rules=["CHT-18"])
 def test__pdb_and_storage_class_defaults(es_docs: list[dict[str, Any]]) -> None:
     """PDB minAvailable 1; storageClassName omitted at the "" default."""
@@ -309,6 +332,7 @@ def test__puller_containers_have_read_only_roots() -> None:
     deployment = find(docs, "Deployment", "atlas-elasticsearch-metrics-puller")
     (init,) = pod_spec(deployment)["initContainers"]
     assert init["securityContext"]["readOnlyRootFilesystem"] is True
+    assert init["resources"]["limits"]["memory"] == "32Mi"  # KSV-0015/16/18 (DD-282)
     app = container(deployment, "metrics-puller")
     assert app["securityContext"]["readOnlyRootFilesystem"] is True
 

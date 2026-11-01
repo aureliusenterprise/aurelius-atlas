@@ -221,6 +221,7 @@ def test__issuer_wait_polls_the_public_well_known(obs_docs: list[dict[str, Any]]
     # the shared posture (DD-282 follow-up — KSV-0014; the collector itself
     # keeps its own root decision).
     assert init["securityContext"]["readOnlyRootFilesystem"] is True
+    assert init["resources"]["limits"]["memory"] == "32Mi"  # KSV-0015/16/18 (DD-282)
 
 
 @pytest.mark.covers(rules=["CHT-37"])
@@ -415,6 +416,7 @@ def test__every_workload_runs_as_65532_dropped_and_unprivileged(obs_docs: list[d
         psc = spec["securityContext"]
         assert psc["runAsNonRoot"] is True, deployment["metadata"]["name"]
         assert psc["runAsUser"] == 65532, deployment["metadata"]["name"]
+        assert psc["runAsGroup"] == 65532, deployment["metadata"]["name"]  # KSV-0021 (DD-282)
         assert psc["seccompProfile"] == {"type": "RuntimeDefault"}
         for app in spec["containers"]:
             sc = app["securityContext"]

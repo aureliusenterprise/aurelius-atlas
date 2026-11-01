@@ -89,6 +89,8 @@ spec:
                               - ALL
                       seccompProfile:
                           type: RuntimeDefault
+                  resources:
+                      {{- toYaml .Values.telemetry.issuerWait.resources | nindent 22 }}
             containers:
                 - name: metrics-puller
                   image: {{ include "atlas-elasticsearch.componentImage" (dict "repository" .Values.telemetry.image.repository "tag" .Values.telemetry.image.tag "digest" .Values.telemetry.image.digest) | quote }}

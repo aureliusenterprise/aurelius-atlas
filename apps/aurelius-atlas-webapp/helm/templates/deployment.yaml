@@ -101,6 +101,8 @@ spec:
                     imagePullPolicy: IfNotPresent
                     securityContext:
                         {{- toYaml .Values.securityContext | nindent 24 }}
+                    resources:
+                        {{- toYaml .Values.initResources | nindent 24 }}
                     {{- /* The placeholder values, verbatim in the init's env
                     (nothing secret but the token, which rides a secretKeyRef
                     from the generated Secret — CHT-25/31). */}}

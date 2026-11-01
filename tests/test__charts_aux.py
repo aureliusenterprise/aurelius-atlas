@@ -67,6 +67,7 @@ def test__uid_pinned_with_fsgroup(aux_docs: list[dict[str, Any]]) -> None:
     """The dhi.io nonroot uid (65532) and fsGroup, read-only rootfs (DD-257)."""
     psc = pod_spec(find(aux_docs, "Deployment", _expect(aux_docs)))["securityContext"]
     assert psc["runAsUser"] == 65532
+    assert psc["runAsGroup"] == 65532  # KSV-0021 (DD-282 follow-up)
     assert psc["runAsNonRoot"] is True
     assert psc["fsGroup"] == 65532
     sc = _app(aux_docs)["securityContext"]

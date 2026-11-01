@@ -268,8 +268,25 @@ def test__puller_containers_have_read_only_roots() -> None:
     deployment = find(docs, "Deployment", "atlas-keycloak-metrics-puller")
     (init,) = pod_spec(deployment)["initContainers"]
     assert init["securityContext"]["readOnlyRootFilesystem"] is True
+    assert init["resources"]["limits"]["memory"] == "32Mi"  # KSV-0015/16/18 (DD-282)
     app = container(deployment, "metrics-puller")
     assert app["securityContext"]["readOnlyRootFilesystem"] is True
+
+
+@pytest.mark.covers(rules=["CHT-17"])
+def test__wait_for_postgres_is_a_read_only_bounded_gate(kc_docs: list[dict[str, Any]]) -> None:
+    """The DB boot gate runs read-only with bounded resources (DD-282 follow-up).
+
+    bash's /dev/tcp opens no files, so unlike the keycloak container (whose
+    writable root is its documented decision), the gate takes a read-only root.
+    """
+    ss = find(kc_docs, "StatefulSet", "atlas-keycloak")
+    (init,) = pod_spec(ss)["initContainers"]
+    assert init["name"] == "wait-for-postgres"
+    sc = init["securityContext"]
+    assert sc["readOnlyRootFilesystem"] is True
+    assert sc["capabilities"]["drop"] == ["ALL"]
+    assert init["resources"]["limits"]["memory"] == "128Mi"
 
 
 @pytest.mark.covers(rules=["CHT-90", "CHT-91"])

@@ -55,6 +55,16 @@ resources:
     limits:
         memory: 256Mi
 
+# The resolve-nginx-config init (a sed over one template file, KSV-0011/
+# 0015/0016/0018): memory-capped, no CPU limit (the house posture, DD-282
+# follow-up).
+initResources:
+    requests:
+        cpu: 10m
+        memory: 32Mi
+    limits:
+        memory: 64Mi
+
 # nginx's resolver (AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER). "" takes the chart
 # default 10.96.0.10 (the ClusterIP default); the runbook reads the live
 # cluster value: kubectl -n kube-system get svc kube-dns -o jsonpath.

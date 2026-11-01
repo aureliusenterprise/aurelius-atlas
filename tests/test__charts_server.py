@@ -119,6 +119,7 @@ def test__image_uid_pinned_with_fsgroup(server_docs: list[dict[str, Any]]) -> No
     """The dhi.io python nonroot uid (65532), no privilege (DD-257)."""
     psc = pod_spec(find(server_docs, "Deployment", "atlas-server"))["securityContext"]
     assert psc["runAsUser"] == 65532
+    assert psc["runAsGroup"] == 65532  # KSV-0021 (DD-282 follow-up)
     assert psc["runAsNonRoot"] is True
     assert psc["fsGroup"] == 65532
     sc = container(find(server_docs, "Deployment", "atlas-server"), "server")["securityContext"]

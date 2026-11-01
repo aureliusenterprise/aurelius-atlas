@@ -69,6 +69,14 @@ collector:
             repository: dhi.io/curl
             tag: "8"
             digest: sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862
+        # A boot gate, not a workload (KSV-0011/0015/0016/0018, DD-282
+        # follow-up): memory-capped, no CPU limit (the house posture).
+        resources:
+            requests:
+                cpu: 10m
+                memory: 16Mi
+            limits:
+                memory: 32Mi
     # deployment.environment.name stamped on every signal (DD-268): the
     # compose keeps "development"; a cluster install is its own environment.
     deploymentEnvironment: cluster
@@ -225,6 +233,7 @@ podLabels: {}
 podSecurityContext:
     runAsNonRoot: true
     runAsUser: 65532
+    runAsGroup: 65532
     fsGroup: 65532
     seccompProfile:
         type: RuntimeDefault

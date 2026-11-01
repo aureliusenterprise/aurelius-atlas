@@ -83,6 +83,8 @@ spec:
                               - ALL
                       seccompProfile:
                           type: RuntimeDefault
+                  resources:
+                      {{- toYaml .Values.telemetry.puller.issuerWait.resources | nindent 22 }}
             containers:
                 - name: metrics-puller
                   image: {{ include "atlas-keycloak.componentImage" (dict "repository" .Values.telemetry.puller.image.repository "tag" .Values.telemetry.puller.image.tag "digest" .Values.telemetry.puller.image.digest) | quote }}

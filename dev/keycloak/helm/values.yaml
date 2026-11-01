@@ -134,12 +134,30 @@ telemetry:
                 repository: dhi.io/curl
                 tag: "8"
                 digest: sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862
+            # A boot gate, not a workload (KSV-0011/0015/0016/0018, DD-282
+            # follow-up): memory-capped, no CPU limit (the house posture).
+            resources:
+                requests:
+                    cpu: 10m
+                    memory: 16Mi
+                limits:
+                    memory: 32Mi
         resources:
             requests:
                 cpu: 50m
                 memory: 128Mi
             limits:
                 memory: 256Mi
+
+# The wait-for-postgres init (a boot gate, not a workload — the house
+# limits.memory-only posture, KSV-0011/0015/0016/0018, DD-282 follow-up).
+waitForPostgres:
+    resources:
+        requests:
+            cpu: 10m
+            memory: 64Mi
+        limits:
+            memory: 128Mi
 
 database:
     # "bundled" renders the Postgres below; "external" uses the url.

@@ -66,6 +66,12 @@ spec:
                         capabilities:
                             drop:
                                 - ALL
+                        # bash's /dev/tcp opens no files — a read-only root is
+                        # safe here (the keycloak container's own writable root
+                        # is its documented decision, DD-282 follow-up).
+                        readOnlyRootFilesystem: true
+                    resources:
+                        {{- toYaml .Values.waitForPostgres.resources | nindent 24 }}
             {{- end }}
             containers:
                 -   name: keycloak

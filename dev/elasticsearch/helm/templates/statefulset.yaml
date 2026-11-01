@@ -51,8 +51,18 @@ spec:
                         - /coredump-noop.jar
                         - /agent/coredump-noop.jar
                     securityContext:
+                        runAsNonRoot: true
                         runAsUser: 1000
                         allowPrivilegeEscalation: false
+                        # The agent copies one jar to the shared emptyDir and
+                        # writes nothing else — read-only root, drop ALL
+                        # (DD-282 follow-up: KSV-0003/0004/0012/0014).
+                        capabilities:
+                            drop:
+                                - ALL
+                        readOnlyRootFilesystem: true
+                    resources:
+                        {{- toYaml .Values.agent.resources | nindent 24 }}
                     volumeMounts:
                         - name: agent
                           mountPath: /agent
