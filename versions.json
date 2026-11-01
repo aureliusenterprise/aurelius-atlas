@@ -1,5 +1,10 @@
 [
   {
+    "version": "refactor-per-project-specs-a-trace-tool",
+    "title": "refactor-per-project-specs-a-trace-tool",
+    "aliases": []
+  },
+  {
     "version": "phase4-4.4b-dsl-projections",
     "title": "phase4-4.4b-dsl-projections",
     "aliases": []
