@@ -18,6 +18,7 @@ from aurelius_atlas_typesystem.classification_type import ClassificationType
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_mapper import EntityMapper
@@ -58,7 +59,8 @@ type Notes = list[Callable[[], Awaitable[None]]]
 class EntityClassifications:
     """Classifications of the entities of ``store``, changed as ``user``; ``tasks`` defers propagation (TSK-02).
 
-    ``notifier`` is told each change once it is written (DD-085).
+    ``notifier`` is told each change once it is written (DD-085); ``authorizer`` checks each read and change
+    (AUZ-08).
     """
 
     def __init__(
@@ -68,28 +70,36 @@ class EntityClassifications:
         user: str | None = None,
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
         self._user = user
         self._tasks = tasks
         self._notifier = notifier
+        self._authorizer = authorizer
 
     async def get_classifications(self, guid: str) -> list[AtlasClassification]:
-        """``getClassifications``: the entity's classifications (CLS-03).
+        """``getClassifications``: the entity's classifications (CLS-03, AUZ-08).
 
         Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND``.
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``UNAUTHORIZED_ACCESS``.
         """
-        return await EntityRetriever(self._store).classifications(guid)
+        found = await EntityRetriever(self._store).classifications(guid)
+        self._authorizer.verify_access(AtlasPrivilege.ENTITY_READ, "get classifications: guid=", guid)
+        return found
 
     async def get_classification(self, guid: str, name: str) -> AtlasClassification:
         """``getClassification``: the first of the name attached directly, else the first of the name (CLS-03).
 
         Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``CLASSIFICATION_NOT_FOUND``.
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``UNAUTHORIZED_ACCESS``, ``CLASSIFICATION_NOT_FOUND``.
         """
+        classifications = await EntityRetriever(self._store).classifications(guid)
+        self._authorizer.verify_access(
+            AtlasPrivilege.ENTITY_READ, "get classification: guid=", guid, ", classification=", name
+        )
         found = None
-        for classification in await self.get_classifications(guid):
+        for classification in classifications:
             if (classification.type_name or "").lower() != name.lower():
                 continue
             if not classification.entity_guid or classification.entity_guid.lower() == guid.lower():
@@ -100,11 +110,11 @@ class EntityClassifications:
         return found
 
     async def add_classifications(self, guid: str, classifications: Sequence[AtlasClassification] | None) -> None:
-        """``addClassifications``: attach them to the entity, after checking them all (CLS-04, CLS-05).
+        """``addClassifications``: attach them to the entity, after checking them all (CLS-04, CLS-05, AUZ-08).
 
         Raises:
-            AtlasError: ``INVALID_PARAMETERS``, ``INSTANCE_GUID_NOT_FOUND``, ``CLASSIFICATION_NOT_FOUND``,
-                ``INVALID_ENTITY_FOR_CLASSIFICATION``.
+            AtlasError: ``INVALID_PARAMETERS``, ``INSTANCE_GUID_NOT_FOUND``, ``UNAUTHORIZED_ACCESS``,
+                ``CLASSIFICATION_NOT_FOUND``, ``INVALID_ENTITY_FOR_CLASSIFICATION``.
         """
         if not guid:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID)
@@ -114,6 +124,8 @@ class EntityClassifications:
         async def attempt() -> Notes:
             found = await self._entity(guid)
             given = [classification.model_copy(deep=True) for classification in classifications]
+            for classification in given:
+                self._verify(AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, "add", guid, classification)
             for classification in given:
                 self._validate(classification)
             await self._check_associations(found.entity, given)
@@ -138,6 +150,7 @@ class EntityClassifications:
             targets: list[tuple[VersionedEntity, list[AtlasClassification]]] = []
             for guid in guids:
                 found = await self._entity(guid)
+                self._verify(AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, "add", guid, checked)
                 await self._check_associations(found.entity, [checked])
                 targets.append((found, [checked.model_copy(deep=True)]))
             return await self._write_added(targets)
@@ -145,11 +158,12 @@ class EntityClassifications:
         await self._run(attempt)
 
     async def update_classifications(self, guid: str, classifications: Sequence[AtlasClassification] | None) -> None:
-        """``updateClassifications``: change classifications the entity has attached directly (CLS-08).
+        """``updateClassifications``: change classifications the entity has attached directly (CLS-08, AUZ-08).
 
         Raises:
-            AtlasError: ``INVALID_PARAMETERS``, ``INSTANCE_GUID_NOT_FOUND``, ``CLASSIFICATION_NOT_FOUND``,
-                ``CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY``, ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
+            AtlasError: ``INVALID_PARAMETERS``, ``INSTANCE_GUID_NOT_FOUND``, ``UNAUTHORIZED_ACCESS``,
+                ``CLASSIFICATION_NOT_FOUND``, ``CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY``,
+                ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
         """
         if not guid:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID_FOR_UPDATE)
@@ -159,6 +173,8 @@ class EntityClassifications:
         async def attempt() -> Notes:
             found = await self._entity(guid)
             given = [classification.model_copy(deep=True) for classification in classifications]
+            for classification in given:
+                self._verify(AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION, "update", guid, classification)
             for classification in given:
                 self._validate(classification)
             instances = await self._instances(found.entity)
@@ -190,11 +206,12 @@ class EntityClassifications:
         await self._run(attempt)
 
     async def delete_classification(self, guid: str, name: str, associated_entity_guid: str | None = None) -> None:
-        """``deleteClassification``: remove a classification the entity has attached directly (CLS-09).
+        """``deleteClassification``: remove a classification the entity has attached directly (CLS-09, AUZ-08).
 
         Raises:
-            AtlasError: ``INVALID_PARAMETERS``, ``INSTANCE_GUID_NOT_FOUND``, ``NO_CLASSIFICATIONS_FOUND_FOR_ENTITY``,
-                ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``, ``PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
+            AtlasError: ``INVALID_PARAMETERS``, ``INSTANCE_GUID_NOT_FOUND``, ``UNAUTHORIZED_ACCESS``,
+                ``NO_CLASSIFICATIONS_FOUND_FOR_ENTITY``, ``CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``,
+                ``PROPAGATED_CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY``.
         """
         if not guid:
             raise AtlasError(AtlasErrorCode.INVALID_PARAMETERS, NO_GUID)
@@ -203,9 +220,11 @@ class EntityClassifications:
 
         async def attempt() -> Notes:
             found = await self._entity(guid)
-            if associated_entity_guid and associated_entity_guid != guid:
+            if associated_entity_guid and associated_entity_guid != guid:  # AUZ-08: no check for a propagated one
                 await self._delete_propagated(found, name, associated_entity_guid)
                 return []  # CAU-04: Atlas records the removal and never tells it
+            removed = AtlasClassification(type_name=name)
+            self._verify(AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION, "remove", guid, removed)
             direct = [instance for instance in await self._instances(found.entity) if _direct(instance, guid)]
             if not direct:
                 raise AtlasError(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, guid)
@@ -229,6 +248,12 @@ class EntityClassifications:
             return self._note(self._deleted_note, guids, current.classification)
 
         await self._run(attempt)
+
+    def _verify(self, privilege: AtlasPrivilege, verb: str, guid: str, classification: AtlasClassification) -> None:
+        """``<verb> classification: guid=<guid>, classification=<name>`` needs the privilege (AUZ-08)."""
+        self._authorizer.verify_access(
+            privilege, f"{verb} classification: guid=", guid, ", classification=", classification.type_name
+        )
 
     async def _delete_propagated(self, found: VersionedEntity, name: str, associated: str) -> None:
         """``deletePropagatedClassification``: one propagated from a deleted entity stops being listed (PRO-08).

@@ -26,6 +26,7 @@ from aurelius_atlas_typesystem.atlas_type import resolved
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.entity_type import EntityType
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.dsl_query_executor import DslQueryExecutor
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_search_processor import EntitySearchProcessor
@@ -54,10 +55,14 @@ INVALID_DATA = "invalid data"
 
 
 class EntityDiscoveryService:
-    """Basic search over the entities of ``store``."""
+    """Basic search over the entities of ``store``; ``authorizer`` checks the saved searches read and written.
 
-    def __init__(self, store: EntityStore) -> None:
+    AUZ-10.
+    """
+
+    def __init__(self, store: EntityStore, *, authorizer: Authorizer = ALLOW_ALL) -> None:
         self._store = store
+        self._authorizer = authorizer
 
     async def search_with_parameters(self, parameters: SearchParameters) -> AtlasSearchResult:
         """``searchWithParameters``: the entities a search finds, as ``searchWithSearchContext`` answers them.
@@ -178,40 +183,43 @@ class EntityDiscoveryService:
             AtlasError: ``BAD_REQUEST`` for another owner, or as ``UserProfileService.add_saved_search``.
         """
         _own(current_user, saved_search)
-        return await UserProfileService(self._store, user=current_user).add_saved_search(saved_search)
+        return await self._profiles(current_user).add_saved_search(saved_search)
 
     async def update_saved_search(
         self, current_user: str | None, saved_search: AtlasUserSavedSearch
     ) -> AtlasUserSavedSearch:
         """``updateSavedSearch``: as ``add_saved_search`` checks its owner (SVS-03)."""
         _own(current_user, saved_search)
-        return await UserProfileService(self._store, user=current_user).update_saved_search(saved_search)
+        return await self._profiles(current_user).update_saved_search(saved_search)
 
     async def get_saved_searches(
         self, current_user: str | None, user_name: str | None
     ) -> list[AtlasUserSavedSearch] | None:
         """``getSavedSearches``: the current user's; another user's fail with ``BAD_REQUEST`` (SVS-04)."""
         user_name = _of_current(current_user, user_name)
-        return await UserProfileService(self._store, user=current_user).get_saved_searches(user_name)
+        return await self._profiles(current_user).get_saved_searches(user_name)
 
     async def get_saved_search_by_name(
         self, current_user: str | None, user_name: str | None, search_name: str
     ) -> AtlasUserSavedSearch:
         """``getSavedSearchByName``: the current user's of the name (SVS-04)."""
         user_name = _of_current(current_user, user_name)
-        return await UserProfileService(self._store, user=current_user).get_saved_search_by_name(user_name, search_name)
+        return await self._profiles(current_user).get_saved_search_by_name(user_name, search_name)
 
     async def get_saved_search_by_guid(self, current_user: str | None, guid: str) -> AtlasUserSavedSearch:
         """``getSavedSearchByGuid``: the search, if the current user owns it (SVS-04)."""
-        found = await UserProfileService(self._store, user=current_user).get_saved_search(guid)
+        found = await self._profiles(current_user).get_saved_search(guid)
         _check_ownership(current_user, found)
         return found
 
     async def delete_saved_search(self, current_user: str | None, guid: str) -> None:
         """``deleteSavedSearch``: the search, if the current user owns it (SVS-05)."""
-        service = UserProfileService(self._store, user=current_user)
+        service = self._profiles(current_user)
         _check_ownership(current_user, await service.get_saved_search(guid))
         await service.delete_saved_search(guid)
+
+    def _profiles(self, current_user: str | None) -> UserProfileService:
+        return UserProfileService(self._store, user=current_user, authorizer=self._authorizer)
 
     async def execute_saved_search(self, saved_search: AtlasUserSavedSearch) -> AtlasSearchResult:
         """``executeSavedSearch``: an ``ADVANCED`` search as its DSL query, any other as its basic search (SVS-06).

@@ -17,6 +17,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   models directory and the nine typedef patch actions
 - `aurelius_atlas_core/models/` — `addons/models` of Atlas 2.4.0, byte for byte: never edit, reformat or
   re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar)
+- `aurelius_atlas_core/authorization.py` — `AtlasPrivilege`, the `Authorizer` a store is given and `Granted`:
+  the stores check where Atlas's stores check, with its action texts; without an authorizer, nothing (DD-301)
 - `aurelius_atlas_core/entity_store.py` — `EntityStore`: GUIDs, reads by GUID and unique attributes,
   all-or-nothing writes through the journal, recovery and the type usage check (DD-043 to DD-048)
 - `aurelius_atlas_core/relationship_store.py` — `RelationshipStore` (`AtlasRelationshipStoreV2`) and the checks

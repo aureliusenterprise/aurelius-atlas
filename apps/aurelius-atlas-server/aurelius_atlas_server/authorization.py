@@ -1,45 +1,16 @@
 """Authorization: Atlas's privileges, granted by four roles of the server's client (AUZ-01 to AUZ-03, DD-300).
 
 What a user may do is decided in one place (ADR 038): the identity provider holds who has which role, and this
-module what each role grants. A check refused is Atlas's ``UNAUTHORIZED_ACCESS``.
+module what each role grants. The stores check a request as Atlas's do, through the request's ``authorizer``; a
+check refused is Atlas's ``UNAUTHORIZED_ACCESS``.
 """
 
-from collections.abc import Iterable
-from enum import StrEnum
-
+from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
 from fastapi import Request
 
 from aurelius_atlas_server.authentication import User
-from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode
 
-
-class AtlasPrivilege(StrEnum):
-    """``AtlasPrivilege``: what a request may need, by Atlas's names."""
-
-    TYPE_CREATE = "type-create"
-    TYPE_UPDATE = "type-update"
-    TYPE_DELETE = "type-delete"
-    TYPE_READ = "type-read"
-    ENTITY_READ = "entity-read"
-    ENTITY_CREATE = "entity-create"
-    ENTITY_UPDATE = "entity-update"
-    ENTITY_DELETE = "entity-delete"
-    ENTITY_READ_CLASSIFICATION = "entity-read-classification"
-    ENTITY_ADD_CLASSIFICATION = "entity-add-classification"
-    ENTITY_UPDATE_CLASSIFICATION = "entity-update-classification"
-    ENTITY_REMOVE_CLASSIFICATION = "entity-remove-classification"
-    ENTITY_ADD_LABEL = "entity-add-label"
-    ENTITY_REMOVE_LABEL = "entity-remove-label"
-    ENTITY_UPDATE_BUSINESS_METADATA = "entity-update-business-metadata"
-    RELATIONSHIP_ADD = "add-relationship"
-    RELATIONSHIP_UPDATE = "update-relationship"
-    RELATIONSHIP_REMOVE = "remove-relationship"
-    ADMIN_EXPORT = "admin-export"
-    ADMIN_IMPORT = "admin-import"
-    ADMIN_PURGE = "admin-purge"
-    ADMIN_AUDITS = "admin-audits"
-    SERVICE_NOTIFICATION_POST = "service-notification-post"
-
+__all__ = ["ROLE_PRIVILEGES", "AtlasPrivilege", "authorizer", "is_access_allowed", "privileges", "verify_access"]
 
 P = AtlasPrivilege
 ROLE_PRIVILEGES: dict[str, frozenset[AtlasPrivilege]] = {
@@ -74,9 +45,15 @@ def privileges(user: User | None) -> frozenset[AtlasPrivilege]:
     return frozenset(privilege for role in user.roles for privilege in ROLE_PRIVILEGES.get(role, ()))
 
 
+def authorizer(request: Request) -> Granted:
+    """The authorizer of the request's stores: the privileges of its user (AUZ-03, AUZ-07 to AUZ-10)."""
+    user: User | None = getattr(request.state, "user", None)
+    return Granted(None if user is None else user.name, privileges(user))
+
+
 def is_access_allowed(request: Request, privilege: AtlasPrivilege) -> bool:
     """``isAccessAllowed``: whether the request's user holds the privilege (AUZ-02)."""
-    return privilege in privileges(getattr(request.state, "user", None))
+    return authorizer(request).is_access_allowed(privilege)
 
 
 def verify_access(request: Request, privilege: AtlasPrivilege, *action: object) -> None:
@@ -85,17 +62,4 @@ def verify_access(request: Request, privilege: AtlasPrivilege, *action: object) 
     Raises:
         AtlasError: ``UNAUTHORIZED_ACCESS``, ``<user> is not authorized to perform <action>``.
     """
-    if not is_access_allowed(request, privilege):
-        user: User | None = getattr(request.state, "user", None)
-        raise AtlasError(AtlasErrorCode.UNAUTHORIZED_ACCESS, None if user is None else user.name, _joined(action))
-
-
-def _joined(action: Iterable[object]) -> str:
-    """``StringUtils.join`` of the action's parts: each its Java text, a collection as ``[a, b]``."""
-    return "".join(_text(part) for part in action)
-
-
-def _text(part: object) -> str:
-    if isinstance(part, (list, set, tuple, frozenset)):
-        return "[" + ", ".join(str(item) for item in part) + "]"
-    return "null" if part is None else str(part)
+    authorizer(request).verify_access(privilege, *action)

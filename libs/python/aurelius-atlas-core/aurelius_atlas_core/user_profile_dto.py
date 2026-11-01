@@ -12,6 +12,7 @@ from aurelius_atlas_model.discovery import SearchParameters
 from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityWithExtInfo, AtlasObjectId, EntityStatus
 from aurelius_atlas_model.profile import AtlasUserProfile, AtlasUserSavedSearch, SavedSearchType
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.data_access import DataAccess, Registry
 from aurelius_atlas_core.entity_store import EntityStore
 
@@ -90,9 +91,11 @@ class AtlasUserProfileDTO:
 PROFILE_DTOS: Registry = {AtlasUserProfile: AtlasUserProfileDTO(), AtlasUserSavedSearch: AtlasSavedSearchDTO()}
 
 
-def profile_data_access(store: EntityStore, *, user: str | None = None) -> DataAccess:
-    """The ``DataAccess`` of profiles and saved searches in ``store``, written as ``user``."""
-    return DataAccess(store, PROFILE_DTOS, user=user)
+def profile_data_access(
+    store: EntityStore, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
+) -> DataAccess:
+    """The ``DataAccess`` of profiles and saved searches in ``store``, as ``user``, checked by ``authorizer``."""
+    return DataAccess(store, PROFILE_DTOS, user=user, authorizer=authorizer)
 
 
 def saved_search_from(entity: AtlasEntity) -> AtlasUserSavedSearch:

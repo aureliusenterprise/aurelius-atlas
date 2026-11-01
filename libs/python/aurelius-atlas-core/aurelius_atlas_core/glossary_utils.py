@@ -16,6 +16,7 @@ from aurelius_atlas_model.glossary import (
 )
 from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelationship
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.data_access import DataAccess
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
@@ -70,10 +71,11 @@ def term_relation_attributes(found: AtlasRelationship, header: AtlasRelatedTermH
 class GlossaryUtils:
     """The relationships of ``store`` between glossary objects, the objects loaded through ``data_access``.
 
-    ``tasks`` and ``notifier`` are the relationship store's: what a term assignment propagates (GTA-02).
+    ``tasks``, ``notifier`` and ``authorizer`` are the relationship store's: what a term assignment propagates
+    (GTA-02), and who may relate glossary objects (AUZ-09).
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the relationship store's options, each a keyword
         self,
         store: EntityStore,
         data_access: DataAccess,
@@ -81,10 +83,11 @@ class GlossaryUtils:
         user: str | None = None,
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
         self._data_access = data_access
-        self._relationships = RelationshipStore(store, user=user, tasks=tasks, notifier=notifier)
+        self._relationships = RelationshipStore(store, user=user, tasks=tasks, notifier=notifier, authorizer=authorizer)
 
     async def _get_or_create(self, found: AtlasRelationship) -> None:
         """``createRelationship``: a relationship of the type between the ends exists already, or is created."""

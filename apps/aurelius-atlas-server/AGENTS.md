@@ -30,8 +30,9 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   request's user from its bearer token or browser session, the 401 or sign-in redirect, the CSRF check (6.1a,
   DD-250); `oidc_client.py` — `OidcClient`: the confidential client's code flow, refresh and sign-out;
   `routes/login.py` — `login.jsp` and `logout.html`. Tokens are verified by `aurelius-atlas-auth`
-- `aurelius_atlas_server/authorization.py` — `AtlasPrivilege`, the four roles of the server's client that grant
-  them, `verify_access` (6.2, DD-300); the routes check where Atlas's stores check
+- `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's privileges,
+  `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
+  `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`

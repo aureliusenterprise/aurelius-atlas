@@ -22,6 +22,7 @@ from aurelius_atlas_model.glossary import (
 )
 from aurelius_atlas_model.instance import AtlasRelatedObjectId
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
@@ -78,7 +79,10 @@ def paginate[T](items: Sequence[T], offset: int, limit: int) -> list[T]:
 
 
 class GlossaryService:
-    """Glossaries, categories and terms of the entities of ``store``."""
+    """Glossaries, categories and terms of the entities of ``store``.
+
+    ``authorizer`` checks each read and change as the entity and relationship stores check them (AUZ-10).
+    """
 
     def __init__(
         self,
@@ -87,13 +91,17 @@ class GlossaryService:
         user: str | None = None,
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
         self._user = user
         self._notifier = notifier
-        self._data_access = glossary_data_access(store, user=user)
-        self._category_utils = GlossaryCategoryUtils(store, self._data_access, user=user)
-        self._term_utils = GlossaryTermUtils(store, self._data_access, user=user, tasks=tasks, notifier=notifier)
+        self._authorizer = authorizer
+        self._data_access = glossary_data_access(store, user=user, authorizer=authorizer)
+        self._category_utils = GlossaryCategoryUtils(store, self._data_access, user=user, authorizer=authorizer)
+        self._term_utils = GlossaryTermUtils(
+            store, self._data_access, user=user, tasks=tasks, notifier=notifier, authorizer=authorizer
+        )
 
     async def get_glossaries(self, limit: int, offset: int, sort_order: SortOrder) -> list[AtlasGlossary]:
         """``getGlossaries``: every glossary, deleted ones too, by qualified name, paged (GLS-05, DV-100)."""
@@ -109,6 +117,7 @@ class GlossaryService:
         found = []
         for stored in paginate(hits.entities, offset, limit):
             entity = (await retriever.entity_with_ext_info(stored.guid)).entity
+            self._authorizer.verify_access(AtlasPrivilege.ENTITY_READ, "read entity: guid=", stored.guid)
             if entity is not None:
                 found.append(glossary_from(entity))
         return found

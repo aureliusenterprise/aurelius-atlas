@@ -21,6 +21,7 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_typesystem.relationship_type import RelationshipType
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import VersionedEntity, VersionedRelationship
@@ -49,10 +50,11 @@ _SWAPPED = {PropagateTags.ONE_TO_TWO: PropagateTags.TWO_TO_ONE, PropagateTags.TW
 class RelationshipStore:
     """Relationships between entities of ``store``, written as ``user``; ``delete_type`` is the default (EDL-04).
 
-    ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told the propagations each change made (CAU-05).
+    ``tasks`` defers propagation to tasks (TSK-02); ``notifier`` is told the propagations each change made (CAU-05);
+    ``authorizer`` checks each relationship added, updated or removed (AUZ-09).
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
         store: EntityStore,
         *,
@@ -60,9 +62,11 @@ class RelationshipStore:
         delete_type: DeleteType = DeleteType.SOFT,
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
         self._user = user
+        self._authorizer = authorizer
         self._delete_type = DeleteType.SOFT if delete_type is DeleteType.DEFAULT else delete_type
         self._tasks = tasks
         self._notifier = notifier
@@ -72,7 +76,8 @@ class RelationshipStore:
 
         Raises:
             AtlasError: ``INVALID_VALUE``, ``RELATIONSHIP_END_IS_NULL``, ``INVALID_RELATIONSHIP_END_TYPE``,
-                ``INVALID_PROPAGATION_TYPE``, ``RELATIONSHIP_CRUD_INVALID_PARAMS`` or ``RELATIONSHIP_ALREADY_EXISTS``.
+                ``INVALID_PROPAGATION_TYPE``, ``RELATIONSHIP_CRUD_INVALID_PARAMS``, ``RELATIONSHIP_ALREADY_EXISTS`` or
+                ``UNAUTHORIZED_ACCESS``.
         """
         return await self._run(lambda: self._create(relationship.model_copy(deep=True)))
 
@@ -113,7 +118,7 @@ class RelationshipStore:
 
         Raises:
             AtlasError: ``RELATIONSHIP_CRUD_INVALID_PARAMS`` for no GUID, ``RELATIONSHIP_GUID_NOT_FOUND``,
-                ``RELATIONSHIP_ALREADY_DELETED``.
+                ``RELATIONSHIP_ALREADY_DELETED``, ``UNAUTHORIZED_ACCESS``.
         """
         if not guid:
             raise AtlasError(AtlasErrorCode.RELATIONSHIP_CRUD_INVALID_PARAMS, EMPTY_GUID)
@@ -124,6 +129,7 @@ class RelationshipStore:
             stored = found.relationship
             if stored.state is RelationshipStatus.DELETED:
                 raise AtlasError(AtlasErrorCode.RELATIONSHIP_ALREADY_DELETED, guid)
+            self._authorizer.verify_access(AtlasPrivilege.RELATIONSHIP_REMOVE)
             if not hard:
                 deleted = stored.model_copy(
                     update={
@@ -180,6 +186,8 @@ class RelationshipStore:
                     end1.entity.guid,
                     end2.entity.guid,
                 )
+        if not relationship_type.has_legacy_attribute_end:  # a legacy attribute's end is the entity's update
+            self._authorizer.verify_access(AtlasPrivilege.RELATIONSHIP_ADD)
         given = relationship.guid
         stored = created_relationship(
             relationship_type,
@@ -230,6 +238,7 @@ class RelationshipStore:
         )
         if unnamed:
             relationship.type_name = None
+        self._authorizer.verify_access(AtlasPrivilege.RELATIONSHIP_UPDATE)
         update: dict[str, Any] = {"attributes": _updated_attributes(relationship_type, relationship, stored)}
         if relationship.propagate_tags is not None:
             update["propagate_tags"] = relationship.propagate_tags  # DV-29: none given keeps the stored one

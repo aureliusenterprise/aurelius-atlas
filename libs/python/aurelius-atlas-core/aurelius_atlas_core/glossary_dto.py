@@ -27,6 +27,7 @@ from aurelius_atlas_model.instance import (
     RelationshipStatus,
 )
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.data_access import DataAccess, Registry
 from aurelius_atlas_core.entity_store import EntityStore
 
@@ -206,9 +207,11 @@ GLOSSARY_DTOS: Registry = {
 """``AtlasGlossaryDTO``, ``AtlasGlossaryCategoryDTO``, ``AtlasGlossaryTermDTO`` (DD-252)."""
 
 
-def glossary_data_access(store: EntityStore, *, user: str | None = None) -> DataAccess:
-    """The ``DataAccess`` of glossary objects in ``store``, written as ``user``."""
-    return DataAccess(store, GLOSSARY_DTOS, user=user)
+def glossary_data_access(
+    store: EntityStore, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL
+) -> DataAccess:
+    """The ``DataAccess`` of glossary objects in ``store``, written as ``user`` and checked by ``authorizer``."""
+    return DataAccess(store, GLOSSARY_DTOS, user=user, authorizer=authorizer)
 
 
 def _type_name(obj: GlossaryObject) -> str:

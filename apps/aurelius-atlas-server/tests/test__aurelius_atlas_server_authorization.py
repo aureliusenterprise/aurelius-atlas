@@ -4,10 +4,13 @@ Read from Atlas 2.4.0's ``AtlasPrivilege``, ``AtlasAuthorizationUtils``, ``Atlas
 its type-definition stores, ``AtlasEntityStoreV2#purgeByIds`` and ``AdminResource#getUserProfile``.
 """
 
+import shutil
+from pathlib import Path
 from typing import Any
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_server.authentication import User
 from aurelius_atlas_server.authorization import ROLE_PRIVILEGES, AtlasPrivilege, privileges
 from fake_issuer import FakeIssuer
@@ -15,10 +18,21 @@ from fake_issuer import FakeIssuer
 A = "aurelius_atlas_server.authorization"
 T = "aurelius_atlas_server.routes.types"
 TYPES = "/api/atlas/v2/types"
+MODELS = (Path("0000-Area0") / "0010-base_model.json", Path("0000-Area0") / "0011-glossary_model.json")
 DEFINITIONS: dict[str, Any] = {
     "enumDefs": [{"name": "e_auth", "elementDefs": [{"value": "A", "ordinal": 0}]}],
     "entityDefs": [{"name": "t_auth", "superTypes": [], "attributeDefs": []}],
 }
+
+
+@pytest.fixture
+def models_dir(tmp_path: Path) -> Path:
+    """Atlas's base and glossary models alone (MDL-16): ``Asset``, the glossary and the user profile."""
+    directory = tmp_path / "core-models"
+    for model in MODELS:
+        (directory / model.parent).mkdir(parents=True, exist_ok=True)
+        shutil.copy(BUILTIN_MODELS_DIR / model, directory / model)
+    return directory
 
 
 def as_roles(issuer: FakeIssuer, user: str, *roles: str) -> dict[str, str]:
@@ -120,3 +134,85 @@ async def test__the_session_reports_the_entity_permissions(client: httpx.AsyncCl
 
     assert await allowed("atlas-write") == (True, True)
     assert await allowed("atlas-read", "atlas-types", "atlas-admin") == (False, False)
+
+
+ENTITY = "/api/atlas/v2/entity"
+ASSET = {"typeName": "Asset", "attributes": {"qualifiedName": "a@auz", "name": "a"}}
+
+
+async def asset(client: httpx.AsyncClient) -> str:
+    """The GUID of a new ``Asset``, created as ``admin``, who holds every role."""
+    created = (await client.post(ENTITY, json={"entity": ASSET})).json()
+    return str(created["mutatedEntities"]["CREATE"][0]["guid"])
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.entity.get_by_id",
+    "aurelius_atlas_server.routes.entity.get_header_by_id",
+    "aurelius_atlas_server.routes.entity.get_by_unique_attributes",
+    "aurelius_atlas_server.routes.entity.get_entity_header_by_unique_attributes",
+    "aurelius_atlas_server.routes.entity.get_entities_by_unique_attributes",
+    "aurelius_atlas_server.routes.entity.get_by_guids",
+    "aurelius_atlas_server.routes.entity.get_audit_events",
+    f"{A}.authorizer",
+    rules=["AUZ-11"],
+)
+async def test__entities_are_read_with_entity_read(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
+    """Each read is refused without ``atlas-read``, once the entity is found; a missing one is 404 first."""
+    guid = await asset(client)
+    nobody, reader = as_roles(issuer, "nobody"), as_roles(issuer, "reader", "atlas-read")
+    unique = "typeName=Asset, uniqueAttributes={qualifiedName=a@auz}"
+    for url, action in (
+        (f"{ENTITY}/guid/{guid}", f"read entity: guid={guid}"),
+        (f"{ENTITY}/guid/{guid}/header", f"read entity: guid={guid}"),
+        (f"{ENTITY}/uniqueAttribute/type/Asset?attr:qualifiedName=a@auz", f"read entity: {unique}"),
+        (f"{ENTITY}/uniqueAttribute/type/Asset/header?attr:qualifiedName=a@auz", f"read entity: {unique}"),
+        (
+            f"{ENTITY}/bulk/uniqueAttribute/type/Asset?attr_0:qualifiedName=a@auz",
+            f"read entity: typeName=Asset, guid={guid}",
+        ),
+        (f"{ENTITY}/bulk?guid={guid}", f"read entity: guid={guid}"),
+        (f"{ENTITY}/{guid}/audit", f"read entity: guid={guid}"),
+    ):
+        assert refusal(await client.get(url, headers=nobody))[2] == f"nobody is not authorized to perform {action}"
+        assert (await client.get(url, headers=reader)).status_code == 200
+    assert (await client.get(f"{ENTITY}/guid/missing", headers=nobody)).status_code == 404
+    assert (await client.delete(f"{ENTITY}/guid/{guid}")).status_code == 200
+    assert (await client.put("/api/atlas/admin/purge", json=[guid])).status_code == 200
+    assert refusal(await client.get(f"{ENTITY}/{guid}/audit", headers=nobody))[2] == (
+        f"nobody is not authorized to perform read entity audit: guid={guid}"
+    )
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.entity.writer",
+    "aurelius_atlas_server.routes.entity.updater",
+    "aurelius_atlas_server.routes.entity.classifications",
+    "aurelius_atlas_server.routes.relationship.relationships",
+    "aurelius_atlas_server.routes.glossary._service",
+    rules=["AUZ-07", "AUZ-08", "AUZ-10"],
+)
+async def test__a_reader_changes_nothing(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
+    """``atlas-read`` reads entities and their classifications; creating, deleting and saving are refused."""
+    guid = await asset(client)
+    reader = as_roles(issuer, "reader", "atlas-read")
+
+    other = {"entity": {**ASSET, "attributes": {"qualifiedName": "b@auz", "name": "b"}}}
+    assert refusal(await client.post(ENTITY, json=other, headers=reader)) == (
+        403,
+        "ATLAS-403-00-001",
+        "reader is not authorized to perform create entity: type=Asset",
+    )
+    assert refusal(await client.delete(f"{ENTITY}/guid/{guid}", headers=reader))[2] == (
+        f"reader is not authorized to perform delete entity: guid={guid}"
+    )
+    assert refusal(await client.post("/api/atlas/v2/glossary", json={"name": "g"}, headers=reader))[2] == (
+        "reader is not authorized to perform create entity: type=AtlasGlossary"
+    )
+    saved = {"name": "s", "searchParameters": {"typeName": "Asset"}}
+    assert refusal(await client.post("/api/atlas/v2/search/saved", json=saved, headers=reader))[2] == (
+        "reader is not authorized to perform create entity: type=__AtlasUserProfile"
+    )
+    assert (await client.get(f"{ENTITY}/guid/{guid}/classifications", headers=reader)).status_code == 200
+    gone = await client.delete("/api/atlas/v2/relationship/guid/missing", headers=reader)
+    assert gone.status_code == 404

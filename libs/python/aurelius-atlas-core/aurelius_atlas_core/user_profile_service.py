@@ -6,15 +6,16 @@ A profile is created with its user's first saved search; a search's name is uniq
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.profile import AtlasUserProfile, AtlasUserSavedSearch
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.user_profile_dto import profile_data_access
 
 
 class UserProfileService:
-    """The profiles and saved searches of ``store``, written as ``user``."""
+    """The profiles and saved searches of ``store``, written as ``user`` and checked by ``authorizer`` (AUZ-10)."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
-        self._data_access = profile_data_access(store, user=user)
+    def __init__(self, store: EntityStore, *, user: str | None = None, authorizer: Authorizer = ALLOW_ALL) -> None:
+        self._data_access = profile_data_access(store, user=user, authorizer=authorizer)
 
     async def get_user_profile(self, user_name: str | None) -> AtlasUserProfile:
         """``getUserProfile``: the profile of the user's name.
