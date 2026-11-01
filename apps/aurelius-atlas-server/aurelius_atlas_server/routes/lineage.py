@@ -5,6 +5,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_model.lineage import LineageDirection, LineageOnDemandConstraints
 from fastapi import APIRouter, Request
 
+from aurelius_atlas_server.authorization import authorizer
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import (
     INT_RANGE,
@@ -24,13 +25,14 @@ DEFAULT_DEPTH = 3
 
 
 def lineage_service(request: Request, store: EntityStore) -> EntityLineageService:
-    """The lineage service with the server's lineage settings (LIN-04, LIN-06)."""
+    """The lineage service with the server's lineage settings (LIN-04, LIN-06), checked as the user (AUZ-13)."""
     settings = request.app.state.settings
     return EntityLineageService(
         store,
         on_demand_enabled=settings.lineage_on_demand_enabled,
         on_demand_default_node_count=settings.lineage_on_demand_default_node_count,
         max_node_count=settings.lineage_max_node_count,
+        authorizer=authorizer(request),
     )
 
 

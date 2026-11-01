@@ -6,7 +6,7 @@ in [ADRs 007–008, 013, 028, 039](../../adr/index.md); the practitioner's guide
 
 | Page                                          | Scope                                                                                                                                                             | Written by             |
 | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
-| [Access Management](access-management.md)     | Authorizer policies on every endpoint, role model                                                                                                                 | 6.2 (ADR 038)          |
+| [Access Management](access-management.md)     | The role model, what is checked, granting and revoking                                                                                                            | written (6.2, ADR 038) |
 | [Identity Management](identity-management.md) | Shared identity provider, sessions, the dashboard's identity                                                                                                      | 6.1 (ADR 007)          |
 | [Secrets Management](secrets-management.md)   | Production: env channel, ownership (ADR 028), boundaries; dev/CI rules after; how-to in the [Contributor Guide](../../../contributor-guide/secrets-management.md) | written (ADRs 008/028) |
 | [Data Encryption](data-encryption.md)         | TLS in flight (production), at rest; dev certificates and named relaxations after                                                                                 | written (0.2/0.5)      |

@@ -1,4 +1,4 @@
-"""Free text (FTX-01 to FTX-05, DD-092) on the in-memory documents.
+"""Free text (FTX-01 to FTX-05, DD-092), its hits scrubbed (AUZ-12), on the in-memory documents.
 
 The rules are read from ``EntityDiscoveryService.searchWithParameters`` and ``searchUsingFullTextQuery``,
 ``FreeTextSearchProcessor``, ``SolrIndexHelper``, ``FullTextMapperV2.getClassificationTextForEntity`` and
@@ -8,6 +8,7 @@ The rules are read from ``EntityDiscoveryService.searchWithParameters`` and ``se
 from typing import Any
 
 import pytest
+from aurelius_atlas_core.authorization import Granted
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_store import EntityStore
@@ -167,3 +168,14 @@ async def test__a_full_text_search_answers_headers_with_scores(store: EntityStor
     assert [found["entity"]["attributes"]["qualifiedName"] for found in active["fullTextResult"]] == ["d1"]
     assert active["approximateCount"] == 3
     assert active["fullTextResult"][0]["entity"]["status"] == "ACTIVE"
+
+
+@pytest.mark.covers(f"{D}.search_using_full_text", rules=["AUZ-12"])
+async def test__a_full_text_search_scrubs_what_the_user_may_not_read(store: EntityStore) -> None:
+    """Each hit's header scrubbed, its score and the count kept."""
+    service = EntityDiscoveryService(store, authorizer=Granted("u", frozenset()))
+    found = (await service.search_using_full_text("sales", exclude_deleted_entities=False, limit=0, offset=0)).to_json()
+    assert {hit["entity"]["guid"] for hit in found["fullTextResult"]} == {"-1"}
+    assert all(hit["entity"]["attributes"] == {} for hit in found["fullTextResult"])
+    assert found["fullTextResult"][-1]["score"] == 3
+    assert found["approximateCount"] == 3

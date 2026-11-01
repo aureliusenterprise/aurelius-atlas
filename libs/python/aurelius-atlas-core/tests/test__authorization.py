@@ -1,4 +1,4 @@
-"""The stores' checks (AUZ-03, AUZ-07 to AUZ-10) on the in-memory documents.
+"""The stores' checks (AUZ-03, AUZ-07 to AUZ-10), the scrubbing and the type filter (AUZ-12, AUZ-14).
 
 Read from ``AtlasAuthorizationUtils`` and the checks of ``AtlasEntityStoreV2``, ``AtlasRelationshipStoreV2``,
 ``DataAccess`` and ``GlossaryService#getGlossaries`` of Apache Atlas 2.4.0, with their action texts.
@@ -8,7 +8,14 @@ import json
 from typing import Any
 
 import pytest
-from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Granted, joined
+from aurelius_atlas_core.authorization import (
+    ALLOW_ALL,
+    AtlasPrivilege,
+    Granted,
+    filter_types_def,
+    joined,
+    scrub_search_results,
+)
 from aurelius_atlas_core.classification_associator import ClassificationAssociator
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_store import EntityStore
@@ -19,6 +26,7 @@ from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.user_profile_service import UserProfileService
+from aurelius_atlas_model.discovery import AtlasFullTextResult, AtlasSearchResult
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.glossary import AtlasGlossary, AtlasGlossaryHeader, AtlasGlossaryTerm
 from aurelius_atlas_model.instance import (
@@ -344,3 +352,67 @@ async def test__a_profile_is_read_by_its_unique_name_with_read() -> None:
     )
     found = await UserProfileService(store, user="u", authorizer=granted(P.ENTITY_READ)).get_user_profile("u")
     assert isinstance(found, AtlasUserProfile)
+
+
+@pytest.mark.covers(f"{A}.scrub_entity_header", f"{A}.scrub_search_results", rules=["AUZ-12"])
+def test__scrubbing_empties_each_header_found_or_referred() -> None:
+    """``scrubEntityHeader`` on entities, full-text hits and referred entities; an absent list stays absent."""
+    header = AtlasEntityHeader.model_validate(
+        {
+            "typeName": "Table",
+            "guid": "g1",
+            "displayText": "t",
+            "attributes": {"name": "t"},
+            "classificationNames": ["PII"],
+            "classifications": [{"typeName": "PII"}],
+            "meaningNames": ["term"],
+            "meanings": [{"termGuid": "t1"}],
+            "labels": ["l"],
+        }
+    )
+    result = AtlasSearchResult(
+        entities=[header],
+        full_text_result=[AtlasFullTextResult(entity=AtlasEntityHeader(type_name="Table", guid="g2"), score=1.0)],
+        referred_entities={"g3": AtlasEntityHeader(type_name="DB", guid="g3", attributes={"name": "d"})},
+    )
+
+    scrub_search_results(granted(), result)
+
+    assert header.to_json() == {
+        "typeName": "Table",
+        "guid": "-1",
+        "status": "ACTIVE",
+        "displayText": "t",
+        "attributes": {},
+        "classificationNames": [],
+        "classifications": [],
+        "meaningNames": [],
+        "meanings": [],
+        "isIncomplete": False,
+        "labels": ["l"],
+    }
+    found = result.to_json()
+    assert found["fullTextResult"][0]["entity"] == {
+        "typeName": "Table",
+        "guid": "-1",
+        "status": "ACTIVE",
+        "isIncomplete": False,
+    }
+    assert found["referredEntities"]["g3"]["attributes"] == {}
+    kept = AtlasEntityHeader(type_name="Table", guid="g4")
+    scrub_search_results(granted(P.ENTITY_READ), AtlasSearchResult(entities=[kept]))
+    assert kept.guid == "g4"
+
+
+@pytest.mark.covers(
+    f"{A}.filter_types_def", f"{A}.Authorizer.is_access_allowed", f"{A}.AllowAll.is_access_allowed", rules=["AUZ-14"]
+)
+def test__type_listings_keep_what_the_user_may_read() -> None:
+    """``filterTypesDef``: each definition without ``TYPE_READ`` left out; a store's default keeps all."""
+    types_def = AtlasTypesDef.model_validate(
+        {"enumDefs": [{"name": "e"}], "entityDefs": [{"name": "t"}], "classificationDefs": [{"name": "c"}]}
+    )
+    kept = filter_types_def(granted(P.TYPE_READ), types_def)
+    assert kept.to_json() == types_def.to_json()
+    assert filter_types_def(granted(P.ENTITY_READ), types_def).to_json() == AtlasTypesDef().to_json()
+    assert filter_types_def(ALLOW_ALL, types_def).to_json() == kept.to_json()

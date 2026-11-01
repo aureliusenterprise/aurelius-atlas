@@ -18,6 +18,7 @@ from aurelius_atlas_model.lineage import (
 )
 from aurelius_atlas_typesystem.edge_direction import EdgeDirection
 
+from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.graph_helper import edges_for_label
@@ -100,7 +101,7 @@ class _Lineage:
 
 
 class EntityLineageService:
-    """The lineage of the entities of ``store``, with Atlas's lineage settings."""
+    """The lineage of the entities of ``store``, with Atlas's lineage settings; ``authorizer`` checks it is read."""
 
     def __init__(
         self,
@@ -109,8 +110,10 @@ class EntityLineageService:
         on_demand_enabled: bool = False,
         on_demand_default_node_count: int = 3,
         max_node_count: int = DEFAULT_LINEAGE_MAX_NODE_COUNT,
+        authorizer: Authorizer = ALLOW_ALL,
     ) -> None:
         self._store = store
+        self._authorizer = authorizer
         self._retriever = EntityRetriever(store)
         self._on_demand_enabled = on_demand_enabled
         self._default_node_count = on_demand_default_node_count
@@ -121,7 +124,8 @@ class EntityLineageService:
         """``getAtlasLineageInfo``: the lineage ``depth`` deep (0 for all) in ``direction`` (LIN-03 to LIN-05).
 
         Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` or ``INVALID_LINEAGE_ENTITY_TYPE`` (LIN-02).
+            AtlasError: ``INSTANCE_GUID_NOT_FOUND``, ``UNAUTHORIZED_ACCESS`` (AUZ-13) or
+                ``INVALID_LINEAGE_ENTITY_TYPE`` (LIN-02).
         """
         is_data_set = await self._is_data_set(guid)
         lineage = _Lineage(guid, direction, depth)
@@ -154,8 +158,8 @@ class EntityLineageService:
         """``getAtlasLineageInfo`` on demand: each entity's relations limited by its constraints (LIN-06, LIN-07).
 
         Raises:
-            AtlasError: ``LINEAGE_ON_DEMAND_NOT_ENABLED``, ``INSTANCE_GUID_NOT_FOUND`` or
-                ``INVALID_LINEAGE_ENTITY_TYPE``.
+            AtlasError: ``LINEAGE_ON_DEMAND_NOT_ENABLED``, ``INSTANCE_GUID_NOT_FOUND``,
+                ``UNAUTHORIZED_ACCESS`` (AUZ-13) or ``INVALID_LINEAGE_ENTITY_TYPE``.
         """
         if not self._on_demand_enabled:
             raise AtlasError(AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED, LINEAGE_ON_DEMAND_ENABLED)
@@ -189,8 +193,13 @@ class EntityLineageService:
         return info
 
     async def _is_data_set(self, guid: str) -> bool:
-        """``validateEntityTypeAndCheckIfDataSet``: a data set, a process, or neither (LIN-02)."""
+        """``validateEntityTypeAndCheckIfDataSet``: a data set, a process, or neither (LIN-02), once read (AUZ-13).
+
+        Raises:
+            AtlasError: ``UNAUTHORIZED_ACCESS`` for a user who may not read the entity.
+        """
         header = await self._retriever.header(guid, classifications=False)
+        self._authorizer.verify_access(AtlasPrivilege.ENTITY_READ, "read entity lineage: guid=", guid)
         entity_type = self._store.registry.entity_type(header.type_name)
         if entity_type is None:  # pragma: no cover - a stored entity's type is registered
             raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, header.type_name)

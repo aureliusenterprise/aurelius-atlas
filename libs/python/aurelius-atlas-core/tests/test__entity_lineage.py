@@ -1,4 +1,4 @@
-"""Lineage (LIN-02 to LIN-07) on the in-memory documents.
+"""Lineage (LIN-02 to LIN-07), and the check it is read (AUZ-13), on the in-memory documents.
 
 Read from ``EntityLineageService`` of Apache Atlas 2.4.0 (``getLineageInfoV2``, ``getLineageInfoOnDemand``) on the
 lineage of its ``EntityLineageJerseyResourceIT``: ``sales_fact`` and ``time_dim`` load ``sales_daily``, which
@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
 from aurelius_atlas_core.entity_lineage_service import EntityLineageService
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -238,3 +239,24 @@ async def test__lineage_on_demand_from_a_process(store: EntityStore) -> None:
         ("load_monthly", "sales_monthly"),
         ("sales_daily", "load_monthly"),
     ]
+
+
+@pytest.mark.covers(f"{L}.get_atlas_lineage_info", f"{L}.get_atlas_lineage_info_on_demand", rules=["AUZ-13"])
+async def test__lineage_needs_entity_read_once_the_entity_is_found(store: EntityStore) -> None:
+    """``read entity lineage: guid=<guid>`` after the entity is found, before its type is checked."""
+    nobody = Granted("u", frozenset())
+    service = EntityLineageService(store, authorizer=nobody, on_demand_enabled=True)
+
+    with pytest.raises(AtlasError) as unknown:
+        await service.get_atlas_lineage_info("nope", LineageDirection.BOTH, 3)
+    for call in (
+        service.get_atlas_lineage_info(GUIDS["sales"], LineageDirection.BOTH, 3),
+        service.get_atlas_lineage_info_on_demand(GUIDS["sales_daily"], None),
+    ):
+        with pytest.raises(AtlasError) as refused:
+            await call
+        assert refused.value.code is AtlasErrorCode.UNAUTHORIZED_ACCESS
+        assert refused.value.message.startswith("u is not authorized to perform read entity lineage: guid=")
+    assert unknown.value.code is AtlasErrorCode.INSTANCE_GUID_NOT_FOUND
+    reader = EntityLineageService(store, authorizer=Granted("u", frozenset({AtlasPrivilege.ENTITY_READ})))
+    assert (await reader.get_atlas_lineage_info(GUIDS["sales_daily"], LineageDirection.BOTH, 3)).relations

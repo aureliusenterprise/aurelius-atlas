@@ -1,4 +1,4 @@
-"""Authorization (AUZ-01 to AUZ-06): the roles of the server's client grant Atlas's privileges.
+"""Authorization (AUZ-01 to AUZ-14): the roles of the server's client grant Atlas's privileges.
 
 Read from Atlas 2.4.0's ``AtlasPrivilege``, ``AtlasAuthorizationUtils``, ``AtlasSimpleAuthorizer`` and the checks of
 its type-definition stores, ``AtlasEntityStoreV2#purgeByIds`` and ``AdminResource#getUserProfile``.
@@ -92,10 +92,16 @@ async def test__type_definitions_change_with_the_types_role(client: httpx.AsyncC
 
 
 @pytest.mark.covers(
-    f"{T}.get_typedef_by_name", f"{T}.get_typedef_by_guid", f"{T}.kind_by_name", f"{T}.kind_by_guid", rules=["AUZ-04"]
+    f"{T}.get_typedef_by_name",
+    f"{T}.get_typedef_by_guid",
+    f"{T}.kind_by_name",
+    f"{T}.kind_by_guid",
+    f"{T}.get_all_typedefs",
+    f"{T}.get_typedef_headers",
+    rules=["AUZ-04", "AUZ-14"],
 )
 async def test__one_definition_is_read_with_type_read(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
-    """``read type <name or GUID>`` needs ``TYPE_READ``; the lists and headers need nothing; a missing one is 404."""
+    """``read type <name or GUID>`` needs ``TYPE_READ``; the lists and headers leave out what it does not read."""
     created = (await client.post(f"{TYPES}/typedefs", json=DEFINITIONS)).json()
     guid = created["entityDefs"][0]["guid"]
     nobody = as_roles(issuer, "nobody")
@@ -107,8 +113,13 @@ async def test__one_definition_is_read_with_type_read(client: httpx.AsyncClient,
     ):
         assert refusal(await client.get(url, headers=nobody))[2] == f"nobody is not authorized to perform {action}"
         assert (await client.get(url, headers=as_roles(issuer, "reader", "atlas-read"))).status_code == 200
-    assert (await client.get(f"{TYPES}/typedefs/headers", headers=nobody)).status_code == 200
-    assert (await client.get(f"{TYPES}/typedefs", headers=nobody)).status_code == 200
+    assert (await client.get(f"{TYPES}/typedefs/headers", headers=nobody)).json() == []
+    assert (await client.get(f"{TYPES}/typedefs", headers=nobody)).json() == (
+        await client.get(f"{TYPES}/typedefs?type=nothing")
+    ).json()
+    reader = as_roles(issuer, "reader", "atlas-read")
+    headers = (await client.get(f"{TYPES}/typedefs/headers", headers=reader)).json()
+    assert {"t_auth", "e_auth"} <= {header["name"] for header in headers}
     assert (await client.get(f"{TYPES}/typedef/name/missing", headers=nobody)).status_code == 404
 
 
@@ -216,3 +227,33 @@ async def test__a_reader_changes_nothing(client: httpx.AsyncClient, issuer: Fake
     assert (await client.get(f"{ENTITY}/guid/{guid}/classifications", headers=reader)).status_code == 200
     gone = await client.delete("/api/atlas/v2/relationship/guid/missing", headers=reader)
     assert gone.status_code == 404
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.discovery.search_using_basic",
+    "aurelius_atlas_server.routes.discovery.quick_search_using_query",
+    "aurelius_atlas_server.routes.lineage.lineage_service",
+    rules=["AUZ-12", "AUZ-13"],
+)
+async def test__a_user_without_read_finds_scrubbed_entities_and_no_lineage(
+    client: httpx.AsyncClient, issuer: FakeIssuer
+) -> None:
+    """Search answers headers scrubbed of GUID and attributes; lineage is refused once the entity is found."""
+    guid = await asset(client)
+    nobody, reader = as_roles(issuer, "nobody"), as_roles(issuer, "reader", "atlas-read")
+    for url, path in (
+        ("/api/atlas/v2/search/basic?typeName=Asset", ("entities",)),
+        ("/api/atlas/v2/search/quick?typeName=Asset", ("searchResults", "entities")),
+    ):
+        hidden, shown = (await client.get(url, headers=nobody)).json(), (await client.get(url, headers=reader)).json()
+        for key in path:
+            hidden, shown = hidden[key], shown[key]
+        assert [(header["guid"], header["attributes"]) for header in hidden] == [("-1", {})]
+        assert [header["guid"] for header in shown] == [guid]
+    assert refusal(await client.get(f"/api/atlas/v2/lineage/{guid}", headers=nobody)) == (
+        403,
+        "ATLAS-403-00-001",
+        f"nobody is not authorized to perform read entity lineage: guid={guid}",
+    )
+    assert (await client.get(f"/api/atlas/v2/lineage/{guid}", headers=reader)).json()["errorCode"] == "ATLAS-404-00-011"
+    assert (await client.get("/api/atlas/v2/lineage/missing", headers=nobody)).status_code == 404

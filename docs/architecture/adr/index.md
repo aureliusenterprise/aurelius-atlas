@@ -49,7 +49,7 @@ area you are about to work in; the rest can wait.
 | [035](./035-parts-hand-work-through-a-durable-event-log.md)                          | Parts hand work through a durable event log — the log is the default integration; joining is a subscription.                                                                                                  | Accepted          |
 | [036](./036-the-delivery-plane-is-a-named-exception-to-the-data-boundary.md)         | The delivery plane is a named exception to the data boundary — the pipeline crosses at recorded points; the running system never does.                                                                        | Accepted          |
 | [037](./037-the-system-itself-promises-nothing-about-staying-up.md)                  | The system itself promises nothing about staying up — availability is what the deployment builds around it.                                                                                                   | Accepted          |
-| [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md) | What a person may do is decided in one place — permission apart from identity; one answer, one act to revoke.                                                                                                 | Proposed          |
+| [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md) | What a person may do is decided in one place — permission apart from identity; one answer, one act to revoke.                                                                                                 | Accepted          |
 | [039](./039-data-is-protected-where-it-travels-and-where-it-rests.md)                | Data is protected where it travels and rests — declared arrangements, not assumed properties.                                                                                                                 | Accepted          |
 | [040](./040-the-system-raises-its-hand-when-it-is-broken.md)                         | The system raises its hand when it is broken — named triggers, named destinations; silence is a condition.                                                                                                    | Proposed          |
 | [041](./041-a-failure-of-the-running-system-has-an-owner-and-a-rehearsed-path.md)    | A failure of the running system has an owner and a rehearsed path — response owned, written, practised.                                                                                                       | Accepted          |
@@ -203,12 +203,11 @@ defer — is what acceptance adds.
 
 ??? INFO "Which records are Proposed"
 
-    Nine: [023](./023-storage-schema-changes-by-recorded-migration.md),
+    Eight: [023](./023-storage-schema-changes-by-recorded-migration.md),
     [025](./025-data-has-a-stated-lifetime.md),
     [026](./026-the-system-can-be-brought-back-from-a-named-snapshot.md),
     [027](./027-every-stream-carries-a-stated-delivery-guarantee.md) (its slice
     removed by [050](./050-the-system-carries-only-what-the-catalogue-needs.md)),
-    [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md),
     [040](./040-the-system-raises-its-hand-when-it-is-broken.md),
     [042](./042-every-dataset-has-an-owner-who-answers-for-it.md),
     [052](./052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md),
@@ -240,10 +239,6 @@ first.
   slice it governs was removed by
   [050](./050-the-system-carries-only-what-the-catalogue-needs.md); the record
   stays open in case a queue returns.
-- **Authorization** —
-  [038](./038-what-a-person-may-do-is-decided-in-one-place-apart-from-who-they-are.md),
-  the permission question the identity record
-  ([007](./007-one-shared-identity-provider.md)) deliberately leaves open.
 - **Alerting** —
   [040](./040-the-system-raises-its-hand-when-it-is-broken.md), the noticing
   the collection point

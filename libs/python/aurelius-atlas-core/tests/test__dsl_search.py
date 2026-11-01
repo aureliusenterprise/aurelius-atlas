@@ -1,5 +1,7 @@
 """DSL search of entities (DSE-02 to DSE-15) on the in-memory documents; 4.4b's in ``test__dsl_projections``.
 
+Search results scrubbed of what the user may not read (AUZ-12), from ``AtlasSimpleAuthorizer#scrubSearchResults``.
+
 Read from ``EntityDiscoveryService.searchUsingDslQuery`` and ``getDslQueryUsingTypeNameClassification``,
 ``TraversalBasedExecutor``, ``DSLVisitor``, ``GremlinQueryComposer``, ``GremlinClause``, ``IdentifierHelper``,
 ``RegistryBasedLookup`` and ``GremlinClauseToTraversalTranslator`` of Apache Atlas 2.4.0. The queries are those of
@@ -10,6 +12,7 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core import search_query as sq
+from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_core.dsl_query_composer import DslQueryComposer
 from aurelius_atlas_core.dsl_query_executor import translatable
@@ -18,6 +21,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_dsl.atlas_dsl import QueryMetadata, parse
+from aurelius_atlas_model.discovery import QuickSearchParameters, SearchParameters
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasClassification, AtlasEntitiesWithExtInfo
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -559,3 +563,29 @@ async def test__semantic_errors_are_joined_in_order(store: EntityStore) -> None:
 async def test__forms_not_searched_fail_with_a_reason(store: EntityStore, query: str, reason: str) -> None:
     """Declared (DV-95)."""
     assert await failure(store, query) == reason
+
+
+@pytest.mark.covers(
+    f"{D}.search_using_dsl_query",
+    f"{D}.search_with_parameters",
+    f"{D}.quick_search",
+    "aurelius_atlas_core.authorization.scrub_search_results",
+    rules=["AUZ-12"],
+)
+async def test__a_reader_without_entity_read_finds_scrubbed_headers(store: EntityStore) -> None:
+    """Each header's GUID ``-1``, its attributes and classifications emptied; the counts and facets kept."""
+    service = EntityDiscoveryService(store, authorizer=Granted("u", frozenset()))
+    reader = EntityDiscoveryService(store, authorizer=Granted("u", frozenset({AtlasPrivilege.ENTITY_READ})))
+
+    found = (await service.search_using_dsl_query("Table where name = 'time_dim'", 0, 0)).to_json()
+    basic = (await service.search_with_parameters(SearchParameters(type_name="Table"))).to_json()
+    quick = (await service.quick_search(QuickSearchParameters(type_name="Table"))).to_json()
+    read = (await reader.search_using_dsl_query("Table where name = 'time_dim'", 0, 0)).to_json()
+
+    assert found["entities"] == [
+        {**read["entities"][0], "guid": "-1", "attributes": {}, "classifications": [], "classificationNames": []}
+    ]
+    assert {header["guid"] for header in basic["entities"]} == {"-1"}
+    assert basic["approximateCount"] == len(ALL_TABLES)
+    assert {header["guid"] for header in quick["searchResults"]["entities"]} == {"-1"}
+    assert quick["aggregationMetrics"]

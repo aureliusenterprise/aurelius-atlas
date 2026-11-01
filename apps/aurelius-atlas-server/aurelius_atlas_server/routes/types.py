@@ -3,6 +3,7 @@
 from collections.abc import Awaitable, Callable
 from typing import Annotated, Any
 
+from aurelius_atlas_core.authorization import filter_types_def
 from aurelius_atlas_core.type_search import TypeSearchFilter, search_types_def, type_def_headers
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.typedef import AtlasTypesDef, TypeCategory
@@ -10,7 +11,7 @@ from fastapi import APIRouter, Depends, Request, Response
 from pydantic import ValidationError
 
 from aurelius_atlas_server.authentication import acting_user
-from aurelius_atlas_server.authorization import AtlasPrivilege, verify_access
+from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 
 TYPES = APIRouter(prefix="/api/atlas/v2/types", tags=["Types"])
@@ -91,16 +92,24 @@ async def get_typedef_by_guid(guid: str, request: Request, store: Store) -> Atla
 
 @TYPES.get("/typedefs/headers")
 async def get_typedef_headers(request: Request, store: Store) -> AtlasJSONResponse:
-    """``getTypeDefHeaders``: the headers of the definitions the filter keeps (TYR-08)."""
-    found = search_types_def(store.registry, TypeSearchFilter.from_query(request.query_params.multi_items()))
+    """``getTypeDefHeaders``: the headers of the definitions the filter keeps and the user may read (TYR-08, AUZ-14)."""
+    found = _search_types_def(request, store)
     return _json([header.to_json() for header in type_def_headers(found)])
 
 
 @TYPES.get("/typedefs")
 async def get_all_typedefs(request: Request, store: Store) -> AtlasJSONResponse:
-    """``getAllTypeDefs``: the definitions the filter keeps, each kind sorted by name (TYR-05 to TYR-07)."""
+    """``getAllTypeDefs``: the definitions the filter keeps and the user may read, each kind sorted by name.
+
+    TYR-05 to TYR-07, AUZ-14.
+    """
+    return _json(_search_types_def(request, store).to_json())
+
+
+def _search_types_def(request: Request, store: TypedefStore) -> AtlasTypesDef:
+    """``searchTypesDef``: the definitions the query's filter keeps, of those the user may read (AUZ-14)."""
     found = search_types_def(store.registry, TypeSearchFilter.from_query(request.query_params.multi_items()))
-    return _json(found.to_json())
+    return filter_types_def(authorizer(request), found)
 
 
 @TYPES.post("/typedefs")

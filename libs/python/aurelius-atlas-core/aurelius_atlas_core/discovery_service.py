@@ -26,7 +26,7 @@ from aurelius_atlas_typesystem.atlas_type import resolved
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.entity_type import EntityType
 
-from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer
+from aurelius_atlas_core.authorization import ALLOW_ALL, Authorizer, scrub_search_results
 from aurelius_atlas_core.dsl_query_executor import DslQueryExecutor
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_search_processor import EntitySearchProcessor
@@ -55,10 +55,11 @@ INVALID_DATA = "invalid data"
 
 
 class EntityDiscoveryService:
-    """Basic search over the entities of ``store``; ``authorizer`` checks the saved searches read and written.
+    """Basic search over the entities of ``store``; ``authorizer`` checks the saved searches read and written,
+    and scrubs the results of entities the user may not read.
 
-    AUZ-10.
-    """
+    AUZ-10, AUZ-12.
+    """  # noqa: D205 - one sentence
 
     def __init__(self, store: EntityStore, *, authorizer: Authorizer = ALLOW_ALL) -> None:
         self._store = store
@@ -123,6 +124,7 @@ class EntityDiscoveryService:
             result.attributes = _table(context, found)
         else:
             await self._headers(context, found, result)
+        scrub_search_results(self._authorizer, result)
         return result, processor.facets
 
     async def search_using_full_text(
@@ -146,9 +148,11 @@ class EntityDiscoveryService:
             AtlasFullTextResult(entity=await retriever.header_with_attributes(stored, []), score=score)
             for stored, score in zip(hits.entities, hits.scores, strict=True)
         ]
-        return AtlasSearchResult(
+        result = AtlasSearchResult(
             query_type=AtlasQueryType.FULL_TEXT, query_text=query, full_text_result=found, approximate_count=total
         )
+        scrub_search_results(self._authorizer, result)
+        return result
 
     async def search_using_dsl_query(self, dsl_query: str, limit: int, offset: int) -> AtlasSearchResult:
         """``searchUsingDslQuery``: the entities a DSL query finds, its limit and offset normalised (DSE-01, DSE-03).
@@ -157,7 +161,9 @@ class EntityDiscoveryService:
             AtlasError: ``INVALID_DSL_QUERY``, as ``DslQueryExecutor.execute`` raises it.
         """
         limit, offset = normalized(limit, offset)
-        return await DslQueryExecutor(self._store).execute(dsl_query, limit, offset)
+        result = await DslQueryExecutor(self._store).execute(dsl_query, limit, offset)
+        scrub_search_results(self._authorizer, result)
+        return result
 
     @staticmethod
     def get_dsl_query_using_type_name_classification(
