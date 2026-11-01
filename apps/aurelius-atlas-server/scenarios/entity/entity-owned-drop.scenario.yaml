@@ -67,8 +67,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -104,8 +104,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
@@ -115,19 +115,6 @@ stages:
               - $.entityDefs[1].guid
               - $.entityDefs[1].createTime
               - $.entityDefs[1].updateTime
-          deviations:
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].updatedBy
-                absent: true
     - name: create two columns and the owner of both
       request:
           method: POST

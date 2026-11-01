@@ -13,6 +13,7 @@ from aurelius_atlas_model.instance import AtlasRelatedObjectId
 from fastapi import APIRouter, Request, Response
 from starlette.datastructures import UploadFile
 
+from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import (
     INT_RANGE,
@@ -45,7 +46,9 @@ def _json(content: Any) -> AtlasJSONResponse:  # noqa: ANN401 - Atlas JSON
 
 def _service(request: Request, store: EntityStore) -> GlossaryService:
     """The service, its term assignments propagating as ``tasks_enabled`` says and audited (GTA-02, GTA-04)."""
-    return GlossaryService(store, tasks=tasks_enabled(request), notifier=notifier(request, store))
+    return GlossaryService(
+        store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
+    )
 
 
 def _glossary(body: Any) -> AtlasGlossary | None:  # noqa: ANN401 - the request body

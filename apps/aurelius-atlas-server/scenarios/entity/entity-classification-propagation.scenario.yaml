@@ -75,8 +75,8 @@ stages:
                     entityTypes: []
                     subTypes: []
                     category: CLASSIFICATION
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               entityDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -125,8 +125,8 @@ stages:
                           isLegacyAttribute: false
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -174,8 +174,8 @@ stages:
                           isLegacyAttribute: false
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -200,8 +200,8 @@ stages:
                         cardinality: SET
                         isLegacyAttribute: false
                     category: RELATIONSHIP
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -225,8 +225,8 @@ stages:
                         cardinality: SET
                         isLegacyAttribute: false
                     category: RELATIONSHIP
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[0].guid
@@ -244,37 +244,6 @@ stages:
               - $.relationshipDefs[1].guid
               - $.relationshipDefs[1].createTime
               - $.relationshipDefs[1].updateTime
-          deviations:
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.classificationDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.classificationDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[1].updatedBy
-                absent: true
     - name: a process reads a and writes b
       request:
           method: POST

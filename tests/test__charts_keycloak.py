@@ -905,7 +905,7 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     hardening fields. An identity change in the dev realm that is neither
     mirrored here nor named in its commit fails this test. CHT-81's grafana
     client is the one named exception: prod-only (the dev compose Grafana
-    stays anonymous, DV-111), so the prod set is the dev set plus it.
+    stays anonymous, DV-113), so the prod set is the dev set plus it.
     CHT-87 (DD-277) amends the rule once more: the otel peers equal minus
     id *and* secret — the prod secret is deliberately the per-client
     placeholder where dev shares one, and the delta itself is pinned.

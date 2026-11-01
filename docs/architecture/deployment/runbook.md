@@ -151,7 +151,7 @@ either way, which is the point of the per-client shape.
 > crash-loop, a Secret the chart expects but nobody created — burns the full
 > `--timeout` and leaves the release stuck at `pending-install`; every later
 > `helm upgrade` then fails with "another operation … is in progress" until
-> `helm uninstall atlas -n atlas` clears it (DD-252). Fix the cause (check
+> `helm uninstall atlas -n atlas` clears it (DD-298). Fix the cause (check
 > `kubectl -n atlas get pods` / `helm history atlas -n atlas`), then
 > uninstall and reinstall — do not wait the release out.
 

@@ -22,7 +22,7 @@ This increment makes Grafana a **confidential OAuth2/OIDC relying party of the
 
 - A new `grafana` client joins `files/aurelius-atlas.json` — the first client in
   the **prod asset only**: the dev compose Grafana keeps the anonymous-Viewer
-  posture (DD-275, DV-111), so CHT-79's structural parity rule gains its first
+  posture (DD-275, DV-113), so CHT-79's structural parity rule gains its first
   named exception (prod client set = dev set ∪ {`grafana`}).
 - The observability chart's Grafana deployment swaps the anonymous env for the
   `GF_AUTH_GENERIC_OAUTH_*` set: issuer URLs derived from
@@ -44,7 +44,7 @@ This increment does **not** deliver: per-producer telemetry credentials (M5),
 Grafana exposure by default (`global.hosts.grafana.enabled` stays `false` —
 this increment makes exposing safe, not automatic), any change to the dev
 compose stack (its Grafana stays anonymous-Viewer — a local dashboard over
-local telemetry, DV-111), or alerting/contact-points (out of scope entirely).
+local telemetry, DV-113), or alerting/contact-points (out of scope entirely).
 
 ## Semantics
 
@@ -70,7 +70,7 @@ auth provider.
 
 ## Deviations
 
-None against Atlas. DV-111 records the deliberate dev↔prod divergence: the dev
+None against Atlas. DV-113 records the deliberate dev↔prod divergence: the dev
 compose Grafana stays anonymous-Viewer (a local dashboard over local telemetry,
 same two-shape posture as DD-273's identity split), while the cluster Grafana
 is Keycloak-gated — the first client that lives in one realm asset and not the
@@ -101,7 +101,7 @@ clause (its generated-admin-Secret half stands).
 - Runbook: the Grafana section documents the Keycloak login, the role map, and
   the port-forward path. `dev/observability/AGENTS.md`, `dev/keycloak/AGENTS.md`,
   and `helm/AGENTS.md` record the new client/Secret/join. `deviations.md` gains
-  DV-111. The 10.5 hand-check note extends: a stock umbrella's Grafana redirects
+  DV-113. The 10.5 hand-check note extends: a stock umbrella's Grafana redirects
   to the realm's login at `keycloak.atlas.test` and an authenticated realm user
   lands as Viewer.
 - Hand check: not run in CI here (no live Keycloak); proven by render.

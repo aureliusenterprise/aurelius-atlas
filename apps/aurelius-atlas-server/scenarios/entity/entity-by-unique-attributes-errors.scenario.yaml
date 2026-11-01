@@ -64,17 +64,14 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[0].guid
               - $.entityDefs[0].createTime
               - $.entityDefs[0].updateTime
-          deviations:
-              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
     - name: an unknown type
       request:
           method: GET

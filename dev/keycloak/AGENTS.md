@@ -17,7 +17,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 - `helm/files/aurelius-atlas.json` — the cluster realm asset (10.7): minimally
   authored, hardened, no users (its own section below — not a master export).
   10.8 adds the `grafana` relying-party client here and **only** here — the
-  dev asset stays without it (DV-111, CHT-79's named parity exception).
+  dev asset stays without it (DV-113, CHT-79's named parity exception).
   10.12 adds the `aurelius-atlas-server` confidential client (CHT-110): the
   dev asset has had it since 6.1a/DD-250, so it lands in **both** assets and
   its `${ATLAS_SERVER_CLIENT_SECRET}` env is not realm-gated (unlike

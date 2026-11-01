@@ -157,7 +157,7 @@ userinfo URLs derived from `global.issuer.url`/`global.domain` + `global.realm`
 Viewer default (CHT-84/85). `GF_SERVER_ROOT_URL` stays unset — request-derived
 so a port-forward completes the login against the client's localhost redirect
 (DD-276); the admin Secret env stays as account recovery. The client lives in
-the prod realm asset only (the dev compose stays anonymous, DV-111). 10.6
+the prod realm asset only (the dev compose stays anonymous, DV-113). 10.6
 adds the ingress allows (CHT-67/68): the collector's four rules per leg
 (4318 browser ← webapp, 4317/4319 per-service ← apps + pullers, 4320/4321
 legacy ← webapp + keycloak, 9464/8888 ← prometheus), and the

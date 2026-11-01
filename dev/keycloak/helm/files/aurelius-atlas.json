@@ -154,7 +154,7 @@
             "clientId": "grafana",
             "consentRequired": false,
             "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
-            "description": "Grafana's relying-party client (10.8, CHT-81, DD-275): the confidential OIDC login Grafana itself presents; its editor/admin client roles escalate the Viewer default via GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH. Prod realm only — the dev compose Grafana stays anonymous (DV-111).",
+            "description": "Grafana's relying-party client (10.8, CHT-81, DD-275): the confidential OIDC login Grafana itself presents; its editor/admin client roles escalate the Viewer default via GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH. Prod realm only — the dev compose Grafana stays anonymous (DV-113).",
             "directAccessGrantsEnabled": false,
             "enabled": true,
             "frontchannelLogout": true,

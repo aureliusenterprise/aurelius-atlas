@@ -60,8 +60,8 @@ stages:
                         - value: ONE
                           ordinal: 1
                     category: ENUM
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               structDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -82,8 +82,8 @@ stages:
                           includeInNotification: false
                           searchWeight: -1
                     category: STRUCT
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               classificationDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -97,8 +97,8 @@ stages:
                     entityTypes: []
                     subTypes: []
                     category: CLASSIFICATION
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               entityDefs: []
               relationshipDefs: []
               businessMetadataDefs:
@@ -111,8 +111,8 @@ stages:
                     typeVersion: "1.0"
                     attributeDefs: []
                     category: BUSINESS_METADATA
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
           volatile:
               - $.enumDefs[0].guid
               - $.enumDefs[0].createTime
@@ -131,31 +131,6 @@ stages:
               struct: $.structDefs[0].guid
               tag: $.classificationDefs[0].guid
               bm: $.businessMetadataDefs[0].guid
-          deviations:
-              - id: DV-06
-                path: $.enumDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.enumDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.structDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.structDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.classificationDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.classificationDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.businessMetadataDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.businessMetadataDefs[0].updatedBy
-                absent: true
     - name: enumdef by name
       request:
           method: GET
@@ -174,18 +149,11 @@ stages:
                   - value: ONE
                     ordinal: 1
               category: ENUM
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: enumdef by GUID
       request:
           method: GET
@@ -204,18 +172,11 @@ stages:
                   - value: ONE
                     ordinal: 1
               category: ENUM
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: structdef by name
       request:
           method: GET
@@ -242,18 +203,11 @@ stages:
                     includeInNotification: false
                     searchWeight: -1
               category: STRUCT
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: structdef by GUID
       request:
           method: GET
@@ -280,18 +234,11 @@ stages:
                     includeInNotification: false
                     searchWeight: -1
               category: STRUCT
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: classificationdef by name
       request:
           method: GET
@@ -311,18 +258,11 @@ stages:
               entityTypes: []
               subTypes: []
               category: CLASSIFICATION
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: classificationdef by GUID
       request:
           method: GET
@@ -342,18 +282,11 @@ stages:
               entityTypes: []
               subTypes: []
               category: CLASSIFICATION
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: businessmetadatadef by name
       request:
           method: GET
@@ -370,18 +303,11 @@ stages:
               typeVersion: "1.0"
               attributeDefs: []
               category: BUSINESS_METADATA
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: businessmetadatadef by GUID
       request:
           method: GET
@@ -398,18 +324,11 @@ stages:
               typeVersion: "1.0"
               attributeDefs: []
               category: BUSINESS_METADATA
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: an enum's lookup does not find a struct
       request:
           method: GET

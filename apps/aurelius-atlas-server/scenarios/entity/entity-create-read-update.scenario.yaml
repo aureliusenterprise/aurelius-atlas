@@ -65,8 +65,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -110,19 +110,14 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[*].guid
               - $.entityDefs[*].createTime
               - $.entityDefs[*].updateTime
-          deviations:
-              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[1].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[1].updatedBy", absent: true }
     - name: a reference to a GUID neither stored nor in the request names nothing
       request:
           method: POST
@@ -203,8 +198,8 @@ stages:
                   isIncomplete: false
                   provenanceType: 0
                   status: ACTIVE
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
                   createTime: 0
                   updateTime: 0
                   version: 0
@@ -212,9 +207,6 @@ stages:
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
-          deviations:
-              - { id: DV-15, path: $.entity.createdBy, absent: true }
-              - { id: DV-15, path: $.entity.updatedBy, absent: true }
     - name: a create with the table's unique value updates it
       request:
           method: POST
@@ -313,8 +305,8 @@ stages:
                   isIncomplete: false
                   provenanceType: 0
                   status: ACTIVE
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
                   createTime: 0
                   updateTime: 0
                   version: 0
@@ -322,9 +314,6 @@ stages:
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
-          deviations:
-              - { id: DV-15, path: $.entity.createdBy, absent: true }
-              - { id: DV-15, path: $.entity.updatedBy, absent: true }
     - name: delete both entities; no hard delete is asked for, so they are soft-deleted (EDL-04)
       request:
           method: DELETE

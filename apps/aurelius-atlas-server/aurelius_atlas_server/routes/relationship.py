@@ -6,6 +6,7 @@ from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_model.instance import AtlasRelationship, AtlasRelationshipWithExtInfo
 from fastapi import APIRouter, Request, Response
 
+from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.errors import AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import (
     Body,
@@ -29,6 +30,7 @@ def relationships(request: Request, store: EntityStore) -> RelationshipStore:
     return RelationshipStore(
         store,
         delete_type=DeleteType.of(request.app.state.settings.delete_type),
+        user=acting_user(request),
         tasks=tasks_enabled(request),
         notifier=notifier(request, store),
     )

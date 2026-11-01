@@ -73,7 +73,7 @@ which the shared placeholder made impossible until now).
 
 ## Deviations
 
-None against Atlas. The dev↔prod divergence deepens along the line DV-110 drew:
+None against Atlas. The dev↔prod divergence deepens along the line DV-112 drew:
 the realm assets now differ in credential shape as well as hardening — the
 prod asset's seven per-client placeholders against master's shared one — and
 CHT-79's drift guard carries the second named exception for exactly this

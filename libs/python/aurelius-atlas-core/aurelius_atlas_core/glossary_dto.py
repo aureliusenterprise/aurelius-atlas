@@ -1,14 +1,13 @@
-"""``DataAccess`` with the glossary, category and term DTOs: glossary objects as entities (DD-246).
+"""The glossary, category and term DTOs of ``DataAccess``: glossary objects as entities (DD-246, DD-252).
 
 A glossary object is saved as its entity, created or updated, and loaded back from the entity and its relationship
 attributes (GLS-01, GCT-01, GLS-06, GTM-01). Relationships between glossary objects are the glossary utilities' to
 write.
 """
 
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable
 from typing import Any
 
-from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.glossary import (
     AtlasGlossary,
     AtlasGlossaryCategory,
@@ -21,18 +20,15 @@ from aurelius_atlas_model.glossary import (
     Relation,
 )
 from aurelius_atlas_model.instance import (
-    AtlasEntitiesWithExtInfo,
     AtlasEntity,
+    AtlasEntityWithExtInfo,
     AtlasObjectId,
     AtlasRelatedObjectId,
-    EntityStatus,
     RelationshipStatus,
 )
 
-from aurelius_atlas_core.delete_type import DeleteType
-from aurelius_atlas_core.entity_retriever import EntityRetriever
+from aurelius_atlas_core.data_access import DataAccess, Registry
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.entity_writer import EntityWriter
 
 ATLAS_GLOSSARY_TYPENAME = "AtlasGlossary"
 ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory"
@@ -177,69 +173,42 @@ def to_entity(obj: GlossaryObject) -> AtlasEntity:
     return AtlasEntity(type_name=_type_name(obj), guid=obj.guid, attributes=attributes, classifications=classifications)
 
 
-class DataAccess:
-    """``DataAccess``: glossary objects saved and loaded as the entities of ``store``."""
+class _GlossaryObjectDTO[T: GlossaryObject]:
+    """``AbstractGlossaryDTO``: a glossary object of one type, found by its qualified name (DD-246)."""
 
-    def __init__(self, store: EntityStore, *, user: str | None = None) -> None:
-        self._store = store
-        self._user = user
+    def __init__(self, type_name: str, read: Callable[[AtlasEntity], T]) -> None:
+        self._type_name = type_name
+        self._read = read
 
-    async def save[T: GlossaryObject](self, obj: T) -> T:
-        """``save``: create or update the object's entity, its new GUID taken, and load it back."""
-        response = await EntityWriter(self._store, user=self._user).create_or_update(
-            AtlasEntitiesWithExtInfo(entities=[to_entity(obj)])
-        )
-        assigned = (response.guid_assignments or {}).get(obj.guid)
-        if response.get_created_entities() and assigned is not None and assigned != obj.guid:
-            obj.guid = assigned
-        return await self.load(obj)
+    @property
+    def type_name(self) -> str:
+        """The entity type of the objects."""
+        return self._type_name
 
-    async def save_all[T: GlossaryObject](self, objects: Iterable[T]) -> list[T]:
-        """``save`` of each, in order."""
-        return [await self.save(obj) for obj in objects]
+    def from_entity(self, found: AtlasEntityWithExtInfo) -> T:
+        """``from``: the object of the entity and its relationship attributes."""
+        return self._read(found.entity)  # type: ignore[arg-type]  # a read answers the entity
 
-    async def load[T: GlossaryObject](self, obj: T) -> T:
-        """``load``: by GUID, or by qualified name for a new object (GLS-06).
+    def to_entities(self, obj: T) -> list[AtlasEntity]:
+        """``toEntityWithExtInfo``: the object's entity alone; its relationships are written apart."""
+        return [to_entity(obj)]
 
-        Raises:
-            AtlasError: ``INSTANCE_GUID_NOT_FOUND`` or ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND``, ``UNEXPECTED_TYPE``
-                for another type, ``INSTANCE_GUID_DELETED`` for a deleted one.
-        """
-        retriever = EntityRetriever(self._store)
-        expected = _type_name(obj)
-        if obj.guid and not obj.guid.startswith("-"):
-            found = await retriever.entity_with_ext_info(obj.guid)
-        else:
-            entity_type = self._store.registry.entity_type(expected)
-            if entity_type is None:  # pragma: no cover - the glossary model is loaded with the server
-                raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, expected)
-            found = await retriever.entity_by_unique_attributes(entity_type, {"qualifiedName": obj.qualified_name})
-        entity = found.entity
-        if entity is None:  # pragma: no cover - a read answers the entity
-            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, obj.guid)
-        if entity.type_name != expected:
-            raise AtlasError(AtlasErrorCode.UNEXPECTED_TYPE, expected, entity.type_name)
-        if entity.status is EntityStatus.DELETED:
-            raise AtlasError(AtlasErrorCode.INSTANCE_GUID_DELETED, obj.guid)
-        if isinstance(obj, AtlasGlossary):
-            return glossary_from(entity)  # type: ignore[return-value]  # the loader of T's class
-        if isinstance(obj, AtlasGlossaryTerm):
-            return term_from(entity)  # type: ignore[return-value]
-        return category_from(entity)  # type: ignore[return-value]
+    def unique_attributes(self, obj: T) -> dict[str, Any]:
+        """``getUniqueAttributes``: the qualified name."""
+        return {"qualifiedName": obj.qualified_name}
 
-    async def load_all[T: GlossaryObject](self, objects: Sequence[T]) -> list[T]:
-        """``load`` of each, those failing to load left out."""
-        found = []
-        for obj in objects:
-            try:
-                found.append(await self.load(obj))
-            except AtlasError:
-                continue
-        return found
 
-    async def delete(self, guid: str) -> None:
-        """``delete``: the entity, as the server deletes entities."""
-        await EntityWriter(self._store, user=self._user).delete_by_id(guid, DeleteType.DEFAULT)
+GLOSSARY_DTOS: Registry = {
+    AtlasGlossary: _GlossaryObjectDTO(ATLAS_GLOSSARY_TYPENAME, glossary_from),
+    AtlasGlossaryCategory: _GlossaryObjectDTO(ATLAS_GLOSSARY_CATEGORY_TYPENAME, category_from),
+    AtlasGlossaryTerm: _GlossaryObjectDTO(ATLAS_GLOSSARY_TERM_TYPENAME, term_from),
+}
+"""``AtlasGlossaryDTO``, ``AtlasGlossaryCategoryDTO``, ``AtlasGlossaryTermDTO`` (DD-252)."""
+
+
+def glossary_data_access(store: EntityStore, *, user: str | None = None) -> DataAccess:
+    """The ``DataAccess`` of glossary objects in ``store``, written as ``user``."""
+    return DataAccess(store, GLOSSARY_DTOS, user=user)
 
 
 def _type_name(obj: GlossaryObject) -> str:

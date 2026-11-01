@@ -8,9 +8,9 @@ from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
 
 SCENARIOS = Path(__file__).parents[1] / "scenarios"
 CORE_MODELS = (Path("0000-Area0") / "0010-base_model.json", Path("0000-Area0") / "0011-glossary_model.json")
-NEEDS_CORE_MODELS = ("glossary/", "lineage/")
-"""Scenarios on the base and glossary models' types (``DataSet``, ``Process``, ``AtlasGlossary``), which the e2e
-server loads with every model."""
+NEEDS_CORE_MODELS = ("glossary/", "lineage/", "search/saved")
+"""Scenarios on the base and glossary models' types (``DataSet``, ``Process``, ``AtlasGlossary``, the profile's),
+which the e2e server loads with every model."""
 
 
 def core_models(directory: Path) -> Path:
@@ -30,5 +30,5 @@ def models_dir(models_dir: Path, tmp_path: Path, request: pytest.FixtureRequest)
 
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
 async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
-    """Each parity scenario passes against the application in-process (ADR 052)."""
-    await run_scenario(scenario, client)
+    """Each parity scenario passes against the application in-process (ADR 052), as the user ``admin`` (USR-04)."""
+    await run_scenario(scenario, client, {"user": "admin"})

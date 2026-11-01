@@ -3,7 +3,7 @@
 - **Status:** in progress
 - **Pull request:** [#157](https://github.com/aureliusenterprise/aurelius-atlas/pull/157)
 - **Records:** [ADR 057](../../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md),
-  DD-252, DD-283..294
+  DD-298, DD-283..294
 
 ## Scope
 
@@ -66,7 +66,7 @@ None. This increment adds no runtime behaviour.
   images) reaches `deployed` and the three aux Deployments go Ready on their HTTPS `/liveness`
   probes; `helm upgrade` is a clean no-op. Two aux-chart gaps found by the trial — the unbacked
   `ca.crt` mount and lineage-model's missing upstream URLs — are deferred to 10.3 (DD-294);
-  the `--wait` stuck-release recovery joins the runbook (DD-252).
+  the `--wait` stuck-release recovery joins the runbook (DD-298).
 - The plugin targets are visible on the owning projects (`npx nx show project
 aurelius-atlas-server` shows `helm-lint`/`helm-template`/`helm-publish`, DD-293)
   and `-c ci` selects the CI configuration (CHT-05 wiring).

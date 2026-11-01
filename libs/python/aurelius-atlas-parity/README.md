@@ -44,6 +44,8 @@ stages:
   it into the text, also into an object key, `{{` and `}}` are literal braces.
 - **`{run}`** is saved before the first stage: a value unique to each run, for names a scenario creates in a
   store that keeps them (DD-055).
+- **`{user}`**, and any other value the test passes to `run_scenario` as `known`, is there from the first
+  stage: the user the client acts as, whom the server names in `createdBy`, `updatedBy` and audits (6.1b).
 - **`deviations`** turn the Atlas expectation into the Aurelius answer, each with its id from
   [Deviations](../../../docs/architecture/conversion/deviations.md).
 - **Paths** are the JSONPath subset `$`, `.name`, `['name']`, `[n]` and `[*]`. Quote them in YAML
