@@ -262,6 +262,9 @@
         <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/adr/template/</loc>
       </url>
       <url>
@@ -311,6 +314,39 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/1-6-types-rest/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-1-chart-foundation/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-10-digest-pinning-chart-signing/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-11-low-findings-hardening/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-12-server-auth-chart-wiring/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-2-stateful-platform/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-3-app-edge-charts/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-3b-observability-chart/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-6-network-segmentation/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-7-prod-realm/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-8-grafana-auth/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/10-9-per-producer-ingest-credentials/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/conversion/increments/2-1-entity-models/</loc>
@@ -533,6 +569,15 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/data-lifecycle-management/data-storage/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/deployment/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/deployment/runbook/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/deployment/secret-storage/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase6-6.2-authorization/architecture/platform/</loc>
