@@ -25,7 +25,7 @@ stages:
               atlas.entity.create.allowed: true
               atlas.ui.editable.entity.types: hdfs_path
               atlas.ui.default.version: v2
-              userName: admin
+              userName: "{user}"
               groups: [ADMIN]
               timezones: ["Java's TimeZone.getAvailableIDs()"]
               atlas.ui.date.timezone.format.enabled: true
@@ -38,9 +38,9 @@ stages:
               atlas.lineage.on.demand.default.node.count: 3
               atlas.relationship.search.enabled: false
               _csrfToken: "20 random letters and digits"
-          # A new token per session; its form is checked by the unit tests. The user and groups are the identity
-          # provider's user who asks (AUT-03, AUT-09), checked by the unit tests and the e2e sign-in.
-          volatile: [$._csrfToken, $.timezones, $.userName, $.groups]
+          # A new token per session; its form is checked by the unit tests. The groups are the identity provider's
+          # for the user who asks (AUT-03, AUT-09), checked by the unit tests and the e2e sign-in.
+          volatile: [$._csrfToken, $.timezones, $.groups]
           deviations:
               - { id: DV-105, path: "$['atlas.entity.update.allowed']", value: false }
               - { id: DV-105, path: "$['atlas.entity.create.allowed']", value: false }

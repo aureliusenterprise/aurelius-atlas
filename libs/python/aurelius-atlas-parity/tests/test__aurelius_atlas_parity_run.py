@@ -84,6 +84,32 @@ stages:
     assert all(name.startswith("t_") and name[2:].isalnum() for name in names)
 
 
+@pytest.mark.covers("aurelius_atlas_parity.run.run_scenario", rules=["USR-04"])
+async def test__run_scenario_knows_the_values_it_is_given(
+    write_scenario: WriteScenario, client: httpx.AsyncClient, app: SampleApp
+) -> None:
+    """A value the caller knows, such as ``{user}``, is there from the first stage; ``{run}`` stays the run's."""
+    scenario = scenario_from(
+        write_scenario,
+        """
+name: Create with the user's name
+source: [x]
+stages:
+  - request: {method: POST, url: /api/entities, json: {name: "{user}_{run}"}}
+    response:
+      status: 200
+      json: {guid: "", name: "{user}_{run}", createTime: 0}
+      volatile: [$.guid, $.createTime]
+""",
+    )
+
+    await run_scenario(scenario, client, {"user": "ann", "run": "ignored"})
+
+    (name,) = [entity["name"] for entity in app.entities.values()]
+    assert name.startswith("ann_")
+    assert name != "ann_ignored"
+
+
 @pytest.mark.covers("aurelius_atlas_parity.run.run_scenario", rules=["SCN-02", "SCN-08"])
 async def test__run_scenario_sends_params_headers_and_bodies(
     write_scenario: WriteScenario, client: httpx.AsyncClient

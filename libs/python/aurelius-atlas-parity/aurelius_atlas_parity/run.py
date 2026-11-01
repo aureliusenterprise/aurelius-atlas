@@ -98,18 +98,19 @@ def _saved(name: str, saved: Mapping[str, Any]) -> Any:  # noqa: ANN401 - any JS
     return saved[name]
 
 
-async def run_scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
+async def run_scenario(scenario: Scenario, client: httpx.AsyncClient, known: Mapping[str, Any] | None = None) -> None:
     """Run a scenario's stages in order through the client (SCN-05); ``{run}`` is unique to the run (SCN-16).
 
     Args:
         scenario: The scenario, as ``load_scenarios`` gives it.
         client: Talks to the application under test, in-process or over HTTP; the caller owns it.
+        known: Values known before the first stage, such as ``{user}``, the user the client acts as (USR-04).
 
     Raises:
         ScenarioFailedError: A stage's response differs from its expectation, or the stage cannot run; later
             stages do not run.
     """
-    saved: dict[str, Any] = {RUN: uuid.uuid4().hex}
+    saved: dict[str, Any] = {**(known or {}), RUN: uuid.uuid4().hex}
     for number, stage in enumerate(scenario.stages, start=1):
         differences: list[str | Difference]
         try:

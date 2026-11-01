@@ -11,5 +11,8 @@ SCENARIOS = Path(__file__).parents[1] / "scenarios"
 @pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
 async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
-    """Each parity scenario passes against the container image over HTTPS, on the dev store (ADR 052)."""
-    await run_scenario(scenario, client)
+    """Each parity scenario passes against the container image over HTTPS, on the dev store (ADR 052).
+
+    The client acts as the dev realm's writer, whom the writes name (USR-04).
+    """
+    await run_scenario(scenario, client, {"user": "aurelius-writer"})
