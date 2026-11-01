@@ -32,6 +32,7 @@ from aurelius_atlas_typesystem.entity_type import EntityType
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import TypeAdapter, ValidationError
 
+from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.types import validate_param_length
 
@@ -86,6 +87,7 @@ def writer(request: Request, store: EntityStore) -> EntityWriter:
     return EntityWriter(
         store,
         delete_type=DeleteType.of(settings.delete_type),
+        user=acting_user(request),
         tasks=tasks_enabled(request),
         notifier=notifier(request, store),
     )
@@ -93,7 +95,9 @@ def writer(request: Request, store: EntityStore) -> EntityWriter:
 
 def classifications(request: Request, store: EntityStore) -> EntityClassifications:
     """Classification changes, propagation deferred as the server's ``tasks_enabled`` setting says (TSK-02)."""
-    return EntityClassifications(store, tasks=tasks_enabled(request), notifier=notifier(request, store))
+    return EntityClassifications(
+        store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
+    )
 
 
 def delete_type(request: Request) -> DeleteType:
@@ -304,9 +308,9 @@ async def create_or_update(request: Request, body: Body, store: Store) -> AtlasJ
     entity = model_body(AtlasEntityWithExtInfo, body) or AtlasEntityWithExtInfo()
     return _json(
         (
-            await EntityWriter(store, tasks=tasks_enabled(request), notifier=notifier(request, store)).create_or_update(
-                entity
-            )
+            await EntityWriter(
+                store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
+            ).create_or_update(entity)
         ).to_json()
     )
 
@@ -317,9 +321,9 @@ async def create_or_update_bulk(request: Request, body: Body, store: Store) -> A
     entities = model_body(AtlasEntitiesWithExtInfo, body)
     return _json(
         (
-            await EntityWriter(store, tasks=tasks_enabled(request), notifier=notifier(request, store)).create_or_update(
-                entities
-            )
+            await EntityWriter(
+                store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
+            ).create_or_update(entities)
         ).to_json()
     )
 
@@ -337,7 +341,7 @@ async def partial_update_entity_by_unique_attrs(
     return _json(
         (
             await EntityWriter(
-                store, tasks=tasks_enabled(request), notifier=notifier(request, store)
+                store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
             ).update_by_unique_attributes(entity_type, attributes, entity)
         ).to_json()
     )
@@ -355,7 +359,7 @@ async def partial_update_entity_attr_by_guid(
     return _json(
         (
             await EntityWriter(
-                store, tasks=tasks_enabled(request), notifier=notifier(request, store)
+                store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
             ).update_attribute_by_guid(guid, name, body)
         ).to_json()
     )
@@ -498,7 +502,9 @@ async def set_classifications(request: Request, body: Body, store: Store) -> Res
     The array is Java's text, answered as it is; no body answers ``[]`` (DV-36).
     """
     headers = model_body(AtlasEntityHeaders, body)
-    associator = ClassificationAssociator(store, tasks=tasks_enabled(request), notifier=notifier(request, store))
+    associator = ClassificationAssociator(
+        store, user=acting_user(request), tasks=tasks_enabled(request), notifier=notifier(request, store)
+    )
     summary = await associator.set_classifications(None if headers is None else headers.guid_header_map)
     return Response(content=summary, media_type="application/json")
 

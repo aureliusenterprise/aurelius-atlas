@@ -79,8 +79,8 @@ stages:
                           isLegacyAttribute: false
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -105,8 +105,8 @@ stages:
                         cardinality: SINGLE
                         isLegacyAttribute: false
                     category: RELATIONSHIP
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[0].guid
@@ -118,19 +118,6 @@ stages:
           save:
               entity: $.entityDefs[0].guid
               relationship: $.relationshipDefs[0].guid
-          deviations:
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].updatedBy
-                absent: true
     - name: entitydef by name, with its relationship attributes
       request:
           method: GET
@@ -175,18 +162,11 @@ stages:
                     isLegacyAttribute: false
               businessAttributeDefs: {}
               category: ENTITY
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: entitydef by GUID
       request:
           method: GET
@@ -231,18 +211,11 @@ stages:
                     isLegacyAttribute: false
               businessAttributeDefs: {}
               category: ENTITY
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: relationshipdef by name
       request:
           method: GET
@@ -273,18 +246,11 @@ stages:
                   cardinality: SINGLE
                   isLegacyAttribute: false
               category: RELATIONSHIP
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: relationshipdef by GUID
       request:
           method: GET
@@ -315,18 +281,11 @@ stages:
                   cardinality: SINGLE
                   isLegacyAttribute: false
               category: RELATIONSHIP
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
           volatile:
               - $.createTime
               - $.updateTime
-          deviations:
-              - id: DV-06
-                path: $.createdBy
-                absent: true
-              - id: DV-06
-                path: $.updatedBy
-                absent: true
     - name: an entity's lookup does not find a relationship
       request:
           method: GET

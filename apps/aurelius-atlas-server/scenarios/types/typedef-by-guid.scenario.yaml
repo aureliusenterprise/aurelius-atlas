@@ -22,8 +22,8 @@ stages:
               classificationDefs:
                   - category: CLASSIFICATION
                     guid: "a random UUID"
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                     createTime: 0
                     updateTime: 0
                     version: 1
@@ -42,9 +42,6 @@ stages:
               - "$.classificationDefs[0].createTime"
               - "$.classificationDefs[0].updateTime"
           save: { guid: "$.classificationDefs[0].guid" }
-          deviations:
-              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
     - name: found by its GUID
       request: { method: GET, url: "/api/atlas/v2/types/typedef/guid/{guid}" }
       response:
@@ -52,8 +49,8 @@ stages:
           json:
               category: CLASSIFICATION
               guid: "{guid}"
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
               createTime: 0
               updateTime: 0
               version: 1
@@ -65,9 +62,6 @@ stages:
               entityTypes: []
               subTypes: []
           volatile: ["$.createTime", "$.updateTime"]
-          deviations:
-              - { id: DV-06, path: $.createdBy, absent: true }
-              - { id: DV-06, path: $.updatedBy, absent: true }
     - name: an unknown GUID
       request: { method: GET, url: /api/atlas/v2/types/typedef/guid/scenario-by-guid-missing }
       response:

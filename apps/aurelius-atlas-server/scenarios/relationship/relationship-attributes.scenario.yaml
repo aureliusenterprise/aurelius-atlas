@@ -108,8 +108,8 @@ stages:
                           isLegacyAttribute: false
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -155,8 +155,8 @@ stages:
                           isLegacyAttribute: true
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -181,8 +181,8 @@ stages:
                         cardinality: SET
                         isLegacyAttribute: false
                     category: RELATIONSHIP
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[0].guid
@@ -194,25 +194,6 @@ stages:
               - $.relationshipDefs[0].guid
               - $.relationshipDefs[0].createTime
               - $.relationshipDefs[0].updateTime
-          deviations:
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].updatedBy
-                absent: true
     - name: create two databases and a table whose db is the first
       request:
           method: POST
@@ -329,21 +310,14 @@ stages:
                           qualifiedName: db1_{run}
                           relationshipType: scenario_xtable_db_{run}
                   labels: []
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
               - $.entity.relationshipAttributes.db.relationshipGuid
           save:
               rel1: $.entity.relationshipAttributes.db.relationshipGuid
-          deviations:
-              - id: DV-15
-                path: $.entity.createdBy
-                absent: true
-              - id: DV-15
-                path: $.entity.updatedBy
-                absent: true
     - name: the database lists the table among its tables
       request:
           method: GET
@@ -377,18 +351,11 @@ stages:
                             qualifiedName: t_{run}
                             relationshipType: scenario_xtable_db_{run}
                   labels: []
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
-          deviations:
-              - id: DV-15
-                path: $.entity.createdBy
-                absent: true
-              - id: DV-15
-                path: $.entity.updatedBy
-                absent: true
     - name: moving the table to the second database updates both databases (reported in the order reached, DV-21)
       request:
           method: POST
@@ -477,18 +444,11 @@ stages:
                             qualifiedName: t_{run}
                             relationshipType: scenario_xtable_db_{run}
                   labels: []
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
-          deviations:
-              - id: DV-15
-                path: $.entity.createdBy
-                absent: true
-              - id: DV-15
-                path: $.entity.updatedBy
-                absent: true
     - name: the table reads the second database
       request:
           method: GET
@@ -526,19 +486,12 @@ stages:
                           qualifiedName: db2_{run}
                           relationshipType: scenario_xtable_db_{run}
                   labels: []
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
               - $.entity.relationshipAttributes.db.relationshipGuid
-          deviations:
-              - id: DV-15
-                path: $.entity.createdBy
-                absent: true
-              - id: DV-15
-                path: $.entity.updatedBy
-                absent: true
     - name: delete the three
       request:
           method: DELETE

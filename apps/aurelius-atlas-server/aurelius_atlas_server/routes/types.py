@@ -9,6 +9,7 @@ from aurelius_atlas_model.typedef import AtlasTypesDef, TypeCategory
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import ValidationError
 
+from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 
 TYPES = APIRouter(prefix="/api/atlas/v2/types", tags=["Types"])
@@ -98,15 +99,15 @@ async def get_all_typedefs(request: Request, store: Store) -> AtlasJSONResponse:
 
 
 @TYPES.post("/typedefs")
-async def create_typedefs(types_def: Body, store: Store) -> AtlasJSONResponse:
-    """``createAtlasTypeDefs``: create the definitions, all or none (TYR-09)."""
-    return _json((await store.create_types_def(types_def)).to_json())
+async def create_typedefs(request: Request, types_def: Body, store: Store) -> AtlasJSONResponse:
+    """``createAtlasTypeDefs``: create the definitions, all or none, as the request's user (TYR-09, USR-02)."""
+    return _json((await store.create_types_def(types_def, user=acting_user(request))).to_json())
 
 
 @TYPES.put("/typedefs")
-async def update_typedefs(types_def: Body, store: Store) -> AtlasJSONResponse:
-    """``updateAtlasTypeDefs``: update the definitions, all or none (TYR-09)."""
-    return _json((await store.update_types_def(types_def)).to_json())
+async def update_typedefs(request: Request, types_def: Body, store: Store) -> AtlasJSONResponse:
+    """``updateAtlasTypeDefs``: update the definitions, all or none, as the request's user (TYR-09, USR-02)."""
+    return _json((await store.update_types_def(types_def, user=acting_user(request))).to_json())
 
 
 @TYPES.delete("/typedefs", status_code=204)

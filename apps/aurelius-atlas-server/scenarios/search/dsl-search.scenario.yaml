@@ -53,8 +53,8 @@ stages:
                     entityTypes: []
                     subTypes: []
                     category: CLASSIFICATION
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               entityDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -79,8 +79,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
@@ -90,11 +90,6 @@ stages:
               - $.entityDefs[*].guid
               - $.entityDefs[*].createTime
               - $.entityDefs[*].updateTime
-          deviations:
-              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
     - name: create two tables
       request:
           method: POST

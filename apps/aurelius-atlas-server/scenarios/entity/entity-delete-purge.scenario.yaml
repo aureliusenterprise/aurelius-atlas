@@ -66,8 +66,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -91,8 +91,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -137,21 +137,14 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[*].guid
               - $.entityDefs[*].createTime
               - $.entityDefs[*].updateTime
-          deviations:
-              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[1].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[1].updatedBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[2].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[2].updatedBy", absent: true }
     - name: create a database, and a table that refers to it and owns a column
       request:
           method: POST
@@ -258,8 +251,8 @@ stages:
                       isIncomplete: false
                       provenanceType: 0
                       status: ACTIVE
-                      createdBy: admin
-                      updatedBy: admin
+                      createdBy: "{user}"
+                      updatedBy: "{user}"
                       createTime: 0
                       updateTime: 0
                       version: 0
@@ -279,8 +272,8 @@ stages:
                   isIncomplete: false
                   provenanceType: 0
                   status: ACTIVE
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
                   createTime: 0
                   updateTime: 0
                   version: 0
@@ -290,11 +283,6 @@ stages:
               - $.entity.updateTime
               - $.referredEntities[*].createTime
               - $.referredEntities[*].updateTime
-          deviations:
-              - { id: DV-15, path: $.entity.createdBy, absent: true }
-              - { id: DV-15, path: $.entity.updatedBy, absent: true }
-              - { id: DV-15, path: "$.referredEntities[*].createdBy", absent: true }
-              - { id: DV-15, path: "$.referredEntities[*].updatedBy", absent: true }
     - name: deleting the table by its unique value deletes the column it owns
       request:
           method: DELETE

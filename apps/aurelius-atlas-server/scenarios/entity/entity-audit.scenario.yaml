@@ -44,8 +44,8 @@ stages:
                     entityTypes: []
                     subTypes: []
                     category: CLASSIFICATION
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               entityDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -80,8 +80,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
@@ -91,11 +91,6 @@ stages:
               - $.entityDefs[*].guid
               - $.entityDefs[*].createTime
               - $.entityDefs[*].updateTime
-          deviations:
-              - { id: DV-06, path: "$.classificationDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.classificationDefs[0].updatedBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
     - name: create a table
       request:
           method: POST
@@ -185,7 +180,7 @@ stages:
           json:
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: ENTITY_DELETE
                 details: Deleted entity
                 eventKey: "{table}:<timestamp>:0:<now>"
@@ -193,7 +188,7 @@ stages:
                 type: null
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: CLASSIFICATION_DELETE
                 details: "Deleted classification: scenario_atag_{run}"
                 eventKey: "{table}:<timestamp>:0:<now>"
@@ -201,7 +196,7 @@ stages:
                 type: null
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: CLASSIFICATION_ADD
                 details: 'Added classification: {"typeName":"scenario_atag_{run}","entityGuid":"{table}", …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
@@ -209,7 +204,7 @@ stages:
                 type: null
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: ENTITY_UPDATE
                 details: 'Updated: {"typeName":"scenario_atable_{run}", … "size":7 …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
@@ -217,7 +212,7 @@ stages:
                 type: null
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: ENTITY_CREATE
                 details: 'Created: {"typeName":"scenario_atable_{run}", …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
@@ -230,12 +225,6 @@ stages:
               - $[2].details
               - $[3].details
               - $[4].details
-          deviations:
-              - { id: DV-109, path: "$[0].user", value: null }
-              - { id: DV-109, path: "$[1].user", value: null }
-              - { id: DV-109, path: "$[2].user", value: null }
-              - { id: DV-109, path: "$[3].user", value: null }
-              - { id: DV-109, path: "$[4].user", value: null }
     - name: only its creation, by action
       request:
           method: GET
@@ -246,15 +235,13 @@ stages:
           json:
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: ENTITY_CREATE
                 details: 'Created: {"typeName":"scenario_atable_{run}", …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
                 entity: null
                 type: null
           volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
-          deviations:
-              - { id: DV-109, path: "$[0].user", value: null }
     - name: sorted by time, oldest first, two from the first
       request:
           method: GET
@@ -265,7 +252,7 @@ stages:
           json:
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: ENTITY_CREATE
                 details: 'Created: {"typeName":"scenario_atable_{run}", …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
@@ -273,16 +260,13 @@ stages:
                 type: null
               - entityId: "{table}"
                 timestamp: 0
-                user: admin
+                user: "{user}"
                 action: ENTITY_UPDATE
                 details: 'Updated: {"typeName":"scenario_atable_{run}", … "size":7 …}'
                 eventKey: "{table}:<timestamp>:0:<now>"
                 entity: null
                 type: null
           volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
-          deviations:
-              - { id: DV-109, path: "$[0].user", value: null }
-              - { id: DV-109, path: "$[1].user", value: null }
     - name: no audit for a GUID no entity had
       request: { method: GET, url: "/api/atlas/v2/entity/no-such-guid-{run}/audit" }
       response:

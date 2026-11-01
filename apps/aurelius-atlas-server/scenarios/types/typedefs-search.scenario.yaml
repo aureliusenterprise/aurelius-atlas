@@ -51,8 +51,8 @@ stages:
                         - value: ONE
                           ordinal: 1
                     category: ENUM
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               structDefs: []
               classificationDefs: []
               entityDefs:
@@ -71,8 +71,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -88,8 +88,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
@@ -106,25 +106,6 @@ stages:
               enum: $.enumDefs[0].guid
               base: $.entityDefs[0].guid
               child: $.entityDefs[1].guid
-          deviations:
-              - id: DV-06
-                path: $.enumDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.enumDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].updatedBy
-                absent: true
     - name: every definition of the service type, each kind sorted by name
       request:
           method: GET
@@ -147,8 +128,8 @@ stages:
                         - value: ONE
                           ordinal: 1
                     category: ENUM
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               structDefs: []
               classificationDefs: []
               entityDefs:
@@ -167,8 +148,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: "{child}"
                     createTime: 0
                     updateTime: 0
@@ -184,8 +165,8 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
@@ -195,25 +176,6 @@ stages:
               - $.entityDefs[0].updateTime
               - $.entityDefs[1].createTime
               - $.entityDefs[1].updateTime
-          deviations:
-              - id: DV-06
-                path: $.enumDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.enumDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].updatedBy
-                absent: true
     - name: the entity types with a super type
       request:
           method: GET
@@ -243,20 +205,13 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[0].createTime
               - $.entityDefs[0].updateTime
-          deviations:
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
     - name: the headers of the service type, except one name
       request:
           method: GET
