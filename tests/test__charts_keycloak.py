@@ -724,7 +724,9 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
     roles = asset["roles"]["client"]
     assert {r["name"] for r in roles["aurelius"]} == {"aurelius-write"}
     assert {r["name"] for r in roles["grafana"]} == {"admin", "editor"}  # CHT-81
-    assert set(roles) == {"aurelius", "grafana"}
+    atlas = {"atlas-read", "atlas-write", "atlas-types", "atlas-admin"}
+    assert {r["name"] for r in roles["aurelius-atlas-server"]} == atlas  # 6.2c, DD-300
+    assert set(roles) == {"aurelius", "aurelius-atlas-server", "grafana"}
 
 
 @pytest.mark.covers(rules=["CHT-76", "CHT-110"])
@@ -895,7 +897,7 @@ def test__grafana_host_token_follows_the_host_rule() -> None:
     assert "https://foo.localhost/login/generic_oauth" in text
 
 
-@pytest.mark.covers(rules=["CHT-79", "CHT-110"])
+@pytest.mark.covers(rules=["CHT-79", "CHT-110", "AUZ-15"])
 def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     """The two-realm drift guard (CHT-79): application peers must match.
 
@@ -957,6 +959,10 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     (prod_role,) = prod["roles"]["client"]["aurelius"]
     (prod_client,) = [c for c in prod["clients"] if c["clientId"] == "aurelius"]
     assert strip_ids(prod_role) == {**strip_ids(dev_role), "containerId": prod_client["id"]}
+    # 6.2c (DD-300): the server client's four atlas roles, and their mapping into
+    # the aurelius client's scope, are dev's exactly; no user holds them in prod.
+    assert prod["roles"]["client"]["aurelius-atlas-server"] == dev["roles"]["client"]["aurelius-atlas-server"]
+    assert prod["clientScopeMappings"] == {"aurelius-atlas-server": dev["clientScopeMappings"]["aurelius-atlas-server"]}
 
 
 @pytest.mark.covers(rules=["CHT-80", "CHT-87"])

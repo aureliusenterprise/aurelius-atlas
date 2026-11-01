@@ -29,6 +29,14 @@
     "bruteForceProtected": true,
     "bruteForceStrategy": "MULTIPLE",
     "clientAuthenticationFlow": "clients",
+    "clientScopeMappings": {
+        "aurelius-atlas-server": [
+            {
+                "client": "aurelius",
+                "roles": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            }
+        ]
+    },
     "clientScopes": [
         {
             "attributes": {
@@ -413,6 +421,36 @@
                     "containerId": "4d343b10-a5b5-5d29-a8d8-de22b2f14074",
                     "description": "Write access to the Aurelius example API (PUT/DELETE on /entities)",
                     "name": "aurelius-write"
+                }
+            ],
+            "aurelius-atlas-server": [
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "Atlas: read types, entities and their classifications (6.2a, DD-300)",
+                    "name": "atlas-read"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "Atlas: create, update and delete entities, their classifications, labels, business metadata and relationships (6.2a, DD-300)",
+                    "name": "atlas-write"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "Atlas: create, update and delete type definitions (6.2a, DD-300)",
+                    "name": "atlas-types"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "Atlas: purge, export, import and admin audits (6.2a, DD-300)",
+                    "name": "atlas-admin"
                 }
             ],
             "grafana": [
