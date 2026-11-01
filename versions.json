@@ -160,11 +160,6 @@
     "aliases": []
   },
   {
-    "version": "feat-chart-server-auth",
-    "title": "feat-chart-server-auth",
-    "aliases": []
-  },
-  {
     "version": "feat-chart-prod-realm",
     "title": "feat-chart-prod-realm",
     "aliases": []
