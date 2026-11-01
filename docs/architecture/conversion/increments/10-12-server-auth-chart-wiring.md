@@ -64,8 +64,7 @@ established in 10.1–10.3, extended here.)
 
 Chart-contract suites (run: `uv run pytest tests/test__charts_server.py
 tests/test__charts_keycloak.py tests/test__charts_umbrella.py
-tests/test__charts_data2model.py tests/test__charts_lineage_model.py
-tests/test__charts_validate_entity.py`):
+tests/test__charts_aux.py`):
 
 - `test__charts_server.py` — CHT-108: the auth env block on the stock render
   (issuer URL, realm, client id, audiences, CA path, secret join); the issuer
@@ -80,5 +79,5 @@ tests/test__charts_validate_entity.py`):
   generated roster with its one key; it renders for the keycloak-only and
   server-only installs and not for neither; CHT-111: server + aux `AUTH_REALM`
   equal the imported realm.
-- `test__charts_data2model.py` (+ lineage/validate twins) — CHT-111:
+- `test__charts_aux.py` (parametrised over the three aux charts) — CHT-111:
   `AUTH_REALM` follows `global.realm` (prod default and the master hatch).

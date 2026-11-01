@@ -262,7 +262,7 @@ def test__server_client_secret_gates_on_both_consumers() -> None:
     assert secret["data"]["client-secret"] == "c3VwcGxpZWQtc3J2"  # b64("supplied-srv")
 
 
-@pytest.mark.covers(rules=["CHT-108", "CHT-109"])
+@pytest.mark.covers(rules=["CHT-108", "CHT-109", "CHT-110"])
 def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[str, Any]]) -> None:
     """The composed render closes the loop: server join == import env == Secret.
 
@@ -413,7 +413,7 @@ def test__network_policy_off_drops_umbrella_scope(umbrella_docs: list[dict[str, 
     assert inventory(docs) == inventory(umbrella_docs)
 
 
-@pytest.mark.covers(rules=["CHT-74"])
+@pytest.mark.covers(rules=["CHT-74", "CHT-111"])
 def test__every_consumer_names_the_imported_realm(umbrella_docs: list[dict[str, Any]]) -> None:
     """One realm fact, every join (CHT-74).
 

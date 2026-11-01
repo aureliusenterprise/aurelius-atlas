@@ -85,7 +85,7 @@ def test__hostname_chain() -> None:
     assert hostname(("global.domain=atlas.example", "hostname=", "global.issuer.url=")) == "keycloak.atlas.example"
 
 
-@pytest.mark.covers(rules=["CHT-16", "CHT-80", "CHT-89"])
+@pytest.mark.covers(rules=["CHT-16", "CHT-80", "CHT-89", "CHT-110"])
 def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> None:
     """Every credential arrives via secretKeyRef, none inline (CHT-16/19).
 
@@ -680,7 +680,7 @@ def test__unknown_realm_fails_the_render() -> None:
     assert "not a shipped realm asset" in error
 
 
-@pytest.mark.covers(rules=["CHT-75"])
+@pytest.mark.covers(rules=["CHT-75", "CHT-110"])
 def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str, Any]]) -> None:
     """Minimal authoring: the app's clients/roles/scope, no Keycloak built-ins.
 
@@ -727,7 +727,7 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
     assert set(roles) == {"aurelius", "grafana"}
 
 
-@pytest.mark.covers(rules=["CHT-76"])
+@pytest.mark.covers(rules=["CHT-76", "CHT-110"])
 def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
     """The pentest H3 list, read off the imported asset.
 
@@ -782,7 +782,7 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
         assert client["secret"] == f"${{{env}_CLIENT_SECRET}}"  # the placeholder rule, never a secret
 
 
-@pytest.mark.covers(rules=["CHT-77"])
+@pytest.mark.covers(rules=["CHT-77", "CHT-110"])
 def test__browser_origins_carry_the_deployed_hosts() -> None:
     """Host tokens substitute to real hosts; localhost never reaches a cluster.
 
@@ -895,7 +895,7 @@ def test__grafana_host_token_follows_the_host_rule() -> None:
     assert "https://foo.localhost/login/generic_oauth" in text
 
 
-@pytest.mark.covers(rules=["CHT-79"])
+@pytest.mark.covers(rules=["CHT-79", "CHT-110"])
 def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     """The two-realm drift guard (CHT-79): application peers must match.
 
