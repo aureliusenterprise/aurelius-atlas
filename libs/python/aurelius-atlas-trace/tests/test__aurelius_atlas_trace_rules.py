@@ -92,6 +92,20 @@ def test__read_rules_takes_parts_of_one_increment_as_one_source_of_truth(tmp_pat
 
 
 @pytest.mark.covers("aurelius_atlas_trace.rules.read_rules", rules=["TRC-08"])
+def test__read_rules_ignores_link_depth_in_shared_rows(tmp_path: Path) -> None:
+    """Two parts of one increment restate a shared row at different tree depths: the same rule."""
+    row = "| ESD-05 | The heap is fixed ([ADR 006](../adr/006-x.md)) |\n"
+    write_spec(tmp_path / "a" / "specs" / "0-2-slug", "spec.md", row)
+    write_spec(
+        tmp_path / "b" / "c" / "specs" / "0-2-slug",
+        "spec.md",
+        "| ESD-05 | The heap is fixed ([ADR 006](../../adr/006-x.md)) |\n",
+    )
+
+    assert sorted(read_rules([tmp_path], Increment(0, 2))) == ["ESD-05"]
+
+
+@pytest.mark.covers("aurelius_atlas_trace.rules.read_rules", rules=["TRC-08"])
 def test__read_rules_refuses_a_rule_defined_twice(tmp_path: Path) -> None:
     """The same id in two increments is an error that names both files."""
     write_spec(tmp_path, "0-2-a.md", "| ABC-01 | One |\n")

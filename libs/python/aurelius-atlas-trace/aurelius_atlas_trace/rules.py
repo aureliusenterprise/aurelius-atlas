@@ -78,7 +78,13 @@ def _spec_files(root: Path) -> Iterator[tuple[Path, Increment]]:
 
 
 def _normalize(row: str) -> str:
-    """A rule row compared across files of one increment: the cells, with spacing ignored."""
+    """A rule row compared across files of one increment: the cells, with spacing ignored.
+
+    Relative path prefixes are stripped: the parts of a multi-project increment hold the same
+    shared row at different tree depths, so a link's `../` count differs while the rule does not.
+    """
+    while "../" in row:
+        row = row.replace("../", "")
     return "|".join(cell.strip() for cell in row.split("|"))
 
 
