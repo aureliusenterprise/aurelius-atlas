@@ -120,6 +120,19 @@ async def test__two_stores_racing_for_a_value_let_one_win(dev_store: Elasticsear
         await one.write([EntityChange(table(one, qualifiedName="race@e2e"))])
 
 
+async def recovered(store: EntityStore, seconds: float = 5.0) -> int:
+    """What ``recover`` undoes once the journal shows the entry: journal writes do not wait for a refresh (DD-247).
+
+    The test moves its clock past the lease at once; a real lease outlasts the index's refresh by far.
+    """
+    deadline = asyncio.get_running_loop().time() + seconds
+    found = await store.recover()
+    while found == 0 and asyncio.get_running_loop().time() < deadline:
+        await asyncio.sleep(0.25)
+        found = await store.recover()
+    return found
+
+
 @pytest.mark.covers(rules=["ENS-07", "ENS-08"])
 async def test__a_write_cut_short_is_undone_by_another_process(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -140,7 +153,7 @@ async def test__a_write_cut_short_is_undone_by_another_process(
         )
     clock[0] += LEASE_MILLISECONDS / 1000 + 1
 
-    assert await survivor.recover() == 1
+    assert await recovered(survivor) == 1
 
     restored = await survivor.get(kept.guid)
     assert restored is not None

@@ -4,23 +4,14 @@ Atlas's ``AtlasBaseModelObject`` gives a new object a negative GUID; its sets of
 ``set_attribute`` is the partial update of ``GlossaryREST`` (GLS-03, GCT-05, GTM-04).
 """
 
-import itertools
 import json
-import time
 from enum import Enum, StrEnum
 from typing import Any
 
 from pydantic import Field
 
-from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.base import AtlasModel, new_model_guid
 from aurelius_atlas_model.instance import AtlasClassification, AtlasRelatedObjectId
-
-_NEXT_ID = itertools.count(time.monotonic_ns())
-
-
-def _new_guid() -> str:
-    """``AtlasBaseModelObject.init``: ``-`` and the next internal id."""
-    return f"-{next(_NEXT_ID) + 1}"
 
 
 class AtlasTermRelationshipStatus(StrEnum):
@@ -105,7 +96,7 @@ class AtlasTermCategorizationHeader(AtlasModel):
 class AtlasGlossaryBaseObject(AtlasModel):
     """``AtlasGlossaryBaseObject``: what glossaries, categories and terms share."""
 
-    guid: str = Field(default_factory=_new_guid)
+    guid: str = Field(default_factory=new_model_guid)
     qualified_name: str | None = None
     name: str | None = None
     short_description: str | None = None

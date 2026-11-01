@@ -31,7 +31,7 @@ from aurelius_atlas_core.glossary_dto import (
     ATLAS_GLOSSARY_CATEGORY_TYPENAME,
     ATLAS_GLOSSARY_TERM_TYPENAME,
     ATLAS_GLOSSARY_TYPENAME,
-    DataAccess,
+    glossary_data_access,
     glossary_from,
 )
 from aurelius_atlas_core.glossary_term_utils import GlossaryTermUtils, ImportCache
@@ -91,7 +91,7 @@ class GlossaryService:
         self._store = store
         self._user = user
         self._notifier = notifier
-        self._data_access = DataAccess(store, user=user)
+        self._data_access = glossary_data_access(store, user=user)
         self._category_utils = GlossaryCategoryUtils(store, self._data_access, user=user)
         self._term_utils = GlossaryTermUtils(store, self._data_access, user=user, tasks=tasks, notifier=notifier)
 

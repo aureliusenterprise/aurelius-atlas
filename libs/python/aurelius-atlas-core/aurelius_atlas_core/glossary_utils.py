@@ -16,10 +16,10 @@ from aurelius_atlas_model.glossary import (
 )
 from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelationship
 
+from aurelius_atlas_core.data_access import DataAccess
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.glossary_dto import DataAccess
 from aurelius_atlas_core.relationship_store import RelationshipStore
 
 

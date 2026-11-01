@@ -1,0 +1,211 @@
+name: A user saves searches, reads, renames, runs and deletes them
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#addSavedSearch
+    - webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java#executeSavedSearch
+    - repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java#checkSavedSearchOwnership
+    - repository/src/main/java/org/apache/atlas/repository/userprofile/UserProfileService.java
+    - repository/src/main/java/org/apache/atlas/repository/ogm/profiles/AtlasSavedSearchDTO.java
+    - intg/src/main/java/org/apache/atlas/model/profile/AtlasUserSavedSearch.java
+    - repository/src/test/java/org/apache/atlas/repository/userprofile/UserProfileServiceTest.java
+rules: [SVS-01, SVS-02, SVS-03, SVS-04, SVS-05, SVS-06]
+covers:
+    - aurelius_atlas_server.routes.discovery.add_saved_search
+    - aurelius_atlas_server.routes.discovery.update_saved_search
+    - aurelius_atlas_server.routes.discovery.get_saved_searches
+    - aurelius_atlas_server.routes.discovery.get_saved_search
+    - aurelius_atlas_server.routes.discovery.execute_saved_search_by_name
+    - aurelius_atlas_server.routes.discovery.execute_saved_search_by_guid
+    - aurelius_atlas_server.routes.discovery.delete_saved_search
+stages:
+    - name: an asset to find
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json: { entity: { typeName: Asset, attributes: { qualifiedName: "saved_{run}", name: "saved_{run}" } } }
+      response:
+          status: 200
+          json:
+              mutatedEntities: the created asset
+              guidAssignments: its GUID
+          volatile: [$.mutatedEntities, $.guidAssignments]
+          save:
+              asset: $.mutatedEntities.CREATE[0].guid
+    - name: a basic search saved without an owner is the user's
+      request:
+          method: POST
+          url: /api/atlas/v2/search/saved
+          json:
+              name: "basic_{run}"
+              searchType: BASIC
+              searchParameters: { typeName: Asset, query: "saved_{run}", limit: 10 }
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              ownerName: "{user}"
+              name: "basic_{run}"
+              searchType: BASIC
+              searchParameters:
+                  query: "saved_{run}"
+                  typeName: Asset
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 10
+                  offset: 0
+          volatile: [$.guid]
+          save:
+              basic: $.guid
+    - name: the same name again is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/search/saved
+          json: { name: "basic_{run}", searchParameters: { typeName: Asset } }
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-006
+              errorMessage: "search named basic_{run} already exists for user {user}"
+    - name: a search of another owner is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/search/saved
+          json: { name: "other_{run}", ownerName: "someone_else_{run}", searchParameters: { typeName: Asset } }
+      response:
+          status: 400
+          json: { errorCode: ATLAS-400-00-029, errorMessage: invalid data }
+    - name: a DSL search saved too
+      request:
+          method: POST
+          url: /api/atlas/v2/search/saved
+          json:
+              name: "dsl_{run}"
+              searchType: ADVANCED
+              searchParameters: { typeName: Asset, query: "where name = 'saved_{run}'", limit: 5 }
+              uiParameters: "{}"
+      response:
+          status: 200
+          json:
+              guid: a new GUID
+              ownerName: "{user}"
+              name: "dsl_{run}"
+              searchType: ADVANCED
+              searchParameters:
+                  query: "where name = 'saved_{run}'"
+                  typeName: Asset
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 5
+                  offset: 0
+              uiParameters: "{}"
+          volatile: [$.guid]
+          save:
+              dsl: $.guid
+    - name: the basic search runs by name
+      request:
+          method: GET
+          url: "/api/atlas/v2/search/saved/execute/basic_{run}"
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              queryText: "saved_{run}"
+              searchParameters: the saved parameters, as used
+              entities: the asset's header
+              approximateCount: 1
+          volatile: [$.searchParameters, $.entities]
+    - name: the DSL search runs by GUID, as its query on its type
+      request:
+          method: GET
+          url: /api/atlas/v2/search/saved/execute/guid/{dsl}
+      response:
+          status: 200
+          json:
+              queryType: DSL
+              queryText: "`Asset` where name = 'saved_{run}'"
+              entities: the asset's header
+              approximateCount: -1
+          volatile: [$.entities]
+    - name: the DSL search renamed
+      request:
+          method: PUT
+          url: /api/atlas/v2/search/saved
+          json:
+              guid: "{dsl}"
+              name: "renamed_{run}"
+              searchType: ADVANCED
+              searchParameters: { typeName: Asset, query: "where name = 'saved_{run}'", limit: 5 }
+      response:
+          status: 200
+          json:
+              guid: "{dsl}"
+              ownerName: "{user}"
+              name: "renamed_{run}"
+              searchType: ADVANCED
+              searchParameters: the saved parameters
+          volatile: [$.searchParameters]
+    - name: renamed to the name of the other is refused
+      request:
+          method: PUT
+          url: /api/atlas/v2/search/saved
+          json: { guid: "{dsl}", name: "basic_{run}", searchParameters: { typeName: Asset } }
+      response:
+          status: 409
+          json:
+              errorCode: ATLAS-409-00-006
+              errorMessage: "search named basic_{run} already exists for user {user}"
+    - name: read by name
+      request:
+          method: GET
+          url: "/api/atlas/v2/search/saved/renamed_{run}"
+      response:
+          status: 200
+          json:
+              guid: "{dsl}"
+              ownerName: "{user}"
+              name: "renamed_{run}"
+              searchType: ADVANCED
+              searchParameters: the saved parameters
+          volatile: [$.searchParameters]
+    - name: another user's searches are refused
+      request:
+          method: GET
+          url: /api/atlas/v2/search/saved
+          params: { user: "someone_else_{run}" }
+      response:
+          status: 400
+          json: { errorCode: ATLAS-400-00-029, errorMessage: invalid data }
+    - name: deleting both searches
+      request:
+          method: DELETE
+          url: /api/atlas/v2/search/saved/{dsl}
+      response:
+          status: 204
+    - name: and the other
+      request:
+          method: DELETE
+          url: /api/atlas/v2/search/saved/{basic}
+      response:
+          status: 204
+    - name: a deleted search is gone
+      request:
+          method: GET
+          url: /api/atlas/v2/search/saved/execute/guid/{basic}
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: "Given instance guid {basic} is invalid/not found"
+    - name: the asset is deleted
+      request:
+          method: DELETE
+          url: /api/atlas/v2/entity/guid/{asset}
+      response:
+          status: 200
+          json: { mutatedEntities: the deleted asset }
+          volatile: [$.mutatedEntities]

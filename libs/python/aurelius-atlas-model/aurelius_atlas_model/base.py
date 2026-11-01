@@ -3,6 +3,8 @@
 Used by the typedef models (``typedef``) and the instance models (``instance``) alike.
 """
 
+import itertools
+import time
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
@@ -12,6 +14,14 @@ from pydantic.alias_generators import to_camel
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MILLISECOND = timedelta(milliseconds=1)
+
+
+_NEXT_ID = itertools.count(time.monotonic_ns())
+
+
+def new_model_guid() -> str:
+    """``AtlasBaseModelObject.init``: a new object's GUID, ``-`` and the next internal id (GLS-01, SVS-01)."""
+    return f"-{next(_NEXT_ID) + 1}"
 
 
 def _read_epoch_millis(value: object) -> object:
