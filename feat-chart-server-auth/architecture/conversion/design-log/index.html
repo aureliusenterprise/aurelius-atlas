@@ -6862,6 +6862,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-299. helm-lint vendors umbrella dependencies like helm-template
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -14349,6 +14360,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-299. helm-lint vendors umbrella dependencies like helm-template
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -16016,6 +16038,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><code>helm install --wait</code> against a never-Ready workload leaves the release <code>pending-install</code> until uninstalled — runbook warns</td>
 <td>10.1</td>
 <td>Accepted</td>
+</tr>
+<tr>
+<td><a href="#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template">DD-299</a></td>
+<td><code>helm-lint</code> runs <code>helm dep update</code> before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values</td>
+<td>10.12</td>
+<td>Proposed</td>
 </tr>
 </tbody>
 </table>
@@ -24918,6 +24946,31 @@ wiring lands in a later increment) are exactly when an operator meets it.</p>
 <code>helm uninstall</code> recovery lines; 10.5's install script scripts the recovery
 (guard the wait with a pre-flight, or clean up on timeout) rather than
 discovering it again. Next free DD: 253.</p>
+<h3 id="dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template">DD-299. helm-lint vendors umbrella dependencies like helm-template<a class="headerlink" href="#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Accepted</li>
+<li><strong>Increment:</strong> 10.12</li>
+<li><strong>Date:</strong> 2026-11-01</li>
+</ul>
+<p><strong>Decision.</strong> The helm plugin's <code>helm-lint</code> target gains the
+<code>helm dep update &lt;chart&gt; &gt;/dev/null &amp;&amp;</code> prefix that <code>helm-template</code> and
+<code>helm-config-scan</code> already carry, for every chart.</p>
+<p><strong>Reason.</strong> The umbrella's subchart tarballs (<code>helm/charts/</code>) are gitignored;
+they exist only where someone has run <code>helm dep update</code> or <code>helm package -u</code>.
+Locally the lint always saw them, so the bare <code>helm lint</code> passed everywhere
+it was tried — but on a fresh CI checkout the umbrella lints with no
+dependency default values, and its own templates nil-pointer on
+<code>(index .Values "atlas-keycloak").realm.name</code> (a shape 10.12's
+<code>secret-keycloak.yaml</code> made unavoidable: it reads the subchart's realm name
+through the umbrella values the subchart defaults provide). The failure is
+the checkout's, not the chart's: the render targets had always vendored first
+(DD-282 learned the same about Trivy's renderer); <code>helm-lint</code> was the one
+target that assumed vendored state. <code>helm dep update</code> is a no-op for the
+dependency-free component charts and its <code>file://</code> repositories never leave
+the machine, so the prefix is uniform and cheap.</p>
+<p><strong>Consequences.</strong> #205's <code>Lint &amp; render charts</code> step goes green on a clean
+runner; the plugin's three render-family targets now share one provenance
+rule: never trust <code>helm/charts/</code> to exist. Next free DD: 300.</p>
 
 
 

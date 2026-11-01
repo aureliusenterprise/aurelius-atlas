@@ -281,6 +281,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-296](<#dd-296-61as-required-auth-settings-land-in-the-charts-as-joins>) | 6.1a's required server-auth settings land in the charts as issuer/realm/secret joins; the dashboards' browser leg stays dashboard-host-gated | 10.12 | Accepted |
 | [DD-297](<#dd-297-the-aux-apis-auth_realm-joins-globalrealm>) | The aux APIs' AUTH\_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74) | 10.12 | Accepted |
 | [DD-298](<#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall>) | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns | 10.1 | Accepted |
+| [DD-299](<#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template>) | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values | 10.12 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -4091,3 +4092,15 @@ Next free DD: 282.
 **Reason.** Observed twice in the trial of DD-294: the first install timed out on the crash-looping aux pods and the stuck release blocked the fix-and-retry path with a confusing error unrelated to the actual defect. It is helm's documented behaviour, not a chart bug, so it belongs in the runbook, and mid-roadmap installs (subcharts that render no workloads yet, workloads whose wiring lands in a later increment) are exactly when an operator meets it.
 
 **Consequences.** The runbook gains the note and the `helm history` / `helm uninstall` recovery lines; 10.5's install script scripts the recovery (guard the wait with a pre-flight, or clean up on timeout) rather than discovering it again. Next free DD: 253.
+
+### DD-299. helm-lint vendors umbrella dependencies like helm-template
+
+- **Status:** Accepted
+- **Increment:** 10.12
+- **Date:** 2026-11-01
+
+**Decision.** The helm plugin's `helm-lint` target gains the `helm dep update <chart> >/dev/null &&` prefix that `helm-template` and `helm-config-scan` already carry, for every chart.
+
+**Reason.** The umbrella's subchart tarballs (`helm/charts/`) are gitignored; they exist only where someone has run `helm dep update` or `helm package -u`. Locally the lint always saw them, so the bare `helm lint` passed everywhere it was tried — but on a fresh CI checkout the umbrella lints with no dependency default values, and its own templates nil-pointer on `(index .Values "atlas-keycloak").realm.name` (a shape 10.12's `secret-keycloak.yaml` made unavoidable: it reads the subchart's realm name through the umbrella values the subchart defaults provide). The failure is the checkout's, not the chart's: the render targets had always vendored first (DD-282 learned the same about Trivy's renderer); `helm-lint` was the one target that assumed vendored state. `helm dep update` is a no-op for the dependency-free component charts and its `file://` repositories never leave the machine, so the prefix is uniform and cheap.
+
+**Consequences.** \#205's `Lint & render charts` step goes green on a clean runner; the plugin's three render-family targets now share one provenance rule: never trust `helm/charts/` to exist. Next free DD: 300.
