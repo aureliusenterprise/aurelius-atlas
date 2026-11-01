@@ -53,7 +53,10 @@ services:
             retries: 30
             start_period: 30s
         ports:
-            - ${ELASTICSEARCH_PORT}:9200
+            # Loopback-pinned (CHT-101): the store's dev publish rides the host
+            # gateway by default, so a shared/CI host serves the catalogue to
+            # its LAN. Consumers reach it on localhost (e2e) or in-network.
+            - "127.0.0.1:${ELASTICSEARCH_PORT}:9200"
         volumes:
             - data:/usr/share/elasticsearch/data
             - ../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro

@@ -1,0 +1,247 @@
+"""Chart-contract suite for the server chart (CHT-20/21/22, 10.3a).
+
+The shape the spec pins: a Deployment + ClusterIP Service on the settings
+port with HTTPS probes (the server always serves TLS, SRV-06); every settings
+value that names a peer is a join (store Service, generated credential
+Secrets, issuer URL), never a literal; the Certificate's SANs are exactly the
+names the webapp's nginx pins with proxy_ssl_name (CHT-25's twin).
+"""
+
+import json
+from pathlib import Path
+from typing import Any
+
+import pytest
+from conftest import (
+    SERVER_CHART,
+    container,
+    env_map,
+    env_value,
+    find,
+    helm_render,
+    helm_render_fails,
+    names,
+    peer_labels,
+    pod_spec,
+    policy_peers_by_port,
+)
+
+TEST_VALUES = (SERVER_CHART / "tests/values.test.yaml",)
+
+
+@pytest.mark.covers(rules=["CHT-20"])
+def test__deployment_and_https_service(server_docs: list[dict[str, Any]]) -> None:
+    """ClusterIP Service on the settings port; probes are HTTPS (SRV-06)."""
+    service = find(server_docs, "Service", "atlas-server")
+    assert service["spec"]["type"] == "ClusterIP"
+    assert service["spec"]["ports"] == [{"name": "https", "port": 21000, "targetPort": 21000, "protocol": "TCP"}]
+    deployment = find(server_docs, "Deployment", "atlas-server")
+    assert deployment["spec"]["replicas"] == 1
+    app = container(deployment, "server")
+    assert app["ports"] == [{"name": "https", "containerPort": 21000, "protocol": "TCP"}]
+    for probe_name, path in (
+        ("readinessProbe", "/api/atlas/admin/readiness"),
+        ("livenessProbe", "/api/atlas/admin/liveness"),
+    ):
+        probe = app[probe_name]
+        assert probe["httpGet"]["scheme"] == "HTTPS", probe_name
+        assert probe["httpGet"]["path"] == path
+        assert probe["httpGet"]["port"] == 21000
+
+
+@pytest.mark.covers(rules=["CHT-21"])
+def test__settings_are_joins_not_literals(server_docs: list[dict[str, Any]]) -> None:
+    """Store URL, ES password, and the CA/TLS paths all derive from peers."""
+    envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS") == '["https://atlas-elasticsearch:9200"]'
+    password = envs["AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD"]["valueFrom"]["secretKeyRef"]
+    assert password == {"name": "atlas-elasticsearch", "key": "elastic-password"}
+    for name in (
+        "AURELIUS_ATLAS_SERVER_TLS_CA_FILE",
+        "AURELIUS_ATLAS_SERVER_OTEL_CA_FILE",
+        "AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS",
+    ):
+        assert env_value(envs, name) == "/etc/aurelius-atlas/tls/ca.crt", name
+    # The leaf paths ride the Certificate's whole-Secret mount (CHT-22/27).
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_TLS_CERT_FILE") == "/etc/aurelius-atlas/tls/tls.crt"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_TLS_KEY_FILE") == "/etc/aurelius-atlas/tls/tls.key"
+    mount = find(server_docs, "Deployment", "atlas-server")["spec"]["template"]["spec"]["volumes"]
+    tls_volume = next(v for v in mount if v["name"] == "tls")
+    assert tls_volume["secret"]["secretName"] == "atlas-server-tls"
+
+
+@pytest.mark.covers(rules=["CHT-21", "CHT-90"])
+def test__telemetry_join_names_collector_and_issuer() -> None:
+    """telemetry.enabled wires OTEL_ENDPOINT/OTEL_TOKEN_URL/OTEL_CLIENT_SECRET.
+
+    CHT-90: on the prod realm the secret join is the chart's own client key
+    (its own ingest credential, DD-277); the container-facing env name stays
+    OTEL_CLIENT_SECRET either way.
+    """
+    docs = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=("telemetry.enabled=true",))
+    envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT") == "https://atlas-observability:4319"
+    assert (
+        env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL")
+        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+    )
+    client_secret = envs["AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert client_secret == {"name": "atlas-otel-clients", "key": "otel-atlas-server"}
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID") == "otel-atlas-server"
+
+
+@pytest.mark.covers(rules=["CHT-90", "CHT-91"])
+def test__master_realm_join_falls_back_to_the_shared_key() -> None:
+    """global.realm=master restores the shared ingest key on the join (CHT-90/91).
+
+    The master hatch keeps the master asset's single shared placeholder, so
+    the join reverts to OTEL_INGEST_CLIENT_SECRET while the env name and
+    client id stay as on the prod realm.
+    """
+    docs = helm_render(
+        SERVER_CHART,
+        value_files=TEST_VALUES,
+        sets=("telemetry.enabled=true", "global.realm=master"),
+    )
+    envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
+    client_secret = envs["AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert client_secret == {"name": "atlas-otel-clients", "key": "OTEL_INGEST_CLIENT_SECRET"}
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID") == "otel-atlas-server"
+
+
+@pytest.mark.covers(rules=["CHT-21"])
+def test__telemetry_off_renders_no_collector_env(server_docs: list[dict[str, Any]]) -> None:
+    """The default render carries no OTEL_ENDPOINT — telemetry is opt-in."""
+    envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
+    assert "AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT" not in envs
+    assert "AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET" not in envs
+
+
+@pytest.mark.covers(rules=["CHT-21"])
+def test__image_uid_pinned_with_fsgroup(server_docs: list[dict[str, Any]]) -> None:
+    """The dhi.io python nonroot uid (65532), no privilege (DD-257)."""
+    psc = pod_spec(find(server_docs, "Deployment", "atlas-server"))["securityContext"]
+    assert psc["runAsUser"] == 65532
+    assert psc["runAsGroup"] == 65532  # KSV-0021 (DD-282 follow-up)
+    assert psc["runAsNonRoot"] is True
+    assert psc["fsGroup"] == 65532
+    sc = container(find(server_docs, "Deployment", "atlas-server"), "server")["securityContext"]
+    assert sc["readOnlyRootFilesystem"] is True
+    assert sc["allowPrivilegeEscalation"] is False
+
+
+@pytest.mark.covers(rules=["CHT-22"])
+def test__certificate_sans_are_the_service_names(server_docs: list[dict[str, Any]]) -> None:
+    """The Service name and FQDN forms — nginx's proxy_ssl_name target."""
+    cert = find(server_docs, "Certificate", "atlas-server")
+    assert cert["spec"]["secretName"] == "atlas-server-tls"
+    assert cert["spec"]["dnsNames"] == [
+        "atlas-server",
+        "atlas-server.atlas",
+        "atlas-server.atlas.svc",
+        "atlas-server.atlas.svc.cluster.local",
+    ]
+    assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
+
+
+@pytest.mark.covers(rules=["CHT-108"])
+def test__auth_env_block_joins_issuer_realm_and_secret(server_docs: list[dict[str, Any]]) -> None:
+    """6.1a's required settings render as joins, unconditionally (CHT-108).
+
+    The server refuses to boot without AUTH_SERVER_URL/AUTH_CLIENT_SECRET,
+    so the block is not opt-in like telemetry: the issuer is the CHT-03
+    join, the realm the CHT-74 fact, the audiences the webapp's client
+    (AUT-02/10), the CA the Certificate's mounted ca.crt, and the secret the
+    <release>-server-client join the realm import resolves (CHT-109).
+    """
+    envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.test"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
+    join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "atlas-server-client", "key": "client-secret"}
+
+    # The realm fact retargets the auth realm with everything else (CHT-74).
+    master = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=("global.realm=master",))
+    master_envs = env_map(container(find(master, "Deployment", "atlas-server"), "server"))
+    assert env_value(master_envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "master"
+
+
+@pytest.mark.covers(rules=["CHT-108"])
+def test__auth_block_values_and_brought_secret_override(tmp_path: Path) -> None:
+    """auth.clientId/_audiences are values; credentialSecrets.serverClient brings your own."""
+    values = tmp_path / "auth.yaml"
+    values.write_text(
+        "auth:\n"
+        "    clientId: atlas-srv\n"
+        "    audiences:\n"
+        "        - aurelius\n"
+        "        - grafana\n"
+        "credentialSecrets:\n"
+        "    serverClient: my-auth-secret\n"
+    )
+    docs = helm_render(SERVER_CHART, value_files=(*TEST_VALUES, values))
+    envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "atlas-srv"
+    assert set(json.loads(env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES"))) == {"aurelius", "grafana"}
+    join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "my-auth-secret", "key": "client-secret"}
+
+
+@pytest.mark.covers(rules=["CHT-108"])
+def test__authless_render_fails_the_render() -> None:
+    """No issuer to verify against fails the render, not the pod (CHT-108).
+
+    AUTH_SERVER_URL is required since 6.1a, so the issuer guard (CHT-03's
+    required on global.domain/issuer.url) now fires on every render — the
+    authless-server crash cannot reach a cluster.
+    """
+    error = helm_render_fails(SERVER_CHART, value_files=TEST_VALUES, sets=("global.issuer.url=", "global.domain="))
+    assert "issuer" in error.lower()
+
+
+@pytest.mark.covers(rules=["CHT-22"])
+def test__no_password_renders_anywhere(server_docs: list[dict[str, Any]]) -> None:
+    """Secrets are refs; the render carries no credential material."""
+    assert not any(d["kind"] == "Secret" for d in server_docs)
+    text = str(server_docs)
+    assert "password:" not in text  # refs only carry key names, e.g. elastic-password
+
+
+@pytest.mark.covers(rules=["CHT-65"])
+def test__server_admits_webapp_and_lineage_model(server_docs: list[dict[str, Any]]) -> None:
+    """21000 accepts the webapp proxy and the lineage-model join only (CHT-65)."""
+    policy = find(server_docs, "NetworkPolicy", "atlas-server-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-server")
+    assert policy_peers_by_port(server_docs, "atlas-server-ingress") == {21000: {"atlas-webapp", "atlas-lineage-model"}}
+
+
+@pytest.mark.covers(rules=["CHT-65", "CHT-72"])
+def test__server_network_policy_off_changes_nothing_else() -> None:
+    """The disable switch removes the policy and nothing else (CHT-72's chart half)."""
+    on = helm_render(SERVER_CHART, value_files=TEST_VALUES)
+    off = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=("networkPolicy.enabled=false",))
+    assert "atlas-server-ingress" in names(on, "NetworkPolicy")
+    assert names(off, "NetworkPolicy") == set()
+
+    def rest(docs: list[dict[str, Any]]) -> list[tuple[str, str]]:
+        return sorted((d["kind"], d["metadata"]["name"]) for d in docs if d["kind"] != "NetworkPolicy")
+
+    assert rest(on) == rest(off)
+
+
+@pytest.mark.covers(rules=["CHT-92"])
+def test__image_digest_override_replaces_the_tag() -> None:
+    """image.digest renders <base>@<digest>, tag ignored (CHT-92).
+
+    Aurelius images ship the field empty (CHT-94: release integrity rides
+    the signed chart artifact, not a digest), so this is the operator
+    override path — the base registry/namespace/name stays put.
+    """
+    docs = helm_render(SERVER_CHART, value_files=TEST_VALUES, sets=(f"image.digest=sha256:{5:064d}",))
+    deployment = find(docs, "Deployment", "atlas-server")
+    assert container(deployment, "server")["image"] == (
+        "ghcr.io/aureliusenterprise/aurelius-atlas-server@sha256:" + "0" * 63 + "5"
+    )

@@ -1,0 +1,18 @@
+{{/*
+PodDisruptionBudget: one pod survives a node drain when replicas > 1 (the
+aux charts' shipped pattern; the server defaults to a single replica).
+*/}}
+{{- if gt (int .Values.replicaCount) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+    name: {{ include "atlas-server.fullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+spec:
+    minAvailable: 1
+    selector:
+        matchLabels:
+            {{- include "atlas-server.selectorLabels" . | nindent 12 }}
+{{- end }}

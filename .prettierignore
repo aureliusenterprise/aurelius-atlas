@@ -27,3 +27,6 @@ uv.lock
 .angular
 # Built-in models vendored from Apache Atlas release-2.4.0, kept byte-identical (DD-032)
 /libs/python/aurelius-atlas-core/aurelius_atlas_core/models
+# Helm chart templates are Go templates, not YAML — prettier cannot parse
+# them. helm lint/template gate them (CHT-06); values/Chart.yaml stay checked.
+**/helm/templates/

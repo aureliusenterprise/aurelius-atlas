@@ -1,0 +1,6 @@
+# Test values for `helm lint` / `helm template` (CHT-06): the shape CI
+# renders with — no cluster, no registry, no SOPS key. The minikube
+# environment stands in as "a deployment's values file".
+global:
+    domain: atlas.example
+    namespace: atlas

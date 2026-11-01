@@ -1,7 +1,7 @@
 name: Publish Documentation (Tag)
 
 concurrency:
-    group: "docs"
+    group: "docs-public"
 
 # Default-deny: mike deploy --push writes the public-docs branch and needs
 # contents:write; nothing else in this workflow needs a scope.

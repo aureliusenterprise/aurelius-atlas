@@ -256,6 +256,21 @@ nav:
                       - 9.2 Server hardening: architecture/conversion/increments/9-2-server-hardening.md
                       - 9.3 Search cost and client IP: architecture/conversion/increments/9-3-search-cost-client-ip.md
                       - 9.4 Edge tracing: architecture/conversion/increments/9-4-edge-tracing.md
+                      - 10.1 Deployment chart foundation: architecture/conversion/increments/10-1-chart-foundation.md
+                      - 10.2 Stateful platform charts: architecture/conversion/increments/10-2-stateful-platform.md
+                      - 10.3a App and edge charts: architecture/conversion/increments/10-3-app-edge-charts.md
+                      - 10.3b Observability chart: architecture/conversion/increments/10-3b-observability-chart.md
+                      - 10.6 Network segmentation: architecture/conversion/increments/10-6-network-segmentation.md
+                      - 10.7 Production identity realm: architecture/conversion/increments/10-7-prod-realm.md
+                      - 10.8 Grafana realm login: architecture/conversion/increments/10-8-grafana-auth.md
+                      - 10.9 Per-producer ingest credentials: architecture/conversion/increments/10-9-per-producer-ingest-credentials.md
+                      - 10.10 Digest-pinned images and signed charts: architecture/conversion/increments/10-10-digest-pinning-chart-signing.md
+                      - 10.11 Low-findings hardening: architecture/conversion/increments/10-11-low-findings-hardening.md
+                      - 10.12 Server authentication chart wiring: architecture/conversion/increments/10-12-server-auth-chart-wiring.md
+          - Deployment:
+                - architecture/deployment/index.md
+                - Runbook: architecture/deployment/runbook.md
+                - Secret Storage: architecture/deployment/secret-storage.md
           - Vision & Strategy:
                 - architecture/vision-and-strategy/index.md
                 - Mission Statement: architecture/vision-and-strategy/mission-statement.md

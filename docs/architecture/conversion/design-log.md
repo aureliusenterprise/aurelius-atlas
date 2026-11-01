@@ -34,222 +34,259 @@ decisions are ADRs in [Architecture Decisions](../adr/index.md).
 
 ## Log
 
-| #                                                                                                                   | Decision                                                                                                                          | Increment     | Status           |
-| ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------- | ---------------- |
-| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)                                      | Reference is Apache Atlas 2.4.0, and both dashboards are served                                                                   | 0.1           | Accepted         |
-| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                                        | Atlas code lives in aurelius-atlas projects split by layer                                                                        | 0.1           | Accepted         |
-| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                                        | Template projects are renamed to the aurelius-atlas prefix                                                                        | 0.1           | Accepted         |
-| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                                           | The SPA keeps tokens in memory and renews them silently                                                                           | 0.1           | Accepted         |
-| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                                            | The store uses the official async Elasticsearch client                                                                            | 0.2           | Proposed         |
-| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                                          | Development and tests run Elasticsearch with security on                                                                          | 0.2           | Proposed         |
-| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)                                       | The Elasticsearch test fixture ships with the store library                                                                       | 0.2           | Proposed         |
-| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                                                       | A yellow cluster is healthy                                                                                                       | 0.2           | Proposed         |
-| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)                                | Traceability is checked from collected markers, not from a test run                                                               | 0.3           | Proposed         |
-| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)                                     | The traceability check covers Atlas code from increment 0.2 on                                                                    | 0.3           | Proposed         |
-| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)                                  | The test report is generated from JUnit, coverage and trace files                                                                 | 0.3           | Proposed         |
-| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)                                  | Parity scenarios are YAML files run as parametrised pytest tests                                                                  | 0.4           | Proposed         |
-| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)                                  | A scenario response is compared exactly, except at declared paths                                                                 | 0.4           | Proposed         |
-| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                                                | Scenario facts reach the report as test properties                                                                                | 0.4           | Proposed         |
-| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)                            | The server is a FastAPI application with one router per Atlas resource                                                            | 0.5           | Proposed         |
-| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                                                       | The server does not start without its store                                                                                       | 0.5           | Proposed         |
-| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)                         | The dashboards are vendored unchanged and built with dart-sass on Node 24                                                         | 0.6           | Proposed         |
-| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                                             | The server serves the dashboards from the API's origin                                                                            | 0.6           | Proposed         |
-| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                                                 | The template examples stay until the plan is done                                                                                 | 0.6           | Proposed         |
-| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)                                | Typedef models are Pydantic models that read and write Atlas's JSON                                                               | 1.1           | Proposed         |
-| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                                         | Set-valued fields keep each name once, in first-seen order                                                                        | 1.1           | Proposed         |
-| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)                              | Typedef timestamps are aware datetimes, written as epoch milliseconds                                                             | 1.1           | Proposed         |
-| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                                            | Atlas errors live in the model library                                                                                            | 1.2           | Proposed         |
-| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)                               | The registry is updated on a transient copy under a re-entrant lock                                                               | 1.2           | Proposed         |
-| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                                                    | The type system ports the definition side only                                                                                    | 1.2           | Proposed         |
-| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)                                   | Dynamic attributes and search lookups wait for their increments                                                                   | 1.3           | Proposed         |
-| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                                           | Derived type sets keep first-seen order                                                                                           | 1.3           | Proposed         |
-| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                                               | The type definitions are one Elasticsearch document                                                                               | 1.4           | Proposed         |
-| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version)                         | Server processes share the type definitions through the document's version                                                        | 1.4           | Proposed         |
-| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                                          | The store asks the entity store whether a type is in use                                                                          | 1.4           | Proposed         |
-| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                                                    | The patch records live in the typedef document                                                                                    | 1.5           | Proposed         |
-| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)                              | The built-in models are vendored unchanged and read from a directory                                                              | 1.5           | Proposed         |
-| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)                                       | Start-up loading is one change per model file and per patch                                                                       | 1.5           | Proposed         |
-| [DD-034](#dd-034-lists-of-type-definitions-are-sorted-by-name)                                                      | Lists of type definitions are sorted by name                                                                                      | 1.6           | Proposed         |
-| [DD-035](#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end)                                   | Type scenarios create what they read and delete it at their end                                                                   | 1.6           | Proposed         |
-| [DD-036](#dd-036-start-up-loading-tries-a-raced-change-again)                                                       | Start-up loading tries a raced change again                                                                                       | 1.6           | Proposed         |
-| [DD-037](#dd-037-instance-models-are-one-module-per-java-class)                                                     | Instance models are one module per Java class                                                                                     | 2.1           | Proposed         |
-| [DD-038](#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them)                               | Attribute values stay plain JSON values until their types read them                                                               | 2.1           | Proposed         |
-| [DD-039](#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits)                   | One Atlas JSON codec reads floats as decimals and writes them with their digits                                                   | 2.1           | Proposed         |
-| [DD-040](#dd-040-java-values-are-held-as-the-python-values-closest-to-them)                                         | Java values are held as the Python values closest to them                                                                         | 2.1           | Proposed         |
-| [DD-041](#dd-041-the-type-system-is-one-module-per-java-type-class-too)                                             | The type system is one module per Java type class too                                                                             | 2.1           | Proposed         |
-| [DD-042](#dd-042-a-validity-period-without-a-time-zone-is-in-utc)                                                   | A validity period without a time zone is in UTC                                                                                   | 2.1           | Proposed         |
-| [DD-043](#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names)                        | Entities are documents of one index, their attributes under qualified names                                                       | 2.2           | Proposed         |
-| [DD-044](#dd-044-a-guid-is-a-random-uuid)                                                                           | A GUID is a random UUID                                                                                                           | 2.2           | Proposed         |
-| [DD-045](#dd-045-unique-values-are-reserved-by-create-only-documents)                                               | Unique values are reserved by create-only documents                                                                               | 2.2           | Proposed         |
-| [DD-046](#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal)                                          | A multi-entity write is all or nothing, through a journal                                                                         | 2.2           | Proposed         |
-| [DD-047](#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version)                                 | Entities are written conditionally on their Elasticsearch version                                                                 | 2.2           | Proposed         |
-| [DD-048](#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it)                                           | A type is in use while the entity index holds one of it                                                                           | 2.2           | Proposed         |
-| [DD-049](#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)                      | Attribute values are stored normalised; a struct inline, a reference as a GUID                                                    | 2.3           | Proposed         |
-| [DD-050](#dd-050-relationship-attributes-read-empty-until-relationships-are-stored)                                 | Relationship attributes read empty until relationships are stored                                                                 | 2.3           | Superseded by DD |
-| [DD-051](#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24)                            | Entity reads are tested on entities written through the store until 2.4                                                           | 2.3           | Proposed         |
-| [DD-052](#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again)                          | A request is mapped in memory and written once; a lost race runs it again                                                         | 2.4           | Proposed         |
-| [DD-053](#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31)          | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1                                        | 2.4           | Superseded by DD |
-| [DD-054](#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order)                                   | Dynamic attributes are evaluated in first-seen dependency order                                                                   | 2.4           | Proposed         |
-| [DD-055](#dd-055-scenarios-name-what-they-create-with-a-per-run-value)                                              | Scenarios name what they create with a per-run value                                                                              | 2.4           | Proposed         |
-| [DD-056](#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others)                                  | An entity write also removes documents, journaled like the others                                                                 | 2.5           | Proposed         |
-| [DD-057](#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids)                             | Entities referring to one are found through an indexed field of GUIDs                                                             | 2.5           | Proposed         |
-| [DD-058](#dd-058-a-stored-reference-stands-for-an-edge-active-for-a-delete-deleted-for-a-purge)                     | A stored reference stands for an edge: active for a delete, deleted for a purge                                                   | 2.5           | Proposed         |
-| [DD-059](#dd-059-the-delete-type-and-its-override-are-server-settings)                                              | The delete type and its override are server settings                                                                              | 2.5           | Proposed         |
-| [DD-060](#dd-060-the-owned-reference-cascade-moves-from-32-to-25)                                                   | The owned-reference cascade moves from 3.2 to 2.5                                                                                 | 2.5           | Proposed         |
-| [DD-061](#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends)                                | Relationships are documents of their own index, listed by both ends                                                               | 3.1           | Proposed         |
-| [DD-062](#dd-062-an-entity-write-also-writes-relationships-all-or-nothing)                                          | An entity write also writes relationships, all or nothing                                                                         | 3.1           | Proposed         |
-| [DD-063](#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes)                               | 3.1 is split into relationship instances and relationship attributes                                                              | 3.1           | Proposed         |
-| [DD-064](#dd-064-relationship-attribute-values-are-relationships)                                                   | Relationship attribute values are relationships                                                                                   | 3.1           | Proposed         |
-| [DD-065](#dd-065-a-relationship-keeps-one-array-index-the-last-writers)                                             | A relationship keeps one array index, the last writer's                                                                           | 3.1           | Proposed         |
-| [DD-066](#dd-066-relationship-attributes-are-mapped-in-memory-and-written-with-the-entities)                        | Relationship attributes are mapped in memory and written with the entities                                                        | 3.1           | Proposed         |
-| [DD-067](#dd-067-delete-cascades-follow-owned-relationships-from-31b)                                               | Delete cascades follow owned relationships from 3.1b                                                                              | 3.1           | Proposed         |
-| [DD-068](#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request)                          | Owned entities an update drops are deleted through a view of the request                                                          | 3.2           | Proposed         |
-| [DD-069](#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving)                           | A reference to a deleted entity stands for a deleted edge when reviving                                                           | 3.2           | Proposed         |
-| [DD-070](#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity)                  | Classification instances are documents of their own index, listed by their entity                                                 | 3.3           | Proposed         |
-| [DD-071](#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing)                               | An entity write also writes classification instances, all or nothing                                                              | 3.3           | Proposed         |
-| [DD-072](#dd-072-the-propagation-defaults-are-atlass-defaults)                                                      | The propagation defaults are Atlas's defaults                                                                                     | 3.3           | Proposed         |
-| [DD-073](#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator)                                   | 3.3 is split into direct classifications and the bulk associator                                                                  | 3.3           | Proposed         |
-| [DD-074](#dd-074-bulkheaders-moves-to-35)                                                                           | `bulk/headers` moves to 3.5                                                                                                       | 3.3           | Proposed         |
-| [DD-075](#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches)                                  | A propagated classification is listed by the entities it reaches                                                                  | 3.4           | Proposed         |
-| [DD-076](#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field)                          | The entities a classification reached are found through an indexed field                                                          | 3.4           | Proposed         |
-| [DD-077](#dd-077-propagation-runs-within-the-request-until-34b)                                                     | Propagation runs within the request until 3.4b                                                                                    | 3.4           | Proposed         |
-| [DD-078](#dd-078-34-is-split-into-propagation-and-propagation-tasks)                                                | 3.4 is split into propagation and propagation tasks                                                                               | 3.4           | Proposed         |
-| [DD-079](#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them)                  | Tasks are documents of their own index, written with the change that records them                                                 | 3.4           | Proposed         |
-| [DD-080](#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease)                                         | Every server process runs tasks, each claimed with a lease                                                                        | 3.4           | Proposed         |
-| [DD-081](#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default)                                               | Tasks are enabled by a server setting, on by default                                                                              | 3.4           | Proposed         |
-| [DD-082](#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change)                            | Audit events are documents of their own index, written after the change                                                           | 3.5           | Proposed         |
-| [DD-083](#dd-083-audit-events-keep-atlass-event-keys-and-their-order)                                               | Audit events keep Atlas's event keys and their order                                                                              | 3.5           | Proposed         |
-| [DD-084](#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed)                                         | The entity writer tells a change notifier what it changed                                                                         | 3.5           | Proposed         |
-| [DD-085](#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write)                   | Classification events are collected in the request and recorded after its write                                                   | 3.5           | Proposed         |
-| [DD-086](#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed)                              | Tag propagation records the propagations a request added and removed                                                              | 3.5           | Proposed         |
-| [DD-087](#dd-087-basic-search-is-split-into-entity-and-classification-search)                                       | Basic search is split into entity and classification search                                                                       | 4.1           | Proposed         |
-| [DD-088](#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type)             | Entity attributes are searched in typed search fields named after their defining type                                             | 4.1           | Proposed         |
-| [DD-089](#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given)             | A search is a query of the entity documents, ordered by creation when no sort is given                                            | 4.1           | Proposed         |
-| [DD-090](#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them)                      | A classification search finds instances first, then the entities listing them                                                     | 4.1           | Proposed         |
-| [DD-091](#dd-091-free-text-is-split-from-quick-search)                                                              | Free text is split from quick search                                                                                              | 4.2           | Proposed         |
-| [DD-092](#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights)                | String search fields carry an analysed text sub-field, searched with Atlas's weights                                              | 4.2           | Proposed         |
-| [DD-093](#dd-093-facets-are-aggregations-of-the-searchs-own-query)                                                  | Facets are aggregations of the search's own query                                                                                 | 4.2           | Proposed         |
-| [DD-094](#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields)                                         | Suggestions are terms aggregations of the text sub-fields                                                                         | 4.2           | Proposed         |
-| [DD-126](#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place)                                | The webapp is a new project, not the Aurelius app upgraded in place                                                               | 7.0           | Proposed         |
-| [DD-127](#dd-127-signals-replace-the-custom-store-each-slice-owns-its-state)                                        | Signals replace the custom store; each slice owns its state                                                                       | 7.0           | Proposed         |
-| [DD-128](#dd-128-aurelius-dictionaries-become-xliff-migrated-whole-with-the-json-as-fixture)                        | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                                                      | 7.1           | Proposed         |
-| [DD-129](#dd-129-google-analytics-and-clickstream-are-dropped-not-ported)                                           | Google Analytics and clickstream are dropped, not ported                                                                          | 7.1           | Proposed         |
-| [DD-130](#dd-130-the-webapps-config-is-a-typed-appconfig-and-environmentts-is-not-ported)                           | The webapp's config is a typed AppConfig, and `environment.ts` is not ported                                                      | 7.1           | Proposed         |
-| [DD-131](#dd-131-webapp-purity-is-a-checked-gate-not-a-review-convention)                                           | Webapp purity is a checked gate, not a review convention                                                                          | 7.0           | Proposed         |
-| [DD-132](#dd-132-the-wildcard-fallback-redirects-to-the-destination-not-through-the-root)                           | The wildcard fallback redirects to the destination, not through the root                                                          | 7.1           | Proposed         |
-| [DD-133](#dd-133-operational-telemetry-lands-with-71-the-auth-wiring-stays-with-73)                                 | Operational telemetry lands with 7.1; the auth wiring stays with 7.3                                                              | 7.1           | Proposed         |
-| [DD-134](#dd-134-the-design-system-slice-ports-the-in-use-components-not-the-library)                               | The design-system slice ports the in-use components, not the library                                                              | 7.2           | Proposed         |
-| [DD-135](#dd-135-component-services-dissolve-into-signal-state-nothing-is-ported-as-a-store)                        | Component services dissolve into signal state; nothing is ported as a store                                                       | 7.2           | Proposed         |
-| [DD-136](#dd-136-shared-chrome-strings-are-localisation-units-keyed-by-the-legacy-dictionary-paths)                 | Shared chrome strings are localisation units keyed by the legacy dictionary paths                                                 | 7.2           | Proposed         |
-| [DD-137](#dd-137-the-purity-gate-is-made-executable-over-libsangular)                                               | The purity gate is made executable over `libs/angular`                                                                            | 7.2           | Proposed         |
-| [DD-138](#dd-138-the-storybook-preview-loads-angularlocalizeinit)                                                   | The Storybook preview loads `@angular/localize/init`                                                                              | 7.2           | Proposed         |
-| [DD-139](#dd-139-the-client-owns-the-base-url-the-proxy-forwards-the-prefix-untouched)                              | The client owns the base URL; the proxy forwards the prefix untouched                                                             | 7.3           | Proposed         |
-| [DD-140](#dd-140-the-rest-client-ports-the-live-surface-the-search-client-is-redesigned-in-74)                      | The REST client ports the live surface; the search client is redesigned in 7.4                                                    | 7.3           | Proposed         |
-| [DD-141](#dd-141-auth-is-guarded-at-the-app-root-the-bearer-token-is-stated-inert-until-61)                         | Auth is guarded at the app root; the bearer token is stated inert until 6.1                                                       | 7.3           | Proposed         |
-| [DD-142](#dd-142-the-webapp-e2e-stack-runs-the-real-atlas-server-behind-the-proxy)                                  | The webapp e2e stack runs the real Atlas server behind the proxy                                                                  | 7.3           | Proposed         |
-| [DD-143](#dd-143-the-landing-page-is-ported-statically-search-affordances-and-shell-chrome-join-the-search-slice)   | The landing page is ported statically; search affordances and Shell chrome join the search slice                                  | 7.5           | Proposed         |
-| [DD-144](#dd-144-i18n-ids-carry-no-description-suffix-the-bridge-key-must-equal-the-extracted-id)                   | i18n ids carry no description suffix; the bridge key must equal the extracted id                                                  | 7.5           | Proposed         |
-| [DD-145](#dd-145-the-shell-chrome-is-ported-search-free-the-root-composes-header-and-footer)                        | The Shell chrome is ported search-free; the root composes header and footer                                                       | 7.11          | Proposed         |
-| [DD-146](#dd-146-session-chrome-injects-the-keycloak-js-keycloak-instance-not-keycloak-angulars-keycloakservice)    | Session chrome injects the keycloak-js `Keycloak` instance, not keycloak-angular's `KeycloakService`                              | 7.11          | Accepted         |
-| [DD-147](#dd-147-dev-keycloak-users-carry-default-roles-master-explicitly)                                          | Dev Keycloak users carry `default-roles-master` explicitly                                                                        | 7.11          | Accepted         |
-| [DD-148](#dd-148-the-aurelius-brand-lands-on-bulma-1-tokens-light-forced-legacy-metrics-pinned)                     | The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned                                                   | 7.12          | Accepted         |
-| [DD-149](#dd-149-critical-css-inlining-is-off-the-zoneless-csr-app-never-swaps-the-print-sheet)                     | Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet                                                    | 7.12          | Accepted         |
-| [DD-150](#dd-150-the-sticky-footer-is-the-legacy-rule-verbatim-page-content-sits-on-bulmas-grid)                    | The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid                                                  | 7.12          | Accepted         |
-| [DD-151](#dd-151-the-brand-re-emits-bulma-094s-text-ramp-not-just-the-body-metrics)                                 | The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics                                                             | 7.12          | Accepted         |
-| [DD-152](#dd-152-the-accent-ramp-primary-stays-bulma-teal-the-accents-take-the-bootstrap-map)                       | The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map                                                     | —             | Proposed         |
-| [DD-153](#dd-153-the-mobile-burger-chrome-grey-burger-blended-dropdowns-legacy-logout-anchor)                       | The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor                                                    | —             | Proposed         |
-| [DD-154](#dd-154-the-entity-card-emits-entityclicked-the-caller-navigates)                                          | The entity card emits `entityClicked`; the caller navigates                                                                       | —             | Proposed         |
-| [DD-155](#dd-155-the-select-is-one-field-with-a-searchrequested-output)                                             | The select is one field with a `searchRequested` output                                                                           | —             | Proposed         |
-| [DD-156](#dd-156-the-brand-ships-a-dark-ink-ramp-on-bulmas-dark-hosts)                                              | The brand ships a dark ink ramp on Bulma's dark hosts                                                                             | —             | Proposed         |
-| [DD-157](#dd-157-the-drawer-is-a-new-ui-lib-component-not-a-modal-or-a-dropdown)                                    | The drawer is a new ui-lib component, not a Modal or a dropdown                                                                   | 7.14          | Accepted         |
-| [DD-158](#dd-158-the-telemetry-switch-stops-exports-immediately-and-starts-them-on-reload)                          | The telemetry switch stops exports immediately and starts them on reload                                                          | 7.14          | Accepted         |
-| [DD-159](#dd-159-the-theme-choice-is-applied-pre-render-shm-01s-light-pin-is-superseded-by-a-light-default)         | The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default                                       | 7.14          | Accepted         |
-| [DD-160](#dd-160-settings-are-a-facade-over-one-owner-service-per-category)                                         | Settings are a facade over one owner service per category                                                                         | 7.14          | Accepted         |
-| [DD-161](#dd-161-settings-are-browser-scoped-localstorage-server-side-persistence-is-the-follow-up-slice)           | Settings are browser-scoped localStorage; server-side persistence is the follow-up slice                                          | 7.14          | Accepted         |
-| [DD-162](#dd-162-the-drawer-animates-in-and-out-the-layers-life-is-the-exit-animations)                             | The drawer animates in and out; the layer's life is the exit animation's                                                          | 7.14          | Accepted         |
-| [DD-163](#dd-163-the-drawer-styles-itself-with-fallbacks-bulmas-modal-tokens-are-modal-scoped)                      | The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped                                                 | 7.14          | Accepted         |
-| [DD-164](#dd-164-the-appearance-picker-is-the-ui-lib-select-the-select-gains-searchvisible)                         | The Appearance picker is the ui-lib Select; the Select gains `searchVisible`                                                      | 7.14          | Accepted         |
-| [DD-165](#dd-165-about-shows-one-version-the-server-is-not-fetched)                                                 | About shows one version; the server is not fetched                                                                                | 7.14          | Accepted         |
-| [DD-166](#dd-166-the-settings-panel-is-a-routed-overlay-in-the-drawer-aux-outlet)                                   | The settings panel is a routed overlay in the `drawer` aux outlet                                                                 | 7.14          | Accepted         |
-| [DD-167](#dd-167-settings-drawer-polish-lit-gear-scheme-following-band-browser-default-picker-label-headings)       | Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings                                | 7.14          | Accepted         |
-| [DD-168](#dd-168-the-navbar-follows-the-scheme-the-dark-slate-band)                                                 | The navbar follows the scheme: the dark slate band                                                                                | 7.14          | Accepted         |
-| [DD-169](#dd-169-settings-headings-are-the-controls-accessible-names)                                               | Settings headings are the controls' accessible names                                                                              | 7.14          | Accepted         |
-| [DD-170](#dd-170-the-active-locale-is-filled-with-the-aurelius-blue)                                                | The active locale is filled with the Aurelius blue                                                                                | 7.14          | Accepted         |
-| [DD-171](#dd-171-the-alerts-store-groups-by-a-quiet-window)                                                         | The alerts store groups by a quiet window                                                                                         | 7.15          | Accepted         |
-| [DD-172](#dd-172-the-apps-errorhandler-chains-alert-then-trace)                                                     | The app's ErrorHandler chains: alert, then trace                                                                                  | 7.15          | Accepted         |
-| [DD-173](#dd-173-the-http-reporter-5xx-and-network-failures-on-api)                                                 | The HTTP reporter: 5xx and network failures on /api                                                                               | 7.15          | Accepted         |
-| [DD-174](#dd-174-the-bell-severity-badge-and-ring-one-outlet)                                                       | The bell: severity badge and ring, one outlet                                                                                     | 7.15          | Accepted         |
-| [DD-175](#dd-175-alertlist-and-badge-are-ui-lib-presentational-components)                                          | AlertList and Badge are ui-lib presentational components                                                                          | 7.15          | Accepted         |
-| [DD-176](#dd-176-the-chips-pinned-pair-clear-all-in-the-drawer-head)                                                | The chip's pinned pair; Clear all in the drawer head                                                                              | 7.15          | Accepted         |
-| [DD-177](#dd-177-the-parallel-tracks-colliding-dddv-ids-renumber-to-the-7x8x-side)                                  | The parallel tracks' colliding DD/DV ids renumber to the 7.x/8.x side                                                             | —             | Accepted         |
-| [DD-178](#dd-178-the-merge-resolves-the-opentelemetry-version-split-to-the-1451066b1-set)                           | The merge resolves the OpenTelemetry version split to the 1.45.1/0.66b1 set                                                       | —             | Accepted         |
-| [DD-179](#dd-179-the-branchs-second-collision-band-renumbers-above-mains-tail)                                      | The branch's second collision band renumbers above main's tail                                                                    | —             | Accepted         |
-| [DD-180](#dd-180--the-inbox-bar-severity-chips-read-tracking-clear-all-in-the-bar)                                  | The inbox bar: severity chips, read tracking, Clear all in the bar                                                                | 7.15          | Accepted         |
-| [DD-181](#dd-181--the-drawers-body-is-the-scroll-container)                                                         | The drawer's body is the scroll container                                                                                         | 7.15          | Accepted         |
-| [DD-182](#dd-182--the-inbox-bar-is-one-joined-group-severity-coloured-ramp-order)                                   | The inbox bar is one joined group, severity-coloured, ramp order                                                                  | 7.15          | Accepted         |
-| [DD-183](#dd-183--the-inbox-bar-is-one-height-the-count-badge-is-compacted)                                         | The inbox bar is one height: the count badge is compacted                                                                         | 7.15          | Accepted         |
-| [DD-184](#dd-184--the-void-chip-an-empty-severity-greys-out)                                                        | The void chip: an empty severity greys out                                                                                        | 7.15          | Accepted         |
-| [DD-185](#dd-185--show-all-is-gone-the-bars-shape-never-shifts)                                                     | Show all is gone: the bar's shape never shifts                                                                                    | 7.15          | Accepted         |
-| [DD-186](#dd-186--entity-details-arrives-as-a-routed-skeleton-its-data-spine-joins-23)                              | Entity details arrives as a routed skeleton; its data spine joins 2.3                                                             | 7.6           | Proposed         |
-| [DD-187](#dd-187--the-entity-client-is-built-test-first-against-the-atlas-wire-format)                              | The entity client is built test-first against the Atlas wire format                                                               | 7.6           | Proposed         |
-| [DD-188](#dd-188--one-api-base-the-clients-urls-all-ride-the-api_base_url-token)                                    | One API base: the client's URLs all ride the API_BASE_URL token                                                                   | 7.6           | Accepted         |
-| [DD-189](#dd-189--the-details-chip-is-the-classification-chip-its-sources-project-in)                               | The details chip is the classification chip; its sources project in                                                               | 7.16          | Proposed         |
-| [DD-190](#dd-190--the-type-name-badge-is-extracted-from-entity-card)                                                | The type-name badge is extracted from entity-card                                                                                 | 7.16          | Proposed         |
-| [DD-191](#dd-191--details-navigation-is-a-shell-the-scroll-directive-stays-app-side)                                | Details navigation is a shell; the scroll directive stays app-side                                                                | 7.16          | Proposed         |
-| [DD-192](#dd-192--the-count-bar-is-section-stats-one-component-two-call-sites)                                      | The count bar is section-stats: one component, two call sites                                                                     | 7.16          | Proposed         |
-| [DD-193](#dd-193--collector-ingest-is-authenticated-in-two-legs-user-jwts-for-browsers-a-shared-token-for-services) | Collector ingest is authenticated in two legs: user JWTs for browsers, a shared token for services                                | 7.17          | Proposed         |
-| [DD-194](#dd-194--the-collector-stamps-the-verified-user-onto-the-telemetry-enduserid)                              | The collector stamps the verified user onto the telemetry: `enduser.id`                                                           | 7.17          | Accepted         |
-| [DD-195](#dd-195--the-collector-rides-out-keycloaks-boot-bounded-restart-awaited-readiness)                         | The collector rides out Keycloak's boot: bounded restart, awaited readiness                                                       | 7.17          | Accepted         |
-| [DD-196](#dd-196--the-service-leg-graduates-to-per-service-identity-keycloak-client-credentials-jwts-azp-stamped)   | The service leg graduates to per-service identity: Keycloak client-credentials JWTs, azp-stamped                                  | 7.18          | Proposed         |
-| [DD-197](#dd-197--the-auxiliary-apis-share-one-foundation-the-otel-and-auth-libs)                                   | The auxiliary APIs share one foundation: the OTel and auth libs                                                                   | 8.0           | Proposed         |
-| [DD-198](#dd-198--the-8x-ports-are-pandas-free-pydantic-rule-models-plain-row-maps)                                 | The 8.x ports are pandas-free: pydantic rule models, plain row maps                                                               | 8.1           | Proposed         |
-| [DD-199](#dd-199--app-unit-tests-clear-the-injected-env-prefix-in-an-autouse-fixture)                               | App unit tests clear the injected `.env` prefix in an autouse fixture                                                             | 8.1           | Accepted         |
-| [DD-200](#dd-200--the-82-proxy-app-injects-its-upstream-http-client-the-e2e-atlas-is-a-canned-file-server)          | The 8.2 proxy app injects its upstream HTTP client; the e2e Atlas is a canned-file server                                         | 8.2           | Accepted         |
-| [DD-201](#dd-201--the-83-mock-ships-as-module-data-the-verifier-is-injectable)                                      | The 8.3 mock ships as module data; the verifier is injectable                                                                     | 8.3           | Accepted         |
-| [DD-202](#dd-202--one-issuer-world-producers-mint-on-the-tls-listener-the-collector-validates-both)                 | One issuer world: producers mint on the TLS listener, the collector validates both                                                | 7.18          | Accepted         |
-| [DD-203](#dd-203--the-wire-contract-lives-in-a-client-library-the-app-imports-it)                                   | The wire contract lives in a client library; the app imports it                                                                   | 8.4           | Accepted         |
-| [DD-204](#dd-204--clients-are-async-httpx-with-an-injectable-transport-and-read-no-env)                             | Clients are async httpx with an injectable transport, and read no env                                                             | 8.4           | Accepted         |
-| [DD-205](#dd-205--the-clients-httpxasyncclient-is-provided-externally)                                              | The client's `httpx.AsyncClient` is provided externally                                                                           | 8.4           | Accepted         |
-| [DD-206](#dd-206--the-lineage-models-upstream-breakers-live-in-the-app-on-pybreakers-calling-seam)                  | The lineage-model's upstream breakers live in the app, on pybreaker's `calling()` seam                                            | 8.5           | Accepted         |
-| [DD-207](#dd-207--the-lineage-model-app-follows-the-example-apps-providerroute-layout)                              | The lineage-model app follows the example app's provider/route layout                                                             | —             | Proposed         |
-| [DD-208](#dd-208--the-lineage-flow-lives-in-the-route-the-chain-class-is-dissolved)                                 | The lineage flow lives in the route; the chain class is dissolved                                                                 | —             | Proposed         |
-| [DD-209](#dd-209--data2model-and-validate-entity-follow-the-example-apps-providerroute-layout)                      | data2model and validate-entity follow the example app's provider/route layout                                                     | —             | Proposed         |
-| [DD-210](#dd-210--telemetry-goes-native-the-otel-sdk-replaces-the-logfire-shell)                                    | Telemetry goes native: the OTel SDK replaces the logfire shell                                                                    | 8.5           | Proposed         |
-| [DD-211](#dd-211--httpx2-replaces-httpx-across-the-http-surface)                                                    | httpx2 replaces httpx across the HTTP surface                                                                                     | 8.5           | Proposed         |
-| [DD-212](#dd-212--the-8x-apps-appscenario-test-modules-carry-their-package-name)                                    | The 8.x apps' app/scenario test modules carry their package name                                                                  | 8.5           | Accepted         |
-| [DD-213](#dd-213--the-lineage-guid-is-a-uuid-on-every-typed-surface)                                                | The lineage guid is a UUID on every typed surface                                                                                 | 8.5           | Accepted         |
-| [DD-214](#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)                              | The test suite review of 2026-10-24 scopes the hardening increments                                                               | cross-cutting | Accepted         |
-| [DD-215](#dd-215--the-ci-pipeline-drops-the-traceability-check-and-report)                                          | The CI pipeline drops the traceability check and report; the tools stay as local aids                                             | cross-cutting | Accepted         |
-| [DD-216](#dd-216--stacks-own-the-tls-material-they-mount)                                                           | Stacks own the TLS material they mount                                                                                            | cross-cutting | Accepted         |
-| [DD-217](#dd-217--the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74)                                    | The search client lands on both sides of the wire, ahead of 7.4                                                                   | cross-cutting | Accepted         |
-| [DD-226](#dd-226--the-dev-stacks-restart-windows-are-unbounded)                                                     | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up                                  | cross-cutting | Accepted         |
-| [DD-227](#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production)                | The store-es e2e suite is removed: it evaluated the dev environment, not production                                               | cross-cutting | Accepted         |
-| [DD-228](#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied)                             | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour                        | cross-cutting | Accepted         |
-| [DD-229](#dd-229--the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon)                                       | Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss                         | cross-cutting | Accepted         |
-| [DD-230](#dd-230--parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc)                              | Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away | cross-cutting | Accepted         |
-| [DD-231](#dd-231--teardown-downs-the-compose-stacks-prune-only-sweeps-corpses)                                      | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail                  | cross-cutting | Accepted         |
-| [DD-232](#dd-232--the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir)                                    | CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir          | cross-cutting | Accepted         |
-| [DD-233](#dd-233--the-toolchain-caches-bridge-pod-churn-through-the-cache-server)                                   | Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)                | cross-cutting | Accepted         |
-| [DD-234](#dd-234--tls-material-is-a-required-setting-the-server-never-serves-plaintext)                             | TLS material is a required setting: the server never serves plaintext                                                             | 9.2           | Accepted         |
-| [DD-235](#dd-235--a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid)                                     | A 5xx answer is opaque and carries the trace id as `requestId`                                                                    | 9.2           | Accepted         |
-| [DD-236](#dd-236--security-response-headers-are-a-pure-asgi-middleware-split-on-api-path)                           | Security response headers are a pure-ASGI middleware split on `/api` path                                                         | 9.2           | Accepted         |
-| [DD-237](#dd-237--index-refresh-moves-from-reads-to-writes)                                                         | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes                                 | 9.3           | Accepted         |
-| [DD-238](#dd-238--the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)                                 | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                                 | 9.3           | Accepted         |
-| [DD-239](#dd-239--the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage)                            | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage                | 9.4           | Accepted         |
-| [DD-240](#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar)                                               | The DSL parser is generated from Atlas's own grammar                                                                              | 4.3           | Proposed         |
-| [DD-241](#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes)                                              | The parse tree is handed on as typed, immutable nodes                                                                             | 4.3           | Proposed         |
-| [DD-242](#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree)                                        | A DSL query is composed into the basic search's filter tree                                                                       | 4.4           | Proposed         |
-| [DD-243](#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps)                                             | DSL traversals and projections are evaluated in steps                                                                             | 4.4           | Proposed         |
-| [DD-244](#dd-244-saved-searches-wait-for-authentication)                                                            | Saved searches wait for authentication                                                                                            | 4.5           | Accepted         |
-| [DD-245](#dd-245-lineage-walks-the-relationships-of-the-process-edges)                                              | Lineage walks the relationships of the process edges                                                                              | 5.1           | Proposed         |
-| [DD-246](#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores)                  | Glossary objects are entities written through the entity and relationship stores                                                  | 5.2           | Proposed         |
-| [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                          | Journal writes do not wait for a refresh                                                                                          | cross-cutting | Proposed         |
-| [DD-248](#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships)                                        | An entity's meanings are read from its listed relationships                                                                       | 5.2           | Proposed         |
-| [DD-249](#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd)                                   | Uploaded files are read with python-multipart, openpyxl and xlrd                                                                  | 5.2           | Proposed         |
-| [DD-250](#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider)                            | The server authenticates requests itself against the identity provider                                                            | 6.1           | Proposed         |
-| [DD-251](#dd-251-browser-sessions-are-kept-in-the-servers-memory)                                                   | Browser sessions are kept in the server's memory                                                                                  | 6.1           | Proposed         |
-| [DD-252](#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos)                                  | DataAccess carries every model object through a registry of DTOs                                                                  | 4.5           | Proposed         |
-| [DD-253](#dd-253-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                    | Four fixed roles of the server's client grant Atlas's privileges                                                                  | 6.2           | Proposed         |
+| #                                                                                                                   | Decision                                                                                                                                                                                                                        | Increment     | Status               |
+| ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------- |
+| [DD-001](#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)                                      | Reference is Apache Atlas 2.4.0, and both dashboards are served                                                                                                                                                                 | 0.1           | Accepted             |
+| [DD-002](#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)                                        | Atlas code lives in aurelius-atlas projects split by layer                                                                                                                                                                      | 0.1           | Accepted             |
+| [DD-003](#dd-003-template-projects-are-renamed-to-the-aurelius-atlas-prefix)                                        | Template projects are renamed to the aurelius-atlas prefix                                                                                                                                                                      | 0.1           | Accepted             |
+| [DD-004](#dd-004-the-spa-keeps-tokens-in-memory-and-renews-them-silently)                                           | The SPA keeps tokens in memory and renews them silently                                                                                                                                                                         | 0.1           | Accepted             |
+| [DD-005](#dd-005-the-store-uses-the-official-async-elasticsearch-client)                                            | The store uses the official async Elasticsearch client                                                                                                                                                                          | 0.2           | Proposed             |
+| [DD-006](#dd-006-development-and-tests-run-elasticsearch-with-security-on)                                          | Development and tests run Elasticsearch with security on                                                                                                                                                                        | 0.2           | Proposed             |
+| [DD-007](#dd-007-the-elasticsearch-test-fixture-ships-with-the-store-library)                                       | The Elasticsearch test fixture ships with the store library                                                                                                                                                                     | 0.2           | Proposed             |
+| [DD-008](#dd-008-a-yellow-cluster-is-healthy)                                                                       | A yellow cluster is healthy                                                                                                                                                                                                     | 0.2           | Proposed             |
+| [DD-009](#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)                                | Traceability is checked from collected markers, not from a test run                                                                                                                                                             | 0.3           | Proposed             |
+| [DD-010](#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)                                     | The traceability check covers Atlas code from increment 0.2 on                                                                                                                                                                  | 0.3           | Proposed             |
+| [DD-011](#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)                                  | The test report is generated from JUnit, coverage and trace files                                                                                                                                                               | 0.3           | Proposed             |
+| [DD-012](#dd-012-parity-scenarios-are-yaml-files-run-as-parametrised-pytest-tests)                                  | Parity scenarios are YAML files run as parametrised pytest tests                                                                                                                                                                | 0.4           | Proposed             |
+| [DD-013](#dd-013-a-scenario-response-is-compared-exactly-except-at-declared-paths)                                  | A scenario response is compared exactly, except at declared paths                                                                                                                                                               | 0.4           | Proposed             |
+| [DD-014](#dd-014-scenario-facts-reach-the-report-as-test-properties)                                                | Scenario facts reach the report as test properties                                                                                                                                                                              | 0.4           | Proposed             |
+| [DD-015](#dd-015-the-server-is-a-fastapi-application-with-one-router-per-atlas-resource)                            | The server is a FastAPI application with one router per Atlas resource                                                                                                                                                          | 0.5           | Proposed             |
+| [DD-016](#dd-016-the-server-does-not-start-without-its-store)                                                       | The server does not start without its store                                                                                                                                                                                     | 0.5           | Proposed             |
+| [DD-017](#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)                         | The dashboards are vendored unchanged and built with dart-sass on Node 24                                                                                                                                                       | 0.6           | Proposed             |
+| [DD-018](#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)                                             | The server serves the dashboards from the API's origin                                                                                                                                                                          | 0.6           | Proposed             |
+| [DD-019](#dd-019-the-template-examples-stay-until-the-plan-is-done)                                                 | The template examples stay until the plan is done                                                                                                                                                                               | 0.6           | Proposed             |
+| [DD-020](#dd-020-typedef-models-are-pydantic-models-that-read-and-write-atlass-json)                                | Typedef models are Pydantic models that read and write Atlas's JSON                                                                                                                                                             | 1.1           | Proposed             |
+| [DD-021](#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order)                                         | Set-valued fields keep each name once, in first-seen order                                                                                                                                                                      | 1.1           | Proposed             |
+| [DD-022](#dd-022-typedef-timestamps-are-aware-datetimes-written-as-epoch-milliseconds)                              | Typedef timestamps are aware datetimes, written as epoch milliseconds                                                                                                                                                           | 1.1           | Proposed             |
+| [DD-023](#dd-023-atlas-errors-live-in-the-model-library)                                                            | Atlas errors live in the model library                                                                                                                                                                                          | 1.2           | Proposed             |
+| [DD-024](#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock)                               | The registry is updated on a transient copy under a re-entrant lock                                                                                                                                                             | 1.2           | Proposed             |
+| [DD-025](#dd-025-the-type-system-ports-the-definition-side-only)                                                    | The type system ports the definition side only                                                                                                                                                                                  | 1.2           | Proposed             |
+| [DD-026](#dd-026-dynamic-attributes-and-search-lookups-wait-for-their-increments)                                   | Dynamic attributes and search lookups wait for their increments                                                                                                                                                                 | 1.3           | Proposed             |
+| [DD-027](#dd-027-derived-type-sets-keep-first-seen-order)                                                           | Derived type sets keep first-seen order                                                                                                                                                                                         | 1.3           | Proposed             |
+| [DD-028](#dd-028-the-type-definitions-are-one-elasticsearch-document)                                               | The type definitions are one Elasticsearch document                                                                                                                                                                             | 1.4           | Proposed             |
+| [DD-029](#dd-029-server-processes-share-the-type-definitions-through-the-documents-version)                         | Server processes share the type definitions through the document's version                                                                                                                                                      | 1.4           | Proposed             |
+| [DD-030](#dd-030-the-store-asks-the-entity-store-whether-a-type-is-in-use)                                          | The store asks the entity store whether a type is in use                                                                                                                                                                        | 1.4           | Proposed             |
+| [DD-031](#dd-031-the-patch-records-live-in-the-typedef-document)                                                    | The patch records live in the typedef document                                                                                                                                                                                  | 1.5           | Proposed             |
+| [DD-032](#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)                              | The built-in models are vendored unchanged and read from a directory                                                                                                                                                            | 1.5           | Proposed             |
+| [DD-033](#dd-033-start-up-loading-is-one-change-per-model-file-and-per-patch)                                       | Start-up loading is one change per model file and per patch                                                                                                                                                                     | 1.5           | Proposed             |
+| [DD-034](#dd-034-lists-of-type-definitions-are-sorted-by-name)                                                      | Lists of type definitions are sorted by name                                                                                                                                                                                    | 1.6           | Proposed             |
+| [DD-035](#dd-035-type-scenarios-create-what-they-read-and-delete-it-at-their-end)                                   | Type scenarios create what they read and delete it at their end                                                                                                                                                                 | 1.6           | Proposed             |
+| [DD-036](#dd-036-start-up-loading-tries-a-raced-change-again)                                                       | Start-up loading tries a raced change again                                                                                                                                                                                     | 1.6           | Proposed             |
+| [DD-037](#dd-037-instance-models-are-one-module-per-java-class)                                                     | Instance models are one module per Java class                                                                                                                                                                                   | 2.1           | Proposed             |
+| [DD-038](#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them)                               | Attribute values stay plain JSON values until their types read them                                                                                                                                                             | 2.1           | Proposed             |
+| [DD-039](#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits)                   | One Atlas JSON codec reads floats as decimals and writes them with their digits                                                                                                                                                 | 2.1           | Proposed             |
+| [DD-040](#dd-040-java-values-are-held-as-the-python-values-closest-to-them)                                         | Java values are held as the Python values closest to them                                                                                                                                                                       | 2.1           | Proposed             |
+| [DD-041](#dd-041-the-type-system-is-one-module-per-java-type-class-too)                                             | The type system is one module per Java type class too                                                                                                                                                                           | 2.1           | Proposed             |
+| [DD-042](#dd-042-a-validity-period-without-a-time-zone-is-in-utc)                                                   | A validity period without a time zone is in UTC                                                                                                                                                                                 | 2.1           | Proposed             |
+| [DD-043](#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names)                        | Entities are documents of one index, their attributes under qualified names                                                                                                                                                     | 2.2           | Proposed             |
+| [DD-044](#dd-044-a-guid-is-a-random-uuid)                                                                           | A GUID is a random UUID                                                                                                                                                                                                         | 2.2           | Proposed             |
+| [DD-045](#dd-045-unique-values-are-reserved-by-create-only-documents)                                               | Unique values are reserved by create-only documents                                                                                                                                                                             | 2.2           | Proposed             |
+| [DD-046](#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal)                                          | A multi-entity write is all or nothing, through a journal                                                                                                                                                                       | 2.2           | Proposed             |
+| [DD-047](#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version)                                 | Entities are written conditionally on their Elasticsearch version                                                                                                                                                               | 2.2           | Proposed             |
+| [DD-048](#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it)                                           | A type is in use while the entity index holds one of it                                                                                                                                                                         | 2.2           | Proposed             |
+| [DD-049](#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)                      | Attribute values are stored normalised; a struct inline, a reference as a GUID                                                                                                                                                  | 2.3           | Proposed             |
+| [DD-050](#dd-050-relationship-attributes-read-empty-until-relationships-are-stored)                                 | Relationship attributes read empty until relationships are stored                                                                                                                                                               | 2.3           | Superseded by DD     |
+| [DD-051](#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24)                            | Entity reads are tested on entities written through the store until 2.4                                                                                                                                                         | 2.3           | Proposed             |
+| [DD-052](#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again)                          | A request is mapped in memory and written once; a lost race runs it again                                                                                                                                                       | 2.4           | Proposed             |
+| [DD-053](#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31)          | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1                                                                                                                                      | 2.4           | Superseded by DD     |
+| [DD-054](#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order)                                   | Dynamic attributes are evaluated in first-seen dependency order                                                                                                                                                                 | 2.4           | Proposed             |
+| [DD-055](#dd-055-scenarios-name-what-they-create-with-a-per-run-value)                                              | Scenarios name what they create with a per-run value                                                                                                                                                                            | 2.4           | Proposed             |
+| [DD-056](#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others)                                  | An entity write also removes documents, journaled like the others                                                                                                                                                               | 2.5           | Proposed             |
+| [DD-057](#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids)                             | Entities referring to one are found through an indexed field of GUIDs                                                                                                                                                           | 2.5           | Proposed             |
+| [DD-058](#dd-058-a-stored-reference-stands-for-an-edge-active-for-a-delete-deleted-for-a-purge)                     | A stored reference stands for an edge: active for a delete, deleted for a purge                                                                                                                                                 | 2.5           | Proposed             |
+| [DD-059](#dd-059-the-delete-type-and-its-override-are-server-settings)                                              | The delete type and its override are server settings                                                                                                                                                                            | 2.5           | Proposed             |
+| [DD-060](#dd-060-the-owned-reference-cascade-moves-from-32-to-25)                                                   | The owned-reference cascade moves from 3.2 to 2.5                                                                                                                                                                               | 2.5           | Proposed             |
+| [DD-061](#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends)                                | Relationships are documents of their own index, listed by both ends                                                                                                                                                             | 3.1           | Proposed             |
+| [DD-062](#dd-062-an-entity-write-also-writes-relationships-all-or-nothing)                                          | An entity write also writes relationships, all or nothing                                                                                                                                                                       | 3.1           | Proposed             |
+| [DD-063](#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes)                               | 3.1 is split into relationship instances and relationship attributes                                                                                                                                                            | 3.1           | Proposed             |
+| [DD-064](#dd-064-relationship-attribute-values-are-relationships)                                                   | Relationship attribute values are relationships                                                                                                                                                                                 | 3.1           | Proposed             |
+| [DD-065](#dd-065-a-relationship-keeps-one-array-index-the-last-writers)                                             | A relationship keeps one array index, the last writer's                                                                                                                                                                         | 3.1           | Proposed             |
+| [DD-066](#dd-066-relationship-attributes-are-mapped-in-memory-and-written-with-the-entities)                        | Relationship attributes are mapped in memory and written with the entities                                                                                                                                                      | 3.1           | Proposed             |
+| [DD-067](#dd-067-delete-cascades-follow-owned-relationships-from-31b)                                               | Delete cascades follow owned relationships from 3.1b                                                                                                                                                                            | 3.1           | Proposed             |
+| [DD-068](#dd-068-owned-entities-an-update-drops-are-deleted-through-a-view-of-the-request)                          | Owned entities an update drops are deleted through a view of the request                                                                                                                                                        | 3.2           | Proposed             |
+| [DD-069](#dd-069-a-reference-to-a-deleted-entity-stands-for-a-deleted-edge-when-reviving)                           | A reference to a deleted entity stands for a deleted edge when reviving                                                                                                                                                         | 3.2           | Proposed             |
+| [DD-070](#dd-070-classification-instances-are-documents-of-their-own-index-listed-by-their-entity)                  | Classification instances are documents of their own index, listed by their entity                                                                                                                                               | 3.3           | Proposed             |
+| [DD-071](#dd-071-an-entity-write-also-writes-classification-instances-all-or-nothing)                               | An entity write also writes classification instances, all or nothing                                                                                                                                                            | 3.3           | Proposed             |
+| [DD-072](#dd-072-the-propagation-defaults-are-atlass-defaults)                                                      | The propagation defaults are Atlas's defaults                                                                                                                                                                                   | 3.3           | Proposed             |
+| [DD-073](#dd-073-33-is-split-into-direct-classifications-and-the-bulk-associator)                                   | 3.3 is split into direct classifications and the bulk associator                                                                                                                                                                | 3.3           | Proposed             |
+| [DD-074](#dd-074-bulkheaders-moves-to-35)                                                                           | `bulk/headers` moves to 3.5                                                                                                                                                                                                     | 3.3           | Proposed             |
+| [DD-075](#dd-075-a-propagated-classification-is-listed-by-the-entities-it-reaches)                                  | A propagated classification is listed by the entities it reaches                                                                                                                                                                | 3.4           | Proposed             |
+| [DD-076](#dd-076-the-entities-a-classification-reached-are-found-through-an-indexed-field)                          | The entities a classification reached are found through an indexed field                                                                                                                                                        | 3.4           | Proposed             |
+| [DD-077](#dd-077-propagation-runs-within-the-request-until-34b)                                                     | Propagation runs within the request until 3.4b                                                                                                                                                                                  | 3.4           | Proposed             |
+| [DD-078](#dd-078-34-is-split-into-propagation-and-propagation-tasks)                                                | 3.4 is split into propagation and propagation tasks                                                                                                                                                                             | 3.4           | Proposed             |
+| [DD-079](#dd-079-tasks-are-documents-of-their-own-index-written-with-the-change-that-records-them)                  | Tasks are documents of their own index, written with the change that records them                                                                                                                                               | 3.4           | Proposed             |
+| [DD-080](#dd-080-every-server-process-runs-tasks-each-claimed-with-a-lease)                                         | Every server process runs tasks, each claimed with a lease                                                                                                                                                                      | 3.4           | Proposed             |
+| [DD-081](#dd-081-tasks-are-enabled-by-a-server-setting-on-by-default)                                               | Tasks are enabled by a server setting, on by default                                                                                                                                                                            | 3.4           | Proposed             |
+| [DD-082](#dd-082-audit-events-are-documents-of-their-own-index-written-after-the-change)                            | Audit events are documents of their own index, written after the change                                                                                                                                                         | 3.5           | Proposed             |
+| [DD-083](#dd-083-audit-events-keep-atlass-event-keys-and-their-order)                                               | Audit events keep Atlas's event keys and their order                                                                                                                                                                            | 3.5           | Proposed             |
+| [DD-084](#dd-084-the-entity-writer-tells-a-change-notifier-what-it-changed)                                         | The entity writer tells a change notifier what it changed                                                                                                                                                                       | 3.5           | Proposed             |
+| [DD-085](#dd-085-classification-events-are-collected-in-the-request-and-recorded-after-its-write)                   | Classification events are collected in the request and recorded after its write                                                                                                                                                 | 3.5           | Proposed             |
+| [DD-086](#dd-086-tag-propagation-records-the-propagations-a-request-added-and-removed)                              | Tag propagation records the propagations a request added and removed                                                                                                                                                            | 3.5           | Proposed             |
+| [DD-087](#dd-087-basic-search-is-split-into-entity-and-classification-search)                                       | Basic search is split into entity and classification search                                                                                                                                                                     | 4.1           | Proposed             |
+| [DD-088](#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type)             | Entity attributes are searched in typed search fields named after their defining type                                                                                                                                           | 4.1           | Proposed             |
+| [DD-089](#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given)             | A search is a query of the entity documents, ordered by creation when no sort is given                                                                                                                                          | 4.1           | Proposed             |
+| [DD-090](#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them)                      | A classification search finds instances first, then the entities listing them                                                                                                                                                   | 4.1           | Proposed             |
+| [DD-091](#dd-091-free-text-is-split-from-quick-search)                                                              | Free text is split from quick search                                                                                                                                                                                            | 4.2           | Proposed             |
+| [DD-092](#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights)                | String search fields carry an analysed text sub-field, searched with Atlas's weights                                                                                                                                            | 4.2           | Proposed             |
+| [DD-093](#dd-093-facets-are-aggregations-of-the-searchs-own-query)                                                  | Facets are aggregations of the search's own query                                                                                                                                                                               | 4.2           | Proposed             |
+| [DD-094](#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields)                                         | Suggestions are terms aggregations of the text sub-fields                                                                                                                                                                       | 4.2           | Proposed             |
+| [DD-126](#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place)                                | The webapp is a new project, not the Aurelius app upgraded in place                                                                                                                                                             | 7.0           | Proposed             |
+| [DD-127](#dd-127-signals-replace-the-custom-store-each-slice-owns-its-state)                                        | Signals replace the custom store; each slice owns its state                                                                                                                                                                     | 7.0           | Proposed             |
+| [DD-128](#dd-128-aurelius-dictionaries-become-xliff-migrated-whole-with-the-json-as-fixture)                        | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                                                                                                                                                    | 7.1           | Proposed             |
+| [DD-129](#dd-129-google-analytics-and-clickstream-are-dropped-not-ported)                                           | Google Analytics and clickstream are dropped, not ported                                                                                                                                                                        | 7.1           | Proposed             |
+| [DD-130](#dd-130-the-webapps-config-is-a-typed-appconfig-and-environmentts-is-not-ported)                           | The webapp's config is a typed AppConfig, and `environment.ts` is not ported                                                                                                                                                    | 7.1           | Proposed             |
+| [DD-131](#dd-131-webapp-purity-is-a-checked-gate-not-a-review-convention)                                           | Webapp purity is a checked gate, not a review convention                                                                                                                                                                        | 7.0           | Proposed             |
+| [DD-132](#dd-132-the-wildcard-fallback-redirects-to-the-destination-not-through-the-root)                           | The wildcard fallback redirects to the destination, not through the root                                                                                                                                                        | 7.1           | Proposed             |
+| [DD-133](#dd-133-operational-telemetry-lands-with-71-the-auth-wiring-stays-with-73)                                 | Operational telemetry lands with 7.1; the auth wiring stays with 7.3                                                                                                                                                            | 7.1           | Proposed             |
+| [DD-134](#dd-134-the-design-system-slice-ports-the-in-use-components-not-the-library)                               | The design-system slice ports the in-use components, not the library                                                                                                                                                            | 7.2           | Proposed             |
+| [DD-135](#dd-135-component-services-dissolve-into-signal-state-nothing-is-ported-as-a-store)                        | Component services dissolve into signal state; nothing is ported as a store                                                                                                                                                     | 7.2           | Proposed             |
+| [DD-136](#dd-136-shared-chrome-strings-are-localisation-units-keyed-by-the-legacy-dictionary-paths)                 | Shared chrome strings are localisation units keyed by the legacy dictionary paths                                                                                                                                               | 7.2           | Proposed             |
+| [DD-137](#dd-137-the-purity-gate-is-made-executable-over-libsangular)                                               | The purity gate is made executable over `libs/angular`                                                                                                                                                                          | 7.2           | Proposed             |
+| [DD-138](#dd-138-the-storybook-preview-loads-angularlocalizeinit)                                                   | The Storybook preview loads `@angular/localize/init`                                                                                                                                                                            | 7.2           | Proposed             |
+| [DD-139](#dd-139-the-client-owns-the-base-url-the-proxy-forwards-the-prefix-untouched)                              | The client owns the base URL; the proxy forwards the prefix untouched                                                                                                                                                           | 7.3           | Proposed             |
+| [DD-140](#dd-140-the-rest-client-ports-the-live-surface-the-search-client-is-redesigned-in-74)                      | The REST client ports the live surface; the search client is redesigned in 7.4                                                                                                                                                  | 7.3           | Proposed             |
+| [DD-141](#dd-141-auth-is-guarded-at-the-app-root-the-bearer-token-is-stated-inert-until-61)                         | Auth is guarded at the app root; the bearer token is stated inert until 6.1                                                                                                                                                     | 7.3           | Proposed             |
+| [DD-142](#dd-142-the-webapp-e2e-stack-runs-the-real-atlas-server-behind-the-proxy)                                  | The webapp e2e stack runs the real Atlas server behind the proxy                                                                                                                                                                | 7.3           | Proposed             |
+| [DD-143](#dd-143-the-landing-page-is-ported-statically-search-affordances-and-shell-chrome-join-the-search-slice)   | The landing page is ported statically; search affordances and Shell chrome join the search slice                                                                                                                                | 7.5           | Proposed             |
+| [DD-144](#dd-144-i18n-ids-carry-no-description-suffix-the-bridge-key-must-equal-the-extracted-id)                   | i18n ids carry no description suffix; the bridge key must equal the extracted id                                                                                                                                                | 7.5           | Proposed             |
+| [DD-145](#dd-145-the-shell-chrome-is-ported-search-free-the-root-composes-header-and-footer)                        | The Shell chrome is ported search-free; the root composes header and footer                                                                                                                                                     | 7.11          | Proposed             |
+| [DD-146](#dd-146-session-chrome-injects-the-keycloak-js-keycloak-instance-not-keycloak-angulars-keycloakservice)    | Session chrome injects the keycloak-js `Keycloak` instance, not keycloak-angular's `KeycloakService`                                                                                                                            | 7.11          | Accepted             |
+| [DD-147](#dd-147-dev-keycloak-users-carry-default-roles-master-explicitly)                                          | Dev Keycloak users carry `default-roles-master` explicitly                                                                                                                                                                      | 7.11          | Accepted             |
+| [DD-148](#dd-148-the-aurelius-brand-lands-on-bulma-1-tokens-light-forced-legacy-metrics-pinned)                     | The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned                                                                                                                                                 | 7.12          | Accepted             |
+| [DD-149](#dd-149-critical-css-inlining-is-off-the-zoneless-csr-app-never-swaps-the-print-sheet)                     | Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet                                                                                                                                                  | 7.12          | Accepted             |
+| [DD-150](#dd-150-the-sticky-footer-is-the-legacy-rule-verbatim-page-content-sits-on-bulmas-grid)                    | The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid                                                                                                                                                | 7.12          | Accepted             |
+| [DD-151](#dd-151-the-brand-re-emits-bulma-094s-text-ramp-not-just-the-body-metrics)                                 | The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics                                                                                                                                                           | 7.12          | Accepted             |
+| [DD-152](#dd-152-the-accent-ramp-primary-stays-bulma-teal-the-accents-take-the-bootstrap-map)                       | The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map                                                                                                                                                   | —             | Proposed             |
+| [DD-153](#dd-153-the-mobile-burger-chrome-grey-burger-blended-dropdowns-legacy-logout-anchor)                       | The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor                                                                                                                                                  | —             | Proposed             |
+| [DD-154](#dd-154-the-entity-card-emits-entityclicked-the-caller-navigates)                                          | The entity card emits `entityClicked`; the caller navigates                                                                                                                                                                     | —             | Proposed             |
+| [DD-155](#dd-155-the-select-is-one-field-with-a-searchrequested-output)                                             | The select is one field with a `searchRequested` output                                                                                                                                                                         | —             | Proposed             |
+| [DD-156](#dd-156-the-brand-ships-a-dark-ink-ramp-on-bulmas-dark-hosts)                                              | The brand ships a dark ink ramp on Bulma's dark hosts                                                                                                                                                                           | —             | Proposed             |
+| [DD-157](#dd-157-the-drawer-is-a-new-ui-lib-component-not-a-modal-or-a-dropdown)                                    | The drawer is a new ui-lib component, not a Modal or a dropdown                                                                                                                                                                 | 7.14          | Accepted             |
+| [DD-158](#dd-158-the-telemetry-switch-stops-exports-immediately-and-starts-them-on-reload)                          | The telemetry switch stops exports immediately and starts them on reload                                                                                                                                                        | 7.14          | Accepted             |
+| [DD-159](#dd-159-the-theme-choice-is-applied-pre-render-shm-01s-light-pin-is-superseded-by-a-light-default)         | The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default                                                                                                                                     | 7.14          | Accepted             |
+| [DD-160](#dd-160-settings-are-a-facade-over-one-owner-service-per-category)                                         | Settings are a facade over one owner service per category                                                                                                                                                                       | 7.14          | Accepted             |
+| [DD-161](#dd-161-settings-are-browser-scoped-localstorage-server-side-persistence-is-the-follow-up-slice)           | Settings are browser-scoped localStorage; server-side persistence is the follow-up slice                                                                                                                                        | 7.14          | Accepted             |
+| [DD-162](#dd-162-the-drawer-animates-in-and-out-the-layers-life-is-the-exit-animations)                             | The drawer animates in and out; the layer's life is the exit animation's                                                                                                                                                        | 7.14          | Accepted             |
+| [DD-163](#dd-163-the-drawer-styles-itself-with-fallbacks-bulmas-modal-tokens-are-modal-scoped)                      | The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped                                                                                                                                               | 7.14          | Accepted             |
+| [DD-164](#dd-164-the-appearance-picker-is-the-ui-lib-select-the-select-gains-searchvisible)                         | The Appearance picker is the ui-lib Select; the Select gains `searchVisible`                                                                                                                                                    | 7.14          | Accepted             |
+| [DD-165](#dd-165-about-shows-one-version-the-server-is-not-fetched)                                                 | About shows one version; the server is not fetched                                                                                                                                                                              | 7.14          | Accepted             |
+| [DD-166](#dd-166-the-settings-panel-is-a-routed-overlay-in-the-drawer-aux-outlet)                                   | The settings panel is a routed overlay in the `drawer` aux outlet                                                                                                                                                               | 7.14          | Accepted             |
+| [DD-167](#dd-167-settings-drawer-polish-lit-gear-scheme-following-band-browser-default-picker-label-headings)       | Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings                                                                                                                              | 7.14          | Accepted             |
+| [DD-168](#dd-168-the-navbar-follows-the-scheme-the-dark-slate-band)                                                 | The navbar follows the scheme: the dark slate band                                                                                                                                                                              | 7.14          | Accepted             |
+| [DD-169](#dd-169-settings-headings-are-the-controls-accessible-names)                                               | Settings headings are the controls' accessible names                                                                                                                                                                            | 7.14          | Accepted             |
+| [DD-170](#dd-170-the-active-locale-is-filled-with-the-aurelius-blue)                                                | The active locale is filled with the Aurelius blue                                                                                                                                                                              | 7.14          | Accepted             |
+| [DD-171](#dd-171-the-alerts-store-groups-by-a-quiet-window)                                                         | The alerts store groups by a quiet window                                                                                                                                                                                       | 7.15          | Accepted             |
+| [DD-172](#dd-172-the-apps-errorhandler-chains-alert-then-trace)                                                     | The app's ErrorHandler chains: alert, then trace                                                                                                                                                                                | 7.15          | Accepted             |
+| [DD-173](#dd-173-the-http-reporter-5xx-and-network-failures-on-api)                                                 | The HTTP reporter: 5xx and network failures on /api                                                                                                                                                                             | 7.15          | Accepted             |
+| [DD-174](#dd-174-the-bell-severity-badge-and-ring-one-outlet)                                                       | The bell: severity badge and ring, one outlet                                                                                                                                                                                   | 7.15          | Accepted             |
+| [DD-175](#dd-175-alertlist-and-badge-are-ui-lib-presentational-components)                                          | AlertList and Badge are ui-lib presentational components                                                                                                                                                                        | 7.15          | Accepted             |
+| [DD-176](#dd-176-the-chips-pinned-pair-clear-all-in-the-drawer-head)                                                | The chip's pinned pair; Clear all in the drawer head                                                                                                                                                                            | 7.15          | Accepted             |
+| [DD-177](#dd-177-the-parallel-tracks-colliding-dddv-ids-renumber-to-the-7x8x-side)                                  | The parallel tracks' colliding DD/DV ids renumber to the 7.x/8.x side                                                                                                                                                           | —             | Accepted             |
+| [DD-178](#dd-178-the-merge-resolves-the-opentelemetry-version-split-to-the-1451066b1-set)                           | The merge resolves the OpenTelemetry version split to the 1.45.1/0.66b1 set                                                                                                                                                     | —             | Accepted             |
+| [DD-179](#dd-179-the-branchs-second-collision-band-renumbers-above-mains-tail)                                      | The branch's second collision band renumbers above main's tail                                                                                                                                                                  | —             | Accepted             |
+| [DD-180](#dd-180--the-inbox-bar-severity-chips-read-tracking-clear-all-in-the-bar)                                  | The inbox bar: severity chips, read tracking, Clear all in the bar                                                                                                                                                              | 7.15          | Accepted             |
+| [DD-181](#dd-181--the-drawers-body-is-the-scroll-container)                                                         | The drawer's body is the scroll container                                                                                                                                                                                       | 7.15          | Accepted             |
+| [DD-182](#dd-182--the-inbox-bar-is-one-joined-group-severity-coloured-ramp-order)                                   | The inbox bar is one joined group, severity-coloured, ramp order                                                                                                                                                                | 7.15          | Accepted             |
+| [DD-183](#dd-183--the-inbox-bar-is-one-height-the-count-badge-is-compacted)                                         | The inbox bar is one height: the count badge is compacted                                                                                                                                                                       | 7.15          | Accepted             |
+| [DD-184](#dd-184--the-void-chip-an-empty-severity-greys-out)                                                        | The void chip: an empty severity greys out                                                                                                                                                                                      | 7.15          | Accepted             |
+| [DD-185](#dd-185--show-all-is-gone-the-bars-shape-never-shifts)                                                     | Show all is gone: the bar's shape never shifts                                                                                                                                                                                  | 7.15          | Accepted             |
+| [DD-186](#dd-186--entity-details-arrives-as-a-routed-skeleton-its-data-spine-joins-23)                              | Entity details arrives as a routed skeleton; its data spine joins 2.3                                                                                                                                                           | 7.6           | Proposed             |
+| [DD-187](#dd-187--the-entity-client-is-built-test-first-against-the-atlas-wire-format)                              | The entity client is built test-first against the Atlas wire format                                                                                                                                                             | 7.6           | Proposed             |
+| [DD-188](#dd-188--one-api-base-the-clients-urls-all-ride-the-api_base_url-token)                                    | One API base: the client's URLs all ride the API_BASE_URL token                                                                                                                                                                 | 7.6           | Accepted             |
+| [DD-189](#dd-189--the-details-chip-is-the-classification-chip-its-sources-project-in)                               | The details chip is the classification chip; its sources project in                                                                                                                                                             | 7.16          | Proposed             |
+| [DD-190](#dd-190--the-type-name-badge-is-extracted-from-entity-card)                                                | The type-name badge is extracted from entity-card                                                                                                                                                                               | 7.16          | Proposed             |
+| [DD-191](#dd-191--details-navigation-is-a-shell-the-scroll-directive-stays-app-side)                                | Details navigation is a shell; the scroll directive stays app-side                                                                                                                                                              | 7.16          | Proposed             |
+| [DD-192](#dd-192--the-count-bar-is-section-stats-one-component-two-call-sites)                                      | The count bar is section-stats: one component, two call sites                                                                                                                                                                   | 7.16          | Proposed             |
+| [DD-193](#dd-193--collector-ingest-is-authenticated-in-two-legs-user-jwts-for-browsers-a-shared-token-for-services) | Collector ingest is authenticated in two legs: user JWTs for browsers, a shared token for services                                                                                                                              | 7.17          | Proposed             |
+| [DD-194](#dd-194--the-collector-stamps-the-verified-user-onto-the-telemetry-enduserid)                              | The collector stamps the verified user onto the telemetry: `enduser.id`                                                                                                                                                         | 7.17          | Accepted             |
+| [DD-195](#dd-195--the-collector-rides-out-keycloaks-boot-bounded-restart-awaited-readiness)                         | The collector rides out Keycloak's boot: bounded restart, awaited readiness                                                                                                                                                     | 7.17          | Accepted             |
+| [DD-196](#dd-196--the-service-leg-graduates-to-per-service-identity-keycloak-client-credentials-jwts-azp-stamped)   | The service leg graduates to per-service identity: Keycloak client-credentials JWTs, azp-stamped                                                                                                                                | 7.18          | Proposed             |
+| [DD-197](#dd-197--the-auxiliary-apis-share-one-foundation-the-otel-and-auth-libs)                                   | The auxiliary APIs share one foundation: the OTel and auth libs                                                                                                                                                                 | 8.0           | Proposed             |
+| [DD-198](#dd-198--the-8x-ports-are-pandas-free-pydantic-rule-models-plain-row-maps)                                 | The 8.x ports are pandas-free: pydantic rule models, plain row maps                                                                                                                                                             | 8.1           | Proposed             |
+| [DD-199](#dd-199--app-unit-tests-clear-the-injected-env-prefix-in-an-autouse-fixture)                               | App unit tests clear the injected `.env` prefix in an autouse fixture                                                                                                                                                           | 8.1           | Accepted             |
+| [DD-200](#dd-200--the-82-proxy-app-injects-its-upstream-http-client-the-e2e-atlas-is-a-canned-file-server)          | The 8.2 proxy app injects its upstream HTTP client; the e2e Atlas is a canned-file server                                                                                                                                       | 8.2           | Accepted             |
+| [DD-201](#dd-201--the-83-mock-ships-as-module-data-the-verifier-is-injectable)                                      | The 8.3 mock ships as module data; the verifier is injectable                                                                                                                                                                   | 8.3           | Accepted             |
+| [DD-202](#dd-202--one-issuer-world-producers-mint-on-the-tls-listener-the-collector-validates-both)                 | One issuer world: producers mint on the TLS listener, the collector validates both                                                                                                                                              | 7.18          | Accepted             |
+| [DD-203](#dd-203--the-wire-contract-lives-in-a-client-library-the-app-imports-it)                                   | The wire contract lives in a client library; the app imports it                                                                                                                                                                 | 8.4           | Accepted             |
+| [DD-204](#dd-204--clients-are-async-httpx-with-an-injectable-transport-and-read-no-env)                             | Clients are async httpx with an injectable transport, and read no env                                                                                                                                                           | 8.4           | Accepted             |
+| [DD-205](#dd-205--the-clients-httpxasyncclient-is-provided-externally)                                              | The client's `httpx.AsyncClient` is provided externally                                                                                                                                                                         | 8.4           | Accepted             |
+| [DD-206](#dd-206--the-lineage-models-upstream-breakers-live-in-the-app-on-pybreakers-calling-seam)                  | The lineage-model's upstream breakers live in the app, on pybreaker's `calling()` seam                                                                                                                                          | 8.5           | Accepted             |
+| [DD-207](#dd-207--the-lineage-model-app-follows-the-example-apps-providerroute-layout)                              | The lineage-model app follows the example app's provider/route layout                                                                                                                                                           | —             | Proposed             |
+| [DD-208](#dd-208--the-lineage-flow-lives-in-the-route-the-chain-class-is-dissolved)                                 | The lineage flow lives in the route; the chain class is dissolved                                                                                                                                                               | —             | Proposed             |
+| [DD-209](#dd-209--data2model-and-validate-entity-follow-the-example-apps-providerroute-layout)                      | data2model and validate-entity follow the example app's provider/route layout                                                                                                                                                   | —             | Proposed             |
+| [DD-210](#dd-210--telemetry-goes-native-the-otel-sdk-replaces-the-logfire-shell)                                    | Telemetry goes native: the OTel SDK replaces the logfire shell                                                                                                                                                                  | 8.5           | Proposed             |
+| [DD-211](#dd-211--httpx2-replaces-httpx-across-the-http-surface)                                                    | httpx2 replaces httpx across the HTTP surface                                                                                                                                                                                   | 8.5           | Proposed             |
+| [DD-212](#dd-212--the-8x-apps-appscenario-test-modules-carry-their-package-name)                                    | The 8.x apps' app/scenario test modules carry their package name                                                                                                                                                                | 8.5           | Accepted             |
+| [DD-213](#dd-213--the-lineage-guid-is-a-uuid-on-every-typed-surface)                                                | The lineage guid is a UUID on every typed surface                                                                                                                                                                               | 8.5           | Accepted             |
+| [DD-214](#dd-214--the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)                              | The test suite review of 2026-10-24 scopes the hardening increments                                                                                                                                                             | cross-cutting | Accepted             |
+| [DD-215](#dd-215--the-ci-pipeline-drops-the-traceability-check-and-report)                                          | The CI pipeline drops the traceability check and report; the tools stay as local aids                                                                                                                                           | cross-cutting | Accepted             |
+| [DD-216](#dd-216--stacks-own-the-tls-material-they-mount)                                                           | Stacks own the TLS material they mount                                                                                                                                                                                          | cross-cutting | Accepted             |
+| [DD-217](#dd-217--the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74)                                    | The search client lands on both sides of the wire, ahead of 7.4                                                                                                                                                                 | cross-cutting | Accepted             |
+| [DD-226](#dd-226--the-dev-stacks-restart-windows-are-unbounded)                                                     | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up                                                                                                                                | cross-cutting | Accepted             |
+| [DD-227](#dd-227--the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production)                | The store-es e2e suite is removed: it evaluated the dev environment, not production                                                                                                                                             | cross-cutting | Accepted             |
+| [DD-228](#dd-228--dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied)                             | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour                                                                                                                      | cross-cutting | Accepted             |
+| [DD-229](#dd-229--the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon)                                       | Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss                                                                                                                       | cross-cutting | Accepted             |
+| [DD-230](#dd-230--parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc)                              | Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away                                                                                               | cross-cutting | Accepted             |
+| [DD-231](#dd-231--teardown-downs-the-compose-stacks-prune-only-sweeps-corpses)                                      | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail                                                                                                                | cross-cutting | Accepted             |
+| [DD-232](#dd-232--the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir)                                    | CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir                                                                                                        | cross-cutting | Accepted             |
+| [DD-233](#dd-233--the-toolchain-caches-bridge-pod-churn-through-the-cache-server)                                   | Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)                                                                                                              | cross-cutting | Accepted             |
+| [DD-234](#dd-234--tls-material-is-a-required-setting-the-server-never-serves-plaintext)                             | TLS material is a required setting: the server never serves plaintext                                                                                                                                                           | 9.2           | Accepted             |
+| [DD-235](#dd-235--a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid)                                     | A 5xx answer is opaque and carries the trace id as `requestId`                                                                                                                                                                  | 9.2           | Accepted             |
+| [DD-236](#dd-236--security-response-headers-are-a-pure-asgi-middleware-split-on-api-path)                           | Security response headers are a pure-ASGI middleware split on `/api` path                                                                                                                                                       | 9.2           | Accepted             |
+| [DD-237](#dd-237--index-refresh-moves-from-reads-to-writes)                                                         | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes                                                                                                                               | 9.3           | Accepted             |
+| [DD-238](#dd-238--the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)                                 | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                                                                                                                               | 9.3           | Accepted             |
+| [DD-239](#dd-239--the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage)                            | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage                                                                                                              | 9.4           | Accepted             |
+| [DD-240](#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar)                                               | The DSL parser is generated from Atlas's own grammar                                                                                                                                                                            | 4.3           | Proposed             |
+| [DD-241](#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes)                                              | The parse tree is handed on as typed, immutable nodes                                                                                                                                                                           | 4.3           | Proposed             |
+| [DD-242](#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree)                                        | A DSL query is composed into the basic search's filter tree                                                                                                                                                                     | 4.4           | Proposed             |
+| [DD-243](#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps)                                             | DSL traversals and projections are evaluated in steps                                                                                                                                                                           | 4.4           | Proposed             |
+| [DD-244](#dd-244-saved-searches-wait-for-authentication)                                                            | Saved searches wait for authentication                                                                                                                                                                                          | 4.5           | Accepted             |
+| [DD-245](#dd-245-lineage-walks-the-relationships-of-the-process-edges)                                              | Lineage walks the relationships of the process edges                                                                                                                                                                            | 5.1           | Proposed             |
+| [DD-246](#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores)                  | Glossary objects are entities written through the entity and relationship stores                                                                                                                                                | 5.2           | Proposed             |
+| [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                          | Journal writes do not wait for a refresh                                                                                                                                                                                        | cross-cutting | Proposed             |
+| [DD-248](#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships)                                        | An entity's meanings are read from its listed relationships                                                                                                                                                                     | 5.2           | Proposed             |
+| [DD-249](#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd)                                   | Uploaded files are read with python-multipart, openpyxl and xlrd                                                                                                                                                                | 5.2           | Proposed             |
+| [DD-250](#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider)                            | The server authenticates requests itself against the identity provider                                                                                                                                                          | 6.1           | Proposed             |
+| [DD-251](#dd-251-browser-sessions-are-kept-in-the-servers-memory)                                                   | Browser sessions are kept in the server's memory                                                                                                                                                                                | 6.1           | Proposed             |
+| [DD-252](#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos)                                  | DataAccess carries every model object through a registry of DTOs                                                                                                                                                                | 4.5           | Proposed             |
+| [DD-253](#dd-253--the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli)               | The chart-contract suite lives at the workspace root (`tests/`) and asserts rendered manifests via the `helm` CLI                                                                                                               | 10.2          | Accepted             |
+| [DD-254](#dd-254--deploy-time-credential-generation-lands-in-102-with-publish-and-rotation-in-104)                  | The umbrella's `randAlphaNum` + `lookup` credential generation ships in 10.2; retrieval/rotation polish stays in 10.4                                                                                                           | 10.2          | Accepted             |
+| [DD-255](#dd-255--the-coredump-agent-ships-as-its-own-image-project)                                                | The ES coredump agent ships as the `aurelius-atlas-elasticsearch-agent` image, not a ConfigMap-embedded jar                                                                                                                     | 10.2          | Accepted             |
+| [DD-256](#dd-256--the-realm-is-a-byte-copy-chart-asset-and-its-placeholders-resolve-in-keycloak)                    | The realm is a byte-copy chart asset rendered verbatim; its `${...}` placeholders resolve in Keycloak, never by Helm                                                                                                            | 10.2          | Accepted             |
+| [DD-257](#dd-257--stateful-workloads-run-as-their-images-declared-uid-with-fsgroup-for-volumes)                     | Each stateful pod pins its hardened image's declared uid (ES 1000, KC 65532, PG 70) with `fsGroup` for volumes — no privilege drop                                                                                              | 10.2          | Accepted             |
+| [DD-258](#dd-258--a-bundled-database-dates-its-consumer-with-a-wait-init-and-its-own-probe-sans)                    | Keycloak waits for the bundled Postgres via an init container (the compose `depends_on: service_healthy` port); the DB cert carries the probe's loopback SAN                                                                    | 10.2          | Accepted             |
+| [DD-259](#dd-259--the-chart-managed-trust-root-is-a-namespaced-self-signed-issuer-chain)                            | The default trust root is a namespaced self-signed-issuer chain (bootstrap → CA Certificate → CA issuer); a bare self-signed ClusterIssuer mints a per-certificate root (partially supersedes DD-286)                           | 10.2          | Accepted             |
+| [DD-260](#dd-260--keycloaks-management-interface-is-tls-in-prod-mode-probes-included)                               | Prod-mode Keycloak serves TLS on the management port; probes are HTTPS and the startup budget covers the per-container re-augmentation                                                                                          | 10.2          | Accepted             |
+| [DD-261](#dd-261--the-two-hop-edge-names-both-client-ip-trust-hops)                                                 | The Gateway in front of the webapp makes DD-238's TCP-trust assumption false: realip from the gateway network, forwarded_allow_ips from values                                                                                  | 10.3a         | Accepted             |
+| [DD-262](#dd-262--the-webapp-nginx-config-resolves-at-pod-start-not-at-helm-render)                                 | The nginx ConfigMap is a byte-copy asset; its placeholders (incl. the ingest bearer) resolve at pod start in an init container, never at Helm render                                                                            | 10.3a         | Accepted             |
+| [DD-263](#dd-263--backendtlspolicy-renders-the-v1-cacertificaterefs-list)                                           | The edge BackendTLSPolicy renders the stable v1 `caCertificateRefs` list — the experimental `v1alpha3` singular ref is not in the standard CRD bundle                                                                           | 10.3a         | Accepted             |
+| [DD-264](#dd-264--the-webapps-emptydirs-mount-below-the-images-symlink-baked-in-paths)                              | Writable emptyDirs mount below the nginx image's symlinked paths; upstream placeholder defaults are cluster FQDNs because the stub resolver ignores search domains                                                              | 10.3a         | Accepted             |
+| [DD-265](#dd-265--the-issuers-public-name-resolves-inside-the-cluster-too-split-horizon)                            | Split-horizon issuer: a runbook CoreDNS entry resolves `keycloak.<domain>` to the Keycloak Service (which gains a 443 port); Keycloak and every consumer keep the public URL, so the issuer claim is one value in both horizons | 10.3b         | Accepted             |
+| [DD-266](#dd-266--scrape-with-static-configs-and-slice-owned-puller-deployments)                                    | The cluster answers 10.2's deferred scrape question the compose's way: Prometheus static configs over chart Services, plus ES/Keycloak `metrics-puller` Deployments; no Prometheus Operator                                     | 10.3b         | Accepted             |
+| [DD-267](#dd-267--grafanas-admin-password-is-a-generated-secret-and-the-login-form-stays-disabled)                  | Grafana gets an umbrella-generated `-grafana-admin` Secret; with `adminPasswordSecret` unset the dev anonymous-Viewer-only posture (login disabled) stands unchanged                                                            | 10.3b         | Accepted             |
+| [DD-268](#dd-268--the-clusters-deployment-environment-is-named-by-values-not-baked-as-development)                  | The collector's `deployment.environment.name` comes from values (default `cluster`); the dev compose keeps `development` — environment, not drift                                                                               | 10.3b         | Accepted             |
+| [DD-269](#dd-269--the-boot-gate-image-is-curl-not-busybox-wget-cannot-handshake-keycloaks-tls)                      | The issuer-wait init ships as `dhi.io/curl` with native retry; busybox wget resets against Keycloak's TLS, and the hardened curl image has no shell for a loop                                                                  | 10.3b         | Accepted             |
+| [DD-270](#dd-270--the-webapp-serves-tls-behind-the-gateway-the-last-plaintext-hop-closes)                           | The webapp's listener serves TLS and the umbrella adds its BackendTLSPolicy; the last plaintext backend hop closes (supersedes DD-285's plaintext-backend clause)                                                               | 10.3c         | Accepted             |
+| [DD-271](#dd-271--network-policy-ownership-the-umbrella-deny-all-and-the-charts-additive-allows)                    | The umbrella renders the namespace default-deny; each chart renders its own additive ingress allows; the two never overlap, so no switch opens the namespace (CHT-60/72)                                                        | 10.6          | Accepted             |
+| [DD-272](#dd-272--the-edge-allows-source-is-a-knob-with-an-all-namespaces-default)                                  | The gateway edge allows read `networkPolicy.gatewayNamespaces`; the default admits every namespace, because a public browser edge's data-plane placement varies per cluster and a wrong pin silently black-holes the edge       | 10.6          | Accepted             |
+| [DD-283](#dd-283--one-chart-per-component-under-an-umbrella-published-as-oci-artifacts)                             | One chart per component under an umbrella, published as OCI artifacts from `charts/`                                                                                                                                            | 10.1          | Superseded by DD-290 |
+| [DD-284](#dd-284--helm-targets-are-inferred-from-chartyaml-by-a-plugin-mirroring-dockerts)                          | Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts`                                                                                                                                                   | 10.1          | Superseded by DD-293 |
+| [DD-285](#dd-285--the-edge-is-gateway-api-not-ingress-nginx)                                                        | The edge is Gateway API, not ingress-nginx (retired March 2026); instrumentation and Istio are out                                                                                                                              | 10.1          | Accepted             |
+| [DD-286](#dd-286--tls-trust-is-cert-manager-issuers-each-pinned-ca-is-a-configmap-of-the-trust-root)                | TLS trust is cert-manager issuers; the CA each consumer pins is a ConfigMap of the cluster trust root                                                                                                                           | 10.1          | Accepted             |
+| [DD-287](#dd-287--the-umbrella-owns-shared-secrets-generated-at-install-and-preserved-on-upgrade)                   | The umbrella owns shared secrets; the webapp's telemetry token is a browser-reachable public constant                                                                                                                           | 10.1          | Accepted             |
+| [DD-288](#dd-288--the-umbrella-pins-its-component-charts-to-its-own-version-chart-version-equals-release-version)   | The umbrella pins its component charts to its own version; chart version equals release version, `appVersion` is the tag                                                                                                        | 10.1          | Accepted             |
+| [DD-289](#dd-289--the-chart-gate-renders-each-charts-own-values-files-the-release-refreshes-chartlock)              | The chart gate renders each chart's own values files separately; the release refreshes Chart.lock in `afterAllProjectsVersioned`                                                                                                | 10.1          | Accepted             |
+| [DD-290](#dd-290--component-charts-live-next-to-their-projects-helpers-are-chart-local)                             | Component charts live in `apps/<app>/helm` / `dev/<name>/helm`; helpers are chart-local, no library charts                                                                                                                      | 10.1          | Accepted             |
+| [DD-291](#dd-291--the-chartyaml-is-the-charts-whole-nx-identity-no-chart-projectjson)                               | The `Chart.yaml` is the chart's whole Nx identity: the plugin infers name, targets, release actions, and umbrella edges                                                                                                         | 10.1          | Superseded by DD-293 |
+| [DD-292](#dd-292--the-umbrella-sits-at-the-workspace-root-helm)                                                     | The umbrella lives at `helm/` in the workspace root: the chart tree is all `helm/` directories, `charts/` is gone                                                                                                               | 10.1          | Accepted             |
+| [DD-293](#dd-293--helm-targets-merge-onto-the-owning-project-a-chart-is-not-a-project)                              | Helm targets merge onto the owning project: a chart is not a project                                                                                                                                                            | 10.1          | Accepted             |
+| [DD-294](#dd-294--the-minikube-trial-findings-in-the-aux-charts-land-in-103)                                        | The minikube trial's two aux-chart findings (unbackable CA mount, lineage-model upstream URLs) are fixed in 10.3                                                                                                                | 10.1          | Accepted             |
+| [DD-295](#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges)                                    | Chart-track id collisions with main renumber above both ranges                                                                                                                                                                  | —             | Accepted             |
+| [DD-296](#dd-296-61as-required-auth-settings-land-in-the-charts-as-joins)                                           | 6.1a's required server-auth settings land in the charts as issuer/realm/secret joins; the dashboards' browser leg stays dashboard-host-gated                                                                                    | 10.12         | Accepted             |
+| [DD-297](#dd-297-the-aux-apis-auth_realm-joins-globalrealm)                                                         | The aux APIs' AUTH_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74)                                                                                              | 10.12         | Accepted             |
+| [DD-298](#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall)                                          | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns                                                                                                     | 10.1          | Accepted             |
+| [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                        | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
+| [DD-300](#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                    | Four fixed roles of the server's client grant Atlas's privileges                                                                                                                                                                | 6.2           | Proposed             |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -7612,7 +7649,2208 @@ would carry DTOs they never use.
 
 **Consequences.** The glossary's `DataAccess` is `glossary_data_access`; its tests name the generic methods.
 
-### DD-253. Four fixed roles of the server's client grant Atlas's privileges
+### DD-253 — The chart-contract suite lives at the workspace root and renders with the helm CLI
+
+- **Status:** Accepted
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** The chart-contract pytest suite lives at the workspace root
+(`tests/`, owned by the root `aurelius-atlas` project through an explicit
+`test` target in the root `project.json`). It renders each chart with the
+`helm template` CLI in a subprocess and asserts the rendered manifests —
+settings keys, Secret references and shapes, certificate SANs, probe shapes,
+pg_hba lines, the realm byte-equality — instead of unit-testing template
+helpers. The suite skips when `helm` is absent (it ships in the devcontainer
+and the CI runner, so in CI it never skips).
+
+**Reason.** A chart is a YAML generator and its contract is the rendered
+manifest; testing the manifests is testing the contract (CHT-06's gate only
+proves the render _succeeds_ — 10.2 makes the first time real containers
+appear in the output, so the output's _content_ needs guarding). No `dev/*`
+chart owner is a Python package and none may become one (their `project.json`
+files are chart-owner stubs), and the contract spans the umbrella plus the
+component charts at once — the root is the only project above that seam. The
+`helm` CLI is the only faithful renderer; a Python re-implementation of
+Helm's template engine does not exist and a `helm`-library shim would drift.
+Rendering in a session-scoped fixture keeps the suite at ~2 s.
+
+**Alternatives.** (a) Colocate under each chart's `tests/` as pytest files —
+rejected: the chart owners have no `test` target (they are not Python
+projects) and the umbrella↔component joins (Secret names a component consumes,
+the issuer reference) have no single chart to live in. (b) Rely on the
+`helm-template` render gate plus review — rejected: DD-294's trial showed
+renders that pass lint while producing crash-looping pods; the invariants need
+assertions. (c) Make the root project a uv member — rejected: `.` already is
+the workspace itself; adding the tests as a package would churn
+`uv sync`/release for a suite with no import surface. The root `project.json`
+is what enables a target here, and with it the python plugin also infers a
+root `typecheck` (`uv run pyright .`) — harmless (nothing in CI targets it;
+every package is type-checked at home) and left in place.
+
+**Consequences.** Chart edits key the target's cache through
+`inputs: helm/**, dev/*/helm/**`, so any chart change re-runs the suite in CI
+(the root project is affected via the umbrella's implicitDependencies anyway).
+The suite is the pattern 10.3 extends when the app charts land; the
+`covers`-marker rule ids (CHT-10..19) give `aurelius-atlas-trace check` the
+spec-to-test map. Next free DD: 254.
+
+### DD-254 — Deploy-time credential generation lands in 10.2 with publish and rotation in 10.4
+
+- **Status:** Accepted
+- **Increment:** 10.2 (re-sliced from 10.4's share of DD-287)
+- **Date:** 2026-10-28
+
+**Decision.** The umbrella's deploy-time credential generation (DD-287's
+mechanism: `randAlphaNum 32` for every empty value, `lookup`-preserve across
+upgrades, values-supplied wins, one Secret per consumer, none committed)
+ships in 10.2 — but only the five Secrets its workloads consume:
+`<release>-elasticsearch` (elastic-password), `-keycloak-admin` (user/password),
+`-keycloak-database` (user/password, shared by Keycloak and the bundled
+Postgres), `-keycloak-users` (writer-password/reader-password), and
+`-otel-clients` (OTEL_INGEST_CLIENT_SECRET). Each renders only while its
+consumer chart is enabled. 10.4 keeps the rest of DD-287's promise: the
+remaining secrets (the collector legacy token and the observability slice's
+credentials, the webapp's edge token), the chart OCI-publish polish, and the
+operator runbook around retrieval and rotation.
+
+**Reason.** 10.2's acceptance is "the stateful pods reach Ready on a cluster"
+— every one of them reads a generated Secret at boot (CHT-13/16), so the
+generation is not separable from the workloads that consume it: without it,
+the increment's own hand check would need out-of-band Secrets, exactly the
+trial-fixup shape DD-294 called out as the thing acceptance must not need.
+The five are also the complete set no other increment needs earlier. The
+10.4-only parts stay in 10.4 because their consumers (collector, webapp edge)
+land there.
+
+**Alternatives.** (a) Ship all of DD-287's secrets now — rejected: a Secret
+with no consumer is dead config that 10.3/10.4 would re-shape anyway; (b)
+keep generation in 10.4 and hand-generate for the hand check — rejected: the
+`lookup`-preserve pattern is subtle and untested-by-CI until real upgrades
+run (10.5); deferring it also defers its first real exercise past its own
+increment.
+
+**Consequences.** The umbrella's `secrets.*` values block is the operator's
+supply surface; the component charts consume strictly by `<release>-<purpose>`
+names (their `*SecretName` values bring your own, which skips generation —
+the chart renders the consumer regardless, pointing wherever told). The
+collector legacy Secret gains a composed `otel-header` key (the
+`"Authorization=Bearer <token>"` pair) when 10.3/10.4 wires its consumers —
+env values cannot concat from a `secretKeyRef`, so the composition belongs in
+the Secret, not the chart. Next free DD: 255.
+
+### DD-255 — The coredump agent ships as its own image project
+
+- **Status:** Accepted
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** The Elasticsearch coredump-agent jar (the no-op javaagent that
+absorbs the fatal `java_lang` dump attempt on GKE, dev/elasticsearch's
+workaround) ships as a real image — `aurelius-atlas-elasticsearch-agent`
+(`tools/es-coredump-agent/`, a `dhi.io/busybox` base plus the committed jar) —
+and the store's StatefulSet mounts it as an init container copying the jar to
+an emptyDir the JVM's `-javaagent` flag reads. The jar itself stays committed
+(`coredump-noop.jar`, 1.9 KB, byte-stable; `build.sh` regenerates it) and a
+chart-contract test pins the image reference and the flag.
+
+**Reason.** The alternative shape — embedding the jar's bytes in a chart
+ConfigMap — hides a shipped binary artifact from every supply-chain control
+this workspace already runs for images: the SBOM (CycloneDX), the vulnerability
+scan (`docker-vuln-scan`), the cosign sign/attest/verify chain
+(publish.yaml), and the registry ACL. An image flows all of them for free the
+moment it exists as a project (the docker plugin infers the eight targets from
+the `Dockerfile` alone; publish.yaml's `run-many -t docker-publish` picks it up
+with no wiring). It also keeps the chart honest: a ConfigMap jar makes every
+install carry the bytes; an image reference makes the store chart depend on a
+versioned, signed artifact like every other workload.
+
+**Alternatives.** (a) ConfigMap-embedded base64 jar — rejected above (supply
+chain), plus a 1.9 KB binary blob in chart values-review. (b) Bake the jar
+into a custom ES image — rejected: forks the hardened `dhi.io` store image and
+re-creates the maintenance the hardened image exists to avoid. (c) Drop the
+agent in-cluster (hope GKE's `vm.max_map_count` story differs) — rejected: the
+procfs write is the same node behaviour DD-008's CI lessons recorded; the agent
+is what makes ES 9.x boot there.
+
+**Consequences.** The image builds in CI (`affected -t docker-build`), is
+published and signed with every release like any other, and takes
+`global.image`'s registry/namespace so a mirror deployment redirects it. The
+busybox base pins `1.37` (no `latest` tag exists on the hardened image). The
+chart's `agent.image.tag` defaults to the appVersion chain like the store's
+own image. Next free DD: 256.
+
+### DD-256 — The realm is a byte-copy chart asset and its placeholders resolve in Keycloak
+
+- **Status:** Accepted
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** The Aurelius realm (`master.json`, the 2 580-line identity
+configuration) is a chart _asset_: `dev/keycloak/helm/files/master.json`, a
+byte-copy of the dev import `dev/keycloak/import/master.json`, rendered into
+the realm ConfigMap verbatim (`.Files.Get`). Helm performs no substitution in
+it. Its `${DEV_USER_WRITER_PASSWORD}` / `${DEV_USER_READER_PASSWORD}` /
+`${OTEL_INGEST_CLIENT_SECRET}` placeholders resolve at import time inside
+Keycloak itself — the JVM's own
+`-Dkeycloak.migration.replace-placeholders=true` flag (already the dev
+compose's mechanism, DD-196) fed from the container's environment, which the
+chart fills from the generated Secrets. A chart-contract test byte-compares
+the asset against the dev import every run (the drift guard).
+
+**Reason.** The dev import file is the single authored source (every dev/e2e
+realm edit lands there first); Helm-substituting the placeholders would fork
+that source per environment. More than drift, the decisive fact is
+reproducibility: a Helm-rendered `randAlphaNum` secret appears twice in one
+render (the realm ConfigMap and the Secret), and `lookup` cannot protect the
+ConfigMap side — a pod rescheduled later gets a realm baked with yesterday's
+rendered value while the Secret holds today's, a boot-order-dependent
+credential mismatch. Keeping the file byte-identical to what dev already
+imports proves the chart path and the dev path carry the same realm, and
+Keycloak's placeholder resolution — the mechanism the dev stack runs today —
+is the same one that resolves from the Secret-fed env.
+
+**Alternatives.** (a) `tpl`/substitution over the file in-chart — rejected:
+the double-`randAlphaNum` race above, plus the file's 2.5 KB of `${env:...}`-
+adjacent JSON full of braces Helm would have to be told to ignore. (b)
+Generate the realm from chart values — rejected: forks the source and loses
+every realm edit; the file is the API. (c) A CI check comparing the copy
+instead of a test — rejected: the chart-contract suite is the established
+place for render-time invariants (DD-253); a byte-compare there runs on the
+same gate.
+
+**Consequences.** Editing the dev import requires re-running the byte-copy
+(`cp dev/keycloak/import/master.json dev/keycloak/helm/files/master.json`) and
+the test fails until it is done — deliberate: the two files may only differ in
+the same commit. The browser-facing redirect URIs in the realm stay
+localhost-only for now; per-environment redirects are 10.3's webapp work and
+will extend the asset (or a values-driven patch) then, not by Helm-substituting
+secrets. Next free DD: 257.
+
+### DD-257 — Stateful workloads run as their image's declared uid, with fsGroup for volumes
+
+- **Status:** Accepted
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** Every stateful workload of the platform charts pins its
+container to the uid the image itself declares — Elasticsearch 1000,
+Keycloak 65532, Postgres 70 — with `runAsNonRoot: true`, matching
+`runAsGroup`, and `fsGroup` set to the same uid for the mounted volumes.
+The chart sets no `runAsUser: 0` anywhere and relies on no privilege drop
+in the image. `fsGroup` is the in-cluster equivalent of the compose
+stacks' one-shot `volume-init` chown: the kubelet group-owns the
+provisioned volume at the fsGroup gid, so the dynamic-provisioner path
+needs no init-container root.
+
+**Reason.** Found in the 10.2 minikube hand check, not on the drawing
+board. The first install crashlooped both stateful pods: Elasticsearch
+exited with `can not run elasticsearch as root` (its JVM refuses uid 0 in
+`initializeNatives`), and Keycloak's re-augmentation failed with
+`AccessDeniedException` on `/opt/keycloak/lib/quarkus/transformed-bytecode.
+jar` because the pod ran uid 1000 while the image owns that tree at 65532.
+The charts had inherited a belief from the dev compose comments — that the
+store image boots as root and drops privilege via `gosu` before exec'ing
+the JVM, so the pod should run as root. That is upstream Elastic's image;
+the hardened `dhi.io` images have no root stage at all: the ES entrypoint
+is `umask 0002` then exec, its `Config.User` is `1000`, and Keycloak's is
+`65532` (Postgres 70). The image's declared user is the only correct
+`runAsUser`, and the hand check is the level (of the three in `AGENTS.md`)
+that catches a wrong one.
+
+**Alternatives.** (a) `runAsUser: 0` + hope for a gosu drop — rejected:
+crashes the store outright, and giving root to pods that never need it
+violates the hardening posture the images exist for. (b) Omit
+`podSecurityContext` and inherit the image user — rejected:
+`runAsNonRoot` must be explicit for the posture to be checkable, and
+`fsGroup` must be set explicitly or dynamically-provisioned volumes mount
+root-owned against the wrong gid. (c) An init container that chowns as uid
+0 (the compose's `volume-init` shape, kept) — rejected in-cluster:
+`fsGroup` does the same job without granting any container root.
+
+**Consequences.** The chart-contract suite pins each workload's uid
+against the image's declared user (`test__runs_as_image_uid_with_fs_group`
+in both stateful suites), so a base-image uid change fails the gate with a
+pointer to this entry. Compose comments claiming a root-entrypoint boot
+describe upstream images, not `dhi.io` ones — they are corrected where
+10.2 touched them, and any future chart copies the uid from
+`docker inspect`, never from prose. Next free DD: 258.
+
+### DD-258 — A bundled database dates its consumer with a wait-init and its own probe SANs
+
+- **Status:** Accepted
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** Two facts the compose siblings state outright and the first
+chart port lost, both caught by the 10.2 minikube hand check. (1) The
+Keycloak pod waits for the bundled database: a `wait-for-postgres` init
+container (bundled flavor only) retries a TCP dial of the database's
+headless Service until it answers — the Kubernetes port of the compose's
+`depends_on: postgres-keycloak: condition: service_healthy`, which has no
+direct equivalent because Kubernetes never gates one pod's start on another
+pod's readiness. (2) The database's Certificate carries `127.0.0.1` as an
+IP SAN next to the service-name DNS SANs: the `verify-full` `pg_isready`
+probes dial `127.0.0.1` (the compose healthcheck's own target, and the dev
+`tls.json` lists the address for exactly this), and `verify-full` compares
+the dialled host against the SANs — without the loopback entry the probes
+can never pass, the pod never turns Ready, and the headless Service never
+publishes an endpoint for Keycloak's JDBC URL to resolve.
+
+**Reason.** The first install deadlocked the pair exactly along those two
+missing facts: Keycloak logged `UnknownHostException: atlas-keycloak-postgres`
+(it started before the database was reachable and prod mode exits on the
+JDBC failure), while Postgres sat Ready-in-name-but-0/1 because its startup
+probe failed hostname verification against a certificate that could not
+amever validate the address it was probed at. The init's wait is
+transitive on TLS correctness — the headless Service publishes the pod only
+after the pod's own verify-full probe passes, so a successful dial already
+proves the database serving verified TLS. bash's `/dev/tcp` is the shape
+the compose's Keycloak healthcheck uses and needs no client tool added to
+the hardened image.
+
+**Alternatives.** (a) A `startupProbe` failure-threshold budget on Keycloak
+instead of the init — rejected: prod-mode `kc.sh` exits on the first JDBC
+failure, so probes cannot ride out the race; the restart loop only
+re-rolls the dice, which is what made the deadlock look random. (b) Have
+the probes dial the service name instead of loopback — rejected: during a
+pod's own NotReady phase its endpoint is unpublished, so a readiness probe
+addressed through the Service could fail on its own not-ready status —
+loopback is the only address that answers the instant Postgres itself is
+up, which is why the compose (and every Postgres guide) probes `127.0.0.1`.
+(c) `publishNotReadyAddresses` on the database Service — rejected: that
+would hand consumers a dial target before the database accepts connections,
+replacing the deadlock with a worse silent race.
+
+**Consequences.** The chart-contract suite pins both: the init container
+present under bundled and absent under external, and the Certificate's
+`ipAddresses: [127.0.0.1]`. A future cluster-ca path that issues per-SAN
+certificates must keep the loopback entry as long as the probes dial
+loopback. Next free DD: 259.
+
+### DD-259 — The chart-managed trust root is a namespaced self-signed issuer chain
+
+- **Status:** Accepted
+- **Supersedes:** the issuer shape in DD-286
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** `global.trust.createIssuer=true` (the default posture) builds
+the cluster trust root as a three-resource chain in the app namespace: a
+self-signed bootstrap `Issuer` signs exactly one `isCA: true` `Certificate`
+whose Secret is the trust root (its name is `global.trust.caSecretName`,
+defaulting to `<issuerRef.name>-ca`); a `ca`-type `Issuer` of that Secret —
+the object every `Certificate` names in `issuerRef` — then signs every leaf.
+Because every leaf descends from the one CA, the `ca.crt` cert-manager
+places in each leaf Secret is the same root everywhere, and the file each
+consumer pins verifies every peer's certificate. The chain is namespaced
+(`Issuer`), so the umbrella's default `issuerRef.kind` becomes `Issuer`
+(the component charts' standalone defaults follow); a `ClusterIssuer` stays
+valid only for bring-your-own issuers (`createIssuer=false`, gke.yaml),
+whose CA is off-cluster and installed via `caBundle` as before. DD-286's
+decision stands in full except this issuer-shape clause.
+
+**Reason.** The 10.2 hand check: a fresh minikube install reached Ready for
+the store and the database but Keycloak refused its JDBC TLS with `PKIX
+path validation failed`. The leaf Secrets told the story — the Keycloak
+and database certificates were signed by two different CAs, which is what
+a bare `selfSigned` issuer means: cert-manager generates a fresh private
+key for every Certificate it self-signs, so "the issuer's CA" is a
+per-certificate secret that cannot exist. DD-286's prose always assumed a
+shared root ("a private root is the default, so the cluster's trust set is
+closed and enumerable") — the implementation shipped in 10.1 contradicted
+its own consequence. The namespacing is cert-manager's own constraint,
+verified on the cluster before the charts changed: a `ClusterIssuer` reads
+its CA Secret from cert-manager's namespace (`ErrGetKeyPair` otherwise),
+while a `Certificate` can only write its Secret to its own namespace — the
+chart can therefore never hand a `ClusterIssuer` a CA it created.
+
+**Alternatives.** (a) Keep the self-signed `ClusterIssuer` and have each
+consumer trust the issuer per leaf (mount every peer's `ca.crt`) —
+rejected: N² trust material, renewed on every certificate rotation, and
+it still cannot express "verify the name I dial" across independently
+minted roots. (b) Make the chain a `ClusterIssuer` pair and copy the CA
+Secret into cert-manager's namespace — rejected: the chart would write
+into another system's namespace and race its garbage collection. (c)
+Generate the CA key in the chart (a Helm-rendered private key in a
+Secret) — rejected: the key lands in the release history and every
+`helm get`, the exact posture DD-287 exists to avoid; cert-manager's
+bootstrap chain keeps the key in its own secret with rotation built in.
+
+**Consequences.** Three objects instead of one for the default posture;
+the chart-contract suite renders and pins the whole chain (bootstrap spec,
+root `isCA` + bootstrap issuerRef, CA Issuer spec, leaf refs `kind:
+Issuer`), and the leaf certificates in the minikube hand check now share
+one CA fingerprint. A CA rotation is cert-manager-renewal-driven and hits
+the boot-time CA readers (store, Keycloak) — DD-286's restart-hook
+consequence, still owed by 10.3. GKE overlays with `createIssuer=false`
+are unaffected. Next free DD: 260.
+
+### DD-260 — Keycloak's management interface is TLS in prod mode, probes included
+
+- **Status:** Accepted
+- **Increment:** 10.2
+- **Date:** 2026-10-28
+
+**Decision.** Keycloak's three probes address the management port over
+**HTTPS** (`httpGet.scheme: HTTPS`), and the startup budget is 30×10s
+(300s). Prod mode puts TLS on the management interface as well as the
+browser one — the same keypair serves both — so there is no plaintext
+listener anywhere in the chart's posture (`KC_HTTP_ENABLED=false` is a
+chart-contract assertion), and a plaintext probe can only ever fail. The
+budget covers what the cluster measures: `kc.sh start` re-augments the
+Quarkus runtime into the container's image filesystem on every new
+container (the PVC holds the realm and cache, not the augmented
+runtime-layer), which on minikube's CPU took ~165s end to end.
+
+**Reason.** The last hand-check failure, and the subtlest: the trust fixes
+worked (realm import ran over JDBC TLS, bootstrap completed in ~2.5s after
+a 165s boot) yet the pod restarted eleven times. kubelet logged
+`Get "http://…:9000/health/ready": EOF` — the dev healthcheck's plaintext
+`/dev/tcp/localhost/9000` probe shape was copied from the compose, where it
+works only because dev runs the plaintext listener as ADR 039's named
+relaxation. The chart renders prod posture, and an HTTP probe against a TLS
+port gets an EOF — the pod's container then died on a
+startup-probe-threshold kill seconds after finishing its work. The widened
+budget is the same measurement: the earlier 180s (the compose's
+`start_period`) left 15 seconds of margin against a cold start, and a
+kill-then-reaugment loop (each restart pays the augmentation again) looked
+exactly like a broken chart.
+
+**Alternatives.** (a) `KC_HTTP_ENABLED=true` and a plaintext management
+listener in-cluster — rejected: the compose's relaxation is named and
+scoped to dev (ADR 039); a chart posture that exists to be the hardened
+shape does not open a second plaintext port. (b) TCP probes instead of
+HTTP — rejected: they'd pass on a listening socket whose health checks are
+failing (the compose's HTTP-shape probe exists for the checks); TLS HTTP
+probes cost kubelet nothing extra. (c) Pinning the probes' certificate
+verification to the cluster CA — not an option kubelet offers (HTTPS
+probes ignore certificate validation), and the right one: a liveness
+channel is an escape hatch, not a trust surface.
+
+**Consequences.** The probe scheme is a values knob
+(`probes.scheme`, default HTTPS) rather than a template literal. The
+augmentation cost is per-container, so a rollout or reschedule always
+pays it: the readiness gate plus the 300s budget absorb it; a future
+image that ships the augmented runtime (a custom build) can shrink the
+budget. The chart-contract test pins the HTTPS scheme and a startup
+budget of at least 300s. Next free DD: 261.
+
+### DD-261 — The two-hop edge names both client-IP trust hops
+
+- **Status:** Accepted
+- **Increment:** 10.3a
+- **Date:** 2026-10-28
+
+**Decision.** In-cluster the browser path is Gateway → webapp nginx →
+server, and both proxy hops are named in values: the webapp's nginx gains a
+`realip` block (`set_real_ip_from` from `nginx.trustedProxyCIDRs`, the
+Gateway's network, an environment value) resolving `X-Forwarded-For` to the
+browser before the `limit_req` geo bucket and the access log key on it; the
+server's `FORWARDED_ALLOW_IPS` takes the webapp's network. Both default to
+no-trust (loopback / empty) in a stock render; the environment overlays name
+their clusters' pod CIDRs (`10.244.0.0/16` on minikube). The nginx change
+lands in the app's own `nginx.conf.template` (with a placeholder the chart
+resolves), keeping the chart's byte-copy and the e2e mirror one contract —
+the e2e stack is one hop and sets no trusted proxies, so its behaviour is
+unchanged.
+
+**Reason.** DD-238's rate-limiter design rests on one fact: "the browser
+cannot spoof the TCP address nginx sees" — true when nginx is the front
+door. The Gateway API edge (DD-285) makes the browser's TCP address, as
+nginx sees it, the Gateway's. Left unnamed, every browser behind the gateway
+shares one `limit_req` bucket (the Gateway's address, inside the RFC1918
+geo allowlist → the limiter disables entirely: requests with an empty key
+are not accounted), and the server's access log/peer attributes key on the
+wrong pod. That is not a hypothetical deployment shape; it is the product's
+default edge. DD-238's consequence line ("deployments that front the server
+with something other than the webapp nginx get no limiter") anticipated a
+foreign front end, not this one in front of the nginx itself.
+
+**Alternatives.** (a) Keep nginx's TCP-trust and let the geo allowlist
+swallow the gateway — rejected: it silently disables the only browser rate
+limiter in the product (DV-87's alert-drawer UX would fire against one
+shared bucket, or never fire). (b) Trust `X-Forwarded-For` unconditionally —
+rejected: DD-238 rejected the same for the one-hop case (spoofable when the
+hop is not pinned); pinning it to the gateway network is exactly the
+correction that makes the header trustworthy. (c) Have Envoy do the
+limiting (local rate-limit policy at the edge) — rejected for now:
+it forks the limiter from the tested contract (`e2e/config/nginx.conf`,
+DD-142/238's pair), and the webapp's allowlist semantics (internal callers
+exempt) are geo-based, which the edge would have to re-implement. Recorded
+as a 10.5+ candidate if per-edge limiting earns its keep.
+
+**Consequences.** The `realip` placeholder joins the template contract
+(the ninth `AURELIUS_ATLAS_WEBAPP_*` name becomes ten); the chart-contract
+suite pins the render against both CIDR-list defaults. A GKE overlay names
+its alias IP range; a deployment whose Gateway runs outside the pod network
+names its own. The server-side setting exists today (`forwarded_allow_ips`,
+DD-238); only the rendering is new here.
+
+### DD-262 — The webapp nginx config resolves at pod start, not at Helm render
+
+- **Status:** Accepted
+- **Increment:** 10.3a
+- **Date:** 2026-10-28
+
+**Decision.** The webapp chart ships the nginx config as a ConfigMap of a
+chart _asset_ — `helm/files/nginx.conf.template`, a byte-copy of the app's
+`nginx.conf.template` (drift-guarded by a byte-compare test) — and a
+`resolve-nginx-config` init container (the same webapp image, POSIX `sh` +
+`sed`) substitutes the `${AURELIUS_ATLAS_WEBAPP_*}` placeholders from the
+container's environment into an emptyDir that nginx reads at
+`/etc/nginx/conf.d`. Helm performs no substitution; the image is unchanged
+(it ships the raw template and fails loudly at parse, the Dockerfile's
+contract). The hardened `dhi.io/nginx` base has neither `envsubst` nor
+`bash` — the upstream image's `/docker-entrypoint.d/` 20-envsubst machinery
+is not in it — hence the chart-side init container rather than an
+entrypoint convention.
+
+**Reason.** The template's ninth placeholder is
+`${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN}` — a _generated_ credential.
+Rendering it Helm-side means the chart must expand
+`lookup(-collector-legacy)` into the ConfigMap, and that is DD-256's
+forbidden shape with a different secret: a Helm-rendered `randAlphaNum`
+appearing in both the Secret and a ConfigMap, where `lookup` protects only
+the Secret side — a pod rescheduled after a values edit gets yesterday's
+bearer baked into its config while the Secret holds today's. Resolving at
+pod start from the mounted Secret is the pattern the increment already
+runs: Keycloak's realm placeholders resolve inside the process, fed from
+the environment the chart fills from the generated Secret (DD-256). The
+remaining placeholders (upstream names, resolver, origins, CA path) carry
+no secret, but they resolve the same way — one mechanism, one contract,
+byte-identical to the e2e stack's config-modulo-values.
+
+**Alternatives.** (a) `tpl`/substitution over the file at render —
+rejected: the double-generation race above. (b) Bake a filled config with
+`envsubst` at image build — rejected: freezes environment values into the
+image (the same environment deploys many clusters; CHT-04). (c) Fork an
+nginx image with `envsubst` — rejected: the hardened image exists to not
+carry GNU gettext. (d) Ship the template untouched and let nginx fail at
+parse — rejected: that is the _bare container's_ deliberate failure, not a
+deployable's.
+
+**Consequences.** `tests/test__charts_webapp.py` byte-compares the asset
+against `apps/aurelius-atlas-webapp/nginx.conf.template` every run; editing
+the template requires re-copying. The init container's `sed` handles
+exactly the `AURELIUS_ATLAS_WEBAPP_` name prefix; a template placeholder
+outside it resolves to nothing loudly (a `grep` for unresolved `${` fails
+the init before nginx starts). Next free DD: 263.
+
+### DD-263 — BackendTLSPolicy renders the v1 `caCertificateRefs` list
+
+- **Status:** Accepted
+- **Increment:** 10.3a
+- **Date:** 2026-10-28
+
+**Decision.** The umbrella's `httproutes.yaml` renders each TLS backend's
+`BackendTLSPolicy` at `apiVersion: gateway.networking.k8s.io/v1` with
+`validation.caCertificateRefs` — a _list_ of `{group, kind, name}` refs to the
+trust CA Secret (which carries `ca.crt`) — plus `validation.hostname` set to
+the Service name (SNI and the per-Certificate SAN check). It does not render
+the `v1alpha3`/singular-`caCertRef` shape.
+
+**Reason.** The minikube hand check caught the first render server-side
+applying as `.spec.validation.caCertRef: field not declared in schema`: the
+standard Gateway API CRD bundle (v1.6.1 experimental, installed per the
+runbook) declares only the v1 `validation` fields; `v1alpha3` with the
+singular ref is not in that schema at all. Envoy Gateway 1.9.3's
+`BackendTLSSettings` docs confirm the v1 shape works end to end, including a
+single Secret ref with the CA in `ca.crt`. The keycloak round-trip through the
+Gateway then completed with the policy Accepted.
+
+**Alternatives.** (a) Install the `gateway.networking.x-k8s.io` experimental
+bundle to get `v1alpha3` — rejected: a whole extra CRD set for a field the
+stable API already has. (b) Drop CA pinning and trust the proxy's system
+store — rejected: CHT-30's whole point is the Gateway verifies the leaf the
+same way an in-cluster client does.
+
+**Consequences.** `tests/test__charts_edge.py` pins the apiVersion and the
+list form; a future Gateway API upgrade needs no chart change. Next free DD: 264.
+
+### DD-264 — The webapp's emptyDirs mount below the image's symlink baked-in paths
+
+- **Status:** Accepted
+- **Increment:** 10.3a
+- **Date:** 2026-10-28
+
+**Decision.** The webapp chart's writable-path emptyDirs mount at
+`/run/nginx`, `/var/lib/nginx/tmp` (not `/var/lib/nginx`), and
+`/var/log/nginx`. The chart's nginx-upstream placeholder defaults are cluster
+FQDNs (`<svc>.<ns>.svc.cluster.local`) rather than short Service names.
+
+**Reason.** The minikube hand check caught the webapp CrashLooping twice over.
+(1) The `dhi.io/nginx` image bakes `/var/lib/nginx/logs` and
+`/var/lib/nginx/modules` as symlinks into `/var/log/nginx` and
+`/usr/lib/nginx/modules`; an emptyDir over `/var/lib/nginx` hides them, and
+`load_module modules/ngx_otel_module.so` then dlopens a path that no longer
+exists — nginx exits at boot. Mounting at `/var/lib/nginx/tmp` covers nginx's
+only real compiled-in writable need there (the temp dirs) while the image's
+own `logs`/`modules` symlinks survive (the `/var/log/nginx` emptyDir still
+covers the logs path; `/etc/passwd`'s home is `/home/nginx`, unused). (2) Once
+booting, the `/api` leg 502'd: the template's `proxy_pass` is a variable,
+which forces nginx's stub `resolver` (the template sets it from
+`${..._DNS_RESOLVER}`), and that resolver never applies `resolv.conf`'s
+search list — a short name like `atlas-server` fails with `Host not found`.
+The peer Certificates carry the `.svc.cluster.local` SAN, so the FQDN default
+fixes resolution and keeps `proxy_ssl_name` verification (DD-286) intact.
+
+**Alternatives.** (a) `postStart`/init `ln -s` into the mounted emptyDir —
+rejected: the chart would re-enact the image's filesystem contract. (b)
+Non-variable `proxy_pass` (static upstream) — rejected: the template is
+shared with the compose stack, where the variable form is needed for the
+resolver-based OTel leg, and DD-262 keeps chart and compose configs
+byte-identical. (c) Values-level FQDN overrides only in
+`environments/*.yaml` — rejected: the defaults are the common case and must
+work unaided (CHT-04).
+
+**Consequences.** `tests/test__charts_webapp.py` pins the three mountPaths
+and the FQDN placeholder defaults. Compose is unaffected (its `nginx.conf`
+is static and docker's DNS handles short names there). Next free DD: 265.
+
+### DD-265 — The issuer's public name resolves inside the cluster too (split-horizon)
+
+- **Status:** Accepted
+- **Increment:** 10.3b
+- **Date:** 2026-10-29
+
+**Decision.** The public issuer host (`keycloak.<domain>`) is made resolvable
+_in-cluster_ as well: the runbook's cluster setup gains one CoreDNS entry
+(rewrite `keycloak.<domain>` → `atlas-keycloak.<ns>.svc.cluster.local` — the
+cluster port of dev's per-producer `extra_hosts`, DD-202), and the Keycloak
+chart's Service gains a `443 → https` port so the public URL's implicit port
+dials. Keycloak's configuration is unchanged (`KC_HOSTNAME` stays the bare
+public host — the hostname-v2 options are not enabled) and no consumer
+changes: the collector's `oidc` extension, the apps' `AUTH_SERVER_URL`, the
+OTLP token URLs, and the pullers' `token_url` all keep the public URL and now
+resolve it locally. The collector keeps one `issuer_url` (no `jwks_url`
+split). The hand check pins that a mint through the Gateway and a mint
+through the Service yield the same `iss`.
+
+**Reason.** The cluster must answer 10.2's deferred "how do in-cluster
+producers reach the issuer" question, and a live probe against the 10.3a
+hand-check cluster pinned the constraints. Keycloak (26.7, hostname v1,
+`KC_HOSTNAME` bare, `KC_PROXY_HEADERS=xforwarded`) resolves the emitted
+issuer from the _Host header_: a request with `Host: keycloak.atlas.test`
+mints `iss=https://keycloak.atlas.test/realms/master`; one with the Service
+FQDN as Host mints `iss=https://atlas-keycloak.atlas.svc.cluster.local/realms/
+master` — a different issuer, permanently embedded in every token it
+produces (runbook §0). So in-cluster consumers cannot simply dial the Service
+name: they would fork the issuer per dial-path. The discovery document makes
+it worse: it hands out a `jwks_uri` that follows the same Host, and the
+auth library (and every OIDC client) _follows_ it — a Service-FQDN fetch
+returns a jwks_uri that only makes sense on the dial path it came from. The
+one shape where every consumer keeps its configuration and every token keeps
+the canonical `iss` is making the public name resolvable both outside
+(the Gateway route, browsers) and inside (CoreDNS → Service, pods), i.e.
+split-horizon DNS — and that is precisely the mechanism the dev stack
+already runs: `keycloak.localhost` is in every producer's hosts file
+(Docker's `extra_hosts`) so the single issuer name resolves wherever it is
+dialled. A real deployment's DNS does the same naturally (`atlas.test` is
+the operator's domain, its internal view points at the cluster); on a dev
+cluster the CoreDNS entry is the explicit form, and it is a documented
+cluster prerequisite beside cert-manager and the GatewayClass.
+The Service's second port exists because `https://keycloak.<domain>/`
+dials 443 and the public URL must carry no port for the canonical `iss`
+(Host-with-port → issuer-with-port).
+
+**Alternatives.** (a) The hostname-v2 split (`KC_HOSTNAME_URL` +
+`--hostname-backchannel-dynamic`): Keycloak's own answer to internal-vs-
+public URLs — rejected: it makes the _claim_ path-dependent (the
+backchannel's issuer follows the dial name per request), and the probe
+showed even v1's port handling varies by dial path (:8443 appears in `iss`
+whenever the Host header carries it), so the permanent claim would fork
+per producer. (b) A per-consumer fetch/claim split (the collector's native
+`jwks_url`, a new option in `aurelius-atlas-auth` to fetch JWKS at the
+Service while checking the public `iss`, Service-FQDN token URLs in every
+chart): rejected — it touches the auth library, three aux apps' settings,
+the pullers, and the collector to work around a DNS gap the cluster owns,
+and any future discovery-following component (Grafana/Tempo OIDC, the
+server's own auth when it lands) inherits the same surgery. (c) A headless
+ExternalName Service for the public name: Services answer at
+`<name>.<ns>.svc.cluster.local`, never at a bare host — impossible.
+(d) `hostAliases` per pod: wants an IP (Service ClusterIP is unknown at
+render time). (e) Route in-cluster mints through the Gateway (hairpin via
+Envoy with a Host rewrite): rejected — httpx/http clients cannot present
+`Host: keycloak.<domain>` over a Service-IP connection without bespoke
+transports, and Envoy hairpins every internal token mint.
+
+**Consequences.** The runbook gains the CoreDNS step (the minikube line:
+`kubectl -n kube-system edit cm coredns`, a `rewrite name` stanza); the
+hand check scripts it and the `helm upgrade` pins it.
+`tests/test__charts_keycloak.py` pins the Service's `443 → https` port and
+the unchanged `KC_HOSTNAME`. The dashboard/contract rule stays honest: one
+realm, one issuer URL, two horizons of DNS for the same name — the same
+sentence the dev compose already tells.
+
+### DD-266 — Scrape with static configs and slice-owned puller Deployments
+
+- **Status:** Accepted
+- **Increment:** 10.3b
+- **Date:** 2026-10-29
+
+**Decision.** 10.2's deferred scrape question is answered with the compose's
+shape, not Kubernetes-native service discovery: the Prometheus ConfigMap
+keeps the five dev jobs (`prometheus`, `otel-collector` with the
+native-histogram protocol pins, `otel-collector-internal`, `loki`, `tempo`)
+retargeted to this chart's Service names, and the Elasticsearch and Keycloak
+charts each gain a `metrics-puller` Deployment gated on `telemetry.enabled` —
+the contrib collector image, a ConfigMap port of the slice's dev
+`metrics-puller.yaml`, the dev `service.name` values kept verbatim
+(`dev-elasticsearch`, `keycloak-infra`). No `ServiceMonitor`/`PodMonitor`
+resources anywhere; no sidecar pullers.
+
+**Reason.** The accepted Grafana dashboards pin `exported_job` values
+(`dev-elasticsearch`, `keycloak-infra`, `keycloak`, …) that came from the
+pullers' `service.name` upserts, and 10.2's spec committed to
+"cluster-native scraping" only as a prediction, not a contract. A
+Prometheus-Operator install contradicts the deployment reference's component
+list (the stack is five images, and the Operator is a sixth with its own
+CRDs); static scrape configs are what the working reference already runs and
+what the stack dashboard's `job="otel-collector"` pins assume. Puller-as-
+Deployment (not sidecar) keeps 10.2's store charts' statefulsets untouched
+— including the CHT-18 template-hash checksums — and gives each puller its
+own restart/rollout blast radius, which is what the dev `restart:
+on-failure` + ESD-06 lesson (a wedged puller starves the store's telemetry
+silently) asks for as a separate unit. Keeping the dev `service.name` values
+is deliberate (DD-265's one-contract rule): a dashboard must not fork per
+environment, and `dev-` reads as the metric-family name the dashboards were
+accepted with, not as a lie about the environment (that's
+`deployment.environment.name`, DD-268).
+
+**Alternatives.** (a) `ServiceMonitor`s via Prometheus Operator — rejected
+above (component budget, CRD surface, dashboards' job pins). (b) Puller as
+a second container in each store pod — rejected: store rollout churn, and
+the store's probes/checksums now include a telemetry concern. (c) Rename
+`service.name`s to environment-neutral values and edit the dashboards —
+rejected: the dashboards are the accepted surface (this increment's own
+byte-copy drift guards treat them as frozen); a values-level
+`service.name` override is available for a deployment that wants its own
+attribution. (d) Scrape Elasticsearch/Postgres with Prometheus' native
+`elasticsearch`/`postgres_exporter` jobs — rejected: needs an exporter
+image not in the stack, and the OTel `elasticsearch`/`postgresql` receivers
+already produce the series the dashboards query.
+
+**Consequences.** `test__charts_elasticsearch.py`/
+`test__charts_keycloak.py` grow a puller render (gated off by default — the
+dev compose remains the dev shape); the puller ConfigMaps are structurally
+compared against the dev YAMLs (CHT-34's pin, same pattern). The umbrella
+enables `telemetry.enabled` on both store charts so a stock install gets
+store metrics. `dev/postgres`'s standalone puller stays compose-only — that
+slice is not an umbrella component. Next free DD: 267.
+
+### DD-267 — Grafana's admin password is a generated Secret and the login form stays disabled
+
+- **Status:** Accepted (the login-form-stays-disabled clause superseded by
+  [DD-276](#dd-276--grafana-logs-in-through-the-realm-with-a-request-derived-root-url))
+- **Increment:** 10.3b
+- **Date:** 2026-10-29
+
+**Decision.** The umbrella generates `<release>-grafana-admin` (user +
+password, the lookup/values/fresh-`randAlphaNum` CHT-19 pattern) and the
+observability chart joins it into `GF_SECURITY_ADMIN_USER` /
+`GF_SECURITY_ADMIN_PASSWORD` when `grafana.adminPasswordSecret` is unset
+(default) or names a Secret to use. The login form stays disabled
+(`GF_AUTH_DISABLE_LOGIN_FORM=true`) exactly as in dev, so the deployed
+posture is anonymous-Viewer read access and the admin credential is held in
+the Secret for the operator to use through whatever authenticated path the
+environment opens later. A deployment that brings its own Secret points
+`adminPasswordSecret` at it and the umbrella generates nothing.
+
+**Reason.** The values contract already reserved the hook ("the default
+posture is kubectl port-forward"), and the CHT-19 pattern — one generated
+Secret per credential, preserved across upgrades, never rendered into any
+ConfigMap — is what every other credential in this system follows (DD-254).
+The alternative in dev (no admin password at all, Grafana's `admin`/`admin`
+default) is what R5 forbids shipping, and enabling the login form would put
+a password-authenticated surface behind the `grafana.<domain>` route (10.3a
+CHT-32) that has no Keycloak front — the edge's OIDC auth filter covers the
+atlas host, not this one, and bolting auth onto the observability host is
+its own increment-sized decision, not a side effect of turning the stack on.
+Keeping the form disabled matches the accepted dev contract: anonymous Viewer
+is the posture; the generated admin exists so the instance is never
+ship-default-credentialed.
+
+**Alternatives.** (a) `adminPassword` in values plaintext — rejected: R5,
+and the chart's whole secrets story is generation + joins. (b) No admin at
+all — rejected: Grafana still boots `admin`/`admin` internally and the form
+being off is the only thing gating it; the operator needs a real credential
+to re-enable it deliberately. (c) Route Grafana through Keycloak now —
+rejected as scope: the edge's auth filter pattern exists, but wiring it is
+an edge change with its own rules (10.4's polish list has the candidates).
+
+**Consequences.** `helm/templates/secret-grafana.yaml` (or the existing
+secret template's sibling block) renders the pair only when
+`atlas-observability.enabled` and `grafana.enabled`; the observability test
+pins the `valueFrom` joins. Turning `GF_AUTH_DISABLE_LOGIN_FORM` off in a
+values overlay is the documented way to expose admin, with the Secret
+retrieved per the runbook's `kubectl get secret` line. Next free DD: 268.
+
+### DD-268 — The cluster's deployment environment is named by values, not baked as development
+
+- **Status:** Accepted
+- **Increment:** 10.3b
+- **Date:** 2026-10-29
+
+**Decision.** The collector's `resource` processor upserts
+`deployment.environment.name` from `collector.deploymentEnvironment`
+(default `cluster`); the dev compose's ConfigMap keeps `development`
+untouched. Producers contribute no environment attribute of their own (the
+OTel SDK defaults stay unset — the charts render no `OTEL_DEPLOYMENT_*`
+env); the collector is the single place the attribute is stamped, in every
+deployment shape.
+
+**Reason.** The dev config's `development` value is an environment
+statement, not pipeline semantics — every rule CHT-34 copies (receivers,
+processors, pipelines) is environment-free except this one line, and the
+charts' contract is "the dev config's shape with the environment slots
+computed" (the observability values file's own comment). Baking
+`development` into a cluster install would make Tempo/ Loki's data lie about
+where it came from, and an operator filtering panels by environment would
+have to fork the ConfigMap — the drift DD-253's suite exists to prevent.
+Defaulting to `cluster` keeps a stock install honest with zero values; the
+attribute's consumer contract (the OTel semantic convention, and panels that
+group by it) is unaffected. A producer-side `OTEL_RESOURCE_ATTRIBUTES`
+route was the other shape: rejected because then every chart would stamp
+the same environment string (eight places instead of one) and any mismatch
+between them silently splits the panels' filters.
+
+**Alternatives.** (a) `deployment.environment.name` from the umbrella's
+release/environment values (e.g. `global.environment`) — considered; kept
+chart-local as `collector.deploymentEnvironment` because the collector is
+the stamper and there is no second consumer of the concept yet; promote it
+to `global.*` when a second one appears. (b) Producer-side env — rejected
+above. (c) Omit the attribute in-cluster — rejected: Tempo's
+`deployment.environment` search facets and the resource processors'
+matching depend on a value existing.
+
+**Consequences.** The CHT-34 structural test compares dev vs cluster configs
+everywhere except this attribute's value (the one slot the test knows to
+allow); a values-level override is the documented fork. Next free DD: 269.
+
+### DD-269 — The boot-gate image is curl, not busybox: wget cannot handshake Keycloak's TLS
+
+- **Status:** Accepted
+- **Increment:** 10.3b
+
+**Context.** The hand check's first live boot left the three `issuer-wait` init
+containers spinning forever with the issuer healthy: busybox's `wget`
+(`--no-check-certificate`) fails Keycloak's TLS listener with `got bad TLS
+record (len:0) while expecting handshake record` / `Connection reset by peer`
+against a server openssl, python, and curl all complete handshakes to
+(TLS 1.2 and 1.3, ECDHE-RSA-AES256-GCM-SHA384 and TLS_AES_256_GCM_SHA384).
+The uClibc busybox TLS stack is the failing side, and it fails on every
+attempt — an init loop with a fixed `sleep` would never end, so a workload
+whose whole job is "wait for the issuer" blocks the collector, the server
+puller, and the Keycloak puller forever.
+
+**Decision.** The issuer-wait init ships as `dhi.io/curl:8` (uid 65532, as
+busybox did) with `curl -sSf --insecure --retry 0 --retry-connrefused
+--retry-delay 5 <well-known>` — an infinite native retry, no `sh` needed
+(the hardened curl image has no shell), exit 0 the moment the realm answers.
+
+**Alternatives.** (a) A richer init image with a shell (alpine-class) —
+rejected: one more base image to harden for a six-line poll, and the retry
+semantics are identical. (b) A TCP-only wait (`nc -z`) — rejected: a listening
+socket does not mean the realm's JWKS endpoint answers, and the OIDC extension
+reads exactly that endpoint (DD-195's race is an HTTP-level one). (c) Keep
+busybox, retry the init from Kubernetes instead of in-process — rejected: a
+backoff-waiting Pod is exactly what the init container exists to prevent
+(DD-298's lesson applies to crash-looping inits too).
+
+**Consequences.** CHT-37's rule text names the image honestly; the chart tests
+pin `dhi.io/curl:8` and the command shape (no shell, `--retry-connrefused`).
+The `--insecure` flag stays scoped to a boot gate (the collector verifies the
+issuer CA-pinned, DD-216). Next free DD: 270.
+
+### DD-270 — The webapp serves TLS behind the gateway: the last plaintext hop closes
+
+- **Status:** Accepted
+- **Increment:** 10.3c
+- **Date:** 2026-10-29
+
+**Context.** DD-285 shaped the webapp's listener as plaintext behind the
+gateway, and `helm/templates/httproutes.yaml` gave it no BackendTLSPolicy.
+The trust analysis of the OTel/API flows found the one inversion between the
+dev stacks and the cluster: the e2e nginx already listens `8080 ssl` with the
+project's mkcert leaf (`apps/aurelius-atlas-webapp/e2e/config/nginx.conf`),
+so the shipped chart was weaker than the tested dev shape. From 7.3 the
+browser's bearer token and per-user OTLP pushes arrive at the Gateway, whose
+HTTPS listener terminates there — and would then cross the gateway→nginx hop
+in plaintext, one hop before the same token's TLS-verified `/api/` proxy
+(whose comment names exactly that threat). The invariant "user tokens never
+cross plaintext" (ADR 039) needs the hop closed before the tokens flow.
+
+**Decision.** The webapp's nginx listener serves TLS: the shipped template
+gains `listen 8080 ssl` with `ssl_certificate`/`ssl_certificate_key` from two
+new placeholders (the contract grows ten → twelve, CHT-25 amended in place —
+PR #159 is still in review). The chart ships a `Certificate` following the
+server's pattern (CHT-22: SANs = the Service and its FQDNs, issued by the
+umbrella's CA issuer; `tls.certSecretName` brings your own and renders
+nothing), mounts the leaf whole beside the trust root, and flips its probes
+to HTTPS. The umbrella's `edge.listeners` helper flips the webapp entry's
+`tlsBackend` to true, so `httproutes.yaml` renders the third
+`BackendTLSPolicy` — CA-pinned via `caCertificateRefs`, SNI = the Service
+name = the SAN — with no template change of its own. Grafana stays the lone
+plaintext backend (anonymous Viewer, login disabled, DD-267): nothing
+secret-bearing crosses its hop, and DD-285's clause stands scoped to it.
+DD-285's gateway choice is untouched — this supersedes only its
+plaintext-backend clause.
+
+**Alternatives.** (a) Leave it until 7.3 — rejected: the e2e stack already
+runs TLS nginx (the cluster should not ship weaker than the test rig), and
+landing it beside the auth wiring bundles two unrelated slices. (b) mTLS to
+the webapp — rejected: the Gateway API `BackendTLS` validation is
+CA-and-SNI; client certificates would need Envoy Gateway BackendAuth policies
+for an identity the app layer already carries (DD-285's mesh argument).
+(c) Reuse the `<release>-edge-tls` leaf — rejected: its SANs are the browser
+hosts, not the Service name; the BackendTLSPolicy hostname check is the
+Service name (CHT-22's rule, as for every other backend).
+
+**Consequences.** CHT-23's and CHT-25's rule text in the 10.3a spec amend in
+place (unmerged); CHT-30's "plaintext backends (webapp) none" becomes
+Grafana-only. The webapp's placeholder count is twelve; the byte-copy drift
+guard covers the new template. The probes are HTTPS (kubelet skips
+verification — liveness, not trust, DD-260's lesson). A cluster upgrade to
+this chart is an atomic umbrella `helm upgrade`: the BackendTLSPolicy and the
+TLS listener ship together, so there is no window where Envoy dials TLS into
+a plaintext listener or plaintext into a TLS one.
+Next free DD: 271.
+
+### DD-271 — Network-policy ownership: the umbrella deny-all and the chart's additive allows
+
+- **Status:** Accepted
+- **Increment:** 10.6
+- **Date:** 2026-10-29
+
+**Context.** The pre-pentest review's H2 found the cluster shape flat: any
+pod in the namespace could dial any other pod's every port, so one webapp
+compromise walked to Elasticsearch's 9200, Keycloak's 8443, and the telemetry
+backends without a credential check at the network layer. Kubernetes
+`NetworkPolicy` is the native fix, but its semantics — policies are additive
+allows and a namespace is default-open until some policy selects a pod —
+make _ownership_ the design question: a single umbrella-owned policy set
+would have to enumerate every chart's ports (a central registry the component
+charts don't have, against ADR 057's per-chart ownership), and one default
+rendered per chart would make a chart's `networkPolicy.enabled=false` a
+namespace-wide open — the opposite of the surgical switch operators need.
+
+**Decision.** Two owners, never overlapping (CHT-60/72): the umbrella renders
+exactly one namespace-wide deny (`<release>-deny-all-ingress`,
+`podSelector: {}`, no rules) and the browser-edge allows for its own
+listeners; every chart renders only additive ingress allows for the pods it
+owns, gated by its own `networkPolicy.enabled`. Disabling a chart's switch
+narrows allows, never the deny — no component can open the namespace, and no
+component chart ever needs to know the namespace contract exists. Peers join
+by **pod** labels (`app.kubernetes.io/name`/`instance`/`component`, CHT-70),
+not Service names: the name rule the Services use is the same rule, and the
+`networkPolicy.peers.<peer>` overrides exist because the Service-name joins
+(`atlas.service` et al.) rename Services and must never feed a selector. The
+peer sets are the full call graph read off the renders (who actually dials
+whom, DD-265's split-horizon included), so every rule names a real caller —
+lineage-model and validate-entity get no ingress policy because nothing dials
+them (CHT-66), and Grafana's only allow is the gateway's when its host is
+enabled (CHT-69).
+
+**Alternatives.** (a) One umbrella-owned policy list — rejected: centralises
+every chart's port knowledge in the umbrella, exactly what ADR 057 split up,
+and a component renamed by values silently breaks a rule it does not own.
+(b) Per-chart default-deny policies — rejected: overlapping denies compose to
+the intersection and a chart's disable switch becomes namespace-wide
+foot-gun. (c) CiliumNetworkPolicy / egress rules — rejected: a CRD
+dependency for a posture Kubernetes v1 covers, and egress restriction is a
+cluster-policy decision (the compose dev shape runs with no policies at all;
+CHT-73 keeps Ingress-only so both shapes stay honest). (d) AdminNetworkPolicy
+— rejected: out of the chart's namespace scope entirely.
+
+**Consequences.** The umbrella and every chart carry a
+`networkPolicy.yaml`; the contract suite names CHT-60..73 with the exact
+peer sets and ports so a widened rule breaks a named rule, not a snapshot.
+Kubelet probes and `kubectl port-forward` ride the CNI's node path and are
+policy-exempt — documented (CHT-71), which is what keeps the collector's
+13133 and Keycloak's 9000 rule-free. A cluster upgrade applies the deny the
+moment it rolls: charts that ship a policy whose caller the operator has
+customised need the `peers` override set before the upgrade, and the hand
+check (10.5 script) boots the full umbrella under the policies before the
+leg round-trip runs. Next free DD: 272.
+
+### DD-272 — The edge allow's source is a knob with an all-namespaces default
+
+- **Status:** Accepted
+- **Increment:** 10.6
+- **Date:** 2026-10-29
+
+**Context.** The gateway edge policies (CHT-61) admit the Gateway's data
+plane to the browser backends' container ports. The obvious `from` is the
+data plane's namespace by label — but the placement is not the chart's fact:
+Envoy Gateway ships its data plane wherever its own install puts it
+(`controlPlane.namespace`), the managed alternatives (GKE, AKS, Istio
+ingress) name it their own, and the dev kind/minikube shapes may co-locate
+it. A wrong pin does not fail loudly: the HTTPRoutes stay green, the Gateway
+programs, and every browser request black-holes at the network layer —
+exactly the class of failure the pentest would report as a foot-gun.
+
+**Decision.** `networkPolicy.gatewayNamespaces` (list, default `[]`). Empty —
+the shipped default — renders `namespaceSelector: {}` (every namespace):
+the browser backends are already public through the Gateway, so an
+all-namespaces source adds no exposure the edge does not already have —
+the in-cluster peers of a browser backend are no closer to a secret than a
+browser is (the webapp proxies only through the server's own auth). A
+non-empty list pins: one `namespaceSelector` per name matched on
+`kubernetes.io/metadata.name`, and only those namespaces admit. The runbook
+names the pin as the production hardening step; the chart cannot read the
+Gateway's placement from inside the release.
+
+**Alternatives.** (a) Default to `ingress-gateway` (Envoy Gateway's default
+namespace) — rejected: right for one install recipe, silently wrong for the
+managed platforms, and the failure mode (black-holed edge) is invisible in
+the HTTPRoute tests. (b) Discover the data plane from the cluster at render
+— rejected: `helm template` has no cluster, and an `lookup`-based default
+makes the render untestable (the contract suite renders offline, CHT-06).
+(c) No knob at all, always all-namespaces — rejected: operators on a
+multi-tenant cluster lose the hardening path entirely.
+
+**Consequences.** The stock install's edge policies say "any namespace", which
+reads alarming in a security review until DD-272 is cited — the spec and
+`helm/values.yaml` comment carry the pointer. The pin test (CHT-61) renders
+the single-namespace spellings so the knob is a contract, not a suggestion.
+A future environment overlay (helm/environments/) may set the pin per
+platform once the placement facts are on record.
+Next free DD: 273.
+
+### DD-273 — Two identity realms: hardened `aurelius-atlas` for clusters, `master` as the dev escape hatch
+
+- **Status:** Accepted
+- **Increment:** 10.7
+- **Date:** 2026-10-30
+
+**Context.** The pre-pentest review's H3: the cluster authenticated the whole
+system against Keycloak's own `master` admin realm, because
+`dev/keycloak/import/master.json` — built for the compose/e2e browser-login
+rig (localhost origins, ROPC password grant, demo users, Keycloak's admin
+clients with `webOrigins: ["+"]`) — was also the chart's only realm asset.
+Splitting the shapes raises the question of what the prod asset is made of.
+Stripping master's export down to the app surface looked attractive until
+its composites were checked: `default-roles-master` composites the
+account/realm-management client roles, so a pruned export either keeps dead
+references or breaks import, and no offline check can prove which — there is
+no running Java-Atlas-style reference Keycloak here, and the cluster shape
+only ever boots for real in the 10.5 hand check.
+
+**Decision.** Two assets, two shapes (CHT-75, CHT-78). The cluster's realm is
+the minimally-authored `files/aurelius-atlas.json`: exactly the
+application-facing surface — the `aurelius` public client (with its
+`aurelius-write` client role), the seven `otel-*` service accounts, and the
+`otel-ingest` scope — with the H3 hardening applied and no seeded users;
+Keycloak recreates its built-in clients, scopes, flows, and roles when it
+creates the realm, so the file never carries or references them.
+`files/master.json` stays exactly as DD-256 made it (byte-copy of the dev
+import, drift guard running): the dev compose and the four `e2e/` suites keep
+importing `master` with its localhost origins, ROPC, and demo users — the
+browser-login conveniences the Playwright suites need — and `realm.name:
+master` remains the documented cluster escape hatch that loads it byte-for-
+byte. The demo-user plumbing (the umbrella's `<release>-keycloak-users`
+Secret, the StatefulSet's `DEV_USER_*` env) is gated on the master realm
+(CHT-80): a stock install provisions no people.
+
+**Alternatives.** (a) One realm for everything, hardened — rejected: it
+breaks the dev login rig (Playwright's ROPC grants and localhost origins are
+the suite's contract, DD-206's shape) and drags dev into the first-boot
+hostname pin. (b) A pruned export of master as the prod asset — rejected as
+unverifiable offline (composite transplant, above). (c) Seed prod users from
+values — rejected: a cluster realm with no users is the pentest-clean shape;
+operator provisioning through the admin console is the normal path, and
+placeholder-fed demo identities in a prod chart re-create the finding.
+
+**Consequences.** The CHT-79 structural-parity test is the two-asset drift
+guard: the otel-* clients and the otel-ingest scope must equal their dev
+peers and the aurelius client may differ only in the hardened fields, so an
+identity change in dev must be mirrored in the prod asset or named in its
+commit. The two shapes are deliberate (DV-112): a reviewer comparing the dev
+stack's login behaviour to the cluster's should expect them to differ.
+
+### DD-274 — `global.realm` as the values contract; host tokens substituted chart-side
+
+- **Status:** Accepted
+- **Increment:** 10.7
+- **Date:** 2026-10-30
+
+**Context.** Two realm facts had to reach every chart: the realm _name_
+(eight charts' issuer URLs, token URLs, and the SPA's config named it as a
+per-chart value default — seven copies of `realm: master` that could drift
+from the realm the KC chart imported), and the _browser hosts_ the prod
+asset's redirect URIs and web origins must carry (which the KC chart cannot
+read from the umbrella's `global.hosts` — subcharts see only what the
+umbrella passes as `global`).
+
+**Decision.** `global.realm` joins the CHT-03 contract (default
+`aurelius-atlas`): every consumer chart declares `global.realm` and derives
+its realm from a per-chart `realm` helper (`default "aurelius-atlas"
+.Values.global.realm`), so one umbrella value retargets the whole system; the
+KC chart's own `realm.name` stays as a chart-level override for standalone
+installs. The asset's browser hosts are chart-substituted, not credential
+placeholders (CHT-77): `__ATLAS_HOST__`/`__DASHBOARD_HOST__` tokens in the
+JSON, replaced literally by `configmap-realm.yaml` from
+`global.hosts.atlas.host`/`global.hosts.dashboard.host` (the KC chart's
+`global:` block declares them), falling back to `atlas.<domain>` /
+`dashboard.<domain>` then `<release>.localhost` for bare renders — mirroring
+the umbrella's host rule. The KC chart's `atlasHost`/`dashboardHost` helpers
+mirror the umbrella's so both spellings of the same deployment agree;
+credentials stay Keycloak's replace-placeholders business (DD-256
+untouched): a render must never materialise a secret.
+
+**Alternatives.** (a) Template the hosts into the JSON with Helm syntax —
+rejected: `{{ }}` inside a chart asset breaks the byte-compare-style guards
+and makes the file unparseable standalone; literal tokens keep the asset
+plain JSON. (b) Per-chart realm values as today — rejected: the CHT-74
+contract test exists precisely because seven defaults already drifted once
+(`master` everywhere was the drift). (c) The umbrella re-exports the asset
+as a ConfigMap override — rejected: the realm is the KC chart's asset (its
+files/, its import flags); the umbrella composes, it does not own component
+content.
+
+**Consequences.** `global.realm` is first-boot-immutable like the issuer it
+embeds — the values comment and the runbook say so. The bare chart renders
+(helm.ts runs them with no values) stay guard-free via the
+`<release>.localhost` fallback, so lint/template never fail for want of a
+domain; a deploy whose hosts are unset everywhere still gets a render, and
+the 10.5 smoke catches the nonsense hosts. The parity question between the
+umbrella and KC host helpers is pinned by the umbrella suite's realm tests
+rather than a shared helper library (DD-290's chart-local rule holds).
+Next free DD: 275.
+
+### DD-275 — Grafana is a confidential realm RP; its client lives in the prod asset only
+
+- **Status:** Accepted
+- **Increment:** 10.8
+- **Date:** 2026-10-31
+
+**Context.** The pre-pentest finding H4: the cluster's Grafana answers with
+DD-267's anonymous-Viewer posture, so `global.hosts.grafana.enabled` —
+already wired end-to-end through the edge (10.3c) — would publish the
+dashboards read-public. 10.7 shipped the `aurelius-atlas` realm and the
+placeholder machinery; Grafana is the first workload whose login is a
+relying-party flow of its own rather than the webapp's existing one.
+
+**Decision.** A `grafana` client joins `files/aurelius-atlas.json` and the
+prod asset **only** (CHT-81): confidential (`clientAuthenticatorType:
+client-secret`, secret `${GRAFANA_CLIENT_SECRET}` — DD-256's
+replace-placeholders resolver, fed from `<release>-grafana-oauth` exactly as
+`${OTEL_INGEST_CLIENT_SECRET}` is), standard-flow + PKCE S256, ROPC off, no
+service account. RBAC comes from the token: `role_attribute_path` grants
+Viewer to every authenticated realm user and the client's `editor`/`admin`
+client roles escalate — the realm is the access boundary, and escalation is
+an explicit grant an operator makes in the Keycloak console. This is CHT-79's
+first named parity exception (prod client ids = dev's ∪ {`grafana`}): the dev
+compose Grafana stays anonymous-Viewer, a local dashboard over local
+telemetry (DV-113) — the same two-shape posture as DD-273's identity split,
+now with a concrete client proving the assets may diverge on purpose.
+
+**Alternatives.** (a) Grafana's own auth proxy or the edge's OIDC auth filter
+in front of it — rejected: the gateway filter would authenticate but not
+carry identity into Grafana (dashboards lose viewer attribution, and
+per-dashboard permissions stay Grafana's job anyway); generic_oauth is
+Grafana's native OIDC RP and needs no edge change. (b) Put the client in
+both realm assets — rejected: dev's Grafana is a compose convenience, and a
+client the dev stack never uses is drift bait for CHT-79. (c) Map realm
+_roles_ instead of client roles — rejected: realm roles would collide with
+`aurelius-write`'s namespace and make Grafana escalation a realm-wide grant;
+client roles scope it to Grafana's own console surface. (d) `admin` group
+mapping from Keycloak realm admins — rejected: realm-admin should not
+silently become Grafana-admin; explicit client roles keep escalation auditable.
+
+**Consequences.** The umbrella's `secrets.grafanaOauth` Secret serves two
+consumers (realm import + Grafana env) so the gate is either-consumer
+(CHT-83); a `master`-only install generates nothing, CHT-80's rule. The dev
+Grafana keeps DD-267's full anonymous posture — compose and cluster diverge
+by design, and the CHT-79 test now names the exception, so a future client
+added to one asset and not the other fails loudly and must be justified in
+the spec like this one. Next free DD: 276.
+
+### DD-276 — Grafana logs in through the realm, with a request-derived root URL
+
+- **Status:** Accepted (supersedes DD-267's login-form-stays-disabled clause)
+- **Increment:** 10.8
+- **Date:** 2026-10-31
+
+**Context.** Enabling the login (H4) has an operator cost DD-267 named
+obliquely: its reason paragraph said enabling the form would put a
+password surface behind a route with no Keycloak front — 10.8 removes that
+objection by putting Keycloak in front. The other half of DD-267 (the
+generated `-grafana-admin` Secret, never ship-defaulted) stands untouched
+and keeps its env joins; it becomes account recovery rather than a dormant
+credential.
+
+**Decision.** `GF_AUTH_*` swaps anonymous-off/login-form-on/OAuth-on
+(CHT-84); `GF_SERVER_ROOT_URL` **stays unset** and the client's
+`redirectUris` carry both `https://__GRAFANA_HOST__/login/generic_oauth` and
+`http://localhost:3000/login/generic_oauth` (CHT-82). Grafana derives the
+redirect from the request Host header when root_url is unset, so
+`kubectl port-forward` to the pod — the documented default access path —
+completes the full OIDC round-trip through Keycloak at the public issuer
+URL, while a browser reaching `grafana.<domain>` (if exposed) round-trips
+through the same client. The localhost entry is a fixed dev/operator URI,
+not a wildcard: an attacker who cannot land a browser on `localhost:3000` of
+the operator's machine cannot use it.
+
+**Alternatives.** (a) Pin `GF_SERVER_ROOT_URL` to `https://grafana.<domain>`
+— rejected: it breaks the port-forward path (Grafana would redirect the
+browser to a host that isn't listening) and pins the pod to one hostname;
+the umbrella's `hosts.grafana.enabled=false` default makes the request-
+derived form the correct general shape. (b) The `+` wildcard redirect —
+rejected: CHT-77 forbids `+` in a cluster asset, and a wildcard on a
+confidential client is the open-redirect shape the realm was hardened
+against. (c) A second `grafana-dev` client for the localhost path —
+rejected: one client, two exact URIs is less surface and one row of drift.
+
+**Consequences.** DD-267's table row and body carry the partial-supersession
+annotation; its generated-Secret half is unchanged. Keycloak's 8443 dialer
+set gains the Grafana pod (CHT-86) — the token exchange and JWKS fetches are
+new real traffic and the full-dialer-set philosophy (CHT-62) admits them
+without a flag. A render with `global.hosts.grafana.host` set to something
+unreachable still logs in fine over port-forward; the host entry is inert
+allow-list filler (CHT-82), not a dependency.
+Next free DD: 277.
+
+### DD-277 — Per-producer ingest secrets: one realm-shaped Secret, dev stays shared
+
+- **Status:** Accepted (completes DD-196's deferral)
+- **Increment:** 10.9
+- **Date:** 2026-10-31
+
+**Context.** The pre-pentest triage's M5: the seven `otel-*` ingest clients
+share one secret end to end — one placeholder in both realm assets, one key
+in `<release>-otel-clients`, one join in all six cluster producers. A leak
+from any producer's container forges telemetry for all seven (the collector
+verifies signature and audience, not which client the bearer was minted
+for). DD-196 deferred per-client secrets deliberately for the dev compose;
+7.18 left the cluster side unported, so the deferral quietly became the
+production shape. DD-196's own note assumed "prod deployments inject
+per-client secrets, the realm import supports it as-is" — which the shared
+placeholder made untrue until the asset itself spells one placeholder per
+client.
+
+**Decision.** Three calls, all decided autonomously (user pre-authorised):
+
+1. **One Secret with per-client keys, not seven Secrets.** The umbrella's
+   `<release>-otel-clients` gains one key per client id on a non-master
+   realm — each value independently lookup-preserved, values-overridden
+   (`secrets.otelClients.clients.<client-id>`), or fresh (CHT-19's pattern
+   seven times over). Six producers each mount the same one Secret they
+   mount today, under their own key; the RBAC/secret-count/nothing-special
+   story is unchanged, and rotation of one producer touches one key of one
+   object.
+2. **Realm-conditional keys — the `master` hatch keeps the shared key
+   everywhere.** Secret shape, KC StatefulSet env shape, and every producer
+   join read the same realm chain (CHT-80's gate, generalized), so
+   `global.realm=master` renders today's single-key behavior verbatim and
+   existing overrides (`secrets.otelClients.secret`) keep working. Prod-only
+   keys would have broken the documented escape hatch; prod-only Secret +
+   shared dev asset is also CHT-79's second named exception, recorded
+   rather than papered over.
+3. **Dev compose stays shared.** `import/master.json` keeps
+   `${OTEL_INGEST_CLIENT_SECRET}` in all seven clients; DD-256's byte-copy
+   guard and the four e2e suites stay untouched. Seven secrets multiply the
+   `.env.enc` surface and the placeholder machinery for a loopback-only
+   stack — DD-196's dev deferral stands (CHT-91).
+
+The placeholder mapping is the one deterministic rule in the asset (client
+id uppercased, `-` → `_`, suffixed `_CLIENT_SECRET`, CHT-87) and the charts
+derive env names from the roster mechanically, so the asset, the Secret
+keys, the StatefulSet envs, and the six producer joins are four spellings
+of one list — with a roster-drift test pinning the three cluster spellings
+against the asset.
+
+**Alternatives.** (a) Seven Secrets, one per client — rejected: more
+rendered objects and six join sites per producer chart to select among,
+for a separation one Secret's keys already give. (b) Prod-only keys with
+no realm gate — rejected: breaks `master` renders (the realm-conditional
+`atlas-keycloak.realm.name=master` shape is tested, and operators do use
+it for local debugging). (c) Full per-client dev posture — rejected with
+DD-196's reasoning: dev's threat model is loopback, and the incremental
+`.env.enc`/import churn buys nothing there. (d) Rotating via realm import
+values on every upgrade — rejected as scope: the import applies at first
+boot only (IGNORE_EXISTING), live rotation stays admin-console work; this
+increment shrinks the blast radius, the runbook records the procedure.
+
+**Consequences.** CHT-79's parity rule is amended a second time (prod otel
+peers equal dev minus `id` **and** `secret`, the secret delta pinned to the
+mapping rule). `otel-postgres` keeps its roster seat with no cluster
+consumer — the realm defines the client, the dev compose consumes it; a
+future Postgres chart joins its own key with no chart change here. The
+known mixed-render edge (chart-local `atlas-keycloak.realm.name=master`
+without `global.realm=master` yields a shared-key Secret under per-client
+joins) rides CHT-74's existing rule that `global.realm` is the one-value
+retarget — documented in the umbrella AGENTS note, not guarded in the
+template. Rotation is now per-producer: leak one container, rotate one key,
+restart one producer (runbook §Credentials).
+Next free DD: 278.
+
+### DD-278 — Third-party digests committed, own images stay tags; charts sign
+
+- **Status:** Accepted
+- **Increment:** 10.10
+- **Date:** 2026-10-31
+
+**Context.** The pre-pentest triage's M9: every chart image renders by
+mutable tag, and published OCI charts are unsigned while their images are
+keyless-signed (publish.yaml). A registry compromise, a mirror substitution,
+or a retagged upstream silently changes what installs. A first design
+sketch pinned _everything_: committed digests for the thirteen third-party
+values plus a publish-time bake resolving each Aurelius image's digest into
+the chart tree before `helm package`. The bake is what this entry rejects.
+
+**Decision.** Three calls, the second at the user's explicit direction
+("uncomplicate our pipeline by only pinning digests for third-party
+images"):
+
+1. **Every image block gains a `digest` field; the helpers make it win.**
+   `<base>@<digest>` when set, `<base>:<tag>` otherwise — whatever produced
+   the tag (appVersion chain, chart default, `global.image.tag`). Puller and
+   issuer-wait images move from inline `printf "%s:%s"` joins to named
+   helpers so they get the same branch (CHT-92).
+2. **Only third-party digests are committed; Aurelius images stay tags.**
+   The risk a digest answers is _someone else changing what a tag means_.
+   The nine dhi.io pins carry committed digests (CHT-93); a weekly drift
+   guard (CHT-96) fails when a tag bump forgets its digest refresh. Our own
+   six images are written only by publish.yaml — after signing and
+   verifying — and the published chart version that references them is
+   itself immutable (OCI refuses re-push) and cosign-signed, so installing
+   chart version X provably names this release's images. The bake would
+   pin the release to itself a second time, at the cost of a publish-time
+   rewrite of the chart tree (a workflow-local mutation invisible to
+   review, whose output no CI render ever reproduces). Their `digest`
+   fields stay `""` — a live operator override, not decoration (CHT-94).
+3. **Charts sign like containers.** `helm-sign`/`helm-verify` join the helm
+   plugin's inferred targets (DD-290's mechanism) against
+   `ghcr.io/aureliusenterprise/charts/<chart>:<version>`, keyless, with
+   `docker-verify`'s identity/issuer regexp contract; publish.yaml runs the
+   pair right after `helm-publish` (CHT-95).
+
+**Alternatives.** (a) Full bake (the first sketch) — rejected per 2; with
+it went `tools/images/bake_digests.py` and the publish bake step, descoped
+mid-increment. (b) Committed Aurelius digests bumped by the release itself
+— rejected: every release would dirty the chart tree with a digest of its
+own predecessor, and CI renders would trail the registry. (c) Dependabot
+for the third-party pins — rejected as mechanism: its `docker` ecosystem
+does not parse Helm values; the drift guard's refresh PR is the equivalent
+flow. (d) `helm provenance` (.prov packages) instead of cosign — rejected:
+cosign is what the image chain already uses, one identity/issuer contract
+to audit, and the sign target rides the OCI artifact `helm push` already
+uploads.
+
+**Consequences.** A stock install pulls nine immutable third-party images
+and a signature-verifiable chart; admission enforcement (policy rejecting
+unverified images at the cluster) stays an operator follow-up named in the
+runbook. The umbrella guard (CHT-97) classifies every rendered image as
+Aurelius-tag or committed-pin, so an unpinned new image fails CI without a
+registry call, and a pin that drifts from `conftest.PINNED` fails loudly.
+`digest: ""` fields in the six Aurelius blocks look like dead config to a
+newcomer; CHT-94 and the values comments carry the why. Next free DD: 279.
+
+### DD-279 — Edge hardening, two-stack loopback guard, CI fork posture
+
+- **Status:** Accepted
+- **Increment:** 10.11
+- **Date:** 2026-10-31
+
+**Context.** The pentest backlog's Low residue after 10.6–10.10: the webapp
+edge serves the SPA over TLS with no HSTS, keeps the resolved nginx config
+(which embeds the legacy ingest bearer) on disk, and proxies `/otel/`
+unthrottled; Prometheus/Loki/Tempo and the dev store still publish on
+`0.0.0.0`; and the CI queue treats the members-only-PR policy as a GitHub
+setting rather than code, with one `concurrency` group shared by public
+deploys and PR previews and ARC runner images floating on mutable tags.
+
+**Decision.** Four calls, the third's shape decided mid-increment at the
+user's direction:
+
+1. **The tmpfs is scoped to the secret.** Only `nginx-conf` gets
+   `emptyDir.medium: Memory` (CHT-98); the pid/temp/log emptyDirs stay
+   disk-backed. RAM is charged per pod and the threat is the bearer, not
+   emptyDirs in general. HSTS rides the same placeholder mechanism as the
+   realip block — the chart renders the _whole_ `add_header` directive into
+   `${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}` (CHT-99), so the e2e/compose
+   shapes resolve it to nothing and the fail-loud guard keeps the contract
+   closed at thirteen. The `/otel/` limiter is browser-sized deliberately
+   (`atlas_otel`, 600 r/m, burst 100) in both twins — a test-sized zone
+   would throttle the suite's own traffic (CHT-100).
+2. **The loopback guard enforces two stacks, not the world** (CHT-101).
+   `tests/test__dev_stack.py` scans only `dev/observability` and
+   `dev/elasticsearch` compose files. A first sketch swept all of `dev/*`;
+   the sweep surfaced Keycloak's issuer ports (e2e consumers dial
+   `keycloak.localhost` via `extra_hosts: host-gateway`, so a loopback bind
+   detaches every app e2e suite) and the template Postgres (its host port
+   is the examples' `serve` database — host processes, not containers).
+   Both need a compose-network rework, not a `127.0.0.1:` prefix: they are
+   **named deferrals** in the spec, and the guard's file set is the honest
+   enforceable set rather than an allowlist-shaped lie.
+3. **Fork posture lives in the workflows** (CHT-102). Every
+   `pull_request`-triggered job in `ci.yaml` and the PR-docs job gain the
+   same-repo guard (`head.repo.full_name == github.repository`, ORed with
+   `event_name != 'pull_request'` where a job also rides pushes). The
+   members-only policy is a repo setting a future settings-sync could
+   relax; the runners mount age keys, so the boundary is worth two lines
+   per job. Docs `concurrency` splits by scope: `docs-public` (main/tag/
+   delete) vs `docs-pr-<number>` per PR — no `cancel-in-progress` on the
+   PR group because `mike deploy --push` is a git transaction.
+   ARC: the third-party `actions-runner` cache-init image is digest-pinned
+   in values; `CI_SHAPEA_IMAGE_TAG` accepts a `sha256:` digest and
+   `install.sh` joins it with `@` (own images stay tags per DD-278).
+4. **The Trivy SARIF stays one-hopped** — declined at the user's direction:
+   the scan already feeds SonarQube, whose quality gate fails the build; a
+   second surface (GitHub code scanning) for identical findings splits the
+   triage queue instead of shortening it. CODEOWNERS declined the same way
+   (enforces nothing without org plan support). Both stay in the spec's
+   not-delivered list with the reasoning.
+
+**Alternatives.** (a) Whole-`dev/*` loopback sweep — rejected per 2; the
+deferrals are named and dated, not hidden. (b) `permissions: contents:
+read` on PR jobs instead of `if:` guards — insufficient: the age keys ride
+step env from decrypted `.env.enc`, and a fork PR would still exfiltrate
+via build output. (c) tmpfs for every emptyDir — rejected per 1. (d) A
+per-PR concurrency group with `cancel-in-progress: true` — rejected: two
+previews of one PR racing `mike deploy --push` corrupt the gh-pages
+branch; queueing (no cancel) is correct for a git transaction.
+
+**Consequences.** The webapp ConfigMap asset carries an
+`${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}` placeholder no render may leave
+unresolved — the chart suite pins the thirteen-name contract, and the
+twin byte-identity test keeps `helm/files/nginx.conf.template` honest.
+Dev hosts with tooling that reached 9090/3100/3200 or 9200 over a LAN
+interface must re-point at the box's address; contributor-guide ports
+table says so. The fork guard means external contributions run only the
+lint/render jobs until the policy question is settled — accepted. The
+Keycloak/Postgres loopback deferrals are open items with a named blocker
+(compose-network rework) for a future increment. Next free DD: 280.
+
+### DD-281 — The container-outage and edge-flood e2e proofs retire; the shipped limiter stays
+
+- **Status:** Accepted
+- **Increment:** 10.5 (rollout step 0)
+- **Date:** 2026-11-02
+
+**Context.** The 10.5 rollout (DD-280) moves the e2e suites onto the
+Helm/minikube lane, and three scenarios have no lane to migrate to. RSL-01
+(webapp suite) and RSL-02 (lineage chain) stop and start **compose
+containers** through the docker SDK, found by compose labels
+(`com.docker.compose.project`); a minikube pod has no counterpart to that
+handle, and rebuilding the arrangement on `kubectl delete pod` + restart
+buy back two browser-visible symptoms — a bell badge after a 502, an
+Atlas-shaped 502 body — that the unit suites already pin in-process (7.7's
+`HttpTestingController` alert chain, 8.5's fake-transport LM-12 suite).
+SRV-09's rate-limit test is worse: it proves the bucket by outspending it,
+which works only because `e2e/config/nginx.conf` ships a **test-sized**
+twin (60r/m burst 20) the live-flood can overflow in seconds; the shipped
+browser-sized bucket (300r/m burst 100, geo-allowlisted so suite traffic
+passes unlimited) is unprovable through a live flood at suite speed on any
+lane, and the cluster edge adds a second limiter layer on top.
+
+**Decision.** Delete the three proofs, in both lanes, and retire their
+rule ids rather than park them as skips:
+
+- `test__aurelius_atlas_webapp_resilience.py` keeps only the RSL-03
+  logout round-trip (browser-only, migrates cleanly in 10.5c); its outage
+  fixture, docker-SDK helpers, and RSL-01 test go.
+- `test__aurelius_atlas_lineage_model_resilience_e2e.py` goes whole; its
+  `covers` markers also named LM-12 and CL-30, which stay pinned by the
+  scenarios files and the client suites.
+- `test__aurelius_atlas_webapp_rate_limit.py` goes whole, and with it the
+  test-sized `atlas_api` zone in `e2e/config/nginx.conf` (a bucket with no
+  test keeps no config). RSL-03 and the `atlas_otel` zone (CHT-100,
+  chart-guarded) stay.
+
+**What stands.** The shipped limiter itself is untouched: both
+`nginx.conf.template` copies (image + helm byte-copy), the geo/map key
+pair, `limit_req_status 429`, DV-87, and the chart-render guards. SRV-09
+retires as an _e2e rule_ — the config remains part of the product, guarded
+where it is deterministic to guard (rendered manifests), and no longer
+where it was only ever provable against a fixture-sized twin.
+
+**Consequences.** 9.1 narrows to RSL-03; 9.3's limiter row carries the
+retirement note; the conversion index rows for 9.1/9.3 and the lineage
+conftest's timeout rationale follow. docker-py leaves the direct-use
+column (its two consumers were these files; it stays installed as a
+testcontainers transitive). The step runs **before** the suite migrations
+so the shared lane library (10.5b) never has to carry an outage-orchestration
+API nobody intends to use.
+
+Next free DD: 282.
+
+### DD-282 — Chart misconfig scans ride the Sonar hop as project-level issues
+
+- **Status:** Accepted
+- **Increment:** 10.11 follow-on (helm hardening)
+- **Date:** 2026-10-31
+
+**Context.** The helm charts are in decent shape and the ask was to hunt
+for small misconfigurations. A Trivy `config` pass over the nine charts
+(their real renders, below) surfaces 206 findings (28 HIGH / 66 MED /
+112 LOW); every HIGH is a dev-only workload — the store, Keycloak + its
+Postgres, the observability stack, the metrics pullers — no Aurelius app
+chart. SonarCloud already ingests the per-app image-vuln SARIF
+(`docker-vuln-scan -c sarif` → `sonar.sarifReportPaths`, scan and sonar
+co-located in CI's `scan-sonar` job for exactly that handoff); the natural
+move is to give the chart findings the same hop instead of a new surface
+(the 10.11 DD-279 decision keeps Trivy one-hopped — Sonar is the surface).
+
+**Decision.** Three calls:
+
+1. **Plugin target, not a script.** `helm-config-scan` joins the helm
+   plugin's inferred set (`json` default for humans, `sarif` config for
+   CI, `exit-code 0` — the gate lives in the quality gate, not the task),
+   mirroring `docker-vuln-scan`'s configuration shape. CI's scan step
+   extends in place (`-t docker-vuln-scan helm-config-scan -c sarif`);
+   both SARIFs share the `vuln-reports` artifact. The target needs the
+   explicit-executor form: Nx silently DROPS a `command:`-sugar target
+   carrying `configurations` (verified against the graph — the target
+   vanishes).
+2. **Scan the real `helm template` render, not Trivy's helm renderer.**
+   Two silent-skip traps, both verified. Trivy renders charts with DEFAULT
+   values, and the CHT-02 required-guards fire there — a guarded chart then
+   scans zero targets, which reads as clean. Worse, Trivy's own renderer
+   cannot run `.Files.Get` (the keycloak chart's realm asset), so even with
+   test values passed it SKIPs that chart outright — the `--helm-values`
+   flag fixed six of nine but left keycloak invisible. The robust shape:
+   render with real `helm template` (test values when the chart ships
+   them, exactly as `helm-template` does — handles both guards and
+   `.Files.Get`), write the manifests to `{projectRoot}/.helm-rendered.yaml`,
+   and `trivy config` the file. Because the SARIF is project-level either
+   way (locations dropped), scanning the render costs nothing in
+   attribution.
+3. **Project-level issues, no scope change.** The SARIF's jq filter drops
+   every result's `locations` and the run's `originalUriBaseIds`, so
+   Sonar imports findings as project-level issues (documented
+   location-less behaviour). The alternative — rewrite URIs
+   workspace-relative and add `helm/` to `sonar.sources` — would run the
+   YAML analyzer over the Go templates (the same files prettier/check-yaml
+   already exclude) and its line numbers are whole-container stanza
+   regions anyway. The SARIF stays HIGH/CRITICAL-only: the LOW/MED backlog
+   (KSV-0011 CPU limits — often deliberate, KSV-0125 ghcr untrusted-registry
+   false positive, KSV-0013 `:latest` — a default-values render artefact,
+   the release pins `appVersion`) would enter the new-issues gate as noise
+   before triage; it graduates by editing the severity list, not by
+   `.trivyignore`.
+
+**Scope.** Only the five app charts have Sonar projects; their
+`sonar-project.properties` gain the second comma-delimited SARIF path.
+The umbrella and the three dev charts (where every HIGH lives) have no
+Sonar project yet — their scans run in CI and their SARIFs reach the
+artifact only; Sonar projects for them are a later decision.
+
+**HIGH baseline (render-scan, all nine).** Five app charts: 0. Dev
+elasticsearch 2, keycloak 3, observability 6, umbrella 17 (the umbrella
+supersets the dev charts' workloads — its render is the deployed shape).
+Every HIGH is KSV-0014 (`readOnlyRootFilesystem` unset/false) on a
+dev-only workload — the store, Keycloak + its Postgres, the observability
+stack, the metrics pullers — or KSV-0109 (a puller ConfigMap holding a
+`${env:…}` password/secret slot). None touches an Aurelius app chart.
+
+**Consequences.** `helm-misconfigs.json` and `.helm-rendered.yaml` join
+the gitignored scan-report set (`*.sarif` was already ignored). The
+plugin gained a sixth target; `helm/AGENTS.md`'s adding-a-chart list names
+it. The findings are triage items, not gate failures: KSV-0109's
+`${env:…}` references are placeholders (the real secret arrives as env
+from a Secret — R5), and KSV-0014's puller containers can likely take a
+read-only root with an emptyDir; the stateful workloads (store, Keycloak,
+Postgres, observability) write to their data dirs and a read-only root is
+a per-workload decision with a `tests/values.test.yaml` render guard. Both
+are follow-ups; nothing enters a quality gate today because the app charts
+are clean at HIGH. Next free DD: 283.
+
+### DD-283 — One chart per component under an umbrella, published as OCI artifacts
+
+- **Status:** Superseded by DD-290 (the `charts/` residence; one-chart-per-
+  component, umbrella, and OCI publish stand)
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** Deployment lives in a top-level `charts/` tree: one chart per
+deployable component (`atlas-server`, `atlas-webapp`, `atlas-data2model`,
+`atlas-lineage-model`, `atlas-validate-entity`, `atlas-elasticsearch`,
+`atlas-keycloak`, `atlas-observability`), a Helm library chart `atlas-common`
+for the shared helpers, and the umbrella `aurelius-atlas` that composes them.
+A component chart owns its component's runtime contract (port, probes,
+`AURELIUS_ATLAS_*` settings, trust mounts); the umbrella owns the edge, the
+trust issuers, the shared secrets, and the `global.*` values contract. Charts
+publish to `oci://ghcr.io/aureliusenterprise/charts` in the release.
+
+**Reason.** ADR 057. The increment that changes a component is the one that
+knows its ports and probes, so ownership sits at the component (R3); the
+combination that CI proves is one install of the umbrella (R4); a registry
+artifact under the release's number, in the registry the images use, with the
+credentials CI already has, is the smallest addition to the delivery plane
+(R7). `charts/` as one tree keeps chart-to-chart edges — the common library,
+the umbrella's pins — visible in one place, and each project's `AGENTS.md`
+points at its chart.
+
+**Alternatives.** (a) `apps/<app>/chart/` — one step more local, and it
+interleaves the docker plugin's `**/Dockerfile` glob with a `**/Chart.yaml`
+glob in the same directories; the deployable unit is a chart, and the app tree
+is organised by conversion increment, not by deployment. (b) One monolithic
+chart — R3's failure, the file where component knowledge goes stale.
+(c) Charts in their own repositories — R2's failure, and ADR 001's; a
+component change and its chart change stop being one commit. (d) Kustomize —
+no chart artifact to publish (R7) and env-var text substitution where the
+components need typed, validated values.
+
+**Consequences:** `charts/AGENTS.md` carries the chart conventions the way
+`libs/python/AGENTS.md` carries the library recipes. The example apps get no
+chart — they leave with 6.4 (DD-019). The dashboard is not a chart: it is
+copied into the server image (`/application/dashboard`, DD-018). Publishing
+order becomes load-bearing (subcharts before the umbrella, DD-288). Next free
+DD: 241.
+
+### DD-284 — Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts`
+
+- **Status:** Superseded by DD-293 (the inference and the plugin stand; the
+  separate `<chart>-chart` PROJECT does not — targets merge onto the owner)
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** `tools/plugins/helm.ts` infers, for every `charts/**/Chart.yaml`,
+an Nx project named `<chart>-chart` (tagged `helm`) with `helm-lint`,
+`helm-template` (`local`/`ci` configurations) and `helm-publish`
+(`--namespace oci://ghcr.io/aureliusenterprise/charts`, `version` default
+`local`, publish `latest`, CI passes `--version $VERSION`) — the option,
+configuration, and metadata shape of `tools/plugins/docker.ts`.
+
+**Reason.** ADR 021 (a technology joins by recipe: discovered, gated,
+releasable, removable in one pass) and DD-283's R7. Inference makes charts
+graph-visible, so `nx affected -t helm-lint` gates a chart change and
+`nx run-many -t helm-publish` releases them — the same two commands that
+already carry images. The docker plugin is the house pattern; a second shape
+for the same job costs review attention.
+
+**Alternatives.** (a) One root `helm` project looping charts in a shell script
+— invisible to `affected`, no per-chart cache, no per-chart target to compose.
+(b) A `project.json` in each chart — nine manifests to keep in step, where one
+plugin file infers all nine. (c) `@nx/kubernetes` — it generates kustomize
+scaffolding, not Helm targets.
+
+**Consequences.** The validate job adds `nx affected -t helm-lint helm-template`
+(level 0: no cluster, no registry, no SOPS key — helm 4.3.1 is in the dev
+container, which is the CI runner image, so nothing installs). Release
+grouping picks chart projects into the version plan (DD-288). The plugin's
+commands are helm 4 flags; a helm 3 operator can lint the charts but the
+publish path assumes helm 4's OCI push. Next free DD: 242.
+
+### DD-285 — The edge is Gateway API, not ingress-nginx
+
+- **Status:** Accepted
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** The umbrella renders the edge as Gateway API resources: one
+`Gateway` and one `HTTPRoute` per host (`atlas.<domain>` → webapp,
+`keycloak.<domain>` → Keycloak, optional dashboard and Grafana hosts), with
+`gateway.className` a value (Envoy Gateway on minikube, the provider's
+implementation on a managed cluster). No ingress-nginx, no ingress-level
+instrumentation, no service mesh.
+
+**Reason.** ingress-nginx retires in March 2026 — best-effort maintenance
+until then, no security fixes after (kubernetes.io, 2025-11-11) — so building
+the deployment on it starts a migration on day one. Gateway API is the
+successor and is the portable choice by construction: the chart names an API,
+the cluster names an implementation, which is R1 in one line. The policy the
+edge used to be chosen for already lives one hop in: the webapp's nginx owns
+the browser rate limit (DD-238) and the `/api/` tracing export (DD-239), and
+it is tested by the e2e suites.
+
+**Alternatives.** (a) ingress-nginx — retired; its snippet annotations are the
+security debt the retirement names. (b) Traefik, Kong, Moov — capable, and
+each makes its own CRDs and policy vocabulary a chart dependency, so
+portability costs a value per controller; as a GatewayClass implementation
+each is a value swap. (c) LoadBalancer Services only — two browser-reachable
+hosts (webapp, Keycloak) on one address needs host routing. (d) Istio —
+a mesh sidecar model replaces the pinned-CA trust the components ship with
+(ADR 039, DD-234) and adds a data plane to operate for a policy set already
+implemented in nginx.
+
+**Consequences.** A GatewayClass is a cluster prerequisite, installed by the
+install script and named in the runbook (10.4). TLS terminates at the gateway
+and the webapp→server hop stays TLS (DD-286's per-service certificates).
+Routing stays coarse: one host to one service, because the webapp's `/api/`
+and `/otel/` proxy is the tested data path (DD-142) — the gateway does not
+duplicate it. Next free DD: 243.
+
+### DD-286 — TLS trust is cert-manager issuers; each pinned CA is a ConfigMap of the trust root
+
+- **Status:** Accepted (the default issuer's shape superseded by
+  [DD-259](#dd-259--the-chart-managed-trust-root-is-a-namespaced-self-signed-issuer-chain))
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** The umbrella owns the trust model: an issuer reference
+(`global.issuerRef`, a self-signed `ClusterIssuer` by default, swappable for
+ACME, a provider CA, or an existing chain) and one `Certificate` per
+browser host and per in-cluster service, with the SAN sets the consumers
+verify (service DNS names for internal hops, the host names for the edge).
+The CA every consumer pins by file — `ELASTICSEARCH_CA_CERTS`, nginx
+`proxy_ssl_trusted_certificate`, `AUTH_CA_FILE`, `OTEL_*_CA_FILE`, the store's
+`tls/ca.pem` — is supplied as a ConfigMap of the issuer's CA, mounted at the
+path the chart names, through a helper in `atlas-common`.
+
+**Reason.** ADR 039 declares TLS at every hop and the components enforce it:
+the server refuses to start without key, cert, and CA (SRV-06, DD-234), and
+nginx, Keycloak, Elasticsearch, and the collector each pin a CA file. So the
+chart must deliver files, not secrets alone. cert-manager is the one mechanism
+that produces a leaf and its `ca.crt` on every cluster, minikube included
+(R1, R6), with rotation built in. The dev CA cannot travel: `tools/tls/certgen.sh`
+is mkcert-root based, mode-644 keys, and its header forbids shipping `certs/`.
+
+**Alternatives.** (a) Bring-your-own TLS secrets — the chart stays dumb and
+every environment hand-produces eight leaf certificates with eight SAN sets and
+renews them by hand; R6's failure is that no test catches a wrong SAN.
+(b) SPIFFE or mesh-issued identities — a third identity system beside Keycloak
+and the `otel-*` client credentials (ADR 007, ADR 013). (c) Plaintext in-cluster
+hop-by-hop — refused by ADR 039: a declared arrangement, not an assumed property.
+
+**Consequences.** cert-manager is a prerequisite of every cluster (install
+script, runbook). Consumers that read the CA at boot (Elasticsearch, Keycloak)
+need a restart hook when the CA rotates — recorded for 10.2/10.3. A private
+root is the default, so the cluster's trust set is closed and enumerable;
+swapping `issuerRef` to ACME changes the browser certificates only, because
+internal consumers pin the internal issuer's CA. Next free DD: 244.
+
+### DD-287 — The umbrella owns shared secrets, generated at install and preserved on upgrade
+
+- **Status:** Accepted
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** Every credential the system needs at runtime is produced by one
+umbrella template from one `secrets.*` values block and written as plain
+`Secret`s, one per consumer: the store's `elastic` password, Keycloak's
+bootstrap admin and database credentials, the `otel-*` client secret the realm
+shares, the two demo users, and the collector's legacy-leg token. A value
+supplied in values wins; a value absent is generated (`randAlphaNum`) and
+**preserved across upgrades** by reading the live Secret (`lookup`) before
+generating. The webapp's ingest token is the legacy-leg token, documented as
+browser-reachable — a public ingest endpoint's constant, not a confidential
+credential.
+
+**Reason.** R5 (no secret in the artifact) and R6 (a fresh minikube install
+with no prepared secrets must reach a running system). The preserve step is
+not decoration: regenerating the store's password on upgrade bricks the system
+of record, and the first install of a generated secret is the only moment the
+value exists. That the browser leg's token is public follows from DD-239 — the
+edge exports on the legacy leg from the browser's request path, so the value
+travels where an attacker with a page load can read it; the honest model is an
+OTLP ingest DSN, and the audit trail is the OIDC legs (7.17/7.18).
+
+**Alternatives.** (a) The repo's SOPS `.env.enc` — those files are per-project
+dev defaults readable by every developer's age key (ADR 008); production
+credentials in them inherit that audience. (b) External Secrets Operator or a
+cloud secret manager — the right answer for a deployment that runs one, so the
+chart consumes plain `Secret` names and leaves the door open (option in the
+runbook, 10.4) rather than binding the chart to a backend. (c) helm-secrets /
+sops in the operator's path — adds a CLI and an age-key distribution problem
+to the install.
+
+**Consequences.** `helm uninstall` deletes the credentials, so the runbook
+names the backup duty with ADR 026/028 and the rotation procedure (10.4);
+retrieval is `kubectl get secret -o jsonpath`. Talisman and pre-commit see no
+secrets because none are committed. A deployment that wants per-environment
+secrets in its own store sets them in values and gets the same preservation.
+Next free DD: 245.
+
+### DD-288 — The umbrella pins its component charts to its own version; chart version equals release version
+
+- **Status:** Accepted
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** Every chart's `version` is the release's semver and its
+`appVersion` the image tag. The umbrella's `dependencies` pin each component
+chart to `=` its own version and resolve them from the OCI repository, so
+`helm install aurelius-atlas` on a deployment's machine pulls exactly the set
+CI tested. `publish.yaml` publishes subcharts before the umbrella.
+
+**Reason.** ADR 019's one number must name a shippable combination, and CHT-07
+is the chart half of that promise: a range (`>=1.2.0`) resolves to "the newest
+of each", which is a combination no pipeline ever ran. Pin-equal makes mixing
+impossible and makes the release the unit of deployment, the same argument
+that gives the images one tag.
+
+**Alternatives.** (a) Caret/range pins — the drift generator this decision
+exists to refuse. (b) `file://` dependencies only — the umbrella would carry
+tarballs and a component chart could not be installed standalone from the
+registry (a deployment standing up Keycloak alone for a staging test).
+(c) Independent chart versioning — a chart fix ships without a release, so
+"the release" stops naming what runs; R2's failure, and the one ADR 019
+forbids.
+
+**Consequences.** Charts join the release group, so Nx release bumps them with
+the rest (DD-284); a chart-only fix costs a release — the deliberate price of
+R2, and the same price the images already pay. Development installs can use
+the local tree (umbrella `file://` dependencies behind a values switch) so
+chart hacking needs no publish; publish ordering is subcharts → umbrella,
+checked by the verify step 10.4 adds. Next free DD: 246.
+
+### DD-289 — The chart gate renders each chart's own values files; the release refreshes Chart.lock
+
+- **Status:** Accepted
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** `helm-template` renders a chart once per values file it ships —
+`tests/values.test.yaml` and each `environments/*.yaml` overlay — as separate
+`helm template` invocations, never as one stacked command. The chart
+projects' `afterAllProjectsVersioned` refreshes the umbrella's `Chart.lock`
+with `helm dep update` after a release writes the new versions.
+
+**Reason.** Stacked (`-f a.yaml -f b.yaml`) renders only the umbrella's
+combination; a component chart's own overlay pair (test values + environment)
+is a combination no deployment runs, and stacking every chart's files in one
+command hides which file breaks. Separate renders name the failing file. The
+lock refresh exists because `Chart.lock` records the resolved dependency
+versions and a digest over them: a release that bumps the component charts
+leaves it stale, and only helm computes the digest — the tree is flushed to
+disk by the time the hook runs, so `helm dep update` is the only writer that
+can produce a valid lock.
+
+**Alternatives.** (a) One stacked render — fails the naming-the-file goal and
+makes a component chart's CI green without its own contract ever rendering.
+(b) Gitignore `Chart.lock` — helm's own contract wants the lock committed
+(`helm dep build` verifies against it); an unlocked install resolves
+dependencies at install time, which is DD-288's drift generator re-opened.
+(c) A `helm-lock` Nx target — a release-time action, not a developer one; the
+version-actions hook fires exactly when the lock goes stale.
+
+**Consequences.** The gate's task count grows with the values files a chart
+ships (20 tasks for 11 charts today); every chart that gains an overlay gains
+a render. The lock refresh runs in `nx release version` only (a dry run
+skips it, and the `--dry-run` flag's tree is empty), so the version commit
+carries a valid lock. The plugin's target command is generated at graph-build
+time from the files on disk — adding an overlay changes the task's command,
+which is a cache miss. Next free DD: 247.
+
+### DD-290 — Component charts live next to their projects; helpers are chart-local
+
+- **Status:** Accepted (supersedes DD-283's `charts/` residence; its
+  one-chart-per-component split, the umbrella, and the OCI publish stand;
+  the umbrella's `charts/` residence is superseded by DD-292)
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** Each component chart lives in a `helm/` directory inside the
+project it deploys — `apps/<app>/helm/` for the five apps,
+`dev/<name>/helm/` for the three infrastructure components. `charts/` keeps
+the umbrella `aurelius-atlas` only: it is the one chart with no owning
+project. The two library charts (`atlas-common`, `atlas-aux-api`) are
+deleted: their helpers are expanded into each chart's own
+`templates/_helpers.tpl` and template files, keeping the naming convention
+(`<chart>.fullname`, `<chart>.labels`, …). The umbrella reaches its
+components through `file://../../apps/…/helm` dependencies; names, pins
+(CHT-07), and OCI artifacts are unchanged.
+
+**Reason.** The chart's owner is the project's owner: a change to a
+component's ports, settings env, or probes rides the same PR as the code it
+deploys, and the PR's diff shows the blast radius (workload + chart) in one
+place. A library chart is a component with no runtime — nothing runs it,
+nothing deploys it, and every consumer sits in the same repo — the
+artificial-abstraction shape this workspace's module rule rejects. 10.1's
+gate measured the shared surface as small (mostly `required:` guards), so
+the copies are cheap; DD-283's "chart-to-chart edges in one place" is the
+umbrella's `Chart.yaml` (the single join) plus the naming convention. The
+Nx plugin infers targets from a `**/Chart.yaml` glob, so the move is a
+tooling non-event — zero plugin changes.
+
+**Alternatives.** (a) Keep the `charts/` tree (DD-283) — the ownership map
+lives only in docs, and contributors must know to visit a sibling tree.
+(b) Keep `atlas-common` as the only library — the shared helpers stay
+shared, at the cost of every chart depending on a project that runs
+nothing; the convention dedupes what a library would share.
+(c) Name the directory `chart/` — `helm/` is unambiguous (the Helm
+convention, parallel to `docker/`-style folders) and reads as the deploy
+toolchain of the project.
+
+**Consequences.** Each owning project's `AGENTS.md` documents its chart
+(layout bullet + a Helm-chart section); `charts/AGENTS.md` covers the
+umbrella and the shared conventions/gotchas. Component charts are
+dependency-free, so their `Chart.lock` files are gone; the umbrella's lock
+regenerates with 8 entries. The prettier/check-yaml template excludes and
+the gitignore dependency-tarball rules widen from `charts/*/…` to
+`**/helm/…`. The gate keeps its task count (the libraries contributed two
+lint tasks). The aux-API deployment/service shape now exists three times
+(verified byte-identical at the copy); the three charts may drift on
+purpose — the convention, not code, is the dedupe. Next free DD: 248.
+
+### DD-291 — The Chart.yaml is the chart's whole Nx identity; no chart project.json
+
+- **Status:** Superseded by DD-293 (the no-`project.json` rule and the
+  everything-from-`Chart.yaml` rule stand; the separate `<chart>-chart` PROJECT
+  — the plugin's `name` field — does not)
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** A chart ships no `project.json`. The helm plugin reads
+everything it needs from `Chart.yaml` itself: the project **name**
+(`<chart>-chart`, from the `name:` field — the same name Helm gives the
+packaged artifact), `projectType: application`, the `helm` tag, the release
+`versionActions`, and — for the umbrella — the `implicitDependencies` that
+drive `helm-publish`'s cascade, derived from the `dependencies:` block.
+DD-284's inference claim becomes literally true: the chart directory is
+`Chart.yaml`, `values.yaml`, `templates/`, `tests/`, and nothing else.
+
+**Reason.** The `project.json` files existed only to carry four fields the
+plugin could derive, and each was a second statement of a fact `Chart.yaml`
+already states: the chart name (`name:` = the artifact name = the project
+name base), the dependency edges (the umbrella's `dependencies:` = the
+cascade graph = the CHT-07 pins). Two sources of one fact is the drift the
+conversion workflow bans. The naming suffix is load-bearing, not cosmetic:
+without it, nine folders all named `helm` would derive colliding project
+names, and the release's pin lookup (`<project>-chart → chart name`) needs
+the mapping — deriving it from `Chart.yaml name:` keeps chart and project
+names equal by construction.
+
+**Alternatives.** (a) Keep the nine `project.json` files — nine manifests
+echoing facts the manifest of record already carries (DD-284's own
+rejected alternative (b)). (b) Folder-derived project names
+(`apps-aurelius-atlas-server-helm`) — stable but verbose, collides on plain
+`helm` folders, and breaks the `<chart>-chart` naming the CI invocations,
+docs, and the release pin lookup use. (c) Name the projects from the
+owning app (`aurelius-atlas-server`) — the chart is a distinct artifact
+with its own version and OCI repository; the `-chart` suffix keeps the
+image project and the chart project addressable apart.
+
+**Consequences.** Adding a chart is files only: `Chart.yaml` + values +
+templates + test values (+ the umbrella's dependency row) — nothing to
+register. Removing a slice removes one file fewer. The plugin gained two
+small line-parsers (`name:`, `dependencies[].name`) in
+chart-yaml-version-actions.ts's no-YAML-library style; the umbrella's
+dependency list is now load-bearing for the publish cascade as well as for
+install. Next free DD: 249.
+
+### DD-292 — The umbrella sits at the workspace root: `helm/`
+
+- **Status:** Accepted (supersedes DD-290's clause that the umbrella is the
+  only resident of `charts/`; the component-chart placement and the
+  no-library-charts rule stand, and DD-283 is superseded the same way)
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** The umbrella chart `aurelius-atlas` lives in `helm/` at the
+workspace root; the `charts/` directory is gone. The chart tree is now one
+shape: every chart in the repo is a `helm/` directory — the component charts
+next to their projects (DD-290), the umbrella at the root. The umbrella's
+`file://` dependencies shorten one level (`file://../apps/<app>/helm`), and
+its lock is `helm/Chart.lock`.
+
+**Reason.** DD-290 moved every component chart to its owner; the umbrella
+has no owning project — it deploys the whole system — so its place is the
+root. It also completes the naming convention: the chart is the Helm
+toolchain of "the workspace project", exactly as `apps/<app>/helm/` is of
+an app. A single-chart directory named `charts/` (plural, one entry) was a
+vestige of the tree DD-290 dismantled.
+
+**Alternatives.** (a) Keep `charts/aurelius-atlas/` — DD-290's rationale
+applied verbatim: an owning scope exists (the workspace), the folder is
+just `helm/` at root, and the residual `charts/` tree exists only for the
+umbrella. (b) `helm/aurelius-atlas/` (chart name inside the root dir) —
+one directory deeper than needed; a chart directory is one chart, and
+`helm/` at root already says whose.
+
+**Consequences.** The plugin needs zero changes (the `**/Chart.yaml` glob
+finds the root chart; the Nx project root becomes `helm`). The release
+lock-refresh hook targets `helm/Chart.lock`. The prettier/check-yaml/
+gitignore patterns converge on `**/helm/{templates,charts}/` — the
+`charts/aurelius-atlas/...` special cases are deleted, not widened. The
+`.helmignore-shared` template moves to `helm/.helmignore-shared`. Next
+free DD: 250.
+
+### DD-293 — Helm targets merge onto the owning project: a chart is not a project
+
+- **Status:** Accepted (supersedes DD-284 and DD-291: the plugin's inference
+  and the no-`project.json` rule stand, the separate `<chart>-chart` projects
+  do not)
+- **Increment:** 10.1
+- **Date:** 2026-10-28
+
+**Decision.** The helm plugin keys its `createNodes` result at the chart's
+OWNER root — the chart dir's parent (`apps/<app>/helm` → `apps/<app>`; the
+root `helm` → `.`) — so Nx shallow-merges `helm-lint`/`helm-template`/
+`helm-publish` and the `helm` tag onto the existing project node. No `*-chart`
+project exists. The plugin sets no `name` (a node's name belongs to the first
+plugin that claims its root, helm runs before the ecosystem plugins, and
+naming here would rename the owner) and no `projectType`. The umbrella's
+dependency edges become `implicitDependencies` on the OWNING projects,
+resolved by following each `dependencies[]` `repository: file://` path to the
+chart dir and reading the owner's name (project.json, pyproject.toml,
+package.json). Release: every chart owner points `release.version.versionActions`
+at the composite module (`tools/plugins/chart-yaml-version-actions.ts`), which
+versions the owner's ecosystem manifest AND its `helm/Chart.yaml`, re-pins the
+umbrella (dependency entries are looked up through the owner name), and
+refreshes `helm/Chart.lock` — wired from `python.ts` for the uv projects
+(which overwrites the plugin's same-valued field), from `project.json` for the
+dev charts, from the plugin at the root project.
+
+**Reason.** The nine `*-chart` projects were graph noise: one chart per
+project already (DD-290), so the chart project and the app project share a
+root, a release bump, a CI run, and an owner. A chart change touched two graph
+nodes; `nx affected -t helm-lint` listed a project no one navigates to, and
+each app's target list carried `helm-*` beside its own `build`/`test` under a
+name no one types. Merging by parent root is Nx's documented merge (a
+same-root inference result adds targets to the existing node), the
+project.json-override layer is untouched, and CI is target-based (`affected
+-t helm-lint helm-template`, `run-many -t helm-publish`) so it sees no change.
+The chart tree, the CHT rules, the pin-equal release (DD-288), and the OCI
+artifact are untouched — only the graph shape.
+
+**Alternatives.** (a) Keep the chart projects (DD-284/DD-291) — a stable name
+per artifact, addressable apart from the image; paid in graph noise and split
+`affected` output. (b) Folder-derived owner names — not available: `name` is
+first-plugin-wins, helm runs early, and the plugin has no project-name map in
+the v1 context; the parent's name comes from its own manifests, read the same
+way the release's pin lookup reads them. (c) Keep the chart projects and alias
+them in `nx.json` — an artificial abstraction the tree rejects (DD-290).
+
+**Consequences.** Release needed a composite: chart version writes, umbrella
+pin refresh, and the lock hook all lived on the chart projects' version-actions
+and now run on the owners' — the composite extends `@nxlv/python`'s actions for
+pyproject owners, treats `Chart.yaml` as the manifest for chart-only owners,
+and maps umbrella pins by owner name through the `repository:` paths (the
+dependency parser reads entries, not line-adjacent pairs, so a `repository:`
+after `version:` resolves). The `-chart` suffix and its pin-lookup convention
+are gone — the chart name lives only in `Chart.yaml`/`repository:`. `npx nx
+show project aurelius-atlas-server` lists the chart targets. The release
+dry-run keeps its shape: 9 Chart.yaml writes + 8 umbrella pin updates. Docs'
+per-chart commands become `npx nx run <owner>:helm-template`. The dev charts'
+`project.json` swap noop actions for the composite (their chart is their
+version manifest). Next free DD: 251.
+
+### DD-294 — The minikube trial findings in the aux charts land in 10.3
+
+- **Status:** Accepted
+- **Increment:** 10.1 (trial) · fixed in 10.3
+- **Date:** 2026-10-28
+
+**Decision.** A trial `helm install` of the umbrella on minikube (the three aux
+APIs — the only real workloads 10.1 ships — with locally built images and
+self-signed `kubernetes.io/tls` Secrets) surfaced two defects in the aux
+charts' rendered Deployments. Neither is fixed in 10.1; both are scheduled
+into 10.3, where the app charts get their real workload wiring:
+
+1. **The CA file has no backing store.** The aux charts' default settings env
+   points `AUTH_CA_FILE`/`OTEL_CA_FILE` at `/etc/aurelius-atlas/tls/ca.crt`,
+   but the TLS volume mounts only a `kubernetes.io/tls` Secret — which carries
+   only `tls.crt`/`tls.key` — so a spec-conformant install crash-loops at boot
+   on pydantic's `path_not_file`. The `tls.caConfigMap`/`tls.caPath` values the
+   charts already declare are dead: the Deployment template never reads them.
+   10.3 wires the mount for real — cert-manager issues each service's
+   Certificate from the self-signed ClusterIssuer (DD-286) and the issuer's
+   `ca.crt` reaches the pod through the declared CA value (Secret or
+   ConfigMap), and the settings default and the mount become consistent.
+2. **lineage-model cannot boot its own defaults.** `atlas_base_url` and
+   `data2model_url` are required settings with no defaults, and the chart
+   renders neither, so the rendered Deployment always fails validation. 10.3
+   sets them from the in-cluster joins (`https://<server-svc>:21000/`,
+   `https://<data2model-svc>:21001/` — the sibling Service the same chart
+   renders), the same increment that wires the OTEL endpoints the values
+   comments already promise.
+
+**Reason.** 10.1's stated boundary is the foundation: charts render, lint,
+version, and publish, and the acceptance gate is render-level (CHT-06). Both
+fixes are workload-wiring changes — a trust mount and a settings join — and
+the trial shows the aux charts were skipped over by the render gate exactly
+where 10.3's scope line already says they get filled in (the three auxiliary
+APIs, CHT-20..34). Fixing them under 10.1 would land half the trust model
+(no cert-manager yet) and duplicate 10.3's edits.
+
+**Alternatives.** (a) Fix the CA mount now with a plain-Secret `ca.crt` key —
+wrong shape: the real CA arrives with cert-manager in 10.3/10.4 and the key
+would be re-plumbed. (b) Give the lineage-model settings chart defaults —
+wrong owner: those URLs are deployment joins like `AUTH_SERVER_URL`, not
+component constants, and deriving them in-chart before the server chart has a
+Service (10.3) would be guesswork.
+
+**Consequences.** 10.3's spec must carry both as rules (CA mount for every TLS
+app; lineage-model upstream URLs) with render assertions, and its minikube
+install must boot the aux Deployments with no out-of-band values — the
+`/tmp`-style overrides this trial needed (an extra `ca.crt` in the TLS Secret,
+an `extraEnv` file for the two URLs) are the acceptance test's negative space.
+The trial itself passed otherwise: install/upgrade reached `deployed`, all
+three rollouts went Ready on the HTTPS `/liveness` probes, and the derived
+`AUTH_SERVER_URL` matched the overlay domain. Next free DD: 252.
+
+### DD-295. Chart-track id collisions with main renumber above both ranges
+
+- **Status:** Accepted
+- **Increment:** — (merge hygiene; lands with the rebase of the 10.x chart
+  track onto the 4.3–6.1 merges, PRs #157–#191)
+- **Date:** 2026-11-01
+
+**Decision.** The 4.3–6.1 track on main (DSL, lineage, glossaries, auth) and
+the 10.x chart track branched at DD-239/DV-87 and minted ids in parallel:
+main took DD-240..251 and DV-88..109, the chart track took DD-240..252 (12
+colliding ids — the same numbers, different decisions) plus DV-88/89 in its
+10.7/10.8 increments, its children continuing at DD-253..282. The rebase
+renumbers the **chart side of the collision**: DD-240..251 → DD-283..294 in
+ascending order, and DV-88/89 → DV-112/113 — and this entry (DD-295) records
+it. Main's ids keep their numbers. The chart track's DD-252..282 already sit
+above both ranges and are untouched; the 10.1 chain citation `DD-240..252`
+becomes the explicit list `DD-298, DD-283..294`. The citation sweep rewrote
+every chart spec, doc, chart template, plugin comment, CI workflow, and test
+on the chart side; DD-177 is the precedent for the method.
+
+**Reason.** Main's 4.3–6.1 decisions are merged and cited by merged code —
+they are the accepted record, and the ledger's rule (numbers are never reused,
+accepted entries are never edited) protects them. The chart track is the
+in-progress side of the same ledger, so it is the side allowed to move;
+moving 12+2 ids in one mechanical, reviewable sweep costs less than living
+with ids that mean two things. The new range starts above the chart track's
+own DD-282, so the track's later ids keep their citations.
+
+**Consequences.** The rebase of the chart chain onto main is conflict-free
+for the id ledger: the two tracks occupy disjoint ranges. Every pre-rebase
+commit message cites the OLD numbers — commit history is not rewritten
+further, and this appendix is the lookup from a commit's citation to the
+merged record.
+
+| Old    | New    | Old    | New    | Old    | New    |
+| ------ | ------ | ------ | ------ | ------ | ------ |
+| DD-240 | DD-283 | DD-245 | DD-288 | DD-250 | DD-293 |
+| DD-241 | DD-284 | DD-246 | DD-289 | DD-251 | DD-294 |
+| DD-242 | DD-285 | DD-247 | DD-290 | DV-88  | DV-112 |
+| DD-243 | DD-286 | DD-248 | DD-291 | DV-89  | DV-113 |
+| DD-244 | DD-287 | DD-249 | DD-292 | —      | —      |
+
+**Addendum (2026-11-01, this merge).** 4.5 (#194) then minted main’s `DD-252`
+and `DV-110`, so ids this entry left in place collided: they move to `DD-298`
+and `DV-112`, and the paired `DV-111` shifts with it to `DV-113` — one sweep,
+same rule. Chart `DD-252` → `DD-298`, `DV-110/111` → `DV-112/113`; main keeps
+`DD-252` and `DV-110`.
+
+### DD-296. 6.1a's required auth settings land in the charts as joins
+
+- **Status:** Accepted
+- **Increment:** 10.12
+- **Date:** 2026-11-01
+
+**Decision.** 6.1a (main, #188; DD-250) made `auth_server_url` and
+`auth_client_secret` required settings with no defaults: a server pod that
+boots without them dies at settings load. The chart track forked before that
+merge, so the 10.x charts render no `AUTH_*` env and an umbrella install of a
+post-6.1a image crash-loops. This increment lands the auth block as joins,
+never literals (CHT-108): `AUTH_SERVER_URL` from the chart's CHT-03 issuer
+helper (whose required-guard now fires on every render, so an authless render
+fails at the gate rather than at the pod), `AUTH_REALM` from `global.realm`
+(CHT-74), `AUTH_CLIENT_ID`/`_AUTH_AUDIENCES` from the server chart's `auth`
+values block (the server's own confidential client plus the webapp's `aurelius`
+client — AUT-02/AUT-10), `AUTH_CA_FILE` from the Certificate's mounted
+`ca.crt`, and `AUTH_CLIENT_SECRET` from the new `<release>-server-client`
+Secret (CHT-109), the same Secret the Keycloak chart feeds the realm import's
+`${ATLAS_SERVER_CLIENT_SECRET}` (CHT-110) — both shipped realm assets carry
+the placeholder (master's client since 6.1a), so unlike the grafana
+credential (CHT-83) this one is not realm-gated. The prod realm asset gains
+the `aurelius-atlas-server` client, hardened and host-tokenised like its
+`aurelius` peer, its `login.jsp` redirects naming both browser hosts.
+
+**Reason.** The webapp's nginx `/api/` proxy already forwards the browser's
+bearer token, so the API leg authenticates end-to-end with no chart change —
+the gap is only the server's own boot. The dashboards' sign-in leg
+(`login.jsp`, AUT-05) lands on the server's host, and the dashboard host
+stays `enabled: false` by default (ADR 054): the browser leg therefore works
+exactly where it is exposed, and nothing in the stock shape changes for
+operators who never enable it. The secret rides the CHT-87/88 placeholder
+mechanism (one client, one placeholder, one key — rotation story like every
+other client credential), and the CHT-79 drift guard keeps the two realm
+assets' server clients peer-faithful the way they keep the otel-* ones.
+
+**Consequences.** The umbrella's generated-secret roster gains
+`<release>-server-client` (lookup/preserve/override, gated on either
+consumer). The server chart's values gain the `auth` block and
+`credentialSecrets.serverClient`. Any cluster install of a post-6.1a image
+before this increment crash-loops — the charts and the app must ship as one
+release. The webapp's own login flow (keycloak-js against the `aurelius`
+public client) is 7.x behaviour and unchanged.
+
+### DD-297. The aux APIs' AUTH_REALM joins global.realm
+
+- **Status:** Accepted
+- **Increment:** 10.12
+- **Date:** 2026-11-01
+
+**Decision.** The three aux charts (data2model, lineage-model,
+validate-entity) carried `AUTH_REALM: master` as a static entry in their
+`config:` values blocks — written when their settings were authored, while
+the cluster's only realm was still `master`. 10.7 (CHT-74) moved the
+cluster's default realm to `aurelius-atlas` and enumerated the
+realm-bearing envs; the aux `AUTH_REALM` was missed, so on a prod-realm
+cluster the aux APIs fetched discovery/JWKS from `/realms/master` and every
+browser token (issued by `aurelius-atlas`) failed verification — a latent
+drift no render-time test caught, because the value was a literal. It now
+renders as a deployment join from each chart's existing realm helper
+(CHT-111), and the umbrella suite pins the server's and the three aux pods'
+`AUTH_REALM` against the realm the Keycloak chart imports.
+
+**Reason.** CHT-74's rule is that `global.realm` is the one realm fact and
+every consumer derives from it; a literal is a second source of truth by
+definition. The `master` escape hatch keeps working — it retargets the same
+one fact — and the settings' own default (`master`) stays the standalone
+default for compose/dev, which the charts never relied on anyway.
+
+**Consequences.** `AUTH_REALM` leaves the aux charts' `config:` maps, which
+are for verbatim operator settings, not derived joins. Any future
+realm-bearing env joins the same enumeration (the umbrella suite's
+`/realms/...` sweep plus the named AUTH_REALM pins).
+
+### DD-298 — A stuck pending-install release is cleared by uninstall
+
+- **Status:** Accepted
+- **Increment:** 10.1 (trial)
+- **Date:** 2026-10-28
+
+**Decision.** The runbook's install/upgrade sections warn: `helm install
+--wait` (or `--atomic`) against a workload that never reaches Ready — a
+crash-loop, a missing Secret — burns the full `--timeout` and leaves the
+release `pending-install`; every later `helm upgrade` then fails with
+"another operation (install/upgrade/rollback) is in progress" until `helm
+uninstall` clears it. Fix the cause, inspect with `helm history`, and
+uninstall rather than waiting the release out.
+
+**Reason.** Observed twice in the trial of DD-294: the first install timed out
+on the crash-looping aux pods and the stuck release blocked the fix-and-retry
+path with a confusing error unrelated to the actual defect. It is helm's
+documented behaviour, not a chart bug, so it belongs in the runbook, and
+mid-roadmap installs (subcharts that render no workloads yet, workloads whose
+wiring lands in a later increment) are exactly when an operator meets it.
+
+**Consequences.** The runbook gains the note and the `helm history` /
+`helm uninstall` recovery lines; 10.5's install script scripts the recovery
+(guard the wait with a pre-flight, or clean up on timeout) rather than
+discovering it again. Next free DD: 253.
+
+### DD-299. helm-lint vendors umbrella dependencies like helm-template
+
+- **Status:** Accepted
+- **Increment:** 10.12
+- **Date:** 2026-11-01
+
+**Decision.** The helm plugin's `helm-lint` target gains the
+`helm dep update <chart> >/dev/null &&` prefix that `helm-template` and
+`helm-config-scan` already carry, for every chart.
+
+**Reason.** The umbrella's subchart tarballs (`helm/charts/`) are gitignored;
+they exist only where someone has run `helm dep update` or `helm package -u`.
+Locally the lint always saw them, so the bare `helm lint` passed everywhere
+it was tried — but on a fresh CI checkout the umbrella lints with no
+dependency default values, and its own templates nil-pointer on
+`(index .Values "atlas-keycloak").realm.name` (a shape 10.12's
+`secret-keycloak.yaml` made unavoidable: it reads the subchart's realm name
+through the umbrella values the subchart defaults provide). The failure is
+the checkout's, not the chart's: the render targets had always vendored first
+(DD-282 learned the same about Trivy's renderer); `helm-lint` was the one
+target that assumed vendored state. `helm dep update` is a no-op for the
+dependency-free component charts and its `file://` repositories never leave
+the machine, so the prefix is uniform and cheap.
+
+**Consequences.** #205's `Lint & render charts` step goes green on a clean
+runner; the plugin's three render-family targets now share one provenance
+rule: never trust `helm/charts/` to exist. Next free DD: 300.
+
+### DD-300. Four fixed roles of the server's client grant Atlas's privileges
 
 - **Status:** Proposed
 - **Increment:** 6.2a
@@ -7635,6 +9873,6 @@ the distinctions Atlas's default policy draws (readers, stewards, type owners, a
 mapped from users and groups): Atlas-compatible and finer, but a second place to manage and a file to deploy.
 An external policy engine: one more service to run everywhere it is validated.
 
-**Consequences.** No permission finer than a role: a user may change every entity type or none (DV-111). The
+**Consequences.** No permission finer than a role: a user may change every entity type or none (DV-114). The
 roles are client roles, so a client that forwards a user's token (the webapp's) maps them into its scope. The
 dev realm gives the writer every role and the reader `atlas-read`.

@@ -1,0 +1,322 @@
+# The identity provider chart — its runtime contract (CHT-02).
+# Keycloak 26.7 (26.8 is pinned-broken upstream) serving the Aurelius realm;
+# its Postgres is bundled (postgres.* below, flavor=external points at an
+# existing database). The workload is 10.2's (CHT-16/17): the prod-mode
+# StatefulSet (`kc.sh start --import-realm`), the realm ConfigMap (chart asset,
+# DD-256), the RSS headless service, probes on the management port, and the
+# bundled Postgres (cert-copy boot, pg_hba, VCT).
+#
+# WARNING (runbook): Keycloak pins the realm issuer at first boot — the
+# hostname below must be final before the first install; changing it later
+# invalidates every issued token.
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    storageClass: ""
+    # The Keycloak issuer root and browser host derive from the umbrella's
+    # hostname; "" here takes keycloak.<domain> (the umbrella passes it in).
+    domain: ""
+    issuer:
+        url: ""
+    dnsResolver: ""
+    # The realm this chart imports (CHT-74): files/<realm>.json from this
+    # chart's files/, and the realm the puller's mint URL names. "" takes the
+    # chart default (aurelius-atlas, the hardened production realm).
+    realm: ""
+    # The browser hosts the realm asset's redirect URIs and web origins are
+    # substituted with (CHT-77). "" takes the umbrella's host rule: the host
+    # over the domain, else <name>.<domain>, else <release>.localhost for a
+    # bare render.
+    hosts:
+        atlas:
+            host: ""
+        dashboard:
+            host: ""
+        grafana:
+            host: ""
+    # The issuer signing this pod's certificates (DD-286). Namespaced by
+    # default — the umbrella's chart-managed chain is an Issuer (DD-259).
+    trust:
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+
+enabled: true
+component: keycloak
+nameOverride: ""
+fullnameOverride: ""
+replicas: 1
+
+image:
+    # Digest-pinned (CHT-93, DD-278): bump tag and digest together — the
+    # digest wins in the render (CHT-92), and the registry-drift guard
+    # (CHT-96) fails a tag bump whose digest was not refreshed.
+    repository: dhi.io/keycloak
+    tag: "26.7-debian13"
+    digest: sha256:d585d342ea3b9b2aa5b8f3216e88fa04f2eb1846d6986caa4227a6a887296bf6
+
+# The browser hostname the issuer pins to (KC_HOSTNAME): https://<hostname>.
+hostname: ""
+
+# Credentials (CHT-19, DD-254): the umbrella generates each Secret and this
+# chart consumes it by <release>-<purpose> name; set a name to bring your own.
+bootstrap:
+    # Admin bootstrap: <release>-keycloak-admin (keys user/password).
+    adminSecretName: ""
+
+realm:
+    # Import files/<name>.json (the chart's own asset copy, DD-256/DD-274) at
+    # first boot. "" takes global.realm, whose chart default is
+    # aurelius-atlas — the hardened production realm (CHT-74). `master` is
+    # the documented dev escape hatch: it loads files/master.json
+    # byte-for-byte (the DD-256 asset) with its demo users and localhost
+    # origins, and brings back the DEV_USER_* plumbing (CHT-80).
+    import: true
+    name: ""
+    # Demo users (master only, CHT-80): <release>-keycloak-users (keys
+    # writer-password/reader-password) feed the ${DEV_USER_*} import
+    # placeholders (CHT-16).
+    usersSecretName: ""
+    # The otel-* ingest client secrets: <release>-otel-clients feeds the
+    # import placeholders (CHT-16, CHT-88/89): one env per client id on the
+    # prod realm (CHT-87), the shared OTEL_INGEST_CLIENT_SECRET key/env on
+    # master.
+    otelClientsSecretName: ""
+    # Grafana's relying-party client secret: <release>-grafana-oauth (key
+    # client-secret) feeds the ${GRAFANA_CLIENT_SECRET} import placeholder
+    # (CHT-83, DD-275). The placeholder is inert when the imported realm
+    # has no grafana client (master), so this env is not realm-gated.
+    grafanaOauthSecretName: ""
+    # The Atlas server's confidential-client secret: <release>-server-client
+    # (key client-secret) feeds the ${ATLAS_SERVER_CLIENT_SECRET} import
+    # placeholder (CHT-109/110, 10.12). Both shipped assets carry the client
+    # (master's since 6.1a/DD-250), so the env renders on every realm.
+    serverClientSecretName: ""
+
+# Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so
+# its own OTLP cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on
+# the collector's LEGACY leg with the shared token.
+telemetry:
+    # The umbrella sets this true (CHT-42): a stock install is a
+    # self-observing system (ADR 016).
+    enabled: false
+    # The collector Service; "" derives this release's atlas-observability
+    # chart name (the siblingService name rule, as the server chart's
+    # telemetry join).
+    service: ""
+    # The collector legacy-leg gRPC port (Keycloak's own Quarkus OTLP speaks
+    # gRPC; the bearer arrives via OTEL_EXPORTER_OTLP_HEADERS).
+    port: 4320
+    # Explicit endpoint override; "" derives https://<service>:<port> when
+    # enabled. Set with no `enabled` renders telemetry too (10.3a shape).
+    endpoint: ""
+    # The legacy-leg token: <release>-collector-legacy (key token, header
+    # form under key otel-header).
+    tokenSecretName: ""
+    tracesSamplerArg: "0.1"
+    # The slice-owned metrics puller (CHT-43, DD-266): Keycloak's metadata
+    # Postgres speaks no OTLP, so the chart runs the dev
+    # config/metrics-puller.yaml as a Deployment next to the server's own
+    # native telemetry. Rendered with telemetry.enabled.
+    puller:
+        # The collector's per-service gRPC leg (DD-196) — the puller mints
+        # (otel-keycloak), unlike the server's legacy leg above.
+        port: 4317
+        image:
+            repository: dhi.io/opentelemetry-collector
+            tag: "0-debian13-contrib"
+            digest: sha256:79de5a3a0319b189dfb428d3fa36a39b8d83ee6605e106089ce78153f7f5ac6e
+        # The issuer-wait init image (CHT-37's pattern, DD-226).
+        issuerWait:
+            image:
+                repository: dhi.io/curl
+                tag: "8"
+                digest: sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862
+            # A boot gate, not a workload (KSV-0011/0015/0016/0018, DD-282
+            # follow-up): memory-capped, no CPU limit (the house posture).
+            resources:
+                requests:
+                    cpu: 10m
+                    memory: 16Mi
+                limits:
+                    memory: 32Mi
+        resources:
+            requests:
+                cpu: 50m
+                memory: 128Mi
+            limits:
+                memory: 256Mi
+
+# The wait-for-postgres init (a boot gate, not a workload — the house
+# limits.memory-only posture, KSV-0011/0015/0016/0018, DD-282 follow-up).
+waitForPostgres:
+    resources:
+        requests:
+            cpu: 10m
+            memory: 64Mi
+        limits:
+            memory: 128Mi
+
+# The kc-build init container (DD-282 Tier 3): copies the image's Keycloak
+# home to an emptyDir and runs the Quarkus build there with the chart's
+# build-time options, so the read-only-rooted runtime finds a current build
+# and rewrites nothing at start. A boot stage, not a workload — but the build
+# is a JVM: the request/limit pair is the heap's headroom.
+kcBuild:
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 512Mi
+
+database:
+    # "bundled" renders the Postgres below; "external" uses the url.
+    flavor: bundled
+    # External JDBC URL (sslmode=verify-full + sslrootcert required), with the
+    # credentials in <release>-keycloak-database (keys user/password) unless a
+    # name is given.
+    url: ""
+    secretName: ""
+
+postgres:
+    # Bundled Keycloak database (a chart section, not a subchart — it exists
+    # only for Keycloak, CHT-02). Credentials come from the same
+    # <release>-keycloak-database Secret Keycloak connects with (CHT-17).
+    enabled: true
+    nameOverride: ""
+    image:
+        repository: dhi.io/postgres
+        tag: "18-alpine3.23"
+        digest: sha256:c075241e0b60eca5cb40e61484feb582b17bd756e8c48a482d93321607a332ce
+    auth:
+        database: keycloak
+    persistence:
+        size: 5Gi
+    service:
+        port: 5432
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 512Mi
+    pdb:
+        enabled: true
+        minAvailable: 1
+
+service:
+    # 8443 is the browser-facing TLS port (the gateway routes keycloak host);
+    # 9000 is the management port (health probes, never routed). Kept with note
+    # (CHT-101 triage): 9000 carries no Service entry (the chart suite pins the
+    # Service's ports) and no NetPol rule (CHT-71), and the probes answering it
+    # unauthenticated ride H1's probe-auth work, not this increment.
+    port: 8443
+    managementPort: 9000
+    # The HTTPS-standard port in-cluster producers dial when they reach the
+    # issuer by its public name (DD-265's split-horizon): `https://
+    # keycloak.<domain>/` implies 443, and CoreDNS resolves that name to this
+    # Service, so the Service must answer 443. Same targetPort as 8443 (one
+    # listener); the gateway route still joins 8443 directly (0. A 0 here
+    # renders no extra port for a standalone chart that never uses it).
+    issuerPort: 443
+
+probes:
+    # Management-port probes (dev healthcheck's port). Prod mode puts TLS on
+    # the management interface too (it inherits the keypair — DD-260; the dev
+    # plaintext probe worked only on the compose's named relaxation, ADR 039),
+    # so the scheme is HTTPS; kubelet's HTTPS probes accept any certificate —
+    # a liveness check is not a trust check. The startup budget covers the
+    # prod-mode cold boot: `kc.sh start` re-augments the runtime into the
+    # image filesystem (not the PVC) on every new container — ~165s measured
+    # on minikube against the compose's 180s start_period, so 300s.
+    path: /health/ready
+    scheme: HTTPS
+    initialDelaySeconds: 0
+    periodSeconds: 20
+    timeoutSeconds: 5
+    failureThreshold: 6
+    startup:
+        periodSeconds: 10
+        failureThreshold: 30
+
+pdb:
+    # CHT-18: never zero voluntary disruptions.
+    enabled: true
+    minAvailable: 1
+
+tls:
+    # "" takes the Certificate's Secret (<fullname>-tls); set to bring your own
+    # (keys tls.crt/tls.key/ca.crt). The ca.crt is the same issuer root every
+    # cluster certificate chains to (DD-286): it is the JDBC sslrootcert
+    # (CHT-17) and the JVM's trust anchor — the dev truststore workaround is
+    # never rendered (CHT-16).
+    secretName: ""
+    mountPath: /etc/aurelius-atlas/tls
+
+certificate:
+    # cert-manager issues the browser-facing certificate (CHT-16) with the
+    # KC_HOSTNAME (the issuer host) plus the in-cluster names as SANs.
+    enabled: true
+    duration: 2160h
+    renewBefore: 720h
+
+serviceAccount:
+    create: true
+    name: ""
+
+resources:
+    requests:
+        cpu: 250m
+        memory: 768Mi
+    limits:
+        memory: 1Gi
+
+# Quarkus heap (the JAVA_OPTS -Xms/-Xmx pair — leaving it unset lets Quarkus
+# size to 25% of the node, the dev compose's CI-cap lesson). extraJavaOpts
+# appends after the chart's base flags (the replace-placeholders import flag,
+# the RSS query).
+heap: 512m
+extraJavaOpts: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+# The hardened Keycloak image runs as its fixed non-root user (uid 65532
+# "nonroot") — run as that uid. fsGroup matches (it is what makes the kc-home
+# and tmp emptyDirs group-writable, DD-282 Tier 3).
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+
+# Network segmentation (CHT-62/63, DD-271): the ingress allows — Keycloak
+# admits the token minters/verifiers (server + aux APIs) and this chart's
+# puller; the bundled Postgres admits Keycloak and the puller; jgroups admits
+# Keycloak pods; the management port gets no rule (CHT-71). The browser path
+# (the gateway) rides the umbrella with the keycloak HTTPRoute. peers.<peer>
+# renames a peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        server: ""
+        data2model: ""
+        lineageModel: ""
+        validateEntity: ""
+        observability: ""
+        elasticsearchPuller: ""
+
+required: []

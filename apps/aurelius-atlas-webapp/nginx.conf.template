@@ -3,11 +3,15 @@
 # with <base href="/<locale>/">. See https://angular.dev/guide/i18n/deploy
 # Baked at image build to /etc/nginx/conf.d/default.conf. This file is a
 # *template*: the ${AURELIUS_ATLAS_WEBAPP_*} placeholders (API/OTLP upstream
-# origins + TLS names, trust anchor path, DNS resolver) are resolved by the
-# deployment, which mounts its filled-in copy over that path — see
-# e2e/config/nginx.conf for a static resolved variant. The hardened runtime
-# image has no shell tooling to render at start, on purpose; an unresolved
-# container fails at config parse instead of serving with template defaults.
+# origins + TLS names, trust anchor path, listener leaf paths, DNS resolver,
+# the realip trust block)
+# are resolved by the deployment, which mounts its filled-in copy over that
+# path — see e2e/config/nginx.conf for a static resolved variant. The runtime
+# image ships neither envsubst nor bash (the hardened base's contract), so a
+# deployment resolves the template with its own tooling: the compose stack at
+# compose time, the Helm chart at pod start in an init container running the
+# same image's sh + sed (DD-262). An unresolved container fails at config
+# parse instead of serving with template defaults.
 # NOTE: the hardened image includes this file inside its *http* block (the
 # last line of the stock nginx.conf), so http-scoped directives (the
 # limit_req_zone and otel_exporter blocks below) are legal at file top; the
@@ -23,6 +27,15 @@
 # allowlist pattern). The limit is the browser's: an internal caller bursting
 # is working, an attacker bursting is browsing. Extend the geo block (a 0 entry
 # per range) for deployment networks that are not RFC 1918.
+#
+# Client-IP trust first (DD-261): the placeholder below resolves to the
+# deployment's realip block — `set_real_ip_from` for the proxy hop(s) whose
+# X-Forwarded-For resolves to the browser (a Gateway sitting in front of this
+# nginx, in-cluster). It lands before the geo bucket so a behind-gateway
+# deployment buckets per browser, not per Gateway; the compose/e2e shape
+# resolves it to nothing — there nginx is the front door and
+# $binary_remote_addr already is the browser.
+${AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK}
 geo $atlas_api_limit_key {
     default 1;
     127.0.0.0/8 0;
@@ -38,6 +51,12 @@ map $atlas_api_limit_key $atlas_api_limit_addr {
 }
 
 limit_req_zone $atlas_api_limit_addr zone=atlas_api:10m rate=300r/m;
+# The browser-leg twin (CHT-100): /otel/ is auth-gated by the collector's own
+# OIDC receiver, but the 401 path is still work — a logged-in tab (or a
+# scripted flood behind one) otherwise reaches the collector unbounded while
+# /api/ buckets. Browser-sized with headroom: an OTLP push is bursty by
+# design, an attack is a sustained stream.
+limit_req_zone $atlas_api_limit_addr zone=atlas_otel:10m rate=600r/m;
 limit_req_status 429;
 
 # Native edge tracing (SHL-15, DD-239): every /api/ request gets an edge span
@@ -54,7 +73,16 @@ otel_exporter {
 otel_service_name aurelius-atlas-webapp-edge;
 
 server {
-    listen 8080;
+    # TLS to the last hop (DD-270): the Gateway's BackendTLSPolicy dials this
+    # listener with CA validation and the Service name as SNI, so the leaf
+    # here carries that name as its SAN (the chart's Certificate). Plaintext
+    # behind the gateway was DD-285's shape until the browser's bearer tokens
+    # (7.3) and OTLP pushes started crossing this hop in the clear — the same
+    # reason the /api/ proxy below verifies its upstream.
+    listen 8080 ssl;
+
+    ssl_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CERT_FILE};
+    ssl_certificate_key ${AURELIUS_ATLAS_WEBAPP_TLS_KEY_FILE};
 
     # Assets produce no spans: tracing is opted in per location (/api/
     # below); the module's off/ignore defaults cover every other route.
@@ -85,6 +113,13 @@ server {
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "no-referrer" always;
     add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # HSTS (CHT-99): this listener only ever serves TLS (DD-270), so the
+    # downgrade window is the one hop in front of it. Whole-directive
+    # placeholder (the realip precedent): the chart renders the add_header
+    # when nginx.hsts.enabled, and the compose/e2e shapes resolve it to
+    # nothing — test posture, mirroring the server's dev HSTS_ENABLED=false.
+    ${AURELIUS_ATLAS_WEBAPP_HSTS_HEADER}
 
     # keycloak-js silent SSO iframe: same-origin only, and its one inline
     # script is allowed via hash (sha256 of the script element's content —
@@ -173,6 +208,11 @@ server {
     # (DD-193, CIA-01/02). A logged-out push has no token and is answered
     # 401 — accepted, the telemetry gate is the login (DD-193).
     location /otel/ {
+        # The browser-leg bucket (CHT-100): same trusted-address key as
+        # /api/, so behind a Gateway with trustedProxyCIDRs it buckets per
+        # browser, and without it per Gateway — same shape as SRV-09.
+        limit_req zone=atlas_otel burst=100 nodelay;
+
         set $otel_upstream ${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM};
         rewrite ^/otel(/.*)$ $1 break;
         proxy_pass $otel_upstream;

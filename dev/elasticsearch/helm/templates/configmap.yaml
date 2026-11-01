@@ -1,0 +1,45 @@
+{{/*
+The elasticsearch.yml ConfigMap (CHT-11): the hardened image ignores dotted
+environment variables, so this file is the settings channel — mounted over the
+image's config/elasticsearch.yml. The shape is dev/elasticsearch/config's
+(the working reference): security on, TLS-only HTTP pinned to the CA,
+transport TLS off for a single node, ML off (GKE natives bootstrap abort),
+allow_mmap off (vm.max_map_count varies). Node name stays the pod default.
+*/}}
+{{- $fullname := include "atlas-elasticsearch.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-elasticsearch.labels" . | nindent 8 }}
+data:
+    elasticsearch.yml: |
+        cluster.name: {{ .Values.config.clusterName }}
+        network.host: 0.0.0.0
+        discovery.type: single-node
+
+        # Security on (DD-006): TLS-only HTTP with the cert-manager certificate
+        # (CHT-12) and basic authentication. Mounted at config/tls, never
+        # config/certs — that directory belongs to security auto-configuration,
+        # which must not run because every security setting is explicit.
+        xpack.security.enabled: true
+        xpack.security.autoconfiguration.enabled: false
+        xpack.security.http.ssl.enabled: true
+        xpack.security.http.ssl.certificate: tls/elasticsearch.pem
+        xpack.security.http.ssl.key: tls/elasticsearch-key.pem
+        xpack.security.http.ssl.certificate_authorities: [tls/ca.pem]
+        # A single node has no peers to talk to over the transport layer.
+        xpack.security.transport.ssl.enabled: false
+
+        # ML off: ES 9.x bootstraps a native-code self-check that aborts the
+        # node on GKE's containerd nodes (CI run 40277651130); this cluster
+        # never runs ML jobs.
+        xpack.ml.enabled: false
+
+        # No mmap: host vm.max_map_count varies (dev machines, CI runners,
+        # GKE nodes all differ).
+        node.store.allow_mmap: false
+
+        cluster.routing.allocation.disk.threshold_enabled: {{ .Values.config.diskThresholdEnabled }}

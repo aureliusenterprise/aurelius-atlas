@@ -1,0 +1,417 @@
+{
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "description": "Core Web Vitals and error telemetry from the Aurelius Atlas webapp SPA (OpenTelemetry browser SDK → collector → Prometheus/Tempo). Percentile panels read the live cumulative distribution across browser tabs that are currently open, not a per-time-window rate: values reflect all pages loaded since those tabs started.",
+    "id": null,
+    "panels": [
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Largest Contentful Paint (LCP): how long after navigation the biggest visible element (text block or image) finishes rendering — the perceived page-load speed. Google thresholds: good ≤2.5s, needs improvement ≤4s, poor >4s. The 75th percentile means 75% of page loads are at least this fast.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 0
+            },
+            "id": 12,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.75, sum by (le) (web_vital_lcp_milliseconds_bucket{exported_job=\"aurelius-atlas-webapp\"}))",
+                    "legendFormat": "75th percentile",
+                    "refId": "A"
+                }
+            ],
+            "title": "Largest Contentful Paint (ms, 75th percentile)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Interaction to Next Paint (INP): the delay between a user interaction (click, key press) and the next screen paint — how responsive the page feels. Google thresholds: good ≤200ms, needs improvement ≤500ms, poor >500ms.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 0
+            },
+            "id": 13,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.75, sum by (le) (web_vital_inp_milliseconds_bucket{exported_job=\"aurelius-atlas-webapp\"}))",
+                    "legendFormat": "75th percentile",
+                    "refId": "A"
+                }
+            ],
+            "title": "Interaction to Next Paint (ms, 75th percentile)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Cumulative Layout Shift (CLS): how much visible content jumps around while the page loads (unexpected movement of text/images), summed over the worst session window. Unitless: 0 = perfectly stable. Google thresholds: good ≤0.1, needs improvement ≤0.25, poor >0.25.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "none"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 0
+            },
+            "id": 14,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.75, sum by (le) (web_vital_cls_bucket{exported_job=\"aurelius-atlas-webapp\"}))",
+                    "legendFormat": "75th percentile",
+                    "refId": "A"
+                }
+            ],
+            "title": "Cumulative Layout Shift (75th percentile)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "First Contentful Paint (FCP): how long until the first piece of content (text, image, canvas) is painted — the first sign the page is alive. Google thresholds: good ≤1.8s, needs improvement ≤3s, poor >3s.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 8
+            },
+            "id": 15,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.75, sum by (le) (web_vital_fcp_milliseconds_bucket{exported_job=\"aurelius-atlas-webapp\"}))",
+                    "legendFormat": "75th percentile",
+                    "refId": "A"
+                }
+            ],
+            "title": "First Contentful Paint (ms, 75th percentile)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "How many measured interactions fall into each Google quality band (good / needs improvement / poor) for Interaction to Next Paint; if no interaction has happened yet on the open tabs, it falls back to Largest Contentful Paint page loads.",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 8
+            },
+            "id": 16,
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "showLegend": true
+                },
+                "pieType": "donut",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                },
+                "rotation": 0,
+                "tooltip": {
+                    "mode": "single"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum by (web_vital_rating) (web_vital_inp_milliseconds_count{exported_job=\"aurelius-atlas-webapp\"}) or sum by (web_vital_rating) (web_vital_lcp_milliseconds_count{exported_job=\"aurelius-atlas-webapp\"})",
+                    "legendFormat": "{{web_vital_rating}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Web Vital Quality Ratings (interactions, fallback: page loads)",
+            "type": "piechart"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Distinct browser tabs currently sending telemetry. Each tab gets a random, tab-scoped session id at startup (sessionStorage, so a reload keeps it) and attaches it to every trace and metric as session.id — it groups one user's page views into a journey without identifying the person. The count reflects tabs active in the last minute or so; it drops when tabs close.",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 8
+            },
+            "id": 17,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "count(count by (session_id) (target_info{exported_job=\"aurelius-atlas-webapp\"})) or vector(0)",
+                    "legendFormat": "sessions",
+                    "refId": "A"
+                }
+            ],
+            "title": "Active Browser Sessions",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Time To First Byte (TTFB): how long the browser waited for the first byte of the HTML document — mostly server and network latency, before any rendering. Google thresholds: good ≤800ms, needs improvement ≤1.8s, poor >1.8s.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "ms"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 16
+            },
+            "id": 18,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.75, sum by (le) (web_vital_ttfb_milliseconds_bucket{exported_job=\"aurelius-atlas-webapp\"}))",
+                    "legendFormat": "75th percentile",
+                    "refId": "A"
+                }
+            ],
+            "title": "Time To First Byte (ms, 75th percentile)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "tempo",
+                "uid": "tempo"
+            },
+            "description": "Browser traces with error status: uncaught JavaScript exceptions and rejected promises (each becomes an 'uncaught exception' span), plus failed HTTP calls to /api. Rows link to the trace with the exception type, message and stack trace. Time range = search window; recent errors only, as Tempo's search covers the ingest window.",
+            "gridPos": {
+                "h": 8,
+                "w": 16,
+                "x": 8,
+                "y": 16
+            },
+            "id": 19,
+            "options": {
+                "showHeader": true
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "tempo"
+                    },
+                    "limit": 20,
+                    "query": "{resource.service.name = \"aurelius-atlas-webapp\" && status = error}",
+                    "queryType": "traceql",
+                    "refId": "A"
+                }
+            ],
+            "title": "Uncaught Errors & Failed Requests (browser traces)",
+            "type": "table"
+        },
+        {
+            "datasource": {
+                "type": "tempo",
+                "uid": "tempo"
+            },
+            "description": "Recent traces originating in the browser: each row is one user action or page load. Open a row to see the full journey — the client HTTP span, the matching FastAPI server span, and its database queries — joined via W3C traceparent propagation. Click a trace to open the trace viewer.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 24
+            },
+            "id": 20,
+            "options": {
+                "showHeader": true
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "tempo"
+                    },
+                    "limit": 20,
+                    "query": "{resource.service.name = \"aurelius-atlas-webapp\"}",
+                    "queryType": "traceql",
+                    "refId": "A"
+                }
+            ],
+            "title": "Recent Browser Traces",
+            "type": "table"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "webapp"],
+    "timezone": "browser",
+    "title": "Aurelius Atlas Webapp",
+    "uid": "aurelius-atlas-webapp-obsv",
+    "version": 2
+}

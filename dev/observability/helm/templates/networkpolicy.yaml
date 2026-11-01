@@ -1,0 +1,156 @@
+{{/*
+The observability workloads' ingress allows (CHT-67/68/69, DD-271). The
+collector is the one authenticated seam (ADR 034), so its rules are per leg:
+4318 browser ← webapp (/otel/ proxy); 4317/4319 per-service ← the apps and
+both metrics pullers; 4320/4321 legacy ← webapp (edge exporter) and Keycloak
+(native OTLP, DD-193/196); 9464/8888 scrape ← Prometheus. The backends are
+the chart's own workloads by component label (one name across five pods,
+CHT-70): Prometheus 9090 ← itself (self-scrape) + Grafana (panels); Loki 3100
+← collector (export), Prometheus (scrape), Grafana (datasource); Tempo 4318 ←
+collector, 3200 ← Prometheus + Grafana. Grafana renders NO allow (CHT-69):
+its default access is kubectl port-forward, which rides the kubelet and is
+policy-exempt; the only allow it can ever get is the umbrella's gateway rule
+when grafana.<domain> is enabled — same fact as its HTTPRoute. The collector's
+health 13133 is kubelet-only (CHT-71). The pullers' names are fullname-
+derived (peerName helper); the apps' are chart-name constants.
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+{{- $np := .Values.networkPolicy -}}
+{{- $release := .Release.Name -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $ns := include "atlas-observability.namespace" . -}}
+{{- $labels := fromYaml (include "atlas-observability.labels" .) -}}
+{{- $self := include "atlas-observability.name" . -}}
+{{- /* Peer selector blocks, built once (chart-name constants; pullers
+fullname-derived). */ -}}
+{{- $webapp := dict "name" (default "atlas-webapp" $np.peers.webapp) "release" $release -}}
+{{- $keycloak := dict "name" (default "atlas-keycloak" $np.peers.keycloak) "release" $release -}}
+{{- $server := dict "name" (default "atlas-server" $np.peers.server) "release" $release -}}
+{{- $d2m := dict "name" (default "atlas-data2model" $np.peers.data2model) "release" $release -}}
+{{- $lm := dict "name" (default "atlas-lineage-model" $np.peers.lineageModel) "release" $release -}}
+{{- $ve := dict "name" (default "atlas-validate-entity" $np.peers.validateEntity) "release" $release -}}
+{{- $esPuller := dict "name" (include "atlas-observability.peerName" (dict "name" "atlas-elasticsearch-metrics-puller" "release" $release "override" $np.peers.elasticsearchPuller)) "release" $release -}}
+{{- $kcPuller := dict "name" (include "atlas-observability.peerName" (dict "name" "atlas-keycloak-metrics-puller" "release" $release "override" $np.peers.keycloakPuller)) "release" $release -}}
+{{- $prom := dict "name" $self "component" "prometheus" "release" $release -}}
+{{- $grafana := dict "name" $self "component" "grafana" "release" $release -}}
+{{- $loki := dict "name" $self "component" "loki" "release" $release -}}
+{{- $tempo := dict "name" $self "component" "tempo" "release" $release -}}
+{{- $collector := dict "name" $self "component" (default .Chart.Name .Values.component) "release" $release -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- toYaml $labels | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            app.kubernetes.io/name: {{ $self | quote }}
+            app.kubernetes.io/instance: {{ $release | quote }}
+            app.kubernetes.io/component: {{ $collector.component | quote }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                {{- include "atlas-observability.peerFrom" $webapp | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.service.browserPort }}
+                    protocol: TCP
+        -   from:
+                {{- include "atlas-observability.peerFromList" (list $server $d2m $lm $ve $esPuller $kcPuller) | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.service.servicesGrpcPort }}
+                    protocol: TCP
+                -   port: {{ int .Values.service.servicesHttpPort }}
+                    protocol: TCP
+        -   from:
+                {{- include "atlas-observability.peerFromList" (list $webapp $keycloak) | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.service.legacyGrpcPort }}
+                    protocol: TCP
+                -   port: {{ int .Values.service.legacyHttpPort }}
+                    protocol: TCP
+        -   from:
+                {{- include "atlas-observability.peerFrom" $prom | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.service.metricsPort }}
+                    protocol: TCP
+                -   port: {{ int .Values.service.internalPort }}
+                    protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-prometheus-ingress" $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- toYaml $labels | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            app.kubernetes.io/name: {{ $self | quote }}
+            app.kubernetes.io/instance: {{ $release | quote }}
+            app.kubernetes.io/component: "prometheus"
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                {{- include "atlas-observability.peerFromList" (list $prom $grafana) | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.prometheus.probes.port }}
+                    protocol: TCP
+{{- if .Values.loki.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-loki-ingress" $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- toYaml $labels | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            app.kubernetes.io/name: {{ $self | quote }}
+            app.kubernetes.io/instance: {{ $release | quote }}
+            app.kubernetes.io/component: "loki"
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                {{- include "atlas-observability.peerFromList" (list $collector $prom $grafana) | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.loki.probes.port }}
+                    protocol: TCP
+{{- end }}
+{{- if .Values.tempo.enabled }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-tempo-ingress" $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- toYaml $labels | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            app.kubernetes.io/name: {{ $self | quote }}
+            app.kubernetes.io/instance: {{ $release | quote }}
+            app.kubernetes.io/component: "tempo"
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                {{- include "atlas-observability.peerFrom" $collector | nindent 16 }}
+            ports:
+                -   port: 4318
+                    protocol: TCP
+        -   from:
+                {{- include "atlas-observability.peerFromList" (list $prom $grafana) | nindent 16 }}
+            ports:
+                -   port: {{ int .Values.tempo.probes.port }}
+                    protocol: TCP
+{{- end }}
+{{- end }}

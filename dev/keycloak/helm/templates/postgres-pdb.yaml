@@ -1,0 +1,15 @@
+{{/* The database's PodDisruptionBudget (CHT-18). */}}
+{{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled .Values.postgres.pdb.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+    name: {{ include "atlas-keycloak.pgFullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-keycloak.labelsPG" . | nindent 8 }}
+spec:
+    minAvailable: {{ int .Values.postgres.pdb.minAvailable }}
+    selector:
+        matchLabels:
+            {{- include "atlas-keycloak.selectorLabelsPG" . | nindent 12 }}
+{{- end }}

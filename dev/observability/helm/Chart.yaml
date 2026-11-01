@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-observability
+description: "The system's self-observation: the OTel collector (three ingest legs, ADR 034) with Prometheus, Loki, Tempo, and Grafana (ADR 016)."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas

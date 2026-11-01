@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-validate-entity
+description: "The validate-entity API: entity in, governance-quality validation out (increment 8.3, ADR 055)."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas

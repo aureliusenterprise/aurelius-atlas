@@ -34,6 +34,7 @@ auth=None)` builds the verifier, mounts the routers and the 400 handler (the app
 - `scenarios/` — parity scenarios, read from the Aurelius source (the lineage caller's
   fixed rules are the payload); run by `tests/`
 - `tests/` — unit tests (rules + engine + app wiring on a fake issuer); `e2e/` — the image
+- `helm/` — the `atlas-data2model` chart (its own section below)
   over HTTPS, Keycloak-minted tokens
 
 ## Rules the app keeps
@@ -64,6 +65,28 @@ the webapp's parser's input.
   liveness healthcheck.
 - `e2e/docker-compose.yaml` — the app on the observability network (`otel-collector:4319`),
   Keycloak reached through `keycloak.localhost:host-gateway` (the loopback-pinned mint).
+
+## Helm chart
+
+`helm/` — the `atlas-data2model` chart (CHT-02, workloads in 10.3a):
+port 21001, probes, the `AURELIUS_ATLAS_DATA2MODEL_` settings env, the
+Keycloak audience (`aurelius-atlas-data2model`), and the OTLP ingest
+identity. Its deployment/service/sa/pdb/certificate templates are the shipped
+aux-API shape, kept as a copy per chart by design (DD-290) — no shared
+library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
+FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
+`/etc/aurelius-atlas/tls`, which is where the AUTH_CA_FILE/OTEL_CA_FILE
+config paths point (DD-294's closure — the dead caConfigMap pair is gone).
+10.6 adds the ingress allow (CHT-66): 21001 from the lineage-model pods only.
+Chart-contract tests: `tests/test__charts_aux.py`. Conventions:
+`helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-data2model:helm-template
+```
+
+Removing the app removes `helm/` too — plus the umbrella's dependency and
+values-toggle rows (`helm/AGENTS.md`).
 
 ## Removal
 

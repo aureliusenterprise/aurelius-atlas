@@ -1,0 +1,1 @@
+{{- include "atlas-server.requireValues" (dict "values" .Values) }}
