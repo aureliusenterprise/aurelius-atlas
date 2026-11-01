@@ -468,7 +468,7 @@ Raises:
 ### run\_scenario
 
 ```
-run_scenario(scenario: Scenario, client: AsyncClient) -> None
+run_scenario(scenario: Scenario, client: AsyncClient, known: Mapping[str, Any] | None = None) -> None
 ```
 
 Run a scenario's stages in order through the client (SCN-05); `{run}` is unique to the run (SCN-16).
@@ -485,6 +485,11 @@ Parameters:
   (`AsyncClient`) –
 
   Talks to the application under test, in-process or over HTTP; the caller owns it.
+- #### **`known`**
+
+  (`Mapping[str, Any] | None`, default: `None` ) –
+
+  Values known before the first stage, such as `{user}`, the user the client acts as (USR-04).
 
 Raises:
 
@@ -1898,7 +1903,7 @@ Raises:
 ### run\_scenario
 
 ```
-run_scenario(scenario: Scenario, client: AsyncClient) -> None
+run_scenario(scenario: Scenario, client: AsyncClient, known: Mapping[str, Any] | None = None) -> None
 ```
 
 Run a scenario's stages in order through the client (SCN-05); `{run}` is unique to the run (SCN-16).
@@ -1915,6 +1920,11 @@ Parameters:
   (`AsyncClient`) –
 
   Talks to the application under test, in-process or over HTTP; the caller owns it.
+- #### **`known`**
+
+  (`Mapping[str, Any] | None`, default: `None` ) –
+
+  Values known before the first stage, such as `{user}`, the user the client acts as (USR-04).
 
 Raises:
 
