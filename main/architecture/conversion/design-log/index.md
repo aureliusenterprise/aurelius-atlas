@@ -244,6 +244,7 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-249](<#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd>) | Uploaded files are read with python-multipart, openpyxl and xlrd | 5.2 | Proposed |
 | [DD-250](<#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider>) | The server authenticates requests itself against the identity provider | 6.1 | Proposed |
 | [DD-251](<#dd-251-browser-sessions-are-kept-in-the-servers-memory>) | Browser sessions are kept in the server's memory | 6.1 | Proposed |
+| [DD-252](<#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos>) | DataAccess carries every model object through a registry of DTOs | 4.5 | Proposed |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3378,3 +3379,17 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 **Alternatives.** A signed cookie holding the tokens: no server state, but the tokens leave the server and a signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survive restarts and serve several instances, at a store round-trip per request.
 
 **Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts. Several server instances need sticky sessions.
+
+### DD-252. DataAccess carries every model object through a registry of DTOs
+
+- **Status:** Proposed
+- **Increment:** 4.5
+- **Date:** 2026-11-01
+
+**Decision.** `DataAccess` moves out of the glossary's module into `data_access`, generic over a registry of data transfer objects by the object's class, as Atlas's `DataAccess` and `DTORegistry` are. A DTO names the entity type, makes the object's entities (its own first, then those it refers to) and reads the object back from its entity and the entities read with it, and gives the unique attributes a new object is found by. The glossary's three DTOs and the user profile's two register there; each service builds its `DataAccess` from its registry.
+
+**Reason.** 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and written like the glossary's objects (DD-246). Atlas has one `DataAccess` for both; a second copy for profiles would duplicate the save, load, type and deletion checks the glossary's already has.
+
+**Alternatives.** A profile store written apart: the same checks twice. One registry of every DTO: services would carry DTOs they never use.
+
+**Consequences.** The glossary's `DataAccess` is `glossary_data_access`; its tests name the generic methods.

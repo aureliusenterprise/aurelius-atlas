@@ -6352,6 +6352,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-252. DataAccess carries every model object through a registry of DTOs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -6431,6 +6442,8 @@
       
         
           
+        
+      
         
       
         
@@ -7586,6 +7599,33 @@
     
   
   4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
 
     
   </span>
@@ -12849,6 +12889,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        DD-252. DataAccess carries every model object through a registry of DTOs
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -14291,6 +14342,12 @@ decisions are ADRs in <a href="../../adr/">Architecture Decisions</a>.</p>
 <td><a href="#dd-251-browser-sessions-are-kept-in-the-servers-memory">DD-251</a></td>
 <td>Browser sessions are kept in the server's memory</td>
 <td>6.1</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos">DD-252</a></td>
+<td>DataAccess carries every model object through a registry of DTOs</td>
+<td>4.5</td>
 <td>Proposed</td>
 </tr>
 </tbody>
@@ -21131,6 +21188,24 @@ signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survi
 instances, at a store round-trip per request.</p>
 <p><strong>Consequences.</strong> A restart signs browsers out; they sign in again at once while their provider session lasts.
 Several server instances need sticky sessions.</p>
+<h3 id="dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos">DD-252. DataAccess carries every model object through a registry of DTOs<a class="headerlink" href="#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>Status:</strong> Proposed</li>
+<li><strong>Increment:</strong> 4.5</li>
+<li><strong>Date:</strong> 2026-11-01</li>
+</ul>
+<p><strong>Decision.</strong> <code>DataAccess</code> moves out of the glossary's module into <code>data_access</code>, generic over a registry of
+data transfer objects by the object's class, as Atlas's <code>DataAccess</code> and <code>DTORegistry</code> are. A DTO names the
+entity type, makes the object's entities (its own first, then those it refers to) and reads the object back
+from its entity and the entities read with it, and gives the unique attributes a new object is found by. The
+glossary's three DTOs and the user profile's two register there; each service builds its <code>DataAccess</code> from its
+registry.</p>
+<p><strong>Reason.</strong> 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and
+written like the glossary's objects (DD-246). Atlas has one <code>DataAccess</code> for both; a second copy for profiles
+would duplicate the save, load, type and deletion checks the glossary's already has.</p>
+<p><strong>Alternatives.</strong> A profile store written apart: the same checks twice. One registry of every DTO: services
+would carry DTOs they never use.</p>
+<p><strong>Consequences.</strong> The glossary's <code>DataAccess</code> is <code>glossary_data_access</code>; its tests name the generic methods.</p>
 
 
 

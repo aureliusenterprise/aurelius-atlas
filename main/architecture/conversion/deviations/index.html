@@ -4077,6 +4077,8 @@
       
         
       
+        
+      
     
     
     
@@ -5090,6 +5092,33 @@
     
   
   4.4b DSL projections and traversals
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/4-5-saved-searches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  4.5 Saved searches and user profile
 
     
   </span>
@@ -8713,6 +8742,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>No basic authentication; clients obtain tokens from the provider</td>
 <td>The server never sees a password (<a href="../../adr/007-one-shared-identity-provider/">ADR 007</a>)</td>
 <td>6.1</td>
+</tr>
+<tr>
+<td>DV-110</td>
+<td>Search</td>
+<td>Saving or updating without a search, or running a saved search without parameters, fails on a null: an internal error</td>
+<td><code>BAD_REQUEST</code></td>
+<td>A client error should say what is wrong</td>
+<td>4.5</td>
 </tr>
 </tbody>
 </table>

@@ -146,6 +146,7 @@
 - [4.3 DSL parser](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-3-dsl-parser/index.md>)
 - [4.4a DSL search of entities](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-4-dsl-entities/index.md>)
 - [4.4b DSL projections and traversals](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-4-dsl-projections/index.md>)
+- [4.5 Saved searches and user profile](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/4-5-saved-searches/index.md>)
 - [5.1 Lineage](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/5-1-lineage/index.md>)
 - [5.2a Glossaries and categories](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/5-2-glossaries-and-categories/index.md>)
 - [5.2d Glossary import](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/5-2-glossary-import/index.md>)
