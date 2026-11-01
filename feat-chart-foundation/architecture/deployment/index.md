@@ -47,7 +47,7 @@ The components and their charts:
 | `atlas-observability` | OTel collector + Prometheus, Loki, Tempo, Grafana | 4317–4321 | the three ingest legs (DD-193/196/202) |
 | `aurelius-atlas` | Umbrella: edge, trust, secrets, the `global.*` contract | 443 | composes the eight charts above |
 
-Each component chart lives next to the project it deploys (`apps/<app>/helm/`, `dev/<name>/helm/`, DD-247); the umbrella `aurelius-atlas` is the one chart without an owning project and sits at the workspace root, `helm/` (DD-249). Helpers are chart-local — the naming convention is the dedupe, no library charts.
+Each component chart lives next to the project it deploys (`apps/<app>/helm/`, `dev/<name>/helm/`, DD-290); the umbrella `aurelius-atlas` is the one chart without an owning project and sits at the workspace root, `helm/` (DD-292). Helpers are chart-local — the naming convention is the dedupe, no library charts.
 
 ## The values contract
 
@@ -66,13 +66,13 @@ CI renders every chart against both overlays on every change (CHT-06), so "rende
 
 ## Trust
 
-cert-manager signs every certificate (DD-243). The default posture is the chart-created self-signed `ClusterIssuer`: the umbrella creates the issuer and the certificates, and publishes the CA bundle into a ConfigMap the components mount to pin by file. A production deployment brings its own issuer (`global.trust.createIssuer: false`, `issuerRef` to the org's) and either the CA secret name or a literal CA bundle.
+cert-manager signs every certificate (DD-286). The default posture is the chart-created self-signed `ClusterIssuer`: the umbrella creates the issuer and the certificates, and publishes the CA bundle into a ConfigMap the components mount to pin by file. A production deployment brings its own issuer (`global.trust.createIssuer: false`, `issuerRef` to the org's) and either the CA secret name or a literal CA bundle.
 
 **The Keycloak issuer URL is immutable once entities exist.** Tokens embed the issuer; changing `global.domain` (or `global.issuer.url`) after data is written invalidates every token and every saved reference. Pick the hostname at first install.
 
 ## Secrets
 
-Plain Kubernetes Secrets, generated at deploy time (DD-244). The umbrella `randAlphaNum`-generates each credential once and *preserves* it on upgrade via `lookup` — an upgrade never rotates a live password. Values may pin a secret explicitly (a deployment that manages secrets with External Secrets / Vault passes the names in and sets the generator off). The webapp's legacy dashboard token is browser-reachable by design (DD-239) — treat it as a public client's secret.
+Plain Kubernetes Secrets, generated at deploy time (DD-287). The umbrella `randAlphaNum`-generates each credential once and *preserves* it on upgrade via `lookup` — an upgrade never rotates a live password. Values may pin a secret explicitly (a deployment that manages secrets with External Secrets / Vault passes the names in and sets the generator off). The webapp's legacy dashboard token is browser-reachable by design (DD-239) — treat it as a public client's secret.
 
 ## Prerequisites a deployment installs
 
@@ -84,4 +84,4 @@ The charts install the system, not the cluster. Before the first install (runboo
 
 ## Versioning
 
-Chart version == the release semver; `appVersion` == the image tag (`v1.2.3`), so a chart installed by version resolves its component's image by default (DD-245). The umbrella pins its component charts `=x.y.z` to its own version, and `helm package -u` embeds the component tarballs — the published umbrella *is* the tested combination. Charts publish as OCI artifacts beside the images: `oci://ghcr.io/aureliusenterprise/charts/<chart>`.
+Chart version == the release semver; `appVersion` == the image tag (`v1.2.3`), so a chart installed by version resolves its component's image by default (DD-288). The umbrella pins its component charts `=x.y.z` to its own version, and `helm package -u` embeds the component tarballs — the published umbrella *is* the tested combination. Charts publish as OCI artifacts beside the images: `oci://ghcr.io/aureliusenterprise/charts/<chart>`.

@@ -8648,6 +8648,9 @@ Functions:
 - **`empty_when_null`** –
 
   Read a null list as empty: a field Java never leaves null (TDM-06).
+- **`new_model_guid`** –
+
+  `AtlasBaseModelObject.init`: a new object's GUID, `-` and the next internal id (GLS-01, SVS-01).
 - **`null_when_empty`** –
 
   Read an empty list as null: a field Java leaves null when empty (TDM-11).
@@ -8741,6 +8744,14 @@ empty_when_null(value: object) -> object
 ```
 
 Read a null list as empty: a field Java never leaves null (TDM-06).
+
+### new\_model\_guid
+
+```
+new_model_guid() -> str
+```
+
+`AtlasBaseModelObject.init`: a new object's GUID, `-` and the next internal id (GLS-01, SVS-01).
 
 ### null\_when\_empty
 

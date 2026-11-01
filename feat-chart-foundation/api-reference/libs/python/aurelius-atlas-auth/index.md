@@ -88,6 +88,7 @@ AuthConfig(
     fail_max: int = 5,
     reset_timeout: float = 60.0,
     ca_file: str | None = None,
+    extra_audiences: tuple[str, ...] = (),
 )
 ```
 
@@ -98,7 +99,13 @@ What a service needs to verify its tokens. Apps map their settings in.
 Attributes:
 
 - **`audience`** (`str`) –
+- **`audiences`** (`frozenset[str]`) –
+
+  Every accepted `azp`/`aud` value: the audience and the extra ones (AUT-10).
 - **`ca_file`** (`str | None`) –
+- **`extra_audiences`** (`tuple[str, ...]`) –
+
+  Further accepted `azp`/`aud` values: the clients whose tokens the service also takes (AUT-10).
 - **`fail_max`** (`int`) –
 - **`realm`** (`str`) –
 - **`reset_timeout`** (`float`) –
@@ -111,11 +118,27 @@ Attributes:
 audience: str
 ```
 
+#### audiences
+
+```
+audiences: frozenset[str]
+```
+
+Every accepted `azp`/`aud` value: the audience and the extra ones (AUT-10).
+
 #### ca\_file
 
 ```
 ca_file: str | None = None
 ```
+
+#### extra\_audiences
+
+```
+extra_audiences: tuple[str, ...] = ()
+```
+
+Further accepted `azp`/`aud` values: the clients whose tokens the service also takes (AUT-10).
 
 #### fail\_max
 
@@ -172,12 +195,18 @@ Methods:
 - **`close`** –
 
   Close the issuer HTTP client (the app calls it on shutdown).
+- **`discovery`** –
+
+  The issuer's OpenID configuration: its endpoints, fetched once, cached an hour (AUT-10).
 - **`require_write_access`** –
 
   Require the write role for mutating routes (AUX-04).
 - **`user_info`** –
 
   Verify the bearer token and return its claims (AUX-02, AUX-03).
+- **`verify`** –
+
+  Verify a token and return its claims, for callers outside a route dependency (AUX-02, AUT-10).
 
 Attributes:
 
@@ -247,6 +276,14 @@ close() -> None
 
 Close the issuer HTTP client (the app calls it on shutdown).
 
+#### discovery
+
+```
+discovery() -> dict
+```
+
+The issuer's OpenID configuration: its endpoints, fetched once, cached an hour (AUT-10).
+
 #### require\_write\_access
 
 ```
@@ -264,3 +301,13 @@ user_info(auth: HTTPAuthorizationCredentials) -> dict
 ```
 
 Verify the bearer token and return its claims (AUX-02, AUX-03).
+
+#### verify
+
+```
+verify(token: str) -> dict
+```
+
+Verify a token and return its claims, for callers outside a route dependency (AUX-02, AUT-10).
+
+:raises HTTPException: 401 for a token that does not verify, 503 when the issuer cannot be reached

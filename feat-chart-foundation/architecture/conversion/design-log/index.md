@@ -232,19 +232,33 @@ Technical decisions made during the conversion that are too implementation-speci
 | [DD-237](<#dd-237--index-refresh-moves-from-reads-to-writes>) | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes | 9.3 | Accepted |
 | [DD-238](<#dd-238--the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server>) | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted | 9.3 | Accepted |
 | [DD-239](<#dd-239--the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage>) | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage | 9.4 | Accepted |
-| [DD-240](<#dd-240--one-chart-per-component-under-an-umbrella-published-as-oci-artifacts>) | One chart per component under an umbrella, published as OCI artifacts from `charts/` | 10.1 | Superseded by DD-247 |
-| [DD-241](<#dd-241--helm-targets-are-inferred-from-chartyaml-by-a-plugin-mirroring-dockerts>) | Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts` | 10.1 | Superseded by DD-250 |
-| [DD-242](<#dd-242--the-edge-is-gateway-api-not-ingress-nginx>) | The edge is Gateway API, not ingress-nginx (retired March 2026); instrumentation and Istio are out | 10.1 | Accepted |
-| [DD-243](<#dd-243--tls-trust-is-cert-manager-issuers-each-pinned-ca-is-a-configmap-of-the-trust-root>) | TLS trust is cert-manager issuers; the CA each consumer pins is a ConfigMap of the cluster trust root | 10.1 | Accepted |
-| [DD-244](<#dd-244--the-umbrella-owns-shared-secrets-generated-at-install-and-preserved-on-upgrade>) | The umbrella owns shared secrets; the webapp's telemetry token is a browser-reachable public constant | 10.1 | Accepted |
-| [DD-245](<#dd-245--the-umbrella-pins-its-component-charts-to-its-own-version-chart-version-equals-release-version>) | The umbrella pins its component charts to its own version; chart version equals release version, `appVersion` is the tag | 10.1 | Accepted |
-| [DD-246](<#dd-246--the-chart-gate-renders-each-charts-own-values-files-the-release-refreshes-chartlock>) | The chart gate renders each chart's own values files separately; the release refreshes Chart.lock in `afterAllProjectsVersioned` | 10.1 | Accepted |
-| [DD-247](<#dd-247--component-charts-live-next-to-their-projects-helpers-are-chart-local>) | Component charts live in `apps/<app>/helm` / `dev/<name>/helm`; helpers are chart-local, no library charts | 10.1 | Accepted |
-| [DD-248](<#dd-248--the-chartyaml-is-the-charts-whole-nx-identity-no-chart-projectjson>) | The `Chart.yaml` is the chart's whole Nx identity: the plugin infers name, targets, release actions, and umbrella edges | 10.1 | Superseded by DD-250 |
-| [DD-249](<#dd-249--the-umbrella-sits-at-the-workspace-root-helm>) | The umbrella lives at `helm/` in the workspace root: the chart tree is all `helm/` directories, `charts/` is gone | 10.1 | Accepted |
-| [DD-250](<#dd-250--helm-targets-merge-onto-the-owning-project-a-chart-is-not-a-project>) | Helm targets merge onto the owning project: a chart is not a project | 10.1 | Accepted |
-| [DD-251](<#dd-251--the-minikube-trial-findings-in-the-aux-charts-land-in-103>) | The minikube trial's two aux-chart findings (unbackable CA mount, lineage-model upstream URLs) are fixed in 10.3 | 10.1 | Accepted |
-| [DD-252](<#dd-252--a-stuck-pending-install-release-is-cleared-by-uninstall>) | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns | 10.1 | Accepted |
+| [DD-240](<#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar>) | The DSL parser is generated from Atlas's own grammar | 4.3 | Proposed |
+| [DD-241](<#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes>) | The parse tree is handed on as typed, immutable nodes | 4.3 | Proposed |
+| [DD-242](<#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree>) | A DSL query is composed into the basic search's filter tree | 4.4 | Proposed |
+| [DD-243](<#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps>) | DSL traversals and projections are evaluated in steps | 4.4 | Proposed |
+| [DD-244](<#dd-244-saved-searches-wait-for-authentication>) | Saved searches wait for authentication | 4.5 | Accepted |
+| [DD-245](<#dd-245-lineage-walks-the-relationships-of-the-process-edges>) | Lineage walks the relationships of the process edges | 5.1 | Proposed |
+| [DD-246](<#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores>) | Glossary objects are entities written through the entity and relationship stores | 5.2 | Proposed |
+| [DD-247](<#dd-247-journal-writes-do-not-wait-for-a-refresh>) | Journal writes do not wait for a refresh | cross-cutting | Proposed |
+| [DD-248](<#dd-248-an-entitys-meanings-are-read-from-its-listed-relationships>) | An entity's meanings are read from its listed relationships | 5.2 | Proposed |
+| [DD-249](<#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd>) | Uploaded files are read with python-multipart, openpyxl and xlrd | 5.2 | Proposed |
+| [DD-250](<#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider>) | The server authenticates requests itself against the identity provider | 6.1 | Proposed |
+| [DD-251](<#dd-251-browser-sessions-are-kept-in-the-servers-memory>) | Browser sessions are kept in the server's memory | 6.1 | Proposed |
+| [DD-252](<#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos>) | DataAccess carries every model object through a registry of DTOs | 4.5 | Proposed |
+| [DD-283](<#dd-283--one-chart-per-component-under-an-umbrella-published-as-oci-artifacts>) | One chart per component under an umbrella, published as OCI artifacts from `charts/` | 10.1 | Superseded by DD-290 |
+| [DD-284](<#dd-284--helm-targets-are-inferred-from-chartyaml-by-a-plugin-mirroring-dockerts>) | Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts` | 10.1 | Superseded by DD-293 |
+| [DD-285](<#dd-285--the-edge-is-gateway-api-not-ingress-nginx>) | The edge is Gateway API, not ingress-nginx (retired March 2026); instrumentation and Istio are out | 10.1 | Accepted |
+| [DD-286](<#dd-286--tls-trust-is-cert-manager-issuers-each-pinned-ca-is-a-configmap-of-the-trust-root>) | TLS trust is cert-manager issuers; the CA each consumer pins is a ConfigMap of the cluster trust root | 10.1 | Accepted |
+| [DD-287](<#dd-287--the-umbrella-owns-shared-secrets-generated-at-install-and-preserved-on-upgrade>) | The umbrella owns shared secrets; the webapp's telemetry token is a browser-reachable public constant | 10.1 | Accepted |
+| [DD-288](<#dd-288--the-umbrella-pins-its-component-charts-to-its-own-version-chart-version-equals-release-version>) | The umbrella pins its component charts to its own version; chart version equals release version, `appVersion` is the tag | 10.1 | Accepted |
+| [DD-289](<#dd-289--the-chart-gate-renders-each-charts-own-values-files-the-release-refreshes-chartlock>) | The chart gate renders each chart's own values files separately; the release refreshes Chart.lock in `afterAllProjectsVersioned` | 10.1 | Accepted |
+| [DD-290](<#dd-290--component-charts-live-next-to-their-projects-helpers-are-chart-local>) | Component charts live in `apps/<app>/helm` / `dev/<name>/helm`; helpers are chart-local, no library charts | 10.1 | Accepted |
+| [DD-291](<#dd-291--the-chartyaml-is-the-charts-whole-nx-identity-no-chart-projectjson>) | The `Chart.yaml` is the chart's whole Nx identity: the plugin infers name, targets, release actions, and umbrella edges | 10.1 | Superseded by DD-293 |
+| [DD-292](<#dd-292--the-umbrella-sits-at-the-workspace-root-helm>) | The umbrella lives at `helm/` in the workspace root: the chart tree is all `helm/` directories, `charts/` is gone | 10.1 | Accepted |
+| [DD-293](<#dd-293--helm-targets-merge-onto-the-owning-project-a-chart-is-not-a-project>) | Helm targets merge onto the owning project: a chart is not a project | 10.1 | Accepted |
+| [DD-294](<#dd-294--the-minikube-trial-findings-in-the-aux-charts-land-in-103>) | The minikube trial's two aux-chart findings (unbackable CA mount, lineage-model upstream URLs) are fixed in 10.3 | 10.1 | Accepted |
+| [DD-295](<#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges>) | Chart-track id collisions with main renumber above both ranges | — | Accepted |
+| [DD-298](<#dd-298--a-stuck-pending-install-release-is-cleared-by-uninstall>) | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns | 10.1 | Accepted |
 
 ### DD-001. Reference is Apache Atlas 2.4.0, and both dashboards are served
 
@@ -3212,9 +3226,191 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** The webapp image grows 14→56 MB; the SBOM/license report gains grpc/protobuf/abseil/re2/icu (Apache/BSD). The builder pins the v0.1.2 tag with the cmake-4 policy flag (its `cmake_minimum_required` predates 3.5) and apk's `python-3.14` (the dev image's xcb-proto resolves 3.14; bare `python` is 3.15 now) — reproducible-build facts recorded here. `limit_req` and this module share the `/api/` location: the limiter refuses before the span's `http.status_code` records the 429 (the module samples at the rewrite phase, completes at the log phase — a refused request's span is real, proven in the prototype burst). The v0.1.x line is 2023-frozen (4 open issues, no maintainer activity); re-evaluate at the next nginx baseline (the 1.30 signature check is the compatibility gate — a mismatched module fails at config parse, loudly, at boot). Next free DD: 240.
 
-### DD-240 — One chart per component under an umbrella, published as OCI artifacts
+### DD-240. The DSL parser is generated from Atlas's own grammar
 
-- **Status:** Superseded by DD-247 (the `charts/` residence; one-chart-per- component, umbrella, and OCI publish stand)
+- **Status:** Proposed
+- **Increment:** 4.3
+- **Date:** 2026-10-30
+
+**Decision.** `aurelius-atlas-dsl` keeps Atlas's `AtlasDSLLexer.g4` and `AtlasDSLParser.g4` unchanged in `grammar/` and generates its lexer and parser from them with the ANTLR 4.13.2 tool (`npx nx generate-parser aurelius-atlas-dsl`, Java needed only then). The generated modules are committed in `aurelius_atlas_dsl/generated` and run on `antlr4-python3-runtime`, pinned to the tool's version. They are left out of ruff, pyright, coverage, Sonar, the hooks, the traceability check and the increment's line budget: nobody writes or reviews them.
+
+**Reason.** The grammar is ambiguous and its lexer has quirks a client can see: the longest match decides between a keyword and a name (`fromDate`, `db.name`, `a.b.c` as `a.b` and `.c`), a sign joins a number (`a -5` is two sources), and ANTLR's adaptive prediction picks among the readings of `singleQrySrc`. Generating from the same grammar reproduces all of it, and ANTLR's syntax error messages, which Atlas puts in `INVALID_DSL_QUERY`. Every query of Atlas's DSL tests reads as Atlas reads it. A warm parse takes about 13 ms.
+
+**Alternatives.** A hand-written recursive descent parser: no runtime dependency and faster, but every lexer rule and every ambiguity resolution re-derived by hand, and ANTLR's error messages imitated. A parser library such as Lark: a second grammar to keep equal to Atlas's. ANTLR 4.7, Atlas's own version: its Python runtime dates from 2017 and is no longer maintained; 4.13 runs the same parsing algorithm.
+
+**Consequences.** A grammar change is Atlas's grammar changed and the package regenerated, never the generated code edited. The runtime is a pure-Python dependency without type information; `tree_builder` reads the contexts through small typed helpers.
+
+### DD-241. The parse tree is handed on as typed, immutable nodes
+
+- **Status:** Proposed
+- **Increment:** 4.3
+- **Date:** 2026-10-30
+
+**Decision.** `parse` returns a tree of frozen dataclasses (`dsl_tree`), not ANTLR's contexts: one node per grammar rule that `DSLVisitor` reads, named after it, a choosing rule as the union of its alternatives. Every node keeps its `getText()`, and an operator, sort order or literal the text it was written with besides its kind.
+
+**Reason.** `DSLVisitor` and `GremlinQueryComposer` work on rule texts (`getText()`) and on which alternative matched; the nodes keep both, so 4.4 can port that logic, Atlas's quirks included (it upper-cases the operator's spelling before looking it up). Typed nodes let pyright check 4.4's composer and keep the generated code behind one module; equality makes trees easy to assert in tests.
+
+**Alternatives.** Hand ANTLR's contexts to 4.4 as Java does: the closest port, but untyped, mutable and tied to the generated code. An abstract tree that folds Atlas's rules into precedence (`and` before `or`): Atlas joins conditions left to right, and the folding belongs to the composer that reproduces it.
+
+**Consequences.** 4.4 composes Elasticsearch queries from `dsl_tree` alone. A grammar change touches `dsl_tree` and `tree_builder` too.
+
+### DD-242. A DSL query is composed into the basic search's filter tree
+
+- **Status:** Proposed
+- **Increment:** 4.4
+- **Date:** 2026-10-30
+
+**Decision.** `DSLVisitor` and `GremlinQueryComposer` are replaced by one composer in `aurelius-atlas-core` (`dsl_query_composer`) that walks the syntax tree of 4.3 (DD-241) and writes the `SearchQuery` of the basic search (DD-089): the sources and conditions as one filter tree of `Criterion` and `Group` over the search fields (DD-088), the `orderby` as its sort, the limit and offset as its page. `like` adds two tests to the search query: `REGEX`, a regular expression the whole keyword value matches in case, and `WORD_REGEX`, one a word of the text sub-field (DD-092) matches in any case; Elasticsearch answers both with `regexp`, the in-memory documents with Python's `re`. The composer keeps Atlas's name resolution (`IdentifierHelper.Info`, `RegistryBasedLookup`), its left-to-right joining of `and` and `or`, and its semantic errors, collected and joined into one `INVALID_DSL_QUERY`. `aurelius-atlas-core` depends on `aurelius-atlas-dsl`.
+
+**Reason.** Atlas's composer writes Gremlin text that its executor turns back into a traversal; every clause of 4.4a is a test of the entity's own fields, which the basic search already translates to Elasticsearch and evaluates in memory. One filter tree keeps a DSL query to one Elasticsearch request, reuses the paging, sorting and tie-breaking of the basic search, and lets the in-memory documents answer the core tests.
+
+**Alternatives.** Port `GremlinQueryComposer` clause by clause and translate the clause list: the closest port, but a second translation of every predicate the basic search already has. Elasticsearch's query string syntax: a client's query would reach Elasticsearch's parser, with neither Atlas's grammar nor its errors.
+
+**Consequences.** Traversals into referred entities, classification attributes and projections (4.4b) are not tests of one document's fields; 4.4b decides how they are evaluated, over the relationship documents (DD-061). Lucene's regular expressions are not Java's or Python's: the patterns `like` writes (`.`, `.*`, escaped characters, classes) read the same in all three, which the e2e tests check.
+
+### DD-243. DSL traversals and projections are evaluated in steps
+
+- **Status:** Proposed
+- **Increment:** 4.4
+- **Date:** 2026-10-30
+
+**Decision.** The DSL composer (DD-242) answers a plan: the filter tree of the final entities, the steps before them, and the `select` and `groupby`. A move to referred entities (a source naming a reference, a `select` of one) is a step: the entities found so far are read, the GUIDs their attribute refers to taken, and the next filter holds for those GUIDs. A condition on a referred entity (`db.name`) or a classification attribute (`Dimension.tagAttr1`) is a criterion whose value the executor resolves to GUIDs before searching: the referred entities matching, the entities referring to them by reference (`references`, DD-057) or relationship end (DD-061) and confirmed by reading the attribute; or the classification instances matching, as the classification search finds them (DD-090). Aggregates, groups and moves read the entities found in one search of at most 10,000; rows and groups are built from them in memory, as `SelectClauseProjections` builds them from vertices.
+
+**Reason.** Atlas walks edges; the documents have none. Resolving to GUIDs keeps each step a search of the entity documents with the filter tree of DD-242, and the in-memory documents answer the same plan. A reference is read as a read answers it, so plain references and relationship ends, legacy or not, give the same answer.
+
+**Alternatives.** Denormalising referred attributes into the referring document's search fields: one query, but every write would have to rewrite the entities referring to the one written. Elasticsearch `terms` lookups across indices: they read one document's field, not a relationship's other end. Aggregating in Elasticsearch: Java's comparison for `min` and `max` (no value least, kinds equal) and row deduplication are not its.
+
+**Consequences.** A step reads at most 10,000 entities (DV-98); a query reaching past them answers from the first 10,000. A condition on a referred entity costs a search, a read of the candidates and of their references.
+
+### DD-244. Saved searches wait for authentication
+
+- **Status:** Accepted
+- **Increment:** 4.5
+- **Date:** 2026-10-30
+
+**Decision.** Increment 4.5 (saved searches and the user profile) follows 6.1 (authentication) instead of preceding 5.1. The roadmap keeps its number; 5.1 lineage is the next increment. The user chose this on 2026-10-30.
+
+**Reason.** Atlas owns every saved search by the logged-in user: `addSavedSearch` sets the owner from the request's user, `getSavedSearches` defaults to that user, and reading, updating, deleting and executing a search check ownership (`checkSavedSearchOwnership`). Until 6.1 the server has no user (DV-04, DV-06); porting 4.5 now would need a temporary owner, a deviation 6.1 would have to undo, and ownership checks that test nothing.
+
+**Alternatives.** One anonymous owner until 6.1: the endpoints sooner, the checks trivially passing. An owner taken from a request header until 6.1: testable checks, but a spoofable identity to remove later.
+
+**Consequences.** `search/saved*` stays unanswered until after 6.1; the dashboards' saved-search menus fail until then, as they did before.
+
+### DD-245. Lineage walks the relationships of the process edges
+
+- **Status:** Proposed
+- **Increment:** 5.1
+- **Date:** 2026-10-30
+
+**Decision.** `EntityLineageService` ports Atlas's default traversal (`getLineageInfoV2`) and lineage on demand over the relationship documents (DD-061): an edge `__Process.inputs` or `__Process.outputs` is a relationship of that label, going out of end 1 (the process) into end 2 (the data set), read through the relationships an entity lists, as `graph_helper.edges_for_label` reads them for the other edge lookups. Each entity's relationships are read once per lineage. The Gremlin lineage (`atlas.lineage.query.use.gremlin`) is not ported. Atlas's lineage settings are server settings with Atlas's defaults: on demand off, 3 relations each way, at most 9,000 relations.
+
+**Reason.** The relationships are the edges Atlas walks: one document per edge, listed by both ends, in any state as Atlas's `getEdges` returns them. Walking them keeps Atlas's order of visits, its visited sets and its cap, which decide what a deep or wide lineage answers.
+
+**Alternatives.** A search per step for the relationships of a label whose end is the entity: an index on ends the relationship documents do not have, and a refresh before each read. Denormalising each entity's process edges into its document: a second copy every relationship write would keep equal.
+
+**Consequences.** A lineage costs two reads per entity it reaches (the entity and its relationships); the 9,000 relation cap bounds it. Lineage on demand, off by default as in Atlas, is answered once the setting is on.
+
+### DD-246. Glossary objects are entities written through the entity and relationship stores
+
+- **Status:** Proposed
+- **Increment:** 5.2
+- **Date:** 2026-10-30
+
+**Decision.** Glossaries and categories (and from 5.2b terms) are entities of Atlas's glossary model (`0011-glossary_model`), as `DataAccess` and the glossary DTOs keep them: an object is saved by creating or updating its entity with `EntityWriter`, which also writes a category's mandatory `anchor`, and loaded back from the entity and its relationship attributes with `EntityRetriever`; the relationships between glossary objects (anchors, the category hierarchy, term categorizations) are written with the `RelationshipStore` as `GlossaryCategoryUtils` writes them, `getOrCreate` taking an existing relationship of the type and ends, and a removed one deleted for good. 5.2 is split by the user into 5.2a (glossaries and categories), 5.2b (terms) and 5.2c (term assignment); glossary import is a later increment.
+
+**Reason.** Atlas's glossary is entities and relationships of internal types, read and written through its stores; the stores here already keep entities, relationships, unique qualified names and internal types' hard deletes as Atlas does, so the glossary's behaviour follows from them without a store of its own.
+
+**Alternatives.** Glossary documents of their own index: simpler reads, but the glossary would no longer be entities the entity API, search and lineage see, as they are in Atlas.
+
+**Consequences.** A glossary write is several entity and relationship writes, each all or nothing on its own, as in Atlas within its graph transaction only when the graph commits; a failure part way leaves what was written. The server's models carry `0011-glossary_model`, as they do with every model loaded.
+
+### DD-247. Journal writes do not wait for a refresh
+
+- **Status:** Proposed
+- **Increment:** cross-cutting (no roadmap row; found by 5.2a's e2e)
+- **Date:** 2026-10-30
+
+**Decision.** The journal entry's write, its commit and its delete (DD-046) no longer carry `refresh="wait_for"`; the entity bulk, the restores and the audit append keep it (DD-237, ENS-11). Recovery lists the journal's entries by a search, as before, and acts on each as a real-time `get` by its write id reads it now: an entry already deleted, or still within its lease, is left alone. This supersedes DD-237's choice for the journal only; the rest of DD-237 stands.
+
+**Reason.** On the dev store every entity write cost about 2.8 s: four writes each waiting for a refresh (about 1 s each with the default refresh interval), three of them the journal's. A glossary write is several entity and relationship writes, so creating a child category took 9 s and deleting a glossary 18 s, past the e2e client's timeout. DD-237 kept the journal's refresh for recovery, which "reads entries written moments before"; but recovery acts only on entries whose 60-second lease has passed, long after the index's own refresh has made them searchable, and the real-time `get` closes the remaining gap: a listing that lags an entry's commit or delete cannot make recovery undo a write that finished. With the change a write costs about 0.9 s on the dev store.
+
+**Alternatives.** A shorter refresh interval: every write still pays for refreshes no reader needs. Trimming the glossary's writes: helps one feature, and departs from Atlas's sequence of writes.
+
+**Consequences.** A journal entry may be missing from a search for up to the refresh interval after it is written; nothing but recovery searches it. ENS-11's text names the journal as unrefreshed.
+
+### DD-248. An entity's meanings are read from its listed relationships
+
+- **Status:** Proposed
+- **Increment:** 5.2c
+- **Date:** 2026-10-31
+
+**Decision.** An entity header's `meanings` (GTA-05) are read from the relationships the entity lists (DD-061): those of type `AtlasGlossarySemanticAssignment` whose second end is the entity, in the order listed, with their terms read in one request. The relationships are read once per response, as the header's relationship attributes already read them. Basic search's `termName` and the DSL's `hasTerm` read the terms' listed relationships the same way and search the entities by GUID, as a DSL condition on referred entities does (DD-243).
+
+**Reason.** Atlas reads the entity's incoming edges with the assignment's label. The listing is the one place an entity's relationships are known by real-time `get`s, so a header read right after an assignment shows it, as every other relationship attribute does.
+
+**Alternatives.** A search of the relationship index by type and end: one request per page of headers, but it sees an assignment only after a refresh. A field of meanings on the entity document: every assignment would write the entity too.
+
+**Consequences.** A header costs a read of all the entity's relationships, also for an entity with many and no meanings; a header that reads relationship attributes pays it once. A term assigned to more entities than one search window holds is not searched beyond it.
+
+### DD-249. Uploaded files are read with python-multipart, openpyxl and xlrd
+
+- **Status:** Proposed
+- **Increment:** 5.2d
+- **Date:** 2026-10-31
+
+**Decision.** The server reads a multipart upload with `python-multipart`, which FastAPI's form parsing requires. The core reads an `xlsx` workbook with `openpyxl` (read-only, cached values) and an `xls` workbook with `xlrd` 2, which reads only that format; a CSV file with the standard library's `csv` module. All three are pure Python.
+
+**Reason.** Atlas reads CSV with opencsv and both Excel formats with Apache POI. Python has no single library for both Excel formats: openpyxl reads only the XML format, xlrd 2 only the binary one, and each is the maintained reader of its format.
+
+**Alternatives.** pandas: reads both, but through these same engines and with numpy behind it. Dropping `xls`: Atlas's clients may upload it, and its error message names it.
+
+**Consequences.** Three new runtime dependencies, in the SBOM. A value is read as Python gives it; DV-104 records where that differs from Atlas.
+
+### DD-250. The server authenticates requests itself against the identity provider
+
+- **Status:** Proposed
+- **Increment:** 6.1a
+- **Date:** 2026-10-31
+
+**Decision.** The server verifies every request's credentials itself, in a middleware, with the shared verifier `aurelius-atlas-auth` (DD-197): a bearer token is an RS256 JWT of the provider's key set, of its issuer, unexpired, whose `azp` or `aud` names the server's client or a configured further client (the webapp's, which the auxiliary APIs forward). A browser without a token signs in through the server's own confidential client, `aurelius-atlas-server`, by the authorization code flow with PKCE, and keeps a session cookie. A user's name is the `preferred_username` claim by default and their groups the configured groups claim, else the realm roles, as Atlas's provider with `groups_claim` set.
+
+**Reason.** Atlas authenticates in-process with Keycloak's Spring Security adapter: bearer tokens for clients, a login redirect and session for its dashboards, which the server still serves. Verifying tokens in the server keeps one path for every client, needs no proxy in front of it, and reuses the verifier the auxiliary APIs already run. The adapter names a user by `sub` unless `principal-attribute` is set, which deployments set to `preferred_username`, the name people know; it is a setting here too.
+
+**Alternatives.** An authenticating proxy (oauth2-proxy) in front of the server: a second component on every deployment, and the server would trust a header. Bearer tokens only: the vendored dashboards could not sign in. Exchanging `Basic` credentials at the provider, as the adapter can: the server would handle passwords (DV-108).
+
+**Consequences.** The server needs the provider's URL, realm, its client's secret and the further audiences; every client sends a token. The dev realm gains the confidential client; the e2e suites mint tokens and sign the browser in.
+
+### DD-251. Browser sessions are kept in the server's memory
+
+- **Status:** Proposed
+- **Increment:** 6.1a
+- **Date:** 2026-10-31
+
+**Decision.** A browser's session — its user, its tokens, a sign-in under way and its CSRF token — is kept in the server's memory under a random id in the `ATLASSESSIONID` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`), renewed at sign-in, ended after 60 minutes unused or when the provider refuses to refresh its token. At most 10,000 sessions are kept, the least recently used dropped first.
+
+**Reason.** Atlas keeps its sessions in Jetty's memory, with the same cookie and a 60-minute timeout. The session holds the tokens the server refreshes, so the browser never sees them.
+
+**Alternatives.** A signed cookie holding the tokens: no server state, but the tokens leave the server and a signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survive restarts and serve several instances, at a store round-trip per request.
+
+**Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts. Several server instances need sticky sessions.
+
+### DD-252. DataAccess carries every model object through a registry of DTOs
+
+- **Status:** Proposed
+- **Increment:** 4.5
+- **Date:** 2026-11-01
+
+**Decision.** `DataAccess` moves out of the glossary's module into `data_access`, generic over a registry of data transfer objects by the object's class, as Atlas's `DataAccess` and `DTORegistry` are. A DTO names the entity type, makes the object's entities (its own first, then those it refers to) and reads the object back from its entity and the entities read with it, and gives the unique attributes a new object is found by. The glossary's three DTOs and the user profile's two register there; each service builds its `DataAccess` from its registry.
+
+**Reason.** 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and written like the glossary's objects (DD-246). Atlas has one `DataAccess` for both; a second copy for profiles would duplicate the save, load, type and deletion checks the glossary's already has.
+
+**Alternatives.** A profile store written apart: the same checks twice. One registry of every DTO: services would carry DTOs they never use.
+
+**Consequences.** The glossary's `DataAccess` is `glossary_data_access`; its tests name the generic methods.
+
+### DD-283 — One chart per component under an umbrella, published as OCI artifacts
+
+- **Status:** Superseded by DD-290 (the `charts/` residence; one-chart-per- component, umbrella, and OCI publish stand)
 - **Increment:** 10.1
 - **Date:** 2026-10-28
 
@@ -3224,23 +3420,23 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Alternatives.** (a) `apps/<app>/chart/` — one step more local, and it interleaves the docker plugin's `**/Dockerfile` glob with a `**/Chart.yaml` glob in the same directories; the deployable unit is a chart, and the app tree is organised by conversion increment, not by deployment. (b) One monolithic chart — R3's failure, the file where component knowledge goes stale. (c) Charts in their own repositories — R2's failure, and ADR 001's; a component change and its chart change stop being one commit. (d) Kustomize — no chart artifact to publish (R7) and env-var text substitution where the components need typed, validated values.
 
-**Consequences:** `charts/AGENTS.md` carries the chart conventions the way `libs/python/AGENTS.md` carries the library recipes. The example apps get no chart — they leave with 6.4 (DD-019). The dashboard is not a chart: it is copied into the server image (`/application/dashboard`, DD-018). Publishing order becomes load-bearing (subcharts before the umbrella, DD-245). Next free DD: 241.
+**Consequences:** `charts/AGENTS.md` carries the chart conventions the way `libs/python/AGENTS.md` carries the library recipes. The example apps get no chart — they leave with 6.4 (DD-019). The dashboard is not a chart: it is copied into the server image (`/application/dashboard`, DD-018). Publishing order becomes load-bearing (subcharts before the umbrella, DD-288). Next free DD: 241.
 
-### DD-241 — Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts`
+### DD-284 — Helm targets are inferred from `Chart.yaml` by a plugin mirroring `docker.ts`
 
-- **Status:** Superseded by DD-250 (the inference and the plugin stand; the separate `<chart>-chart` PROJECT does not — targets merge onto the owner)
+- **Status:** Superseded by DD-293 (the inference and the plugin stand; the separate `<chart>-chart` PROJECT does not — targets merge onto the owner)
 - **Increment:** 10.1
 - **Date:** 2026-10-28
 
 **Decision.** `tools/plugins/helm.ts` infers, for every `charts/**/Chart.yaml`, an Nx project named `<chart>-chart` (tagged `helm`) with `helm-lint`, `helm-template` (`local`/`ci` configurations) and `helm-publish` (`--namespace oci://ghcr.io/aureliusenterprise/charts`, `version` default `local`, publish `latest`, CI passes `--version $VERSION`) — the option, configuration, and metadata shape of `tools/plugins/docker.ts`.
 
-**Reason.** ADR 021 (a technology joins by recipe: discovered, gated, releasable, removable in one pass) and DD-240's R7. Inference makes charts graph-visible, so `nx affected -t helm-lint` gates a chart change and `nx run-many -t helm-publish` releases them — the same two commands that already carry images. The docker plugin is the house pattern; a second shape for the same job costs review attention.
+**Reason.** ADR 021 (a technology joins by recipe: discovered, gated, releasable, removable in one pass) and DD-283's R7. Inference makes charts graph-visible, so `nx affected -t helm-lint` gates a chart change and `nx run-many -t helm-publish` releases them — the same two commands that already carry images. The docker plugin is the house pattern; a second shape for the same job costs review attention.
 
 **Alternatives.** (a) One root `helm` project looping charts in a shell script — invisible to `affected`, no per-chart cache, no per-chart target to compose. (b) A `project.json` in each chart — nine manifests to keep in step, where one plugin file infers all nine. (c) `@nx/kubernetes` — it generates kustomize scaffolding, not Helm targets.
 
-**Consequences.** The validate job adds `nx affected -t helm-lint helm-template` (level 0: no cluster, no registry, no SOPS key — helm 4.3.1 is in the dev container, which is the CI runner image, so nothing installs). Release grouping picks chart projects into the version plan (DD-245). The plugin's commands are helm 4 flags; a helm 3 operator can lint the charts but the publish path assumes helm 4's OCI push. Next free DD: 242.
+**Consequences.** The validate job adds `nx affected -t helm-lint helm-template` (level 0: no cluster, no registry, no SOPS key — helm 4.3.1 is in the dev container, which is the CI runner image, so nothing installs). Release grouping picks chart projects into the version plan (DD-288). The plugin's commands are helm 4 flags; a helm 3 operator can lint the charts but the publish path assumes helm 4's OCI push. Next free DD: 242.
 
-### DD-242 — The edge is Gateway API, not ingress-nginx
+### DD-285 — The edge is Gateway API, not ingress-nginx
 
 - **Status:** Accepted
 - **Increment:** 10.1
@@ -3252,9 +3448,9 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Alternatives.** (a) ingress-nginx — retired; its snippet annotations are the security debt the retirement names. (b) Traefik, Kong, Moov — capable, and each makes its own CRDs and policy vocabulary a chart dependency, so portability costs a value per controller; as a GatewayClass implementation each is a value swap. (c) LoadBalancer Services only — two browser-reachable hosts (webapp, Keycloak) on one address needs host routing. (d) Istio — a mesh sidecar model replaces the pinned-CA trust the components ship with (ADR 039, DD-234) and adds a data plane to operate for a policy set already implemented in nginx.
 
-**Consequences.** A GatewayClass is a cluster prerequisite, installed by the install script and named in the runbook (10.4). TLS terminates at the gateway and the webapp→server hop stays TLS (DD-243's per-service certificates). Routing stays coarse: one host to one service, because the webapp's `/api/` and `/otel/` proxy is the tested data path (DD-142) — the gateway does not duplicate it. Next free DD: 243.
+**Consequences.** A GatewayClass is a cluster prerequisite, installed by the install script and named in the runbook (10.4). TLS terminates at the gateway and the webapp→server hop stays TLS (DD-286's per-service certificates). Routing stays coarse: one host to one service, because the webapp's `/api/` and `/otel/` proxy is the tested data path (DD-142) — the gateway does not duplicate it. Next free DD: 243.
 
-### DD-243 — TLS trust is cert-manager issuers; each pinned CA is a ConfigMap of the trust root
+### DD-286 — TLS trust is cert-manager issuers; each pinned CA is a ConfigMap of the trust root
 
 - **Status:** Accepted
 - **Increment:** 10.1
@@ -3268,7 +3464,7 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** cert-manager is a prerequisite of every cluster (install script, runbook). Consumers that read the CA at boot (Elasticsearch, Keycloak) need a restart hook when the CA rotates — recorded for 10.2/10.3. A private root is the default, so the cluster's trust set is closed and enumerable; swapping `issuerRef` to ACME changes the browser certificates only, because internal consumers pin the internal issuer's CA. Next free DD: 244.
 
-### DD-244 — The umbrella owns shared secrets, generated at install and preserved on upgrade
+### DD-287 — The umbrella owns shared secrets, generated at install and preserved on upgrade
 
 - **Status:** Accepted
 - **Increment:** 10.1
@@ -3282,7 +3478,7 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** `helm uninstall` deletes the credentials, so the runbook names the backup duty with ADR 026/028 and the rotation procedure (10.4); retrieval is `kubectl get secret -o jsonpath`. Talisman and pre-commit see no secrets because none are committed. A deployment that wants per-environment secrets in its own store sets them in values and gets the same preservation. Next free DD: 245.
 
-### DD-245 — The umbrella pins its component charts to its own version; chart version equals release version
+### DD-288 — The umbrella pins its component charts to its own version; chart version equals release version
 
 - **Status:** Accepted
 - **Increment:** 10.1
@@ -3294,9 +3490,9 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Alternatives.** (a) Caret/range pins — the drift generator this decision exists to refuse. (b) `file://` dependencies only — the umbrella would carry tarballs and a component chart could not be installed standalone from the registry (a deployment standing up Keycloak alone for a staging test). (c) Independent chart versioning — a chart fix ships without a release, so "the release" stops naming what runs; R2's failure, and the one ADR 019 forbids.
 
-**Consequences.** Charts join the release group, so Nx release bumps them with the rest (DD-241); a chart-only fix costs a release — the deliberate price of R2, and the same price the images already pay. Development installs can use the local tree (umbrella `file://` dependencies behind a values switch) so chart hacking needs no publish; publish ordering is subcharts → umbrella, checked by the verify step 10.4 adds. Next free DD: 246.
+**Consequences.** Charts join the release group, so Nx release bumps them with the rest (DD-284); a chart-only fix costs a release — the deliberate price of R2, and the same price the images already pay. Development installs can use the local tree (umbrella `file://` dependencies behind a values switch) so chart hacking needs no publish; publish ordering is subcharts → umbrella, checked by the verify step 10.4 adds. Next free DD: 246.
 
-### DD-246 — The chart gate renders each chart's own values files; the release refreshes Chart.lock
+### DD-289 — The chart gate renders each chart's own values files; the release refreshes Chart.lock
 
 - **Status:** Accepted
 - **Increment:** 10.1
@@ -3306,67 +3502,67 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Reason.** Stacked (`-f a.yaml -f b.yaml`) renders only the umbrella's combination; a component chart's own overlay pair (test values + environment) is a combination no deployment runs, and stacking every chart's files in one command hides which file breaks. Separate renders name the failing file. The lock refresh exists because `Chart.lock` records the resolved dependency versions and a digest over them: a release that bumps the component charts leaves it stale, and only helm computes the digest — the tree is flushed to disk by the time the hook runs, so `helm dep update` is the only writer that can produce a valid lock.
 
-**Alternatives.** (a) One stacked render — fails the naming-the-file goal and makes a component chart's CI green without its own contract ever rendering. (b) Gitignore `Chart.lock` — helm's own contract wants the lock committed (`helm dep build` verifies against it); an unlocked install resolves dependencies at install time, which is DD-245's drift generator re-opened. (c) A `helm-lock` Nx target — a release-time action, not a developer one; the version-actions hook fires exactly when the lock goes stale.
+**Alternatives.** (a) One stacked render — fails the naming-the-file goal and makes a component chart's CI green without its own contract ever rendering. (b) Gitignore `Chart.lock` — helm's own contract wants the lock committed (`helm dep build` verifies against it); an unlocked install resolves dependencies at install time, which is DD-288's drift generator re-opened. (c) A `helm-lock` Nx target — a release-time action, not a developer one; the version-actions hook fires exactly when the lock goes stale.
 
 **Consequences.** The gate's task count grows with the values files a chart ships (20 tasks for 11 charts today); every chart that gains an overlay gains a render. The lock refresh runs in `nx release version` only (a dry run skips it, and the `--dry-run` flag's tree is empty), so the version commit carries a valid lock. The plugin's target command is generated at graph-build time from the files on disk — adding an overlay changes the task's command, which is a cache miss. Next free DD: 247.
 
-### DD-247 — Component charts live next to their projects; helpers are chart-local
+### DD-290 — Component charts live next to their projects; helpers are chart-local
 
-- **Status:** Accepted (supersedes DD-240's `charts/` residence; its one-chart-per-component split, the umbrella, and the OCI publish stand; the umbrella's `charts/` residence is superseded by DD-249)
+- **Status:** Accepted (supersedes DD-283's `charts/` residence; its one-chart-per-component split, the umbrella, and the OCI publish stand; the umbrella's `charts/` residence is superseded by DD-292)
 - **Increment:** 10.1
 - **Date:** 2026-10-28
 
 **Decision.** Each component chart lives in a `helm/` directory inside the project it deploys — `apps/<app>/helm/` for the five apps, `dev/<name>/helm/` for the three infrastructure components. `charts/` keeps the umbrella `aurelius-atlas` only: it is the one chart with no owning project. The two library charts (`atlas-common`, `atlas-aux-api`) are deleted: their helpers are expanded into each chart's own `templates/_helpers.tpl` and template files, keeping the naming convention (`<chart>.fullname`, `<chart>.labels`, …). The umbrella reaches its components through `file://../../apps/…/helm` dependencies; names, pins (CHT-07), and OCI artifacts are unchanged.
 
-**Reason.** The chart's owner is the project's owner: a change to a component's ports, settings env, or probes rides the same PR as the code it deploys, and the PR's diff shows the blast radius (workload + chart) in one place. A library chart is a component with no runtime — nothing runs it, nothing deploys it, and every consumer sits in the same repo — the artificial-abstraction shape this workspace's module rule rejects. 10.1's gate measured the shared surface as small (mostly `required:` guards), so the copies are cheap; DD-240's "chart-to-chart edges in one place" is the umbrella's `Chart.yaml` (the single join) plus the naming convention. The Nx plugin infers targets from a `**/Chart.yaml` glob, so the move is a tooling non-event — zero plugin changes.
+**Reason.** The chart's owner is the project's owner: a change to a component's ports, settings env, or probes rides the same PR as the code it deploys, and the PR's diff shows the blast radius (workload + chart) in one place. A library chart is a component with no runtime — nothing runs it, nothing deploys it, and every consumer sits in the same repo — the artificial-abstraction shape this workspace's module rule rejects. 10.1's gate measured the shared surface as small (mostly `required:` guards), so the copies are cheap; DD-283's "chart-to-chart edges in one place" is the umbrella's `Chart.yaml` (the single join) plus the naming convention. The Nx plugin infers targets from a `**/Chart.yaml` glob, so the move is a tooling non-event — zero plugin changes.
 
-**Alternatives.** (a) Keep the `charts/` tree (DD-240) — the ownership map lives only in docs, and contributors must know to visit a sibling tree. (b) Keep `atlas-common` as the only library — the shared helpers stay shared, at the cost of every chart depending on a project that runs nothing; the convention dedupes what a library would share. (c) Name the directory `chart/` — `helm/` is unambiguous (the Helm convention, parallel to `docker/`-style folders) and reads as the deploy toolchain of the project.
+**Alternatives.** (a) Keep the `charts/` tree (DD-283) — the ownership map lives only in docs, and contributors must know to visit a sibling tree. (b) Keep `atlas-common` as the only library — the shared helpers stay shared, at the cost of every chart depending on a project that runs nothing; the convention dedupes what a library would share. (c) Name the directory `chart/` — `helm/` is unambiguous (the Helm convention, parallel to `docker/`-style folders) and reads as the deploy toolchain of the project.
 
 **Consequences.** Each owning project's `AGENTS.md` documents its chart (layout bullet + a Helm-chart section); `charts/AGENTS.md` covers the umbrella and the shared conventions/gotchas. Component charts are dependency-free, so their `Chart.lock` files are gone; the umbrella's lock regenerates with 8 entries. The prettier/check-yaml template excludes and the gitignore dependency-tarball rules widen from `charts/*/…` to `**/helm/…`. The gate keeps its task count (the libraries contributed two lint tasks). The aux-API deployment/service shape now exists three times (verified byte-identical at the copy); the three charts may drift on purpose — the convention, not code, is the dedupe. Next free DD: 248.
 
-### DD-248 — The Chart.yaml is the chart's whole Nx identity; no chart project.json
+### DD-291 — The Chart.yaml is the chart's whole Nx identity; no chart project.json
 
-- **Status:** Superseded by DD-250 (the no-`project.json` rule and the everything-from-`Chart.yaml` rule stand; the separate `<chart>-chart` PROJECT — the plugin's `name` field — does not)
+- **Status:** Superseded by DD-293 (the no-`project.json` rule and the everything-from-`Chart.yaml` rule stand; the separate `<chart>-chart` PROJECT — the plugin's `name` field — does not)
 - **Increment:** 10.1
 - **Date:** 2026-10-28
 
-**Decision.** A chart ships no `project.json`. The helm plugin reads everything it needs from `Chart.yaml` itself: the project **name** (`<chart>-chart`, from the `name:` field — the same name Helm gives the packaged artifact), `projectType: application`, the `helm` tag, the release `versionActions`, and — for the umbrella — the `implicitDependencies` that drive `helm-publish`'s cascade, derived from the `dependencies:` block. DD-241's inference claim becomes literally true: the chart directory is `Chart.yaml`, `values.yaml`, `templates/`, `tests/`, and nothing else.
+**Decision.** A chart ships no `project.json`. The helm plugin reads everything it needs from `Chart.yaml` itself: the project **name** (`<chart>-chart`, from the `name:` field — the same name Helm gives the packaged artifact), `projectType: application`, the `helm` tag, the release `versionActions`, and — for the umbrella — the `implicitDependencies` that drive `helm-publish`'s cascade, derived from the `dependencies:` block. DD-284's inference claim becomes literally true: the chart directory is `Chart.yaml`, `values.yaml`, `templates/`, `tests/`, and nothing else.
 
 **Reason.** The `project.json` files existed only to carry four fields the plugin could derive, and each was a second statement of a fact `Chart.yaml` already states: the chart name (`name:` = the artifact name = the project name base), the dependency edges (the umbrella's `dependencies:` = the cascade graph = the CHT-07 pins). Two sources of one fact is the drift the conversion workflow bans. The naming suffix is load-bearing, not cosmetic: without it, nine folders all named `helm` would derive colliding project names, and the release's pin lookup (`<project>-chart → chart name`) needs the mapping — deriving it from `Chart.yaml name:` keeps chart and project names equal by construction.
 
-**Alternatives.** (a) Keep the nine `project.json` files — nine manifests echoing facts the manifest of record already carries (DD-241's own rejected alternative (b)). (b) Folder-derived project names (`apps-aurelius-atlas-server-helm`) — stable but verbose, collides on plain `helm` folders, and breaks the `<chart>-chart` naming the CI invocations, docs, and the release pin lookup use. (c) Name the projects from the owning app (`aurelius-atlas-server`) — the chart is a distinct artifact with its own version and OCI repository; the `-chart` suffix keeps the image project and the chart project addressable apart.
+**Alternatives.** (a) Keep the nine `project.json` files — nine manifests echoing facts the manifest of record already carries (DD-284's own rejected alternative (b)). (b) Folder-derived project names (`apps-aurelius-atlas-server-helm`) — stable but verbose, collides on plain `helm` folders, and breaks the `<chart>-chart` naming the CI invocations, docs, and the release pin lookup use. (c) Name the projects from the owning app (`aurelius-atlas-server`) — the chart is a distinct artifact with its own version and OCI repository; the `-chart` suffix keeps the image project and the chart project addressable apart.
 
 **Consequences.** Adding a chart is files only: `Chart.yaml` + values + templates + test values (+ the umbrella's dependency row) — nothing to register. Removing a slice removes one file fewer. The plugin gained two small line-parsers (`name:`, `dependencies[].name`) in chart-yaml-version-actions.ts's no-YAML-library style; the umbrella's dependency list is now load-bearing for the publish cascade as well as for install. Next free DD: 249.
 
-### DD-249 — The umbrella sits at the workspace root: `helm/`
+### DD-292 — The umbrella sits at the workspace root: `helm/`
 
-- **Status:** Accepted (supersedes DD-247's clause that the umbrella is the only resident of `charts/`; the component-chart placement and the no-library-charts rule stand, and DD-240 is superseded the same way)
+- **Status:** Accepted (supersedes DD-290's clause that the umbrella is the only resident of `charts/`; the component-chart placement and the no-library-charts rule stand, and DD-283 is superseded the same way)
 - **Increment:** 10.1
 - **Date:** 2026-10-28
 
-**Decision.** The umbrella chart `aurelius-atlas` lives in `helm/` at the workspace root; the `charts/` directory is gone. The chart tree is now one shape: every chart in the repo is a `helm/` directory — the component charts next to their projects (DD-247), the umbrella at the root. The umbrella's `file://` dependencies shorten one level (`file://../apps/<app>/helm`), and its lock is `helm/Chart.lock`.
+**Decision.** The umbrella chart `aurelius-atlas` lives in `helm/` at the workspace root; the `charts/` directory is gone. The chart tree is now one shape: every chart in the repo is a `helm/` directory — the component charts next to their projects (DD-290), the umbrella at the root. The umbrella's `file://` dependencies shorten one level (`file://../apps/<app>/helm`), and its lock is `helm/Chart.lock`.
 
-**Reason.** DD-247 moved every component chart to its owner; the umbrella has no owning project — it deploys the whole system — so its place is the root. It also completes the naming convention: the chart is the Helm toolchain of "the workspace project", exactly as `apps/<app>/helm/` is of an app. A single-chart directory named `charts/` (plural, one entry) was a vestige of the tree DD-247 dismantled.
+**Reason.** DD-290 moved every component chart to its owner; the umbrella has no owning project — it deploys the whole system — so its place is the root. It also completes the naming convention: the chart is the Helm toolchain of "the workspace project", exactly as `apps/<app>/helm/` is of an app. A single-chart directory named `charts/` (plural, one entry) was a vestige of the tree DD-290 dismantled.
 
-**Alternatives.** (a) Keep `charts/aurelius-atlas/` — DD-247's rationale applied verbatim: an owning scope exists (the workspace), the folder is just `helm/` at root, and the residual `charts/` tree exists only for the umbrella. (b) `helm/aurelius-atlas/` (chart name inside the root dir) — one directory deeper than needed; a chart directory is one chart, and `helm/` at root already says whose.
+**Alternatives.** (a) Keep `charts/aurelius-atlas/` — DD-290's rationale applied verbatim: an owning scope exists (the workspace), the folder is just `helm/` at root, and the residual `charts/` tree exists only for the umbrella. (b) `helm/aurelius-atlas/` (chart name inside the root dir) — one directory deeper than needed; a chart directory is one chart, and `helm/` at root already says whose.
 
 **Consequences.** The plugin needs zero changes (the `**/Chart.yaml` glob finds the root chart; the Nx project root becomes `helm`). The release lock-refresh hook targets `helm/Chart.lock`. The prettier/check-yaml/ gitignore patterns converge on `**/helm/{templates,charts}/` — the `charts/aurelius-atlas/...` special cases are deleted, not widened. The `.helmignore-shared` template moves to `helm/.helmignore-shared`. Next free DD: 250.
 
-### DD-250 — Helm targets merge onto the owning project: a chart is not a project
+### DD-293 — Helm targets merge onto the owning project: a chart is not a project
 
-- **Status:** Accepted (supersedes DD-241 and DD-248: the plugin's inference and the no-`project.json` rule stand, the separate `<chart>-chart` projects do not)
+- **Status:** Accepted (supersedes DD-284 and DD-291: the plugin's inference and the no-`project.json` rule stand, the separate `<chart>-chart` projects do not)
 - **Increment:** 10.1
 - **Date:** 2026-10-28
 
 **Decision.** The helm plugin keys its `createNodes` result at the chart's OWNER root — the chart dir's parent (`apps/<app>/helm` → `apps/<app>`; the root `helm` → `.`) — so Nx shallow-merges `helm-lint`/`helm-template`/ `helm-publish` and the `helm` tag onto the existing project node. No `*-chart` project exists. The plugin sets no `name` (a node's name belongs to the first plugin that claims its root, helm runs before the ecosystem plugins, and naming here would rename the owner) and no `projectType`. The umbrella's dependency edges become `implicitDependencies` on the OWNING projects, resolved by following each `dependencies[]` `repository: file://` path to the chart dir and reading the owner's name (project.json, pyproject.toml, package.json). Release: every chart owner points `release.version.versionActions` at the composite module (`tools/plugins/chart-yaml-version-actions.ts`), which versions the owner's ecosystem manifest AND its `helm/Chart.yaml`, re-pins the umbrella (dependency entries are looked up through the owner name), and refreshes `helm/Chart.lock` — wired from `python.ts` for the uv projects (which overwrites the plugin's same-valued field), from `project.json` for the dev charts, from the plugin at the root project.
 
-**Reason.** The nine `*-chart` projects were graph noise: one chart per project already (DD-247), so the chart project and the app project share a root, a release bump, a CI run, and an owner. A chart change touched two graph nodes; `nx affected -t helm-lint` listed a project no one navigates to, and each app's target list carried `helm-*` beside its own `build`/`test` under a name no one types. Merging by parent root is Nx's documented merge (a same-root inference result adds targets to the existing node), the project.json-override layer is untouched, and CI is target-based (`affected -t helm-lint helm-template`, `run-many -t helm-publish`) so it sees no change. The chart tree, the CHT rules, the pin-equal release (DD-245), and the OCI artifact are untouched — only the graph shape.
+**Reason.** The nine `*-chart` projects were graph noise: one chart per project already (DD-290), so the chart project and the app project share a root, a release bump, a CI run, and an owner. A chart change touched two graph nodes; `nx affected -t helm-lint` listed a project no one navigates to, and each app's target list carried `helm-*` beside its own `build`/`test` under a name no one types. Merging by parent root is Nx's documented merge (a same-root inference result adds targets to the existing node), the project.json-override layer is untouched, and CI is target-based (`affected -t helm-lint helm-template`, `run-many -t helm-publish`) so it sees no change. The chart tree, the CHT rules, the pin-equal release (DD-288), and the OCI artifact are untouched — only the graph shape.
 
-**Alternatives.** (a) Keep the chart projects (DD-241/DD-248) — a stable name per artifact, addressable apart from the image; paid in graph noise and split `affected` output. (b) Folder-derived owner names — not available: `name` is first-plugin-wins, helm runs early, and the plugin has no project-name map in the v1 context; the parent's name comes from its own manifests, read the same way the release's pin lookup reads them. (c) Keep the chart projects and alias them in `nx.json` — an artificial abstraction the tree rejects (DD-247).
+**Alternatives.** (a) Keep the chart projects (DD-284/DD-291) — a stable name per artifact, addressable apart from the image; paid in graph noise and split `affected` output. (b) Folder-derived owner names — not available: `name` is first-plugin-wins, helm runs early, and the plugin has no project-name map in the v1 context; the parent's name comes from its own manifests, read the same way the release's pin lookup reads them. (c) Keep the chart projects and alias them in `nx.json` — an artificial abstraction the tree rejects (DD-290).
 
 **Consequences.** Release needed a composite: chart version writes, umbrella pin refresh, and the lock hook all lived on the chart projects' version-actions and now run on the owners' — the composite extends `@nxlv/python`'s actions for pyproject owners, treats `Chart.yaml` as the manifest for chart-only owners, and maps umbrella pins by owner name through the `repository:` paths (the dependency parser reads entries, not line-adjacent pairs, so a `repository:` after `version:` resolves). The `-chart` suffix and its pin-lookup convention are gone — the chart name lives only in `Chart.yaml`/`repository:`. `npx nx show project aurelius-atlas-server` lists the chart targets. The release dry-run keeps its shape: 9 Chart.yaml writes + 8 umbrella pin updates. Docs' per-chart commands become `npx nx run <owner>:helm-template`. The dev charts' `project.json` swap noop actions for the composite (their chart is their version manifest). Next free DD: 251.
 
-### DD-251 — The minikube trial findings in the aux charts land in 10.3
+### DD-294 — The minikube trial findings in the aux charts land in 10.3
 
 - **Status:** Accepted
 - **Increment:** 10.1 (trial) · fixed in 10.3
@@ -3374,7 +3570,7 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Decision.** A trial `helm install` of the umbrella on minikube (the three aux APIs — the only real workloads 10.1 ships — with locally built images and self-signed `kubernetes.io/tls` Secrets) surfaced two defects in the aux charts' rendered Deployments. Neither is fixed in 10.1; both are scheduled into 10.3, where the app charts get their real workload wiring:
 
-1. **The CA file has no backing store.** The aux charts' default settings env points `AUTH_CA_FILE`/`OTEL_CA_FILE` at `/etc/aurelius-atlas/tls/ca.crt`, but the TLS volume mounts only a `kubernetes.io/tls` Secret — which carries only `tls.crt`/`tls.key` — so a spec-conformant install crash-loops at boot on pydantic's `path_not_file`. The `tls.caConfigMap`/`tls.caPath` values the charts already declare are dead: the Deployment template never reads them. 10.3 wires the mount for real — cert-manager issues each service's Certificate from the self-signed ClusterIssuer (DD-243) and the issuer's `ca.crt` reaches the pod through the declared CA value (Secret or ConfigMap), and the settings default and the mount become consistent.
+1. **The CA file has no backing store.** The aux charts' default settings env points `AUTH_CA_FILE`/`OTEL_CA_FILE` at `/etc/aurelius-atlas/tls/ca.crt`, but the TLS volume mounts only a `kubernetes.io/tls` Secret — which carries only `tls.crt`/`tls.key` — so a spec-conformant install crash-loops at boot on pydantic's `path_not_file`. The `tls.caConfigMap`/`tls.caPath` values the charts already declare are dead: the Deployment template never reads them. 10.3 wires the mount for real — cert-manager issues each service's Certificate from the self-signed ClusterIssuer (DD-286) and the issuer's `ca.crt` reaches the pod through the declared CA value (Secret or ConfigMap), and the settings default and the mount become consistent.
 2. **lineage-model cannot boot its own defaults.** `atlas_base_url` and `data2model_url` are required settings with no defaults, and the chart renders neither, so the rendered Deployment always fails validation. 10.3 sets them from the in-cluster joins (`https://<server-svc>:21000/`, `https://<data2model-svc>:21001/` — the sibling Service the same chart renders), the same increment that wires the OTEL endpoints the values comments already promise.
 
 **Reason.** 10.1's stated boundary is the foundation: charts render, lint, version, and publish, and the acceptance gate is render-level (CHT-06). Both fixes are workload-wiring changes — a trust mount and a settings join — and the trial shows the aux charts were skipped over by the render gate exactly where 10.3's scope line already says they get filled in (the three auxiliary APIs, CHT-20..34). Fixing them under 10.1 would land half the trust model (no cert-manager yet) and duplicate 10.3's edits.
@@ -3383,7 +3579,29 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** 10.3's spec must carry both as rules (CA mount for every TLS app; lineage-model upstream URLs) with render assertions, and its minikube install must boot the aux Deployments with no out-of-band values — the `/tmp`-style overrides this trial needed (an extra `ca.crt` in the TLS Secret, an `extraEnv` file for the two URLs) are the acceptance test's negative space. The trial itself passed otherwise: install/upgrade reached `deployed`, all three rollouts went Ready on the HTTPS `/liveness` probes, and the derived `AUTH_SERVER_URL` matched the overlay domain. Next free DD: 252.
 
-### DD-252 — A stuck pending-install release is cleared by uninstall
+### DD-295. Chart-track id collisions with main renumber above both ranges
+
+- **Status:** Accepted
+- **Increment:** — (merge hygiene; lands with the rebase of the 10.x chart track onto the 4.3–6.1 merges, PRs \#157–\#191)
+- **Date:** 2026-11-01
+
+**Decision.** The 4.3–6.1 track on main (DSL, lineage, glossaries, auth) and the 10.x chart track branched at DD-239/DV-87 and minted ids in parallel: main took DD-240..251 and DV-88..109, the chart track took DD-240..252 (12 colliding ids — the same numbers, different decisions) plus DV-88/89 in its 10.7/10.8 increments, its children continuing at DD-253..282. The rebase renumbers the **chart side of the collision**: DD-240..251 → DD-283..294 in ascending order, and DV-88/89 → DV-110/111 — and this entry (DD-295) records it. Main's ids keep their numbers. The chart track's DD-252..282 already sit above both ranges and are untouched; the 10.1 chain citation `DD-240..252` becomes the explicit list `DD-298, DD-283..294`. The citation sweep rewrote every chart spec, doc, chart template, plugin comment, CI workflow, and test on the chart side; DD-177 is the precedent for the method.
+
+**Reason.** Main's 4.3–6.1 decisions are merged and cited by merged code — they are the accepted record, and the ledger's rule (numbers are never reused, accepted entries are never edited) protects them. The chart track is the in-progress side of the same ledger, so it is the side allowed to move; moving 12+2 ids in one mechanical, reviewable sweep costs less than living with ids that mean two things. The new range starts above the chart track's own DD-282, so the track's later ids keep their citations.
+
+**Consequences.** The rebase of the chart chain onto main is conflict-free for the id ledger: the two tracks occupy disjoint ranges. Every pre-rebase commit message cites the OLD numbers — commit history is not rewritten further, and this appendix is the lookup from a commit's citation to the merged record.
+
+| Old | New | Old | New | Old | New |
+| --- | --- | --- | --- | --- | --- |
+| DD-240 | DD-283 | DD-245 | DD-288 | DD-250 | DD-293 |
+| DD-241 | DD-284 | DD-246 | DD-289 | DD-251 | DD-294 |
+| DD-242 | DD-285 | DD-247 | DD-290 | DV-88 | DV-110 |
+| DD-243 | DD-286 | DD-248 | DD-291 | DV-89 | DV-111 |
+| DD-244 | DD-287 | DD-249 | DD-292 | — | — |
+
+**Addendum (2026-11-01, this merge).** 4.5 (\#194) then minted main's `DD-252`, so the chart entry the paragraph above left in place collided: it moves to `DD-298` — one sweep, same rule. Chart `DD-252` → `DD-298`; main keeps `DD-252`.
+
+### DD-298 — A stuck pending-install release is cleared by uninstall
 
 - **Status:** Accepted
 - **Increment:** 10.1 (trial)
@@ -3391,6 +3609,6 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Decision.** The runbook's install/upgrade sections warn: `helm install --wait` (or `--atomic`) against a workload that never reaches Ready — a crash-loop, a missing Secret — burns the full `--timeout` and leaves the release `pending-install`; every later `helm upgrade` then fails with "another operation (install/upgrade/rollback) is in progress" until `helm uninstall` clears it. Fix the cause, inspect with `helm history`, and uninstall rather than waiting the release out.
 
-**Reason.** Observed twice in the trial of DD-251: the first install timed out on the crash-looping aux pods and the stuck release blocked the fix-and-retry path with a confusing error unrelated to the actual defect. It is helm's documented behaviour, not a chart bug, so it belongs in the runbook, and mid-roadmap installs (subcharts that render no workloads yet, workloads whose wiring lands in a later increment) are exactly when an operator meets it.
+**Reason.** Observed twice in the trial of DD-294: the first install timed out on the crash-looping aux pods and the stuck release blocked the fix-and-retry path with a confusing error unrelated to the actual defect. It is helm's documented behaviour, not a chart bug, so it belongs in the runbook, and mid-roadmap installs (subcharts that render no workloads yet, workloads whose wiring lands in a later increment) are exactly when an operator meets it.
 
 **Consequences.** The runbook gains the note and the `helm history` / `helm uninstall` recovery lines; 10.5's install script scripts the recovery (guard the wait with a pre-flight, or clean up on timeout) rather than discovering it again. Next free DD: 253.
