@@ -23807,6 +23807,36 @@ umbrella HIGH baseline drops 17 → 10; the remainder is the Tier 3 set
 (store, Keycloak + Postgres + its wait init, observability's five
 servers), where a read-only root is a per-workload decision with its own
 render guard — a later increment.</p>
+<p><strong>Follow-up 2 (same PR).</strong> A second pass over the residual findings
+closes every family that is a real-but-cheap posture gap or a verified
+false positive, leaving only the Tier 3 roots deferred (ignore-scoped).
+Real fixes: the ES <code>containerSecurityContext</code> and the coredump-agent init
+gain drop-ALL + <code>runAsNonRoot</code> (uid 1000 is the hardened image's declared
+user) and the agent also gets a read-only root + bounded <code>resources</code>
+(it only <code>cp</code>s its jar); Keycloak's <code>wait-for-postgres</code> init and every
+<code>issuer-wait</code>/<code>resolve-nginx-config</code> init get bounded <code>resources</code> and the
+two write-nothing inits (<code>wait-for-postgres</code>'s bash <code>/dev/tcp</code>, the puller
+<code>issuer-wait</code>) a read-only root; and the five pod securityContexts that
+pinned <code>runAsUser</code>/<code>fsGroup</code> but not <code>runAsGroup</code> gain it (the webapp and
+puller pods already did). That clears KSV-0003/0004/0012/0106 (ES pod),
+KSV-0011/0015/0016/0018 (the four init/wait containers + the agent), and
+KSV-0021 (the five 65532 pods). Verified false positives / house posture
+now ignore-scoped in the policy: KSV-0013 (<code>:latest</code> — a default-values
+render artefact; the release re-pins, CHT-92/93); KSV-0125 (ghcr.io +
+dhi.io registries — the contract test
+<code>test__every_image_is_tagged_aurelius_or_pinned_third_party</code> is the live
+control, Trivy's list just predates both); KSV-0011 (the deliberate
+<code>limits.memory</code>-only / no-CPU-limit posture); KSV-01010 (ConfigMap
+"secrets" that are <code>${env:…}</code> refs, <code>tls/*.pem</code> paths, and CSP/dashboard
+substrings — an allowlist of the six named ConfigMaps); KSV-0020/0021 for
+the three image-user containers (ES uid 1000, Postgres uid 70 — non-root,
+fixed by the upstream images, DD-257). After this pass the umbrella render
+reports 0 HIGH/MED/LOW and all nine charts report 0; the eight Tier 3
+stateful roots (elasticsearch, keycloak, postgres, grafana, loki,
+prometheus, tempo, collector) are the single remaining family, silenced by
+name and retiring one-by-one as each gets its logs/tmp emptyDirs in a
+cluster-validated increment. Live-validated on the minikube hand-check
+(cluster green: the read-only/drop-ALL/group/resource flips all boot).</p>
 
 
 
