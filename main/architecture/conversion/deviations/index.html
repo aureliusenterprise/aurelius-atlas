@@ -4115,6 +4115,8 @@
       
         
       
+        
+      
     
     
     
@@ -5344,6 +5346,33 @@
     
   
   5.3b Business metadata
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-business-metadata-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3c Business metadata import
 
     
   </span>
@@ -9403,6 +9432,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Adding or updating business attributes with a business metadata given as <code>null</code>, or <code>businessmetadata/{bmName}</code> without a body, fails on a null value: an internal error</td>
 <td>Taken as that business metadata given no values</td>
 <td>A null map is a client's way of saying none; failing on it helps no one</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>DV-119</td>
+<td>Entities</td>
+<td>A business metadata import applies and lists its entities in a <code>HashMap</code>'s order; an import without a file part fails on the missing part</td>
+<td>In the order the file first names them; no file part is <code>FILE_NAME_NOT_FOUND</code></td>
+<td>Hash order is no meaning; a missing file is a client error, as a blank file name is</td>
 <td>5.3</td>
 </tr>
 </tbody>
