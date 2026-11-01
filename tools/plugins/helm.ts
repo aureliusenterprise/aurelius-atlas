@@ -141,7 +141,13 @@ function createNodesInternal(
 
     const targets: Record<string, unknown> = {
         [lintTargetName]: {
-            command: `helm lint ${chartDir} --namespace atlas`,
+            // Vendored like helm-template (DD-299): the umbrella's subchart
+            // tarballs are gitignored, so a fresh checkout lints WITHOUT the
+            // dependency default values and the umbrella's own templates
+            // nil-pointer on `(index .Values "atlas-keycloak").realm.name`.
+            // `helm dep update` is a no-op for the dependency-free component
+            // charts, and its file:// repositories never leave the machine.
+            command: `helm dep update ${chartDir} >/dev/null && helm lint ${chartDir} --namespace atlas`,
             metadata: {
                 description: "Lint the Helm chart (CHT-06: no cluster needed)",
             },
