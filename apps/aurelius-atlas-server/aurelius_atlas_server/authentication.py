@@ -79,6 +79,12 @@ def user_of(claims: dict[str, Any], *, principal_claim: str, groups_claim: str) 
     return User(str(name), tuple(str(group) for group in groups or []))
 
 
+def acting_user(request: Request) -> str | None:
+    """The name of the user the request acts as, whom its writes and audits name (USR-01, AUT-03)."""
+    user: User | None = getattr(request.state, "user", None)
+    return None if user is None else user.name
+
+
 def csrf_token() -> str:
     """A new random token of 20 letters and digits, as ``AdminResource.getUserProfile`` makes one."""
     return "".join(secrets.choice(_CSRF_ALPHABET) for _ in range(CSRF_TOKEN_LENGTH))

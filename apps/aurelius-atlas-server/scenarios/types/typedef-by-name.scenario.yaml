@@ -24,8 +24,8 @@ stages:
               enumDefs:
                   - category: ENUM
                     guid: "a random UUID"
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                     createTime: 0
                     updateTime: 0
                     version: 1
@@ -43,9 +43,6 @@ stages:
               - "$.enumDefs[0].createTime"
               - "$.enumDefs[0].updateTime"
           save: { guid: "$.enumDefs[0].guid" }
-          deviations:
-              - { id: DV-06, path: "$.enumDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.enumDefs[0].updatedBy", absent: true }
     - name: found by its name
       request: { method: GET, url: /api/atlas/v2/types/typedef/name/scenario_by_name_colour }
       response:
@@ -54,8 +51,8 @@ stages:
           json:
               category: ENUM
               guid: "{guid}"
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
               createTime: 0
               updateTime: 0
               version: 1
@@ -64,9 +61,6 @@ stages:
               typeVersion: "1.0"
               elementDefs: [{ value: RED, ordinal: 1 }]
           volatile: ["$.createTime", "$.updateTime"]
-          deviations:
-              - { id: DV-06, path: $.createdBy, absent: true }
-              - { id: DV-06, path: $.updatedBy, absent: true }
     - name: a built-in type has no definition
       request: { method: GET, url: /api/atlas/v2/types/typedef/name/string }
       response:

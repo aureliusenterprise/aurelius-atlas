@@ -76,17 +76,14 @@ stages:
                     relationshipAttributeDefs: []
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs: []
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[*].guid
               - $.entityDefs[*].createTime
               - $.entityDefs[*].updateTime
-          deviations:
-              - { id: DV-06, path: "$.entityDefs[0].createdBy", absent: true }
-              - { id: DV-06, path: "$.entityDefs[0].updatedBy", absent: true }
     - name: create three tables of sizes 1 to 3
       request:
           method: POST

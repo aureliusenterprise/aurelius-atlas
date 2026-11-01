@@ -30,5 +30,5 @@ def models_dir(models_dir: Path, tmp_path: Path, request: pytest.FixtureRequest)
 
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
 async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:
-    """Each parity scenario passes against the application in-process (ADR 052)."""
-    await run_scenario(scenario, client)
+    """Each parity scenario passes against the application in-process (ADR 052), as the user ``admin`` (USR-04)."""
+    await run_scenario(scenario, client, {"user": "admin"})

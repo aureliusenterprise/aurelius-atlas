@@ -99,8 +99,8 @@ stages:
                           isLegacyAttribute: false
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
                   - guid: a random UUID
                     createTime: 0
                     updateTime: 0
@@ -127,8 +127,8 @@ stages:
                           isLegacyAttribute: false
                     businessAttributeDefs: {}
                     category: ENTITY
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               relationshipDefs:
                   - guid: a random UUID
                     createTime: 0
@@ -163,8 +163,8 @@ stages:
                         cardinality: SET
                         isLegacyAttribute: false
                     category: RELATIONSHIP
-                    createdBy: admin
-                    updatedBy: admin
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
               businessMetadataDefs: []
           volatile:
               - $.entityDefs[*].guid
@@ -173,25 +173,6 @@ stages:
               - $.relationshipDefs[0].guid
               - $.relationshipDefs[0].createTime
               - $.relationshipDefs[0].updateTime
-          deviations:
-              - id: DV-06
-                path: $.entityDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[0].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].createdBy
-                absent: true
-              - id: DV-06
-                path: $.entityDefs[1].updatedBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].createdBy
-                absent: true
-              - id: DV-06
-                path: $.relationshipDefs[0].updatedBy
-                absent: true
     - name: create one entity of each
       request:
           method: POST
@@ -280,8 +261,8 @@ stages:
               label: r:scenario_rel_{run}
               propagateTags: ONE_TO_TWO
               status: ACTIVE
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
               createTime: 0
               updateTime: 0
               version: 0
@@ -291,13 +272,6 @@ stages:
               - $.guid
               - $.createTime
               - $.updateTime
-          deviations: &id004
-              - id: DV-15
-                path: $.createdBy
-                absent: true
-              - id: DV-15
-                path: $.updatedBy
-                absent: true
           save:
               rel: $.guid
     - name: relating them again with the same label is refused
@@ -348,8 +322,8 @@ stages:
                   label: r:scenario_rel_{run}
                   propagateTags: ONE_TO_TWO
                   status: ACTIVE
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
                   createTime: 0
                   updateTime: 0
                   version: 0
@@ -358,13 +332,6 @@ stages:
           volatile:
               - $.relationship.createTime
               - $.relationship.updateTime
-          deviations:
-              - id: DV-15
-                path: $.relationship.createdBy
-                absent: true
-              - id: DV-15
-                path: $.relationship.updatedBy
-                absent: true
     - name: read it with the headers of its ends
       request:
           method: GET
@@ -385,8 +352,8 @@ stages:
                   label: r:scenario_rel_{run}
                   propagateTags: ONE_TO_TWO
                   status: ACTIVE
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
                   createTime: 0
                   updateTime: 0
                   version: 0
@@ -420,13 +387,6 @@ stages:
           volatile:
               - $.relationship.createTime
               - $.relationship.updateTime
-          deviations:
-              - id: DV-15
-                path: $.relationship.createdBy
-                absent: true
-              - id: DV-15
-                path: $.relationship.updatedBy
-                absent: true
     - name: update its attribute
       request:
           method: PUT
@@ -449,8 +409,8 @@ stages:
               label: r:scenario_rel_{run}
               propagateTags: ONE_TO_TWO
               status: ACTIVE
-              createdBy: admin
-              updatedBy: admin
+              createdBy: "{user}"
+              updatedBy: "{user}"
               createTime: 0
               updateTime: 0
               version: 0
@@ -459,7 +419,6 @@ stages:
           volatile:
               - $.createTime
               - $.updateTime
-          deviations: *id004
     - name: its type may not change
       request:
           method: PUT
@@ -498,8 +457,8 @@ stages:
                   label: r:scenario_rel_{run}
                   propagateTags: ONE_TO_TWO
                   status: DELETED
-                  createdBy: admin
-                  updatedBy: admin
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
                   createTime: 0
                   updateTime: 0
                   version: 0
@@ -508,13 +467,6 @@ stages:
           volatile:
               - $.relationship.createTime
               - $.relationship.updateTime
-          deviations:
-              - id: DV-15
-                path: $.relationship.createdBy
-                absent: true
-              - id: DV-15
-                path: $.relationship.updatedBy
-                absent: true
     - name: and cannot be deleted again
       request:
           method: DELETE
