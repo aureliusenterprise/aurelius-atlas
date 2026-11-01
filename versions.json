@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase6-6.2b-authorization-entities",
+    "title": "phase6-6.2b-authorization-entities",
+    "aliases": []
+  },
+  {
     "version": "phase6-6.2-authorization",
     "title": "phase6-6.2-authorization",
     "aliases": []
