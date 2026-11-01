@@ -1,7 +1,12 @@
 name: Publish Documentation (PR)
 
+# Per-PR scope (CHT-102): previews of different PRs run freely, and a new
+# push to the same PR queues behind its own last run — never another PR's
+# run and never a public-docs deploy (docs-public). No cancel-in-progress:
+# mike deploy --push is a git transaction, and half-pushed versions are
+# worse than a queued preview.
 concurrency:
-    group: "docs"
+    group: "docs-pr-${{ github.event.pull_request.number }}"
 
 # Default-deny: mike deploy --push writes the public-docs branch
 # (contents:write) and the PR comment step posts through GITHUB_TOKEN
@@ -16,7 +21,13 @@ on:
             - "**"
 
 jobs:
+    # Same-repo PR guard (CHT-102, pentest L6a): this workflow writes the
+    # public-docs branch and comments on PRs with GITHUB_TOKEN — a fork PR
+    # must not run it at all. A fork's preview is built by a maintainer
+    # pushing the branch into this repo (the preview name is the branch).
     publish:
+        if: github.event.pull_request.head.repo.full_name == github.repository
+
         runs-on: ubuntu-latest
 
         steps:

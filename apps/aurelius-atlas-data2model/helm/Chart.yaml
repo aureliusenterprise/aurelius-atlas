@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-data2model
+description: "The data2model API: tabular rows in, archimate3 model out (increment 8.1, ADR 055)."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas

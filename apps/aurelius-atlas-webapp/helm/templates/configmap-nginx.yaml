@@ -1,0 +1,19 @@
+{{/*
+The nginx config ConfigMap (CHT-24): the chart asset
+helm/files/nginx.conf.template, a byte-copy of the app's nginx.conf.template
+(drift-guarded by tests/test__charts_webapp.py, the DD-256 pattern). Helm
+performs no substitution here — the file ships raw and a resolve-nginx-config
+init container fills the placeholders at pod start (DD-262): one of them is
+the generated ingest bearer, and Helm-rendering it would re-draw the
+umbrella's value out of sync with the Secret (DD-256's race).
+*/}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ include "atlas-webapp.fullname" . }}-nginx
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-webapp.labels" . | nindent 8 }}
+data:
+    nginx.conf.template: |
+        {{- .Files.Get "files/nginx.conf.template" | nindent 8 }}

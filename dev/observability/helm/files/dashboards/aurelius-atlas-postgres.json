@@ -1,0 +1,492 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "The shared dev Postgres (service 'postgres', scraped by the dev-postgres metrics-puller). Stat cards are live gauges; activity charts count work per time bucket, so dev traffic shows small whole numbers rather than fractional per-second rates.",
+    "id": null,
+    "panels": [
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Client connections open to the server right now (live gauge), by state. The dev stack keeps pools open from FastAPI, Keycloak and the puller itself.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_backends{exported_job=\"dev-postgres\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Backends",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Total on-disk size of the databases this server hosts (live gauge).",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "bytes"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_db_size_bytes{exported_job=\"dev-postgres\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "DB Size",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Number of tables across all databases (live gauge). Jumps when an app runs migrations.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_table_count{exported_job=\"dev-postgres\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Tables",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Number of databases on the cluster (live gauge).",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 5,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "area",
+                "reduceOptions": {
+                    "calcs": ["lastNotNull"]
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_database_count{exported_job=\"dev-postgres\"}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Databases",
+            "type": "stat"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Open client connections over time (live gauge). Changes when apps start/stop or their pools resize; a steady line means stable workloads.",
+            "fieldConfig": {
+                "defaults": {
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 5
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_backends{exported_job=\"dev-postgres\"}",
+                    "legendFormat": "backends",
+                    "refId": "A"
+                }
+            ],
+            "title": "Backends",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Rows inserted / updated / deleted / fetched per time bucket (Prometheus increase()). Whole counts, not a per-second rate - most dev activity is e2e runs and OpenMetadata syncs.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 5
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (operation) (increase(postgresql_operations_total{exported_job=\"dev-postgres\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{operation}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Row Operations (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Rows read per time bucket (increase()), split into live-tuple reads and analyzed (dead-tuple) reads. A large analyze share means tables need vacuuming.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 5
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "sum by (state) (increase(postgresql_rows{exported_job=\"dev-postgres\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{state}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Rows Returned (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Committed and rolled-back transactions per time bucket (increase()). Rollbacks climbing with commits usually means app retries or conflicting migrations.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 13
+            },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "increase(postgresql_commits_total{exported_job=\"dev-postgres\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "commits",
+                    "refId": "A"
+                },
+                {
+                    "expr": "increase(postgresql_rollbacks_total{exported_job=\"dev-postgres\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "rollbacks",
+                    "refId": "B"
+                }
+            ],
+            "title": "Commits vs Rollbacks (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Index scans started per time bucket (increase()), by table. Reads climbing while index scans stay flat points at sequential-scan queries.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 13
+            },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "increase(postgresql_index_scans_total{exported_job=\"dev-postgres\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "scans/s",
+                    "refId": "A"
+                }
+            ],
+            "title": "Index Scans (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Background-writer checkpoints per time bucket (increase()). Checkpoints flush dirty pages to disk; a few is normal, a burst means write pressure.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 13
+            },
+            "id": 10,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "increase(postgresql_bgwriter_checkpoint_count_total{exported_job=\"dev-postgres\"}[$__interval])",
+                    "interval": "1m",
+                    "legendFormat": "{{type}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Checkpoints (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "On-disk size over time: whole databases plus the biggest tables and indexes (live gauges, bytes). Growth usually follows e2e runs that insert test rows.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "bytes"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 24,
+                "x": 0,
+                "y": 21
+            },
+            "id": 11,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "expr": "postgresql_db_size_bytes{exported_job=\"dev-postgres\"}",
+                    "legendFormat": "database",
+                    "refId": "A"
+                },
+                {
+                    "expr": "postgresql_table_size_bytes{exported_job=\"dev-postgres\"}",
+                    "legendFormat": "tables",
+                    "refId": "B"
+                },
+                {
+                    "expr": "postgresql_index_size_bytes{exported_job=\"dev-postgres\"}",
+                    "legendFormat": "indexes",
+                    "refId": "C"
+                }
+            ],
+            "title": "Storage (bytes)",
+            "type": "timeseries"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "postgres", "observability"],
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Postgres (app)",
+    "uid": "aurelius-postgres-obsv",
+    "version": 1
+}

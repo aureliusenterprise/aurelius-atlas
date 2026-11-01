@@ -1,0 +1,271 @@
+# Aurelius Atlas umbrella chart — values contract (CHT-03).
+#
+# This file is the system's deployment surface: everything an environment may
+# change. Component knowledge lives in the component charts; the umbrella owns
+# the joins — the edge, the trust model, the shared secrets, and `global`.
+#
+# Conventions:
+#   * A value left "" takes the default the chart computes (see comments);
+#     a value set here wins. `helm lint`/`helm template` render standalone.
+#   * No value names a cloud provider (CHT-04); environment differences are
+#     `environments/*.yaml` overlays, never chart forks.
+
+global:
+    # Namespace the system installs into. Subcharts inherit it; a component
+    # installed standalone defaults to its release namespace.
+    namespace: atlas
+
+    # Base domain for the browser-facing hosts. The issuer URL, the Keycloak
+    # hostname, and the host certificates all derive from it, so a deployment
+    # sets exactly one value to retarget a cluster.
+    # WARNING (runbook): Keycloak pins its issuer at first boot — set the final
+    # hostname before the first install; changing it afterwards invalidates
+    # issued tokens and needs a realm rebuild.
+    domain: atlas.localhost
+
+    # Labels added to every resource of every chart.
+    labels: {}
+
+    image:
+        # Image registry for the Aurelius images: <registry>/<namespace>/<name>:<tag>.
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        # Tag override for all Aurelius images; "" takes each chart's
+        # appVersion, which the release sets to the release tag (DD-288).
+        tag: ""
+        # Pull secrets, e.g. [{name: dhi-pull}] for dhi.io base images on
+        # clusters without a pull-through cache. Created outside the chart
+        # (runbook) — the chart consumes names, never credentials.
+        pullSecrets: []
+
+    # StorageClass for every volume claim (store, Keycloak DB, observability);
+    # "" takes the cluster default.
+    storageClass: ""
+
+    # The DNS resolver the webapp's nginx uses for per-request upstream
+    # resolution. Empty renders the chart default (kube-dns cluster IP
+    # 10.96.0.10, the ClusterIP default many clusters use); the runbook reads
+    # the live value with `kubectl -n kube-system get svc kube-dns`.
+    dnsResolver: ""
+
+    issuer:
+        # Keycloak issuer root the components verify tokens against;
+        # "" defaults to https://keycloak.<domain> (the keycloak host below).
+        url: ""
+
+    # The Keycloak realm the whole system authenticates against (CHT-74):
+    # every component's issuer URL carries /realms/<realm>, and the Keycloak
+    # chart imports files/<realm>.json from its chart directory. The default
+    # is the hardened production realm; `master` is the development escape
+    # hatch (demo users, localhost redirect URIs — DD-273, never on a
+    # cluster). WARNING (runbook): Keycloak pins its issuer at first boot —
+    # the realm name is part of the issuer, so set it before the first
+    # install; renaming afterwards needs a realm rebuild.
+    realm: aurelius-atlas
+
+    trust:
+        # Build the private trust root in-cluster: a self-signed bootstrap
+        # Issuer signs one CA Certificate, and a CA-type Issuer of that CA
+        # signs every leaf (DD-286 as corrected by DD-259). Turn off to bring
+        # an existing issuer (ACME, a private CA) instead.
+        createIssuer: true
+        # The issuer every Certificate in the system is signed by. The
+        # chart-managed chain is namespaced (`Issuer`) — a ClusterIssuer
+        # cannot read a CA Secret the chart writes into the app namespace
+        # (DD-259). A bring-your-own issuer is often a ClusterIssuer (gke.yaml).
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+        # Secret carrying the trust root (key: ca.crt) the components pin by
+        # file. "" defaults to "<issuerRef.name>-ca" — the Secret the CA
+        # Certificate renders under createIssuer, and the one caBundle fills
+        # when the issuer is external and its CA is not in-cluster.
+        caSecretName: ""
+        # PEM of the trust root, installed as a Secret when set; overrides
+        # caSecretName. For ACME/private-CA issuers whose CA is not on-cluster.
+        caBundle: ""
+
+    gateway:
+        # The Gateway API edge (CHT-29): Gateway + HTTPRoutes + the browser
+        # Certificate. Off for deployments that expose nothing through it
+        # (port-forward only); the GatewayClass itself is a cluster
+        # prerequisite either way (runbook).
+        enabled: true
+        # GatewayClass serving the edge (DD-285). Envoy Gateway on a stock
+        # cluster; a managed cluster names its own implementation
+        # ("gke.l4-gateway-netsvc" et al.) — the chart renders the same API.
+        className: envoy-gateway
+        # Port every listener binds (TLS terminates at the gateway; the
+        # webapp→server hop stays TLS).
+        port: 443
+        # The browser-host Certificate (<release>-edge-tls, CHT-29). The
+        # same durations as the component charts' leaves.
+        certificate:
+            duration: 2160h
+            renewBefore: 720h
+
+    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285). Each host
+    # joins to one backend Service; `service`/`port` override the name-rule
+    # join and the component's service port when a deployment diverges.
+    hosts:
+        atlas:
+            enabled: true
+            # "" defaults to atlas.<domain> — the webapp: SPA, /config.json,
+            # and the /api and /otel proxies (the tested data path, DD-142).
+            host: ""
+            # Backend: the webapp Service ("" = the CHT-13 name rule) and its
+            # port (matches atlas-webapp.service.port).
+            service: ""
+            port: 8080
+        keycloak:
+            enabled: true
+            # "" defaults to keycloak.<domain> — the identity provider the
+            # browser redirects to (ADR 007).
+            host: ""
+            # Backend: the Keycloak Service ("" = the CHT-13 name rule) and
+            # its TLS port (matches atlas-keycloak.service.port; a
+            # BackendTLSPolicy pins the hop, CHT-30).
+            service: ""
+            port: 8443
+        dashboard:
+            # The vendored Apache Atlas dashboards (server /, /n/ — DD-018).
+            # Off by default: the server is not browser-exposed while the
+            # webapp is the product surface (ADR 054).
+            enabled: false
+            # "" defaults to dashboard.<domain>.
+            host: ""
+            # Backend: the server Service ("" = the CHT-13 name rule) and its
+            # TLS port (matches atlas-server.service.port; BackendTLSPolicy).
+            service: ""
+            port: 21000
+        grafana:
+            # Off by default; `kubectl port-forward` reaches it (runbook).
+            # Safe to expose now that it is off: the login is the realm's
+            # (CHT-84, DD-275) and the host feeds the grafana client's
+            # redirect URIs (CHT-82).
+            enabled: false
+            # "" defaults to grafana.<domain>.
+            host: ""
+            # Backend: the observability chart's Grafana Service ("" = the
+            # CHT-13 name rule + "-grafana") and its plaintext UI port. The
+            # Service exists once 10.3b renders the observability workloads.
+            service: ""
+            port: 3000
+
+# Shared runtime credentials (DD-287). The umbrella generates what is empty,
+# preserves generated values across upgrades (lookup), and writes one Secret
+# per consumer; the component charts mount them by name. None is committed
+# (R5). Retrieval: kubectl get secret -n <ns> <release>-<purpose> -o jsonpath.
+secrets:
+    elasticsearch:
+        # elastic user bootstrap password → Secret <release>-elasticsearch.
+        password: ""
+    keycloakAdmin:
+        user: admin
+        password: ""
+    keycloakDatabase:
+        user: keycloak
+        password: ""
+    otelClients:
+        # The realm's otel-* client secrets (the collector's per-service leg
+        # verifies their JWTs) → Secret <release>-otel-clients. The keys are
+        # realm-shaped (CHT-88, DD-277): the prod realm carries one key per
+        # client id (rotate one producer without touching the others);
+        # `master` keeps the single shared OTEL_INGEST_CLIENT_SECRET.
+        # Override per producer here: clients.<client-id>: "<secret>", or
+        # the whole shared value for master via `secret`.
+        secret: ""
+        clients: {}
+    collectorLegacy:
+        # Static token on the collector's legacy leg — the webapp edge's
+        # export credential. Browser-reachable by design (DD-239, DD-287):
+        # treat it as a public ingest endpoint's constant.
+        token: ""
+    grafanaAdmin:
+        # Grafana's admin identity (DD-267) → Secret <release>-grafana-admin,
+        # joined into the observability chart's GF_SECURITY_ADMIN_USER/
+        # PASSWORD. The daily door is the realm login (CHT-84); this is the
+        # API/account-recovery credential, not a daily login.
+        user: admin
+        password: ""
+    grafanaOauth:
+        # The grafana client's secret (CHT-83, DD-275) → Secret
+        # <release>-grafana-oauth, key client-secret. Read by both the realm
+        # import (${GRAFANA_CLIENT_SECRET}) and the observability chart's
+        # GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET.
+        clientSecret: ""
+    serverClient:
+        # The Atlas server's confidential-client secret (CHT-109, 10.12) →
+        # Secret <release>-server-client, key client-secret. Read by both the
+        # realm import (${ATLAS_SERVER_CLIENT_SECRET}, CHT-110) and the
+        # server's AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET (CHT-108, 6.1a).
+        clientSecret: ""
+    keycloakUsers:
+        # Demo account passwords the realm import fills (${DEV_USER_*}).
+        writerPassword: ""
+        readerPassword: ""
+
+# Network segmentation (CHT-60/61, DD-271/DD-272). The umbrella renders the
+# namespace-wide default-deny and the gateway's ingress allows (one per
+# listener the edge resolves); the component charts render the in-cluster
+# allows. Disable here to drop the deny and the edge allows together; each
+# chart's own networkPolicy.enabled gates its share (CHT-72).
+networkPolicy:
+    enabled: true
+    # The namespaces the Gateway data plane runs in (envoy-gateway, the GKE
+    # managed-proxy namespace, …). [] admits all namespaces — the honest
+    # default for a public browser edge whose data-plane placement varies per
+    # cluster (DD-272); the runbook names the pin. The pod network is already
+    # segmented by the component charts' allows, so [] exposes only the
+    # browser-facing listeners.
+    gatewayNamespaces: []
+
+# ─── Component charts ───────────────────────────────────────────────────────
+# Key = chart name; `enabled` gates the subchart, everything else passes
+# through to that chart (its own values.yaml documents its surface).
+atlas-elasticsearch:
+    enabled: true
+    # CHT-42/43: a stock install is a self-observing system (ADR 016) — the
+    # store's metrics puller ships on, exporting to this release's collector
+    # (the name rule; telemetry.service overrides for a bring-your-own).
+    telemetry:
+        enabled: true
+atlas-keycloak:
+    enabled: true
+    # Keycloak's database, bundled by the atlas-keycloak chart (CHT-02):
+    # disable with database.flavor=external and point Keycloak at an existing
+    # Postgres via database.url.
+    postgres:
+        enabled: true
+    # CHT-42: Keycloak's own Quarkus OTLP rides the collector's legacy leg
+    # (it is the issuer — no self-minted JWT, DD-193/196); the endpoint and
+    # token Secret take the chart's name-rule defaults. Its metrics puller
+    # (the bundled Postgres, CHT-43) rides telemetry.enabled.
+    telemetry:
+        enabled: true
+atlas-server:
+    enabled: true
+    # CHT-42: the server's per-service OTLP leg goes live (rendered in
+    # 10.3a, switched on here).
+    telemetry:
+        enabled: true
+atlas-webapp:
+    enabled: true
+atlas-data2model:
+    enabled: true
+    # CHT-42: the aux apps' OTLP joins go live (collector :4319, public
+    # issuer mint — DD-265).
+    telemetry:
+        enabled: true
+atlas-lineage-model:
+    enabled: true
+    telemetry:
+        enabled: true
+atlas-validate-entity:
+    enabled: true
+    telemetry:
+        enabled: true
+atlas-observability:
+    # ADR 016: the system observes itself. Off only for deployments that
+    # point telemetry at their own collector (values, not a fork).
+    enabled: true

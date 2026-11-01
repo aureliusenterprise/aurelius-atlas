@@ -1,4 +1,4 @@
-"""Authorization: Atlas's privileges, granted by four roles of the server's client (AUZ-01 to AUZ-03, DD-253).
+"""Authorization: Atlas's privileges, granted by four roles of the server's client (AUZ-01 to AUZ-03, DD-300).
 
 What a user may do is decided in one place (ADR 038): the identity provider holds who has which role, and this
 module what each role grants. The stores check a request as Atlas's do, through the request's ``authorizer``; a
@@ -34,7 +34,7 @@ ROLE_PRIVILEGES: dict[str, frozenset[AtlasPrivilege]] = {
     "atlas-types": frozenset({P.TYPE_CREATE, P.TYPE_UPDATE, P.TYPE_DELETE, P.TYPE_READ}),
     "atlas-admin": frozenset({P.ADMIN_EXPORT, P.ADMIN_IMPORT, P.ADMIN_PURGE, P.ADMIN_AUDITS}),
 }
-"""What each role of the server's client grants (AUZ-02, DD-253); ``atlas-types`` reads the types it may change,
+"""What each role of the server's client grants (AUZ-02, DD-300); ``atlas-types`` reads the types it may change,
 as Atlas's simple authorizer adds ``TYPE_READ``."""
 
 

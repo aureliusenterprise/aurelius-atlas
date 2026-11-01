@@ -1,0 +1,271 @@
+# The observability chart — its runtime contract (CHT-02, CHT-33..44).
+# The collector is the system's one seam for signals (ADR 034): three ingest
+# legs — browser (OIDC, 4318), per-service (OIDC client JWTs, 4317/4319),
+# legacy (static token, 4320/4321) — and one egress to Prometheus, Loki, and
+# Tempo, with Grafana reading them (ADR 016: nothing leaves the system).
+# The collector ConfigMap is dev/observability/config/otel-collector.yaml's
+# shape with the environment slots computed from this chart (CHT-34); Loki's,
+# Tempo's, and Grafana's dashboards ship as files/ byte-copies (DD-256).
+
+# The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    storageClass: ""
+    domain: ""
+    # The OIDC issuer the collector validates ingest tokens against. In the
+    # cluster this is the public URL, resolvable in-cluster too (DD-265's
+    # split-horizon); "" derives https://keycloak.<domain>.
+    issuer:
+        url: ""
+    # The issuer signing the collector's leaf (DD-286/DD-259), as in the
+    # store chart.
+    trust:
+        issuerRef:
+            name: aurelius-atlas-selfsigned
+            kind: Issuer
+    dnsResolver: ""
+    # The umbrella's realm (CHT-74): the realm the ingest audience mints in
+    # (7.18) — the same realm the apps authenticate against, and the realm
+    # the Keycloak chart imports. "" takes the chart default
+    # (aurelius-atlas).
+    realm: ""
+
+enabled: true
+component: observability
+nameOverride: ""
+fullnameOverride: ""
+
+collector:
+    replicaCount: 1
+    # Digest-pinned (CHT-93, DD-278): bump tag and digest together — the
+    # digest wins in the render (CHT-92), and the registry-drift guard
+    # (CHT-96) fails a tag bump whose digest was not refreshed.
+    image:
+        repository: dhi.io/opentelemetry-collector
+        tag: "0-debian13-contrib"
+        digest: sha256:79de5a3a0319b189dfb428d3fa36a39b8d83ee6605e106089ce78153f7f5ac6e
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 512Mi
+    # The JWKS boot race (DD-195/DD-226): the collector discovers the
+    # issuer's JWKS at extension start; the issuer-wait init container below
+    # polls the realm's well-known endpoint until it answers, replacing the
+    # dev compose's unbounded restart (10.1's committed shape).
+    issuerWait:
+        enabled: true
+        # curl fetches the issuer over TLS without pinning — acceptable for
+        # a boot gate (the collector itself verifies the issuer CA-pinned,
+        # DD-216) — and retries natively; the image declares uid 65532 (DD-269).
+        image:
+            repository: dhi.io/curl
+            tag: "8"
+            digest: sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862
+        # A boot gate, not a workload (KSV-0011/0015/0016/0018, DD-282
+        # follow-up): memory-capped, no CPU limit (the house posture).
+        resources:
+            requests:
+                cpu: 10m
+                memory: 16Mi
+            limits:
+                memory: 32Mi
+    # deployment.environment.name stamped on every signal (DD-268): the
+    # compose keeps "development"; a cluster install is its own environment.
+    deploymentEnvironment: cluster
+    probes:
+        # HTTP on the health_check extension's port (CHT-33).
+        port: 13133
+        initialDelaySeconds: 10
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 6
+
+# The collector's Certificate (CHT-36): cluster names only — the collector is
+# producer-facing, never browser-facing (DD-285's audience split).
+certificate:
+    enabled: true
+    duration: 2160h
+    renewBefore: 24h
+
+prometheus:
+    enabled: true
+    image:
+        repository: dhi.io/prometheus
+        tag: "3.13-debian13"
+        digest: sha256:585a54e52b97d4400aaa4c7ef9470add072362b236cd7fb4e8aacdd371121109
+    retention: 15d
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 1Gi
+    persistence:
+        size: 20Gi
+    probes:
+        port: 9090
+        initialDelaySeconds: 10
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
+
+loki:
+    enabled: true
+    image:
+        repository: dhi.io/loki
+        tag: "3-debian13"
+        digest: sha256:4e7325c57c492c02e8944b22cf0c80299a49d657eced3ed9f56853a01f622a41
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 1Gi
+    persistence:
+        size: 20Gi
+    probes:
+        port: 3100
+        initialDelaySeconds: 15
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
+
+tempo:
+    enabled: true
+    image:
+        repository: dhi.io/tempo
+        tag: "3-debian13"
+        digest: sha256:e6355af759ed371adca5b1fc76303b9eb7db3da15739ba76def54a3f336734c8
+    resources:
+        requests:
+            cpu: 100m
+            memory: 256Mi
+        limits:
+            memory: 1Gi
+    persistence:
+        size: 20Gi
+    probes:
+        port: 3200
+        initialDelaySeconds: 15
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
+
+grafana:
+    enabled: true
+    image:
+        repository: dhi.io/grafana
+        tag: "13-debian13"
+        digest: sha256:3524a4af20d6485671f0576084ee16b35a276fa2e7a490f02c95e46e18778384
+    resources:
+        requests:
+            cpu: 50m
+            memory: 128Mi
+        limits:
+            memory: 512Mi
+    persistence:
+        size: 20Gi
+    # The admin credential (DD-267): "" derives <release>-grafana-admin, the
+    # umbrella's generated Secret (CHT-19 pattern); set to bring your own
+    # (keys user/password). The daily door is the realm login (CHT-84);
+    # this is the account-recovery admin, kept so the instance is never
+    # ship-defaulted.
+    adminPasswordSecret: ""
+    # The OAuth client secret (CHT-84, DD-275): "" derives
+    # <release>-grafana-oauth (key client-secret), the umbrella's generated
+    # Secret the realm import reads too; set to bring your own.
+    oauthSecretName: ""
+    # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
+    # the default posture is kubectl port-forward (runbook).
+    probes:
+        port: 3000
+        initialDelaySeconds: 15
+        periodSeconds: 15
+        timeoutSeconds: 5
+        failureThreshold: 6
+
+# Ingest legs (ports fixed by the collector contract, DD-193/DD-196):
+#   browser 4318 (HTTP, OIDC)  · services 4317 (gRPC) + 4319 (HTTP, OIDC)
+#   legacy 4320 (gRPC) + 4321 (HTTP, static token, DD-239)
+service:
+    type: ClusterIP
+    browserPort: 4318
+    servicesGrpcPort: 4317
+    servicesHttpPort: 4319
+    legacyGrpcPort: 4320
+    legacyHttpPort: 4321
+    # The prometheus exporter (:9464) and the collector's own telemetry
+    # (:8888) — scraped by this chart's Prometheus (CHT-38).
+    metricsPort: 9464
+    internalPort: 8888
+
+# The legacy-leg token: <release>-collector-legacy (key token), the
+# umbrella's generated Secret (CHT-31, DD-287) shared with the webapp's edge
+# exporter. Never rendered into the ConfigMap (R5) — it arrives as env.
+secrets:
+    collectorLegacy: ""
+
+tls:
+    secretName: ""
+    # Where the collector's leaf + the trust CA mount. The dev config's shape
+    # (/certs): the Secret's items are projected to otel-collector.pem /
+    # otel-collector-key.pem / ca.pem so the ConfigMap matches dev verbatim.
+    mountPath: /certs
+
+serviceAccount:
+    create: true
+    name: ""
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+
+# Shared by the five Tier 3 workloads (collector, grafana, loki, prometheus,
+# tempo): the read-only root closes KSV-0014 (DD-282 Tier 3). The live
+# overlay's write audit: none of the five writes to its root — every writable
+# path already rides a volume (PVC data, mounted configs); the collector's one
+# root-FS write (the contrib image's ~/.cache) gets its own emptyDir.
+securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+        drop:
+            - ALL
+    readOnlyRootFilesystem: true
+
+# Network segmentation (CHT-67/68/69, DD-271): the collector's per-leg
+# ingress allows, and the Prometheus/Loki/Tempo scrape/export/panel joins.
+# Grafana renders no allow: port-forward is its access path (CHT-69), and the
+# only allow it can get is the umbrella's gateway rule when its host is
+# enabled. peers.<peer> renames a peer's pods (the pullers' names are
+# fullname-derived, the apps' are chart-name constants — CHT-70).
+networkPolicy:
+    enabled: true
+    peers:
+        webapp: ""
+        keycloak: ""
+        server: ""
+        data2model: ""
+        lineageModel: ""
+        validateEntity: ""
+        elasticsearchPuller: ""
+        keycloakPuller: ""
+
+required: []

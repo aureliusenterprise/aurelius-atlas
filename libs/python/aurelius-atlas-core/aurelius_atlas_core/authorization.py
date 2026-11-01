@@ -1,8 +1,8 @@
 """``AtlasAuthorizationUtils``: the checks the stores make, against what the acting user was granted (AUZ-03, AUZ-07).
 
 The stores do not know how privileges are granted: the server builds an authorizer of the acting user's
-privileges (DD-253) and hands it to each store of a request. A store built without one checks nothing, as the
-tests of its behaviour and the server's own startup work need (DD-254).
+privileges (DD-300) and hands it to each store of a request. A store built without one checks nothing, as the
+tests of its behaviour and the server's own startup work need (DD-301).
 """
 
 from collections.abc import Iterable
@@ -50,7 +50,7 @@ class Authorizer(Protocol):
 
 
 class AllowAll:
-    """The authorizer of a store built without one: everything is allowed (DD-254)."""
+    """The authorizer of a store built without one: everything is allowed (DD-301)."""
 
     def verify_access(self, privilege: AtlasPrivilege, *action: object) -> None:
         """Allow."""

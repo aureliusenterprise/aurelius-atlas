@@ -31,12 +31,13 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   DD-250); `oidc_client.py` — `OidcClient`: the confidential client's code flow, refresh and sign-out;
   `routes/login.py` — `login.jsp` and `logout.html`. Tokens are verified by `aurelius-atlas-auth`
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's privileges,
-  `authorizer` and `verify_access` (6.2, DD-253). Every core store a route builds must be given
-  `authorizer=authorizer(request)`: a store without one checks nothing (DD-254)
+  `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
+  `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
 - `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the image over HTTPS on the dev store
+- `helm/` — the `atlas-server` chart (its own section below)
 
 ## Porting an Atlas resource
 
@@ -87,6 +88,41 @@ npx nx test aurelius-atlas-server -c ci
 npx nx e2e aurelius-atlas-server -c ci    # builds the image, starts the dev store
 uv run pytest apps/aurelius-atlas-server/tests
 ```
+
+## Helm chart
+
+`helm/` — the `atlas-server` chart (10.3a, CHT-20/21/22): the Deployment and
+ClusterIP Service on 21000 with **HTTPS** probes (the server never serves
+plaintext, SRV-06); every settings value naming a peer is a join — the store
+Service (`ELASTICSEARCH_HOSTS` + its password Secret), the issuer URL (the
+OTLP token-URL join), the CA/TLS file paths on the whole-Secret mount of the
+chart's own `Certificate` (SANs = Service name + FQDNs, which is exactly what
+the webapp's nginx pins with `proxy_ssl_name`). `telemetry.enabled` is off by
+default — with it on, the collector leg joins (`:4319`, client `otel-atlas-server`,
+Secret `atlas-otel-clients`; the join key is the client id on the prod realm,
+the shared `OTEL_INGEST_CLIENT_SECRET` on `global.realm=master` — CHT-90,
+DD-277). 10.12 adds the **auth block** (CHT-108, 6.1a's required settings):
+`AUTH_SERVER_URL`/`_AUTH_REALM` join the issuer and `global.realm`,
+`_AUTH_CLIENT_ID`/`_AUTH_AUDIENCES` are the `auth` values block (default
+`aurelius-atlas-server` + `["aurelius"]`), `AUTH_CLIENT_SECRET` joins
+`<release>-server-client` (`credentialSecrets.serverClient` brings your own),
+`AUTH_CA_FILE` rides the Certificate's mounted ca.crt — and because
+`AUTH_SERVER_URL` has no default in the app, the issuer guard fails an
+authless render. `forwardedAllowIps` feeds `FORWARDED_ALLOW_IPS`
+— stock render is loopback-only; the environment overlays name the pod CIDRs
+(the two-hop client-IP trust, DD-261/CHT-32). The chart renders standalone
+(test values) and through the umbrella (`helm/`); the chart-contract tests are
+`tests/test__charts_server.py`. 10.6 adds the ingress allow (CHT-65): 21000
+from the webapp and lineage-model pods only (`networkPolicy.peers.*` rename
+the pod-name labels); the dashboard's gateway allow belongs to the umbrella.
+Chart conventions and gotchas: `helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-server:helm-template
+```
+
+Removing the app removes `helm/` too — plus the umbrella's dependency and
+values-toggle rows (`helm/AGENTS.md`).
 
 ## Removal
 

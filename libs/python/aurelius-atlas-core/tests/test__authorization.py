@@ -116,7 +116,7 @@ def test__a_refusal_names_the_user_and_the_action() -> None:
 
 @pytest.mark.covers(f"{A}.AllowAll.verify_access", rules=["AUZ-07"])
 async def test__a_store_without_an_authorizer_checks_nothing(store: EntityStore) -> None:
-    """DD-254: the stores' own tests, and the server's startup, write unchecked."""
+    """DD-301: the stores' own tests, and the server's startup, write unchecked."""
     ALLOW_ALL.verify_access(P.ADMIN_PURGE)
     assert len(await entities(store, table("t@cl"))) == 1
 

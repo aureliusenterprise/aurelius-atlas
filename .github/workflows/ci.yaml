@@ -37,7 +37,15 @@ jobs:
     # the PR never touched), dependency install, and the unit `test` suites
     # with coverage. Its product is the green light + the coverage artifacts
     # the sonar job uploads.
+    # Same-repo PR guard (CHT-102, pentest L6a): the members-only push policy
+    # is a GitHub *setting*; these runners are privileged (dind) and carry
+    # age keys in step env, so the boundary is enforced in code too. A fork
+    # PR's jobs skip (the check stays red — a fork gets no secrets and no
+    # privileged pool, by design; a maintainer pushes the branch to a
+    # same-repo branch to run CI). Push events carry no pull_request context,
+    # so the event-name test keeps main's runs.
     validate:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         runs-on: atlas-ci-shapea
         timeout-minutes: 30
 
@@ -180,6 +188,15 @@ jobs:
                   path: /var/cache/ci/pre-commit
                   key: ${{ steps.restore-pre-commit-cache.outputs.cache-primary-key }}
 
+            # Charts gate (CHT-06): helm bakes into the runner image (the
+            # devcontainer's kubectl-helm-minikube feature), so lint+template
+            # need no cluster, registry, or key - a cheap gate that runs
+            # before the unit suites. Each chart renders against its own test
+            # values; the umbrella adds the environment overlays (CHT-04: the
+            # minikube/gke values render on a stock cluster).
+            - name: Lint & render charts
+              run: npx nx affected -t helm-lint helm-template
+
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). The unit
             # suites include testcontainers (store-es spins a real
@@ -244,6 +261,7 @@ jobs:
     # serialize with the sonar queue-wait (DD-232). No sonar/scan/storybook
     # here — this job ends at teardown.
     e2e:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         needs: validate
         runs-on: atlas-ci-shapea
         timeout-minutes: 45
@@ -384,14 +402,16 @@ jobs:
 
     # ─── scan-sonar: image scanning + SonarQube ────────────────────────────
     # The I/O-wait half of the old serial pipeline. Scan and sonar MUST stay
-    # in one job: sonar reads `**/vulnerabilities.sarif` from the work
-    # volume, and the fan-out jobs never share files. Sonar is ~85% server
+    # in one job: sonar reads `**/vulnerabilities.sarif` and
+    # `**/helm-misconfigs.sarif` from the work volume, and the fan-out jobs
+    # never share files. Sonar is ~85% server
     # queue-wait, so this pod's CPUs idle while SonarCloud digests — exactly
     # the half that now overlaps the e2e job. Coverage arrives as validate's
     # artifact; images rebuild here from the GHCR buildcache (near-instant
     # on a warm node — spike probe-b: 48s for the two heaviest dev-stack
     # images cold, 0.0s once the node has seen the layers).
     scan-sonar:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         needs: validate
         runs-on: atlas-ci-shapea
         timeout-minutes: 45
@@ -485,14 +505,22 @@ jobs:
             - name: Build app images
               run: npx nx affected -t docker-build
 
-            - name: Scan for vulnerabilities
-              run: npx nx affected -t docker-vuln-scan -c sarif
+            # Image vulns (SBOM of each app image) plus chart misconfigs
+            # (DD-282): both Trivy, both -c sarif. The helm SARIF is
+            # HIGH/CRITICAL-only and project-level (the plugin's jq filter) —
+            # the five app charts feed their Sonar projects; the umbrella and
+            # dev charts have no Sonar project yet, so their reports only
+            # reach this artifact.
+            - name: Scan for vulnerabilities and misconfigurations
+              run: npx nx affected -t docker-vuln-scan helm-config-scan -c sarif
 
             - name: Upload vulnerability reports
               uses: actions/upload-artifact@v7
               with:
                   name: vuln-reports
-                  path: "**/vulnerabilities.sarif"
+                  path: |
+                      **/vulnerabilities.sarif
+                      **/helm-misconfigs.sarif
                   if-no-files-found: ignore
 
             # SonarQube analysis requires the test and scan results to be
@@ -530,6 +558,7 @@ jobs:
     # step. The --graph=stdout probe keeps the job a no-op (not a green
     # lie) when the UI is out of the affected set.
     chromatic:
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         needs: validate
         runs-on: atlas-ci-shapea
         timeout-minutes: 30

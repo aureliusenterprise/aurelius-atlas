@@ -43,6 +43,7 @@ collaborators, routes serve, `app.py` composes.
   Atlas answer), `graph.extract.json` (the 8.1 engine's bytes for the same rows). The
   graph is the 8.1 scenario's rows inverted: a dataset → process → dataset lineage.
 - `tests/` — unit tests, one file per module (ADR 056 names every public
+- `helm/` — the `atlas-lineage-model` chart (its own section below)
   function): the flattener, the chain, the providers, the routes, the app
   wiring and breakers — all on a fake issuer and a recording fake upstream
   (`tests/fake_upstream.py`); `e2e/` — the chain: this image + the real
@@ -94,6 +95,28 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
   `e2e/fixtures/`, where `v2/lineage/<guid>` is the canned graph, named for the fixed
   UUID guid the scenario fixtures carry (DV-78)); the collector on the observability network, Keycloak through
   `keycloak.localhost:host-gateway`.
+
+## Helm chart
+
+`helm/` — the `atlas-lineage-model` chart (CHT-02, workloads in 10.3a):
+port 21002, probes, the `AURELIUS_ATLAS_LINEAGE_MODEL_` settings env, the
+Keycloak audience (`aurelius-atlas-lineage-model`), and the OTLP ingest
+identity. Its deployment/service/sa/pdb/certificate templates are the shipped
+aux-API shape, kept as a copy per chart by design (DD-290) — no shared
+library chart. The `Certificate` (CHT-27) carries SANs = the Service name +
+FQDNs and its whole Secret (tls.crt/key + ca.crt) mounts at
+`/etc/aurelius-atlas/tls` (DD-294's closure). The two upstream URLs
+(CHT-28) — `ATLAS_BASE_URL`/`DATA2MODEL_URL`, both required by settings with
+no defaults — are joins to the co-deployed Services (`atlas.service`/
+`data2model.service` values override the name-rule join). Chart-contract
+tests: `tests/test__charts_aux.py`. Conventions: `helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-lineage-model:helm-template
+```
+
+Removing the app removes `helm/` too — plus the umbrella's dependency and
+values-toggle rows (`helm/AGENTS.md`).
 
 ## Removal
 

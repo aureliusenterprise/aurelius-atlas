@@ -1,0 +1,23 @@
+# Patterns the helm toolchain excludes from packaged archives.
+# NOTE: `charts/` and `*.tgz` must NOT be ignored here — Helm loads dependency
+# archives through the same ignore rules, and ignoring the directory makes
+# every `file://` dependency invisible to lint/template (verified, helm 4.3.1).
+# Resolved dependency tarballs stay out of git via the root .gitignore.
+.git
+.gitignore
+.svn
+.project
+.hg
+.hgignore
+.cvs
+*.swp
+*.bak
+*.tmp
+*.orig
+~
+.vscode/
+.idea/
+.DS_Store
+__pycache__/
+# Rendering/test artifacts
+*.rendered.yaml

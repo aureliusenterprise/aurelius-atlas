@@ -1,0 +1,17 @@
+{{/* The Service. */}}
+apiVersion: v1
+kind: Service
+metadata:
+    name: {{ include "atlas-data2model.fullname" . }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-data2model.labels" . | nindent 8 }}
+spec:
+    type: {{ .Values.service.type }}
+    ports:
+        - name: https
+          port: {{ int .Values.service.port }}
+          targetPort: {{ int .Values.port }}
+          protocol: TCP
+    selector:
+        {{- include "atlas-data2model.selectorLabels" . | nindent 12 }}

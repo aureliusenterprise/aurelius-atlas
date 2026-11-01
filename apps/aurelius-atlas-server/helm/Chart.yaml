@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-server
+description: "The Aurelius Atlas server: the Atlas REST API on Elasticsearch, serving the vendored 2.4.0 dashboards (DD-018)."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas
