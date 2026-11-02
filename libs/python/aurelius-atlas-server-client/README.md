@@ -36,9 +36,11 @@ and `libs/python/AGENTS.md`.
   `routes/admin.py`: the five reads plus `patches`, `purge`, the export/import
   ZIP pair as bytes (DD-310, the import's `request` part a form field per
   DD-313), `import_file`, and the task list with its repeated `guids`.
-  `.search` (CL-13) answers the discovery routes: the basic POST/GET, attribute,
-  fulltext, the quick POST/GET, and suggestions — bodies reused whole from
-  `aurelius-atlas-model` (CL-10)
+  `.search` (CL-13 by 8.4, CSD-01..CSD-06 by 8.12) answers all 15 discovery
+  routes: the basic POST/GET, attribute,
+  fulltext, the quick POST/GET, and suggestions, plus `search_using_dsl` and
+  the seven saved-search routes (a missing profile answers `None`, not `[]`) —
+  bodies reused whole from `aurelius-atlas-model` (CL-10)
 
 ## Wiring Checklist
 
@@ -51,7 +53,7 @@ and `libs/python/AGENTS.md`.
   fork them here.
 - The rules it keeps are specified per module: CL-01..CL-05, CL-10..CL-13 by the
   8.4 spec, CL-60..CL-65 by 8.8, CLE-01..CLE-12 by 8.9, CLG-01..CLG-09 by 8.10,
-  CLR-01..CLR-04 and CLW-01..CLW-07 by 8.11
+  CLR-01..CLR-04 and CLW-01..CLW-07 by 8.11, CSD-01..CSD-06 by 8.12
   (each under `libs/python/aurelius-atlas-server-client/specs/`).
 
 ## Conventions

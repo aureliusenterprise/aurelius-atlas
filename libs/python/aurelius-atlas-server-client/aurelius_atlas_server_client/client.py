@@ -22,8 +22,10 @@ entity routes of ``routes/entity.py`` under ``/api/atlas/v2/entity``
 ``/api/atlas/v2/glossary`` (CLG-01..CLG-09, 8.10), the relationship routes of
 ``routes/relationship.py`` under ``/api/atlas/v2/relationship``
 (CLR-01..CLR-04, 8.11), the discovery routes of
-``routes/discovery.py`` under ``/api/atlas/v2/search`` (CL-13), and the lineage
-feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
+``routes/discovery.py`` under ``/api/atlas/v2/search`` (the seven 8.4 searches,
+CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), and
+the lineage feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage``
+(CL-60..CL-63, 8.8).
 """
 
 import json
@@ -71,6 +73,7 @@ from aurelius_atlas_model.instance import (
 )
 from aurelius_atlas_model.lineage import LineageOnDemandConstraints
 from aurelius_atlas_model.patches import AtlasPatch
+from aurelius_atlas_model.profile import AtlasUserSavedSearch
 from aurelius_atlas_model.tasks import AtlasTask
 from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
@@ -125,6 +128,9 @@ server mounts its feed at ``/api/atlas/v2/lineage``, as every other resource
 
 CLIENT_ERROR = 400
 """The status where an answer becomes an error: the client-error boundary (CL-04)."""
+
+NO_CONTENT = 204
+"""The status a saved-searches read answers when the user has no profile (CSD-03, SVS-04)."""
 
 type GlossarySort = Literal["ASC", "DESC"]
 """The glossary reads' ``sort`` parameter (CLG-02, GLS-05).
@@ -552,6 +558,72 @@ class SearchApi:
         params = _present(prefixString=prefix_string, fieldName=field_name)
         answer = await self._api.json("GET", f"{DISCOVERY_ROOT}/suggestions", params=params)
         return AtlasSuggestionsResult.model_validate(answer)
+
+    async def search_using_dsl(
+        self,
+        *,
+        query: str | None = None,
+        type_name: str | None = None,
+        classification: str | None = None,
+        limit: int = 0,
+        offset: int = 0,
+    ) -> AtlasSearchResult:
+        """``GET /api/atlas/v2/search/dsl``: the entities a DSL query finds (DSE-01, DSE-02, CSD-01).
+
+        The lengths the server checks (``INVALID_QUERY_LENGTH``,
+        ``INVALID_QUERY_PARAM_LENGTH``) it checks — the client sends and parses.
+        """
+        params = _present(query=query, typeName=type_name, classification=classification, limit=limit, offset=offset)
+        return AtlasSearchResult.model_validate(await self._api.json("GET", f"{DISCOVERY_ROOT}/dsl", params=params))
+
+    async def add_saved_search(self, saved_search: AtlasUserSavedSearch) -> AtlasUserSavedSearch:
+        """``POST /api/atlas/v2/search/saved``: save the search for the acting user (SVS-02, CSD-02)."""
+        return AtlasUserSavedSearch.model_validate(
+            await self._api.json("POST", f"{DISCOVERY_ROOT}/saved", body=saved_search.to_json())
+        )
+
+    async def update_saved_search(self, saved_search: AtlasUserSavedSearch) -> AtlasUserSavedSearch:
+        """``PUT /api/atlas/v2/search/saved``: the acting user's search of the body's GUID (SVS-03, CSD-02)."""
+        return AtlasUserSavedSearch.model_validate(
+            await self._api.json("PUT", f"{DISCOVERY_ROOT}/saved", body=saved_search.to_json())
+        )
+
+    async def saved_searches(self, user: str | None = None) -> list[AtlasUserSavedSearch] | None:
+        """``GET /api/atlas/v2/search/saved``: the acting user's saved searches (SVS-04, CSD-03).
+
+        ``None`` means the server said 204 — the user has no profile at all —
+        which is a different answer from the empty list of a profile with no
+        saved searches; a caller that treats them alike loses the distinction.
+        """
+        response = await self._api.request("GET", f"{DISCOVERY_ROOT}/saved", params=_present(user=user))
+        if response.status_code == NO_CONTENT:
+            return None
+        return [AtlasUserSavedSearch.model_validate(saved) for saved in response.json()]
+
+    async def saved_search(self, name: str, user: str | None = None) -> AtlasUserSavedSearch:
+        """``GET /api/atlas/v2/search/saved/{name}``: the saved search of the name (SVS-04, CSD-04)."""
+        return AtlasUserSavedSearch.model_validate(
+            await self._api.json("GET", f"{DISCOVERY_ROOT}/saved/{name}", params=_present(user=user))
+        )
+
+    async def delete_saved_search(self, guid: str) -> None:
+        """``DELETE /api/atlas/v2/search/saved/{guid}``: remove it (SVS-05, CSD-04). Answers 204.
+
+        Read by name, delete by GUID — the server's asymmetry, kept on purpose.
+        """
+        await self._api.request("DELETE", f"{DISCOVERY_ROOT}/saved/{guid}")
+
+    async def execute_saved_search_by_name(self, name: str, user: str | None = None) -> AtlasSearchResult:
+        """``GET /api/atlas/v2/search/saved/execute/{name}``: run the saved search (SVS-06, CSD-05)."""
+        return AtlasSearchResult.model_validate(
+            await self._api.json("GET", f"{DISCOVERY_ROOT}/saved/execute/{name}", params=_present(user=user))
+        )
+
+    async def execute_saved_search_by_guid(self, guid: str) -> AtlasSearchResult:
+        """``GET /api/atlas/v2/search/saved/execute/guid/{guid}``: run it by GUID (SVS-06, CSD-05)."""
+        return AtlasSearchResult.model_validate(
+            await self._api.json("GET", f"{DISCOVERY_ROOT}/saved/execute/guid/{guid}")
+        )
 
 
 class EntityApi:

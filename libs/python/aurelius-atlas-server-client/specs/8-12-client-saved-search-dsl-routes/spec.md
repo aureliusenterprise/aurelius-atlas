@@ -1,7 +1,7 @@
 # 8.12 Client route coverage — saved searches and the DSL search
 
-- **Status:** planned
-- **Pull request:** —
+- **Status:** in progress
+- **Pull request:** to follow
 - **Records:** DD-307 (the per-module live-check spec), DD-309 (bodies reused from
   `aurelius-atlas-model`); cites 8.4 (CL-13, the seven shipped search routes), 8.8
   (CL-60..CL-65), and the server's rules SVS, DSE.
@@ -31,23 +31,25 @@ behaviour (SVS and DSE rules stay in the server's specs, cited not restated).
 
 ### The coverage matrix (`routes/discovery.py`, 15 routes)
 
-| Method and path                  | Server function            | Client method                  | Rule         |
-| -------------------------------- | -------------------------- | ------------------------------ | ------------ |
-| `POST /basic`                    | `searchWithParameters`     | `search_with_parameters`       | CL-13 (done) |
-| `GET /basic`                     | `searchUsingBasic`         | `search_using_basic`           | CL-13 (done) |
-| `GET /fulltext`                  | `searchUsingFullText`      | `search_using_full_text`       | CL-13 (done) |
-| `GET /quick`                     | `quickSearch` (query)      | `quick_search_using_query`     | CL-13 (done) |
-| `POST /quick`                    | `quickSearch` (body)       | `quick_search`                 | CL-13 (done) |
-| `GET /suggestions`               | `getSuggestions`           | `get_suggestions`              | CL-13 (done) |
-| `GET /attribute`                 | `searchUsingAttribute`     | `search_using_attribute`       | CL-13 (done) |
-| `GET /dsl`                       | `searchUsingDSL`           | `search_using_dsl`             | CSD-01       |
-| `POST /saved`                    | `addSavedSearch`           | `add_saved_search`             | CSD-02       |
-| `PUT /saved`                     | `updateSavedSearch`        | `update_saved_search`          | CSD-02       |
-| `GET /saved`                     | `getSavedSearches`         | `saved_searches`               | CSD-03       |
-| `GET /saved/{name}`              | `getSavedSearch`           | `saved_search`                 | CSD-04       |
-| `DELETE /saved/{guid}`           | `deleteSavedSearch`        | `delete_saved_search`          | CSD-04       |
-| `GET /saved/execute/{name}`      | `executeSavedSearchByName` | `execute_saved_search_by_name` | CSD-05       |
-| `GET /saved/execute/guid/{guid}` | `executeSavedSearchByGuid` | `execute_saved_search_by_guid` | CSD-05       |
+Open means no client method yet. All 15 are covered as of 8.12.
+
+| Method and path                  | Server function            | Client method                            | Rule         |
+| -------------------------------- | -------------------------- | ---------------------------------------- | ------------ |
+| `POST /basic`                    | `searchWithParameters`     | `search_with_parameters`                 | CL-13 (done) |
+| `GET /basic`                     | `searchUsingBasic`         | `search_using_basic`                     | CL-13 (done) |
+| `GET /fulltext`                  | `searchUsingFullText`      | `search_using_full_text`                 | CL-13 (done) |
+| `GET /quick`                     | `quickSearch` (query)      | `quick_search_using_query`               | CL-13 (done) |
+| `POST /quick`                    | `quickSearch` (body)       | `quick_search`                           | CL-13 (done) |
+| `GET /suggestions`               | `getSuggestions`           | `get_suggestions`                        | CL-13 (done) |
+| `GET /attribute`                 | `searchUsingAttribute`     | `search_using_attribute`                 | CL-13 (done) |
+| `GET /dsl`                       | `searchUsingDSL`           | `search_using_dsl` (covered)             | CSD-01       |
+| `POST /saved`                    | `addSavedSearch`           | `add_saved_search` (covered)             | CSD-02       |
+| `PUT /saved`                     | `updateSavedSearch`        | `update_saved_search` (covered)          | CSD-02       |
+| `GET /saved`                     | `getSavedSearches`         | `saved_searches` (covered)               | CSD-03       |
+| `GET /saved/{name}`              | `getSavedSearch`           | `saved_search` (covered)                 | CSD-04       |
+| `DELETE /saved/{guid}`           | `deleteSavedSearch`        | `delete_saved_search` (covered)          | CSD-04       |
+| `GET /saved/execute/{name}`      | `executeSavedSearchByName` | `execute_saved_search_by_name` (covered) | CSD-05       |
+| `GET /saved/execute/guid/{guid}` | `executeSavedSearchByGuid` | `execute_saved_search_by_guid` (covered) | CSD-05       |
 
 After this increment, `routes/discovery.py` is fully covered.
 
