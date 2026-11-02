@@ -10,6 +10,7 @@ from aurelius_atlas_model.impexp import (
     FILE_NAME_KEY,
     START_GUID_KEY,
     START_POSITION_KEY,
+    TRANSFORMS_KEY,
     UPDATE_TYPE_DEFINITION_KEY,
     AtlasImportRequest,
     AtlasImportResult,
@@ -18,6 +19,7 @@ from aurelius_atlas_model.impexp import (
 
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.import_transforms import ImportTransforms, shape
 from aurelius_atlas_core.import_type_def_processor import ImportTypeDefProcessor
 from aurelius_atlas_core.regular_import import RegularImport
 from aurelius_atlas_core.typedef_store import TypedefStore
@@ -54,6 +56,11 @@ class ImportService:
             time_stamp=self._store.now(),
         )
         start = self._store.now()
+        transforms = ImportTransforms.from_json(request.option(TRANSFORMS_KEY))
+        if transforms is not None:
+            exported = source.export_result()
+            await shape(transforms, None if exported is None else exported.request, self._typedef_store, user_name)
+            source.import_transform = transforms
         update_types = request.option(UPDATE_TYPE_DEFINITION_KEY)
         if update_types is None or update_types == "true":
             await ImportTypeDefProcessor(self._typedef_store, user_name).process_types(source.types_def(), result)
