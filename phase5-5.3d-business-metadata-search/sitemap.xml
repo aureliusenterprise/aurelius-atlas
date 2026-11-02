@@ -280,42 +280,6 @@
         <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/0-1-adopt-template/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/0-2-elasticsearch-infrastructure/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/0-3-test-report-traceability/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/0-4-parity-harness/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/0-5-server-skeleton/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/0-6-dashboards/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/1-1-typedef-models/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/1-2-type-registry/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/1-3-type-hierarchies/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/1-4-typedef-store/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/1-5-builtin-models/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/1-6-types-rest/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/10-1-chart-foundation/</loc>
       </url>
       <url>
@@ -347,27 +311,6 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/10-9-per-producer-ingest-credentials/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-1-entity-models/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-1-entity-validation/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-1-value-types/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-2-entity-store/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-3-entity-read-rest/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-4-entity-write-rest/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/2-5-delete-semantics/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/increments/3-1-relationship-attributes/</loc>
@@ -551,6 +494,9 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/java-map/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/spec-map/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/data-governance/</loc>

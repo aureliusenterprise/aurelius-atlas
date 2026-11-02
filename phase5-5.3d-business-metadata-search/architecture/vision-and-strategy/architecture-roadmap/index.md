@@ -18,7 +18,7 @@ The plan of record is the [conversion roadmap](<https://aureliusenterprise.githu
 >
 > The phase below it is done: the type system (1.x) is what entities (2.x) reference, entities are what search (4.x) finds, and authentication (6.1) arrives last because the contract is proven anonymous first. Each increment is specified before it is built ([ADR 051](<https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>)), so the order is a dependency chain, not a schedule.
 
-Each increment is specified before it is built and lands as one pull request; the roadmap table is the single status record. After increment 6.4, the template's examples leave ([DD-019](<https://aureliusenterprise.github.io/phase5-5.3d-business-metadata-search/architecture/conversion/design-log/#dd-019-the-template-examples-stay-until-the-plan-is-done>)).
+Each increment is specified before it is built and lands as one pull request; the roadmap table is the single status record. After increment 6.4, the template's examples leave (`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)).
 
 > [!NOTE]
 >

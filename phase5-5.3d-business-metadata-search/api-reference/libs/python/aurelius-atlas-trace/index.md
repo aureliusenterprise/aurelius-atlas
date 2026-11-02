@@ -394,6 +394,7 @@ Functions:
 Attributes:
 
 - **`BAD_SETTING_ERROR`** –
+- **`BAD_SPECS_ERROR`** –
 - **`CONFIG_TABLE`** –
 - **`MISSING_TABLE_ERROR`** –
 - **`NO_DEVIATIONS_ERROR`** –
@@ -407,6 +408,12 @@ Attributes:
 
 ```
 BAD_SETTING_ERROR = "{path}: [tool.{table}] needs 'specs' and 'enforce-from' (N.M): {error}"
+```
+
+### BAD\_SPECS\_ERROR
+
+```
+BAD_SPECS_ERROR = "'specs' is a directory, or a non-empty list of directories, as strings"
 ```
 
 ### CONFIG\_TABLE
@@ -490,7 +497,7 @@ test_dirs: tuple[Path, ...]
 ```
 TraceConfig(
     workspace: Path,
-    spec_dir: Path,
+    spec_dirs: tuple[Path, ...],
     enforce_from: Increment,
     projects: tuple[Project, ...],
     excluded_subpackages: tuple[str, ...],
@@ -512,7 +519,7 @@ Attributes:
 
   Every uv workspace member, excluded or not: where the report looks for test results.
 - **`projects`** (`tuple[Project, ...]`) –
-- **`spec_dir`** (`Path`) –
+- **`spec_dirs`** (`tuple[Path, ...]`) –
 - **`workspace`** (`Path`) –
 
 #### deviations
@@ -549,10 +556,10 @@ Every uv workspace member, excluded or not: where the report looks for test resu
 projects: tuple[Project, ...]
 ```
 
-#### spec\_dir
+#### spec\_dirs
 
 ```
-spec_dir: Path
+spec_dirs: tuple[Path, ...]
 ```
 
 #### workspace
@@ -569,7 +576,7 @@ load_config(workspace: Path) -> TraceConfig
 
 Read `[tool.aurelius-atlas-trace]` and the uv workspace members of the root `pyproject.toml`.
 
-The table holds `specs` (directory of the specifications), `enforce-from` (first increment whose rules count), `exclude-projects` (workspace members left out, as listed in `members`) and `exclude-subpackages` (subpackage names left out of every package, default `["testing"]`) and `deviations` (the deviations table, optional).
+The table holds `specs` (a directory, or a list of directories, to search for the increment specifications), `enforce-from` (first increment whose rules count), `exclude-projects` (workspace members left out, as listed in `members`), `exclude-subpackages` (subpackage names left out of every package, default `["testing"]`) and `deviations` (the deviations table, optional).
 
 Raises:
 
@@ -1053,7 +1060,7 @@ Classes:
 
 - **`DuplicateRuleError`** –
 
-  Two specifications, or two rows of one, define the same rule id.
+  Two specifications of different increments define the same rule id, or one increment's files disagree.
 - **`Increment`** –
 
   An increment number such as 0.2, ordered numerically.
@@ -1069,10 +1076,26 @@ Functions:
 
 Attributes:
 
+- **`CONFLICTING_RULE_ERROR`** –
 - **`DUPLICATE_RULE_ERROR`** –
+- **`INCREMENT_DIR_PATTERN`** –
+
+  The name of an increment directory: `N-M-slug`, the minor carrying an optional letter (`7-4a-search`).
+- **`PRUNE_DIRECTORIES`** –
+
+  Project directories the search for specifications never enters.
+- **`SPEC_FILE_NAME`** –
+
+  A specification in the per-project layout: `<project>/specs/N-M-slug/spec.md` for increment N.M.
 - **`SPEC_FILE_PATTERN`** –
 
-  A specification file: `N-M-slug.md` for increment N.M.
+  A specification file in the old layout: `N-M-slug.md` for increment N.M.
+
+### CONFLICTING\_RULE\_ERROR
+
+```
+CONFLICTING_RULE_ERROR = 'rule {rule} is {first_row} in {first} and {second_row} in {second}'
+```
 
 ### DUPLICATE\_RULE\_ERROR
 
@@ -1080,19 +1103,43 @@ Attributes:
 DUPLICATE_RULE_ERROR = 'rule {rule} is defined in both {first} and {second}'
 ```
 
+### INCREMENT\_DIR\_PATTERN
+
+```
+INCREMENT_DIR_PATTERN = re.compile('(\\d+)-(\\d+)([a-z]?)(?:-[a-z0-9-]+)?')
+```
+
+The name of an increment directory: `N-M-slug`, the minor carrying an optional letter (`7-4a-search`).
+
+### PRUNE\_DIRECTORIES
+
+```
+PRUNE_DIRECTORIES = frozenset({'.git', '.venv', '.tox', 'node_modules', '__pycache__', 'dist', 'site', 'coverage'})
+```
+
+Project directories the search for specifications never enters.
+
+### SPEC\_FILE\_NAME
+
+```
+SPEC_FILE_NAME = 'spec.md'
+```
+
+A specification in the per-project layout: `<project>/specs/N-M-slug/spec.md` for increment N.M.
+
 ### SPEC\_FILE\_PATTERN
 
 ```
 SPEC_FILE_PATTERN = re.compile('(\\d+)-(\\d+)-[a-z0-9-]+\\.md')
 ```
 
-A specification file: `N-M-slug.md` for increment N.M.
+A specification file in the old layout: `N-M-slug.md` for increment N.M.
 
 ### DuplicateRuleError
 
 Bases: `ValueError`
 
-Two specifications, or two rows of one, define the same rule id.
+Two specifications of different increments define the same rule id, or one increment's files disagree.
 
 ### Increment
 
@@ -1181,20 +1228,20 @@ spec: Path
 ### read\_rules
 
 ```
-read_rules(spec_dir: Path, enforce_from: Increment) -> dict[str, Rule]
+read_rules(spec_roots: Iterable[Path], enforce_from: Increment) -> dict[str, Rule]
 ```
 
 Read the rule ids of every specification from increment `enforce_from` on (TRC-08).
 
-A rule is a table row whose first cell is a rule id. Files that are not named `N-M-slug.md` (the template, the index) are ignored.
+A rule is a table row whose first cell is a rule id. A specification is either a `spec.md` in an `N-M-slug` directory below one of the roots, or a file named `N-M-slug.md`; other files (the template, the index) are ignored and the search never enters `PRUNE_DIRECTORIES`. Several files can define the rules of one increment — the parts of a multi-project increment restate their scope — so a repeated id within one increment is one source of truth, and only rows that disagree are an error.
 
 Parameters:
 
-- #### **`spec_dir`**
+- #### **`spec_roots`**
 
-  (`Path`) –
+  (`Iterable[Path]`) –
 
-  The directory of the increment specifications.
+  Directories to search for specifications, each a project or the old spec directory.
 - #### **`enforce_from`**
 
   (`Increment`) –
@@ -1211,7 +1258,7 @@ Raises:
 
 - `DuplicateRuleError` –
 
-  A rule id is defined twice.
+  A rule id is defined by two increments, or two files of one increment define it with different rows.
 
 ## aurelius\_atlas\_trace.trace
 
