@@ -20,6 +20,10 @@ Part of the template **spine**.
   lineage graph of an entity, its on-demand form with per-guid constraints,
   and the graph of the entity a unique attribute names — `LineageREST` of
   server 5.x (ALN-01..04); the twin of `AtlasClient.lineage` (CL-61..63)
+- `RelationshipService` — the relationship endpoints (`/atlas/v2/relationship/**`):
+  create and update (the bare relationship both ways), the always-wrapped read,
+  and the soft/hard delete with its `deleteType` — `RelationshipREST` of server
+  2.x (AREL-01..04); the twin of `AtlasClient.relationship` (CLR-01..04)
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from
@@ -28,6 +32,9 @@ Part of the template **spine**.
 - `atlas-lineage.ts` — the lineage DTOs (`AtlasLineageInfo`,
   `LineageOnDemandConstraints`, …), mirrored by hand from
   `aurelius_atlas_model/lineage.py`
+- `atlas-relationship.ts` — the relationship DTOs (`AtlasRelationship`,
+  `AtlasRelationshipWithExtInfo`, `RelationshipStatus`), mirrored by hand from
+  `aurelius_atlas_model/instance/relationship.py`
 - `SearchService` — the search endpoints (`/atlas/v2/search/**`): the basic
   search (POST/GET), attribute, full-text, the quick search with its facets
   (POST/GET), term suggestions, the DSL search, and the seven saved-search
@@ -74,7 +81,9 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 > `aurelius_atlas_model/profile.py`, and to the admin DTOs in
 > `atlas-impexp.ts`/`atlas-mutation.ts`/`atlas-patches.ts`/`atlas-tasks.ts` and
 > `aurelius_atlas_model/impexp.py`/`instance/`/`patches.py`/`tasks.py`, and to
-> the lineage DTOs in `atlas-lineage.ts` and `aurelius_atlas_model/lineage.py`.
+> the lineage DTOs in `atlas-lineage.ts` and `aurelius_atlas_model/lineage.py`,
+> and to the relationship DTOs in `atlas-relationship.ts` and
+> `aurelius_atlas_model/instance/relationship.py`.
 
 ## Testing
 

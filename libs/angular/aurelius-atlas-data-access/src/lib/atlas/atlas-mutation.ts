@@ -18,6 +18,13 @@ import type { AtlasEntityHeader } from "./atlas-search";
 export type EntityOperation = "CREATE" | "UPDATE" | "PARTIAL_UPDATE" | "DELETE" | "PURGE";
 
 /**
+ * How a delete removes entities (`DeleteType`, the client-side twin of the
+ * server's, DD-311): `DEFAULT` defers to the server's configured strategy.
+ * The server reads the value in any case (`DeleteType.of`).
+ */
+export type DeleteType = "DEFAULT" | "SOFT" | "HARD";
+
+/**
  * `EntityMutationResponse`: the headers of the created, updated, deleted and
  * purged entities, keyed by operation, and the guids given to new ones.
  */

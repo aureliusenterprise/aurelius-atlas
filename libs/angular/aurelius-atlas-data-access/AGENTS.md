@@ -29,6 +29,11 @@ consumers import from the package root only, never a subfolder path.
   ALN-01..04): the three `LineageREST` routes — the graph, its on-demand form,
   and the unique-attribute lookup; `depth`/`direction` always go as query
   parameters (the twin's shape, not the `searchParams()` absence rule)
+- `src/lib/atlas/relationship.service.ts` — `RelationshipService`
+  (`/atlas/v2/relationship/**`, AREL-01..04): create/update (bare
+  `AtlasRelationship` both ways), the always-wrapped read
+  (`AtlasRelationshipWithExtInfo`, REL-06), and the soft/hard delete
+  (`deleteType` only when chosen)
 - `src/lib/atlas/atlas-typedef.ts` — the typedef DTO cluster with the server's camelCase
   wire names (APC-03); `src/lib/atlas/atlas-search.ts` — the search DTO cluster
   (`SearchParameters`, `AtlasSearchResult`, `AtlasQuickSearchResult`, …);
@@ -36,9 +41,13 @@ consumers import from the package root only, never a subfolder path.
   `SavedSearchType`, SVS-01); `src/lib/atlas/atlas-entity.ts` — the entity DTOs
   (with `AtlasObjectId`); `src/lib/atlas/atlas-impexp.ts` — the export/import DTOs
   and `AtlasExportAnswer` (DD-315); `src/lib/atlas/atlas-mutation.ts` —
-  `EntityMutationResponse`; `src/lib/atlas/atlas-patches.ts` / `atlas-tasks.ts` —
-  the patch/task DTOs; `src/lib/atlas/atlas-lineage.ts` — the lineage DTOs
-  (`AtlasLineageInfo`, `LineageOnDemandConstraints`, …); `src/lib/atlas/atlas-error.ts` — the Atlas
+  `EntityMutationResponse` (with `DeleteType`, DD-311's client-side vocabulary);
+  `src/lib/atlas/atlas-patches.ts` / `atlas-tasks.ts` —
+  the patch/task DTOs;
+  `src/lib/atlas/atlas-lineage.ts` — the lineage DTOs
+  (`AtlasLineageInfo`, `LineageOnDemandConstraints`, …);
+  `src/lib/atlas/atlas-relationship.ts` — the relationship DTOs
+  (`AtlasRelationship`, `AtlasRelationshipWithExtInfo`); `src/lib/atlas/atlas-error.ts` — the Atlas
   error body (SRV-04, APC-04), shared with `entities.service.ts`
 - `src/lib/entities.service.ts` — `EntitiesService` (HTTP + SSE) and the example API
   types — the FastAPI example's client, outside the Atlas folder by design;
@@ -64,6 +73,10 @@ consumers import from the package root only, never a subfolder path.
   in `libs/python/aurelius-atlas-server-client` covers the same three routes of
   `routes/lineage.py` — change them on both sides in the same PR. Both twins
   always send `depth` and `direction` on the two GET routes (ALN-01).
+- The relationship wire contract has the same twin: `AtlasClient.relationship`
+  (CLR-01..04) covers the same four routes of `routes/relationship.py` —
+  change them on both sides in the same PR. `getById` always answers the
+  `AtlasRelationshipWithExtInfo` wrapper on both sides (REL-06).
 - The admin wire contract has the same twin: `AtlasClient.admin` (CL-11,
   CLW-01..06) covers the same twelve routes of `routes/admin.py` — change them
   on both sides in the same PR. `export` returns `(bytes, content-type)` there
