@@ -44,25 +44,26 @@ history. Nothing is appended here.
 
 ## Log
 
-| #                                                                                                   | Decision                                                                                                                          | Increment     | Status   |
-| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------- |
-| [DD-177](#dd-177-the-parallel-tracks-colliding-dddv-ids-renumber-to-the-7x8x-side)                  | The parallel tracks' colliding DD/DV ids renumber to the 7.x/8.x side                                                             | —             | Accepted |
-| [DD-178](#dd-178-the-merge-resolves-the-opentelemetry-version-split-to-the-1451066b1-set)           | The merge resolves the OpenTelemetry version split to the 1.45.1/0.66b1 set                                                       | —             | Accepted |
-| [DD-179](#dd-179-the-branchs-second-collision-band-renumbers-above-mains-tail)                      | The branch's second collision band renumbers above main's tail                                                                    | —             | Accepted |
-| [DD-214](#dd-214-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)               | The test suite review of 2026-10-24 scopes the hardening increments                                                               | cross-cutting | Accepted |
-| [DD-215](#dd-215-the-ci-pipeline-drops-the-traceability-check-and-report)                           | The CI pipeline drops the traceability check and report; the tools stay as local aids                                             | cross-cutting | Accepted |
-| [DD-216](#dd-216-stacks-own-the-tls-material-they-mount)                                            | Stacks own the TLS material they mount                                                                                            | cross-cutting | Accepted |
-| [DD-217](#dd-217-the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74)                     | The search client lands on both sides of the wire, ahead of 7.4                                                                   | cross-cutting | Accepted |
-| [DD-226](#dd-226-the-dev-stacks-restart-windows-are-unbounded)                                      | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up                                  | cross-cutting | Accepted |
-| [DD-227](#dd-227-the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production) | The store-es e2e suite is removed: it evaluated the dev environment, not production                                               | cross-cutting | Accepted |
-| [DD-228](#dd-228-dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied)              | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour                        | cross-cutting | Accepted |
-| [DD-229](#dd-229-the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon)                        | Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss                         | cross-cutting | Accepted |
-| [DD-230](#dd-230-parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc)               | Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away | cross-cutting | Accepted |
-| [DD-231](#dd-231-teardown-downs-the-compose-stacks-prune-only-sweeps-corpses)                       | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail                  | cross-cutting | Accepted |
-| [DD-232](#dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir)                     | CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir          | cross-cutting | Accepted |
-| [DD-233](#dd-233-the-toolchain-caches-bridge-pod-churn-through-the-cache-server)                    | Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)                | cross-cutting | Accepted |
-| [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                          | Journal writes do not wait for a refresh                                                                                          | cross-cutting | Proposed |
-| [DD-295](#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges)                    | Chart-track id collisions with main renumber above both ranges                                                                    | —             | Accepted |
+| #                                                                                                         | Decision                                                                                                                          | Increment     | Status   |
+| --------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------- |
+| [DD-177](#dd-177-the-parallel-tracks-colliding-dddv-ids-renumber-to-the-7x8x-side)                        | The parallel tracks' colliding DD/DV ids renumber to the 7.x/8.x side                                                             | —             | Accepted |
+| [DD-178](#dd-178-the-merge-resolves-the-opentelemetry-version-split-to-the-1451066b1-set)                 | The merge resolves the OpenTelemetry version split to the 1.45.1/0.66b1 set                                                       | —             | Accepted |
+| [DD-179](#dd-179-the-branchs-second-collision-band-renumbers-above-mains-tail)                            | The branch's second collision band renumbers above main's tail                                                                    | —             | Accepted |
+| [DD-214](#dd-214-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)                     | The test suite review of 2026-10-24 scopes the hardening increments                                                               | cross-cutting | Accepted |
+| [DD-215](#dd-215-the-ci-pipeline-drops-the-traceability-check-and-report)                                 | The CI pipeline drops the traceability check and report; the tools stay as local aids                                             | cross-cutting | Accepted |
+| [DD-216](#dd-216-stacks-own-the-tls-material-they-mount)                                                  | Stacks own the TLS material they mount                                                                                            | cross-cutting | Accepted |
+| [DD-217](#dd-217-the-search-client-lands-on-both-sides-of-the-wire-ahead-of-74)                           | The search client lands on both sides of the wire, ahead of 7.4                                                                   | cross-cutting | Accepted |
+| [DD-226](#dd-226-the-dev-stacks-restart-windows-are-unbounded)                                            | The dev stacks' restart windows are unbounded: an attempt budget burns out before Keycloak is up                                  | cross-cutting | Accepted |
+| [DD-227](#dd-227-the-store-es-e2e-suite-is-removed-it-evaluated-the-dev-environment-not-production)       | The store-es e2e suite is removed: it evaluated the dev environment, not production                                               | cross-cutting | Accepted |
+| [DD-228](#dd-228-dev-posture-tests-leave-the-suites-the-sweep-of-dd-223s-rule-applied)                    | Six dev-posture e2e tests are removed: they asserted the dev box's deployment state, not shipped behaviour                        | cross-cutting | Accepted |
+| [DD-229](#dd-229-the-shape-a-tail-overlaps-the-test-graph-shares-its-daemon)                              | Shape-A wall-time tuning: docker-build rides the test graph, sonar overlaps Storybook, cache save on miss                         | cross-cutting | Accepted |
+| [DD-230](#dd-230-parallelism-stays-at-the-default-the-scanner-cache-moves-to-the-pvc)                     | Nx parallelism stays at the default (5 regressed); the SonarScanner download cache moves to the PVC; engine scoping measured away | cross-cutting | Accepted |
+| [DD-231](#dd-231-teardown-downs-the-compose-stacks-prune-only-sweeps-corpses)                             | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail                  | cross-cutting | Accepted |
+| [DD-232](#dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir)                           | CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir          | cross-cutting | Accepted |
+| [DD-233](#dd-233-the-toolchain-caches-bridge-pod-churn-through-the-cache-server)                          | Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)                | cross-cutting | Accepted |
+| [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                | Journal writes do not wait for a refresh                                                                                          | cross-cutting | Proposed |
+| [DD-295](#dd-295-chart-track-id-collisions-with-main-renumber-above-both-ranges)                          | Chart-track id collisions with main renumber above both ranges                                                                    | —             | Accepted |
+| [DD-302](#dd-302-business-attributes-are-stored-among-the-entitys-attributes-under-their-qualified-names) | Business attributes are stored among the entity's attributes under their qualified names                                          | 5.3           | Proposed |
 
 ### DD-177. The parallel tracks' colliding DD/DV ids renumber to the 7.x/8.x side
 
@@ -1178,6 +1179,28 @@ and `DV-110`, so ids this entry left in place collided: they move to `DD-298`
 and `DV-112`, and the paired `DV-111` shifts with it to `DV-113` — one sweep,
 same rule. Chart `DD-252` → `DD-298`, `DV-110/111` → `DV-112/113`; main keeps
 `DD-252` and `DV-110`.
+
+### DD-302. Business attributes are stored among the entity's attributes under their qualified names
+
+- **Status:** Proposed
+- **Increment:** 5.3b
+- **Date:** 2026-11-01
+
+**Decision.** An entity's business attribute values are kept in its stored document's `attributes`, each
+under the attribute's qualified name, `<business metadata>.<attribute>`, mapped as an entity attribute's value
+is (`EntityMapper`). Reads collect them per business metadata from the entity type's business attributes.
+
+**Reason.** Atlas keeps them as vertex properties of exactly that name, beside the entity's own attributes, and
+maps them with `mapAttribute`. A business metadata's name is a type name, so its qualified names cannot collide
+with an entity attribute's (`<entity type>.<attribute>`). Keeping them in `attributes` means every write that
+copies an entity's attributes keeps them, as Atlas's entity updates leave them, and the search fields can be
+built from them as from the entity's own attributes when business metadata becomes searchable.
+
+**Alternatives.** A separate `businessAttributes` object in the document: closer to the REST shape, but each
+write path would have to carry it across, and the values would need their own mapping and indexing.
+
+**Consequences.** Removing a business metadata type leaves values of its qualified names in stored documents;
+Atlas leaves its vertex properties too. Nothing reads them without the type.
 
 ## Moved entries
 

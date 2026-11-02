@@ -1,0 +1,260 @@
+name: An entity's business attributes are given at its creation, read, added, overwritten, removed and audited
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#addOrUpdateBusinessAttributes
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#removeBusinessAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#addOrUpdateBusinessAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#validateBusinessAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#mapAttributesAndClassifications
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#setBusinessAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#removeBusinessAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#getBusinessMetadata
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onBusinessAttributesUpdated
+rules: [BMD-01, BMD-02, BMD-03, BMD-04, BMD-05, BMD-06]
+covers:
+    - aurelius_atlas_server.routes.entity.add_or_update_business_attributes
+    - aurelius_atlas_server.routes.entity.add_or_update_business_attributes_of
+    - aurelius_atlas_server.routes.entity.remove_business_attributes_of
+stages:
+    - name: create a table type and business metadata that applies to it, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_btable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+              businessMetadataDefs:
+                  - name: scenario_bm_{run}
+                    attributeDefs:
+                        - name: steward
+                          typeName: string
+                          isOptional: true
+                          options: { applicableEntityTypes: '["scenario_btable_{run}"]', maxStrLength: "20" }
+                        - name: rank
+                          typeName: int
+                          isOptional: true
+                          options: { applicableEntityTypes: '["scenario_btable_{run}"]' }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_btable_{run}
+                    description: scenario_btable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs:
+                        scenario_bm_{run}:
+                            - name: steward
+                              typeName: string
+                              isOptional: true
+                              cardinality: SINGLE
+                              valuesMinCount: 0
+                              valuesMaxCount: 1
+                              isUnique: false
+                              isIndexable: false
+                              includeInNotification: false
+                              searchWeight: -1
+                              options: { applicableEntityTypes: '["scenario_btable_{run}"]', maxStrLength: "20" }
+                            - name: rank
+                              typeName: int
+                              isOptional: true
+                              cardinality: SINGLE
+                              valuesMinCount: 0
+                              valuesMaxCount: 1
+                              isUnique: false
+                              isIndexable: false
+                              includeInNotification: false
+                              searchWeight: -1
+                              options: { applicableEntityTypes: '["scenario_btable_{run}"]' }
+                    category: ENTITY
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+              relationshipDefs: []
+              businessMetadataDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_bm_{run}
+                    description: scenario_bm_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: steward
+                          typeName: string
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          options: { applicableEntityTypes: '["scenario_btable_{run}"]', maxStrLength: "20" }
+                        - name: rank
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          options: { applicableEntityTypes: '["scenario_btable_{run}"]' }
+                    category: BUSINESS_METADATA
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+              - $.businessMetadataDefs[*].guid
+              - $.businessMetadataDefs[*].createTime
+              - $.businessMetadataDefs[*].updateTime
+    - name: create a table with a business attribute
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity:
+                  typeName: scenario_btable_{run}
+                  guid: "-1"
+                  attributes: { qualifiedName: "bt_{run}" }
+                  businessAttributes: { "scenario_bm_{run}": { steward: ann } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_btable_{run}
+                        attributes: { qualifiedName: "bt_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: bt_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+          save:
+              table: $.guidAssignments['-1']
+    - name: add a value to the business metadata; the answer has no body
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{table}/businessmetadata/scenario_bm_{run}
+          json: { rank: 2 }
+      response:
+          status: 204
+    - name: the entity carries both values
+      request: { method: GET, url: "/api/atlas/v2/entity/guid/{table}" }
+      response:
+          status: 200
+          json:
+              referredEntities: {}
+              entity:
+                  typeName: scenario_btable_{run}
+                  attributes: { qualifiedName: "bt_{run}" }
+                  guid: "{table}"
+                  isIncomplete: false
+                  provenanceType: 0
+                  status: ACTIVE
+                  createdBy: "{user}"
+                  updatedBy: "{user}"
+                  createTime: 0
+                  updateTime: 0
+                  version: 0
+                  businessAttributes: { "scenario_bm_{run}": { steward: ann, rank: 2 } }
+                  labels: []
+          volatile:
+              - $.entity.createTime
+              - $.entity.updateTime
+    - name: a value longer than its maximum is refused
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{table}/businessmetadata
+          json: { "scenario_bm_{run}": { steward: "a steward with a long name" } }
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-007
+              errorMessage: "Invalid instance creation/updation parameters passed : [scenario_btable_{run}.scenario_bm_{run}.steward:  Business attribute-value exceeds maximum length limit]"
+    - name: overwrite them, leaving only the rank
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/guid/{table}/businessmetadata
+          params: { isOverwrite: "true" }
+          json: { "scenario_bm_{run}": { rank: 3 } }
+      response:
+          status: 204
+    - name: remove the business metadata's values
+      request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{table}/businessmetadata/scenario_bm_{run}" }
+      response:
+          status: 204
+    - name: the business attribute events, newest first
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/{table}/audit
+          params: { auditAction: BUSINESS_ATTRIBUTE_UPDATE }
+      response:
+          status: 200
+          json:
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: BUSINESS_ATTRIBUTE_UPDATE
+                # the scenario template reads }} as an escaped }
+                details: 'Updated business attributes: {"typeName":"scenario_bm_{run}","attributes":{"steward":null,"rank":null}}}}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: BUSINESS_ATTRIBUTE_UPDATE
+                details: 'Updated business attributes: {"typeName":"scenario_bm_{run}","attributes":{"steward":null,"rank":3}}}}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: BUSINESS_ATTRIBUTE_UPDATE
+                details: 'Updated business attributes: {"typeName":"scenario_bm_{run}","attributes":{"rank":2}}}}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: BUSINESS_ATTRIBUTE_UPDATE
+                details: 'Updated business attributes: {"typeName":"scenario_bm_{run}","attributes":{"steward":"ann"}}}}'
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+          volatile: ["$[*].timestamp", "$[*].eventKey"]

@@ -1,0 +1,191 @@
+name: Business attribute values are imported from a CSV file, row failures first, then each entity's outcome
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#produceTemplate
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#importBMAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#bulkCreateOrUpdateBusinessAttributes
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#getBusinessMetadataDefList
+    - repository/src/main/java/org/apache/atlas/util/FileUtils.java#getBusinessMetadataHeaders
+    - intg/src/main/java/org/apache/atlas/bulkimport/BulkImportResponse.java (ImportInfo)
+rules: [BMI-01, BMI-02, BMI-03, BMI-04]
+covers:
+    - aurelius_atlas_server.routes.entity.produce_template
+    - aurelius_atlas_server.routes.entity.import_bm_attributes
+stages:
+    - name: create a table type and business metadata that applies to it, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_itable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+              businessMetadataDefs:
+                  - name: scenario_ibm_{run}
+                    attributeDefs:
+                        - name: steward
+                          typeName: string
+                          isOptional: true
+                          options: { applicableEntityTypes: '["scenario_itable_{run}"]', maxStrLength: "20" }
+                        - name: rank
+                          typeName: int
+                          isOptional: true
+                          options: { applicableEntityTypes: '["scenario_itable_{run}"]' }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_itable_{run}
+                    description: scenario_itable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs:
+                        scenario_ibm_{run}:
+                            - name: steward
+                              typeName: string
+                              isOptional: true
+                              cardinality: SINGLE
+                              valuesMinCount: 0
+                              valuesMaxCount: 1
+                              isUnique: false
+                              isIndexable: false
+                              includeInNotification: false
+                              searchWeight: -1
+                              options: { applicableEntityTypes: '["scenario_itable_{run}"]', maxStrLength: "20" }
+                            - name: rank
+                              typeName: int
+                              isOptional: true
+                              cardinality: SINGLE
+                              valuesMinCount: 0
+                              valuesMaxCount: 1
+                              isUnique: false
+                              isIndexable: false
+                              includeInNotification: false
+                              searchWeight: -1
+                              options: { applicableEntityTypes: '["scenario_itable_{run}"]' }
+                    category: ENTITY
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+              relationshipDefs: []
+              businessMetadataDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ibm_{run}
+                    description: scenario_ibm_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: steward
+                          typeName: string
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          options: { applicableEntityTypes: '["scenario_itable_{run}"]', maxStrLength: "20" }
+                        - name: rank
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                          options: { applicableEntityTypes: '["scenario_itable_{run}"]' }
+                    category: BUSINESS_METADATA
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+              - $.businessMetadataDefs[*].guid
+              - $.businessMetadataDefs[*].createTime
+              - $.businessMetadataDefs[*].updateTime
+    - name: create a table with a business attribute
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity:
+                  typeName: scenario_itable_{run}
+                  guid: "-1"
+                  attributes: { qualifiedName: "it_{run}" }
+                  businessAttributes: { "scenario_ibm_{run}": { steward: ann } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_itable_{run}
+                        attributes: { qualifiedName: "it_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: it_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+          save:
+              table: $.guidAssignments['-1']
+    - name: the template is the header line
+      request: { method: GET, url: /api/atlas/v2/entity/businessmetadata/import/template }
+      response:
+          status: 200
+          headers: { content-disposition: 'attachment; filename="template_business_metadata"' }
+          text: EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue,EntityUniqueAttributeName[optional]
+    - name: import a rank for the table; a row of an unknown business attribute fails
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/businessmetadata/import
+          headers: { content-type: "multipart/form-data; boundary=scenario" }
+          text: "--scenario\r\nContent-Disposition: form-data; name=\"file\"; filename=\"bm.csv\"\r\n\
+              Content-Type: text/csv\r\n\r\nEntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue\r\n\
+              scenario_itable_{run},it_{run},scenario_ibm_{run}.rank,2\r\n\
+              scenario_itable_{run},it_{run},scenario_ibm_{run}.nope,2\r\n--scenario--\r\n"
+      response:
+          status: 200
+          json:
+              failedImportInfoList:
+                  - parentObjectName: ""
+                    childObjectName: ""
+                    importStatus: FAILED
+                    remarks: "Line #3: invalid business-metadata 'scenario_ibm_{run}.nope' for entity type 'scenario_itable_{run}'"
+              successImportInfoList:
+                  - parentObjectName: "{table}"
+                    # the scenario template reads {{ and }} as escaped braces
+                    childObjectName: "{{scenario_ibm_{run}={{steward=ann, rank=2}}}}"
+                    importStatus: SUCCESS
+                    remarks: ""
