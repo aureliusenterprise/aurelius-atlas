@@ -210,6 +210,7 @@ history. Nothing is appended here.
 | [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                       | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
 | [DD-300](#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                   | Four fixed roles of the server's client grant Atlas's privileges                                                                                                                                                                | 6.2           | Proposed             |
 | [DD-301](#dd-301-the-stores-check-through-the-authorizer-they-are-given)                                           | The stores check through the authorizer they are given                                                                                                                                                                          | 6.2           | Proposed             |
+| [DD-302](#dd-302-business-attributes-are-stored-among-the-entitys-attributes-under-their-qualified-names)          | Business attributes are stored among the entity's attributes under their qualified names                                                                                                                                        | 5.3           | Proposed             |
 
 ### DD-087. Basic search is split into entity and classification search
 
@@ -8009,6 +8010,28 @@ default: every internal caller and test would have to make one up.
 **Consequences.** Every store a route builds must be given `authorizer(request)`; the server's tests refuse each
 kind of change for a reader, which catches a route that forgets. Should roles ever grant privileges per type
 (DV-111), the relationship checks inside entity writes are to be added.
+
+### DD-302. Business attributes are stored among the entity's attributes under their qualified names
+
+- **Status:** Proposed
+- **Increment:** 5.3b
+- **Date:** 2026-11-01
+
+**Decision.** An entity's business attribute values are kept in its stored document's `attributes`, each
+under the attribute's qualified name, `<business metadata>.<attribute>`, mapped as an entity attribute's value
+is (`EntityMapper`). Reads collect them per business metadata from the entity type's business attributes.
+
+**Reason.** Atlas keeps them as vertex properties of exactly that name, beside the entity's own attributes, and
+maps them with `mapAttribute`. A business metadata's name is a type name, so its qualified names cannot collide
+with an entity attribute's (`<entity type>.<attribute>`). Keeping them in `attributes` means every write that
+copies an entity's attributes keeps them, as Atlas's entity updates leave them, and the search fields can be
+built from them as from the entity's own attributes when business metadata becomes searchable.
+
+**Alternatives.** A separate `businessAttributes` object in the document: closer to the REST shape, but each
+write path would have to carry it across, and the values would need their own mapping and indexing.
+
+**Consequences.** Removing a business metadata type leaves values of its qualified names in stored documents;
+Atlas leaves its vertex properties too. Nothing reads them without the type.
 
 ## Moved entries
 
