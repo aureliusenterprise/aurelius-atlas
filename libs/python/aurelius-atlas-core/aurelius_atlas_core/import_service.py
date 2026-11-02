@@ -8,6 +8,7 @@ from pathlib import Path
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.impexp import (
     FILE_NAME_KEY,
+    OPTION_KEY_MIGRATION,
     START_GUID_KEY,
     START_POSITION_KEY,
     TRANSFORMS_KEY,
@@ -17,6 +18,7 @@ from aurelius_atlas_model.impexp import (
     OperationStatus,
 )
 
+from aurelius_atlas_core.audits_writer import AuditsWriter
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_transforms import ImportTransforms, shape
@@ -30,12 +32,23 @@ FILE_NOT_FOUND = "{}: file not found"
 
 
 class ImportService:
-    """``ImportService`` into ``store`` and ``typedef_store``, entities written by ``writer``."""
+    """``ImportService`` into ``store`` and ``typedef_store``, entities written by ``writer``.
 
-    def __init__(self, store: EntityStore, typedef_store: TypedefStore, writer: EntityWriter) -> None:
+    ``audits``, when given, records each import but a migration's, and the replication it asks for (REP-02 to REP-04).
+    """
+
+    def __init__(
+        self,
+        store: EntityStore,
+        typedef_store: TypedefStore,
+        writer: EntityWriter,
+        *,
+        audits: AuditsWriter | None = None,
+    ) -> None:
         self._store = store
         self._typedef_store = typedef_store
         self._writer = writer
+        self._audits = audits
 
     async def run(
         self, content: bytes, request: AtlasImportRequest | None, user_name: str | None, host_name: str, ip: str
@@ -71,8 +84,11 @@ class ImportService:
             source.set_position(_position(start_position))
         result.export_result = source.export_result()
         await RegularImport(self._store, self._writer).run(source, result)
-        result.increment_metrics_counter("duration", self._store.now() - start)
+        end = self._store.now()
+        result.increment_metrics_counter("duration", end - start)
         result.operation_status = OperationStatus.SUCCESS
+        if self._audits is not None and OPTION_KEY_MIGRATION not in request.options:
+            await self._audits.write_import(user_name, result, start, end, source.creation_order)
         return result
 
     async def run_file(
