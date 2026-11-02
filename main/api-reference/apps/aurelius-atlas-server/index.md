@@ -130,6 +130,19 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Task Poll Seconds",
 >       "type": "number"
 >     },
+>     "import_folder": {
+>       "anyOf": [
+>         {
+>           "format": "path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Import Folder"
+>     },
 >     "cluster_name": {
 >       "default": "default",
 >       "title": "Cluster Name",
@@ -332,6 +345,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `delete_type_override` (`bool`)
 > - `tasks_enabled` (`bool`)
 > - `task_poll_seconds` (`float`)
+> - `import_folder` (`Path | None`)
 > - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
 > - `lineage_on_demand_default_node_count` (`int`)
@@ -507,6 +521,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Whether responses carry `Strict-Transport-Security` (SRV-08, DD-236). The image ships True; the dev arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the plaintext dev surfaces (ADR 039's named relaxations).
+>
+> ### import\_folder
+>
+> ```
+> import_folder: Path | None = None
+> ```
+>
+> The one folder `admin/importfile` reads export ZIPs from; none refuses every file (IMS-06, DV-125).
 >
 > ### lineage\_max\_node\_count
 >
@@ -934,6 +956,12 @@ Functions:
 - **`get_version`** –
 
   The server's name, release and revision (ADM-01, DV-03).
+- **`import_data`** –
+
+  `importData`: the form's `data`, an export ZIP, imported as its `request` asks (IMS-01 to IMS-05).
+- **`import_file`** –
+
+  `importFile`: the export ZIP its `fileName` option names, from the server's import folder (IMS-06, DV-125).
 - **`purge_by_ids`** –
 
   `purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).
@@ -1121,6 +1149,38 @@ get_version(request: Request) -> dict[str, str]
 ```
 
 The server's name, release and revision (ADM-01, DV-03).
+
+### import\_data
+
+```
+import_data(request: Request, store: Store) -> AtlasJSONResponse
+```
+
+`importData`: the form's `data`, an export ZIP, imported as its `request` asks (IMS-01 to IMS-05).
+
+One export or import runs at a time unless the request names `replicatedFrom`; an empty ZIP answers an empty result.
+
+Raises:
+
+- `AtlasError` –
+
+  `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`; what the import fails with.
+
+### import\_file
+
+```
+import_file(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+```
+
+`importFile`: the export ZIP its `fileName` option names, from the server's import folder (IMS-06, DV-125).
+
+It locks other exports and imports out only when the request names `replicatedFrom`, as Atlas does.
+
+Raises:
+
+- `AtlasError` –
+
+  `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`; `INVALID_PARAMETERS`; what the import fails with.
 
 ### purge\_by\_ids
 

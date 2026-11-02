@@ -2489,15 +2489,6 @@ A constraint on an attribute, such as `ownedRef` or `inverseRef`.
 }
 ```
 
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
-
 Fields:
 
 - `type` (`str | None`)
@@ -8713,6 +8704,15 @@ Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to str
   "type": "object"
 }
 ```
+
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
 
 #### model\_config
 

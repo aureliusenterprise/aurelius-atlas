@@ -1400,6 +1400,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.import_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;import_folder
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.lineage_max_node_count" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2105,6 +2116,28 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_version
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.import_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;import_data
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.import_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;import_file
       </span>
     </span>
   </a>
@@ -7453,6 +7486,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.import_folder" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;import_folder
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.lineage_max_node_count" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8165,6 +8209,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.import_data" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;import_data
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.import_file" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;import_file
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.purge_by_ids" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8446,6 +8512,19 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"exclusiveMinimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task Poll Seconds"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"import_folder"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"path"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Import Folder"</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"cluster_name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span>
@@ -8762,6 +8841,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.task_poll_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.task_poll_seconds">task_poll_seconds</a></code>
                 (<code><span title="float">float</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            import_folder
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.import_folder)" href="./#aurelius_atlas_server.settings.ServerSettings.import_folder">import_folder</a></code>
+                (<code><span title="pathlib.Path">Path</span> | None</code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            cluster_name
@@ -9443,6 +9531,30 @@ limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).</p>
         <p>Whether responses carry <code>Strict-Transport-Security</code> (SRV-08, DD-236). The image ships True; the dev
 arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the
 plaintext dev surfaces (ADR 039's named relaxations).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.import_folder" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">import_folder</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.import_folder" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">import_folder</span><span class="p">:</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The one folder <code>admin/importfile</code> reads export ZIPs from; none refuses every file (IMS-06, DV-125).</p>
 
     </div>
 
@@ -10850,6 +10962,30 @@ there the cause is the request's own defect, not server internals.</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            import_data
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.import_data)" href="./#aurelius_atlas_server.routes.admin.import_data">import_data</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>importData</code>: the form's <code>data</code>, an export ZIP, imported as its <code>request</code> asks (IMS-01 to IMS-05).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            import_file
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.import_file)" href="./#aurelius_atlas_server.routes.admin.import_file">import_file</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>importFile</code>: the export ZIP its <code>fileName</code> option names, from the server's import folder (IMS-06, DV-125).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            purge_by_ids
 
 
@@ -11463,6 +11599,82 @@ permissions are the user's (AUZ-06). <code>atlas.tasks.enabled</code> is the ser
     <div class="doc doc-contents ">
 
         <p>The server's name, release and revision (ADM-01, DV-03).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.import_data" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">import_data</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.import_data" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">import_data</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.import_data(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.import_data(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasJSONResponse (aurelius_atlas_server.errors.AtlasJSONResponse)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse">AtlasJSONResponse</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>importData</code>: the form's <code>data</code>, an export ZIP, imported as its <code>request</code> asks (IMS-01 to IMS-05).</p>
+<p>One export or import runs at a time unless the request names <code>replicatedFrom</code>; an empty ZIP answers an empty
+result.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="aurelius_atlas_server.errors.AtlasError">AtlasError</span></code>
+            –
+          <div class="doc-md-description">
+            <p><code>UNAUTHORIZED_ACCESS</code>; <code>FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK</code>; what the import fails with.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.import_file" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">import_file</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.import_file" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">import_file</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.import_file(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.import_file(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.import_file(body)">body</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Body">Body</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasJSONResponse (aurelius_atlas_server.errors.AtlasJSONResponse)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse">AtlasJSONResponse</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>importFile</code>: the export ZIP its <code>fileName</code> option names, from the server's import folder (IMS-06, DV-125).</p>
+<p>It locks other exports and imports out only when the request names <code>replicatedFrom</code>, as Atlas does.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="aurelius_atlas_server.errors.AtlasError">AtlasError</span></code>
+            –
+          <div class="doc-md-description">
+            <p><code>UNAUTHORIZED_ACCESS</code>; <code>FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK</code>; <code>INVALID_PARAMETERS</code>; what
+the import fails with.</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

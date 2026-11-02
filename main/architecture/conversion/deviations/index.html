@@ -7106,6 +7106,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Exports from a catalogue without hooks hold no shell entities</td>
 <td>6.3</td>
 </tr>
+<tr>
+<td>DV-125</td>
+<td>Import/export</td>
+<td><code>admin/importfile</code> reads the ZIP of any path the server can read</td>
+<td>Only from the server's configured <code>import_folder</code>; any other name is not found</td>
+<td>A path named by a request must not open the server's file system</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-126</td>
+<td>Import/export</td>
+<td>An imported entity whose unique values a stored entity holds renames that entity to the imported GUID, recording the old one; an entity retried after the rest is retried from the position after it</td>
+<td>The stored entity keeps its GUID, the imported GUID standing for it during the import (DD-306); the entity itself is retried</td>
+<td>Our documents name entities by GUID; a rename rewrites them all</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 
