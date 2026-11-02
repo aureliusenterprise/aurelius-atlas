@@ -9,7 +9,9 @@ source:
     - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#removeBusinessAttributes
     - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#getBusinessMetadata
     - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onBusinessAttributesUpdated
-rules: [BMD-01, BMD-02, BMD-03, BMD-04, BMD-05, BMD-06]
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphRetriever.java#mapVertexToAtlasEntityHeader
+    - intg/src/main/java/org/apache/atlas/type/AtlasEntityType.java#getBusinesAAttribute
+rules: [BMD-01, BMD-02, BMD-03, BMD-04, BMD-05, BMD-06, BMS-01, BMS-02]
 covers:
     - aurelius_atlas_server.routes.entity.add_or_update_business_attributes
     - aurelius_atlas_server.routes.entity.add_or_update_business_attributes_of
@@ -194,6 +196,39 @@ stages:
           volatile:
               - $.entity.createTime
               - $.entity.updateTime
+    - name: a basic search filters on the business attribute and answers it
+      request:
+          method: POST
+          url: /api/atlas/v2/search/basic
+          json:
+              typeName: scenario_btable_{run}
+              entityFilters: { attributeName: "scenario_bm_{run}.rank", operator: "=", attributeValue: "2" }
+      response:
+          status: 200
+          json:
+              queryType: BASIC
+              searchParameters:
+                  typeName: scenario_btable_{run}
+                  excludeDeletedEntities: false
+                  includeClassificationAttributes: false
+                  includeSubTypes: true
+                  includeSubClassifications: true
+                  excludeHeaderAttributes: false
+                  limit: 100
+                  offset: 0
+                  entityFilters: { attributeName: "scenario_bm_{run}.rank", operator: "=", attributeValue: "2" }
+              entities:
+                  - typeName: scenario_btable_{run}
+                    attributes: { qualifiedName: "bt_{run}", "scenario_bm_{run}.rank": 2 }
+                    guid: "{table}"
+                    status: ACTIVE
+                    displayText: bt_{run}
+                    classificationNames: []
+                    meaningNames: []
+                    meanings: []
+                    isIncomplete: false
+                    labels: []
+              approximateCount: 1
     - name: a value longer than its maximum is refused
       request:
           method: POST

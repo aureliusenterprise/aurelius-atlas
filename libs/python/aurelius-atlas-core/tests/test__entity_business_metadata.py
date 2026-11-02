@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
+from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata, business_metadata_headers
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
@@ -20,6 +21,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.memory import InMemoryEntityAuditRepository, MemoryEntityDocuments
 from aurelius_atlas_model.audit import EntityAuditActionV2
+from aurelius_atlas_model.discovery import SearchParameters
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -356,3 +358,30 @@ async def test__business_attributes_are_imported_from_a_file(
     with pytest.raises(AtlasError) as blank:
         await service(store, audits).bulk_create_or_update_business_attributes(" ", CSV)
     assert blank.value.code is AtlasErrorCode.FILE_NAME_NOT_FOUND
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.search_fields.search_fields",
+    "aurelius_atlas_core.discovery_service.EntityDiscoveryService.search_with_parameters",
+    rules=["BMS-01", "BMS-02"],
+)
+async def test__a_basic_search_filters_and_answers_business_attributes(
+    store: EntityStore, audits: InMemoryEntityAuditRepository
+) -> None:
+    """``<business metadata>.<attribute>`` filters, sorts and is answered, of one type or of all."""
+    guid = await entity(store, audits, bm={"n": 2, "s": "x"})
+    await entity_without(store)
+    service = EntityDiscoveryService(store)
+
+    def search(type_name: str, **more: Any) -> SearchParameters:  # noqa: ANN401 - parameters
+        criteria = {"attributeName": "bm.n", "operator": "gte", "attributeValue": "2"}
+        return SearchParameters.model_validate({"typeName": type_name, "entityFilters": criteria, **more})
+
+    typed = (await service.search_with_parameters(search("t", attributes=["bm.s"], sortBy="bm.s"))).to_json()
+    every = (await service.search_with_parameters(search("_ALL_ENTITY_TYPES"))).to_json()
+
+    assert [(header["guid"], header["attributes"].get("bm.s")) for header in typed["entities"]] == [(guid, "x")]
+    assert [header["guid"] for header in every["entities"]] == [guid]
+    with pytest.raises(AtlasError) as unknown:
+        await service.search_with_parameters(search("t", attributes=["bm.zz"]))
+    assert unknown.value.code is AtlasErrorCode.UNKNOWN_ATTRIBUTE

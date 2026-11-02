@@ -27,6 +27,7 @@ from aurelius_atlas_model.typedef import (
 )
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_typesystem.types import (
+    ENTITY_ROOT,
     ArrayType,
     BusinessAttribute,
     ClassificationType,
@@ -587,10 +588,12 @@ def test__tag_propagation_edges_follow_propagate_tags(
     "aurelius_atlas_typesystem.attribute.AtlasAttribute.option_set",
     "aurelius_atlas_typesystem.attribute.AtlasAttribute.option_int",
     "aurelius_atlas_typesystem.attribute.AtlasAttribute.option_string",
-    rules=["THY-12"],
+    rules=["THY-12", "BMS-02"],
 )
 def test__business_attributes_apply_to_their_entity_types_and_sub_types() -> None:
-    """``AtlasBusinessMetadataType``: applicable entity types, ``bm.attribute`` lookup, ``businessAttributeDefs``."""
+    """``AtlasBusinessMetadataType``: applicable entity types, ``bm.attribute`` lookup, ``businessAttributeDefs``;
+    the entity root finds any business metadata's attribute through its registry.
+    """  # noqa: D205 - one sentence
     registry = resolve(
         entity("table"),
         entity("view", "table"),
@@ -619,6 +622,8 @@ def test__business_attributes_apply_to_their_entity_types_and_sub_types() -> Non
     business_defs = entity_type(registry, "table").entity_def.business_attribute_defs
     assert business_defs is not None
     assert [item.name for item in business_defs["bm"]] == ["owner", "rank"]
+    assert ENTITY_ROOT.attribute("bm.rank") is view.business_attribute("bm", "rank")
+    assert ENTITY_ROOT.attribute("nope.rank") is None
 
 
 @pytest.mark.covers(rules=["THY-12"])
