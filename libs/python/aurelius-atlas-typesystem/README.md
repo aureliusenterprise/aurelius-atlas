@@ -8,9 +8,9 @@ the type registry and the types that type definitions resolve to. Since incremen
 [1.2](specs/1-2-type-registry/spec.md): the built-in, array, map, enum
 and struct types, attribute types and constraints. Since [1.3](specs/1-3-type-hierarchies/spec.md):
 entity and classification hierarchies, relationship and business metadata types. Since
-[2.1b](../../../docs/architecture/conversion/increments/2-1-value-types.md): the value side of the built-in,
+[2.1b](specs/2-1-value-types/spec.md): the value side of the built-in,
 enum, array and map types, as Atlas checks, normalises and compares attribute values. Since
-[2.1c](../../../docs/architecture/conversion/increments/2-1-entity-validation.md): the same for structs,
+[2.1c](specs/2-1-entity-validation/spec.md): the same for structs,
 classifications (with their validity periods) and entities (with their relationship attributes).
 
 ```python

@@ -8,7 +8,7 @@ translation, test tooling. Business-level decisions are ADRs in
 Each new entry lives in the `design.md` of the increment that makes it, next to that increment's
 spec ([ADR 051](../adr/051-the-conversion-proceeds-in-specified-increments.md)); where, is what
 the [Moved entries](#moved-entries) index keeps per number. This page holds the entries written
-before that layout (DD-001 to DD-036 are moved out; what is listed below stays): it is read-only
+before that layout (DD-001 to DD-060 are moved out; what is listed below stays): it is read-only
 history. Nothing is appended here.
 
 ## Rules
@@ -44,30 +44,6 @@ history. Nothing is appended here.
 
 | #                                                                                                                  | Decision                                                                                                                                                                                                                        | Increment     | Status               |
 | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------- |
-| [DD-037](#dd-037-instance-models-are-one-module-per-java-class)                                                    | Instance models are one module per Java class                                                                                                                                                                                   | 2.1           | Proposed             |
-| [DD-038](#dd-038-attribute-values-stay-plain-json-values-until-their-types-read-them)                              | Attribute values stay plain JSON values until their types read them                                                                                                                                                             | 2.1           | Proposed             |
-| [DD-039](#dd-039-one-atlas-json-codec-reads-floats-as-decimals-and-writes-them-with-their-digits)                  | One Atlas JSON codec reads floats as decimals and writes them with their digits                                                                                                                                                 | 2.1           | Proposed             |
-| [DD-040](#dd-040-java-values-are-held-as-the-python-values-closest-to-them)                                        | Java values are held as the Python values closest to them                                                                                                                                                                       | 2.1           | Proposed             |
-| [DD-041](#dd-041-the-type-system-is-one-module-per-java-type-class-too)                                            | The type system is one module per Java type class too                                                                                                                                                                           | 2.1           | Proposed             |
-| [DD-042](#dd-042-a-validity-period-without-a-time-zone-is-in-utc)                                                  | A validity period without a time zone is in UTC                                                                                                                                                                                 | 2.1           | Proposed             |
-| [DD-043](#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names)                       | Entities are documents of one index, their attributes under qualified names                                                                                                                                                     | 2.2           | Proposed             |
-| [DD-044](#dd-044-a-guid-is-a-random-uuid)                                                                          | A GUID is a random UUID                                                                                                                                                                                                         | 2.2           | Proposed             |
-| [DD-045](#dd-045-unique-values-are-reserved-by-create-only-documents)                                              | Unique values are reserved by create-only documents                                                                                                                                                                             | 2.2           | Proposed             |
-| [DD-046](#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal)                                         | A multi-entity write is all or nothing, through a journal                                                                                                                                                                       | 2.2           | Proposed             |
-| [DD-047](#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version)                                | Entities are written conditionally on their Elasticsearch version                                                                                                                                                               | 2.2           | Proposed             |
-| [DD-048](#dd-048-a-type-is-in-use-while-the-entity-index-holds-one-of-it)                                          | A type is in use while the entity index holds one of it                                                                                                                                                                         | 2.2           | Proposed             |
-| [DD-049](#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)                     | Attribute values are stored normalised; a struct inline, a reference as a GUID                                                                                                                                                  | 2.3           | Proposed             |
-| [DD-050](#dd-050-relationship-attributes-read-empty-until-relationships-are-stored)                                | Relationship attributes read empty until relationships are stored                                                                                                                                                               | 2.3           | Superseded by DD     |
-| [DD-051](#dd-051-entity-reads-are-tested-on-entities-written-through-the-store-until-24)                           | Entity reads are tested on entities written through the store until 2.4                                                                                                                                                         | 2.3           | Proposed             |
-| [DD-052](#dd-052-a-request-is-mapped-in-memory-and-written-once-a-lost-race-runs-it-again)                         | A request is mapped in memory and written once; a lost race runs it again                                                                                                                                                       | 2.4           | Proposed             |
-| [DD-053](#dd-053-relationship-attribute-values-are-resolved-but-stored-only-as-legacy-attributes-until-31)         | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1                                                                                                                                      | 2.4           | Superseded by DD     |
-| [DD-054](#dd-054-dynamic-attributes-are-evaluated-in-first-seen-dependency-order)                                  | Dynamic attributes are evaluated in first-seen dependency order                                                                                                                                                                 | 2.4           | Proposed             |
-| [DD-055](#dd-055-scenarios-name-what-they-create-with-a-per-run-value)                                             | Scenarios name what they create with a per-run value                                                                                                                                                                            | 2.4           | Proposed             |
-| [DD-056](#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others)                                 | An entity write also removes documents, journaled like the others                                                                                                                                                               | 2.5           | Proposed             |
-| [DD-057](#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids)                            | Entities referring to one are found through an indexed field of GUIDs                                                                                                                                                           | 2.5           | Proposed             |
-| [DD-058](#dd-058-a-stored-reference-stands-for-an-edge-active-for-a-delete-deleted-for-a-purge)                    | A stored reference stands for an edge: active for a delete, deleted for a purge                                                                                                                                                 | 2.5           | Proposed             |
-| [DD-059](#dd-059-the-delete-type-and-its-override-are-server-settings)                                             | The delete type and its override are server settings                                                                                                                                                                            | 2.5           | Proposed             |
-| [DD-060](#dd-060-the-owned-reference-cascade-moves-from-32-to-25)                                                  | The owned-reference cascade moves from 3.2 to 2.5                                                                                                                                                                               | 2.5           | Proposed             |
 | [DD-061](#dd-061-relationships-are-documents-of-their-own-index-listed-by-both-ends)                               | Relationships are documents of their own index, listed by both ends                                                                                                                                                             | 3.1           | Proposed             |
 | [DD-062](#dd-062-an-entity-write-also-writes-relationships-all-or-nothing)                                         | An entity write also writes relationships, all or nothing                                                                                                                                                                       | 3.1           | Proposed             |
 | [DD-063](#dd-063-31-is-split-into-relationship-instances-and-relationship-attributes)                              | 3.1 is split into relationship instances and relationship attributes                                                                                                                                                            | 3.1           | Proposed             |
@@ -260,536 +236,6 @@ history. Nothing is appended here.
 | [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                       | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
 | [DD-300](#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                   | Four fixed roles of the server's client grant Atlas's privileges                                                                                                                                                                | 6.2           | Proposed             |
 | [DD-301](#dd-301-the-stores-check-through-the-authorizer-they-are-given)                                           | The stores check through the authorizer they are given                                                                                                                                                                          | 6.2           | Proposed             |
-
-### DD-037. Instance models are one module per Java class
-
-- **Status:** Proposed
-- **Increment:** 2.1
-- **Date:** 2026-10-20
-
-**Decision.** The entity models live in the package `aurelius_atlas_model.instance`, one module per Java
-class, nested classes and enums included (`entity`, `entity_status`, `entity_with_ext_info`, …). The package
-re-exports every model. The JSON conventions all models share (`AtlasModel`, the timestamp, Java boolean, int
-and set types) move from `typedef` to `aurelius_atlas_model.base`; `typedef` imports them from there.
-
-**Reason.** Atlas organises its models as one class per file; a reader who knows a Java class finds its port
-by name, and each module stays small enough to read whole. The typedef models were ported into one module
-(1.1); the instance models are more numerous and depend on each other in one direction only (struct, then
-entity, header, ext info), which modules make visible.
-
-**Alternatives.** One `instance.py`, as `typedef.py`: about as long as all of `typedef.py` again, mixing
-seventeen classes. Importing the shared conventions from `typedef`: makes the instance models depend on the
-typedef module for reasons unrelated to type definitions.
-
-**Consequences.** Tests follow the layout, one file per module under `tests/instance/`; the four enums,
-which have no behaviour of their own, share one. Splitting
-`typedef.py` the same way is possible later without changing its imports, through its re-exports.
-
-### DD-038. Attribute values stay plain JSON values until their types read them
-
-- **Status:** Proposed
-- **Increment:** 2.1
-- **Date:** 2026-10-20
-
-**Decision.** The models of 2.1a keep attribute values (`attributes`, `relationshipAttributes`,
-`uniqueAttributes`, business attributes) as the JSON values Python reads: objects, arrays, strings, integers,
-floats, booleans and null. Atlas's REST mapper reads floats as `BigDecimal` (`USE_BIG_DECIMAL_FOR_FLOATS`)
-and writes them back with their digits (`1.10`, `1E+3`); that is designed with the `bigdecimal`, `float` and
-`double` types in 2.1b.
-
-**Reason.** An untyped value reaches a response only after its attribute's type normalised it (2.1b, then
-the stores), so the digits of a float matter only where a type keeps them. Keeping them in 2.1a would need
-a JSON reader and writer of its own for every model before any type needs it.
-
-**Alternatives.** Read every float as `Decimal` now: Pydantic writes a `Decimal` as a JSON string, so every
-writer would need a custom encoder, designed without the type that motivates it.
-
-**Consequences.** 2.1b decides how a `bigdecimal` value is read from a body and written back exactly, and
-applies it to these models.
-
-### DD-039. One Atlas JSON codec reads floats as decimals and writes them with their digits
-
-- **Status:** Proposed
-- **Increment:** 2.1
-- **Date:** 2026-10-21
-
-**Decision.** `aurelius_atlas_model.codec` holds Atlas's JSON reading and writing. `loads` reads every number
-with a fraction or exponent as a `Decimal`, as Jackson's `USE_BIG_DECIMAL_FOR_FLOATS` does. `dumps` writes a
-`Decimal` with its digits, a `datetime` as epoch milliseconds, NaN as the string `"NaN"`, and map keys as
-Java's text of the key. `AtlasModel.to_json` dumps in Pydantic's Python mode, so attribute values keep these
-types for the codec; typed timestamps are written as epoch milliseconds in both modes. The server's
-`AtlasJSONResponse` writes its content with `dumps`. This settles DD-038.
-
-**Reason.** A `bigdecimal` attribute keeps the digits it was given (`1.10`), and normalised dates are Java
-`Date` values that Jackson writes as numbers, even inside untyped attribute maps. Python's `json` turns a
-`Decimal` into a float, and Pydantic's JSON mode turns it, and a `datetime`, into a string.
-
-**Alternatives.** A custom Pydantic serializer per field: values inside `dict[str, Any]` have no field of
-their own. Converting decimals to floats: loses digits a client sent.
-
-**Consequences.** A double is written with Python's shortest form (`10000000.0`), where Jackson writes
-`Double.toString` (`1.0E7`): the same number in another notation, equal for every JSON reader and for the
-parity comparison. Request bodies with entity values are read with `loads` from 2.3 on.
-
-### DD-040. Java values are held as the Python values closest to them
-
-- **Status:** Proposed
-- **Increment:** 2.1
-- **Date:** 2026-10-21
-
-**Decision.** A Java `Integer`, `Long`, `BigInteger`, `Byte` or `Short` is a Python `int`; which of them it
-was follows from its size, as Jackson chooses by size (`Integer` within 32 bits, `Long` within 64,
-`BigInteger` beyond). A `BigDecimal` is a `Decimal`, a `Double` a `float`, and a `Float` a `float` holding the
-shortest decimal of the 32-bit value. A `Boolean` is a `bool`, never a number. A `Date` is an aware UTC
-`datetime` with millisecond precision. The conversions Java applies between them (`longValue`, `intValue`,
-`floatValue`, `toBigInteger`, `BigDecimal.valueOf(double)`, `valueOf(String)`, `String.valueOf`) are
-functions of `aurelius_atlas_typesystem.java`, each named after its Java original.
-
-**Reason.** The types branch on the Java class of a value (`instanceof Long`, `instanceof BigDecimal`), and
-their results depend on Java's arithmetic: truncation, saturation, 32-bit rounding. Values from a JSON body
-can only be integers, decimals, strings, booleans, lists and maps, so the Python types need only tell those
-apart; Java `Float` and `Double` arise from Atlas's own code and from Atlas's tests.
-
-**Alternatives.** Wrapper classes for every Java number type: every value would need wrapping on reading
-and unwrapping on writing, for distinctions JSON cannot express.
-
-**Consequences.** A `float` value written and read back is the same 32-bit value. An `Integer` and a `Long`
-of equal value cannot be told apart, and give the same result in every type. A `BigInteger` within 64 bits
-cannot be told apart from a `Long` either; `bigdecimal` treats them differently (`1` against `1.0`), but JSON
-never yields one, because Jackson reads such integers as `Integer` or `Long`.
-
-### DD-041. The type system is one module per Java type class too
-
-- **Status:** Proposed
-- **Increment:** 2.1
-- **Date:** 2026-10-21
-
-**Decision.** As DD-037 for the models: the types the value side adds or changes get one module each,
-`atlas_type`, `enum_type`, `array_type`, `map_type`, and `builtin/<name>_type` for each nested class of
-`AtlasBuiltInTypes`. `types.py` keeps the struct, classification, entity, relationship and business
-metadata types, which 2.1c moves the same way, and re-exports the moved classes.
-
-**Reason.** The value side roughly doubles the type classes; one file of all of them would pass two
-thousand lines. A reader who knows Atlas's `AtlasArrayType` finds `array_type`.
-
-**Alternatives.** Adding the value side to `types.py`: one module far beyond what anyone reads whole.
-
-**Consequences.** `from aurelius_atlas_typesystem.types import ArrayType` keeps working; new code imports
-from the class's own module.
-
-### DD-042. A validity period without a time zone is in UTC
-
-- **Status:** Proposed
-- **Increment:** 2.1
-- **Date:** 2026-10-22
-
-**Decision.** A classification's validity period without a `timeZone` is read in UTC, where Atlas reads it in
-its JVM's default time zone (`TimeZone.getDefault()`). Java's time zone ids are matched with Python's tz
-database (`zoneinfo`), Java's legacy three-letter ids (`ZoneId.SHORT_IDS`, such as `PST` and `IST`) and its
-custom `GMT±h[h][[:]mm]` offsets.
-
-**Reason.** Atlas's default zone is whatever its host is set to; the server image runs in UTC, so UTC is the
-same answer for a container deployment, and it does not change with where the code happens to run. The tz
-database holds every zone Java's `TimeZone` resolves except the legacy short ids, which Java maps to tz ids.
-
-**Alternatives.** The local zone of the Python process: makes validation depend on the developer's machine.
-A setting for the default zone: nothing asks for one yet.
-
-**Consequences.** A validity period of `2026/01/01 00:00:00` without a zone means midnight UTC. The time zone
-list must stay in step with Java's; the tz database of the image (the `tzdata` package) supplies it.
-
-### DD-043. Entities are documents of one index, their attributes under qualified names
-
-- **Status:** Proposed
-- **Increment:** 2.2
-- **Date:** 2026-10-22
-
-**Decision.** Every entity, of every type, is one document of the index behind the alias
-`aurelius-atlas-entities`, with its GUID as the document id. The document holds the system properties Atlas
-keeps on a vertex (GUID, type name, super type names, state, times, users, version, labels, custom attributes)
-as top-level fields, mapped for exact lookup, and the attribute values in an `attributes` object keyed by each
-attribute's qualified name (`Referenceable.qualifiedName`, `hive_table.createTime`), as the vertex properties
-are named. The `attributes` object is stored but not indexed (`dynamic: false`) until 4.1 designs the search
-mapping.
-
-**Reason.** A GUID is how Atlas reads, writes and refers to an entity, and a get by id is Elasticsearch's only
-real-time read. One index serves every type, as one graph holds every vertex; per-type indices would multiply
-shards with the number of types. A qualified name is defined by one attribute definition, whose type may not
-change (TDS-08), so one field never holds two value types, which Elasticsearch could not map. Leaving
-attributes unindexed until search needs them keeps 2.2 from deciding analysis and field types it cannot yet
-test.
-
-**Alternatives.** Attributes keyed by their plain names: the same name with different types in two entity
-types cannot share one mapping. An index per entity type: thousands of small indices for Atlas's models alone,
-and queries across a super type touch them all.
-
-**Consequences.** The store's client reads floats as decimals and is given documents as the codec's bytes
-(DD-039), so values keep their digits through Elasticsearch. 4.1 adds attribute mappings and indexes the existing
-documents again (an `update_by_query`),
-the first change ADR 023 records as a migration if data exists by then. Reading an entity back maps qualified
-names to attribute names through the type registry (2.3).
-
-### DD-044. A GUID is a random UUID
-
-- **Status:** Proposed
-- **Increment:** 2.2
-- **Date:** 2026-10-22
-
-**Decision.** The store gives a new entity a random (version 4) UUID in canonical lower-case text, as Atlas's
-`UUID.randomUUID().toString()`.
-
-**Reason.** Atlas's clients see and keep GUIDs of this form; any process can make one without coordination,
-and the chance of two equal ones is negligible.
-
-**Alternatives.** Time-ordered UUIDs (version 7): better index locality, but a GUID would reveal its creation
-time and differ in form from Atlas's.
-
-**Consequences.** None beyond Atlas's.
-
-### DD-045. Unique values are reserved by create-only documents
-
-- **Status:** Proposed
-- **Increment:** 2.2
-- **Date:** 2026-10-22
-
-**Decision.** For each unique attribute value an `ACTIVE` entity has, the store keeps a reservation document
-in `aurelius-atlas-unique-values`, whose id is a SHA-256 of the entity type name, the attribute's qualified
-name and the value as the codec writes it, and which names the GUID holding it. A reservation is made with
-`op_type=create`, so of two processes reserving the same value one fails, and is deleted when the entity
-changes the value or leaves `ACTIVE`. A lookup by unique attributes reads the reservations by id, in real
-time.
-
-**Reason.** Atlas enforces unique attributes with a JanusGraph unique index on a shadow property
-(`__u_Referenceable.qualifiedName`), composite with the type name (`PER_TYPE_UNIQUE`), removed when an entity
-is deleted. Elasticsearch has no unique constraint except the document id, and a search would see neither a
-value written a moment ago nor one being written concurrently. A create-only document with a deterministic id
-is atomic across processes.
-
-**Alternatives.** Search the entity index before writing: races between processes, and misses unrefreshed
-writes. The value itself as the document id: limited to 512 bytes, while a `qualifiedName` may be longer.
-
-**Consequences.** Every write of an entity with unique attributes writes one more document per changed value.
-Reservations belong to the write that made them until it ends (DD-046), so recovery can release those of a
-write that never finished.
-
-### DD-046. A multi-entity write is all or nothing, through a journal
-
-- **Status:** Proposed
-- **Increment:** 2.2
-- **Date:** 2026-10-22
-
-**Decision.** A write of several entities runs in steps:
-
-1. a journal entry in `aurelius-atlas-entity-journal` records the write's id, a lease time and the state of
-   every entity before it (or that it is new);
-2. every unique value the write needs is reserved; a value held by another entity ends the write, before any
-   entity is written, with an error 2.4 turns into an answer;
-3. all entities are written in one bulk request, each conditionally (DD-047) and marked with the write's id;
-4. if any entity fails, every entity written is restored to its state before, and the write's reservations are
-   released;
-5. the journal entry is marked committed; values no longer held are released and the entry is deleted.
-
-Recovery, at start-up, finds journal entries whose lease has passed. A committed entry only has its releases
-finished; any other is undone as in step 4: it restores an entity only while it still carries that write's id,
-and releases only reservations made by that write.
-
-**Reason.** Atlas commits all entities of a request in one graph transaction (`GraphTransactionInterceptor`).
-Elasticsearch writes one document atomically but no more (ADR 047). The user chose an all-or-nothing outcome,
-also after a crash, over per-entity writes or full isolation (2026-10-22): the journal makes the outcome
-recoverable at the cost of one document per write, while isolation would make every read look up write states.
-
-**Alternatives.** Per-entity atomicity: a failed batch leaves part of it written. Isolation through pending
-versions and a committed flag: no reader sees a partial write, but every read pays for it.
-
-**Consequences.** Between steps 3 and 4 another reader may see part of a write (DV-16). A write must finish
-within its lease (60 seconds) or recovery may undo it; a write that finds its lease passed before step 3 gives
-up. Recovery runs at start-up, so a crash's leftovers stay until a process starts.
-
-### DD-047. Entities are written conditionally on their Elasticsearch version
-
-- **Status:** Proposed
-- **Increment:** 2.2
-- **Date:** 2026-10-22
-
-**Decision.** A changed entity is written with the `if_seq_no` and `if_primary_term` it was read with, and a
-new one with `op_type=create`. A conflict fails the write (DD-046 restores the rest) with a version conflict
-the caller handles by reading again. Atlas's `version` field is stored as the entity has it and plays no part.
-
-**Reason.** Atlas serialises writes inside one JanusGraph transaction per request; several server processes
-writing to one Elasticsearch need optimistic concurrency, as the type definitions do (DD-029). Atlas never
-increments an entity's `version` itself (`getEntityVersion` takes the entity's or 0), so it cannot serve as a
-concurrency token without changing what clients see.
-
-**Alternatives.** A lock document per entity: needs expiry when its holder dies. Incrementing `version`:
-changes Atlas's responses.
-
-**Consequences.** 2.4 decides how a write request retries after a conflict and what it answers when it gives
-up.
-
-### DD-048. A type is in use while the entity index holds one of it
-
-- **Status:** Proposed
-- **Increment:** 2.2
-- **Date:** 2026-10-22
-
-**Decision.** The typedef store's usage check (DD-030) refreshes the entity index and counts the documents
-whose type name is the type, in any state, as Atlas's `typeHasInstanceVertex` counts vertices of the type.
-Classification and relationship types join the check when their instances are stored (3.1, 3.3).
-
-**Reason.** A count is near real time; the refresh makes an entity written a moment ago count. Deleting a type
-is rare, so the refresh's cost does not matter.
-
-**Alternatives.** Keeping a counter per type: one more document to update atomically with every write.
-
-**Consequences.** Until 3.1 and 3.3, a classification or relationship type is never in use.
-
-### DD-049. Attribute values are stored normalised; a struct inline, a reference as a GUID
-
-- **Status:** Proposed
-- **Increment:** 2.3
-- **Date:** 2026-10-22
-
-**Decision.** An entity document holds each attribute value as its attribute's type normalises it
-(`getNormalizedValue`), in the codec's JSON (DD-039): a date as epoch milliseconds, an enum as its value's
-name, numbers with their digits. A struct value is held inline as `{"typeName": …, "attributes": {…}}`, its
-attributes by name and normalised the same way. A reference to an entity, whether an `objectid` attribute, an
-element of an array or a value of a map, is held as the referenced entity's GUID; a soft reference
-(`isSoftReference`) is held as Atlas holds it, `typeName:guid`. Reading an entity gets the entities its
-attributes refer to by GUID, in one request, to build their object ids and owned entities; a GUID that finds
-no entity reads as nothing, as an edge to a removed vertex does.
-
-**Reason.** Atlas keeps a struct in a vertex of its own and a reference as an edge; Elasticsearch has
-neither, and one document per entity is what DD-043 decided. A struct belongs to its entity alone, so it
-stays inside it. A reference's GUID never changes, where the referenced entity's unique attributes and
-type may, so the GUID is the only stable thing to store; everything else the object id shows is read from
-the referenced entity, as `toAtlasObjectId` reads it from the vertex.
-
-**Alternatives.** Storing the object id with its unique attributes: stale once the referenced entity
-changes. Structs as documents of their own: a second read per struct, and nothing ever refers to one.
-
-**Consequences.** 2.4 writes values in this form, resolving every object id it is given, by GUID or by
-unique attributes, to a GUID first. A reference read needs a second `mget` per nesting level of owned
-entities. 3.1 decides how relationship attributes are stored; references that are also relationship ends
-(legacy attributes) move there then.
-
-### DD-050. Relationship attributes read empty until relationships are stored
-
-- **Status:** Superseded by DD-064
-- **Increment:** 2.3
-- **Date:** 2026-10-22
-
-**Decision.** Until 3.1 stores relationships, an entity reads as Atlas reads one without relationship
-edges: `relationshipAttributes` names every relationship attribute of its type, null for a `SINGLE` end and
-`[]` for a `LIST` or `SET` end, the end chosen as Atlas chooses it without edges (the attribute's first
-relationship type). `ignoreRelationships=true` leaves `relationshipAttributes` out.
-
-**Reason.** The keys and the empty values are what Atlas answers for an entity no relationship has reached
-yet; answering them now keeps the response's shape, and 3.1 only fills values in.
-
-**Alternatives.** Leaving `relationshipAttributes` out until 3.1: a different shape for every entity, which
-clients that read the keys would notice.
-
-**Consequences.** Until 3.1, a reference given as a legacy relationship attribute (DD-049) reads in
-`attributes` but not in `relationshipAttributes` (DV-18).
-
-### DD-051. Entity reads are tested on entities written through the store until 2.4
-
-- **Status:** Proposed
-- **Increment:** 2.3
-- **Date:** 2026-10-22
-
-**Decision.** 2.3's HTTP tests write the entities they read through `EntityStore` (2.2), in the stored form
-of DD-049, and check every read rule on them. Its parity scenarios cover what needs no entity: unknown GUIDs
-and types, invalid and missing unique attributes, values that find nothing. 2.4 adds scenarios that create
-entities over REST and read them back.
-
-**Reason.** A parity scenario only reaches the server over REST, and entities can be created over REST from
-2.4 on. Seeding through the store tests the read path now without porting the write path early.
-
-**Alternatives.** Merging 2.3 into 2.4: one pull request far above the size limit. Moving 2.4 before 2.3:
-a write increment whose responses could not be read back.
-
-**Consequences.** Until 2.4, the stored form the tests write is checked against Atlas's responses only by
-the expectations read from the Java source; 2.4's scenarios check both directions.
-
-### DD-052. A request is mapped in memory and written once; a lost race runs it again
-
-- **Status:** Proposed
-- **Increment:** 2.4
-- **Date:** 2026-10-22
-
-**Decision.** `EntityWriter` reads every stored entity a create or update request names, discovers and
-resolves its references, and maps its entities to their new stored form in memory, together with the
-entities EWR-12 touches. The response's headers are built from that form. The result is one
-`EntityStore.write` (ENS-07), each changed entity conditional on the version it was read in (ENS-08). When
-the write loses a race, the whole request is read, mapped and written again, once; a second loss, or a unique
-value another entity holds, is answered with `INTERNAL_ERROR` naming the cause (DV-20).
-
-**Reason.** Atlas maps a request onto vertices inside one graph transaction and commits at the end; mapping
-onto documents in memory and writing them in one all-or-nothing write is the same shape on Elasticsearch
-(DD-046). Running the request again on the newer state is what a client would do, as DD-029 does for types.
-
-**Alternatives.** Writing each entity as it is mapped: a failure part-way would leave a half-written request
-for recovery to undo, and headers would be read from the index. Answering a lost race with an error at once:
-two clients updating different attributes of an entity would fail where Atlas, serialising them, succeeds.
-
-**Consequences.** A request's memory grows with its entities, as Atlas's transaction does. A unique value
-clash is no `400`: Atlas resolves an entity by its unique values before writing, so a clash needs an update
-that moves a value onto another entity, or two new entities with the same value in one request.
-
-### DD-053. Relationship attribute values are resolved, but stored only as legacy attributes until 3.1
-
-- **Status:** Superseded by DD-064
-- **Increment:** 2.4
-- **Date:** 2026-10-22
-
-**Decision.** Until 3.1 stores relationships, a relationship attribute's value in a write is discovered,
-resolved, checked and normalised as Atlas does, so its errors are Atlas's. It is stored only when the entity's
-type has an attribute of the same name (a legacy relationship end, such as `hive_table.db`), as that
-attribute's value (DD-049); a relationship attribute without such an attribute is not stored (DV-22).
-
-**Reason.** A legacy end is read from `attributes` (DD-050, DV-18); storing it there keeps what clients
-write readable. Storing other relationship values needs relationship instances, their GUIDs and both ends,
-which is 3.1's.
-
-**Alternatives.** Rejecting relationship attributes until 3.1: requests Atlas accepts, such as the hook
-models', would fail. Storing them as plain references on one end: 3.1 would have to migrate them.
-
-**Consequences.** 3.1 replaces this: relationship values become relationships, and the legacy attributes'
-values move to them.
-
-### DD-054. Dynamic attributes are evaluated in first-seen dependency order
-
-- **Status:** Proposed
-- **Increment:** 2.4
-- **Date:** 2026-10-22
-
-**Decision.** An entity type's dynamic attributes are ordered by a depth-first topological sort over their
-templates, visiting them in the order their `dynAttribute:` options appear, so that an attribute another
-template names is evaluated first.
-
-**Reason.** Java sorts the same graph but starts from the keys of a `HashMap`; where the dependencies leave
-the order open, first-seen order is stable, as DD-027 chooses for derived type sets.
-
-**Alternatives.** Sorting by name: stable too, but unrelated to the definition.
-
-**Consequences.** Independent dynamic attributes may be evaluated in another order than Atlas's; their values
-do not depend on it.
-
-### DD-055. Scenarios name what they create with a per-run value
-
-- **Status:** Proposed
-- **Increment:** 2.4
-- **Date:** 2026-10-22
-
-**Decision.** The parity harness provides `{run}`, a value unique to each run of a scenario, in letters and
-digits, before any stage has saved a value. Entity scenarios name their types and entities with it, and
-leave them in the store until 2.5 lets them delete what they created (DD-035).
-
-**Reason.** The dev store keeps its contents between runs. A scenario that creates an entity again on a
-second run would find it, update it and get a different answer; a type in use cannot be deleted.
-
-**Alternatives.** Deleting the entity index before scenarios: other tests and a developer's data share the
-dev store. Waiting for 2.5: 2.4's writes would have no parity check (DD-051).
-
-**Consequences.** Each run of the entity scenarios leaves a few types and entities in the dev store until
-2.5; CI starts from an empty store.
-
-### DD-056. An entity write also removes documents, journaled like the others
-
-- **Status:** Proposed
-- **Increment:** 2.5
-- **Date:** 2026-10-22
-
-**Decision.** An `EntityChange` may remove its entity instead of writing a new state. The removal is a
-`delete` action of the same bulk request, conditional on the version read (DD-047); the journal entry records
-the entity's state before and lists the removed GUIDs. A failed write restores a removed entity; recovery
-restores a removed entity of an unfinished write when no document has its GUID. A removed entity holds no
-unique value: its reservations are released as for one that left `ACTIVE`.
-
-**Reason.** A hard delete or a purge removes entities and changes those referring to them in one request; the
-all-or-nothing write of DD-046 already covers the changes, and removals need the same guarantee.
-
-**Alternatives.** Marking removed entities and deleting them in a second step: a reader would see them in
-between, and a crash would leave them. Removing them after the write commits: a crash in between leaves
-entities the response called purged.
-
-**Consequences.** Recovery cannot tell a removal undone by it from a later write's removal of the same GUID;
-a GUID is removed once, so this does not arise.
-
-### DD-057. Entities referring to one are found through an indexed field of GUIDs
-
-- **Status:** Proposed
-- **Increment:** 2.5
-- **Date:** 2026-10-22
-
-**Decision.** Every entity document holds `references`, a keyword field of the GUIDs its references name (its
-own object id attributes and the elements and values of its arrays and maps of object ids; not soft references,
-not references in structs), set by `EntityStore` on every write. Deleting an entity refreshes the entity index,
-then searches `references` for its GUID, in pages. Preparing the store adds the field's mapping to an existing
-entity index; documents written before it have no `references` until they are written again.
-
-**Reason.** Atlas follows an entity's incoming edges; documents have none. Of the alternatives offered, the
-indexed field keeps writes to the entities written (DD-052), and the refresh makes every write finished before
-the delete visible.
-
-**Alternatives.** A reverse list on each referenced entity, kept by the same write: exact, but every write that
-adds or drops a reference rewrites the entities it names, and popular entities become write hot spots.
-
-**Consequences.** A referrer written while the delete runs may be missed (DV-27). Lineage (5.1) and
-relationships (3.1) can use the same field.
-
-### DD-058. A stored reference stands for an edge: active for a delete, deleted for a purge
-
-- **Status:** Proposed
-- **Increment:** 2.5
-- **Date:** 2026-10-22
-
-**Decision.** A stored reference has no state of its own. A delete treats the references to the entities it
-deletes, and those of an `ACTIVE` owner to its owned entities, as active edges; a purge treats them as deleted
-edges, which a soft delete left behind.
-
-**Reason.** Atlas soft-deletes an entity's edges with it: the edges a purge finds deleted are those of entities
-a delete made `DELETED`, which is what this rule reads from the entities' states.
-
-**Alternatives.** A state per reference in the stored form (DD-049): an exact copy of the edges' states, at the
-cost of a second representation of every reference until 3.1 stores relationships.
-
-**Consequences.** A reference written to an entity after it was deleted counts as deleted for a purge, where
-Atlas would hold an active edge and leave it.
-
-### DD-059. The delete type and its override are server settings
-
-- **Status:** Proposed
-- **Increment:** 2.5
-- **Date:** 2026-10-22
-
-**Decision.** `AURELIUS_ATLAS_SERVER_DELETE_TYPE` (`soft` by default, or `hard`) stands for
-`atlas.DeleteHandlerV1.impl`; `AURELIUS_ATLAS_SERVER_DELETE_TYPE_OVERRIDE` (`false` by default) for
-`atlas.rest.enable.delete.type.override`, which lets a request's `deleteType` choose.
-
-**Reason.** Atlas configures both in `atlas-application.properties`; the server's settings are its equivalent.
-
-**Alternatives.** Soft deletes only: deployments that configure Atlas for hard deletes could not move.
-
-**Consequences.** None beyond two settings with Atlas's defaults.
-
-### DD-060. The owned-reference cascade moves from 3.2 to 2.5
-
-- **Status:** Proposed
-- **Increment:** 2.5
-- **Date:** 2026-10-22
-
-**Decision.** Deleting an entity deletes the entities its owned reference attributes name (`ownedRef`), as
-`DeleteHandlerV1.getOwnedVertices` does, from 2.5. Composition through `relationshipDefs` and deleting an owned
-entity whose reference an update drops stay with 3.2.
-
-**Reason.** Owned references are stored as GUIDs (DD-049); following them needs no relationships, and without
-them a delete would leave owned entities `ACTIVE`, unlike Atlas.
-
-**Alternatives.** All cascades in 3.2, as the roadmap first had it: deletes would differ from Atlas until then.
-
-**Consequences.** The roadmap's 2.5 and 3.2 rows change accordingly.
 
 ### DD-061. Relationships are documents of their own index, listed by both ends
 
@@ -9083,44 +8529,68 @@ The entries moved next to the increment they record. The record is the truth; th
 here is a copy of the one at the time of the move. New entries go to the increment's
 `design.md`, never here.
 
-| #      | Decision                                                                   | Status   | Design record                                                                          |
-| ------ | -------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------- |
-| DD-001 | Reference is Apache Atlas 2.4.0, and both dashboards are served            | Accepted | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-002 | Atlas code lives in aurelius-atlas projects split by layer                 | Accepted | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-003 | Template projects are renamed to the aurelius-atlas prefix                 | Accepted | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-004 | The SPA keeps tokens in memory and renews them silently                    | Accepted | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-005 | The store uses the official async Elasticsearch client                     | Proposed | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
-| DD-006 | Development and tests run Elasticsearch with security on                   | Proposed | `dev/elasticsearch/specs/0-2-elasticsearch-infrastructure/design.md`                   |
-| DD-007 | The Elasticsearch test fixture ships with the store library                | Proposed | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
-| DD-008 | A yellow cluster is healthy                                                | Proposed | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
-| DD-009 | Traceability is checked from collected markers, not from a test run        | Proposed | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
-| DD-010 | The traceability check covers Atlas code from increment 0.2 on             | Proposed | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
-| DD-011 | The test report is generated from JUnit, coverage and trace files          | Proposed | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
-| DD-012 | Parity scenarios are YAML files run as parametrised pytest tests           | Proposed | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
-| DD-013 | A scenario response is compared exactly, except at declared paths          | Proposed | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
-| DD-014 | Scenario facts reach the report as test properties                         | Proposed | `libs/python/aurelius-atlas-trace/specs/0-4-parity-harness/design.md`                  |
-| DD-015 | The server is a FastAPI application with one router per Atlas resource     | Proposed | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
-| DD-016 | The server does not start without its store                                | Proposed | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
-| DD-017 | The dashboards are vendored unchanged and built with dart-sass on Node 24  | Proposed | `apps/aurelius-atlas-dashboard/specs/0-6-dashboards/design.md`                         |
-| DD-018 | The server serves the dashboards from the API's origin                     | Proposed | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
-| DD-019 | The template examples stay until the plan is done                          | Proposed | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
-| DD-020 | Typedef models are Pydantic models that read and write Atlas's JSON        | Proposed | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
-| DD-021 | Set-valued fields keep each name once, in first-seen order                 | Proposed | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
-| DD-022 | Typedef timestamps are aware datetimes, written as epoch milliseconds      | Proposed | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
-| DD-023 | Atlas errors live in the model library                                     | Proposed | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
-| DD-024 | The registry is updated on a transient copy under a re-entrant lock        | Proposed | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
-| DD-025 | The type system ports the definition side only                             | Proposed | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
-| DD-026 | Dynamic attributes and search lookups wait for their increments            | Proposed | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
-| DD-027 | Derived type sets keep first-seen order                                    | Proposed | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
-| DD-028 | The type definitions are one Elasticsearch document                        | Proposed | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
-| DD-029 | Server processes share the type definitions through the document's version | Proposed | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
-| DD-030 | The store asks the entity store whether a type is in use                   | Proposed | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
-| DD-031 | The patch records live in the typedef document                             | Proposed | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
-| DD-032 | The built-in models are vendored unchanged and read from a directory       | Proposed | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
-| DD-033 | Start-up loading is one change per model file and per patch                | Proposed | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
-| DD-034 | Lists of type definitions are sorted by name                               | Proposed | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
-| DD-035 | Type scenarios create what they read and delete it at their end            | Proposed | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
-| DD-036 | Start-up loading tries a raced change again                                | Proposed | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| #      | Decision                                                                                   | Status           | Design record                                                                          |
+| ------ | ------------------------------------------------------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------- |
+| DD-001 | Reference is Apache Atlas 2.4.0, and both dashboards are served                            | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-002 | Atlas code lives in aurelius-atlas projects split by layer                                 | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-003 | Template projects are renamed to the aurelius-atlas prefix                                 | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-004 | The SPA keeps tokens in memory and renews them silently                                    | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-005 | The store uses the official async Elasticsearch client                                     | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
+| DD-006 | Development and tests run Elasticsearch with security on                                   | Proposed         | `dev/elasticsearch/specs/0-2-elasticsearch-infrastructure/design.md`                   |
+| DD-007 | The Elasticsearch test fixture ships with the store library                                | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
+| DD-008 | A yellow cluster is healthy                                                                | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
+| DD-009 | Traceability is checked from collected markers, not from a test run                        | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
+| DD-010 | The traceability check covers Atlas code from increment 0.2 on                             | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
+| DD-011 | The test report is generated from JUnit, coverage and trace files                          | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
+| DD-012 | Parity scenarios are YAML files run as parametrised pytest tests                           | Proposed         | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
+| DD-013 | A scenario response is compared exactly, except at declared paths                          | Proposed         | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
+| DD-014 | Scenario facts reach the report as test properties                                         | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-4-parity-harness/design.md`                  |
+| DD-015 | The server is a FastAPI application with one router per Atlas resource                     | Proposed         | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
+| DD-016 | The server does not start without its store                                                | Proposed         | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
+| DD-017 | The dashboards are vendored unchanged and built with dart-sass on Node 24                  | Proposed         | `apps/aurelius-atlas-dashboard/specs/0-6-dashboards/design.md`                         |
+| DD-018 | The server serves the dashboards from the API's origin                                     | Proposed         | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
+| DD-019 | The template examples stay until the plan is done                                          | Proposed         | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
+| DD-020 | Typedef models are Pydantic models that read and write Atlas's JSON                        | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
+| DD-021 | Set-valued fields keep each name once, in first-seen order                                 | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
+| DD-022 | Typedef timestamps are aware datetimes, written as epoch milliseconds                      | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
+| DD-023 | Atlas errors live in the model library                                                     | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
+| DD-024 | The registry is updated on a transient copy under a re-entrant lock                        | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
+| DD-025 | The type system ports the definition side only                                             | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
+| DD-026 | Dynamic attributes and search lookups wait for their increments                            | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
+| DD-027 | Derived type sets keep first-seen order                                                    | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
+| DD-028 | The type definitions are one Elasticsearch document                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
+| DD-029 | Server processes share the type definitions through the document's version                 | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
+| DD-030 | The store asks the entity store whether a type is in use                                   | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
+| DD-031 | The patch records live in the typedef document                                             | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
+| DD-032 | The built-in models are vendored unchanged and read from a directory                       | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
+| DD-033 | Start-up loading is one change per model file and per patch                                | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
+| DD-034 | Lists of type definitions are sorted by name                                               | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| DD-035 | Type scenarios create what they read and delete it at their end                            | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| DD-036 | Start-up loading tries a raced change again                                                | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| DD-037 | Instance models are one module per Java class                                              | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-entity-models/design.md`                   |
+| DD-038 | Attribute values stay plain JSON values until their types read them                        | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-entity-models/design.md`                   |
+| DD-039 | One Atlas JSON codec reads floats as decimals and writes them with their digits            | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-value-types/design.md`                     |
+| DD-040 | Java values are held as the Python values closest to them                                  | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
+| DD-041 | The type system is one module per Java type class too                                      | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
+| DD-042 | A validity period without a time zone is in UTC                                            | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
+| DD-043 | Entities are documents of one index, their attributes under qualified names                | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-044 | A GUID is a random UUID                                                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-045 | Unique values are reserved by create-only documents                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-046 | A multi-entity write is all or nothing, through a journal                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-047 | Entities are written conditionally on their Elasticsearch version                          | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-048 | A type is in use while the entity index holds one of it                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-049 | Attribute values are stored normalised; a struct inline, a reference as a GUID             | Proposed         | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
+| DD-050 | Relationship attributes read empty until relationships are stored                          | Superseded by DD | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
+| DD-051 | Entity reads are tested on entities written through the store until 2.4                    | Proposed         | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
+| DD-052 | A request is mapped in memory and written once; a lost race runs it again                  | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-053 | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1 | Superseded by DD | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-054 | Dynamic attributes are evaluated in first-seen dependency order                            | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-055 | Scenarios name what they create with a per-run value                                       | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-056 | An entity write also removes documents, journaled like the others                          | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-057 | Entities referring to one are found through an indexed field of GUIDs                      | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-058 | A stored reference stands for an edge: active for a delete, deleted for a purge            | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-059 | The delete type and its override are server settings                                       | Proposed         | `apps/aurelius-atlas-server/specs/2-5-delete-semantics/design.md`                      |
+| DD-060 | The owned-reference cascade moves from 3.2 to 2.5                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
 
 > [!NOTE]
 > DD-095 to DD-125 and DD-280 were never written. The first band went unused when the

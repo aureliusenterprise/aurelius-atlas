@@ -4,6 +4,9 @@
 - **Pull request:** –
 - **Records:** DD-056 to DD-060, DV-25 to DV-27; relies on DD-043 to DD-049, DD-052, DD-053, DV-16
 
+This page is the `aurelius-atlas-core` part of increment 2.5; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-server`](../../../../../apps/aurelius-atlas-server/specs/2-5-delete-semantics/spec.md).
+
 ## Scope
 
 Deleting and purging entities: the delete endpoints of `EntityREST`, `PUT admin/purge` of `AdminResource`, the
@@ -94,7 +97,4 @@ delete (DD-057).
   purges, cascades, referrers, mandatory references, removals undone by recovery.
 - `libs/python/aurelius-atlas-core/e2e/` — references found by search, a hard delete, a purge against the dev
   store.
-- `apps/aurelius-atlas-server/tests/` — EDL-01 to EDL-08 over HTTP, the delete type settings.
-- `apps/aurelius-atlas-server/scenarios/entity/` — deleting and purging what a scenario created, then its
-  types.
 - `uv run aurelius-atlas-trace check`.

@@ -4,15 +4,15 @@
 
 Atlas stores and services for Aurelius Atlas
 (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)).
-Since increment `1.4` (the spec: `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/spec.md`): the typedef
-store, which keeps type definitions in one Elasticsearch document and serves them from the type registry.
-Since `1.5` (the spec: `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/spec.md`): Apache Atlas's built-in
-models and their typedef patches, loaded at start-up. Since
-`1.6` (the spec: `apps/aurelius-atlas-server/specs/1-6-types-rest/spec.md`): the
-store's reads and the search of
-`/v2/types/typedefs`. Since [2.2](../../../architecture/conversion/increments/2-2-entity-store.md): the
-entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes
-several entities all or nothing through a journal (DD-043 to DD-048).
+Since increment `1.4` (the spec: `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/spec.md`): the
+typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type
+registry. Since `1.5` (the spec: `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/spec.md`): Apache
+Atlas's built-in models and their typedef patches, loaded at start-up. Since `1.6` (the spec:
+`apps/aurelius-atlas-server/specs/1-6-types-rest/spec.md`): the store's reads and the search of
+`/v2/types/typedefs`. Since `2.2` (the spec:
+`libs/python/aurelius-atlas-core/specs/2-2-entity-store/spec.md`): the entity store, which keeps each entity
+as one Elasticsearch document, reserves unique attribute values and writes several entities all or nothing
+through a journal (DD-043 to DD-048).
 
 ```python
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -40,7 +40,8 @@ workspace = true
 To prove it, compare it with the tag:
 
 ```bash
-diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurelius-atlas-core/aurelius_atlas_core/models
+diff -r <apache-atlas checkout at release-2.4.0>/addons/models
+libs/python/aurelius-atlas-core/aurelius_atlas_core/models
 ```
 
 ## Documentation
