@@ -156,6 +156,10 @@ class EntityRetriever:
         """
         return await self._reading(AtlasEntityExtInfo()).classifications(await self._found(guid))
 
+    async def business_attributes(self, stored: StoredEntity) -> dict[str, dict[str, Any]] | None:
+        """``getBusinessMetadata``: the entity's business attributes with a value, or None (BMD-02)."""
+        return await self._reading(AtlasEntityExtInfo()).business_attributes(stored)
+
     async def classification_of(self, stored: StoredClassification) -> AtlasClassification:
         """``toAtlasClassification``: a stored instance as Atlas answers it, every attribute of its type (CLS-02)."""
         return await self._reading(AtlasEntityExtInfo())._classification(stored)  # noqa: SLF001 - same module
@@ -241,6 +245,7 @@ class _Reading:
         self._ext_info.add_referred_entity_as(stored.guid, entity)
         self._stored[stored.guid] = stored
         await self._load(_references_of(stored.attributes, entity_type.all_attributes.values(), qualified=True))
+        entity.business_attributes = await self.business_attributes(stored)
         for name, attribute in entity_type.all_attributes.items():
             entity.set_attribute(name, await self._entity_attribute(stored, attribute, ext_info=True))
         if self._relationships:
@@ -248,6 +253,18 @@ class _Reading:
                 await self._relationship_attribute(stored, entity_type, name, entity)
         entity.classifications = await self.classifications(stored) or None
         return entity
+
+    async def business_attributes(self, stored: StoredEntity) -> dict[str, dict[str, Any]] | None:
+        """``getBusinessMetadata``: the business attributes with a value, by business metadata, or None (BMD-02)."""
+        found: dict[str, dict[str, Any]] = {}
+        for name, attributes in self._entity_type(stored).business_attributes.items():
+            for attribute in attributes.values():
+                value = await self._attribute(
+                    attribute, stored.attributes.get(attribute.qualified_name), ext_info=False
+                )
+                if value is not None:
+                    found.setdefault(name, {})[str(attribute.name)] = value
+        return found or None
 
     async def min_entity(self, stored: StoredEntity) -> AtlasEntity:
         """``mapVertexToAtlasEntityMin``: system properties and the minimal-info attributes with a value (ERD-05)."""

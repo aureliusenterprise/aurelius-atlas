@@ -31,6 +31,7 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 from aurelius_atlas_core.authorization import ALLOW_ALL, AtlasPrivilege, Authorizer
 from aurelius_atlas_core.delete_handler import DeleteHandler
 from aurelius_atlas_core.delete_type import DeleteType
+from aurelius_atlas_core.entity_business_metadata import add_or_update_business_attributes
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier, RequestRecord, prune_response
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_comparator import EntityComparator
@@ -222,17 +223,37 @@ class EntityWriter:
                 raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, str(failure)) from failure
         raise AssertionError  # pragma: no cover - the loop returns or raises
 
+    def _record_labels(self, created: StoredEntity) -> None:
+        """``setLabels`` of a created entity: its labels told as added once it is written (LBL-05)."""
+        if created.labels:
+            self._record.added_labels.append((created.guid, list(created.labels)))
+
+    def _business_attributes(
+        self, mapper: EntityMapper, created: StoredEntity, entity: AtlasEntity, entity_type: EntityType
+    ) -> StoredEntity:
+        """``addOrUpdateBusinessAttributes`` of a created entity: those set told once it is written (BMD-02, BMD-06)."""
+        stored, updated = add_or_update_business_attributes(mapper, created, entity_type, entity.business_attributes)
+        if updated:
+            self._record.business_attributes[created.guid] = updated
+        return stored
+
     async def _mutated(self, response: EntityMutationResponse) -> EntityMutationResponse:
         """``onEntitiesMutated``: the response pruned, as Atlas answers it, and told to the notifier (AUD-02).
 
-        The classifications created entities were given come first, the propagations after (CAU-02, CAU-05).
+        The labels created entities were given come first, then each one's classifications and business attributes,
+        the propagations after (LBL-05, CAU-02, BMD-06, CAU-05).
         """
         prune_response(response)
         record, self._record = self._record, RequestRecord()
         notifier = self._notifier
         if notifier is not None:
+            for guid, labels in record.added_labels:
+                await notifier.on_labels_updated(guid, labels, [], user=self._user)
+            business = dict(record.business_attributes)
             for guids, instance in record.added_classifications:
+                await self._notify_business_attributes(notifier, business, before=guids[0])
                 await notifier.on_classifications_added(guids, [instance], user=self._user)
+            await self._notify_business_attributes(notifier, business, before=None)
             await notifier.on_entities_mutated(response, user=self._user)
             gone = [
                 str(header.guid)
@@ -241,6 +262,15 @@ class EntityWriter:
             ]
             await notifier.notify_propagated_entities(record.added, record.removed, user=self._user, deleted=gone)
         return response
+
+    async def _notify_business_attributes(
+        self, notifier: EntityChangeNotifier, pending: dict[str, dict[str, dict[str, Any]]], *, before: str | None
+    ) -> None:
+        """The business attributes of the created entities ahead of ``before``, or of all, in creation order."""
+        for guid in list(pending):
+            if guid == before:
+                return
+            await notifier.on_business_attributes_updated(guid, pending.pop(guid), user=self._user)
 
     async def _deleted(
         self, handler: DeleteHandler, candidates: list[VersionedEntity], *, purge: bool
@@ -377,9 +407,13 @@ class EntityWriter:
         for entity, entity_type in mutation.created:
             await relationships.map(entity, entity_type, str(entity.guid), EntityOperation.CREATE)
             written[str(entity.guid)] = mapper.create(entity, entity_type, str(entity.guid))
+            self._record_labels(written[str(entity.guid)])
             if entity.classifications:
                 written[str(entity.guid)], added = self._classified(written[str(entity.guid)], entity.classifications)
                 classified += [ClassificationChange(instance) for instance in added]
+            written[str(entity.guid)] = self._business_attributes(
+                mapper, written[str(entity.guid)], entity, entity_type
+            )
         operation = EntityOperation.PARTIAL_UPDATE if partial else EntityOperation.UPDATE
         for entity, entity_type, stored in mutation.updated:
             if entity.guid not in skipped:
