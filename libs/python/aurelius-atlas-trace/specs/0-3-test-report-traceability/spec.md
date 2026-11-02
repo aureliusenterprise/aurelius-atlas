@@ -96,4 +96,4 @@ None: nothing in this increment is visible through the Atlas REST API.
 - `uv run aurelius-atlas-trace check` exits zero on this branch; the CI run of this pull request
   uploads a `test-report` artifact.
 
-[a049]: ../../../../../docs/architecture/conversion/adr/049-every-function-and-rule-is-traceable-to-a-test.md
+[a049]: ../../../../../docs/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test.md

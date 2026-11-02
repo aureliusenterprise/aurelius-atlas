@@ -45,7 +45,7 @@ booleans and null distinct from numbers. Only `volatile` paths (generated GUIDs,
 value, and only `deviations` entries change the expectation, each naming its `DV-NN`.
 
 **Reason.** The dashboard and existing clients read fields the scenarios might not think of; an extra,
-missing or `null` field is a visible difference ([ADR 046](../../../../../docs/architecture/conversion/adr/046-the-catalogue-keeps-its-public-contract.md)).
+missing or `null` field is a visible difference ([ADR 046](../../../../../docs/architecture/adr/046-the-catalogue-keeps-its-public-contract.md)).
 Atlas serialises its models with Jackson `NON_NULL` inclusion, so "absent" and `null` differ there and
 must differ here.
 

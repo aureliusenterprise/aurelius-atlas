@@ -7,4 +7,4 @@ New increments start from the [template](../../../docs/architecture/conversion/i
 trace check reads them. They are not pages of the docs site; the roadmap of what
 lands when is the [conversion index](../../../docs/architecture/conversion/index.md#roadmap).
 
-[adr051]: ../../../docs/architecture/conversion/adr/051-the-conversion-proceeds-in-specified-increments.md
+[adr051]: ../../../docs/architecture/adr/051-the-conversion-proceeds-in-specified-increments.md

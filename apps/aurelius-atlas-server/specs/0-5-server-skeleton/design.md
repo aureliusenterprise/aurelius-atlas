@@ -43,7 +43,7 @@ increments add routers and error codes; the error handler and media type stay.
 store cannot be opened (unreachable, rejected, or not Elasticsearch 9). Once running, `readiness`
 reports the store's health on every call, and `liveness` and `status` do not depend on it.
 
-**Reason.** The store is the only system of record ([ADR 047](../../../../docs/architecture/conversion/adr/047-one-search-store-is-the-system-of-record.md));
+**Reason.** The store is the only system of record ([ADR 047](../../../../docs/architecture/adr/047-one-search-store-is-the-system-of-record.md));
 a server without it cannot answer anything but the admin endpoints. Failing at start-up shows a wrong
 setting at once ([ADR 018][a018]) and lets an
 orchestrator restart the container, while readiness covers a store that goes away later.
@@ -54,4 +54,4 @@ make an orchestrator restart every server, which does not help.
 
 **Consequences.** Start-up order matters: `nx serve` and the end-to-end tests start the dev store first.
 
-[a018]: ../../../../docs/architecture/conversion/adr/018-settings-arrive-at-startup-through-one-channel.md
+[a018]: ../../../../docs/architecture/adr/018-settings-arrive-at-startup-through-one-channel.md

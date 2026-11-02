@@ -38,7 +38,7 @@ consumers import from the package root only, never a subfolder path.
   match `apps/aurelius-atlas-server/aurelius_atlas_server/routes/{types,admin,discovery}.py`
   and `libs/python/aurelius-atlas-model` **by hand** — when the Python model changes,
   update `atlas-typedef.ts` / `atlas-search.ts` too (increments 7.3, 7.4's client
-  half per DD-217, spec `docs/architecture/conversion/increments/7-3-api-client-auth.md`).
+  half per DD-217, spec `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/spec.md`).
 - The search wire contract has a Python twin: `AtlasClient.search` (CL-13) in
   `libs/python/aurelius-atlas-server-client` reads the same routes and models —
   change the endpoints on both sides in the same PR.

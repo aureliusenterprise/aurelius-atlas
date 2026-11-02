@@ -9,7 +9,7 @@ the increment's shared set. The other part is with [`elasticsearch`](../../../..
 
 ## Scope
 
-Give the spine its search store ([ADR 047](../../../../../docs/architecture/conversion/adr/047-one-search-store-is-the-system-of-record.md))
+Give the spine its search store ([ADR 047](../../../../../docs/architecture/adr/047-one-search-store-is-the-system-of-record.md))
 without adding Atlas behaviour:
 
 - **`libs/python/aurelius-atlas-store-es`** (`aurelius_atlas_store_es`), the store library skeleton
@@ -32,14 +32,14 @@ Not in scope:
 
 ### Development store
 
-| Id     | Rule                                                                                                                                                                                            |
-| ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ESD-01 | `nx up aurelius-atlas-dev-elasticsearch` starts a single-node Elasticsearch 9 that reports healthy, reachable at `https://localhost:9200`                                                       |
-| ESD-02 | Security is on: HTTP is TLS-only with a certificate from the workspace CA, and every request needs basic authentication                                                                         |
-| ESD-03 | Credentials exist only in the project's SOPS-encrypted `.env.enc`; the plaintext `.env` holds dev defaults, as for every other project                                                          |
-| ESD-04 | Data survives `docker compose down` / `nx up`; only removing the named volume (`down -v`) resets it                                                                                             |
-| ESD-05 | The JVM heap is fixed (1 GiB by default) so the whole system still runs on one machine ([ADR 006](../../../../../docs/architecture/conversion/adr/006-the-whole-system-runs-on-one-machine.md)) |
-| ESD-06 | Cluster metrics reach `dev/observability` through a sidecar collector; `dev/observability` stays unaware of this project                                                                        |
+| Id     | Rule                                                                                                                                                                                 |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| ESD-01 | `nx up aurelius-atlas-dev-elasticsearch` starts a single-node Elasticsearch 9 that reports healthy, reachable at `https://localhost:9200`                                            |
+| ESD-02 | Security is on: HTTP is TLS-only with a certificate from the workspace CA, and every request needs basic authentication                                                              |
+| ESD-03 | Credentials exist only in the project's SOPS-encrypted `.env.enc`; the plaintext `.env` holds dev defaults, as for every other project                                               |
+| ESD-04 | Data survives `docker compose down` / `nx up`; only removing the named volume (`down -v`) resets it                                                                                  |
+| ESD-05 | The JVM heap is fixed (1 GiB by default) so the whole system still runs on one machine ([ADR 006](../../../../../docs/architecture/adr/006-the-whole-system-runs-on-one-machine.md)) |
+| ESD-06 | Cluster metrics reach `dev/observability` through a sidecar collector; `dev/observability` stays unaware of this project                                                             |
 
 > [!NOTE]
 > The ESD rules have no automated e2e tests (DD-223, DD-227). ESD-04's test meant

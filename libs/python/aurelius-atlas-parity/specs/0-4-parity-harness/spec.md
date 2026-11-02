@@ -9,7 +9,7 @@ the increment's shared set. The other part is with [`aurelius-atlas-trace`](../.
 
 ## Scope
 
-Make [ADR 052](../../../../../docs/architecture/conversion/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md)
+Make [ADR 052](../../../../../docs/architecture/adr/052-behaviour-is-specified-by-scenarios-read-from-the-reference-source.md)
 executable: an endpoint's behaviour is written down as scenarios — requests and the responses Apache
 Atlas 2.4.0 gives, read from its source and its own tests — and every scenario runs as a test against
 Aurelius Atlas, with its result in the test report.
