@@ -120,6 +120,12 @@ class EntityMapper:
         """``updateModificationMetadata``: the entity, changed by this request (EWR-12)."""
         return stored.touched(now=self._now, user=self._user)
 
+    def set_value(
+        self, target: dict[str, Any], attribute: AtlasAttribute, value: object, operation: EntityOperation
+    ) -> None:
+        """``mapAttribute`` of one attribute into ``target``, under its qualified name (BMD-02)."""
+        self._set(target, attribute, value, operation)
+
     def _set(
         self,
         target: dict[str, Any],
