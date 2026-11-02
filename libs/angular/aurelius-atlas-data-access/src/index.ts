@@ -3,6 +3,7 @@ export * from "./lib/atlas/admin.service";
 export * from "./lib/atlas/atlas-entities.service";
 export * from "./lib/atlas/atlas-entity";
 export * from "./lib/atlas/atlas-error";
+export * from "./lib/atlas/atlas-profile";
 export * from "./lib/atlas/atlas-search";
 export * from "./lib/atlas/atlas-typedef";
 export * from "./lib/atlas/search.service";

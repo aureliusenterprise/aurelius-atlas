@@ -15,8 +15,12 @@ Part of the template **spine**.
   (`/atlas/admin/**`)
 - `SearchService` — the search endpoints (`/atlas/v2/search/**`): the basic
   search (POST/GET), attribute, full-text, the quick search with its facets
-  (POST/GET), and term suggestions — `DiscoveryREST` of increments 4.1/4.2
-  (APC-11, DD-217); no screen calls it yet, 7.4's search slice is its first
+  (POST/GET), term suggestions, the DSL search, and the seven saved-search
+  routes — `DiscoveryREST` of increments 4.1–4.5 (APC-11, ACS-01..06, DD-217);
+  no screen calls the new methods yet, 7.4's search slice is its first
+- `atlas-profile.ts` — the saved-search DTOs (`AtlasUserSavedSearch`,
+  `SavedSearchType`) with the server's camelCase wire names, mirrored by hand
+  from `libs/python/aurelius-atlas-model` (`aurelius_atlas_model/profile.py`)
 - `atlas-typedef.ts` — the typedef DTO cluster (`AtlasTypesDef` and friends) with the
   server's camelCase wire names, mirrored by hand from
   `libs/python/aurelius-atlas-model` (`aurelius_atlas_model/typedef.py`)
@@ -50,7 +54,9 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 > `Entity` here and the Python `Entity` model are kept in sync by hand — update
 > both when the domain model changes. The same applies to the typedef DTOs in
 > `atlas-typedef.ts` and `aurelius_atlas_model/typedef.py` (APC-03), and to the
-> search DTOs in `atlas-search.ts` and `aurelius_atlas_model/discovery.py`.
+> search DTOs in `atlas-search.ts` and `aurelius_atlas_model/discovery.py`, and
+> to the saved-search DTOs in `atlas-profile.ts` and
+> `aurelius_atlas_model/profile.py`.
 
 ## Testing
 

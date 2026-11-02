@@ -15,7 +15,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   `KIND_PATHS`;
   `search` mirrors `routes/discovery.py` (CL-13 by 8.4, plus CSD-01..CSD-06,
   8.12 — the DSL search and the saved searches, the 204 of a missing profile
-  read as `None`), GET parameters as query
+  read as `None`; its Angular twin is `SearchService`, ACS-01..06 of 8.13,
+  where the 204 rides the body as `null` per DD-314), GET parameters as query
   parameters with the Java defaults (false, 0) left out;
   `entity` mirrors `routes/entity.py` (CLE-01..CLE-12, 8.9 — bodies from
   `aurelius-atlas-model`, `attr:`/`attr_<n>:` parameters, the client's own
