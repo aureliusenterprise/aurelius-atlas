@@ -424,6 +424,7 @@ class AtlasErrorCode(Enum):
     )
     REFERENCED_ENTITY_NOT_FOUND = (404, "ATLAS-404-00-00A", "Referenced entity {0} is not found")
     RELATIONSHIP_GUID_NOT_FOUND = (404, "ATLAS-404-00-00C", "Given relationship guid {0} is invalid/not found")
+    FILE_NAME_NOT_FOUND = (404, "ATLAS-404-00-014", "File name should not be blank")
     RELATIONSHIP_CRUD_INVALID_PARAMS = (
         404,
         "ATLAS-404-00-00D",
