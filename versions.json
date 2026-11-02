@@ -90,6 +90,11 @@
     "aliases": []
   },
   {
+    "version": "feat-8-17-angular-entity-read-routes",
+    "title": "feat-8-17-angular-entity-read-routes",
+    "aliases": []
+  },
+  {
     "version": "feat-8-16-angular-relationship-routes",
     "title": "feat-8-16-angular-relationship-routes",
     "aliases": []
