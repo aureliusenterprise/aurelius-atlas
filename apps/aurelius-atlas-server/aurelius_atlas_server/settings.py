@@ -75,6 +75,9 @@ class ServerSettings(BaseSettings):
     task_poll_seconds: float = Field(default=10.0, gt=0)
     """How often the worker looks for tasks other processes recorded or left behind (DD-080)."""
 
+    import_folder: Path | None = None
+    """The one folder ``admin/importfile`` reads export ZIPs from; none refuses every file (IMS-06, DV-125)."""
+
     cluster_name: str = "default"
     """The cluster an export says it comes from: ``atlas.metadata.namespace``, else ``atlas.cluster.name`` (EXP-06)."""
 

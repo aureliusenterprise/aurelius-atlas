@@ -3,25 +3,37 @@
 ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
 """
 
+import json
 import socket
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from functools import cache
 from importlib.metadata import version
 from typing import Any
 from zoneinfo import available_timezones
 
 from aurelius_atlas_core.export_service import ExportService
+from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_core.zip_sink import ZipSink
-from aurelius_atlas_model.impexp import OPTION_KEY_REPLICATED_TO, OPTION_SKIP_LINEAGE, AtlasExportRequest
+from aurelius_atlas_model.impexp import (
+    OPTION_KEY_REPLICATED_TO,
+    OPTION_SKIP_LINEAGE,
+    AtlasExportRequest,
+    AtlasImportRequest,
+    AtlasImportResult,
+)
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import PlainTextResponse
+from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
 from aurelius_atlas_server.authorization import AtlasPrivilege, privileges, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
-from aurelius_atlas_server.routes.entity import Body, Store, writer
+from aurelius_atlas_server.routes.entity import Body, Store, updater, writer
+from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
 
@@ -204,6 +216,88 @@ def _export_request(body: Any) -> AtlasExportRequest:  # noqa: ANN401 - any JSON
         return AtlasExportRequest.model_validate(body)
     except ValueError as error:
         raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AtlasExportRequest: {error}") from error
+
+
+@ADMIN.post("/import")
+async def import_data(request: Request, store: Store) -> AtlasJSONResponse:
+    """``importData``: the form's ``data``, an export ZIP, imported as its ``request`` asks (IMS-01 to IMS-05).
+
+    One export or import runs at a time unless the request names ``replicatedFrom``; an empty ZIP answers an empty
+    result.
+
+    Raises:
+        AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK``; what the import fails with.
+    """
+    verify_access(request, AtlasPrivilege.ADMIN_IMPORT, "importData")
+    form = await request.form()
+    text = form.get("request")
+    import_request = _import_request(text if isinstance(text, str) else "{}")
+    data = form.get("data")
+    content = await data.read() if isinstance(data, UploadFile) else b""
+    exclusive = import_request is not None and not import_request.is_replication_option_set()
+    async with _exclusively(request, exclusive=exclusive):
+        try:
+            result = await (await _importer(request, store)).run(content, import_request, *_who(request))
+        except AtlasError as error:
+            if error.code is not AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP:
+                raise
+            result = AtlasImportResult(time_stamp=store.now())
+    return AtlasJSONResponse(content=result.to_json())
+
+
+@ADMIN.post("/importfile")
+async def import_file(request: Request, store: Store, body: Body) -> AtlasJSONResponse:
+    """``importFile``: the export ZIP its ``fileName`` option names, from the server's import folder (IMS-06, DV-125).
+
+    It locks other exports and imports out only when the request names ``replicatedFrom``, as Atlas does.
+
+    Raises:
+        AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK``; ``INVALID_PARAMETERS``; what
+            the import fails with.
+    """
+    verify_access(request, AtlasPrivilege.ADMIN_IMPORT, "importFile")
+    import_request = _import_request(json.dumps(body)) if body is not None else None
+    exclusive = import_request is not None and import_request.is_replication_option_set()
+    folder = request.app.state.settings.import_folder
+    async with _exclusively(request, exclusive=exclusive):
+        importer = await _importer(request, store)
+        result = await importer.run_file(import_request or AtlasImportRequest(), folder, *_who(request))
+    return AtlasJSONResponse(content=result.to_json())
+
+
+def _import_request(text: str) -> AtlasImportRequest | None:
+    """``AtlasType.fromJson`` of the request: None for text that is no request."""
+    try:
+        return AtlasImportRequest.model_validate_json(text)
+    except ValueError:
+        return None
+
+
+async def _importer(request: Request, store: Store) -> ImportService:
+    """The import service, its types current, its entities written as the request's user (IMS-04)."""
+    return ImportService(store, await refreshed_typedef_store(request), updater(request, store))
+
+
+def _who(request: Request) -> tuple[str | None, str, str]:
+    """The user, the server's host name and the client's address an import or export records."""
+    return acting_user(request), socket.gethostname(), "" if request.client is None else request.client.host
+
+
+@asynccontextmanager
+async def _exclusively(request: Request, *, exclusive: bool) -> AsyncIterator[None]:
+    """``acquireExportImportLock``: when ``exclusive``, the one export or import running (DD-304).
+
+    Raises:
+        AtlasError: ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`` while another runs.
+    """
+    lock = request.app.state.import_export_lock
+    if not exclusive:
+        yield
+        return
+    if lock.locked():
+        raise AtlasError(AtlasErrorCode.FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK)
+    async with lock:
+        yield
 
 
 @ADMIN.get("/tasks")

@@ -60,3 +60,25 @@ async def test__an_export_answers_the_zip_of_what_an_entity_reaches(client: http
     assert order == [created["-2"], created["-1"]]
     assert {typedef["name"] for typedef in types_def["entityDefs"]} == {table, db}
     assert info["operationStatus"] == "SUCCESS"
+
+
+@pytest.mark.covers("aurelius_atlas_server.routes.admin.import_data", rules=["IMS-01", "IMS-04"])
+async def test__an_export_imports_back_into_the_catalogue(client: httpx.AsyncClient) -> None:
+    """The ZIP of an entity, imported again: its entity known by its GUID, the import a success."""
+    run = uuid.uuid4().hex
+    name = f"e2e_import_{run}"
+    types = {
+        "entityDefs": [
+            {"name": name, "attributeDefs": [{"name": "qualifiedName", "typeName": "string", "isUnique": True}]}
+        ]
+    }
+    assert (await client.post("/api/atlas/v2/types/typedefs", json=types)).status_code == 200
+    body = {"entity": {"typeName": name, "attributes": {"qualifiedName": f"q_{run}"}}}
+    guid = (await client.post("/api/atlas/v2/entity", json=body)).json()["mutatedEntities"]["CREATE"][0]["guid"]
+    content = (await client.post("/api/atlas/admin/export", json={"itemsToExport": [{"guid": guid}]})).content
+
+    found = await client.post("/api/atlas/admin/import", files={"data": ("export.zip", content)})
+
+    assert found.status_code == 200
+    assert found.json()["operationStatus"] == "SUCCESS"
+    assert found.json()["exportResult"]["request"]["itemsToExport"] == [{"guid": guid}]

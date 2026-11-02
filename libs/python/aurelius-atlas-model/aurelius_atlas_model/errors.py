@@ -180,6 +180,12 @@ class AtlasErrorCode(Enum):
         "The provided file type: {0} is not supported. Expected file formats are .csv and .xls.",
     )
     NO_DATA_FOUND = (400, "ATLAS-400-00-09B", "No data found in the uploaded file")
+    IMPORT_ATTEMPTING_EMPTY_ZIP = (400, "ATLAS-400-00-08A", "Attempting to import empty ZIP file.")
+    INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED = (
+        400,
+        "ATLAS-400-00-050",
+        "Attribute {0}.{1} is of type {2}. Import has this attribute type as {3}",
+    )
     NOT_VALID_FILE = (400, "ATLAS-400-00-09C", "Invalid {0} file")
     LINEAGE_ON_DEMAND_NOT_ENABLED = (400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled")
     UNEXPECTED_TYPE = (400, "ATLAS-400-00-00F", "expected type {0}; found {1}")

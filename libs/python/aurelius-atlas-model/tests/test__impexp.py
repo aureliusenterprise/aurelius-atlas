@@ -6,7 +6,7 @@ Read from ``AtlasExportRequest`` (``getFetchTypeOptionValue``, ``getSkipLineageO
 """
 
 import pytest
-from aurelius_atlas_model.impexp import AtlasExportRequest, AtlasExportResult
+from aurelius_atlas_model.impexp import AtlasExportRequest, AtlasExportResult, AtlasImportRequest, AtlasImportResult
 
 R = "aurelius_atlas_model.impexp.AtlasExportRequest"
 
@@ -54,3 +54,22 @@ def test__the_result_counts_by_key_and_leaves_out_what_it_lacks() -> None:
         "operationStatus": "FAIL",
         "changeMarker": 0,
     }
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_model.impexp.AtlasImportRequest.option",
+    "aurelius_atlas_model.impexp.AtlasImportRequest.is_replication_option_set",
+    "aurelius_atlas_model.impexp.AtlasImportResult.increment_metrics_counter",
+    rules=["IMS-01"],
+)
+def test__the_import_request_reads_its_options_as_text() -> None:
+    """``getOptionForKey``: the option's text, None when absent; the result counts by key."""
+    request = AtlasImportRequest.model_validate({"options": {"startPosition": 2, "updateTypeDefinition": True}})
+    result = AtlasImportResult()
+    result.increment_metrics_counter("entity:t:created")
+
+    assert (request.option("startPosition"), request.option("updateTypeDefinition")) == ("2", "true")
+    assert request.option("startGuid") is None
+    assert not request.is_replication_option_set()
+    assert AtlasImportRequest.model_validate({"options": {"replicatedFrom": "x"}}).is_replication_option_set()
+    assert result.metrics == {"entity:t:created": 1}
