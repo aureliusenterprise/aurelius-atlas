@@ -1,5 +1,6 @@
 export * from "./lib/api-config";
 export * from "./lib/atlas/admin.service";
+export * from "./lib/atlas/atlas-audit";
 export * from "./lib/atlas/atlas-entities.service";
 export * from "./lib/atlas/atlas-entity";
 export * from "./lib/atlas/atlas-error";

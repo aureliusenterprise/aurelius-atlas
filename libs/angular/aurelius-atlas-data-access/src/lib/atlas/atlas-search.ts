@@ -146,6 +146,15 @@ export type AtlasEntityHeader = {
     labels?: string[] | null;
 };
 
+/**
+ * `AtlasEntityHeaders`: entity headers by GUID, the body of
+ * `/v2/entity/bulk/headers` (ENT-16, AEN-06) and of the changed-classification
+ * read (AEN-06).
+ */
+export type AtlasEntityHeaders = {
+    guidHeaderMap?: Record<string, AtlasEntityHeader> | null;
+};
+
 /** An entity a full-text search found, and its score (`AtlasFullTextResult`, FTX-05). */
 export type AtlasFullTextResult = {
     entity?: AtlasEntityHeader | null;

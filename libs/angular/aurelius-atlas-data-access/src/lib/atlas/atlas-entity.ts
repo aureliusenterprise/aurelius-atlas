@@ -134,10 +134,23 @@ export type AtlasEntity = {
  */
 export type AtlasEntityWithExtInfo = {
     entity?: AtlasEntity | null;
+    /** The entities the main entity refers to, keyed by guid (ENT-10, ERD-02 — AEN-01). */
+    referredEntities?: Record<string, AtlasEntity> | null;
     reftypeDefs?: unknown[] | null;
     structDefs?: unknown[] | null;
     classificationDefs?: unknown[] | null;
     guidance?: string | null;
     /** The page size of the entity's classification list, when paged. */
     totalNumberOfClassifications?: number | null;
+};
+
+/**
+ * `AtlasEntitiesWithExtInfo`: the body of a bulk read or write (ENT-10) —
+ * `entities` and `referredEntities`, the entities they refer to, keyed by guid.
+ * `GET /v2/entity/bulk` and the bulk unique-attribute read answer it (ERD-01,
+ * ERD-08); the entity writes (8.18) send it.
+ */
+export type AtlasEntitiesWithExtInfo = {
+    entities?: AtlasEntity[] | null;
+    referredEntities?: Record<string, AtlasEntity> | null;
 };

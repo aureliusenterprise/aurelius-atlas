@@ -24,6 +24,12 @@ Part of the template **spine**.
   create and update (the bare relationship both ways), the always-wrapped read,
   and the soft/hard delete with its `deleteType` — `RelationshipREST` of server
   2.x (AREL-01..04); the twin of `AtlasClient.relationship` (CLR-01..04)
+- `AtlasEntitiesService` — the entity reads (`/atlas/v2/entity/**`): the
+  by-guid/by-unique-attribute reads (with the ext-info flags), their header
+  siblings, the bulk reads, the audit events, and the changed-classification
+  headers — `EntityREST` of server 2.3/7.6 (DET-03, AEN-01..07); the twin of
+  `AtlasClient.entity`'s reads (CLE-01..CLE-11); the entity writes and the
+  classification/business-metadata/label routes come in 8.18 and 8.19
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from
@@ -35,6 +41,9 @@ Part of the template **spine**.
 - `atlas-relationship.ts` — the relationship DTOs (`AtlasRelationship`,
   `AtlasRelationshipWithExtInfo`, `RelationshipStatus`), mirrored by hand from
   `aurelius_atlas_model/instance/relationship.py`
+- `atlas-audit.ts` — the entity-audit DTOs (`EntityAuditEventV2`,
+  `EntityAuditActionV2`, `EntityAuditType`), mirrored by hand from
+  `aurelius_atlas_model/audit.py`
 - `SearchService` — the search endpoints (`/atlas/v2/search/**`): the basic
   search (POST/GET), attribute, full-text, the quick search with its facets
   (POST/GET), term suggestions, the DSL search, and the seven saved-search
@@ -82,8 +91,10 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 > `atlas-impexp.ts`/`atlas-mutation.ts`/`atlas-patches.ts`/`atlas-tasks.ts` and
 > `aurelius_atlas_model/impexp.py`/`instance/`/`patches.py`/`tasks.py`, and to
 > the lineage DTOs in `atlas-lineage.ts` and `aurelius_atlas_model/lineage.py`,
-> and to the relationship DTOs in `atlas-relationship.ts` and
-> `aurelius_atlas_model/instance/relationship.py`.
+> to the relationship DTOs in `atlas-relationship.ts` and
+> `aurelius_atlas_model/instance/relationship.py`, and to the entity and audit
+> DTOs in `atlas-entity.ts`/`atlas-audit.ts` and
+> `aurelius_atlas_model/instance/`/`audit.py`.
 
 ## Testing
 
