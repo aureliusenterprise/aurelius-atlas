@@ -8,7 +8,8 @@ translation, test tooling. Business-level decisions are ADRs in
 Each new entry lives in the `design.md` of the increment that makes it, next to that increment's
 spec ([ADR 051](../adr/051-the-conversion-proceeds-in-specified-increments.md)); where, is what
 the [Moved entries](#moved-entries) index keeps per number. This page holds the entries written
-before that layout (DD-001 to DD-086 are moved out; what is listed below stays): it is read-only
+before that layout (DD-001 to DD-094, DD-240 to DD-244 and DD-252 are moved out; what is listed
+below stays): it is read-only
 history. Nothing is appended here.
 
 ## Rules
@@ -44,14 +45,6 @@ history. Nothing is appended here.
 
 | #                                                                                                                  | Decision                                                                                                                                                                                                                        | Increment     | Status               |
 | ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------- | -------------------- |
-| [DD-087](#dd-087-basic-search-is-split-into-entity-and-classification-search)                                      | Basic search is split into entity and classification search                                                                                                                                                                     | 4.1           | Proposed             |
-| [DD-088](#dd-088-entity-attributes-are-searched-in-typed-search-fields-named-after-their-defining-type)            | Entity attributes are searched in typed search fields named after their defining type                                                                                                                                           | 4.1           | Proposed             |
-| [DD-089](#dd-089-a-search-is-a-query-of-the-entity-documents-ordered-by-creation-when-no-sort-is-given)            | A search is a query of the entity documents, ordered by creation when no sort is given                                                                                                                                          | 4.1           | Proposed             |
-| [DD-090](#dd-090-a-classification-search-finds-instances-first-then-the-entities-listing-them)                     | A classification search finds instances first, then the entities listing them                                                                                                                                                   | 4.1           | Proposed             |
-| [DD-091](#dd-091-free-text-is-split-from-quick-search)                                                             | Free text is split from quick search                                                                                                                                                                                            | 4.2           | Proposed             |
-| [DD-092](#dd-092-string-search-fields-carry-an-analysed-text-sub-field-searched-with-atlass-weights)               | String search fields carry an analysed text sub-field, searched with Atlas's weights                                                                                                                                            | 4.2           | Proposed             |
-| [DD-093](#dd-093-facets-are-aggregations-of-the-searchs-own-query)                                                 | Facets are aggregations of the search's own query                                                                                                                                                                               | 4.2           | Proposed             |
-| [DD-094](#dd-094-suggestions-are-terms-aggregations-of-the-text-sub-fields)                                        | Suggestions are terms aggregations of the text sub-fields                                                                                                                                                                       | 4.2           | Proposed             |
 | [DD-126](#dd-126-the-webapp-is-a-new-project-not-the-aurelius-app-upgraded-in-place)                               | The webapp is a new project, not the Aurelius app upgraded in place                                                                                                                                                             | 7.0           | Proposed             |
 | [DD-127](#dd-127-signals-replace-the-custom-store-each-slice-owns-its-state)                                       | Signals replace the custom store; each slice owns its state                                                                                                                                                                     | 7.0           | Proposed             |
 | [DD-128](#dd-128-aurelius-dictionaries-become-xliff-migrated-whole-with-the-json-as-fixture)                       | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                                                                                                                                                    | 7.1           | Proposed             |
@@ -158,11 +151,6 @@ history. Nothing is appended here.
 | [DD-237](#dd-237-index-refresh-moves-from-reads-to-writes)                                                         | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes                                                                                                                               | 9.3           | Accepted             |
 | [DD-238](#dd-238-the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)                                 | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                                                                                                                               | 9.3           | Accepted             |
 | [DD-239](#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage)                            | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage                                                                                                              | 9.4           | Accepted             |
-| [DD-240](#dd-240-the-dsl-parser-is-generated-from-atlass-own-grammar)                                              | The DSL parser is generated from Atlas's own grammar                                                                                                                                                                            | 4.3           | Proposed             |
-| [DD-241](#dd-241-the-parse-tree-is-handed-on-as-typed-immutable-nodes)                                             | The parse tree is handed on as typed, immutable nodes                                                                                                                                                                           | 4.3           | Proposed             |
-| [DD-242](#dd-242-a-dsl-query-is-composed-into-the-basic-searchs-filter-tree)                                       | A DSL query is composed into the basic search's filter tree                                                                                                                                                                     | 4.4           | Proposed             |
-| [DD-243](#dd-243-dsl-traversals-and-projections-are-evaluated-in-steps)                                            | DSL traversals and projections are evaluated in steps                                                                                                                                                                           | 4.4           | Proposed             |
-| [DD-244](#dd-244-saved-searches-wait-for-authentication)                                                           | Saved searches wait for authentication                                                                                                                                                                                          | 4.5           | Accepted             |
 | [DD-245](#dd-245-lineage-walks-the-relationships-of-the-process-edges)                                             | Lineage walks the relationships of the process edges                                                                                                                                                                            | 5.1           | Proposed             |
 | [DD-246](#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores)                 | Glossary objects are entities written through the entity and relationship stores                                                                                                                                                | 5.2           | Proposed             |
 | [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                         | Journal writes do not wait for a refresh                                                                                                                                                                                        | cross-cutting | Proposed             |
@@ -170,7 +158,6 @@ history. Nothing is appended here.
 | [DD-249](#dd-249-uploaded-files-are-read-with-python-multipart-openpyxl-and-xlrd)                                  | Uploaded files are read with python-multipart, openpyxl and xlrd                                                                                                                                                                | 5.2           | Proposed             |
 | [DD-250](#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider)                           | The server authenticates requests itself against the identity provider                                                                                                                                                          | 6.1           | Proposed             |
 | [DD-251](#dd-251-browser-sessions-are-kept-in-the-servers-memory)                                                  | Browser sessions are kept in the server's memory                                                                                                                                                                                | 6.1           | Proposed             |
-| [DD-252](#dd-252-dataaccess-carries-every-model-object-through-a-registry-of-dtos)                                 | DataAccess carries every model object through a registry of DTOs                                                                                                                                                                | 4.5           | Proposed             |
 | [DD-253](#dd-253-the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli)               | The chart-contract suite lives at the workspace root (`tests/`) and asserts rendered manifests via the `helm` CLI                                                                                                               | 10.2          | Accepted             |
 | [DD-254](#dd-254-deploy-time-credential-generation-lands-in-102-with-publish-and-rotation-in-104)                  | The umbrella's `randAlphaNum` + `lookup` credential generation ships in 10.2; retrieval/rotation polish stays in 10.4                                                                                                           | 10.2          | Accepted             |
 | [DD-255](#dd-255-the-coredump-agent-ships-as-its-own-image-project)                                                | The ES coredump agent ships as the `aurelius-atlas-elasticsearch-agent` image, not a ConfigMap-embedded jar                                                                                                                     | 10.2          | Accepted             |
@@ -210,169 +197,6 @@ history. Nothing is appended here.
 | [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                       | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
 | [DD-300](#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                   | Four fixed roles of the server's client grant Atlas's privileges                                                                                                                                                                | 6.2           | Proposed             |
 | [DD-301](#dd-301-the-stores-check-through-the-authorizer-they-are-given)                                           | The stores check through the authorizer they are given                                                                                                                                                                          | 6.2           | Proposed             |
-
-### DD-087. Basic search is split into entity and classification search
-
-- **Status:** Proposed
-- **Increment:** 4.1
-- **Date:** 2026-10-24
-
-**Decision.** Increment 4.1 is split: 4.1a searches entities by type, entity filters, state, sort and paging,
-with the search fields it needs (DD-088); 4.1b adds the classification search of
-`ClassificationSearchProcessor`. The free-text `query` of basic search goes with quick search to 4.2.
-
-**Reason.** Atlas's two processors are separate, and each is as large as one increment.
-
-**Alternatives.** One increment of about twice the size; the free text with 4.1, where it would need the full
-text index 4.2 builds anyway.
-
-**Consequences.** Until 4.1b a search naming a classification is refused (DV-46).
-
-### DD-088. Entity attributes are searched in typed search fields named after their defining type
-
-- **Status:** Proposed
-- **Increment:** 4.1
-- **Date:** 2026-10-24
-
-**Decision.** An entity document carries `search`, a flat object (`subobjects: false`) of its searchable
-values: each primitive, enum or array-of-primitive attribute under `<kind>.<qualified name>`, the qualified
-name being Atlas's vertex property key (`hive_table.name`, `Referenceable.qualifiedName`, `__guid`), and
-`<kind>` the Elasticsearch type its Atlas type maps to: `keyword` for strings and enums, `long` for the
-integer types and dates, `double` for `float`, `double` and the big number types, `boolean`. Dynamic templates
-on the kind map each new field. The system attributes of the entity root are filled from the document's own
-fields. The entity store computes `search` with the registry when it writes an entity.
-
-**Reason.** Atlas's index keys a property by its defining type, so one attribute is one field across sub
-types, and its type decides how it compares. A kind in the field's name lets Elasticsearch map a field the
-first time it is written, in any process, without a mapping kept in step with the type definitions.
-
-**Alternatives.** Mapping each field from the type definitions when they change: the same fields, but every
-process and every type change would update the mapping. One `flattened` field: no range or numeric sort.
-Filtering in memory: every search reads every entity of its types.
-
-**Consequences.** Entities written before 4.1a have no `search` until written again. The field limit of the
-entity index is raised to 100,000. The big number types compare as doubles.
-
-### DD-089. A search is a query of the entity documents, ordered by creation when no sort is given
-
-- **Status:** Proposed
-- **Increment:** 4.1
-- **Date:** 2026-10-24
-
-**Decision.** `EntitySearchProcessor` builds a search query of its own: the types, the state, the filter tree
-over search fields with Atlas's operators, the sort, offset and size. The entity documents answer it with the
-matching entities and their total, which is `approximateCount`; Elasticsearch as a `bool` query, the in-memory
-documents by evaluating it. Without `sortBy` entities come by creation time, then GUID.
-
-**Reason.** One query instead of Atlas's index query, graph query and in-memory predicates, whose combination
-the rules of SRC-05 state; Atlas's order without a sort is the index's and has nothing to keep.
-
-**Alternatives.** Elasticsearch's query language in the core: the in-memory documents could not answer it.
-
-**Consequences.** `approximateCount` is exact.
-
-### DD-090. A classification search finds instances first, then the entities listing them
-
-- **Status:** Proposed
-- **Increment:** 4.1
-- **Date:** 2026-10-24
-
-**Decision.** The entity documents gain what Atlas keeps on an entity vertex of its classifications, computed
-when an entity is written from the instances it lists: `__traitNames` and `__propagatedTraitNames`, the type
-names of those attached and propagated, `__classificationNames` and `__propagatedClassificationNames` as
-`|a|b|`, and the GUIDs of the instances. A search naming classifications without tag filters tests the type
-names, as Atlas's `buildTraitPredict` does; with tag filters it reads the instances of the types named from
-the classification index, keeps those that match, evaluated with the search query's predicates over their
-attribute values, and adds to the entity query that the entity lists one of them.
-
-**Reason.** An entity already lists every classification it carries, propagated ones included (DD-070,
-DD-075), and tag filters are what classification instances are searched by; no mapping of classification
-attributes is needed, and the filter semantics are the ones entity filters have.
-
-**Alternatives.** Search fields on classification documents: the same answers, with a second set of mappings.
-Classification type names on the entity only: tag filters could not be answered.
-
-**Consequences.** A search reads every instance of the types it names; an entity query names at most 65,536
-instances, Elasticsearch's `terms` limit, beyond which the search fails.
-
-### DD-091. Free text is split from quick search
-
-- **Status:** Proposed
-- **Increment:** 4.2
-- **Date:** 2026-10-24
-
-**Decision.** Increment 4.2 is split: 4.2a indexes and searches free text, in basic search's `query` and in
-`search/fulltext`; 4.2b answers `search/quick` with its facets, and `search/suggestions`.
-
-**Reason.** Quick search and suggestions build on the free text; each part is about one increment.
-
-**Alternatives.** One increment of about twice the size.
-
-**Consequences.** Until 4.2b, the dashboards' quick search box finds nothing.
-
-### DD-092. String search fields carry an analysed text sub-field, searched with Atlas's weights
-
-- **Status:** Proposed
-- **Increment:** 4.2
-- **Date:** 2026-10-24
-
-**Decision.** The dynamic template of `keyword` search fields gives each a `text` sub-field, analysed by
-Elasticsearch's standard analyser, and keeps values over 8,191 characters out of the keyword. An entity's
-search fields gain `__classificationsText`. A free-text query is a `simple_query_string` over the text
-sub-fields of the string attributes of the non-internal entity types and of `__classificationsText`,
-`__labels`, `__customAttributes` and `__typeName`, each boosted by the weight Atlas's `SolrIndexHelper` gives
-its Solr field. The in-memory documents match words the same way, without Elasticsearch's scoring.
-
-**Reason.** Atlas's free text is Solr's `edismax` over the same fields with the same weights as `qf`; a
-sub-field keeps each attribute's weight and its exact `keyword` for the filters of 4.1.
-
-**Alternatives.** One catch-all text field: every attribute would weigh the same, and 4.2b's suggestions could
-not keep to the fields weighted 8 or more. `query_string`: closer to `edismax`, but a malformed query fails.
-
-**Consequences.** Fields mapped before 4.2a have no text sub-field; an entity index created before needs
-creating again.
-
-### DD-093. Facets are aggregations of the search's own query
-
-- **Status:** Proposed
-- **Increment:** 4.2
-- **Date:** 2026-10-24
-
-**Decision.** Quick search counts its facets with `terms` aggregations over the `keyword` search fields of
-`__typeName`, `__state` and `Asset.owner`, in the same Elasticsearch request as the page of results: the query
-of the search, unpaged, at most 100 values each, ordered by count and then by value. `ServiceType` is added up
-from the `__typeName` counts with the registry's types. The in-memory documents count the same.
-
-**Reason.** Atlas facets the Solr query its `AtlasSolrQueryBuilder` rebuilds from the same query, types,
-filters and state as the search; aggregating the search's own query counts exactly the entities found, without
-a second translation of the filters. 100 is Solr's default `facet.limit`.
-
-**Alternatives.** A second request for the counts: one more round trip for the same query.
-
-**Consequences.** Facets count what the search query matches, classification criteria included, which quick
-search does not take.
-
-### DD-094. Suggestions are terms aggregations of the text sub-fields
-
-- **Status:** Proposed
-- **Increment:** 4.2
-- **Date:** 2026-10-24
-
-**Decision.** The text sub-field of DD-092 enables `fielddata`. Suggestions are, for each field weighted 8 or
-more (or the one named), a `terms` aggregation of its text sub-field over every entity document, of the 5
-terms matching the prefix, most documents first; the fields' terms are then summed and the top 5 kept. The
-in-memory documents count the words of the same fields.
-
-**Reason.** Atlas reads Solr's terms component on the fields with `terms.limit` 5 and adds up the frequencies;
-a terms aggregation is the Elasticsearch reading of a field's terms and their document frequencies. The
-`_terms_enum` API knows no frequencies, and keyword fields hold whole values, not words.
-
-**Alternatives.** A completion suggester: a field of its own per attribute, suggesting whole values. Terms of
-the keyword fields: values, not words, and only case-sensitive prefixes.
-
-**Consequences.** Fielddata of a text sub-field is loaded into the heap the first time it is aggregated, which
-suggestions limit to the few fields weighted 8 or more. Fields mapped before 4.2b have no fielddata; an entity
-index created before needs creating again.
 
 ### DD-126. The webapp is a new project, not the Aurelius app upgraded in place
 
@@ -5423,139 +5247,6 @@ real, proven in the prototype burst). The v0.1.x line is 2023-frozen
 baseline (the 1.30 signature check is the compatibility gate — a mismatched
 module fails at config parse, loudly, at boot). Next free DD: 240.
 
-### DD-240. The DSL parser is generated from Atlas's own grammar
-
-- **Status:** Proposed
-- **Increment:** 4.3
-- **Date:** 2026-10-30
-
-**Decision.** `aurelius-atlas-dsl` keeps Atlas's `AtlasDSLLexer.g4` and `AtlasDSLParser.g4` unchanged in
-`grammar/` and generates its lexer and parser from them with the ANTLR 4.13.2 tool (`npx nx generate-parser
-aurelius-atlas-dsl`, Java needed only then). The generated modules are committed in
-`aurelius_atlas_dsl/generated` and run on `antlr4-python3-runtime`, pinned to the tool's version. They are
-left out of ruff, pyright, coverage, Sonar, the hooks, the traceability check and the increment's line budget:
-nobody writes or reviews them.
-
-**Reason.** The grammar is ambiguous and its lexer has quirks a client can see: the longest match decides
-between a keyword and a name (`fromDate`, `db.name`, `a.b.c` as `a.b` and `.c`), a sign joins a number (`a -5`
-is two sources), and ANTLR's adaptive prediction picks among the readings of `singleQrySrc`. Generating from
-the same grammar reproduces all of it, and ANTLR's syntax error messages, which Atlas puts in
-`INVALID_DSL_QUERY`. Every query of Atlas's DSL tests reads as Atlas reads it. A warm parse takes about 13 ms.
-
-**Alternatives.** A hand-written recursive descent parser: no runtime dependency and faster, but every lexer
-rule and every ambiguity resolution re-derived by hand, and ANTLR's error messages imitated. A parser library
-such as Lark: a second grammar to keep equal to Atlas's. ANTLR 4.7, Atlas's own version: its Python runtime
-dates from 2017 and is no longer maintained; 4.13 runs the same parsing algorithm.
-
-**Consequences.** A grammar change is Atlas's grammar changed and the package regenerated, never the generated
-code edited. The runtime is a pure-Python dependency without type information; `tree_builder` reads the
-contexts through small typed helpers.
-
-### DD-241. The parse tree is handed on as typed, immutable nodes
-
-- **Status:** Proposed
-- **Increment:** 4.3
-- **Date:** 2026-10-30
-
-**Decision.** `parse` returns a tree of frozen dataclasses (`dsl_tree`), not ANTLR's contexts: one node per
-grammar rule that `DSLVisitor` reads, named after it, a choosing rule as the union of its alternatives. Every
-node keeps its `getText()`, and an operator, sort order or literal the text it was written with besides its
-kind.
-
-**Reason.** `DSLVisitor` and `GremlinQueryComposer` work on rule texts (`getText()`) and on which alternative
-matched; the nodes keep both, so 4.4 can port that logic, Atlas's quirks included (it upper-cases the
-operator's spelling before looking it up). Typed nodes let pyright check 4.4's composer and keep the generated
-code behind one module; equality makes trees easy to assert in tests.
-
-**Alternatives.** Hand ANTLR's contexts to 4.4 as Java does: the closest port, but untyped, mutable and tied
-to the generated code. An abstract tree that folds Atlas's rules into precedence (`and` before `or`): Atlas
-joins conditions left to right, and the folding belongs to the composer that reproduces it.
-
-**Consequences.** 4.4 composes Elasticsearch queries from `dsl_tree` alone. A grammar change touches
-`dsl_tree` and `tree_builder` too.
-
-### DD-242. A DSL query is composed into the basic search's filter tree
-
-- **Status:** Proposed
-- **Increment:** 4.4
-- **Date:** 2026-10-30
-
-**Decision.** `DSLVisitor` and `GremlinQueryComposer` are replaced by one composer in `aurelius-atlas-core`
-(`dsl_query_composer`) that walks the syntax tree of 4.3 (DD-241) and writes the `SearchQuery` of the basic
-search (DD-089): the sources and conditions as one filter tree of `Criterion` and `Group` over the search
-fields (DD-088), the `orderby` as its sort, the limit and offset as its page. `like` adds two tests to the
-search query: `REGEX`, a regular expression the whole keyword value matches in case, and `WORD_REGEX`, one a
-word of the text sub-field (DD-092) matches in any case; Elasticsearch answers both with `regexp`, the
-in-memory documents with Python's `re`. The composer keeps Atlas's name resolution (`IdentifierHelper.Info`,
-`RegistryBasedLookup`), its left-to-right joining of `and` and `or`, and its semantic errors, collected and
-joined into one `INVALID_DSL_QUERY`. `aurelius-atlas-core` depends on `aurelius-atlas-dsl`.
-
-**Reason.** Atlas's composer writes Gremlin text that its executor turns back into a traversal; every clause
-of 4.4a is a test of the entity's own fields, which the basic search already translates to Elasticsearch and
-evaluates in memory. One filter tree keeps a DSL query to one Elasticsearch request, reuses the paging,
-sorting and tie-breaking of the basic search, and lets the in-memory documents answer the core tests.
-
-**Alternatives.** Port `GremlinQueryComposer` clause by clause and translate the clause list: the closest
-port, but a second translation of every predicate the basic search already has. Elasticsearch's query string
-syntax: a client's query would reach Elasticsearch's parser, with neither Atlas's grammar nor its errors.
-
-**Consequences.** Traversals into referred entities, classification attributes and projections (4.4b) are not
-tests of one document's fields; 4.4b decides how they are evaluated, over the relationship documents (DD-061).
-Lucene's regular expressions are not Java's or Python's: the patterns `like` writes (`.`, `.*`, escaped
-characters, classes) read the same in all three, which the e2e tests check.
-
-### DD-243. DSL traversals and projections are evaluated in steps
-
-- **Status:** Proposed
-- **Increment:** 4.4
-- **Date:** 2026-10-30
-
-**Decision.** The DSL composer (DD-242) answers a plan: the filter tree of the final entities, the steps
-before them, and the `select` and `groupby`. A move to referred entities (a source naming a reference, a
-`select` of one) is a step: the entities found so far are read, the GUIDs their attribute refers to taken, and
-the next filter holds for those GUIDs. A condition on a referred entity (`db.name`) or a classification
-attribute (`Dimension.tagAttr1`) is a criterion whose value the executor resolves to GUIDs before searching:
-the referred entities matching, the entities referring to them by reference (`references`, DD-057) or
-relationship end (DD-061) and confirmed by reading the attribute; or the classification instances matching, as
-the classification search finds them (DD-090). Aggregates, groups and moves read the entities found in one
-search of at most 10,000; rows and groups are built from them in memory, as `SelectClauseProjections` builds
-them from vertices.
-
-**Reason.** Atlas walks edges; the documents have none. Resolving to GUIDs keeps each step a search of the
-entity documents with the filter tree of DD-242, and the in-memory documents answer the same plan. A reference
-is read as a read answers it, so plain references and relationship ends, legacy or not, give the same answer.
-
-**Alternatives.** Denormalising referred attributes into the referring document's search fields: one query,
-but every write would have to rewrite the entities referring to the one written. Elasticsearch `terms` lookups
-across indices: they read one document's field, not a relationship's other end. Aggregating in Elasticsearch:
-Java's comparison for `min` and `max` (no value least, kinds equal) and row deduplication are not its.
-
-**Consequences.** A step reads at most 10,000 entities (DV-98); a query reaching past them answers from the
-first 10,000. A condition on a referred entity costs a search, a read of the candidates and of their
-references.
-
-### DD-244. Saved searches wait for authentication
-
-- **Status:** Accepted
-- **Increment:** 4.5
-- **Date:** 2026-10-30
-
-**Decision.** Increment 4.5 (saved searches and the user profile) follows 6.1 (authentication) instead of
-preceding 5.1. The roadmap keeps its number; 5.1 lineage is the next increment. The user chose this on
-2026-10-30.
-
-**Reason.** Atlas owns every saved search by the logged-in user: `addSavedSearch` sets the owner from the
-request's user, `getSavedSearches` defaults to that user, and reading, updating, deleting and executing a
-search check ownership (`checkSavedSearchOwnership`). Until 6.1 the server has no user (DV-04, DV-06); porting
-4.5 now would need a temporary owner, a deviation 6.1 would have to undo, and ownership checks that test
-nothing.
-
-**Alternatives.** One anonymous owner until 6.1: the endpoints sooner, the checks trivially passing. An owner
-taken from a request header until 6.1: testable checks, but a spoofable identity to remove later.
-
-**Consequences.** `search/saved*` stays unanswered until after 6.1; the dashboards' saved-search menus fail
-until then, as they did before.
-
 ### DD-245. Lineage walks the relationships of the process edges
 
 - **Status:** Proposed
@@ -5729,28 +5420,6 @@ instances, at a store round-trip per request.
 
 **Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts.
 Several server instances need sticky sessions.
-
-### DD-252. DataAccess carries every model object through a registry of DTOs
-
-- **Status:** Proposed
-- **Increment:** 4.5
-- **Date:** 2026-11-01
-
-**Decision.** `DataAccess` moves out of the glossary's module into `data_access`, generic over a registry of
-data transfer objects by the object's class, as Atlas's `DataAccess` and `DTORegistry` are. A DTO names the
-entity type, makes the object's entities (its own first, then those it refers to) and reads the object back
-from its entity and the entities read with it, and gives the unique attributes a new object is found by. The
-glossary's three DTOs and the user profile's two register there; each service builds its `DataAccess` from its
-registry.
-
-**Reason.** 4.5 stores the user profile and its saved searches as Atlas does, as internal entities read and
-written like the glossary's objects (DD-246). Atlas has one `DataAccess` for both; a second copy for profiles
-would duplicate the save, load, type and deletion checks the glossary's already has.
-
-**Alternatives.** A profile store written apart: the same checks twice. One registry of every DTO: services
-would carry DTOs they never use.
-
-**Consequences.** The glossary's `DataAccess` is `glossary_data_access`; its tests name the generic methods.
 
 ### DD-253. The chart-contract suite lives at the workspace root and renders with the helm CLI
 
@@ -8104,6 +7773,20 @@ here is a copy of the one at the time of the move. New entries go to the increme
 | DD-084 | The entity writer tells a change notifier what it changed                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
 | DD-085 | Classification events are collected in the request and recorded after its write            | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-classification-audit/design.md`             |
 | DD-086 | Tag propagation records the propagations a request added and removed                       | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-classification-audit/design.md`             |
+| DD-087 | Basic search is split into entity and classification search                                | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
+| DD-088 | Entity attributes are searched in typed search fields named after their defining type      | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
+| DD-089 | A search is a query of the entity documents, ordered by creation when no sort is given     | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
+| DD-090 | A classification search finds instances first, then the entities listing them              | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-classification-search/design.md`            |
+| DD-091 | Free text is split from quick search                                                       | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-free-text/design.md`                        |
+| DD-092 | String search fields carry an analysed text sub-field, searched with Atlas's weights       | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-free-text/design.md`                        |
+| DD-093 | Facets are aggregations of the search's own query                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-quick-search/design.md`                     |
+| DD-094 | Suggestions are terms aggregations of the text sub-fields                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-quick-search/design.md`                     |
+| DD-240 | The DSL parser is generated from Atlas's own grammar                                       | Proposed         | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md`                        |
+| DD-241 | The parse tree is handed on as typed, immutable nodes                                      | Proposed         | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md`                        |
+| DD-242 | A DSL query is composed into the basic search's filter tree                                | Proposed         | `libs/python/aurelius-atlas-core/specs/4-4-dsl-entities/design.md`                     |
+| DD-243 | DSL traversals and projections are evaluated in steps                                      | Proposed         | `libs/python/aurelius-atlas-core/specs/4-4-dsl-projections/design.md`                  |
+| DD-244 | Saved searches wait for authentication                                                     | Accepted         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
+| DD-252 | DataAccess carries every model object through a registry of DTOs                           | Proposed         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
 
 > [!NOTE]
 > DD-095 to DD-125 and DD-280 were never written. The first band went unused when the

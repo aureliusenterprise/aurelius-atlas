@@ -41,18 +41,18 @@ writer tells what it changed, and the audit listener and repository that record 
 [3.5b](specs/3-5-classification-audit/spec.md): classification events from
 every operation that attaches or propagates classifications, recorded in Atlas's order, and the retriever behind
 `bulk/headers` (DD-085, DD-086). Since
-[4.1a](../../../docs/architecture/conversion/increments/4-1-entity-search.md): the search fields every entity
+[4.1a](specs/4-1-entity-search/spec.md): the search fields every entity
 document carries, and basic search for entities by type, attribute filters, sort and paging, as one query the
 entity documents answer (DD-087 to DD-089). Since
-[4.1b](../../../docs/architecture/conversion/increments/4-1-classification-search.md): search by
+[4.1b](specs/4-1-classification-search/spec.md): search by
 classification and tag filters (DD-090). Since
-[4.2a](../../../docs/architecture/conversion/increments/4-2-free-text.md): free text, weighted by the
+[4.2a](specs/4-2-free-text/spec.md): free text, weighted by the
 attributes' search weights, in basic search and full-text search (DD-091, DD-092). Since
-[4.2b](../../../docs/architecture/conversion/increments/4-2-quick-search.md): quick search with its facets, and
+[4.2b](specs/4-2-quick-search/spec.md): quick search with its facets, and
 suggestions (DD-093, DD-094). Since
-[4.4a](../../../docs/architecture/conversion/increments/4-4-dsl-entities.md): DSL search of entities, the
+[4.4a](specs/4-4-dsl-entities/spec.md): DSL search of entities, the
 query parsed by `aurelius-atlas-dsl` and composed into the same search query (DD-242). Since
-[4.4b](../../../docs/architecture/conversion/increments/4-4-dsl-projections.md): DSL projections,
+[4.4b](specs/4-4-dsl-projections/spec.md): DSL projections,
 aggregates and groups, and traversals into referred entities and classification attributes (DD-243). Since
 [5.1](../../../docs/architecture/conversion/increments/5-1-lineage.md): lineage over the process
 edges' relationships, also on demand (DD-245). Since
@@ -64,7 +64,7 @@ terms and categories. Since
 meanings on their headers, audited, and searched by `termName` and `hasTerm` (DD-248). Since
 [5.2d](../../../docs/architecture/conversion/increments/5-2-glossary-import.md): glossary terms imported from
 CSV and Excel files (DD-249). Since
-[4.5](../../../docs/architecture/conversion/increments/4-5-saved-searches.md): users' saved searches and profiles,
+[4.5](specs/4-5-saved-searches/spec.md): users' saved searches and profiles,
 through the generic `DataAccess` (DD-252).
 
 ```python
