@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-08
 - **Deciders:** Aurelius Enterprise
-- **Supersedes:** the lineage and validate rows of [DD-140](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/#dd-140-the-rest-client-ports-the-live-surface-the-search-client-is-redesigned-in-74>)
+- **Supersedes:** the lineage and validate rows of `DD-140` (the record: `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/design.md`)
 
 ## Decision
 

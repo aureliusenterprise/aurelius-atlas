@@ -2,9 +2,9 @@
 
 Where each increment's specification lives: `<home>/specs/<N-M-slug>/spec.md`, with its `DD-NNN` records in `design.md` beside it. The home is the project that owns the increment's rule namespace; when an increment's rules are split across two projects, both parts are named and they share the one rule table (the trace tool reads them as a single source, so a shared row repeated at different tree depths is the same rule). The columns after the home list the rule namespaces and, until a series moves, the status of the move.
 
-This table is the reference for a move: it fixes the home before files are touched. A move PR changes the Status column and nothing else here. Homes follow [ADR 002](<https://aureliusenterprise.github.io/main/architecture/adr/002-modules-are-removable-slices/index.md>): a rule belongs to the project whose code it constrains.
+This table is the reference for a move: it fixes the home before files are touched. A move PR changes the Status column and nothing else here. Homes follow [ADR 002](<https://aureliusenterprise.github.io/main/architecture/adr/002-modules-are-removable-slices/index.md>) : a rule belongs to the project whose code it constrains.
 
-## Moved (0.x to 3.x)
+## Moved (0.x to 9.x)
 
 | Increment | Spec | Home | Rules |
 | --- | --- | --- | --- |
@@ -36,84 +36,52 @@ This table is the reference for a move: it fixes the home before files are touch
 | 3.4b | Propagation tasks | `libs/python/aurelius-atlas-core` | TSK |
 | 3.5a | Entity audit | `libs/python/aurelius-atlas-core` | AUD |
 | 3.5b | Classification audit | `libs/python/aurelius-atlas-core` | CAU |
-
-## 4.x — search
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 4.1a | Entity search | `libs/python/aurelius-atlas-core` | SRC | in `increments/` |
-| 4.1b | Classification search | `libs/python/aurelius-atlas-core` | CSR | in `increments/` |
-| 4.2a | Free text | `libs/python/aurelius-atlas-core` | FTX | in `increments/` |
-| 4.2b | Quick search and suggestions | `libs/python/aurelius-atlas-core` | QSR, SUG | in `increments/` |
-| 4.3 | DSL parser | `libs/python/aurelius-atlas-dsl` | DSL | in `increments/` |
-| 4.4a | DSL search of entities | `libs/python/aurelius-atlas-core` | DSE | in `increments/` |
-| 4.4b | DSL projections and traversals | `libs/python/aurelius-atlas-core` | DSP | in `increments/` |
-| 4.5 | Saved searches and user profile | `libs/python/aurelius-atlas-core` | SVS | in `increments/` |
-
-## 5.x — lineage and glossary
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 5.1 | Lineage | `libs/python/aurelius-atlas-core` | LIN | in `increments/` |
-| 5.2a | Glossaries and categories | `libs/python/aurelius-atlas-core` | GLS, GCT | in `increments/` |
-| 5.2b | Glossary terms | `libs/python/aurelius-atlas-core` | GTM | in `increments/` |
-| 5.2c | Term assignment | `libs/python/aurelius-atlas-core` | GTA | in `increments/` |
-| 5.2d | Glossary import | `libs/python/aurelius-atlas-core` | GIM | in `increments/` |
-
-## 6.x — identity and authorization
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 6.1a | Authentication | `apps/aurelius-atlas-server` | AUT | in `increments/` |
-| 6.1b | The acting user on writes | `apps/aurelius-atlas-server` | USR | in `increments/` |
-| 6.2a | Authorization: the authorizer, types and admin | `apps/aurelius-atlas-server` | AUZ | in `increments/` |
-| 6.2b | Authorization: entities and classifications | `apps/aurelius-atlas-server` | AUZ | in `increments/` |
-| 6.2c | Authorization: search, lineage and type listings | `apps/aurelius-atlas-server` | AUZ | in `increments/` |
-
-## 7.x — the webapp
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 7.0 | Webapp foundation (umbrella) | `apps/aurelius-atlas-webapp` | WBP | in `increments/` |
-| 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp` | SHL | in `increments/` |
-| 7.2 | Design system | `libs/angular/aurelius-atlas-ui` | UIC | in `increments/` |
-| 7.3 | API client and auth wiring | `libs/angular/aurelius-atlas-data-access` + `apps/aurelius-atlas-webapp` | APC | in `increments/` |
-| 7.4a | Search results | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SRH, UIC | in `increments/` |
-| 7.5 | Browse landing page | `apps/aurelius-atlas-webapp` | BRW | in `increments/` |
-| 7.6 | Entity details | `apps/aurelius-atlas-webapp` | DET | in `increments/` |
-| 7.11 | Shell chrome | `apps/aurelius-atlas-webapp` | SHC | in `increments/` |
-| 7.12 | Theme, branding and layout | `apps/aurelius-atlas-webapp` | SHM | in `increments/` |
-| 7.13 | UI components: details set | `libs/angular/aurelius-atlas-ui` | UIC | in `increments/` |
-| 7.14 | Settings panel | `apps/aurelius-atlas-webapp` | SPL | in `increments/` |
-| 7.15 | Alerts drawer | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | ALR | in `increments/` |
-| 7.16 | UI components: details chrome set | `libs/angular/aurelius-atlas-ui` | UIC | in `increments/` |
-| 7.17 | Collector ingest auth | `libs/python/aurelius-atlas-otel` + `dev/observability` | CIA | in `increments/` |
-| 7.18 | Collector ingest identity | `libs/python/aurelius-atlas-otel` + `dev/keycloak` | CIA | in `increments/` |
-| 7.19 | Frontend failure UX | `apps/aurelius-atlas-webapp` | – (no new ids, DD-214) | in `increments/` |
-
-## 8.x — the auxiliary APIs
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX | in `increments/` |
-| 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM | in `increments/` |
-| 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM | in `increments/` |
-| 8.3 | validate-entity API | `apps/aurelius-atlas-validate-entity` | VE | in `increments/` |
-| 8.4 | API client libraries | the four client libs under `libs/python/` | CL | in `increments/` |
-| 8.5 | lineage-model circuit breakers | `apps/aurelius-atlas-lineage-model` | LM | in `increments/` |
-| 8.6 | Aux API failure hardening | the three aux apps under `apps/` | – (cites DTM, LM) | in `increments/` |
-| 8.7 | Client failure contract | the four client libs under `libs/python/` | CL | in `increments/` |
-
-> \[!NOTE\] 8.4 and 8.7 span four client libraries and 8.6 spans three apps, with no rule ids of their own (they cite the DTM/LM/VE/AUX namespaces and the shared CL one). A move gives each project a part that restates the shared table; the parts are read as one source. If a reviewer would rather pin one home, that is a judgment call for the 8.x move PR.
-
-## 9.x — resilience and hardening
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 9.1 | Targeted resilience e2e | `apps/aurelius-atlas-webapp` | RSL | in `increments/` |
-| 9.2 | Server hardening | `apps/aurelius-atlas-server` | SRV (0.5, 9.2, 9.3 share it, by id band) | in `increments/` |
-| 9.3 | Search cost and client-IP trust | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` | ENS, SRV | in `increments/` |
-| 9.4 | Edge tracing | `apps/aurelius-atlas-webapp` | ETR | in `increments/` |
+| 4.1a | Entity search | `libs/python/aurelius-atlas-core` | SRC |
+| 4.1b | Classification search | `libs/python/aurelius-atlas-core` | CSR |
+| 4.2a | Free text | `libs/python/aurelius-atlas-core` | FTX |
+| 4.2b | Quick search and suggestions | `libs/python/aurelius-atlas-core` | QSR, SUG |
+| 4.3 | DSL parser | `libs/python/aurelius-atlas-dsl` | DSL |
+| 4.4a | DSL search of entities | `libs/python/aurelius-atlas-core` | DSE |
+| 4.4b | DSL projections and traversals | `libs/python/aurelius-atlas-core` | DSP |
+| 4.5 | Saved searches and user profile | `libs/python/aurelius-atlas-core` | SVS |
+| 5.1 | Lineage | `libs/python/aurelius-atlas-core` | LIN |
+| 5.2a | Glossaries and categories | `libs/python/aurelius-atlas-core` | GLS, GCT |
+| 5.2b | Glossary terms | `libs/python/aurelius-atlas-core` | GTM |
+| 5.2c | Term assignment | `libs/python/aurelius-atlas-core` | GTA |
+| 5.2d | Glossary import | `libs/python/aurelius-atlas-core` | GIM |
+| 6.1a | Authentication | `apps/aurelius-atlas-server` | AUT |
+| 6.1b | The acting user on writes | `apps/aurelius-atlas-server` | USR |
+| 6.2a | Authorization: the authorizer, types and admin | `apps/aurelius-atlas-server` | AUZ |
+| 6.2b | Authorization: entities and classifications | `apps/aurelius-atlas-server` | AUZ |
+| 6.2c | Authorization: search, lineage and type listings | `apps/aurelius-atlas-server` | AUZ |
+| 7.0 | Webapp foundation (umbrella) | `apps/aurelius-atlas-webapp` | WBP |
+| 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp` | SHL |
+| 7.2 | Design system | `libs/angular/aurelius-atlas-ui` | UIC |
+| 7.3 | API client and auth wiring | `libs/angular/aurelius-atlas-data-access` + `apps/aurelius-atlas-webapp` | APC |
+| 7.4a | Search results | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SRH, UIC |
+| 7.5 | Browse landing page | `apps/aurelius-atlas-webapp` | BRW |
+| 7.6 | Entity details | `apps/aurelius-atlas-webapp` | DET |
+| 7.11 | Shell chrome | `apps/aurelius-atlas-webapp` | SHC |
+| 7.12 | Theme, branding and layout | `apps/aurelius-atlas-webapp` | SHM |
+| 7.13 | UI components: details set | `libs/angular/aurelius-atlas-ui` | UIC |
+| 7.14 | Settings panel | `apps/aurelius-atlas-webapp` | SPL |
+| 7.15 | Alerts drawer | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | ALR |
+| 7.16 | UI components: details chrome set | `libs/angular/aurelius-atlas-ui` | UIC |
+| 7.17 | Collector ingest auth | `libs/python/aurelius-atlas-otel` + `dev/observability` | CIA |
+| 7.18 | Collector ingest identity | `libs/python/aurelius-atlas-otel` + `dev/keycloak` + `dev/observability` | CIA |
+| 7.19 | Frontend failure UX | `apps/aurelius-atlas-webapp` | – (no new ids, DD-214) |
+| 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
+| 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
+| 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
+| 8.3 | validate-entity API | `apps/aurelius-atlas-validate-entity` | VE |
+| 8.4 | API client libraries | `libs/python/aurelius-atlas-server-client` + `libs/python/aurelius-atlas-data2model-client` + `libs/python/aurelius-atlas-lineage-model-client` + `libs/python/aurelius-atlas-validate-entity-client` | CL |
+| 8.5 | lineage-model circuit breakers | `apps/aurelius-atlas-lineage-model` | LM |
+| 8.6 | Aux API failure hardening | `apps/aurelius-atlas-data2model` + `apps/aurelius-atlas-lineage-model` + `apps/aurelius-atlas-validate-entity` | – (cites DTM, LM) |
+| 8.7 | Client failure contract | `libs/python/aurelius-atlas-server-client` + `libs/python/aurelius-atlas-data2model-client` + `libs/python/aurelius-atlas-lineage-model-client` + `libs/python/aurelius-atlas-validate-entity-client` | CL |
+| 9.1 | Targeted resilience e2e | `apps/aurelius-atlas-webapp` | RSL |
+| 9.2 | Server hardening | `apps/aurelius-atlas-server` | SRV (0.5, 9.2, 9.3 share it, by id band) |
+| 9.3 | Search cost and client-IP trust | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` | ENS, SRV |
+| 9.4 | Edge tracing | `apps/aurelius-atlas-webapp` | ETR |
 
 ## 10.x — the deployment charts
 
