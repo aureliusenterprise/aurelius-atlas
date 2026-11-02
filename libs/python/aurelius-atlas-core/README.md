@@ -54,15 +54,15 @@ suggestions (DD-093, DD-094). Since
 query parsed by `aurelius-atlas-dsl` and composed into the same search query (DD-242). Since
 [4.4b](specs/4-4-dsl-projections/spec.md): DSL projections,
 aggregates and groups, and traversals into referred entities and classification attributes (DD-243). Since
-[5.1](../../../docs/architecture/conversion/increments/5-1-lineage.md): lineage over the process
+[5.1](specs/5-1-lineage/spec.md): lineage over the process
 edges' relationships, also on demand (DD-245). Since
-[5.2a](../../../docs/architecture/conversion/increments/5-2-glossaries-and-categories.md): glossaries and
+[5.2a](specs/5-2-glossaries-and-categories/spec.md): glossaries and
 their categories, as entities of Atlas's glossary model (DD-246). Since
-[5.2b](../../../docs/architecture/conversion/increments/5-2-glossary-terms.md): glossary terms, their related
+[5.2b](specs/5-2-glossary-terms/spec.md): glossary terms, their related
 terms and categories. Since
-[5.2c](../../../docs/architecture/conversion/increments/5-2-term-assignment.md): terms assigned to entities, as
+[5.2c](specs/5-2-term-assignment/spec.md): terms assigned to entities, as
 meanings on their headers, audited, and searched by `termName` and `hasTerm` (DD-248). Since
-[5.2d](../../../docs/architecture/conversion/increments/5-2-glossary-import.md): glossary terms imported from
+[5.2d](specs/5-2-glossary-import/spec.md): glossary terms imported from
 CSV and Excel files (DD-249). Since
 [4.5](specs/4-5-saved-searches/spec.md): users' saved searches and profiles,
 through the generic `DataAccess` (DD-252).
