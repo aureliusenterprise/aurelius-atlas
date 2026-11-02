@@ -13,7 +13,8 @@ The ledger in this section is the central record of the conversion:
 | [Design Log](./design-log.md)                   | Numbered technical decisions (`DD-NNN`), never edited once accepted    |
 | [Java to Python Map](./java-map.md)             | Which Java module or class becomes which Python module, and its status |
 | [Deviations from Apache Atlas](./deviations.md) | Every intended behaviour difference, referenced by the parity report   |
-| [Increments](./increments/index.md)             | The semantics specification of each increment                          |
+| [Spec Map](./spec-map.md)                       | Which project's `specs/` holds each increment                          |
+| [Increments](./increments/index.md)             | The specifications written before the per-project move, as history     |
 
 ## Definition of done for an increment
 
@@ -29,7 +30,8 @@ An increment is specified before it is built and proven before it is accepted
 ([ADR 051](../adr/051-the-conversion-proceeds-in-specified-increments.md)). The
 checks a PR must pass:
 
-- [ ] Semantics spec in `increments/`, every rule has an id
+- [ ] Semantics spec in `<project>/specs/N-M-slug/` (the [Spec Map](./spec-map.md) says where),
+      every rule has an id
 - [ ] Every new public function has a test that names it (`@pytest.mark.covers`)
 - [ ] Every rule id is named by at least one test
 - [ ] Parity scenarios for the endpoints in scope pass, each citing its Atlas source (ADR 052)
@@ -172,7 +174,7 @@ To do once the last 0.x increment is done:
 ## After the plan
 
 To do once 6.4 is done, not numbered as an increment yet
-([DD-019](./design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)):
+(`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)):
 
 - [ ] **Remove the template's examples.** The FastAPI example service, the Angular example screen,
       `aurelius-atlas-example`, `aurelius-atlas-sdk`, `libs/angular/*`, `libs/styles`, `dev/postgres`

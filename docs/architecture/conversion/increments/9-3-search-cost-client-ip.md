@@ -9,11 +9,11 @@
 The pentest's search-cost finding (M6) and the client-IP trust gap (L3), one increment on the
 core library, the server and the webapp's nginx edge:
 
-- **Refresh moves to writes** (ENS-11, [DD-237](../design-log.md#dd-237--index-refresh-moves-from-reads-to-writes)):
+- **Refresh moves to writes** (ENS-11, [DD-237](../design-log.md#dd-237-index-refresh-moves-from-reads-to-writes)):
   every write carries `refresh="wait_for"` and the read paths stop calling `indices.refresh` —
   today every search, count, listing and audit read pays a full index refresh on the request's
   critical path, which is a denial-of-service lever, not a feature.
-- **Rate limit at the nginx edge** (SRV-09, [DD-238](../design-log.md#dd-238--the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)):
+- **Rate limit at the nginx edge** (SRV-09, [DD-238](../design-log.md#dd-238-the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)):
   a `limit_req` leaky bucket on the webapp's `/api/` proxy, keyed on the client address, with the
   private ranges allowlisted — the limit is the browser's; internal callers arriving at the server
   directly are not limited, and the server itself carries no limiter.

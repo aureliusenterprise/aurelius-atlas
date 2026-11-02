@@ -125,7 +125,7 @@ Merge requires two signatures; the release is the unit a deployment promotes
 ## ADRs and the design log
 
 The record skeleton is fixed — `Decision`, `Context`, `Requirements`, `Alternatives`, `Tradeoffs`,
-`Consequences`, in that order — so records stay comparable
+in that order — so records stay comparable
 ([template](../architecture/adr/template.md)). The style pass works **inside** sections, never on
 the skeleton:
 
@@ -133,7 +133,7 @@ the skeleton:
   "must", the tradeoff as what was given up. The bold lead-in names the rule in plain words
   ("**Being up to date is the default.**"), not in a compressed phrase.
 - Long uniform blocks become numbered requirements, alternative tables, and one-line consequences.
-- Sharp edges stay named, in the `Decision` section, not discovered in `Consequences`.
+- Sharp edges stay named, in the `Decision` section, not discovered in `Tradeoffs`.
 - Callouts apply as everywhere, inside the sections: `??? QUESTION` for the objection a reader
   forms at that sentence ("why not automate the majors too?"), `!!! WARNING` for a named decay
   mode the record accepts. A record earns one or two, not one per paragraph.

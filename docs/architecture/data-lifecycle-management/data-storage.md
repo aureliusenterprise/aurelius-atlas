@@ -23,7 +23,7 @@ opens. A deployment runs and monitors the cluster; the development arrangement r
 
 Type definitions move as **one unit of storage**: the store replaces all definitions whole under a
 concurrency guard, so a change to several definitions lands atomically, with one version number
-for all types ([DD-028](../conversion/design-log.md#dd-028-the-type-definitions-are-one-elasticsearch-document)).
+for all types (`DD-028` (the record: `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`)).
 This is a property the type system needs — Atlas changes several definitions in one transaction,
 a create stores all of a request or none — stated here, implemented there: the alias names,
 write-index mechanics, and size trade-offs are the design documentation's. The unit loads into
@@ -33,28 +33,30 @@ searching over catalogue entries arrives with search in increment 4.1.
 ## The entity layout (increment 2.2)
 
 Every catalogue entry (an entity of any type) is **one record, found by its identifier**: a random UUID, as
-Atlas's clients already know it ([DD-044](../conversion/design-log.md#dd-044-a-guid-is-a-random-uuid)). A read
-by identifier always sees the last write; nothing waits for the search index to catch up ([DD-043][dd-043]).
-Attribute values are kept with their exact digits and become searchable when search arrives (4.1).
-A value that is a structure is kept inside its entry; a link to another entry is kept as that entry's
-identifier, so a renamed entry is never shown under its old name
-([DD-049](../conversion/design-log.md#dd-049-attribute-values-are-stored-normalised-a-struct-inline-a-reference-as-a-guid)).
-Each entry also lists, searchably, the identifiers of the entries it links to, so that deleting an entry finds
-the entries that link to it ([DD-057](../conversion/design-log.md#dd-057-entities-referring-to-one-are-found-through-an-indexed-field-of-guids)).
-A deleted entry is kept, marked deleted, until it is purged; a purge or a hard delete removes it within the
-same all-or-nothing write as everything else the request changes
-([DD-056](../conversion/design-log.md#dd-056-an-entity-write-also-removes-documents-journaled-like-the-others)).
+Atlas's clients already know it (`DD-044` (the record:
+`libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`)). A read by identifier always sees the
+last write; nothing waits for the search index to catch up (`DD-043` (the record:
+`libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`)). Attribute values are kept with their
+exact digits and become searchable when search arrives (4.1). A value that is a structure is kept inside its
+entry; a link to another entry is kept as that entry's identifier, so a renamed entry is never shown under its
+old name (`DD-049` (the record: `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`)). Each
+entry also lists, searchably, the identifiers of the entries it links to, so that deleting an entry finds the
+entries that link to it (`DD-057` (the record:
+`libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`)). A deleted entry is kept, marked
+deleted, until it is purged; a purge or a hard delete removes it within the same all-or-nothing write as
+everything else the request changes (`DD-056` (the record:
+`libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`)).
 
 The store gives the catalogue the three guarantees its graph database gave Atlas, each recorded:
 
 - **A unique value is held once per type.** Two entries of one type cannot share a `qualifiedName`, even when
   two servers try at the same instant; a deleted entry gives its value up
-  ([DD-045](../conversion/design-log.md#dd-045-unique-values-are-reserved-by-create-only-documents)).
+  (`DD-045` (the record: `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`)).
 - **A write of several entries succeeds or fails as a whole**, also when a server dies part-way: a journal lets
   the next start undo what was left half done. While a write is in flight another reader may see part of it
-  ([DD-046](../conversion/design-log.md#dd-046-a-multi-entity-write-is-all-or-nothing-through-a-journal), DV-16).
+  (`DD-046` (the record: `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`), DV-16).
 - **Concurrent changes are detected, not lost.** A change is written only over the version it was read in
-  ([DD-047](../conversion/design-log.md#dd-047-entities-are-written-conditionally-on-their-elasticsearch-version)).
+  (`DD-047` (the record: `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`)).
 
 The concrete indices, mappings and write steps are the
 [core library's design documentation](../../api-reference/libs/python/aurelius-atlas-core.md).
@@ -69,5 +71,3 @@ The concrete indices, mappings and write steps are the
   snapshots in 6.4).
 - Encryption in transit is TLS with verification
   ([data encryption](../platform/security/data-encryption.md)); at rest belongs to the deployment.
-
-[dd-043]: ../conversion/design-log.md#dd-043-entities-are-documents-of-one-index-their-attributes-under-qualified-names

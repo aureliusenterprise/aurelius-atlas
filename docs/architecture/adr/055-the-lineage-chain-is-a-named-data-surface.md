@@ -3,7 +3,7 @@
 - **Status:** Proposed
 - **Date:** 2026-11-08
 - **Deciders:** Aurelius Enterprise
-- **Supersedes:** the lineage and validate rows of [DD-140](../conversion/design-log.md#dd-051-the-rest-client-ports-the-live-surface-the-search-client-is-redesigned-in-7-4)
+- **Supersedes:** the lineage and validate rows of `DD-140` (the record: `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/design.md`)
 
 ## Decision
 
@@ -92,15 +92,17 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.
   legacy service has its own scaling, health, and env story, and the user's
   deployment decision names one app per legacy service. Refused.
 
-## Consequences
+## Tradeoffs
 
-- The webapp gains a lineage screen family with a working backend path
-  (8.4+): its CSP widens to the auxiliary origins, named at deployment.
-- The deployment topology grows three stateless containers (plus their
-  OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the lineage
-  data stays in the server's store (047), read through `/v2/lineage/{guid}`.
-- `deviations.md` records the deliberate divergences: DV-67 (validate-entity
-  ships as the legacy mock), DV-68 (native ar3 layout replaces m4i-analytics),
-  DV-69 (lineage source stubbed until 5.1).
-- DD-140's audit note stays as history; its lineage/validate exclusion is
-  superseded **by this record**, its App Search exclusion stands.
+- **Positive:** the webapp gains a lineage screen family with a working
+  backend path (8.4+).
+- **Negative:** the webapp's CSP widens to the auxiliary origins, named at
+  deployment, and the deployment topology grows three stateless containers
+  (plus their OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the
+  lineage data stays in the server's store (047), read through
+  `/v2/lineage/{guid}`.
+- **Neutral / follow-ups:** `deviations.md` records the deliberate
+  divergences: DV-67 (validate-entity ships as the legacy mock), DV-68
+  (native ar3 layout replaces m4i-analytics), DV-69 (lineage source stubbed
+  until 5.1). DD-140's audit note stays as history; its lineage/validate
+  exclusion is superseded **by this record**, its App Search exclusion stands.

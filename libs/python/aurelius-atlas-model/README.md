@@ -3,16 +3,16 @@
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-model)
 
 Atlas data shapes for Aurelius Atlas, without I/O
-([DD-002](../../../docs/architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
-Since increment [1.1](../../../docs/architecture/conversion/increments/1-1-typedef-models.md): the Apache
+([DD-002](../../../specs/0-1-adopt-template/design.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
+Since increment [1.1](specs/1-1-typedef-models/spec.md): the Apache
 Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata),
 their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since
-[1.5](../../../docs/architecture/conversion/increments/1-5-builtin-models.md): the patch record `AtlasPatch`.
-Since [2.1a](../../../docs/architecture/conversion/increments/2-1-entity-models.md): the entity models of
+[1.5](../aurelius-atlas-core/specs/1-5-builtin-models/spec.md): the patch record `AtlasPatch`.
+Since [2.1a](specs/2-1-entity-models/spec.md): the entity models of
 `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`,
 `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON
 conventions all models share in `aurelius_atlas_model.base`. Since
-[2.1b](../../../docs/architecture/conversion/increments/2-1-value-types.md): Atlas's JSON codec,
+[2.1b](specs/2-1-value-types/spec.md): Atlas's JSON codec,
 `aurelius_atlas_model.codec`, which keeps the digits of decimals.
 
 ```python

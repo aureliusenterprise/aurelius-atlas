@@ -3,68 +3,68 @@
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-core)
 
 Atlas stores and services for Aurelius Atlas
-([DD-002](../../../docs/architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
-Since increment [1.4](../../../docs/architecture/conversion/increments/1-4-typedef-store.md): the typedef
+([DD-002](../../../specs/0-1-adopt-template/design.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
+Since increment [1.4](specs/1-4-typedef-store/spec.md): the typedef
 store, which keeps type definitions in one Elasticsearch document and serves them from the type registry.
-Since [1.5](../../../docs/architecture/conversion/increments/1-5-builtin-models.md): Apache Atlas's built-in
+Since [1.5](specs/1-5-builtin-models/spec.md): Apache Atlas's built-in
 models and their typedef patches, loaded at start-up. Since
-[1.6](../../../docs/architecture/conversion/increments/1-6-types-rest.md): the store's reads and the search of
-`/v2/types/typedefs`. Since [2.2](../../../docs/architecture/conversion/increments/2-2-entity-store.md): the
+[1.6](../../../apps/aurelius-atlas-server/specs/1-6-types-rest/spec.md): the store's reads and the search of
+`/v2/types/typedefs`. Since [2.2](specs/2-2-entity-store/spec.md): the
 entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes
 several entities all or nothing through a journal (DD-043 to DD-048). Since
-[2.3](../../../docs/architecture/conversion/increments/2-3-entity-read-rest.md): the entity retriever, which reads
+[2.3](../../../apps/aurelius-atlas-server/specs/2-3-entity-read-rest/spec.md): the entity retriever, which reads
 entities, their owned entities and headers back as Atlas answers them (DD-049, DD-050). Since
-[2.4](../../../docs/architecture/conversion/increments/2-4-entity-write-rest.md): the entity writer, which
+[2.4](../../../apps/aurelius-atlas-server/specs/2-4-entity-write-rest/spec.md): the entity writer, which
 discovers the entities a request names, resolves its references, maps it onto stored entities and writes them
 in one write (DD-052, DD-053). Since
-[2.5](../../../docs/architecture/conversion/increments/2-5-delete-semantics.md): soft and hard deletes and
+[2.5](specs/2-5-delete-semantics/spec.md): soft and hard deletes and
 purges with the owned-reference cascade, through writes that also remove documents and an indexed field of the
 GUIDs each entity refers to (DD-056 to DD-060). Since
-[3.1a](../../../docs/architecture/conversion/increments/3-1-relationship-instances.md): relationship instances,
+[3.1a](specs/3-1-relationship-instances/spec.md): relationship instances,
 documents of their own index listed by both ends and written with them (DD-061, DD-062). Since
-[3.1b](../../../docs/architecture/conversion/increments/3-1-relationship-attributes.md): the relationship
+[3.1b](specs/3-1-relationship-attributes/spec.md): the relationship
 attributes of entities, mapped onto relationships by the relationship mapper and read back through them, and
 delete cascades that follow owned relationships (DD-064 to DD-067). Since
-[3.2](../../../docs/architecture/conversion/increments/3-2-ownership-cascades.md): updates delete the owned
+[3.2](specs/3-2-ownership-cascades/spec.md): updates delete the owned
 entities they drop, through a view of the request's changes and in the request's one write (DD-068). Since
-[3.3a](../../../docs/architecture/conversion/increments/3-3-direct-classifications.md): classifications
+[3.3a](specs/3-3-direct-classifications/spec.md): classifications
 attached to entities, instances of their own index listed by their entity and written with it (DD-070, DD-071).
-Since [3.3b](../../../docs/architecture/conversion/increments/3-3-bulk-classifications.md): the classification
+Since [3.3b](specs/3-3-bulk-classifications/spec.md): the classification
 associator behind `bulk/setClassifications`. Since
-[3.4a](../../../docs/architecture/conversion/increments/3-4-classification-propagation.md): classification
+[3.4a](specs/3-4-classification-propagation/spec.md): classification
 propagation over relationships, computed and written within the request that causes it (DD-075 to DD-077).
-Since [3.4b](../../../docs/architecture/conversion/increments/3-4-propagation-tasks.md): that propagation
+Since [3.4b](specs/3-4-propagation-tasks/spec.md): that propagation
 deferred to tasks written with the request, which task management claims and runs (DD-079, DD-080). Since
-[3.5a](../../../docs/architecture/conversion/increments/3-5-entity-audit.md): the change notifier the entity
+[3.5a](specs/3-5-entity-audit/spec.md): the change notifier the entity
 writer tells what it changed, and the audit listener and repository that record and list entity events
 (DD-082 to DD-084). Since
-[3.5b](../../../docs/architecture/conversion/increments/3-5-classification-audit.md): classification events from
+[3.5b](specs/3-5-classification-audit/spec.md): classification events from
 every operation that attaches or propagates classifications, recorded in Atlas's order, and the retriever behind
 `bulk/headers` (DD-085, DD-086). Since
-[4.1a](../../../docs/architecture/conversion/increments/4-1-entity-search.md): the search fields every entity
+[4.1a](specs/4-1-entity-search/spec.md): the search fields every entity
 document carries, and basic search for entities by type, attribute filters, sort and paging, as one query the
 entity documents answer (DD-087 to DD-089). Since
-[4.1b](../../../docs/architecture/conversion/increments/4-1-classification-search.md): search by
+[4.1b](specs/4-1-classification-search/spec.md): search by
 classification and tag filters (DD-090). Since
-[4.2a](../../../docs/architecture/conversion/increments/4-2-free-text.md): free text, weighted by the
+[4.2a](specs/4-2-free-text/spec.md): free text, weighted by the
 attributes' search weights, in basic search and full-text search (DD-091, DD-092). Since
-[4.2b](../../../docs/architecture/conversion/increments/4-2-quick-search.md): quick search with its facets, and
+[4.2b](specs/4-2-quick-search/spec.md): quick search with its facets, and
 suggestions (DD-093, DD-094). Since
-[4.4a](../../../docs/architecture/conversion/increments/4-4-dsl-entities.md): DSL search of entities, the
+[4.4a](specs/4-4-dsl-entities/spec.md): DSL search of entities, the
 query parsed by `aurelius-atlas-dsl` and composed into the same search query (DD-242). Since
-[4.4b](../../../docs/architecture/conversion/increments/4-4-dsl-projections.md): DSL projections,
+[4.4b](specs/4-4-dsl-projections/spec.md): DSL projections,
 aggregates and groups, and traversals into referred entities and classification attributes (DD-243). Since
-[5.1](../../../docs/architecture/conversion/increments/5-1-lineage.md): lineage over the process
+[5.1](specs/5-1-lineage/spec.md): lineage over the process
 edges' relationships, also on demand (DD-245). Since
-[5.2a](../../../docs/architecture/conversion/increments/5-2-glossaries-and-categories.md): glossaries and
+[5.2a](specs/5-2-glossaries-and-categories/spec.md): glossaries and
 their categories, as entities of Atlas's glossary model (DD-246). Since
-[5.2b](../../../docs/architecture/conversion/increments/5-2-glossary-terms.md): glossary terms, their related
+[5.2b](specs/5-2-glossary-terms/spec.md): glossary terms, their related
 terms and categories. Since
-[5.2c](../../../docs/architecture/conversion/increments/5-2-term-assignment.md): terms assigned to entities, as
+[5.2c](specs/5-2-term-assignment/spec.md): terms assigned to entities, as
 meanings on their headers, audited, and searched by `termName` and `hasTerm` (DD-248). Since
-[5.2d](../../../docs/architecture/conversion/increments/5-2-glossary-import.md): glossary terms imported from
+[5.2d](specs/5-2-glossary-import/spec.md): glossary terms imported from
 CSV and Excel files (DD-249). Since
-[4.5](../../../docs/architecture/conversion/increments/4-5-saved-searches.md): users' saved searches and profiles,
+[4.5](specs/4-5-saved-searches/spec.md): users' saved searches and profiles,
 through the generic `DataAccess` (DD-252).
 
 ```python
@@ -92,7 +92,7 @@ workspace = true
 ## Vendored models
 
 `aurelius_atlas_core/models/` is `addons/models` of Apache Atlas `release-2.4.0`, byte for byte
-([DD-032](../../../docs/architecture/conversion/design-log.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)).
+([DD-032](specs/1-5-builtin-models/design.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)).
 To prove it, compare it with the tag:
 
 ```bash

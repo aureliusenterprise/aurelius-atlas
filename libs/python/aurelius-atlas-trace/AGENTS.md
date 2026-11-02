@@ -37,8 +37,11 @@ uv run aurelius-atlas-trace check
 
 ## Conventions
 
-- Rule ids are `XXX-NN` (TRC-03); specs are `N-M-slug.md` (TRC-08). Changing either format means
-  changing `marker.RULE_ID_PATTERN` or `rules.SPEC_FILE_PATTERN` and their tests together.
+- Rule ids are `XXX-NN` (TRC-03). A specification is `spec.md` in an `N-M-slug` directory under one
+  of the `specs` roots, or the legacy `N-M-slug.md` file (TRC-08). Changing either format means
+  changing `marker.RULE_ID_PATTERN` or `rules.SPEC_FILE_PATTERN`/`rules.INCREMENT_DIR_PATTERN` and
+  their tests together. Files of one increment (its per-project parts) share its rule-id space:
+  repeated ids are one source of truth, only differing rows are an error.
 - Standard library only beyond pytest: the report reads JUnit and Cobertura XML, nothing else (TRC-12).
 - Parity scenarios reach the check and the report only as test properties (DD-014); the property names in
   `parity.py` and in `aurelius-atlas-parity` change together.

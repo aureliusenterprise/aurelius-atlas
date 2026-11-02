@@ -24,7 +24,7 @@ can do with the catalogue at each phase.
 
 Each increment is specified before it is built and lands as one pull request; the roadmap table is
 the single status record. After increment 6.4, the template's examples leave
-([DD-019](../conversion/design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)).
+(`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)).
 
 ??? QUESTION "Why do the template's examples stay until the very end?"
 

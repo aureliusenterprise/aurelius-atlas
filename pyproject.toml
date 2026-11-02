@@ -174,7 +174,10 @@ exclude-projects = [
     "reports/aurelius-atlas-vulnerability-report",
 ]
 exclude-subpackages = ["generated", "testing"]
-specs = "docs/architecture/conversion/increments"
+# The per-project specs trees ("<project>/specs/N-M-slug/spec.md"); the workspace
+# root holds the pre-move pages under docs/ and the specs of workspace-wide
+# increments. "." walks the whole tree, so a move never needs a config change.
+specs = ["."]
 
 [tool.pyright]
 exclude = [".venv", "site", "coverage", "tmp", "**/dist", "**/target", "**/aurelius_atlas_dsl/generated"]
