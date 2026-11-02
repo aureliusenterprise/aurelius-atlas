@@ -6,7 +6,7 @@
 > the architecture record; cost/benefit and the option analysis are in
 > [self-hosted-ci-decision.md](self-hosted-ci-decision.md), and the
 > operational how-to (setup, deploy loop, the k8s contract, the PVC layout)
-> is [`infra/arc/README.md`](../infra/arc/README.md) — that file is the
+> is `infra/arc/README.md` — that file is the
 > source of truth for the mechanics. Scope: the `ci` job of
 > `.github/workflows/ci.yaml`. Every other workflow (`publish*`, `scan`,
 > `rotate-keys`, docs, `build-devcontainer-image`) stays on GitHub-hosted
@@ -68,7 +68,7 @@ out with actions/checkout's default clean, and caches live OUTSIDE it.
 (its own PD volume; private repos get no cache service on self-hosted
 runners without one — the forked runner build that makes the stock step
 work is documented in
-[`infra/arc/README.md`](../infra/arc/README.md)). The uv download cache,
+`infra/arc/README.md`). The uv download cache,
 the pre-commit home, and containerd's image store live on the runner
 pod's per-pod `emptyDir` work volume (DD-232) as subPath mounts — warm
 within a pod, cold across pods; uv and pre-commit bridge across pods
@@ -79,7 +79,7 @@ bridge). The warm work tree is
 retired: on Shape A it only survived in-pod restarts, leaked
 root-owned dirs and staged diagnostics between jobs, and saved ~70s of
 install the cache server now covers. Layout + the reasons for every
-mount are in [`infra/arc/README.md`](../infra/arc/README.md).
+mount are in `infra/arc/README.md`.
 
 ## Phases (all shipped 2026-10-25; full pipeline green 2026-10-26)
 

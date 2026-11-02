@@ -68,6 +68,15 @@ The architecture page names the rule; these are the specific plaintext exception
 sees, each accepted deliberately
 ([ADR 039](../architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests.md)):
 
+??? question "Why is a plaintext listener a named exception and not a defect?"
+
+    Because it is a developer convenience on a wire that never leaves the
+    machine (ADR 039's R4), and R1's rule is that such relaxations are
+    written down, not implied. The line R4 guards: the same plaintext path
+    outside the development arrangement — the localhost URL copied into a
+    deployment — is a defect, which is why each occurrence carries a comment
+    naming the record.
+
 - The identity provider slice serves a plaintext HTTP listener (port 8080) so the developer
   browser opens a familiar URL; its TLS listener (8443) serves every CI/E2E path.
 - Browser-facing developer surfaces (SPA dev-server, Grafana, Storybook) stay plaintext on a
