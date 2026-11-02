@@ -94,11 +94,30 @@ export type ClassificationAssociateRequest = {
     entityTypeName?: string | null;
 };
 
-/** A glossary term header, as carried in relationship attributes (`AtlasRelatedTermHeader`). */
+/**
+ * A glossary term and the attributes of a relationship to it — the header
+ * glossaries, categories and terms carry, and the entity's
+ * `relationshipAttributes.meanings.meaning` list (`AtlasRelatedTermHeader`,
+ * glossary.py). The glossary server fills `termGuid`; a relationship-attribute
+ * usage carries `guid` instead — both forms are optional so one type serves
+ * both, kept in step with the Python model by hand (APC-03).
+ */
 export type AtlasRelatedTermHeader = {
+    /** The relationship-attribute form's guid; the glossary form uses `termGuid`. */
     guid?: string | null;
+    termGuid?: string | null;
+    relationGuid?: string | null;
     displayText?: string | null;
+    description?: string | null;
+    expression?: string | null;
+    steward?: string | null;
+    source?: string | null;
+    status?: AtlasTermRelationshipStatus | null;
+    qualifiedName?: string | null;
 };
+
+/** How far a term's relationship to another term got (`AtlasTermRelationshipStatus`). */
+export type AtlasTermRelationshipStatus = "DRAFT" | "ACTIVE" | "DEPRECATED" | "OBSOLETE" | "OTHER";
 
 /** The `meanings` value of `relationshipAttributes` (`AtlasRelatedTerms`). */
 export type AtlasRelatedTerms = {

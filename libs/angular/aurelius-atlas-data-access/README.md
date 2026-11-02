@@ -32,6 +32,13 @@ Part of the template **spine**.
   template download and file import), and label routes (8.19, ACL-01..09) —
   all thirty-seven `EntityREST` routes of server 2.3/7.6 (DET-03); the twin
   of `AtlasClient.entity` (CLE-01..CLE-12)
+- `GlossaryService` — the glossary endpoints (`/atlas/v2/glossary/**`): this
+  first third (8.20, AGL-01..07) takes the thirteen glossary routes — the
+  paged list, create/update/partial-update/delete, the detailed read, the
+  paged category and term reads (full and header form), and the template
+  download and file import — `GlossaryREST` of server 2.4 (GLS/GIM); the
+  twin of `AtlasClient.glossary` (CLG-01..CLG-09). Terms (8.21) and
+  categories (8.22) follow
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from
@@ -43,6 +50,10 @@ Part of the template **spine**.
 - `atlas-relationship.ts` — the relationship DTOs (`AtlasRelationship`,
   `AtlasRelationshipWithExtInfo`, `RelationshipStatus`), mirrored by hand from
   `aurelius_atlas_model/instance/relationship.py`
+- `atlas-glossary.ts` — the glossary DTOs (`AtlasGlossary`,
+  `AtlasGlossaryCategory`, `AtlasGlossaryTerm`, `AtlasGlossaryExtInfo`,
+  `AtlasRelatedObjectId`, the header types, `GlossarySort`), mirrored by hand
+  from `aurelius_atlas_model/glossary.py` and `instance/related_object_id.py`
 - `atlas-audit.ts` — the entity-audit DTOs (`EntityAuditEventV2`,
   `EntityAuditActionV2`, `EntityAuditType`), mirrored by hand from
   `aurelius_atlas_model/audit.py`
@@ -98,9 +109,11 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 > `aurelius_atlas_model/impexp.py`/`instance/`/`patches.py`/`tasks.py`, and to
 > the lineage DTOs in `atlas-lineage.ts` and `aurelius_atlas_model/lineage.py`,
 > to the relationship DTOs in `atlas-relationship.ts` and
-> `aurelius_atlas_model/instance/relationship.py`, and to the entity and audit
+> `aurelius_atlas_model/instance/relationship.py`, to the entity and audit
 > DTOs in `atlas-entity.ts`/`atlas-audit.ts` and
-> `aurelius_atlas_model/instance/`/`audit.py`.
+> `aurelius_atlas_model/instance/`/`audit.py`, and to the glossary DTOs in
+> `atlas-glossary.ts` and `aurelius_atlas_model/glossary.py`/
+> `instance/related_object_id.py`.
 
 ## Testing
 

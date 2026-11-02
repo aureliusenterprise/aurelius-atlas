@@ -53,6 +53,19 @@ consumers import from the package root only, never a subfolder path.
   `AtlasRelationship` both ways), the always-wrapped read
   (`AtlasRelationshipWithExtInfo`, REL-06), and the soft/hard delete
   (`deleteType` only when chosen)
+- `src/lib/atlas/glossary.service.ts` — `GlossaryService`
+  (`/atlas/v2/glossary/**`, AGL-01..07): the first third of `GlossaryREST`
+  (the glossary family's 13 of 32 routes; terms and categories follow in
+  8.21/8.22) — the paged list and the paged category/term reads (full and
+  header form) send the server's paging defaults as absence (`GlossaryPage`,
+  CLG-02: `limit` -1 and `offset` 0 and `sort` ASC are absences; an explicit
+  `-1` travels), create/update send the bare `AtlasGlossary` (the server
+  grafts the path guid, CLG-08), `partialUpdateGlossary` sends the bare
+  attribute map (an empty map is the caller's bug — refused client-side, as
+  in the twin, CLG-03), the template download answers the `AtlasExportAnswer`
+  pair (DD-315) and the import posts a `file` form part
+  (`BulkImportResponse`), and the delete answers 204 → `void`. The twin of
+  `AtlasClient.glossary` (CLG-01..CLG-09)
 - `src/lib/atlas/atlas-typedef.ts` — the typedef DTO cluster with the server's camelCase
   wire names (APC-03); `src/lib/atlas/atlas-search.ts` — the search DTO cluster
   (`SearchParameters`, `AtlasSearchResult`, `AtlasQuickSearchResult`, …);
@@ -69,6 +82,11 @@ consumers import from the package root only, never a subfolder path.
   (`AtlasRelationship`, `AtlasRelationshipWithExtInfo`);
   `src/lib/atlas/atlas-audit.ts` — the entity-audit DTOs
   (`EntityAuditEventV2`, `EntityAuditActionV2`, `EntityAuditType`);
+  `src/lib/atlas/atlas-glossary.ts` — the glossary DTOs (`AtlasGlossary`,
+  `AtlasGlossaryCategory`, `AtlasGlossaryTerm`, `AtlasGlossaryExtInfo`,
+  `AtlasRelatedObjectId`, the header types, `GlossarySort`);
+  `AtlasRelatedTermHeader` itself stays in `atlas-entity.ts` — one wire type,
+  both uses (APC-03);
   `src/lib/atlas/atlas-error.ts` — the Atlas
   error body (SRV-04, APC-04), shared with `entities.service.ts`
 - `src/lib/entities.service.ts` — `EntitiesService` (HTTP + SSE) and the example API
@@ -116,6 +134,13 @@ consumers import from the package root only, never a subfolder path.
   metadata template answers the `AtlasExportAnswer` pair here and a
   `(bytes, content-type)` tuple there (DD-315); the partial update's optional
   `name` is the twin's middle parameter moved last (AEW-03's note).
+- The glossary wire contract has the same twin: `AtlasClient.glossary`
+  (CLG-01..CLG-09) and `GlossaryService` cover `routes/glossary.py` in three
+  increments (8.20 the glossaries, 8.21 terms, 8.22 categories) — change a
+  route on both sides in the same PR. The paging rule is shared: a glossary
+  read's default (`limit` -1, `offset` 0, `sort` ASC) travels as absence and
+  an explicit value always travels (CLG-02). `AtlasRelatedTermHeader` is one
+  type on each side, not two (APC-03).
 - The example-backend contract: endpoints (`/entities/*`, `/entities/sse`),
   `Envelope<T>`, and `PaginatedResponse<T>` must match
   `apps/aurelius-atlas-fastapi-example`.
