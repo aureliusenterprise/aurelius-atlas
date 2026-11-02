@@ -11,7 +11,7 @@ This table is the reference for a move: it fixes the home before files are touch
 PR changes the Status column and nothing else here. Homes follow [ADR 002](../adr/002-modules-are-removable-slices.md):
 a rule belongs to the project whose code it constrains.
 
-## Moved (0.x, 1.x and 2.x)
+## Moved (0.x to 3.x)
 
 | Increment | Spec                         | Home                                                                         | Rules    |
 | --------- | ---------------------------- | ---------------------------------------------------------------------------- | -------- |
@@ -34,20 +34,15 @@ a rule belongs to the project whose code it constrains.
 | 2.3       | Entity read REST             | `apps/aurelius-atlas-server`                                                 | ERD      |
 | 2.4       | Entity write REST            | `apps/aurelius-atlas-server`                                                 | EWR      |
 | 2.5       | Delete semantics             | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server`             | EDL      |
-
-## 3.x — relationships, classifications, audit
-
-| Increment | Spec                       | Home                              | Rules | Status           |
-| --------- | -------------------------- | --------------------------------- | ----- | ---------------- |
-| 3.1a      | Relationship instances     | `libs/python/aurelius-atlas-core` | REL   | in `increments/` |
-| 3.1b      | Relationship attributes    | `libs/python/aurelius-atlas-core` | REL   | in `increments/` |
-| 3.2       | Ownership cascades         | `libs/python/aurelius-atlas-core` | OWN   | in `increments/` |
-| 3.3a      | Direct classifications     | `libs/python/aurelius-atlas-core` | CLS   | in `increments/` |
-| 3.3b      | Bulk classifications       | `libs/python/aurelius-atlas-core` | CLA   | in `increments/` |
-| 3.4a      | Classification propagation | `libs/python/aurelius-atlas-core` | PRO   | in `increments/` |
-| 3.4b      | Propagation tasks          | `libs/python/aurelius-atlas-core` | TSK   | in `increments/` |
-| 3.5a      | Entity audit               | `libs/python/aurelius-atlas-core` | AUD   | in `increments/` |
-| 3.5b      | Classification audit       | `libs/python/aurelius-atlas-core` | CAU   | in `increments/` |
+| 3.1a      | Relationship instances       | `libs/python/aurelius-atlas-core`                                            | REL      |
+| 3.1b      | Relationship attributes      | `libs/python/aurelius-atlas-core`                                            | REL      |
+| 3.2       | Ownership cascades           | `libs/python/aurelius-atlas-core`                                            | OWN      |
+| 3.3a      | Direct classifications       | `libs/python/aurelius-atlas-core`                                            | CLS      |
+| 3.3b      | Bulk classifications         | `libs/python/aurelius-atlas-core`                                            | CLA      |
+| 3.4a      | Classification propagation   | `libs/python/aurelius-atlas-core`                                            | PRO      |
+| 3.4b      | Propagation tasks            | `libs/python/aurelius-atlas-core`                                            | TSK      |
+| 3.5a      | Entity audit                 | `libs/python/aurelius-atlas-core`                                            | AUD      |
+| 3.5b      | Classification audit         | `libs/python/aurelius-atlas-core`                                            | CAU      |
 
 ## 4.x — search
 

@@ -20,25 +20,25 @@ in one write (DD-052, DD-053). Since
 [2.5](specs/2-5-delete-semantics/spec.md): soft and hard deletes and
 purges with the owned-reference cascade, through writes that also remove documents and an indexed field of the
 GUIDs each entity refers to (DD-056 to DD-060). Since
-[3.1a](../../../docs/architecture/conversion/increments/3-1-relationship-instances.md): relationship instances,
+[3.1a](specs/3-1-relationship-instances/spec.md): relationship instances,
 documents of their own index listed by both ends and written with them (DD-061, DD-062). Since
-[3.1b](../../../docs/architecture/conversion/increments/3-1-relationship-attributes.md): the relationship
+[3.1b](specs/3-1-relationship-attributes/spec.md): the relationship
 attributes of entities, mapped onto relationships by the relationship mapper and read back through them, and
 delete cascades that follow owned relationships (DD-064 to DD-067). Since
-[3.2](../../../docs/architecture/conversion/increments/3-2-ownership-cascades.md): updates delete the owned
+[3.2](specs/3-2-ownership-cascades/spec.md): updates delete the owned
 entities they drop, through a view of the request's changes and in the request's one write (DD-068). Since
-[3.3a](../../../docs/architecture/conversion/increments/3-3-direct-classifications.md): classifications
+[3.3a](specs/3-3-direct-classifications/spec.md): classifications
 attached to entities, instances of their own index listed by their entity and written with it (DD-070, DD-071).
-Since [3.3b](../../../docs/architecture/conversion/increments/3-3-bulk-classifications.md): the classification
+Since [3.3b](specs/3-3-bulk-classifications/spec.md): the classification
 associator behind `bulk/setClassifications`. Since
-[3.4a](../../../docs/architecture/conversion/increments/3-4-classification-propagation.md): classification
+[3.4a](specs/3-4-classification-propagation/spec.md): classification
 propagation over relationships, computed and written within the request that causes it (DD-075 to DD-077).
-Since [3.4b](../../../docs/architecture/conversion/increments/3-4-propagation-tasks.md): that propagation
+Since [3.4b](specs/3-4-propagation-tasks/spec.md): that propagation
 deferred to tasks written with the request, which task management claims and runs (DD-079, DD-080). Since
-[3.5a](../../../docs/architecture/conversion/increments/3-5-entity-audit.md): the change notifier the entity
+[3.5a](specs/3-5-entity-audit/spec.md): the change notifier the entity
 writer tells what it changed, and the audit listener and repository that record and list entity events
 (DD-082 to DD-084). Since
-[3.5b](../../../docs/architecture/conversion/increments/3-5-classification-audit.md): classification events from
+[3.5b](specs/3-5-classification-audit/spec.md): classification events from
 every operation that attaches or propagates classifications, recorded in Atlas's order, and the retriever behind
 `bulk/headers` (DD-085, DD-086). Since
 [4.1a](../../../docs/architecture/conversion/increments/4-1-entity-search.md): the search fields every entity
