@@ -11,8 +11,10 @@ from aurelius_atlas_core.classification_associator import ClassificationAssociat
 from aurelius_atlas_core.delete_type import DeleteType
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository, list_events_sorted
+from aurelius_atlas_core.entity_business_metadata import EntityBusinessMetadata, business_metadata_headers
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
+from aurelius_atlas_core.entity_labels import EntityLabels
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -32,6 +34,7 @@ from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.entity_type import EntityType
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import TypeAdapter, ValidationError
+from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
@@ -120,6 +123,20 @@ def classifications(request: Request, store: EntityStore) -> EntityClassificatio
         tasks=tasks_enabled(request),
         notifier=notifier(request, store),
         authorizer=authorizer(request),
+    )
+
+
+def labels(request: Request, store: EntityStore) -> EntityLabels:
+    """Label changes as the request's user, audited (LBL-05) and checked (AUZ-16)."""
+    return EntityLabels(
+        store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
+    )
+
+
+def business_metadata(request: Request, store: EntityStore) -> EntityBusinessMetadata:
+    """Business attribute changes as the request's user, audited (BMD-06) and checked (AUZ-17)."""
+    return EntityBusinessMetadata(
+        store, user=acting_user(request), notifier=notifier(request, store), authorizer=authorizer(request)
     )
 
 
@@ -238,6 +255,44 @@ def classifications_body(body: Any) -> list[AtlasClassification] | None:  # noqa
         raise AtlasError(
             AtlasErrorCode.BAD_REQUEST, f"Invalid list of AtlasClassification: {error.errors()[0]['msg']}"
         ) from error
+
+
+def labels_body(body: Any) -> list[str] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a JSON array of labels, or None for no body (LBL-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is no array of strings (DV-10).
+    """
+    if body is not None and (not isinstance(body, list) or not all(isinstance(label, str) for label in body)):
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, "Invalid body: a JSON array of labels is expected")
+    return body
+
+
+def attributes_body(body: Any) -> dict[str, Any] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a JSON object of attribute values, or None for no body (BMD-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for any other body (DV-10).
+    """
+    if body is not None and not isinstance(body, dict):
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, "Invalid body: a JSON object of attribute values is expected")
+    return body
+
+
+def business_attributes_body(body: Any) -> dict[str, dict[str, Any] | None] | None:  # noqa: ANN401 - any JSON value
+    """A body that is a JSON object of attribute values by business metadata, or None for no body (BMD-01).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for any other body (DV-10).
+    """
+    if body is not None and (
+        not isinstance(body, dict) or not all(v is None or isinstance(v, dict) for v in body.values())
+    ):
+        raise AtlasError(
+            AtlasErrorCode.BAD_REQUEST,
+            "Invalid body: a JSON object of attribute values by business metadata is expected",
+        )
+    return body
 
 
 def ensure_classification_type(store: EntityStore, name: str) -> None:
@@ -531,6 +586,109 @@ async def set_classifications(request: Request, body: Body, store: Store) -> Res
     )
     summary = await associator.set_classifications(None if headers is None else headers.guid_header_map)
     return Response(content=summary, media_type="application/json")
+
+
+@ENTITY.post("/guid/{guid}/businessmetadata")
+async def add_or_update_business_attributes(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``addOrUpdateBusinessAttributes``: the body's values set, or with ``isOverwrite`` all replaced (BMD-01)."""
+    given = business_attributes_body(body)
+    await business_metadata(request, store).add_or_update_business_attributes(
+        guid, given, is_overwrite=flag(request, "isOverwrite")
+    )
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/businessmetadata")
+async def remove_business_attributes(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``removeBusinessAttributes``: the body's attributes removed (BMD-01, BMD-05)."""
+    await business_metadata(request, store).remove_business_attributes(guid, business_attributes_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/guid/{guid}/businessmetadata/{bm_name}")
+async def add_or_update_business_attributes_of(
+    guid: str, bm_name: str, request: Request, body: Body, store: Store
+) -> Response:
+    """``addOrUpdateBusinessAttributes`` of one business metadata: the body's values set (BMD-01, BMD-03)."""
+    given = {bm_name: attributes_body(body)}
+    await business_metadata(request, store).add_or_update_business_attributes(guid, given)
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/businessmetadata/{bm_name}")
+async def remove_business_attributes_of(
+    guid: str, bm_name: str, request: Request, body: Body, store: Store
+) -> Response:
+    """``removeBusinessAttributes`` of one business metadata: the body's attributes, or all, removed (BMD-05)."""
+    given = {bm_name: attributes_body(body)}
+    await business_metadata(request, store).remove_business_attributes(guid, given)
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.get("/businessmetadata/import/template")
+async def produce_template() -> Response:
+    """``produceTemplate``: the business metadata import template's header line, as a download (BMI-01)."""
+    return Response(
+        content=business_metadata_headers().encode(),
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": 'attachment; filename="template_business_metadata"'},
+    )
+
+
+@ENTITY.post("/businessmetadata/import")
+async def import_bm_attributes(request: Request, store: Store) -> AtlasJSONResponse:
+    """``importBMAttributes``: the form's ``file``, a CSV or Excel file of business attribute values (BMI-02 to
+    BMI-05); no file is a blank file name (DV-119).
+    """  # noqa: D205 - one sentence
+    upload = (await request.form()).get("file")
+    file_name, content = (upload.filename, await upload.read()) if isinstance(upload, UploadFile) else (None, b"")
+    found = await business_metadata(request, store).bulk_create_or_update_business_attributes(file_name, content)
+    return _json(found.to_json())
+
+
+@ENTITY.post("/guid/{guid}/labels")
+async def set_labels(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``setLabels``: the entity's labels become those of the body (LBL-01, LBL-02)."""
+    await labels(request, store).set_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.put("/guid/{guid}/labels")
+async def add_labels(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``addLabels``: the body's labels added to the entity's (LBL-01, LBL-03)."""
+    await labels(request, store).add_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/guid/{guid}/labels")
+async def remove_labels(guid: str, request: Request, body: Body, store: Store) -> Response:
+    """``removeLabels``: the body's labels taken from the entity's (LBL-01, LBL-04)."""
+    await labels(request, store).remove_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.post("/uniqueAttribute/type/{type_name}/labels")
+async def set_labels_by_unique_attribute(type_name: str, request: Request, body: Body, store: Store) -> Response:
+    """``setLabels`` of the entity holding the ``attr:`` values (LBL-01, LBL-02)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await labels(request, store).set_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.put("/uniqueAttribute/type/{type_name}/labels")
+async def add_labels_by_unique_attribute(type_name: str, request: Request, body: Body, store: Store) -> Response:
+    """``addLabels`` to the entity holding the ``attr:`` values (LBL-01, LBL-03)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await labels(request, store).add_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
+
+
+@ENTITY.delete("/uniqueAttribute/type/{type_name}/labels")
+async def remove_labels_by_unique_attribute(type_name: str, request: Request, body: Body, store: Store) -> Response:
+    """``removeLabels`` from the entity holding the ``attr:`` values (LBL-01, LBL-04)."""
+    guid = await guid_by_unique_attributes(store, type_name, request)
+    await labels(request, store).remove_labels(guid, labels_body(body))
+    return Response(status_code=NO_CONTENT)
 
 
 @ENTITY.get("/{guid}/audit")

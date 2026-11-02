@@ -1,0 +1,219 @@
+name: An entity's labels are added, set and removed, by GUID or unique attributes, and audited
+source:
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#addLabels
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#setLabels
+    - webapp/src/main/java/org/apache/atlas/web/rest/EntityREST.java#removeLabels
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#addLabels
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#setLabels
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/AtlasEntityStoreV2.java#removeLabels
+    - repository/src/main/java/org/apache/atlas/repository/store/graph/v2/EntityGraphMapper.java#validateLabels
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onLabelsAdded
+    - repository/src/main/java/org/apache/atlas/repository/audit/EntityAuditListenerV2.java#onLabelsDeleted
+rules: [LBL-01, LBL-02, LBL-03, LBL-04, LBL-05]
+covers:
+    - aurelius_atlas_server.routes.entity.add_labels
+    - aurelius_atlas_server.routes.entity.set_labels_by_unique_attribute
+    - aurelius_atlas_server.routes.entity.remove_labels
+stages:
+    - name: create a table type and a classification type, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              classificationDefs:
+                  - name: scenario_ltag_{run}
+              entityDefs:
+                  - name: scenario_ltable_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+                        - { name: size, typeName: int, isOptional: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ltag_{run}
+                    description: scenario_ltag_{run}
+                    typeVersion: "1.0"
+                    attributeDefs: []
+                    superTypes: []
+                    entityTypes: []
+                    subTypes: []
+                    category: CLASSIFICATION
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_ltable_{run}
+                    description: scenario_ltable_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                        - name: size
+                          typeName: int
+                          isOptional: true
+                          cardinality: SINGLE
+                          valuesMinCount: 0
+                          valuesMaxCount: 1
+                          isUnique: false
+                          isIndexable: false
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.classificationDefs[*].guid
+              - $.classificationDefs[*].createTime
+              - $.classificationDefs[*].updateTime
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+    - name: create a table
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity: { typeName: "scenario_ltable_{run}", guid: "-1", attributes: { qualifiedName: "lt_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_ltable_{run}
+                        attributes: { qualifiedName: "lt_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: lt_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+          save:
+              table: $.guidAssignments['-1']
+    - name: add a label; the answer has no body
+      request: { method: PUT, url: "/api/atlas/v2/entity/guid/{table}/labels", json: ["lbl_a"] }
+      response:
+          status: 204
+    - name: its header carries the label
+      request: { method: GET, url: "/api/atlas/v2/entity/guid/{table}/header" }
+      response:
+          status: 200
+          json:
+              typeName: scenario_ltable_{run}
+              attributes: { qualifiedName: "lt_{run}" }
+              guid: "{table}"
+              status: ACTIVE
+              displayText: lt_{run}
+              classificationNames: []
+              classifications: []
+              meaningNames: []
+              meanings: []
+              isIncomplete: false
+              labels: [lbl_a]
+    - name: set its labels by its unique attribute, replacing the label
+      request:
+          method: POST
+          url: /api/atlas/v2/entity/uniqueAttribute/type/scenario_ltable_{run}/labels
+          params: { "attr:qualifiedName": "lt_{run}" }
+          json: ["lbl_b"]
+      response:
+          status: 204
+    - name: a label with a space is refused
+      request: { method: PUT, url: "/api/atlas/v2/entity/guid/{table}/labels", json: ["lbl c"] }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-090
+              # MessageFormat takes the quotes of '_' or '-' as escapes
+              errorMessage: "Invalid label: lbl c, label should contain alphanumeric characters, _ or -"
+    - name: removing no labels is refused
+      request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{table}/labels", json: [] }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-01A
+              errorMessage: "invalid parameters: labels is null/empty"
+    - name: remove the label
+      request: { method: DELETE, url: "/api/atlas/v2/entity/guid/{table}/labels", json: ["lbl_b"] }
+      response:
+          status: 204
+    - name: the LABEL_ADD events, newest first
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/{table}/audit
+          params: { auditAction: LABEL_ADD }
+      response:
+          status: 200
+          json:
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: LABEL_ADD
+                details: "Added labels: lbl_b"
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: LABEL_ADD
+                details: "Added labels: lbl_a"
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+          volatile: ["$[*].timestamp", "$[*].eventKey"]
+    - name: the LABEL_DELETE events, newest first
+      request:
+          method: GET
+          url: /api/atlas/v2/entity/{table}/audit
+          params: { auditAction: LABEL_DELETE }
+      response:
+          status: 200
+          json:
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: LABEL_DELETE
+                details: "Deleted labels: lbl_b"
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+              - entityId: "{table}"
+                timestamp: 0
+                user: "{user}"
+                action: LABEL_DELETE
+                details: "Deleted labels: lbl_a"
+                eventKey: "{table}:<timestamp>:0:<now>"
+                entity: null
+                type: null
+          volatile: ["$[*].timestamp", "$[*].eventKey"]
