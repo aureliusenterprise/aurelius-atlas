@@ -298,6 +298,10 @@ class EntityDocuments(Protocol):
         """The entities whose references name any of these GUIDs, as of now (DD-057)."""
         ...
 
+    async def of_types(self, type_names: Sequence[str]) -> list[VersionedEntity]:
+        """The entities of exactly these types, in any state, as of now (EXP-03)."""
+        ...
+
     async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The entities listing any of these classification instances, as of now (DD-076)."""
         ...
@@ -501,6 +505,10 @@ class ElasticsearchEntityDocuments:
     async def referring(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """Page through the entities whose ``references`` hold a GUID (DD-057): writes refresh (ENS-11)."""
         return await self._listing("references", guids)
+
+    async def of_types(self, type_names: Sequence[str]) -> list[VersionedEntity]:
+        """Page through the entities whose ``typeName`` is one of these (EXP-03): writes refresh (ENS-11)."""
+        return await self._listing("typeName", type_names)
 
     async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """Page through the entities whose ``classificationGuids`` hold one (DD-076): writes refresh (ENS-11)."""

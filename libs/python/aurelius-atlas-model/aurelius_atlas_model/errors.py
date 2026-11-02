@@ -452,6 +452,11 @@ class AtlasErrorCode(Enum):
     )
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")
     INTERNAL_ERROR = (500, "ATLAS-500-00-001", "Internal server error {0}")
+    FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK = (
+        409,
+        "ATLAS-500-00-006",
+        "Another import or export is in progress. Please try again",
+    )
     FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK = (
         500,
         "ATLAS-500-00-005",

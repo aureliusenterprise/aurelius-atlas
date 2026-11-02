@@ -1,5 +1,6 @@
 """The FastAPI application: settings, the store's lifetime, error handling and routers (DD-015, DD-016)."""
 
+import asyncio
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -149,7 +150,8 @@ def create_app(
         redoc_url=None,
         openapi_url=None,
     )
-    app.state.settings = settings
+    # one export or import at a time (EXP-01, DD-304)
+    app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
     app.state.store = store
     app.state.type_registry = registry
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions

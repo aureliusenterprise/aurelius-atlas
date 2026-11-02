@@ -189,6 +189,10 @@ class EntityStore:
         """The entities whose references name any of these GUIDs (EDL-10, DD-057)."""
         return await self._documents.referring(list(dict.fromkeys(guids)))
 
+    async def of_types(self, type_names: Sequence[str]) -> list[StoredEntity]:
+        """The entities of exactly these types, in any state (EXP-03)."""
+        return [found.entity for found in await self._documents.of_types(list(dict.fromkeys(type_names)))]
+
     async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The entities listing any of these classification instances, attached or propagated (DD-075, DD-076)."""
         return await self._documents.classified(list(dict.fromkeys(guids)))

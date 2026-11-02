@@ -3,18 +3,22 @@
 ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
 """
 
+import socket
 from functools import cache
 from importlib.metadata import version
 from typing import Any
 from zoneinfo import available_timezones
 
+from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_core.zip_sink import ZipSink
+from aurelius_atlas_model.impexp import OPTION_KEY_REPLICATED_TO, OPTION_SKIP_LINEAGE, AtlasExportRequest
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import PlainTextResponse
 
-from aurelius_atlas_server.authentication import Session, User, csrf_token
+from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
 from aurelius_atlas_server.authorization import AtlasPrivilege, privileges, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.routes.entity import Body, Store, writer
@@ -148,6 +152,58 @@ async def purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONR
     if guids:
         verify_access(request, AtlasPrivilege.ADMIN_PURGE, "purge entity: guids=", guids)  # AUZ-05
     return AtlasJSONResponse(content=(await writer(request, store).purge_by_ids(guids)).to_json())
+
+
+@ADMIN.post("/export")
+async def export(request: Request, store: Store, body: Body) -> Response:
+    """``export``: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
+
+    One export or import runs at a time unless the request's options name ``skipLineage`` or ``replicatedTo``.
+
+    Raises:
+        AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`` while another runs;
+            ``BAD_REQUEST`` for a body that is no export request (DV-10).
+    """
+    verify_access(request, AtlasPrivilege.ADMIN_EXPORT, "export")
+    export_request = _export_request(body)
+    exclusive = (
+        OPTION_SKIP_LINEAGE not in export_request.options and OPTION_KEY_REPLICATED_TO not in export_request.options
+    )
+    lock = request.app.state.import_export_lock
+    if exclusive:
+        if lock.locked():
+            raise AtlasError(AtlasErrorCode.FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK)
+        await lock.acquire()
+    try:
+        sink = ZipSink()
+        service = ExportService(store, cluster_name=request.app.state.settings.cluster_name)
+        client = "" if request.client is None else request.client.host
+        result = await service.run(sink, export_request, acting_user(request), socket.gethostname(), client)
+        content = sink.close()
+    finally:
+        if exclusive:
+            lock.release()
+    if not sink.guids and export_request.omit_zip_response_for_empty_export():
+        return Response(status_code=204)
+    return Response(
+        content=content,
+        media_type="application/zip",
+        headers={"Content-Disposition": f"attachment; filename={type(result).__name__}"},
+    )
+
+
+def _export_request(body: Any) -> AtlasExportRequest:  # noqa: ANN401 - any JSON value
+    """The body as an export request; no body is an empty one (DV-120).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a body that is no export request (DV-10).
+    """
+    if body is None:
+        return AtlasExportRequest()
+    try:
+        return AtlasExportRequest.model_validate(body)
+    except ValueError as error:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AtlasExportRequest: {error}") from error
 
 
 @ADMIN.get("/tasks")

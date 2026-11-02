@@ -239,6 +239,12 @@ class MemoryEntityDocuments:
         found = [guid for guid, (source, _) in self.entities.items() if wanted & set(source.get("references") or [])]  # type: ignore[arg-type]
         return list((await self.get(found)).values())
 
+    async def of_types(self, type_names: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose ``typeName`` is one of these."""
+        wanted = set(type_names)
+        found = [guid for guid, (source, _) in self.entities.items() if source.get("typeName") in wanted]
+        return list((await self.get(found)).values())
+
     async def classified(self, guids: Sequence[str]) -> list[VersionedEntity]:
         """The entities whose ``classificationGuids`` hold any of the GUIDs."""
         wanted = set(guids)
