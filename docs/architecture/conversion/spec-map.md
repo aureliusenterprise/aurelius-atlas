@@ -11,7 +11,7 @@ This table is the reference for a move: it fixes the home before files are touch
 PR changes the Status column and nothing else here. Homes follow [ADR 002](../adr/002-modules-are-removable-slices.md):
 a rule belongs to the project whose code it constrains.
 
-## Moved (0.x to 4.x)
+## Moved (0.x to 5.x)
 
 | Increment | Spec                            | Home                                                                         | Rules    |
 | --------- | ------------------------------- | ---------------------------------------------------------------------------- | -------- |
@@ -51,16 +51,11 @@ a rule belongs to the project whose code it constrains.
 | 4.4a      | DSL search of entities          | `libs/python/aurelius-atlas-core`                                            | DSE      |
 | 4.4b      | DSL projections and traversals  | `libs/python/aurelius-atlas-core`                                            | DSP      |
 | 4.5       | Saved searches and user profile | `libs/python/aurelius-atlas-core`                                            | SVS      |
-
-## 5.x — lineage and glossary
-
-| Increment | Spec                      | Home                              | Rules    | Status           |
-| --------- | ------------------------- | --------------------------------- | -------- | ---------------- |
-| 5.1       | Lineage                   | `libs/python/aurelius-atlas-core` | LIN      | in `increments/` |
-| 5.2a      | Glossaries and categories | `libs/python/aurelius-atlas-core` | GLS, GCT | in `increments/` |
-| 5.2b      | Glossary terms            | `libs/python/aurelius-atlas-core` | GTM      | in `increments/` |
-| 5.2c      | Term assignment           | `libs/python/aurelius-atlas-core` | GTA      | in `increments/` |
-| 5.2d      | Glossary import           | `libs/python/aurelius-atlas-core` | GIM      | in `increments/` |
+| 5.1       | Lineage                         | `libs/python/aurelius-atlas-core`                                            | LIN      |
+| 5.2a      | Glossaries and categories       | `libs/python/aurelius-atlas-core`                                            | GLS, GCT |
+| 5.2b      | Glossary terms                  | `libs/python/aurelius-atlas-core`                                            | GTM      |
+| 5.2c      | Term assignment                 | `libs/python/aurelius-atlas-core`                                            | GTA      |
+| 5.2d      | Glossary import                 | `libs/python/aurelius-atlas-core`                                            | GIM      |
 
 ## 6.x — identity and authorization
 
