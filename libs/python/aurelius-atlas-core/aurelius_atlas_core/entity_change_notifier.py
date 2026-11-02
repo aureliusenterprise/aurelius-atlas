@@ -29,16 +29,22 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 class EntityChangeListener(Protocol):
     """``EntityChangeListenerV2``'s entity methods: entities as they are after the change, or their headers'."""
 
-    async def on_entities_added(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
-        """``onEntitiesAdded``."""
+    async def on_entities_added(
+        self, entities: Sequence[AtlasEntity], *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesAdded``, of an import when ``importing``."""
         ...
 
-    async def on_entities_updated(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
-        """``onEntitiesUpdated``."""
+    async def on_entities_updated(
+        self, entities: Sequence[AtlasEntity], *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesUpdated``, of an import when ``importing``."""
         ...
 
-    async def on_entities_deleted(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
-        """``onEntitiesDeleted``."""
+    async def on_entities_deleted(
+        self, entities: Sequence[AtlasEntity], *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesDeleted``, of an import when ``importing``."""
         ...
 
     async def on_entities_purged(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
@@ -94,6 +100,7 @@ class RequestRecord:
 
     added_classifications: list[tuple[list[str], StoredClassification]] = field(default_factory=list)
     added_labels: list[tuple[str, list[str]]] = field(default_factory=list)
+    updated_labels: list[tuple[str, list[str], list[str]]] = field(default_factory=list)
     business_attributes: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
     added: dict[str, list[StoredClassification]] = field(default_factory=dict)
     removed: dict[str, list[StoredClassification]] = field(default_factory=dict)
@@ -125,11 +132,14 @@ class EntityChangeNotifier:
         self._store = store
         self._listeners = list(listeners)
 
-    async def on_entities_mutated(self, response: EntityMutationResponse, *, user: str | None) -> None:
-        """``onEntitiesMutated``: created, updated, partially updated, deleted, then purged entities (AUD-02).
+    async def on_entities_mutated(
+        self, response: EntityMutationResponse, *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesMutated``: created, updated, partially updated, deleted, then purged entities (AUD-02), of an
+        import when ``importing`` (IMP-08).
 
         The response is to be pruned already (``prune_response``).
-        """
+        """  # noqa: D205 - one sentence
         if not self._listeners:
             return
         for operation in (
@@ -142,7 +152,7 @@ class EntityChangeNotifier:
             entities = await self._entities(response.get_entities_by_operation(operation) or [], operation)
             if entities:
                 for listener in self._listeners:
-                    await _notify(listener, operation, entities, user)
+                    await _notify(listener, operation, entities, user, importing=importing)
 
     async def on_classifications_added(
         self, guids: Sequence[str], classifications: Sequence[StoredClassification], *, user: str | None
@@ -271,16 +281,21 @@ class EntityChangeNotifier:
 
 
 async def _notify(
-    listener: EntityChangeListener, operation: EntityOperation, entities: list[AtlasEntity], user: str | None
+    listener: EntityChangeListener,
+    operation: EntityOperation,
+    entities: list[AtlasEntity],
+    user: str | None,
+    *,
+    importing: bool,
 ) -> None:
     if operation is EntityOperation.CREATE:
-        await listener.on_entities_added(entities, user=user)
+        await listener.on_entities_added(entities, user=user, importing=importing)
     elif operation is EntityOperation.DELETE:
-        await listener.on_entities_deleted(entities, user=user)
+        await listener.on_entities_deleted(entities, user=user, importing=importing)
     elif operation is EntityOperation.PURGE:
         await listener.on_entities_purged(entities, user=user)
     else:
-        await listener.on_entities_updated(entities, user=user)
+        await listener.on_entities_updated(entities, user=user, importing=importing)
 
 
 def entity_of_header(header: AtlasEntityHeader) -> AtlasEntity:

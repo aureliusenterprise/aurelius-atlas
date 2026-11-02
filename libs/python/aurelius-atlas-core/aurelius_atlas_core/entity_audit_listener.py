@@ -57,17 +57,34 @@ class EntityAuditListener:
         self._repository = repository
         self._clock = clock
 
-    async def on_entities_added(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
-        """``onEntitiesAdded``: ``ENTITY_CREATE`` with the entity (AUD-03)."""
-        await self._put([(entity, EntityAuditActionV2.ENTITY_CREATE, None) for entity in entities], user)
+    async def on_entities_added(
+        self, entities: Sequence[AtlasEntity], *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesAdded``: ``ENTITY_CREATE``, or of an import ``ENTITY_IMPORT_CREATE``, with the entity (AUD-03,
+        IMP-08).
+        """  # noqa: D205 - one sentence
+        action = EntityAuditActionV2.ENTITY_IMPORT_CREATE if importing else EntityAuditActionV2.ENTITY_CREATE
+        await self._put([(entity, action, None) for entity in entities], user)
 
-    async def on_entities_updated(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
-        """``onEntitiesUpdated``: ``ENTITY_UPDATE``, or ``ENTITY_CREATE`` for a shell entity (AUD-03)."""
-        await self._put([(entity, _update_action(entity), None) for entity in entities], user)
+    async def on_entities_updated(
+        self, entities: Sequence[AtlasEntity], *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesUpdated``: ``ENTITY_UPDATE``, ``ENTITY_CREATE`` for a shell entity, or of an import
+        ``ENTITY_IMPORT_UPDATE`` (AUD-03, IMP-08).
+        """  # noqa: D205 - one sentence
+        imported = EntityAuditActionV2.ENTITY_IMPORT_UPDATE
+        await self._put(
+            [(entity, imported if importing else _update_action(entity), None) for entity in entities], user
+        )
 
-    async def on_entities_deleted(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
-        """``onEntitiesDeleted``: ``ENTITY_DELETE``, ``Deleted entity`` (AUD-03)."""
-        await self._put([(entity, EntityAuditActionV2.ENTITY_DELETE, DELETED_ENTITY) for entity in entities], user)
+    async def on_entities_deleted(
+        self, entities: Sequence[AtlasEntity], *, user: str | None, importing: bool = False
+    ) -> None:
+        """``onEntitiesDeleted``: ``ENTITY_DELETE``, or of an import ``ENTITY_IMPORT_DELETE``, ``Deleted entity``
+        (AUD-03, IMP-08).
+        """  # noqa: D205 - one sentence
+        action = EntityAuditActionV2.ENTITY_IMPORT_DELETE if importing else EntityAuditActionV2.ENTITY_DELETE
+        await self._put([(entity, action, DELETED_ENTITY) for entity in entities], user)
 
     async def on_entities_purged(self, entities: Sequence[AtlasEntity], *, user: str | None) -> None:
         """``onEntitiesPurged``: ``ENTITY_PURGE`` with the entity made from its header (AUD-03)."""

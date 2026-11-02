@@ -94,12 +94,16 @@ class DiscoveryContext:
 
 
 class EntityDiscovery:
-    """Walks a request's entities and resolves their references against ``store`` (EWR-03 to EWR-05)."""
+    """Walks a request's entities and resolves their references against ``store`` (EWR-03 to EWR-05).
 
-    def __init__(self, store: EntityStore, stream: EntityStream) -> None:
+    ``importing`` keeps a GUID an import names that is nowhere yet as one to come (IMP-03).
+    """
+
+    def __init__(self, store: EntityStore, stream: EntityStream, *, importing: bool = False) -> None:
         self._store = store
         self.stream = stream
         self.context = DiscoveryContext()
+        self._importing = importing
 
     async def discover(self) -> DiscoveryContext:
         """``discoverEntities``: walk the entities, then resolve every reference (EWR-04, EWR-05).
@@ -251,7 +255,9 @@ class EntityDiscovery:
             found = context.stored.get(guid) if guid is not None and is_assigned_guid(guid) else None
             if found is None:
                 entity = self.stream.get_by_guid(guid)
-                if entity is not None:
+                if self._importing and is_assigned_guid(guid):
+                    pass  # an import keeps its GUIDs: its entity is not looked up by its values (IMP-03)
+                elif entity is not None:
                     found = await self._store.find_by_unique_attributes(
                         self.entity_type(entity.type_name), entity.attributes or {}
                     )
@@ -260,7 +266,7 @@ class EntityDiscovery:
             if found is not None:
                 context.stored[found.entity.guid] = found
                 context.resolved_guids[guid] = found.entity.guid
-            elif is_assigned_guid(guid):
+            elif is_assigned_guid(guid) and not self._importing:
                 raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
             else:
                 context.local_guids.add(guid)
