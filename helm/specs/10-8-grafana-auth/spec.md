@@ -5,6 +5,9 @@
 - **Records:** DD-273/DD-274 (relies on, unchanged), DD-275 (adds; supersedes
   DD-267's login-form-stays-disabled clause), DD-276 (adds)
 
+This page is the `helm` part of increment 10.8; its rule table is
+the increment's shared set. The other part is with [`observability`][part-0].
+
 ## Scope
 
 The pre-pentest review's **H4**: Grafana ships with no authentication of its own
@@ -24,19 +27,6 @@ This increment makes Grafana a **confidential OAuth2/OIDC relying party of the
   the **prod asset only**: the dev compose Grafana keeps the anonymous-Viewer
   posture (DD-275, DV-113), so CHT-79's structural parity rule gains its first
   named exception (prod client set = dev set ∪ {`grafana`}).
-- The observability chart's Grafana deployment swaps the anonymous env for the
-  `GF_AUTH_GENERIC_OAUTH_*` set: issuer URLs derived from
-  `atlas-observability.issuerUrl` + `atlas-observability.realm` (CHT-74's
-  plumbing, reused), client id `grafana`, and a client Secret joined from the
-  umbrella's new `<release>-grafana-oauth` Secret — the same placeholder
-  plumbing as `${OTEL_INGEST_CLIENT_SECRET}` (DD-256's resolver, `${GRAFANA_CLIENT_SECRET}`).
-- RBAC is role-mapped, not free-for-all: any authenticated realm user gets
-  **Viewer**; the `grafana` client's `editor` / `admin` client roles escalate to
-  **Editor** / **Admin** (`role_attribute_path`, DD-275).
-- The port-forward path stays alive: the client registers
-  `http://localhost:3000/login/generic_oauth` next to the host-based redirect,
-  and `GF_SERVER_ROOT_URL` stays unset (request-derived), so `kubectl port-forward`
-  to the Grafana pod completes an OAuth login (DD-276).
 - Keycloak's network policy admits Grafana to the 8443 mint port (Grafana dials
   Keycloak for the token exchange and JWKS; CHT-62's full-dialer-set rule).
 
@@ -89,9 +79,6 @@ clause (its generated-admin-Secret half stands).
   dev assets; CHT-79's amended parity set), CHT-82 substitution (stock render →
   `grafana.atlas.test`; host override; bare render → `<release>.localhost`),
   CHT-83 (the StatefulSet's `GRAFANA_CLIENT_SECRET` env, ungated).
-- `tests/test__charts_observability.py` names CHT-84/85 (anonymous off, login
-  form on, OAuth on with `/realms/aurelius-atlas/…` URLs, role-attribute-path,
-  the oauth Secret join, `GF_SERVER_ROOT_URL` absent; admin env retained).
 - `tests/test__charts_umbrella.py` names CHT-83 (stock install generates
   `<release>-grafana-oauth` with key set {`client-secret`}; values override;
   absent when both consumers are gone — observability disabled **and** the
@@ -105,3 +92,5 @@ clause (its generated-admin-Secret half stands).
   to the realm's login at `keycloak.atlas.test` and an authenticated realm user
   lands as Viewer.
 - Hand check: not run in CI here (no live Keycloak); proven by render.
+
+[part-0]: ../../../dev/observability/specs/10-8-grafana-auth/spec.md

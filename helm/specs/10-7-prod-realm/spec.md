@@ -4,6 +4,9 @@
 - **Pull request:** [#178](https://github.com/aureliusenterprise/aurelius-atlas/pull/178) (stacked on #176)
 - **Records:** DD-256 (relies on, unchanged), DD-273 (adds), DD-274 (adds)
 
+This page is the `helm` part of increment 10.7; its rule table is
+the increment's shared set. The other part is with [`keycloak`][part-0].
+
 ## Scope
 
 The pre-pentest review's **H3**: the cluster shape today authenticates the whole
@@ -22,9 +25,6 @@ named **`aurelius-atlas`**:
 - `global.realm` joins the CHT-03 values contract (default `aurelius-atlas`) and
   is the one fact every realm-bearing env derives from; the Keycloak chart
   imports `files/<realm>.json` selected by it.
-- A new chart asset `files/aurelius-atlas.json` carries the prod identity config:
-  the same client/role/scope surface the system authenticates against, with the
-  H3 hardening applied and no seeded end-users.
 - Every consuming chart's realm-bearing join (the OTLP mint URLs, the collector's
   OIDC issuer, the webapp's `/config.json`, the pullers' issuer-wait probes)
   renders from `global.realm`, and a test pins that all of them name the realm
@@ -92,3 +92,5 @@ observability}.py` and `tests/test__charts_edge.py`/`test__charts_umbrella.py`
   with the `aurelius-atlas` realm imported, the `iss` of a minted ingest token is
   `…/realms/aurelius-atlas`, and the browser leg's `/config.json` points the SPA
   at `aurelius-atlas`. Not run in CI here (no live Keycloak); proven by render.
+
+[part-0]: ../../../dev/keycloak/specs/10-7-prod-realm/spec.md

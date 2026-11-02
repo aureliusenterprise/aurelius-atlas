@@ -5,13 +5,13 @@ Where each increment's specification lives: `<home>/specs/<N-M-slug>/spec.md`, w
 rule namespace; when an increment's rules are split across two projects, both parts are named
 and they share the one rule table (the trace tool reads them as a single source, so a shared
 row repeated at different tree depths is the same rule). The columns after the home list the
-rule namespaces and, until a series moves, the status of the move.
+rule namespaces.
 
 This table is the reference for a move: it fixes the home before files are touched. A move PR changes the
 Status column and nothing else here. Homes follow [ADR 002](../adr/002-modules-are-removable-slices.md) : a
 rule belongs to the project whose code it constrains.
 
-## Moved (0.x to 9.x)
+## Moved (0.x to 10.x)
 
 | Increment | Spec                                             | Home                                                                                                                                                                                                  | Rules                                    |
 | --------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
@@ -89,22 +89,14 @@ rule belongs to the project whose code it constrains.
 | 9.2       | Server hardening                                 | `apps/aurelius-atlas-server`                                                                                                                                                                          | SRV (0.5, 9.2, 9.3 share it, by id band) |
 | 9.3       | Search cost and client-IP trust                  | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server`                                                                                                                                      | ENS, SRV                                 |
 | 9.4       | Edge tracing                                     | `apps/aurelius-atlas-webapp`                                                                                                                                                                          | ETR                                      |
-
-## 10.x — the deployment charts
-
-The chart rules (`CHT`) constrain the Helm charts, so the specs live under `helm/`; their tests
-are the `tests/test__charts_*.py` at the workspace root, which stay where they are.
-
-| Increment | Spec                                   | Home                          | Status           |
-| --------- | -------------------------------------- | ----------------------------- | ---------------- |
-| 10.1      | Deployment chart foundation            | `helm/`                       | in `increments/` |
-| 10.2      | Stateful platform charts               | `helm/`                       | in `increments/` |
-| 10.3      | App and edge charts                    | `helm/`                       | in `increments/` |
-| 10.3b     | Observability chart                    | `helm/`                       | in `increments/` |
-| 10.6      | Network segmentation                   | `helm/`                       | in `increments/` |
-| 10.7      | Production identity realm              | `helm/` + `dev/keycloak`      | in `increments/` |
-| 10.8      | Grafana login via the production realm | `helm/` + `dev/observability` | in `increments/` |
-| 10.9      | Per-producer ingest credentials        | `helm/` + `dev/keycloak`      | in `increments/` |
-| 10.10     | Digest-pinned images and signed charts | `helm/`                       | in `increments/` |
-| 10.11     | Low-findings hardening                 | `helm/`                       | in `increments/` |
-| 10.12     | Server authentication, chart wiring    | `helm/`                       | in `increments/` |
+| 10.1      | Deployment chart foundation                      | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.2      | Stateful platform charts                         | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.3a     | App and edge charts                              | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.3b     | Observability chart                              | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.6      | Network segmentation                             | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.7      | Production identity realm                        | `helm/` + `dev/keycloak`                                                                                                                                                                              | CHT                                      |
+| 10.8      | Grafana login via the production realm           | `helm/` + `dev/observability`                                                                                                                                                                         | CHT                                      |
+| 10.9      | Per-producer ingest credentials                  | `helm/` + `dev/keycloak`                                                                                                                                                                              | CHT                                      |
+| 10.10     | Digest-pinned images and signed charts           | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.11     | Low-findings hardening                           | `helm/`                                                                                                                                                                                               | CHT                                      |
+| 10.12     | Server authentication, chart wiring              | `helm/`                                                                                                                                                                                               | CHT                                      |
