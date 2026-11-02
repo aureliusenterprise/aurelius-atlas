@@ -5,6 +5,9 @@
 - **Records:** DD-196 (completes its deferral), DD-273/DD-274/DD-275 (relies on),
   DD-277 (adds)
 
+This page is the `keycloak` part of increment 10.9; its rule table is
+the increment's shared set. The other part is with [`helm`][part-0].
+
 ## Scope
 
 The pre-pentest triage's **M5** (per-producer telemetry credentials, as scoped
@@ -28,25 +31,15 @@ This increment gives each `otel-*` client **its own secret**:
   (`${OTEL_ATLAS_SERVER_CLIENT_SECRET}`, … — client id uppercased, `_`-joined,
   suffixed `_CLIENT_SECRET`); the one deterministic mapping is spelled in the
   asset, and the charts derive it mechanically.
-- `<release>-otel-clients` becomes realm-shaped: a non-master realm gets one
-  key per client id (each generated/preserved independently — rotating one
-  never regenerates the others), `master` keeps today's single
-  `OTEL_INGEST_CLIENT_SECRET` key verbatim (the hatch's overrides keep
-  working).
 - The Keycloak StatefulSet's placeholder env follows the same shape: seven
   envs feeding the prod import, the single shared env for master.
-- Every producer's `OTEL_CLIENT_SECRET` join reads the key its realm shape
-  uses — its client id on the prod realm, the shared key on master. The env
-  names inside the containers (the apps' settings, the pullers'
-  `oauth2client` configs) do not change: only the join key does.
-
-This increment does **not** deliver: a rotation mechanism (the realm import
-applies at first boot; rotating a live client's secret stays admin-console
-work, now scoped to one producer — runbook), per-client secrets in the **dev
-compose** (`import/master.json` keeps the shared placeholder — DD-256's
-byte-copy and the e2e suites stay untouched; CHT-79 gains its second named
-exception), any change to which producer rides which leg (Keycloak-native
-and the FastAPI example stay legacy-leg, DD-196), or M9 (digest pinning).
+  This increment does **not** deliver: a rotation mechanism (the realm import
+  applies at first boot; rotating a live client's secret stays admin-console
+  work, now scoped to one producer — runbook), per-client secrets in the **dev
+  compose** (`import/master.json` keeps the shared placeholder — DD-256's
+  byte-copy and the e2e suites stay untouched; CHT-79 gains its second named
+  exception), any change to which producer rides which leg (Keycloak-native
+  and the FastAPI example stay legacy-leg, DD-196), or M9 (digest pinning).
 
 ## Semantics
 
@@ -84,27 +77,10 @@ staying shared.
 
 ## Acceptance
 
-- `npx nx run-many -t helm-lint helm-template` green (the chart owners).
 - `tests/test__charts_keycloak.py` names CHT-87 (the rendered prod asset's
   seven distinct placeholders; master's shared one; CHT-79's amended
   parity — otel peers equal dev minus `id` and `secret`, with the secret
   delta exactly the rule), CHT-89 (StatefulSet envs: seven named envs on
   the stock render with their key joins, the shared env on master).
-- `tests/test__charts_umbrella.py` names CHT-88 (stock Secret keys = the
-  seven client ids, each independently generated and length-checked;
-  per-client values override leaves the others generated; master render =
-  the single shared key; the roster-drift guard: Secret keys == the asset's
-  otel client ids == the StatefulSet's env joins) and CHT-91's negative
-  (master gains no per-client keys).
-- `tests/test__charts_{server,aux,elasticsearch}.py` name CHT-90 on their
-  stock renders (key = client id) and on a `global.realm=master` render
-  (key = shared name) — six producers, both shapes.
-- Runbook: the credentials section names the per-client keys; the rotation
-  note says one leaked producer rotates one key (realm re-import or admin
-  console — the mechanism is unchanged, the blast radius is not).
-  `dev/keycloak/AGENTS.md` and `helm/AGENTS.md` record the realm-shaped
-  Secret; `dev/elasticsearch/AGENTS.md` and the aux `AGENTS.md` notes if
-  their join lines are documented there.
-- Hand check: not run in CI here (no live Keycloak); proven by render — a
-  stock umbrella's seven producers join seven distinct keys and the realm
-  import resolves seven distinct placeholders from seven distinct envs.
+
+[part-0]: ../../../../helm/specs/10-9-per-producer-ingest-credentials/spec.md

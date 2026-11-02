@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** [#157](https://github.com/aureliusenterprise/aurelius-atlas/pull/157)
-- **Records:** [ADR 057](../../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md),
+- **Records:** [ADR 057](../../../docs/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md),
   DD-298, DD-283..294
 
 ## Scope

@@ -77,7 +77,7 @@ topology this is not (10.1's statement stands).
 ## Deviations
 
 No Apache Atlas behaviour is ported here, so nothing enters
-[Deviations](../deviations.md). Differences from the dev compose siblings (which
+[Deviations](../../../docs/architecture/conversion/deviations.md). Differences from the dev compose siblings (which
 are the working reference for these workloads) are recorded where they are
 decided: no `metrics-puller` sidecars in-cluster (the observability slice's
 pullers are a 10.3 decision — cluster-native scraping is the shape there), no
