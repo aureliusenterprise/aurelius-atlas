@@ -1,0 +1,40 @@
+name: The admin audit search refuses no parameters and an unknown attribute, and an unknown audit has no details
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getAtlasAudits
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getAuditDetails
+    - repository/src/main/java/org/apache/atlas/repository/audit/AtlasAuditService.java#get
+    - repository/src/main/java/org/apache/atlas/repository/audit/AtlasAuditService.java#validateSortByParameter
+    - intg/src/main/java/org/apache/atlas/AtlasErrorCode.java#INVALID_PARAMETERS
+    - intg/src/main/java/org/apache/atlas/AtlasErrorCode.java#UNKNOWN_ATTRIBUTE
+    - intg/src/main/java/org/apache/atlas/AtlasErrorCode.java#INSTANCE_GUID_NOT_FOUND
+rules: [ADA-04, ADA-05]
+covers: [aurelius_atlas_server.routes.admin.get_atlas_audits, aurelius_atlas_server.routes.admin.get_audit_details]
+stages:
+    - name: a search without parameters is refused
+      request:
+          method: POST
+          url: /api/atlas/admin/audits
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-01A
+              errorMessage: "invalid parameters: Audit Search Parameters not specified"
+    - name: a search ordered by an attribute an entry lacks is refused
+      request:
+          method: POST
+          url: /api/atlas/admin/audits
+          json: { sortBy: scenarioNoSuchAttribute }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-023
+              errorMessage: Attribute scenarioNoSuchAttribute not found for type Atlas Audit Entry
+    - name: the details of an audit not there are not found
+      request:
+          method: GET
+          url: /api/atlas/admin/audit/scenario-no-such-audit/details
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-005
+              errorMessage: Given instance guid scenario-no-such-audit is invalid/not found
