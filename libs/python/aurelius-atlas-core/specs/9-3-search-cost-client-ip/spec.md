@@ -4,24 +4,19 @@
 - **Pull request:** [#155](https://github.com/aureliusenterprise/aurelius-atlas/pull/155)
 - **Records:** DD-237, DD-238; supersedes the read-side refresh rationale in DD-043, DD-048 and DD-057
 
+This page is the `aurelius-atlas-core` part of increment 9.3; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-server`][part-0].
+
 ## Scope
 
 The pentest's search-cost finding (M6) and the client-IP trust gap (L3), one increment on the
 core library, the server and the webapp's nginx edge:
 
-- **Refresh moves to writes** (ENS-11, [DD-237](../design-log.md#dd-237-index-refresh-moves-from-reads-to-writes)):
+- **Refresh moves to writes** (ENS-11, [DD-237](design.md#dd-237-index-refresh-moves-from-reads-to-writes)):
   every write carries `refresh="wait_for"` and the read paths stop calling `indices.refresh` —
   today every search, count, listing and audit read pays a full index refresh on the request's
   critical path, which is a denial-of-service lever, not a feature.
-- **Rate limit at the nginx edge** (SRV-09, [DD-238](../design-log.md#dd-238-the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)):
-  a `limit_req` leaky bucket on the webapp's `/api/` proxy, keyed on the client address, with the
-  private ranges allowlisted — the limit is the browser's; internal callers arriving at the server
-  directly are not limited, and the server itself carries no limiter.
-- **Client-IP trust** (SRV-10, same DD): uvicorn's `forwarded_allow_ips` becomes a setting so the
-  proxy hop is declared, `scope["client"]` is the browser, and the access log and OTel's peer
-  attributes key on the real client.
-
-Not in scope:
+  Not in scope:
 
 | Not delivered here                                                     | Delivered by                |
 | ---------------------------------------------------------------------- | --------------------------- |
@@ -47,9 +42,9 @@ before a request reaches the Atlas-shaped surface.
 
 ## Deviations
 
-- [DV-87](../deviations.md): a rate-limited request answers 429; Atlas has no limiter and answers
-  every request. The limit sits at the webapp's nginx edge, so a caller that reaches the server
-  directly (internal apps, deployments without the webapp) sees Atlas's answer-everything
+- [DV-87](../../../../../docs/architecture/conversion/deviations.md) : a rate-limited request answers 429;
+  Atlas has no limiter and answers every request. The limit sits at the webapp's nginx edge, so a caller that
+  reaches the server directly (internal apps, deployments without the webapp) sees Atlas's answer-everything
   behaviour; the webapp arrangement is the browser's front door, and that one is limited.
 
 ENS-11 keeps the visible behaviour (read-your-writes, ENS-04/ENS-07) — only its cost moves
@@ -61,15 +56,7 @@ from every read to every write.
   `test__entity_audit_repository.py` — the fake records the `refresh` kwarg of every bulk and
   single-document write; the tests name the write paths and assert `wait_for`, and the read
   tests assert no `indices.refresh` call (ENS-11).
-- _(DD-281: `apps/aurelius-atlas-webapp/e2e/test__aurelius_atlas_webapp_rate_limit.py` and the
-  test-sized e2e bucket in `e2e/config/nginx.conf` are deleted — a browser-sized shipped bucket
-  is not provable through the e2e edge without a multi-minute flood, and the cluster lane makes
-  the fixture unmigratable.)_
-- `apps/aurelius-atlas-webapp/nginx.conf.template` — carries the shipped zone (300r/m,
-  burst 100); the chart-render guards pin it.
-- `apps/aurelius-atlas-server/tests/test__aurelius_atlas_server___main__.py` — uvicorn options
-  carry `forwarded_allow_ips` (SRV-10).
 - `nx e2e aurelius-atlas-server` — the parity scenarios (write → search stage sequences) stay
   green unchanged: that is the read-your-writes acceptance, over the real store.
-- Manual (dev stack): repeated `POST search/basic` from the webapp shows the browser's IP in the
-  server's access log.
+
+[part-0]: ../../../../../apps/aurelius-atlas-server/specs/9-3-search-cost-client-ip/spec.md
