@@ -21,7 +21,8 @@ stages:
     - name: the entries of a user who exported and imported nothing are an empty list
       request:
           method: GET
-          url: /api/atlas/admin/expimp/audit?userName=scenario-nobody&operation=EXPORT&limit=10
+          url: /api/atlas/admin/expimp/audit
+          params: { userName: scenario-nobody, operation: EXPORT, limit: "10" }
       response:
           status: 200
           json: []
