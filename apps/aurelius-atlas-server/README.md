@@ -40,7 +40,7 @@ The server also serves the Apache Atlas 2.4.0 dashboards from
 ## Authentication
 
 Every request needs a user, as Apache Atlas with its Keycloak provider does
-([6.1a](../../docs/architecture/conversion/increments/6-1-authentication.md)), but the status, liveness and
+([6.1a](specs/6-1-authentication/spec.md)), but the status, liveness and
 readiness endpoints and the dashboards' static files. A client sends a bearer token of the identity provider
 ([ADR 007](../../docs/architecture/adr/007-one-shared-identity-provider.md)); a browser on the dashboards is sent
 to `login.jsp`, signs in at the provider and keeps the `ATLASSESSIONID` session, and `logout.html` signs it out.

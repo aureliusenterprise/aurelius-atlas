@@ -8,7 +8,7 @@ translation, test tooling. Business-level decisions are ADRs in
 Each new entry lives in the `design.md` of the increment that makes it, next to that increment's
 spec ([ADR 051](../adr/051-the-conversion-proceeds-in-specified-increments.md)); where, is what
 the [Moved entries](#moved-entries) index keeps per number. This page holds the entries written
-before that layout (DD-001 to DD-094, DD-240 to DD-246, DD-248, DD-249 and DD-252 are moved out;
+before that layout (DD-001 to DD-094, DD-240 to DD-251 and DD-300 to DD-301 are moved out;
 what is listed below stays): it is read-only
 history. Nothing is appended here.
 
@@ -152,8 +152,6 @@ history. Nothing is appended here.
 | [DD-238](#dd-238-the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)                                 | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                                                                                                                               | 9.3           | Accepted             |
 | [DD-239](#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage)                            | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage                                                                                                              | 9.4           | Accepted             |
 | [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                         | Journal writes do not wait for a refresh                                                                                                                                                                                        | cross-cutting | Proposed             |
-| [DD-250](#dd-250-the-server-authenticates-requests-itself-against-the-identity-provider)                           | The server authenticates requests itself against the identity provider                                                                                                                                                          | 6.1           | Proposed             |
-| [DD-251](#dd-251-browser-sessions-are-kept-in-the-servers-memory)                                                  | Browser sessions are kept in the server's memory                                                                                                                                                                                | 6.1           | Proposed             |
 | [DD-253](#dd-253-the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli)               | The chart-contract suite lives at the workspace root (`tests/`) and asserts rendered manifests via the `helm` CLI                                                                                                               | 10.2          | Accepted             |
 | [DD-254](#dd-254-deploy-time-credential-generation-lands-in-102-with-publish-and-rotation-in-104)                  | The umbrella's `randAlphaNum` + `lookup` credential generation ships in 10.2; retrieval/rotation polish stays in 10.4                                                                                                           | 10.2          | Accepted             |
 | [DD-255](#dd-255-the-coredump-agent-ships-as-its-own-image-project)                                                | The ES coredump agent ships as the `aurelius-atlas-elasticsearch-agent` image, not a ConfigMap-embedded jar                                                                                                                     | 10.2          | Accepted             |
@@ -191,8 +189,6 @@ history. Nothing is appended here.
 | [DD-297](#dd-297-the-aux-apis-auth_realm-joins-globalrealm)                                                        | The aux APIs' AUTH_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74)                                                                                              | 10.12         | Accepted             |
 | [DD-298](#dd-298-a-stuck-pending-install-release-is-cleared-by-uninstall)                                          | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns                                                                                                     | 10.1          | Accepted             |
 | [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                       | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
-| [DD-300](#dd-300-four-fixed-roles-of-the-servers-client-grant-atlass-privileges)                                   | Four fixed roles of the server's client grant Atlas's privileges                                                                                                                                                                | 6.2           | Proposed             |
-| [DD-301](#dd-301-the-stores-check-through-the-authorizer-they-are-given)                                           | The stores check through the authorizer they are given                                                                                                                                                                          | 6.2           | Proposed             |
 | [DD-302](#dd-302-business-attributes-are-stored-among-the-entitys-attributes-under-their-qualified-names)          | Business attributes are stored among the entity's attributes under their qualified names                                                                                                                                        | 5.3           | Proposed             |
 
 ### DD-126. The webapp is a new project, not the Aurelius app upgraded in place
@@ -5271,55 +5267,6 @@ the glossary's writes: helps one feature, and departs from Atlas's sequence of w
 **Consequences.** A journal entry may be missing from a search for up to the refresh interval after it is
 written; nothing but recovery searches it. ENS-11's text names the journal as unrefreshed.
 
-### DD-250. The server authenticates requests itself against the identity provider
-
-- **Status:** Proposed
-- **Increment:** 6.1a
-- **Date:** 2026-10-31
-
-**Decision.** The server verifies every request's credentials itself, in a middleware, with the shared verifier
-`aurelius-atlas-auth` (DD-197): a bearer token is an RS256 JWT of the provider's key set, of its issuer,
-unexpired, whose `azp` or `aud` names the server's client or a configured further client (the webapp's, which
-the auxiliary APIs forward). A browser without a token signs in through the server's own confidential client,
-`aurelius-atlas-server`, by the authorization code flow with PKCE, and keeps a session cookie. A user's name is
-the `preferred_username` claim by default and their groups the configured groups claim, else the realm roles,
-as Atlas's provider with `groups_claim` set.
-
-**Reason.** Atlas authenticates in-process with Keycloak's Spring Security adapter: bearer tokens for clients,
-a login redirect and session for its dashboards, which the server still serves. Verifying tokens in the server
-keeps one path for every client, needs no proxy in front of it, and reuses the verifier the auxiliary APIs
-already run. The adapter names a user by `sub` unless `principal-attribute` is set, which deployments set to
-`preferred_username`, the name people know; it is a setting here too.
-
-**Alternatives.** An authenticating proxy (oauth2-proxy) in front of the server: a second component on every
-deployment, and the server would trust a header. Bearer tokens only: the vendored dashboards could not sign in.
-Exchanging `Basic` credentials at the provider, as the adapter can: the server would handle passwords (DV-108).
-
-**Consequences.** The server needs the provider's URL, realm, its client's secret and the further audiences;
-every client sends a token. The dev realm gains the confidential client; the e2e suites mint tokens and sign
-the browser in.
-
-### DD-251. Browser sessions are kept in the server's memory
-
-- **Status:** Proposed
-- **Increment:** 6.1a
-- **Date:** 2026-10-31
-
-**Decision.** A browser's session — its user, its tokens, a sign-in under way and its CSRF token — is kept in
-the server's memory under a random id in the `ATLASSESSIONID` cookie (`HttpOnly`, `Secure`, `SameSite=Lax`),
-renewed at sign-in, ended after 60 minutes unused or when the provider refuses to refresh its token. At most
-10,000 sessions are kept, the least recently used dropped first.
-
-**Reason.** Atlas keeps its sessions in Jetty's memory, with the same cookie and a 60-minute timeout. The
-session holds the tokens the server refreshes, so the browser never sees them.
-
-**Alternatives.** A signed cookie holding the tokens: no server state, but the tokens leave the server and a
-signed-out cookie stays valid until it expires. Sessions in Elasticsearch: survive restarts and serve several
-instances, at a store round-trip per request.
-
-**Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts.
-Several server instances need sticky sessions.
-
 ### DD-253. The chart-contract suite lives at the workspace root and renders with the helm CLI
 
 - **Status:** Accepted
@@ -7521,63 +7468,6 @@ the machine, so the prefix is uniform and cheap.
 runner; the plugin's three render-family targets now share one provenance
 rule: never trust `helm/charts/` to exist. Next free DD: 300.
 
-### DD-300. Four fixed roles of the server's client grant Atlas's privileges
-
-- **Status:** Proposed
-- **Increment:** 6.2a
-- **Date:** 2026-11-01
-
-**Decision.** The server's authorizer grants Atlas's privileges (`AtlasPrivilege`) by four roles of its own
-client in the identity provider, read from the token's `resource_access.<client>.roles`: `atlas-read` (type,
-entity and classification reads), `atlas-write` (entity, classification, label, business metadata and
-relationship changes), `atlas-types` (type definition changes, and reads) and `atlas-admin` (purge, export,
-import, admin audits). What each role grants is fixed in the server; who holds a role is decided in the identity
-provider only. Checks sit where Atlas's sit, with its action texts and `UNAUTHORIZED_ACCESS`. The user chose this
-on 2026-11-01 over porting Atlas's simple-authz policy file.
-
-**Reason.** ADR 038 asks for one place that answers what a person may do, apart from who they are, where
-revoking is one act. The identity provider already holds who someone is (ADR 007, DD-250); holding their roles
-there too makes granting and revoking one act in one console, with no policy file to deploy. Four roles cover
-the distinctions Atlas's default policy draws (readers, stewards, type owners, administrators).
-
-**Alternatives.** Atlas's simple-authz policy (regular expressions over types, entities and classifications,
-mapped from users and groups): Atlas-compatible and finer, but a second place to manage and a file to deploy.
-An external policy engine: one more service to run everywhere it is validated.
-
-**Consequences.** No permission finer than a role: a user may change every entity type or none (DV-114). The
-roles are client roles, so a client that forwards a user's token (the webapp's) maps them into its scope. The
-dev realm gives the writer every role and the reader `atlas-read`.
-
-### DD-301. The stores check through the authorizer they are given
-
-- **Status:** Proposed
-- **Increment:** 6.2b
-- **Date:** 2026-11-01
-
-**Decision.** The privileges and the checks live in `aurelius-atlas-core` (`authorization`): each store that
-reads or writes entities and relationships for a request (`EntityWriter`, `EntityClassifications`,
-`RelationshipStore`, `DataAccess` and the services built on them) takes an `Authorizer` and asks it at the
-points where Atlas's entity and relationship stores call `AtlasAuthorizationUtils.verifyAccess`, with the same
-action texts. The server builds one per request from its user's privileges (`Granted`, DD-300). A store built
-without one is given `ALLOW_ALL`, which checks nothing. The relationship checks Atlas makes inside an entity
-write (`EntityGraphMapper` creating relationship edges through `createRelationship`) are not made.
-
-**Reason.** Atlas checks inside its stores, after it has found what a request names and before it writes; the
-same placement keeps the same order of not-found and unauthorized answers, and covers the glossary and saved
-searches, which write through those stores, without a check of their own. The core library knows no users or
-roles; it is handed the decision. Allowing everything by default keeps the stores' own tests, the model loading
-at startup and other internal writes free of a user they do not have. Under DD-300 only `atlas-write` grants
-`RELATIONSHIP_ADD`, together with `ENTITY_CREATE` and `ENTITY_UPDATE`, which an entity write checks first, so
-the relationship checks within it could never refuse what the entity checks allowed.
-
-**Alternatives.** Checks in the routes before the stores run: simpler, but they would answer unauthorized for
-a missing entity, and every glossary and saved-search route would need its own. A required authorizer with no
-default: every internal caller and test would have to make one up.
-
-**Consequences.** Every store a route builds must be given `authorizer(request)`; the server's tests refuse each
-kind of change for a reader, which catches a route that forgets. Should roles ever grant privileges per type
-(DV-111), the relationship checks inside entity writes are to be added.
-
 ### DD-302. Business attributes are stored among the entity's attributes under their qualified names
 
 - **Status:** Proposed
@@ -7711,7 +7601,11 @@ here is a copy of the one at the time of the move. New entries go to the increme
 | DD-246 | Glossary objects are entities written through the entity and relationship stores           | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-glossaries-and-categories/design.md`        |
 | DD-248 | An entity's meanings are read from its listed relationships                                | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-term-assignment/design.md`                  |
 | DD-249 | Uploaded files are read with python-multipart, openpyxl and xlrd                           | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-glossary-import/design.md`                  |
+| DD-250 | The server authenticates requests itself against the identity provider                     | Proposed         | `apps/aurelius-atlas-server/specs/6-1-authentication/design.md`                        |
+| DD-251 | Browser sessions are kept in the server's memory                                           | Proposed         | `apps/aurelius-atlas-server/specs/6-1-authentication/design.md`                        |
 | DD-252 | DataAccess carries every model object through a registry of DTOs                           | Proposed         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
+| DD-300 | Four fixed roles of the server's client grant Atlas's privileges                           | Proposed         | `apps/aurelius-atlas-server/specs/6-2-authorization/design.md`                         |
+| DD-301 | The stores check through the authorizer they are given                                     | Proposed         | `apps/aurelius-atlas-server/specs/6-2-authorization-entities/design.md`                |
 
 > [!NOTE]
 > DD-095 to DD-125 and DD-280 were never written. The first band went unused when the
