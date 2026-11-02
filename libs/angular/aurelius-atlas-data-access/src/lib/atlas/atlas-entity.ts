@@ -17,6 +17,17 @@
 /** An entity's lifecycle state (`AtlasEntity.STATUS`, `EntityStatus`). */
 export type AtlasEntityStatus = "ACTIVE" | "DELETE_PENDING" | "PURPOSED_DELETE" | "INPUT_PHASE_COMPLETE";
 
+/**
+ * An entity reference (`AtlasObjectId`): its guid, or its type name and the
+ * unique attribute values that identify it. The export request's
+ * `itemsToExport` is a list of these (EXP-01); the entity routes take them too.
+ */
+export type AtlasObjectId = {
+    guid?: string | null;
+    typeName?: string | null;
+    uniqueAttributes?: Record<string, unknown> | null;
+};
+
 /** A classification on an entity (`AtlasClassification`). */
 export type AtlasClassification = {
     /** The entity attribute the classification is attached to, if any. */

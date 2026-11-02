@@ -18,15 +18,22 @@ consumers import from the package root only, never a subfolder path.
   DSL search and the seven saved-search routes of server 4.1–4.5;
   GET parameters drop the Java defaults, as the routes read an absent parameter;
   `getSavedSearches` keeps the server's 204 as a `null` body (DD-314)
-- `src/lib/atlas/admin.service.ts` — `AdminService` (`/atlas/admin/**`, ADM-01/02/05)
+- `src/lib/atlas/admin.service.ts` — `AdminService` (`/atlas/admin/**`, ADM-01..05,
+  AAC-01..07): version/status/session, the liveness/readiness texts, the patch
+  records, purge, export/import, and the task list — the twin of
+  `AtlasClient.admin` (CL-11, CLW-01..06); `export` answers the
+  `{ body, contentType }` pair of DD-315 where the twin returns a tuple
 - `src/lib/atlas/atlas-entities.service.ts` — `AtlasEntitiesService`
   (`/atlas/v2/entity/**`, DET-03 — the 2.3+7.6 wiring's client, DD-187)
 - `src/lib/atlas/atlas-typedef.ts` — the typedef DTO cluster with the server's camelCase
   wire names (APC-03); `src/lib/atlas/atlas-search.ts` — the search DTO cluster
   (`SearchParameters`, `AtlasSearchResult`, `AtlasQuickSearchResult`, …);
   `src/lib/atlas/atlas-profile.ts` — the saved-search DTOs (`AtlasUserSavedSearch`,
-  `SavedSearchType`, SVS-01); `src/lib/atlas/atlas-entity.ts` — the entity DTOs;
-  `src/lib/atlas/atlas-error.ts` — the Atlas
+  `SavedSearchType`, SVS-01); `src/lib/atlas/atlas-entity.ts` — the entity DTOs
+  (with `AtlasObjectId`); `src/lib/atlas/atlas-impexp.ts` — the export/import DTOs
+  and `AtlasExportAnswer` (DD-315); `src/lib/atlas/atlas-mutation.ts` —
+  `EntityMutationResponse`; `src/lib/atlas/atlas-patches.ts` / `atlas-tasks.ts` —
+  the patch/task DTOs; `src/lib/atlas/atlas-error.ts` — the Atlas
   error body (SRV-04, APC-04), shared with `entities.service.ts`
 - `src/lib/entities.service.ts` — `EntitiesService` (HTTP + SSE) and the example API
   types — the FastAPI example's client, outside the Atlas folder by design;
@@ -48,6 +55,13 @@ consumers import from the package root only, never a subfolder path.
   routes and models — change the endpoints on both sides in the same PR. The
   saved-searches 204 reads as `None` on the Python side and a `null` body here
   (CSD-03 ↔ ACS-03, DD-314).
+- The admin wire contract has the same twin: `AtlasClient.admin` (CL-11,
+  CLW-01..06) covers the same twelve routes of `routes/admin.py` — change them
+  on both sides in the same PR. `export` returns `(bytes, content-type)` there
+  and answers the typed `AtlasExportAnswer` pair here (CLW-03 ↔ AAC-04,
+  DD-315). On the plain-text health routes the twin parses the Atlas error
+  body from the raw bytes (CL-04); here a text request keeps its error body as
+  text and the caller parses it (AAC-01).
 - The example-backend contract: endpoints (`/entities/*`, `/entities/sse`),
   `Envelope<T>`, and `PaginatedResponse<T>` must match
   `apps/aurelius-atlas-fastapi-example`.

@@ -11,8 +11,15 @@ Part of the template **spine**.
 - `TypeDefsService` — the Atlas type-definition endpoints (`/atlas/v2/types/**`):
   searches, by-name/by-guid lookups (any kind and per kind), create/update/delete —
   `TypesREST` of Apache Atlas, served by `aurelius-atlas-server`
-- `AdminService` — `version`, `status`, and this session's UI settings
-  (`/atlas/admin/**`)
+- `AdminService` — `version`, `status`, and this session's UI settings, the
+  liveness/readiness texts, the patch records, purge, export/import, and the
+  task list (`/atlas/admin/**`) — `AdminREST` of server 2.x/5.x (APC-02,
+  AAC-01..07); the twin of `AtlasClient.admin` (CL-11, CLW-01..06)
+- `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
+  `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
+  task DTOs with the server's camelCase wire names, mirrored by hand from
+  `libs/python/aurelius-atlas-model` (`impexp.py`, `instance/`, `patches.py`,
+  `tasks.py`)
 - `SearchService` — the search endpoints (`/atlas/v2/search/**`): the basic
   search (POST/GET), attribute, full-text, the quick search with its facets
   (POST/GET), term suggestions, the DSL search, and the seven saved-search
@@ -56,7 +63,9 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 > `atlas-typedef.ts` and `aurelius_atlas_model/typedef.py` (APC-03), and to the
 > search DTOs in `atlas-search.ts` and `aurelius_atlas_model/discovery.py`, and
 > to the saved-search DTOs in `atlas-profile.ts` and
-> `aurelius_atlas_model/profile.py`.
+> `aurelius_atlas_model/profile.py`, and to the admin DTOs in
+> `atlas-impexp.ts`/`atlas-mutation.ts`/`atlas-patches.ts`/`atlas-tasks.ts` and
+> `aurelius_atlas_model/impexp.py`/`instance/`/`patches.py`/`tasks.py`.
 
 ## Testing
 
