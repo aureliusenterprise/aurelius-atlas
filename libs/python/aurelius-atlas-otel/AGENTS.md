@@ -25,7 +25,7 @@ file covers wiring specific to this lib; workspace-wide rules live in the root
   env leg (DD-210: the legacy shared-token producer, CIA-10) — a
   third-party-runtime name, bare by workspace rule.
 - The rules it keeps (CIA-07) are specified by the 7.18 spec
-  (`docs/architecture/conversion/increments/7-18-collector-ingest-identity.md`).
+  (`libs/python/aurelius-atlas-otel/specs/7-18-collector-ingest-identity/spec.md`).
 
 ## Commands
 

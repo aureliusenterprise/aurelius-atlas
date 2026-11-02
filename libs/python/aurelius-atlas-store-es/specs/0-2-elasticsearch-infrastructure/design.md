@@ -70,4 +70,4 @@ every index is created with zero replicas. A configurable threshold: one more se
 **Consequences.** Lost redundancy is not visible as a health failure; it is visible in the cluster
 metrics (ESD-06) and should be alerted on there.
 
-[a006]: ../../../../../docs/architecture/conversion/adr/006-the-whole-system-runs-on-one-machine.md
+[a006]: ../../../../../docs/architecture/adr/006-the-whole-system-runs-on-one-machine.md

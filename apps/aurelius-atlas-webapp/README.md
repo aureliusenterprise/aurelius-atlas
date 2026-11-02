@@ -8,12 +8,12 @@ legacy NgModules, `@models4insight/*` libs, custom Redux state, and
 ngx-translate are never ported (enforced by `scripts/check-webapp-purity.sh`).
 
 The increment ledger for this track is the 7.x series:
-[7-0 foundation](../../docs/architecture/conversion/increments/7-0-webapp-foundation.md),
-[7-1 shell](../../docs/architecture/conversion/increments/7-1-webapp-shell.md),
-[7-3 API client + auth](../../docs/architecture/conversion/increments/7-3-api-client-auth.md),
-[7-5 landing page](../../docs/architecture/conversion/increments/7-5-browse-landing.md),
-[7-11 shell chrome](../../docs/architecture/conversion/increments/7-11-shell-chrome.md),
-[7-12 theme, branding and layout](../../docs/architecture/conversion/increments/7-12-theme-branding-layout.md).
+[7-0 foundation](specs/7-0-webapp-foundation/spec.md),
+[7-1 shell](specs/7-1-webapp-shell/spec.md),
+[7-3 API client + auth](specs/7-3-api-client-auth/spec.md),
+[7-5 landing page](specs/7-5-browse-landing/spec.md),
+[7-11 shell chrome](specs/7-11-shell-chrome/spec.md),
+[7-12 theme, branding and layout](specs/7-12-theme-branding-layout/spec.md).
 
 ## Features (slice 7.1 — shell + localisation)
 

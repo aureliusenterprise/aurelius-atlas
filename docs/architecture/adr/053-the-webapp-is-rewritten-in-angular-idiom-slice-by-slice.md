@@ -120,10 +120,9 @@ two copies of the same product, paid for legibility and reversibility.
   risk (R5 is the mitigation, and it is manual). There is no compatibility layer to fall back on:
   a slice that lands with Redux in it is a defect, not a state.
 - **Neutral / follow-ups:** the Aurelius interface becomes the served UI at some point in this
-  track, which supersedes the plan to serve the Atlas dashboards at `/`
-  ([DV-64](../conversion/deviations.md)). The example app and the template's Angular toolchain
-  then leave with it (`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)).
-  The track is scheduled as increments 7.x in the
-  [conversion ledger](../conversion/index.md#roadmap) and starts with the application shell
-  ([7.1](../conversion/increments/7-1-webapp-shell.md)), the one slice with no dependency on the
+  track, which supersedes the plan to serve the Atlas dashboards at `/` ( [DV-64](../conversion/deviations.md)
+  ). The example app and the template's Angular toolchain then leave with it (`DD-019` (the record:
+  `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)). The track is scheduled as increments 7.x in
+  the [conversion ledger](../conversion/index.md#roadmap) and starts with the application shell (`7.1` (the
+  spec: `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/spec.md`)), the one slice with no dependency on the
   catalogue API.

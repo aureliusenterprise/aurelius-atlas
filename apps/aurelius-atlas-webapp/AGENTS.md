@@ -136,7 +136,7 @@ values-toggle rows (`helm/AGENTS.md`).
 The webapp is a conversion-track app: removing it means stopping the 7.x
 roadmap. Remove together: its `mkdocs.yaml` nav entry (none yet), the 7.x
 roadmap rows in `docs/architecture/conversion/index.md`, and the clone
-reference in `docs/architecture/conversion/increments/7-0-webapp-foundation.md`.
+reference in `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/spec.md`.
 Auth removal: the `provideKeycloak`/`INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG`
 providers, `createAuthGuard` wrapper and `rootAuthGuard` in `routes.ts`,
 `public/silent-check-sso.html`, the Keycloak locations in the nginx configs, the
