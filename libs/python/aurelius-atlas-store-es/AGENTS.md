@@ -19,7 +19,7 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 
 - Registered in root `pyproject.toml` (workspace members, dev group with `[testing]`, `uv.sources`).
 - Rule ids (`STO-NN`, `ESD-NN`) are specified in
-  `docs/architecture/conversion/increments/0-2-elasticsearch-infrastructure.md`; every test names the
+  `dev/elasticsearch/specs/0-2-elasticsearch-infrastructure/spec.md`; every test names the
   functions and rules it checks with `@pytest.mark.covers` (ADR 056); `aurelius-atlas-trace check`
   reports unnamed functions or rules locally (a review aid, not a CI gate).
 - The ESD rules (the dev store's posture) have no automated tests (DD-223, DD-227): the dev stack's

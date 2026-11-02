@@ -4,7 +4,7 @@ A workspace-wide review of every test suite: coverage, and — the part a covera
 number cannot show — **representativeness**: do the tests cover the non-happy
 flows as well as the happy ones? The methodology and the layers are
 [Testing](./testing.md); this page records what the review found and what it
-committed to build next ([DD-214](../../conversion/design-log.md#dd-125-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
+committed to build next ([DD-214](../../conversion/design-log.md#dd-214-the-test-suite-review-of-2026-10-24-scopes-the-hardening-increments)).
 
 Coverage is reported to SonarQube, whose quality gate is the enforcement
 ([Testing](./testing.md) step 6). This page carries measured baselines as

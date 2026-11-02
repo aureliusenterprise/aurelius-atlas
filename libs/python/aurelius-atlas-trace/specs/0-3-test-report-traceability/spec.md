@@ -6,7 +6,7 @@
 
 ## Scope
 
-Make [ADR 049](../../adr/049-every-function-and-rule-is-traceable-to-a-test.md) executable: every
+Make [ADR 049][a049] executable: every
 public function of the Atlas code and every rule of a specification is named by a test, the pipeline
 refuses a change that leaves either uncovered, and every change publishes one test report.
 
@@ -69,11 +69,11 @@ Not in scope:
 
 Rule TRC-10 is why the check collects instead of reading the results of a run: CI runs only the
 affected projects' tests, so a run's results never contain every marker
-([DD-009](../design-log.md#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)).
+([DD-009](design.md#dd-009-traceability-is-checked-from-collected-markers-not-from-a-test-run)).
 TRC-06 to TRC-08 draw the boundary of what must be covered
-([DD-010](../design-log.md#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)).
+([DD-010](design.md#dd-010-the-traceability-check-covers-atlas-code-from-increment-02-on)).
 The report is a small generator of our own over standard formats
-([DD-011](../design-log.md#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)).
+([DD-011](design.md#dd-011-the-test-report-is-generated-from-junit-coverage-and-trace-files)).
 
 ## Java origin
 
@@ -95,3 +95,5 @@ None: nothing in this increment is visible through the Atlas REST API.
   not production; the ESD rules fall to the stack's healthchecks and review, per the 0-2 note.)
 - `uv run aurelius-atlas-trace check` exits zero on this branch; the CI run of this pull request
   uploads a `test-report` artifact.
+
+[a049]: ../../../../../docs/architecture/conversion/adr/049-every-function-and-rule-is-traceable-to-a-test.md

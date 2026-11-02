@@ -66,8 +66,8 @@ Apache Atlas `release-2.4.0`, `intg/src/main/java/org/apache/atlas/type/`:
 ## Deviations
 
 None. Where Java iterates a `HashSet` or `HashMap` (all super types, relationship attributes), the
-first-seen order is used ([DD-021](../design-log.md#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order),
-[DD-027](../design-log.md#dd-027-derived-type-sets-keep-first-seen-order)).
+first-seen order is used ([DD-021](../../../aurelius-atlas-model/specs/1-1-typedef-models/design.md#dd-021-set-valued-fields-keep-each-name-once-in-first-seen-order),
+[DD-027](design.md#dd-027-derived-type-sets-keep-first-seen-order)).
 
 ## Acceptance
 

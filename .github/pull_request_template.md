@@ -4,7 +4,8 @@
 
 ## Increment
 
-- **Increment:** N.M — link to `docs/architecture/conversion/increments/N-M-slug.md`
+- **Increment:** N.M — link to `<project>/specs/N-M-slug/spec.md` (its `design.md`
+  holds the `DD-NNN` records beside it)
 - **Records added or relied on:** ADR NNN, DD-NNN, DV-NN
 
 ## What this change proves

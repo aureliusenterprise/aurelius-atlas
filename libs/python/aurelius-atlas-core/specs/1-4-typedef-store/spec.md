@@ -8,15 +8,15 @@
 
 Type definitions are kept in Elasticsearch and loaded into the type registry when the server starts, in
 a new library `libs/python/aurelius-atlas-core` (package `aurelius_atlas_core`, the `-core` layer of
-[DD-002](../design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
+[DD-002](../../../../../specs/0-1-adopt-template/design.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
 
 - the typedef store: create, update and delete type definitions, with the checks Atlas's store makes
   and its registry does not (unique and well-formed names, no attribute removed, no type deleted while
   something refers to it), and the audit fields;
 - the stored form: what Atlas keeps of a definition, which is what it answers with afterwards;
 - persistence in one Elasticsearch document, written with optimistic concurrency
-  ([DD-028](../design-log.md#dd-028-the-type-definitions-are-one-elasticsearch-document),
-  [DD-029](../design-log.md#dd-029-server-processes-share-the-type-definitions-through-the-documents-version));
+  ([DD-028](design.md#dd-028-the-type-definitions-are-one-elasticsearch-document),
+  [DD-029](design.md#dd-029-server-processes-share-the-type-definitions-through-the-documents-version));
 - the server loads the stored definitions into its registry at start-up and keeps it in step with other
   processes.
 

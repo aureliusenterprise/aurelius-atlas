@@ -3,10 +3,10 @@
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-typesystem)
 
 The Atlas type system for Aurelius Atlas, without I/O
-([DD-002](../../../docs/architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
+([DD-002](../../../specs/0-1-adopt-template/design.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
 the type registry and the types that type definitions resolve to. Since increment
-[1.2](../../../docs/architecture/conversion/increments/1-2-type-registry.md): the built-in, array, map, enum
-and struct types, attribute types and constraints. Since [1.3](../../../docs/architecture/conversion/increments/1-3-type-hierarchies.md):
+[1.2](specs/1-2-type-registry/spec.md): the built-in, array, map, enum
+and struct types, attribute types and constraints. Since [1.3](specs/1-3-type-hierarchies/spec.md):
 entity and classification hierarchies, relationship and business metadata types. Since
 [2.1b](../../../docs/architecture/conversion/increments/2-1-value-types.md): the value side of the built-in,
 enum, array and map types, as Atlas checks, normalises and compares attribute values. Since

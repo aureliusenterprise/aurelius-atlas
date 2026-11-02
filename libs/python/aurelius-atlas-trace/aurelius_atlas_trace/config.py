@@ -14,6 +14,7 @@ TEST_DIRECTORIES = ("tests", "e2e")
 
 MISSING_TABLE_ERROR = "{path} has no [tool.{table}] table"
 BAD_SETTING_ERROR = "{path}: [tool.{table}] needs 'specs' and 'enforce-from' (N.M): {error}"
+BAD_SPECS_ERROR = "'specs' is a directory, or a non-empty list of directories, as strings"
 NO_DEVIATIONS_ERROR = "{path}: [tool.{table}] deviations: {file} does not exist"
 NO_PACKAGE_ERROR = "{project} declares no package in [tool.hatch.build.targets.wheel] packages"
 
@@ -36,7 +37,7 @@ class TraceConfig:
     """The check's view of the workspace."""
 
     workspace: Path
-    spec_dir: Path
+    spec_dirs: tuple[Path, ...]
     enforce_from: Increment
     projects: tuple[Project, ...]
     excluded_subpackages: tuple[str, ...]
@@ -69,13 +70,21 @@ def _roots(workspace: Path, members: list[str], excluded: set[str]) -> list[Path
     return sorted(root for root in globbed if (root / PYPROJECT).is_file())
 
 
+def _spec_dirs(workspace: Path, value: object) -> tuple[Path, ...]:
+    """The ``specs`` setting: one directory, or a list of directories, resolved against the workspace."""
+    items = [value] if isinstance(value, str) else value if isinstance(value, list) else []
+    if not items or not all(isinstance(item, str) for item in items):
+        raise TypeError(BAD_SPECS_ERROR)
+    return tuple(workspace / item for item in items)
+
+
 def load_config(workspace: Path) -> TraceConfig:
     """Read ``[tool.aurelius-atlas-trace]`` and the uv workspace members of the root ``pyproject.toml``.
 
-    The table holds ``specs`` (directory of the specifications), ``enforce-from`` (first increment whose
-    rules count), ``exclude-projects`` (workspace members left out, as listed in ``members``) and
-    ``exclude-subpackages`` (subpackage names left out of every package, default ``["testing"]``) and
-    ``deviations`` (the deviations table, optional).
+    The table holds ``specs`` (a directory, or a list of directories, to search for the increment
+    specifications), ``enforce-from`` (first increment whose rules count), ``exclude-projects``
+    (workspace members left out, as listed in ``members``), ``exclude-subpackages`` (subpackage names
+    left out of every package, default ``["testing"]``) and ``deviations`` (the deviations table, optional).
 
     Raises:
         ConfigError: The table or one of its settings is missing, or a project declares no package.
@@ -89,9 +98,9 @@ def load_config(workspace: Path) -> TraceConfig:
     excluded = set(table.get("exclude-projects", ()))
     members = tool.get("uv", {}).get("workspace", {}).get("members", ())
     try:
-        spec_dir = workspace / table["specs"]
+        spec_dirs = _spec_dirs(workspace, table["specs"])
         enforce_from = Increment.parse(table["enforce-from"])
-    except (KeyError, ValueError) as error:
+    except (KeyError, TypeError, ValueError) as error:
         raise ConfigError(BAD_SETTING_ERROR.format(path=path, table=CONFIG_TABLE, error=error)) from error
     deviations = workspace / table["deviations"] if "deviations" in table else None
     if deviations is not None and not deviations.is_file():
@@ -99,7 +108,7 @@ def load_config(workspace: Path) -> TraceConfig:
 
     return TraceConfig(
         workspace=workspace,
-        spec_dir=spec_dir,
+        spec_dirs=spec_dirs,
         enforce_from=enforce_from,
         projects=tuple(_project(root) for root in _roots(workspace, members, excluded)),
         excluded_subpackages=tuple(table.get("exclude-subpackages", ("testing",))),

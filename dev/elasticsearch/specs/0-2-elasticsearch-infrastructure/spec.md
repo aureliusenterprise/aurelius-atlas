@@ -4,9 +4,12 @@
 - **Pull request:** [#78](https://github.com/aureliusenterprise/aurelius-atlas/pull/78)
 - **Records:** ADR 047 (becomes Accepted), DD-005, DD-006, DD-007, DD-008
 
+This page is the `elasticsearch` part of increment 0.2; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-store-es`](../../../../libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/spec.md).
+
 ## Scope
 
-Give the spine its search store ([ADR 047](../../adr/047-one-search-store-is-the-system-of-record.md))
+Give the spine its search store ([ADR 047](../../../../docs/architecture/conversion/adr/047-one-search-store-is-the-system-of-record.md))
 without adding Atlas behaviour:
 
 - **`dev/elasticsearch`** (`aurelius-atlas-dev-elasticsearch`): a single-node Elasticsearch 9.5 for
@@ -14,13 +17,7 @@ without adding Atlas behaviour:
   `dhi.io/elasticsearch:9.5-debian13` image, TLS from the workspace CA (`tls.json` → `certgen`),
   credentials in `.env.enc`, a named data volume, and a `metrics-puller` sidecar that pushes cluster
   metrics to `dev/observability`.
-- **`libs/python/aurelius-atlas-store-es`** (`aurelius_atlas_store_es`), the store library skeleton
-  named in [DD-002](../design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer):
-  a settings model, the lifecycle of one asynchronous client, a version check, and a health check.
-- **A test fixture** in the library's `testing` extra that starts a TLS-enabled Elasticsearch with
-  testcontainers, for this library's tests and for every later project that needs a store.
-
-Not in scope:
+  Not in scope:
 
 | Not delivered here                                | Delivered by |
 | ------------------------------------------------- | ------------ |
@@ -34,14 +31,14 @@ Not in scope:
 
 ### Development store
 
-| Id     | Rule                                                                                                                                                      |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ESD-01 | `nx up aurelius-atlas-dev-elasticsearch` starts a single-node Elasticsearch 9 that reports healthy, reachable at `https://localhost:9200`                 |
-| ESD-02 | Security is on: HTTP is TLS-only with a certificate from the workspace CA, and every request needs basic authentication                                   |
-| ESD-03 | Credentials exist only in the project's SOPS-encrypted `.env.enc`; the plaintext `.env` holds dev defaults, as for every other project                    |
-| ESD-04 | Data survives `docker compose down` / `nx up`; only removing the named volume (`down -v`) resets it                                                       |
-| ESD-05 | The JVM heap is fixed (1 GiB by default) so the whole system still runs on one machine ([ADR 006](../../adr/006-the-whole-system-runs-on-one-machine.md)) |
-| ESD-06 | Cluster metrics reach `dev/observability` through a sidecar collector; `dev/observability` stays unaware of this project                                  |
+| Id     | Rule                                                                                                                                                                                         |
+| ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ESD-01 | `nx up aurelius-atlas-dev-elasticsearch` starts a single-node Elasticsearch 9 that reports healthy, reachable at `https://localhost:9200`                                                    |
+| ESD-02 | Security is on: HTTP is TLS-only with a certificate from the workspace CA, and every request needs basic authentication                                                                      |
+| ESD-03 | Credentials exist only in the project's SOPS-encrypted `.env.enc`; the plaintext `.env` holds dev defaults, as for every other project                                                       |
+| ESD-04 | Data survives `docker compose down` / `nx up`; only removing the named volume (`down -v`) resets it                                                                                          |
+| ESD-05 | The JVM heap is fixed (1 GiB by default) so the whole system still runs on one machine ([ADR 006](../../../../docs/architecture/conversion/adr/006-the-whole-system-runs-on-one-machine.md)) |
+| ESD-06 | Cluster metrics reach `dev/observability` through a sidecar collector; `dev/observability` stays unaware of this project                                                                     |
 
 > [!NOTE]
 > The ESD rules have no automated e2e tests (DD-223, DD-227). ESD-04's test meant
@@ -67,13 +64,13 @@ Not in scope:
 | STO-08 | The password is never part of the settings' `repr`, a log record or a health report                                                                               |
 
 Rule STO-05 counts yellow as up because a single-node cluster is yellow as soon as an index has a
-replica it cannot place ([DD-008](../design-log.md#dd-008-a-yellow-cluster-is-healthy)).
+replica it cannot place ([DD-008](../../../../libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md#dd-008-a-yellow-cluster-is-healthy)).
 
 ## Java origin
 
 None ported. The JanusGraph and Solr wiring this replaces (`graphdb/*`,
 `AtlasJanusGraphDatabase`, `Solr6Index`) is already mapped as _replaced_ in the
-[Java to Python Map](../java-map.md). Atlas's own health answer, `GET /api/atlas/admin/status`
+[Java to Python Map](../../../../docs/architecture/conversion/java-map.md). Atlas's own health answer, `GET /api/atlas/admin/status`
 (`AdminResource.getStatus`), is ported in 0.5 on top of STO-05.
 
 ## Deviations
@@ -82,10 +79,6 @@ None: nothing in this increment is visible through the Atlas REST API.
 
 ## Acceptance
 
-- `libs/python/aurelius-atlas-store-es/tests/` — unit tests for STO-01, STO-02, STO-03, STO-08
-  without a server, and integration tests for STO-03 to STO-07 against the `testing` fixture
-  (testcontainers, TLS on). Until the `covers` marker exists (0.3), each test names its rule ids in
-  its docstring; 0.3 turns them into markers.
 - `dev/elasticsearch` — ESD-01 to ESD-06 are checked by hand for this increment
   (`nx up`, `curl --cacert … -u …`, `docker compose down`/`nx up` with a test document, the Grafana
   Elasticsearch metrics); the first project that depends on the dev store in an end-to-end test (0.5)

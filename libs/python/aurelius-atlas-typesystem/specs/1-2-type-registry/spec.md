@@ -8,7 +8,7 @@
 
 The registry that turns type definitions into resolved types, in a new library without I/O,
 `libs/python/aurelius-atlas-typesystem` (package `aurelius_atlas_typesystem`,
-[DD-002](../design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
+[DD-002](../../../../../specs/0-1-adopt-template/design.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)):
 
 - the registry: the built-in types, lookup by name and GUID, the definitions per kind, and updates made on
   a transient copy that is committed or discarded;
@@ -17,7 +17,7 @@ The registry that turns type definitions into resolved types, in a new library w
 - attribute resolution: attribute types, cardinality, the classification and business metadata ban, and
   the `ownedRef` and `inverseRef` constraints;
 - the Atlas error codes these raise, in the model library, where every layer can raise them
-  ([DD-023](../design-log.md#dd-023-atlas-errors-live-in-the-model-library)).
+  ([DD-023](design.md#dd-023-atlas-errors-live-in-the-model-library)).
 
 No endpoint changes; the server does not use the registry yet.
 
@@ -39,7 +39,7 @@ Not in scope:
 | TRG-02 | A registered name answers its type. An unregistered `array<T>` or `map<K,V>` name is built on demand from its element, key and value types, splitting a map's at its first comma; an array built so has cardinality `LIST` and no element counts                                                                                                                                                                                                                                                              |
 | TRG-03 | An unknown type name fails with `TYPE_NAME_NOT_FOUND` (404) and an unknown GUID with `TYPE_GUID_NOT_FOUND` (404), each naming what was asked for                                                                                                                                                                                                                                                                                                                                                              |
 | TRG-04 | Definitions are found by name and by GUID, per kind and across all kinds; each kind lists its definitions, names and types, and the registry lists all type names, all types and all service types                                                                                                                                                                                                                                                                                                            |
-| TRG-05 | The registry changes only through a transient copy taken under the update lock. Committing makes the copy's types the registry's; releasing without committing discards them. The lock is re-entrant; waiting longer than its timeout fails with `FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` (500) ([DD-024](../design-log.md#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock))                                                                                                            |
+| TRG-05 | The registry changes only through a transient copy taken under the update lock. Committing makes the copy's types the registry's; releasing without committing discards them. The lock is re-entrant; waiting longer than its timeout fails with `FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK` (500) ([DD-024](design.md#dd-024-the-registry-is-updated-on-a-transient-copy-under-a-re-entrant-lock))                                                                                                                   |
 | TRG-06 | Adding a definition registers it by name and, when it has one, by GUID. A later definition with the same name replaces the earlier one, a built-in type included                                                                                                                                                                                                                                                                                                                                              |
 | TRG-07 | Updating replaces the definition with the given GUID or name; a definition updated without a target is found by its GUID, else by its name, else ignored                                                                                                                                                                                                                                                                                                                                                      |
 | TRG-08 | Removing by GUID or by name removes the definition under both. Removing the definitions of an `AtlasTypesDef` removes each by its GUID when it has one, else by its name. The transient copy records what was added, updated and removed, in order                                                                                                                                                                                                                                                            |

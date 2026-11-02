@@ -4,19 +4,19 @@
 - **Pull request:** –
 - **Records:** DD-017, DD-018, DD-019; relies on DD-001, ADR 046
 
+This page is the `aurelius-atlas-dashboard` part of increment 0.6; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-server`](../../../aurelius-atlas-server/specs/0-6-dashboards/spec.md).
+
 ## Scope
 
 The two Apache Atlas 2.4.0 user interfaces are served by the Aurelius Atlas server where Atlas serves
 them: `dashboardv2` at `/` and `dashboardv3` at `/n/`
-([DD-001](../design-log.md#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)).
+([DD-001](../../../../specs/0-1-adopt-template/design.md#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)).
 
 - **`apps/aurelius-atlas-dashboard`**: the `dashboardv2` and `dashboardv3` source of the
   `release-2.4.0` tag, vendored unchanged apart from the patches listed in its `PATCHES.md`, with a
   `build` target that compiles both in a hardened Node container.
-- **`aurelius-atlas-server`**: serves the built dashboards next to the API; its image contains them.
-- **Proof**: the end-to-end tests load both dashboards in a browser against the image.
-
-Not in scope:
+  Not in scope:
 
 | Not delivered here                                                 | Delivered by                  |
 | ------------------------------------------------------------------ | ----------------------------- |
@@ -40,9 +40,9 @@ answer yet. That is the expected state, not a deviation.
 
 DSH-05 keeps the dashboards those of Atlas 2.4.0: the vendored source is byte-identical to the tag and
 every change is one reviewed patch
-([DD-017](../design-log.md#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)).
+([DD-017](design.md#dd-017-the-dashboards-are-vendored-unchanged-and-built-with-dart-sass-on-node-24)).
 DSH-01 to DSH-03 serve them from the API's origin, as Atlas does
-([DD-018](../design-log.md#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)).
+([DD-018](../../../aurelius-atlas-server/specs/0-6-dashboards/design.md#dd-018-the-server-serves-the-dashboards-from-the-apis-origin)).
 
 ## Java origin
 
@@ -59,8 +59,5 @@ of libsass (DD-017); the JavaScript is identical to Atlas's build.
 
 ## Acceptance
 
-- `apps/aurelius-atlas-server/tests/` — serving from a dashboard directory, API precedence and the
-  API-only mode (DSH-01 to DSH-04).
 - `apps/aurelius-atlas-dashboard/` — `PATCHES.md` and the build (DSH-05), run by `nx build
 aurelius-atlas-dashboard` and by the server image's build.
-- `apps/aurelius-atlas-server/e2e/` — both dashboards in Chromium against the image (DSH-06).

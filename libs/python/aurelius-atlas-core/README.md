@@ -3,12 +3,12 @@
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-core)
 
 Atlas stores and services for Aurelius Atlas
-([DD-002](../../../docs/architecture/conversion/design-log.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
-Since increment [1.4](../../../docs/architecture/conversion/increments/1-4-typedef-store.md): the typedef
+([DD-002](../../../specs/0-1-adopt-template/design.md#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer)).
+Since increment [1.4](specs/1-4-typedef-store/spec.md): the typedef
 store, which keeps type definitions in one Elasticsearch document and serves them from the type registry.
-Since [1.5](../../../docs/architecture/conversion/increments/1-5-builtin-models.md): Apache Atlas's built-in
+Since [1.5](specs/1-5-builtin-models/spec.md): Apache Atlas's built-in
 models and their typedef patches, loaded at start-up. Since
-[1.6](../../../docs/architecture/conversion/increments/1-6-types-rest.md): the store's reads and the search of
+[1.6](../../../apps/aurelius-atlas-server/specs/1-6-types-rest/spec.md): the store's reads and the search of
 `/v2/types/typedefs`. Since [2.2](../../../docs/architecture/conversion/increments/2-2-entity-store.md): the
 entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes
 several entities all or nothing through a journal (DD-043 to DD-048). Since
@@ -92,7 +92,7 @@ workspace = true
 ## Vendored models
 
 `aurelius_atlas_core/models/` is `addons/models` of Apache Atlas `release-2.4.0`, byte for byte
-([DD-032](../../../docs/architecture/conversion/design-log.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)).
+([DD-032](specs/1-5-builtin-models/design.md#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory)).
 To prove it, compare it with the tag:
 
 ```bash

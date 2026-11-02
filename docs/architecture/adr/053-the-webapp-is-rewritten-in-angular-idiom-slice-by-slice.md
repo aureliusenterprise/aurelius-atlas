@@ -26,7 +26,7 @@ Three properties of the target are fixed, not per-slice choices:
 
 **The Aurelius web interface keeps running untouched while this proceeds,** and the
 template's example app stays as the pattern reference until the webapp replaces it
-([DD-019](../conversion/design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)).
+(`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)).
 
 ## Context
 
@@ -35,7 +35,7 @@ Aurelius Atlas re-implements the catalogue's server in Python
 served today by two interfaces that are both unsuitable as the destination:
 
 - **The Apache Atlas dashboards** are the reference implementation's UI — vendored and
-  served at `/` and `/n/` ([DD-001](../conversion/design-log.md#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served)).
+  served at `/` and `/n/` (`DD-001` (the record: `specs/0-1-adopt-template/design.md`)).
   They are the parity yardstick, not a product Aurelius intends to maintain: Angular 8-era,
   Grunt-built, and explicitly frozen.
 - **The Aurelius web interface** is the product Aurelius does own and does want: five years
@@ -122,7 +122,7 @@ two copies of the same product, paid for legibility and reversibility.
 - **Neutral / follow-ups:** the Aurelius interface becomes the served UI at some point in this
   track, which supersedes the plan to serve the Atlas dashboards at `/`
   ([DV-64](../conversion/deviations.md)). The example app and the template's Angular toolchain
-  then leave with it ([DD-019](../conversion/design-log.md#dd-019-the-template-examples-stay-until-the-plan-is-done)).
+  then leave with it (`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)).
   The track is scheduled as increments 7.x in the
   [conversion ledger](../conversion/index.md#roadmap) and starts with the application shell
   ([7.1](../conversion/increments/7-1-webapp-shell.md)), the one slice with no dependency on the

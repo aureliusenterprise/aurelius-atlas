@@ -137,7 +137,7 @@ def run_check(config: TraceConfig) -> Findings:
     collected = [collect_project(project) for project in config.projects]
     return find_gaps(
         inventory(config),
-        read_rules(config.spec_dir, config.enforce_from),
+        read_rules(config.spec_dirs, config.enforce_from),
         (test for project_tests in collected for test in project_tests.tests),
         None if config.deviations is None else read_deviation_ids(config.deviations),
     )

@@ -216,7 +216,9 @@ Aurelius Atlas is built one **increment** at a time; the roadmap of increments i
 Atlas behaviour (ADR 051):
 
 1. **Spec first.** An increment starts with a semantics spec in
-   `docs/architecture/conversion/increments/NN-<slug>.md` (copy `template.md` there). It names
+   `<project>/specs/<increment>/spec.md` — the specs of an increment live at the root of the
+   project they belong to (for example `apps/aurelius-atlas-server/specs/2-6-<slug>/spec.md`).
+   Copy `docs/architecture/conversion/increments/template.md` as the starting shape. It names
    the endpoints in scope, states each rule with an id (`ENT-07`), the Java classes being ported,
    and any deliberate deviation from Java Atlas.
 2. **One increment per pull request**, roughly 1,500 changed lines of production code at most.
@@ -227,10 +229,38 @@ Atlas behaviour (ADR 051):
 4. **Parity before acceptance.** REST behaviour is checked by scenarios whose expected responses are
    read from the Apache Atlas 2.4.0 source and its own tests, each citing where (ADR 052). No running
    Java Atlas is used. Scenarios are reviewed as code.
-5. **Decisions are recorded where they are made.** Business-level decisions become ADRs;
-   technical ones become `DD-NNN` entries in `docs/architecture/conversion/design-log.md`.
-   Update `java-map.md` and `deviations.md` in the same PR. Never edit an accepted decision;
-   supersede it.
+5. **Decisions are recorded where they are made.** Business-level decisions become ADRs in
+   `docs/architecture/adr/`; technical ones become `DD-NNN` entries in the increment's
+   `design.md`, next to its spec. `docs/architecture/conversion/design-log.md` is the archive
+   of the entries written so far — read it, never append to it. Update `java-map.md` and
+   `deviations.md` in the same PR. Never edit an accepted decision; supersede it.
+
+### Feature workflow settings
+
+These settings point the feature-delivery agents (Planner, Coder, Spec Reviewer, Code
+Reviewer, Docs Writer) at this repository's locations and commands.
+
+- **Spec**: `<project>/specs/<increment>/spec.md`, in the project the increment belongs to.
+- **Plan**: `plan.md` next to the spec. **Design decisions**: `design.md` next to the spec —
+  that increment's `DD-NNN` entries, same entry template as the archive, numbers kept
+  consecutively across the repository.
+- **Architecture decisions**: `docs/architecture/adr/` (its `template.md` is the skeleton).
+  A new record enters as `Proposed`; only a person marks it `Accepted`; never edit an
+  accepted body — supersede it.
+- **Ledger**: `docs/architecture/conversion/java-map.md` and `deviations.md`, updated in the
+  same PR. `docs/architecture/conversion/design-log.md` is read-only history.
+- **Verification**: the levels in [Verification Levels (WIP reporting only)](#verification-levels-wip-reporting-only)
+  above; use the cheapest that covers the task. Python tests: `uv run pytest <path>` (offline)
+  or `nx run <project>:test -c ci`. Lint: `nx lint <project>`; Python types:
+  `nx typecheck <project>`. Traceability gaps: `uv run aurelius-atlas-trace check`.
+- **Docs**: the pages listed in `mkdocs.yaml` nav; validate with the three gates in
+  `docs/contributor-guide/writing-style.md`.
+
+> [!NOTE]
+> The increment specs written so far move into their projects' `specs/` trees series by
+> series (the map is `docs/architecture/conversion/spec-map.md`). Until a series moves,
+> its specs stay in `docs/architecture/conversion/increments/` and their `DD-NNN`
+> entries in `design-log.md`; new increments always use the per-project layout.
 
 <!-- nx configuration start-->
 <!-- markdownlint-disable -->
