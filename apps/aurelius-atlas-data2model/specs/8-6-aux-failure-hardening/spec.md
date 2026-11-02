@@ -4,6 +4,10 @@
 - **Pull request:** — (follows the review of 2026-10-24, DD-214)
 - **Records:** DD-214 (the review that scoped this); cites 8.1, 8.2, 8.3, 8.5, ADR 052
 
+This page is the `aurelius-atlas-data2model` part of increment 8.6; its rule table is the increment's shared
+set. The other parts are with [`aurelius-atlas-lineage-model`][part-0] and
+[`aurelius-atlas-validate-entity`][part-1] .
+
 ## Scope
 
 Test-completeness, not new semantics: the review found the aux APIs' failure
@@ -14,10 +18,6 @@ apps:
 - `data2model` — the extraction engine's view-edge selection, dynamic views,
   dynamic view names, the `archimate_hierarchical` layout, and relation-level
   id dedupe (all at 0% line coverage).
-- `lineage-model` — the transport-failure handler (`app.py`, LM-07/DV-80), the
-  data2model-side open-circuit fast-fail (LM-12), and the upstream timeout
-  (LM-13's outage class) — the app's two uncovered lines.
-- `validate-entity` — the mock's method misuse (405) and oversized body.
 - All three — **negative parity scenarios**: 400/401 stages in YAML, which the
   per-app scenario files (all happy-path today) run against both the in-process
   app and the container, per ADR 052.
@@ -88,34 +88,18 @@ Unit (naming rules per ADR 049; run `uv run pytest apps/<app>/tests`):
   `test__a_dynamic_view_name_comes_from_its_key_column` (DTM-06),
   `test__a_dynamic_view_name_without_its_key_column_is_the_legacy_nan` (DTM-06, DV-70),
   `test__the_hierarchical_layout_ranks_bottom_to_top` (DTM-06, DTM-08).
-- `apps/aurelius-atlas-lineage-model/tests/test__aurelius_atlas_lineage_model_app.py`
-  — appended tests (the `FakeUpstream` handler seam, DD-200):
-  `test__an_unreachable_atlas_is_a_502_not_a_crash` (LM-07, DV-80),
-  `test__an_unreachable_extract_is_a_502` (LM-07, DV-80),
-  `test__a_dead_extract_circuit_fast_fails_without_calling` (LM-12),
-  `test__transport_failures_open_the_circuit` (LM-13),
-  `test__a_hanging_upstream_times_out_to_a_502` (LM-07, LM-10).
-- `apps/aurelius-atlas-validate-entity/tests/test__aurelius_atlas_validate_entity_app.py`
-  — appended: `test__the_mock_route_is_post_only` (405),
-  `test__a_megabyte_body_still_answers_the_mock` (VE-01, DV-67),
-  `test__a_body_without_a_content_type_still_answers_the_mock` (VE-01, DV-67).
-
-Parity scenarios (ADR 052; run in-process by `tests/test__*_scenarios.py` and
-against the container by `e2e/*_scenarios_e2e.py`):
+  Parity scenarios (ADR 052; run in-process by `tests/test__*_scenarios.py` and
+  against the container by `e2e/*_scenarios_e2e.py`):
 
 - `apps/aurelius-atlas-data2model/scenarios/lineage/extract-rejections.scenario.yaml`
   — a malformed body (`{"data": "not rows"}`) → 400 Atlas body
   (`deviations: [DV-79]`, cites the legacy `extract` view's `ValueError`),
   and an unknown `concept_type` rule → 400 (DTM-11).
-- `apps/aurelius-atlas-lineage-model/scenarios/lineage/graph-rejections.scenario.yaml`
-  — a missing `guid` → 400 (`deviations: [DV-73]`, cites the legacy guid
-  `None` crash), a `depth=0` → 400 (DV-73), a `direction=SIDEWAYS` → 400.
-- `apps/aurelius-atlas-validate-entity/scenarios/validation/mock-rejections.scenario.yaml`
-  — the malformed-body stage → 200 mock (`deviations: [DV-67]`, VE-01's
-  other half as a wire contract).
+  Gates: `uv run aurelius-atlas-trace check` green (the appended tests name the
+  functions they already name — no new public functions land; check the gap
+  count does not grow), `nx test <app> -c ci` green for the three apps, the two
+  new scenario sets pass in-process and in e2e, Sonar's coverage of
+  `extract.py` / `app.py` rises (no new-code dip).
 
-Gates: `uv run aurelius-atlas-trace check` green (the appended tests name the
-functions they already name — no new public functions land; check the gap
-count does not grow), `nx test <app> -c ci` green for the three apps, the two
-new scenario sets pass in-process and in e2e, Sonar's coverage of
-`extract.py` / `app.py` rises (no new-code dip).
+[part-0]: ../../../aurelius-atlas-lineage-model/specs/8-6-aux-failure-hardening/spec.md
+[part-1]: ../../../aurelius-atlas-validate-entity/specs/8-6-aux-failure-hardening/spec.md

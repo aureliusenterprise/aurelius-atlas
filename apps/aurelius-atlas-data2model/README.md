@@ -1,7 +1,7 @@
 # aurelius-atlas-data2model
 
 The Aurelius Atlas data2model API: tabular data plus element/relation/view rules in,
-an [archimate3](../../docs/architecture/conversion/increments/8-1-data2model-api.md)
+an [archimate3](specs/8-1-data2model-api/spec.md)
 model string out — the model-extraction API the legacy lineage graph drew on, ported
 from the Aurelius `m4i-data2model` service
 ([ADR 055](../../docs/architecture/adr/055-the-lineage-chain-is-a-named-data-surface.md)).

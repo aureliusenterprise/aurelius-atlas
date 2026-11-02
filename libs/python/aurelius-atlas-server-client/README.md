@@ -30,7 +30,7 @@ and `libs/python/AGENTS.md`.
 - The typedef bodies are `aurelius-atlas-model`'s, reused whole (CL-10) — never
   fork them here.
 - The rules it keeps (CL-01..CL-05, CL-10..CL-13) are specified by the 8.4 spec
-  (`docs/architecture/conversion/increments/8-4-api-client-libraries.md`).
+  (`libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/spec.md`).
 
 ## Conventions
 

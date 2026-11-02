@@ -34,6 +34,10 @@ Four libraries, one per API:
 | `libs/python/aurelius-atlas-lineage-model-client`   | `GET /?guid=&depth=&direction=` of 8.2                                                                          | `LineageModelClient`   |
 | `libs/python/aurelius-atlas-validate-entity-client` | `POST /` of 8.3: the governance-quality document out                                                            | `ValidateEntityClient` |
 
+This page is the `aurelius-atlas-validate-entity-client` part of increment 8.4; its rule table is the
+increment's shared set. The other parts are with [`aurelius-atlas-server-client`][part-0] and
+[`aurelius-atlas-data2model-client`][part-1] and [`aurelius-atlas-lineage-model-client`][part-2] .
+
 ## Scope
 
 In scope:
@@ -54,10 +58,6 @@ Out of scope:
 
 - `aurelius-atlas-fastapi-example` — a template demo, removed by ADR 050; it keeps
   its in-app `Envelope`/`PaginatedResponse` models.
-- `AtlasClient.get_lineage` — the **method** lands with the server's lineage feed
-  (5.1), spec-first; only the lineage **models** move here, because 8.2 consumes them.
-- Entity/search/discovery server routes (increments 2.x–6.x) — each adds its client
-  methods and DTOs as it ships the route, the pattern this increment sets.
 - The Angular data-access lib (stays hand-mirrored) and a code generator (openapi →
   pydantic): hand-written, reviewable contracts, parity-guarded (ADR 052).
 - Real governance validation (DV-67) and the auth/otel libs (8.0).
@@ -123,13 +123,14 @@ increment adds no `DV-` rows because it changes no wire behaviour.
 ## Data contracts
 
 - `aurelius_atlas_server_client`: `AtlasClient(http, token)` (`http` an externally built `httpx.AsyncClient`),
-  `.admin` (`version() -> AtlasVersion`, `status() -> AtlasStatus`, `session() -> AtlasSessionInfo`,
-  `readiness() -> str`, `liveness() -> str`), `.types` (`typedef_by_name(name) -> AtlasBaseTypeDef`,
-  `typedef_by_guid(guid)`, `typedefs(params) -> AtlasTypesDef`, `typedef_headers(params) -> list[AtlasTypeDefHeader]`,
-  `enumdef_by_name(name) -> AtlasEnumDef` … `businessmetadatadef_by_guid(guid)`,
-  `create_typedefs(AtlasTypesDef) -> AtlasTypesDef`, `update_typedefs(...)`, `delete_typedefs(...) -> None`,
-  `delete_typedef_by_name(name) -> None`), `lineage.LineageInfo` (+`EntityHeaderLite`, `LineageRelation`, `Direction`),
-  `models.AtlasErrorInfo`, `AtlasClientError`.
+  `.admin` ( `version() -> AtlasVersion` , `status() -> AtlasStatus` , `session() -> AtlasSessionInfo` ,
+  `readiness() -> str` , `liveness() -> str` ), `.types` ( `typedef_by_name(name) -> AtlasBaseTypeDef` ,
+  `typedef_by_guid(guid)` , `typedefs(params) -> AtlasTypesDef` ,
+  `typedef_headers(params) -> list[AtlasTypeDefHeader]` , `enumdef_by_name(name) -> AtlasEnumDef` …
+  `businessmetadatadef_by_guid(guid)` , `create_typedefs(AtlasTypesDef) -> AtlasTypesDef` ,
+  `update_typedefs(...)` , `delete_typedefs(...) -> None` , `delete_typedef_by_name(name) -> None` ),
+  `lineage.LineageInfo` (+ `EntityHeaderLite` , `LineageRelation` , `Direction` ), `models.AtlasErrorInfo` ,
+  `AtlasClientError` .
 - `aurelius_atlas_data2model_client`: the rule-model family (CL-20) at the package root,
   `ExtractionResponse`, `Data2ModelClient(http, token).extract(request) -> ExtractionResponse`,
   `Data2ModelClientError`.
@@ -140,38 +141,40 @@ increment adds no `DV-` rows because it changes no wire behaviour.
   `ValidateEntityClient(http, token).validate(entity: Mapping) -> ValidationResponse`,
   `ValidateEntityClientError`.
 - Apps: `aurelius_atlas_data2model.rules` re-exports its family from the client lib (a
-  thin compatibility module, so the app's docstrings keep citing DTM rules); `aurelius_atlas_lineage_model.lineage`
-  keeps `PROCESS_TYPES`, `LINEAGE_RULES`, `flatten_relations`, `UpstreamError` and imports the
-  models from `aurelius_atlas_server_client.lineage`; `create_app(settings, auth=None, atlas=None, d2m=None)`.
+  thin compatibility module, so the app's docstrings keep citing DTM rules);
+  `aurelius_atlas_lineage_model.lineage` keeps `PROCESS_TYPES` , `LINEAGE_RULES` , `flatten_relations` ,
+  `UpstreamError` and imports the models from `aurelius_atlas_server_client.lineage` ;
+  `create_app(settings, auth=None, atlas=None, d2m=None)` .
 
 ## Acceptance
 
 - Unit (per lib, every public function named by `covers` with a CL id; basenames
   unique across the workspace, the pytest convention):
-  `libs/python/aurelius-atlas-server-client/tests/test__aurelius_atlas_server_client_models.py`
-  (CL-10), `test__aurelius_atlas_server_client_lineage.py` (CL-12),
-  `test__aurelius_atlas_server_client_client.py` (CL-01..05, CL-11),
-  `test__aurelius_atlas_server_client_search.py` (CL-13),
+  `libs/python/aurelius-atlas-server-client/tests/test__aurelius_atlas_server_client_models.py` (CL-10),
+  `test__aurelius_atlas_server_client_lineage.py` (CL-12), `test__aurelius_atlas_server_client_client.py`
+  (CL-01..05, CL-11), `test__aurelius_atlas_server_client_search.py` (CL-13),
   `libs/python/aurelius-atlas-data2model-client/tests/test__aurelius_atlas_data2model_client_models.py`
   (CL-20), `test__aurelius_atlas_data2model_client_client.py` (CL-01..04, CL-21),
   `libs/python/aurelius-atlas-lineage-model-client/tests/test__aurelius_atlas_lineage_model_client_models.py`
-  (CL-30), `test__aurelius_atlas_lineage_model_client_client.py`,
+  (CL-30), `test__aurelius_atlas_lineage_model_client_client.py` ,
   `libs/python/aurelius-atlas-validate-entity-client/tests/test__aurelius_atlas_validate_entity_client_models.py`
-  (CL-40), `test__aurelius_atlas_validate_entity_client_client.py`;
-  CL-06/CL-07/CL-50 are enforced by the apps' suites (importing the
-  lib's models) and the client suites' transport fakes.
+  (CL-40), `test__aurelius_atlas_validate_entity_client_client.py` ; CL-06/CL-07/CL-50 are enforced by the
+  apps' suites (importing the lib's models) and the client suites' transport fakes.
 - The apps' suites stay green unchanged in behaviour: the 8.1/8.2/8.3 unit suites
-  prove no wire change. The e2e suites (`nx e2e aurelius-atlas-{data2model,lineage-model,validate-entity,server}`)
-  drive the containers **through the client libraries** — each conftest's `api`
-  fixture wraps a CA-verified `httpx.AsyncClient` in the app's client (CL-21, CL-30,
-  CL-40, CL-11; the server's `test__aurelius_atlas_server_search_e2e.py` carries
-  CL-13), so the libraries are proven against the real apps, not only a fake
-  transport. The raw-httpx fixtures stay where the library has no route: the parity
-  scenarios (`run_scenario` takes `httpx.AsyncClient`), the auth-gate 401s, liveness,
-  and the malformed-body call of VE-01.
+  prove no wire change. The e2e suites (
+  `nx e2e aurelius-atlas-{data2model,lineage-model,validate-entity,server}` ) drive the containers **through
+  the client libraries** — each conftest's `api` fixture wraps a CA-verified `httpx.AsyncClient` in the app's
+  client (CL-21, CL-30, CL-40, CL-11; the server's `test__aurelius_atlas_server_search_e2e.py` carries CL-13),
+  so the libraries are proven against the real apps, not only a fake transport. The raw-httpx fixtures stay
+  where the library has no route: the parity scenarios ( `run_scenario` takes `httpx.AsyncClient` ), the
+  auth-gate 401s, liveness, and the malformed-body call of VE-01.
 - `uv run aurelius-atlas-trace check` names every public function (CL ids resolve).
 - Parity: none added — no wire behaviour changes; the existing server scenarios
   (`scenarios/*.scenario.yaml`) and 8.1–8.3 scenarios are the guard.
 
 Run: `uv run pytest libs/python/aurelius-atlas-{server,data2model,lineage,validate-entity}*-client*`
 and the app suites; CI gate `nx affected -t test e2e -c ci`.
+
+[part-0]: ../../../aurelius-atlas-server-client/specs/8-4-api-client-libraries/spec.md
+[part-1]: ../../../aurelius-atlas-data2model-client/specs/8-4-api-client-libraries/spec.md
+[part-2]: ../../../aurelius-atlas-lineage-model-client/specs/8-4-api-client-libraries/spec.md

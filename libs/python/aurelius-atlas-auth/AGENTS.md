@@ -17,7 +17,7 @@ rules live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
 - The app owns the lifecycle: build `KeycloakAuth(config)` in `create_app`,
   call `auth.close()` in the lifespan's shutdown.
 - The rules it keeps (AUX-01..AUX-05) are specified by the 8.0 spec
-  (`docs/architecture/conversion/increments/8-0-auxiliary-api-foundation.md`).
+  (`libs/python/aurelius-atlas-auth/specs/8-0-auxiliary-api-foundation/spec.md`).
 - A service that gates writes needs its write role assigned through Keycloak:
   a realm role, or a client role on the service's own client —
   `dev/keycloak/import/master.json` carries the dev users (see the

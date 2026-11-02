@@ -9,11 +9,11 @@ legacy lineage graph drew, ported from the Aurelius `m4i-lineage-model` service
 Introduced by increment 8.2. The app is a proxy with a flattener: it calls the
 Atlas `v2/lineage` feed and the 8.1 data2model API, forwarding the caller's
 bearer token to both, and answers the extraction verbatim
-([spec](../../docs/architecture/conversion/increments/8-2-lineage-model-api.md)).
+([spec](specs/8-2-lineage-model-api/spec.md)).
 Each upstream is guarded by its own circuit breaker (increment 8.5, DV-77):
 repeated outages open the circuit and the 502 arrives fast, without calling the
 upstream, until a half-open trial closes it again
-([spec](../../docs/architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md)).
+([spec](specs/8-5-lineage-model-circuit-breakers/spec.md)).
 The code follows the workspace's example-app layout (DD-207, DD-208): the
 collaborators built by `providers/`, the endpoints in `routes/` (the lineage
 route composes the fetch → flatten → extract flow), and a thin composition
