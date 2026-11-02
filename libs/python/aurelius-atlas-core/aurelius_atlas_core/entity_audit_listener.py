@@ -1,10 +1,12 @@
 """``EntityAuditListener``: an audit event for each entity, classification and term change (AUD-03 to AUD-05, CAU-01).
 
 Atlas's ``EntityAuditListenerV2``: ``onEntitiesAdded``, ``onEntitiesUpdated``, ``onEntitiesDeleted``,
-``onEntitiesPurged``, ``getAuditEventDetail``, the classification methods, ``onTermAdded`` and ``onTermDeleted``.
+``onEntitiesPurged``, ``getAuditEventDetail``, the classification methods, ``onTermAdded``, ``onTermDeleted``,
+``onLabelsAdded``, ``onLabelsDeleted`` and ``onBusinessAttributesUpdated``.
 """
 
 from collections.abc import Callable, Mapping, Sequence
+from typing import Any
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
@@ -24,6 +26,9 @@ ADDED = {True: "Added classification: ", False: "Added propagated classification
 DELETED = {True: "Deleted classification: ", False: "Deleted propagated classification: "}
 UPDATED_OWN = "Updated classification: "
 UPDATED_PROPAGATED = "Updated propagated classification: "
+ADDED_LABELS = "Added labels: "
+DELETED_LABELS = "Deleted labels: "
+UPDATED_BUSINESS_ATTRIBUTES = "Updated business attributes: "
 """The details' prefixes of classification events, by whether the entity is the classification's own (CAU-01)."""
 
 _PREFIXES = {
@@ -132,6 +137,35 @@ class EntityAuditListener:
         """``onTermDeleted``: ``TERM_DELETE`` on each entity, ``Deleted term: `` and the audit string (GTA-04)."""
         details = _PREFIXES[EntityAuditActionV2.TERM_DELETE] + term_audit_string(term)
         await self._put_events([(guid, EntityAuditActionV2.TERM_DELETE, details) for guid in guids], user)
+
+    async def on_labels_added(self, guid: str, labels: Sequence[str], *, user: str | None) -> None:
+        """``onLabelsAdded``: ``LABEL_ADD``, ``Added labels: `` and the labels apart by a space (LBL-05)."""
+        if labels:
+            await self._put_events([(guid, EntityAuditActionV2.LABEL_ADD, ADDED_LABELS + " ".join(labels))], user)
+
+    async def on_labels_deleted(self, guid: str, labels: Sequence[str], *, user: str | None) -> None:
+        """``onLabelsDeleted``: ``LABEL_DELETE``, ``Deleted labels: `` and the labels apart by a space (LBL-05)."""
+        if labels:
+            await self._put_events([(guid, EntityAuditActionV2.LABEL_DELETE, DELETED_LABELS + " ".join(labels))], user)
+
+    async def on_business_attributes_updated(
+        self, guid: str, updated: Mapping[str, Mapping[str, Any]], *, user: str | None
+    ) -> None:
+        """``onBusinessAttributesUpdated``: a ``BUSINESS_ATTRIBUTE_UPDATE`` per business metadata, its name and the
+        values given as a struct's JSON (BMD-06).
+        """  # noqa: D205 - one sentence
+        await self._put_events(
+            [
+                (
+                    guid,
+                    EntityAuditActionV2.BUSINESS_ATTRIBUTE_UPDATE,
+                    UPDATED_BUSINESS_ATTRIBUTES
+                    + codec.dumps({"typeName": name, "attributes": dict(attributes)}).decode(),
+                )
+                for name, attributes in updated.items()
+            ],
+            user,
+        )
 
     async def _put(
         self, items: Sequence[tuple[AtlasEntity, EntityAuditActionV2, str | None]], user: str | None
