@@ -8,9 +8,9 @@
 
 The server's own attack surface, closed at the edges a pentest named (H3, M5, L1):
 
-- **TLS is a start-up requirement**: the certificate/key pair joins the settings that have no default, so the server can never serve plaintext (SRV-06, [DD-234](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-234--tls-material-is-a-required-setting-the-server-never-serves-plaintext>)); the image's healthcheck speaks HTTPS accordingly.
-- **A 5xx answer is opaque**: no exception text on the wire, a trace-id request id on the body and a header for support correlation (SRV-07, [DD-235](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-235--a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid>)).
-- **Security response headers** on every answer, split API/dashboard, HSTS with a dev escape (SRV-08, [DD-236](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-236--security-response-headers-are-a-pure-asgi-middleware-split-on-api-path>)).
+- **TLS is a start-up requirement**: the certificate/key pair joins the settings that have no default, so the server can never serve plaintext (SRV-06, [DD-234](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext>)); the image's healthcheck speaks HTTPS accordingly.
+- **A 5xx answer is opaque**: no exception text on the wire, a trace-id request id on the body and a header for support correlation (SRV-07, [DD-235](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid>)).
+- **Security response headers** on every answer, split API/dashboard, HSTS with a dev escape (SRV-08, [DD-236](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path>)).
 
 Not in scope:
 

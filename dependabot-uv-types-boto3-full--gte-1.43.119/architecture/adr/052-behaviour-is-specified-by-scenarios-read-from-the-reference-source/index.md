@@ -54,7 +54,7 @@ Any acceptable arrangement must deliver:
 
 ### Watch
 
-- Current reference: the `release-2.4.0` tag of Apache Atlas ([DD-001](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/conversion/design-log/#dd-001-reference-is-apache-atlas-240-and-both-dashboards-are-served>)).
+- Current reference: the `release-2.4.0` tag of Apache Atlas (`DD-001` (the record: `specs/0-1-adopt-template/design.md`)).
 - The scenario format, runner, and comparison are test tooling; results appear in the published test report ([049](<https://aureliusenterprise.github.io/dependabot-uv-types-boto3-full--gte-1.43.119/architecture/adr/049-every-function-and-rule-is-traceable-to-a-test/index.md>)).
 - Shadowing production traffic of an existing Atlas remains possible later as a release check for a migrating customer.
 

@@ -1063,7 +1063,7 @@ get_session(request: Request) -> dict[str, Any]
 
 The user interface settings and the user of this session (ADM-05, AUT-09).
 
-The CSRF token is the session's, made on first ask; a request without a session gets a new one. The entity permissions stay false until 6.2 (DV-105). `atlas.tasks.enabled` is the server's `tasks_enabled` setting (DD-081).
+The CSRF token is the session's, made on first ask; a request without a session gets a new one. The entity permissions are the user's (AUZ-06). `atlas.tasks.enabled` is the server's `tasks_enabled` setting (DD-081).
 
 ### get\_status
 
