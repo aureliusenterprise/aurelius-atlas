@@ -1,0 +1,92 @@
+name: An export that finds no entity of its type with the value answers nothing when asked to
+# The ZIP an export answers is binary, which scenarios do not compare; its entries are checked by the core and
+# server tests. This stage runs the lookup of the starting entities on Elasticsearch.
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#export
+    - repository/src/main/java/org/apache/atlas/repository/impexp/StartEntityFetchByExportRequest.java#get
+    - repository/src/main/java/org/apache/atlas/repository/impexp/ZipSink.java
+rules: [EXP-01, EXP-03]
+covers: [aurelius_atlas_server.routes.admin.export]
+stages:
+    - name: create a type, named for this run (DD-055)
+      request:
+          method: POST
+          url: /api/atlas/v2/types/typedefs
+          json:
+              entityDefs:
+                  - name: scenario_export_{run}
+                    attributeDefs:
+                        - { name: qualifiedName, typeName: string, isUnique: true, isIndexable: true }
+      response:
+          status: 200
+          json:
+              enumDefs: []
+              structDefs: []
+              classificationDefs: []
+              entityDefs:
+                  - guid: a random UUID
+                    createTime: 0
+                    updateTime: 0
+                    version: 1
+                    name: scenario_export_{run}
+                    description: scenario_export_{run}
+                    typeVersion: "1.0"
+                    attributeDefs:
+                        - name: qualifiedName
+                          typeName: string
+                          isOptional: false
+                          cardinality: SINGLE
+                          valuesMinCount: 1
+                          valuesMaxCount: 1
+                          isUnique: true
+                          isIndexable: true
+                          includeInNotification: false
+                          searchWeight: -1
+                    superTypes: []
+                    subTypes: []
+                    relationshipAttributeDefs: []
+                    businessAttributeDefs: {}
+                    category: ENTITY
+                    createdBy: "{user}"
+                    updatedBy: "{user}"
+              relationshipDefs: []
+              businessMetadataDefs: []
+          volatile:
+              - $.entityDefs[*].guid
+              - $.entityDefs[*].createTime
+              - $.entityDefs[*].updateTime
+    - name: create an entity of it
+      request:
+          method: POST
+          url: /api/atlas/v2/entity
+          json:
+              entity: { typeName: "scenario_export_{run}", guid: "-1", attributes: { qualifiedName: "ex_{run}" } }
+      response:
+          status: 200
+          json:
+              mutatedEntities:
+                  CREATE:
+                      - typeName: scenario_export_{run}
+                        attributes: { qualifiedName: "ex_{run}" }
+                        guid: a new GUID
+                        status: ACTIVE
+                        displayText: ex_{run}
+                        classificationNames: []
+                        classifications: []
+                        meaningNames: []
+                        meanings: []
+                        isIncomplete: false
+                        labels: []
+              guidAssignments: { "-1": a new GUID }
+          volatile:
+              - $.mutatedEntities.CREATE[*].guid
+              - $.guidAssignments['-1']
+    - name: an export that finds nothing, asked to answer nothing then
+      request:
+          method: POST
+          url: /api/atlas/admin/export
+          json:
+              itemsToExport: [{ typeName: "scenario_export_{run}", uniqueAttributes: { qualifiedName: "none_{run}" } }]
+              options: { omitZipResponseForEmptyExport: true }
+      response:
+          status: 204

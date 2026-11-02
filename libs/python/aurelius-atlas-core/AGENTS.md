@@ -32,6 +32,10 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   `AtlasEntityStoreV2` and `EntityGraphMapper`; `stored_classification.py` holds the stored instance (DD-070)
 - `aurelius_atlas_core/entity_labels.py` — `EntityLabels`: the label methods of `AtlasEntityStoreV2` and
   `EntityGraphMapper`; labels live on the stored entity, and their changes reach the audit through the notifier
+- `aurelius_atlas_core/export_service.py` — `ExportService`: an export's ZIP (`zip_sink.py`), its starting
+  entities (`start_entity_fetch_by_export_request.py`), what they reach (`entities_extractor.py` and its two
+  strategies) and the types they use (`export_type_processor.py`); edges are stored relationships and references
+  (DD-303)
 - `aurelius_atlas_core/entity_business_metadata.py` — `EntityBusinessMetadata`: the business attribute
   methods of `AtlasEntityStoreV2` and `EntityGraphMapper`; values live in the entity's `attributes` under
   `<bm>.<attr>` (DD-302)

@@ -75,6 +75,9 @@ class ServerSettings(BaseSettings):
     task_poll_seconds: float = Field(default=10.0, gt=0)
     """How often the worker looks for tasks other processes recorded or left behind (DD-080)."""
 
+    cluster_name: str = "default"
+    """The cluster an export says it comes from: ``atlas.metadata.namespace``, else ``atlas.cluster.name`` (EXP-06)."""
+
     lineage_on_demand_enabled: bool = False
     """Whether ``POST v2/lineage/{guid}`` answers lineage on demand: ``atlas.lineage.on.demand.enabled`` (LIN-06)."""
 
