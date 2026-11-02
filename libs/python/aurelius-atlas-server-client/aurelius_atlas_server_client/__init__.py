@@ -15,6 +15,7 @@ from aurelius_atlas_server_client.client import (
     GlossaryApi,
     GlossarySort,
     LineageApi,
+    RelationshipApi,
     SearchApi,
     TokenSource,
 )
@@ -48,6 +49,7 @@ __all__ = [
     "LineageApi",
     "LineageInfo",
     "LineageRelation",
+    "RelationshipApi",
     "SearchApi",
     "TokenSource",
 ]

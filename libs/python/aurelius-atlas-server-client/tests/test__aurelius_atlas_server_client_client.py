@@ -127,10 +127,13 @@ async def test__get_lineage_raises_with_the_status_of_the_answer(recorder: Recor
     "aurelius_atlas_server_client.client.AdminApi.session",
     "aurelius_atlas_server_client.client.AdminApi.liveness",
     "aurelius_atlas_server_client.client.AdminApi.readiness",
-    rules=["CL-11", "CL-10", "CL-03"],
+    rules=["CL-11", "CL-10", "CL-03", "CLW-07"],
 )
 async def test__the_admin_resource_answers_the_server_routes(recorder: Recorder) -> None:
-    """The five admin calls, their paths mirroring ``routes/admin.py``, bearer on each (ADM-01..ADM-05)."""
+    """The five admin calls, their paths mirroring ``routes/admin.py``, bearer on each (ADM-01..ADM-05).
+
+    8.11's CLW-07: these five stay as 8.4 shipped them while the seven writes join the class.
+    """
     recorder.answer(200, VERSION)
     recorder.answer(200, {"Status": "ACTIVE"})
     recorder.answer(200, {"userName": "analyst", "groups": [], "timezones": ["UTC"], "_csrfToken": "t"})

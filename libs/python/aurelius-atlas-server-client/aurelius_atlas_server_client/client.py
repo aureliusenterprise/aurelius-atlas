@@ -15,14 +15,18 @@ propagates as ``httpx``'s own error — mapping it to an HTTP status is the app'
 (LM-07's DV-80), not the client's (CL-05).
 
 The paths mirror the server's routes verbatim: ``routes/admin.py`` under
-``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, the
+``/api/atlas/admin`` (the 8.4 reads plus the 8.11 writes, CLW-01..CLW-07),
+``routes/types.py`` under ``/api/atlas/v2/types``, the
 entity routes of ``routes/entity.py`` under ``/api/atlas/v2/entity``
 (CLE-01..CLE-12, 8.9), the glossary routes of ``routes/glossary.py`` under
-``/api/atlas/v2/glossary`` (CLG-01..CLG-09, 8.10), the discovery routes of
+``/api/atlas/v2/glossary`` (CLG-01..CLG-09, 8.10), the relationship routes of
+``routes/relationship.py`` under ``/api/atlas/v2/relationship``
+(CLR-01..CLR-04, 8.11), the discovery routes of
 ``routes/discovery.py`` under ``/api/atlas/v2/search`` (CL-13), and the lineage
 feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
 """
 
+import json
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
@@ -47,6 +51,11 @@ from aurelius_atlas_model.glossary import (
     AtlasRelatedCategoryHeader,
     AtlasRelatedTermHeader,
 )
+from aurelius_atlas_model.impexp import (
+    AtlasExportRequest,
+    AtlasImportRequest,
+    AtlasImportResult,
+)
 from aurelius_atlas_model.instance import (
     AtlasClassification,
     AtlasClassifications,
@@ -55,10 +64,14 @@ from aurelius_atlas_model.instance import (
     AtlasEntityHeaders,
     AtlasEntityWithExtInfo,
     AtlasRelatedObjectId,
+    AtlasRelationship,
+    AtlasRelationshipWithExtInfo,
     ClassificationAssociateRequest,
     EntityMutationResponse,
 )
 from aurelius_atlas_model.lineage import LineageOnDemandConstraints
+from aurelius_atlas_model.patches import AtlasPatch
+from aurelius_atlas_model.tasks import AtlasTask
 from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
     AtlasBusinessMetadataDef,
@@ -192,12 +205,13 @@ class _Api:
         *,
         params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
         body: Any = None,  # noqa: ANN401 - a JSON request body: a model's to_json(), or any JSON value (EWR-15)
-        files: Mapping[str, tuple[str, bytes]] | None = None,
+        files: Mapping[str, tuple[str | None, str | bytes]] | None = None,
     ) -> httpx.Response:
         """One request with the bearer header; a non-2xx answer raises (CL-03..CL-05).
 
         ``files`` sends ``multipart/form-data`` instead of JSON (CL-64) — the two
-        are never given together.
+        are never given together. A part name mapped to a ``(None, text)`` pair
+        travels as a plain form field, no filename (DD-313).
         """
         response = await self.http.request(
             method, path, params=params, json=body, files=files, headers=_bearer(self.token)
@@ -246,6 +260,74 @@ class AdminApi:
         An ``AtlasClientError`` when the server is not ready (ADM-04).
         """
         return (await self._api.request("GET", f"{ADMIN_ROOT}/readiness")).text
+
+    async def patches(self) -> list[AtlasPatch]:
+        """``GET /patches``: the typedef patch records (ENS-10, CLW-01).
+
+        Unwrapped from the server's ``{"patches": [...]}`` envelope.
+        """
+        answer = await self._api.json("GET", f"{ADMIN_ROOT}/patches")
+        return [AtlasPatch.model_validate(patch) for patch in answer["patches"]]
+
+    async def purge(self, guids: Sequence[str]) -> EntityMutationResponse:
+        """``PUT /purge``: the ``DELETED`` entities of the guid array, removed (EDL-01..EDL-03, CLW-02).
+
+        An empty list still sends ``[]``: the server reads a missing or
+        non-array body as ``BAD_REQUEST`` (DV-10), never as "purge nothing".
+        """
+        return EntityMutationResponse.model_validate(
+            await self._api.json("PUT", f"{ADMIN_ROOT}/purge", body=list(guids))
+        )
+
+    async def export(self, request: AtlasExportRequest | None = None) -> tuple[bytes, str]:
+        """``POST /export``: the export ZIP, as bytes and content type (EXP-01..EXP-06, CLW-03, DD-310).
+
+        No request is the empty one the server builds from a missing body
+        (DV-120) — the client sends no options it was not given. The 204 the
+        server answers for an empty export asked to omit its ZIP
+        (EXP-05) returns ``(b"", "")``.
+        """
+        response = await self._api.request(
+            "POST", f"{ADMIN_ROOT}/export", body=None if request is None else request.to_json()
+        )
+        return response.content, response.headers.get("content-type", "")
+
+    async def import_data(self, content: bytes, request: AtlasImportRequest | None = None) -> AtlasImportResult:
+        """``POST /import``: the export ZIP imported as the request asks (IMS-01..IMS-05, CLW-04, DD-310).
+
+        The ``data`` part carries the bytes; the ``request`` part, when given,
+        is a plain text field holding the request as JSON (DD-313) — never a
+        file path (CL-64).
+        """
+        files: dict[str, tuple[str | None, str | bytes]] = {"data": ("export.zip", content)}
+        if request is not None:
+            files["request"] = (None, json.dumps(request.to_json()))
+        answer = await self._api.request("POST", f"{ADMIN_ROOT}/import", files=files)
+        return AtlasImportResult.model_validate(answer.json())
+
+    async def import_file(self, request: AtlasImportRequest) -> AtlasImportResult:
+        """``POST /importfile``: the ZIP named by the request's ``fileName`` option (IMS-06, DV-125, CLW-05).
+
+        The server opens the name from its import folder; the client reads no
+        folder of its own (DD-310) — the name travels as the request's option.
+        """
+        return AtlasImportResult.model_validate(
+            await self._api.json("POST", f"{ADMIN_ROOT}/importfile", body=request.to_json())
+        )
+
+    async def tasks(self, guids: Sequence[str] | None = None) -> list[AtlasTask]:
+        """``GET /tasks``: the tasks of the guids given, or every task (TSK-06, CLW-06).
+
+        Each guid travels as a repeated ``guids`` parameter; none given sends
+        no parameter, which the server reads as "every task".
+        """
+        params = [("guids", guid) for guid in guids] if guids else None
+        answer = await self._api.json("GET", f"{ADMIN_ROOT}/tasks", params=params)
+        return [AtlasTask.model_validate(task) for task in answer]
+
+    async def delete_tasks(self, guids: Sequence[str]) -> None:
+        """``DELETE /tasks``: the tasks of the guids given, removed (TSK-06, CLW-06). Answers 204."""
+        await self._api.request("DELETE", f"{ADMIN_ROOT}/tasks", params=[("guids", guid) for guid in guids])
 
 
 class TypesApi:
@@ -1090,6 +1172,51 @@ class GlossaryApi:
         await self._api.request("DELETE", f"{GLOSSARY_ROOT}/{glossary_guid}")
 
 
+class RelationshipApi:
+    """The relationship resource of an :class:`AtlasClient` (CLR-01..CLR-04): ``client.relationship``.
+
+    The paths mirror ``routes/relationship.py`` (4 routes); the bodies are
+    ``aurelius-atlas-model``'s, reused whole (DD-309). The ends of a
+    relationship are never checked here — the server answers (REL-04..REL-07).
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def create(self, relationship: AtlasRelationship) -> AtlasRelationship:
+        """``POST ""`: a new relationship between two entities (REL-04, REL-05, CLR-03)."""
+        return AtlasRelationship.model_validate(
+            await self._api.json("POST", RELATIONSHIP_ROOT, body=relationship.to_json())
+        )
+
+    async def update(self, relationship: AtlasRelationship) -> AtlasRelationship:
+        """``PUT ""`: the relationship's tag propagation and attributes (REL-07, CLR-03)."""
+        return AtlasRelationship.model_validate(
+            await self._api.json("PUT", RELATIONSHIP_ROOT, body=relationship.to_json())
+        )
+
+    async def get(self, guid: str, *, extended_info: bool = False) -> AtlasRelationshipWithExtInfo:
+        """``GET /guid/{guid}``: the relationship (REL-03, REL-06, CLR-02).
+
+        ``extended_info`` sends ``extendedInfo=true`` and the answer carries the
+        ends' headers in ``referred_entities``; without it the server answers
+        the same model holding only ``relationship``, and the client sends no
+        parameter at all (the Java default).
+        """
+        answer = await self._api.json(
+            "GET", f"{RELATIONSHIP_ROOT}/guid/{guid}", params=_present(extendedInfo=extended_info)
+        )
+        return AtlasRelationshipWithExtInfo.model_validate(answer)
+
+    async def delete(self, guid: str, *, delete_type: DeleteType | None = None) -> None:
+        """``DELETE /guid/{guid}``: soft or hard, as asked (REL-08, EDL-04, CLR-04). Answers 204.
+
+        An absent ``delete_type`` sends no parameter: the server applies its
+        own ``atlas.purge.entity.delete.strategy`` (as CLE-04).
+        """
+        await self._api.request("DELETE", f"{RELATIONSHIP_ROOT}/guid/{guid}", params=_present(deleteType=delete_type))
+
+
 class LineageApi:
     """The lineage resource of an :class:`AtlasClient` (CL-61..CL-63): ``client.lineage``.
 
@@ -1213,6 +1340,7 @@ class AtlasClient:
         self.types = TypesApi(api)
         self.entity = EntityApi(api)
         self.glossary = GlossaryApi(api)
+        self.relationship = RelationshipApi(api)
         self.search = SearchApi(api)
         self.lineage = LineageApi(api)
 

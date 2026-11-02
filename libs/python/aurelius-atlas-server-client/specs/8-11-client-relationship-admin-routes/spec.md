@@ -1,9 +1,10 @@
 # 8.11 Client route coverage — relationship and the admin writes
 
-- **Status:** planned
-- **Pull request:** —
+- **Status:** in progress
+- **Pull request:** to follow
 - **Records:** DD-307 (the per-module live-check spec), DD-309 (bodies reused from
-  `aurelius-atlas-model`), DD-310 (file routes carry raw bytes); cites 8.4 (the
+  `aurelius-atlas-model`), DD-310 (file routes carry raw bytes), DD-313 (the
+  import's `request` part is a form field, not a file); cites 8.4 (the
   five covered admin routes, CL-01..CL-08), 8.8 (CL-60..CL-65), and the server's
   rules REL, EDL, EDL-purge, EXP, IMS, TSK, ENS.
 
@@ -43,31 +44,32 @@ export and the export/import audits (server 6.3c, planned).
 
 ### The coverage matrix
 
-`routes/relationship.py` (4 routes):
+`routes/relationship.py` (4 routes). Open means no client method yet; all 11
+rows of both matrices are covered as of 8.11.
 
-| Method and path       | Server function | Client method | Rule   |
-| --------------------- | --------------- | ------------- | ------ |
-| `POST ""`             | `create`        | `create`      | CLR-03 |
-| `PUT ""`              | `update`        | `update`      | CLR-03 |
-| `GET /guid/{guid}`    | `getById`       | `get`         | CLR-02 |
-| `DELETE /guid/{guid}` | `deleteById`    | `delete`      | CLR-04 |
+| Method and path       | Server function | Client method      | Rule   |
+| --------------------- | --------------- | ------------------ | ------ |
+| `POST ""`             | `create`        | `create` (covered) | CLR-03 |
+| `PUT ""`              | `update`        | `update` (covered) | CLR-03 |
+| `GET /guid/{guid}`    | `getById`       | `get` (covered)    | CLR-02 |
+| `DELETE /guid/{guid}` | `deleteById`    | `delete` (covered) | CLR-04 |
 
 `routes/admin.py` (12 routes; 5 covered by 8.4, 7 here):
 
-| Method and path    | Server function   | Client method        | Rule         |
-| ------------------ | ----------------- | -------------------- | ------------ |
-| `GET /version`     | (8.4)             | `admin.version`      | CL-11 (done) |
-| `GET /status`      | (8.4)             | `admin.status`       | CL-11 (done) |
-| `GET /session`     | (8.4)             | `admin.session`      | CL-11 (done) |
-| `GET /liveness`    | (8.4)             | `admin.liveness`     | CL-11 (done) |
-| `GET /readiness`   | (8.4)             | `admin.readiness`    | CL-11 (done) |
-| `GET /patches`     | `getAtlasPatches` | `admin.patches`      | CLW-01       |
-| `PUT /purge`       | `purgeByIds`      | `admin.purge`        | CLW-02       |
-| `POST /export`     | `export`          | `admin.export`       | CLW-03       |
-| `POST /import`     | `importData`      | `admin.import_data`  | CLW-04       |
-| `POST /importfile` | `importFile`      | `admin.import_file`  | CLW-05       |
-| `GET /tasks`       | `getTaskStatus`   | `admin.tasks`        | CLW-06       |
-| `DELETE /tasks`    | `deleteTask`      | `admin.delete_tasks` | CLW-06       |
+| Method and path    | Server function   | Client method                  | Rule         |
+| ------------------ | ----------------- | ------------------------------ | ------------ |
+| `GET /version`     | (8.4)             | `admin.version`                | CL-11 (done) |
+| `GET /status`      | (8.4)             | `admin.status`                 | CL-11 (done) |
+| `GET /session`     | (8.4)             | `admin.session`                | CL-11 (done) |
+| `GET /liveness`    | (8.4)             | `admin.liveness`               | CL-11 (done) |
+| `GET /readiness`   | (8.4)             | `admin.readiness`              | CL-11 (done) |
+| `GET /patches`     | `getAtlasPatches` | `admin.patches` (covered)      | CLW-01       |
+| `PUT /purge`       | `purgeByIds`      | `admin.purge` (covered)        | CLW-02       |
+| `POST /export`     | `export`          | `admin.export` (covered)       | CLW-03       |
+| `POST /import`     | `importData`      | `admin.import_data` (covered)  | CLW-04       |
+| `POST /importfile` | `importFile`      | `admin.import_file` (covered)  | CLW-05       |
+| `GET /tasks`       | `getTaskStatus`   | `admin.tasks` (covered)        | CLW-06       |
+| `DELETE /tasks`    | `deleteTask`      | `admin.delete_tasks` (covered) | CLW-06       |
 
 After this increment, `routes/admin.py` and `routes/relationship.py` are fully
 covered.
@@ -91,13 +93,16 @@ Bodies, reused whole (DD-309): `AtlasRelationship`, `AtlasRelationshipWithExtInf
 ## Deviations
 
 None of Atlas (ADR 052). Workspace decisions: DD-307, DD-309, DD-310 in [8.8's
-`design.md`](../8-8-client-route-coverage/design.md). CLW-07 notes the relation to
+`design.md`](../8-8-client-route-coverage/design.md), and DD-313 in [this
+increment's](./design.md). CLW-07 notes the relation to
 8.4: CL-11 is not edited (an accepted spec is not), and this increment extends it.
 
 ## Acceptance
 
-- Unit: `tests/test__aurelius_atlas_server_client_relationship.py` (new) and the
-  admin file extended. One test per matrix row naming its method and rules; the
+- Unit: `tests/test__aurelius_atlas_server_client_relationship.py` (new) and
+  `tests/test__aurelius_atlas_server_client_admin.py` (new, the seven writes —
+  the five 8.4 reads stay in the client file, with their test's covers marker
+  gaining CLW-07). One test per matrix row naming its method and rules; the
   `MockTransport` recorder asserts method, path, query, and body.
 - Unit: CLW-03's empty-export `(b"", "")` and CLW-04's two-part form each get a
   dedicated test; CLW-06's repeated-`guids` rendering is pinned once for both verbs.
