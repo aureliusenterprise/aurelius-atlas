@@ -4,7 +4,7 @@ Where each increment's specification lives: `<home>/specs/<N-M-slug>/spec.md`, w
 
 This table is the reference for a move: it fixes the home before files are touched. A move PR changes the Status column and nothing else here. Homes follow [ADR 002](<https://aureliusenterprise.github.io/main/architecture/adr/002-modules-are-removable-slices/index.md>): a rule belongs to the project whose code it constrains.
 
-## Moved (0.x and 1.x)
+## Moved (0.x to 3.x)
 
 | Increment | Spec | Home | Rules |
 | --- | --- | --- | --- |
@@ -20,32 +20,22 @@ This table is the reference for a move: it fixes the home before files are touch
 | 1.4 | Typedef store | `libs/python/aurelius-atlas-core` | TDS |
 | 1.5 | Built-in models and patches | `libs/python/aurelius-atlas-core` | MDL |
 | 1.6 | Types REST | `apps/aurelius-atlas-server` | TYR |
-
-## 2.x — entities and values
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 2.1a | Entity models | `libs/python/aurelius-atlas-model` | ENT | in `increments/` |
-| 2.1b | Value types | `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` | VAL | in `increments/` |
-| 2.1c | Entity validation | `libs/python/aurelius-atlas-typesystem` | EVL | in `increments/` |
-| 2.2 | Entity store | `libs/python/aurelius-atlas-core` | ENS | in `increments/` |
-| 2.3 | Entity read REST | `apps/aurelius-atlas-server` | ERD | in `increments/` |
-| 2.4 | Entity write REST | `apps/aurelius-atlas-server` | EWR | in `increments/` |
-| 2.5 | Delete semantics | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` | EDL | in `increments/` |
-
-## 3.x — relationships, classifications, audit
-
-| Increment | Spec | Home | Rules | Status |
-| --- | --- | --- | --- | --- |
-| 3.1a | Relationship instances | `libs/python/aurelius-atlas-core` | REL | in `increments/` |
-| 3.1b | Relationship attributes | `libs/python/aurelius-atlas-core` | REL | in `increments/` |
-| 3.2 | Ownership cascades | `libs/python/aurelius-atlas-core` | OWN | in `increments/` |
-| 3.3a | Direct classifications | `libs/python/aurelius-atlas-core` | CLS | in `increments/` |
-| 3.3b | Bulk classifications | `libs/python/aurelius-atlas-core` | CLA | in `increments/` |
-| 3.4a | Classification propagation | `libs/python/aurelius-atlas-core` | PRO | in `increments/` |
-| 3.4b | Propagation tasks | `libs/python/aurelius-atlas-core` | TSK | in `increments/` |
-| 3.5a | Entity audit | `libs/python/aurelius-atlas-core` | AUD | in `increments/` |
-| 3.5b | Classification audit | `libs/python/aurelius-atlas-core` | CAU | in `increments/` |
+| 2.1a | Entity models | `libs/python/aurelius-atlas-model` | ENT |
+| 2.1b | Value types | `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` | VAL |
+| 2.1c | Entity validation | `libs/python/aurelius-atlas-typesystem` | EVL |
+| 2.2 | Entity store | `libs/python/aurelius-atlas-core` | ENS |
+| 2.3 | Entity read REST | `apps/aurelius-atlas-server` | ERD |
+| 2.4 | Entity write REST | `apps/aurelius-atlas-server` | EWR |
+| 2.5 | Delete semantics | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server` | EDL |
+| 3.1a | Relationship instances | `libs/python/aurelius-atlas-core` | REL |
+| 3.1b | Relationship attributes | `libs/python/aurelius-atlas-core` | REL |
+| 3.2 | Ownership cascades | `libs/python/aurelius-atlas-core` | OWN |
+| 3.3a | Direct classifications | `libs/python/aurelius-atlas-core` | CLS |
+| 3.3b | Bulk classifications | `libs/python/aurelius-atlas-core` | CLA |
+| 3.4a | Classification propagation | `libs/python/aurelius-atlas-core` | PRO |
+| 3.4b | Propagation tasks | `libs/python/aurelius-atlas-core` | TSK |
+| 3.5a | Entity audit | `libs/python/aurelius-atlas-core` | AUD |
+| 3.5b | Classification audit | `libs/python/aurelius-atlas-core` | CAU |
 
 ## 4.x — search
 

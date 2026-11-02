@@ -1,6 +1,6 @@
 # aurelius-atlas-typesystem
 
-The Atlas type system for Aurelius Atlas, without I/O (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)): the type registry and the types that type definitions resolve to. Since increment `1.2` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/spec.md`): the built-in, array, map, enum and struct types, attribute types and constraints. Since `1.3` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/spec.md`): entity and classification hierarchies, relationship and business metadata types. Since [2.1b](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-value-types/index.md>): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values. Since [2.1c](<https://aureliusenterprise.github.io/main/architecture/conversion/increments/2-1-entity-validation/index.md>): the same for structs, classifications (with their validity periods) and entities (with their relationship attributes).
+The Atlas type system for Aurelius Atlas, without I/O (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)): the type registry and the types that type definitions resolve to. Since increment `1.2` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/spec.md`): the built-in, array, map, enum and struct types, attribute types and constraints. Since `1.3` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/spec.md`): entity and classification hierarchies, relationship and business metadata types. Since `2.1b` (the spec: `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/spec.md`): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values. Since `2.1c` (the spec: `libs/python/aurelius-atlas-typesystem/specs/2-1-entity-validation/spec.md`): the same for structs, classifications (with their validity periods) and entities (with their relationship attributes).
 
 ```
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -13,7 +13,8 @@ registry.entity_type("hive_table")
 int_type = registry.get_type("int")
 int_type.get_normalized_value("42")  # 42; Java's Integer.valueOf rules, None when invalid
 registry.get_type("array<int>").validate_value(["x"], "a", messages := [])  # messages: a[0]=x: invalid value…
-registry.entity_type("hive_table").validate_value(entity, "entity", messages)  # e.g. mandatory attribute missing
+registry.entity_type("hive_table").validate_value(entity, "entity", messages)  # e.g. mandatory attribute
+missing
 ```
 
 ## Installation
