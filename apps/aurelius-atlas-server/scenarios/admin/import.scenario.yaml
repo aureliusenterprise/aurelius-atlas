@@ -1,0 +1,35 @@
+name: An import of a file that holds no export answers an empty result, and importfile reads no file without a folder
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#importData
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#importFile
+    - repository/src/main/java/org/apache/atlas/repository/impexp/ZipSource.java#isZipFileEmpty
+    - repository/src/main/java/org/apache/atlas/repository/impexp/ImportService.java#run
+    - intg/src/main/java/org/apache/atlas/model/impexp/AtlasImportResult.java
+rules: [IMS-01, IMS-02, IMS-06]
+covers: [aurelius_atlas_server.routes.admin.import_data, aurelius_atlas_server.routes.admin.import_file]
+stages:
+    - name: an upload that is no ZIP is an empty one, answered with an empty result
+      request:
+          method: POST
+          url: /api/atlas/admin/import
+          headers: { content-type: "multipart/form-data; boundary=scenario" }
+          text: "--scenario\r\nContent-Disposition: form-data; name=\"data\"; filename=\"e.zip\"\r\n\r\nnot a zip\r\n\
+              --scenario--\r\n"
+      response:
+          status: 200
+          json:
+              timeStamp: 0
+              metrics: {}
+              processedEntities: []
+              operationStatus: FAIL
+          volatile: ["$.timeStamp"]
+    - name: a file name without an import folder is a file not found (DV-125)
+      request:
+          method: POST
+          url: /api/atlas/admin/importfile
+          json: { options: { fileName: "/tmp/export.zip" } }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-01A
+              errorMessage: "invalid parameters: /tmp/export.zip: file not found"

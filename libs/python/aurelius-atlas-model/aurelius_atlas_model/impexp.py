@@ -110,3 +110,46 @@ class AtlasExportResult(AtlasModel):
 def _java_text(value: object) -> str:
     """``Object.toString`` of an option's JSON value."""
     return java_string(value)
+
+
+TRANSFORMS_KEY = "transforms"
+TRANSFORMERS_KEY = "transformers"
+OPTION_KEY_REPLICATED_FROM = "replicatedFrom"
+OPTION_KEY_MIGRATION = "migration"
+START_GUID_KEY = "startGuid"
+FILE_NAME_KEY = "fileName"
+START_POSITION_KEY = "startPosition"
+UPDATE_TYPE_DEFINITION_KEY = "updateTypeDefinition"
+
+
+class AtlasImportRequest(AtlasModel):
+    """``AtlasImportRequest``: an import's options, each a text (IMS-01)."""
+
+    options: dict[str, Any] = Field(default_factory=dict)
+
+    def option(self, key: str) -> str | None:
+        """``getOptionForKey``: the option's text, or None when it is not given."""
+        value = self.options.get(key)
+        return None if key not in self.options else (None if value is None else _java_text(value))
+
+    def is_replication_option_set(self) -> bool:
+        """``isReplicationOptionSet``: whether ``replicatedFrom`` is given."""
+        return OPTION_KEY_REPLICATED_FROM in self.options
+
+
+class AtlasImportResult(AtlasModel):
+    """``AtlasImportResult``: who imported, when, from where, its counts, the entities it wrote and its status."""
+
+    request: AtlasImportRequest | None = None
+    user_name: str | None = None
+    client_ip_address: str | None = None
+    host_name: str | None = None
+    time_stamp: int = 0
+    metrics: dict[str, int] = Field(default_factory=dict)
+    processed_entities: list[str] = Field(default_factory=list)
+    operation_status: OperationStatus = OperationStatus.FAIL
+    export_result: AtlasExportResult | None = None
+
+    def increment_metrics_counter(self, key: str, increment_by: int = 1) -> None:
+        """``incrementMeticsCounter``: add to the count of ``key``."""
+        self.metrics[key] = self.metrics.get(key, 0) + increment_by
