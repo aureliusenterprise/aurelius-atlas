@@ -7,8 +7,21 @@ whole (CL-10); this module covers only what that library never had: the admin
 answers, and the ``{errorCode, errorMessage}`` body of every Atlas error (SRV-04).
 """
 
+from enum import StrEnum
+
 from aurelius_atlas_model.typedef import AtlasModel
 from pydantic import Field
+
+
+# EDL-04; CLE-04; DD-311. The server's own DeleteType lives in
+# aurelius-atlas-core, which a client must not depend on; the wire vocabulary is
+# the three values below, read in any case by the server's ``DeleteType.of``.
+class DeleteType(StrEnum):
+    """How a delete removes entities: ``DEFAULT`` defers to the server's setting."""
+
+    DEFAULT = "DEFAULT"
+    SOFT = "SOFT"
+    HARD = "HARD"
 
 
 # ADM-01; DV-03; CL-10. The keys are Atlas's, capitalised; the Aurelius

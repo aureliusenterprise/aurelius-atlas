@@ -10,11 +10,16 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 - `aurelius_atlas_server_client/lineage.py` — the `api/atlas/v2/lineage/{guid}`
   body models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`admin` / `types` /
-  `search` / `lineage` / `with_token`, plus the `get_lineage` alias of
+  `entity` / `search` / `lineage` / `with_token`, plus the `get_lineage` alias of
   `lineage.get`), `AtlasClientError`, `KIND_PATHS`;
   `search` mirrors `routes/discovery.py` (CL-13), GET parameters as query
   parameters with the Java defaults (false, 0) left out;
+  `entity` mirrors `routes/entity.py` (CLE-01..CLE-12, 8.9 — bodies from
+  `aurelius-atlas-model`, `attr:`/`attr_<n>:` parameters, the client's own
+  `DeleteType` per DD-311);
   `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8)
+- `specs/<increment>/spec.md` — the per-module coverage matrices (DD-307): a
+  change to a server `routes/*.py` updates its spec's matrix in the same PR.
 
 ## Wiring Checklist
 
@@ -34,10 +39,12 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   bearer on every request (CL-03); `AtlasClientError` on >=400 with
   `status_code` and `.info` (CL-04);
   transport failures propagate as `httpx2` errors (CL-05).
-- `routes/admin.py` / `routes/types.py` / `routes/discovery.py` of the server
-  are the source of truth for paths — mirror changes here in the same PR
-  (the server's `e2e/test__aurelius_atlas_server_search_e2e.py` proves the
-  discovery paths against the container).
+- `routes/admin.py` / `routes/types.py` / `routes/entity.py` /
+  `routes/discovery.py` / `routes/lineage.py` of the server are the source of
+  truth for paths — mirror changes here, and the module spec's matrix, in the
+  same PR (the server's
+  `e2e/test__aurelius_atlas_server_search_e2e.py` proves the discovery paths
+  against the container).
 
 ## Commands
 

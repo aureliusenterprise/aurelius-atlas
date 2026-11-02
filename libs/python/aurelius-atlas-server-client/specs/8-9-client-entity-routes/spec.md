@@ -1,9 +1,10 @@
 # 8.9 Client route coverage — entity
 
-- **Status:** planned
-- **Pull request:** —
+- **Status:** in progress
+- **Pull request:** to follow
 - **Records:** DD-307 (the per-module live-check spec), DD-309 (bodies reused from
-  `aurelius-atlas-model`), DD-310 (file routes carry raw bytes); cites 8.4
+  `aurelius-atlas-model`), DD-310 (file routes carry raw bytes), DD-311 (the
+  client's own `DeleteType`); cites 8.4
   (CL-01..CL-08, CL-10, DD-203/DD-205), 8.8 (CL-60..CL-65), and the server's own
   rules ERD, EWR, EDL, CLS, CLA, BMI, LBL, AUD, CAU.
 
@@ -53,53 +54,56 @@ Out of scope, with the increment that delivers it:
 ### The coverage matrix (`routes/entity.py`, 37 routes)
 
 Open means no client method yet. Each series PR marks its own rows covered.
+All 37 are covered as of 8.9.
 
-| Method and path                                       | Server function                          | Client method                                 | Rule           |
-| ----------------------------------------------------- | ---------------------------------------- | --------------------------------------------- | -------------- |
-| `GET /guid/{guid}`                                    | `getById`                                | `by_guid`                                     | CLE-01, CLE-02 |
-| `GET /guid/{guid}/header`                             | `getHeaderById`                          | `header_by_guid`                              | CLE-01         |
-| `GET /uniqueAttribute/type/{t}`                       | `getByUniqueAttributes`                  | `by_unique_attributes`                        | CLE-02, CLE-03 |
-| `GET /uniqueAttribute/type/{t}/header`                | `getEntityHeaderByUniqueAttributes`      | `header_by_unique_attributes`                 | CLE-03         |
-| `GET /bulk/uniqueAttribute/type/{t}`                  | `getEntitiesByUniqueAttributes`          | `entities_by_unique_attributes`               | CLE-02, CLE-03 |
-| `GET /bulk`                                           | `getByGuids`                             | `by_guids`                                    | CLE-02         |
-| `GET /{guid}/audit`                                   | `getAuditEvents`                         | `audit_events`                                | CLE-10         |
-| `GET /bulk/headers`                                   | `getEntityHeaders`                       | `changed_classifications`                     | CLE-11         |
-| `POST ""`                                             | `createOrUpdate`                         | `create_or_update`                            | CLE-01         |
-| `POST /bulk`                                          | `createOrUpdate` (bulk)                  | `create_or_update_bulk`                       | CLE-01         |
-| `PUT /guid/{guid}`                                    | `partialUpdateEntityAttrByGuid`          | `partial_update_attribute`                    | CLE-01         |
-| `PUT /uniqueAttribute/type/{t}`                       | `partialUpdateEntityByUniqueAttrs`       | `partial_update_by_unique_attributes`         | CLE-03         |
-| `DELETE /guid/{guid}`                                 | `deleteByGuid`                           | `delete_by_guid`                              | CLE-04         |
-| `DELETE /bulk`                                        | `deleteByGuids`                          | `delete_by_guids`                             | CLE-04         |
-| `DELETE /uniqueAttribute/type/{t}`                    | `deleteByUniqueAttribute`                | `delete_by_unique_attributes`                 | CLE-03, CLE-04 |
-| `GET /guid/{g}/classification/{c}`                    | `getClassification`                      | `get_classification`                          | CLE-01         |
-| `GET /guid/{g}/classifications`                       | `getClassifications`                     | `get_classifications`                         | CLE-01         |
-| `POST /guid/{g}/classifications`                      | `addClassifications`                     | `add_classifications`                         | CLE-05         |
-| `POST /uniqueAttribute/type/{t}/classifications`      | `addClassificationsByUniqueAttribute`    | `add_classifications_by_unique_attributes`    | CLE-03, CLE-05 |
-| `PUT /guid/{g}/classifications`                       | `updateClassifications`                  | `update_classifications`                      | CLE-05         |
-| `PUT /uniqueAttribute/type/{t}/classifications`       | `updateClassificationsByUniqueAttribute` | `update_classifications_by_unique_attributes` | CLE-03, CLE-05 |
-| `DELETE /guid/{g}/classification/{c}`                 | `deleteClassification`                   | `delete_classification`                       | CLE-05         |
-| `DELETE /uniqueAttribute/type/{t}/classification/{c}` | `deleteClassificationByUniqueAttribute`  | `delete_classification_by_unique_attributes`  | CLE-03, CLE-05 |
-| `POST /bulk/classification`                           | `addClassification`                      | `associate_classification`                    | CLE-01         |
-| `POST /bulk/setClassifications`                       | `setClassifications`                     | `set_classifications`                         | CLE-08         |
-| `POST /guid/{g}/businessmetadata`                     | `addOrUpdateBusinessAttributes`          | `add_or_update_business_metadata`             | CLE-07         |
-| `DELETE /guid/{g}/businessmetadata`                   | `removeBusinessAttributes`               | `remove_business_metadata`                    | CLE-07         |
-| `POST /guid/{g}/businessmetadata/{bm}`                | `addOrUpdateBusinessAttributes` (one)    | `add_or_update_business_metadata_of`          | CLE-07         |
-| `DELETE /guid/{g}/businessmetadata/{bm}`              | `removeBusinessAttributes` (one)         | `remove_business_metadata_of`                 | CLE-07         |
-| `GET /businessmetadata/import/template`               | `produceTemplate`                        | `business_metadata_template`                  | CLE-09         |
-| `POST /businessmetadata/import`                       | `importBMAttributes`                     | `import_business_metadata`                    | CLE-09         |
-| `POST /guid/{g}/labels`                               | `setLabels`                              | `set_labels`                                  | CLE-06         |
-| `PUT /guid/{g}/labels`                                | `addLabels`                              | `add_labels`                                  | CLE-06         |
-| `DELETE /guid/{g}/labels`                             | `removeLabels`                           | `remove_labels`                               | CLE-06         |
-| `POST /uniqueAttribute/type/{t}/labels`               | `setLabels` (unique)                     | `set_labels_by_unique_attributes`             | CLE-03, CLE-06 |
-| `PUT /uniqueAttribute/type/{t}/labels`                | `addLabels` (unique)                     | `add_labels_by_unique_attributes`             | CLE-03, CLE-06 |
-| `DELETE /uniqueAttribute/type/{t}/labels`             | `removeLabels` (unique)                  | `remove_labels_by_unique_attributes`          | CLE-03, CLE-06 |
+| Method and path                                       | Server function                          | Client method                                           | Rule           |
+| ----------------------------------------------------- | ---------------------------------------- | ------------------------------------------------------- | -------------- |
+| `GET /guid/{guid}`                                    | `getById`                                | `by_guid` (covered)                                     | CLE-01, CLE-02 |
+| `GET /guid/{guid}/header`                             | `getHeaderById`                          | `header_by_guid` (covered)                              | CLE-01         |
+| `GET /uniqueAttribute/type/{t}`                       | `getByUniqueAttributes`                  | `by_unique_attributes` (covered)                        | CLE-02, CLE-03 |
+| `GET /uniqueAttribute/type/{t}/header`                | `getEntityHeaderByUniqueAttributes`      | `header_by_unique_attributes` (covered)                 | CLE-03         |
+| `GET /bulk/uniqueAttribute/type/{t}`                  | `getEntitiesByUniqueAttributes`          | `entities_by_unique_attributes` (covered)               | CLE-02, CLE-03 |
+| `GET /bulk`                                           | `getByGuids`                             | `by_guids` (covered)                                    | CLE-02         |
+| `GET /{guid}/audit`                                   | `getAuditEvents`                         | `audit_events` (covered)                                | CLE-10         |
+| `GET /bulk/headers`                                   | `getEntityHeaders`                       | `changed_classifications` (covered)                     | CLE-11         |
+| `POST ""`                                             | `createOrUpdate`                         | `create_or_update` (covered)                            | CLE-01         |
+| `POST /bulk`                                          | `createOrUpdate` (bulk)                  | `create_or_update_bulk` (covered)                       | CLE-01         |
+| `PUT /guid/{guid}`                                    | `partialUpdateEntityAttrByGuid`          | `partial_update_attribute` (covered)                    | CLE-01         |
+| `PUT /uniqueAttribute/type/{t}`                       | `partialUpdateEntityByUniqueAttrs`       | `partial_update_by_unique_attributes` (covered)         | CLE-03         |
+| `DELETE /guid/{guid}`                                 | `deleteByGuid`                           | `delete_by_guid` (covered)                              | CLE-04         |
+| `DELETE /bulk`                                        | `deleteByGuids`                          | `delete_by_guids` (covered)                             | CLE-04         |
+| `DELETE /uniqueAttribute/type/{t}`                    | `deleteByUniqueAttribute`                | `delete_by_unique_attributes` (covered)                 | CLE-03, CLE-04 |
+| `GET /guid/{g}/classification/{c}`                    | `getClassification`                      | `get_classification` (covered)                          | CLE-01         |
+| `GET /guid/{g}/classifications`                       | `getClassifications`                     | `get_classifications` (covered)                         | CLE-01         |
+| `POST /guid/{g}/classifications`                      | `addClassifications`                     | `add_classifications` (covered)                         | CLE-05         |
+| `POST /uniqueAttribute/type/{t}/classifications`      | `addClassificationsByUniqueAttribute`    | `add_classifications_by_unique_attributes` (covered)    | CLE-03, CLE-05 |
+| `PUT /guid/{g}/classifications`                       | `updateClassifications`                  | `update_classifications` (covered)                      | CLE-05         |
+| `PUT /uniqueAttribute/type/{t}/classifications`       | `updateClassificationsByUniqueAttribute` | `update_classifications_by_unique_attributes` (covered) | CLE-03, CLE-05 |
+| `DELETE /guid/{g}/classification/{c}`                 | `deleteClassification`                   | `delete_classification` (covered)                       | CLE-05         |
+| `DELETE /uniqueAttribute/type/{t}/classification/{c}` | `deleteClassificationByUniqueAttribute`  | `delete_classification_by_unique_attributes` (covered)  | CLE-03, CLE-05 |
+| `POST /bulk/classification`                           | `addClassification`                      | `associate_classification` (covered)                    | CLE-01         |
+| `POST /bulk/setClassifications`                       | `setClassifications`                     | `set_classifications` (covered)                         | CLE-08         |
+| `POST /guid/{g}/businessmetadata`                     | `addOrUpdateBusinessAttributes`          | `add_or_update_business_metadata` (covered)             | CLE-07         |
+| `DELETE /guid/{g}/businessmetadata`                   | `removeBusinessAttributes`               | `remove_business_metadata` (covered)                    | CLE-07         |
+| `POST /guid/{g}/businessmetadata/{bm}`                | `addOrUpdateBusinessAttributes` (one)    | `add_or_update_business_metadata_of` (covered)          | CLE-07         |
+| `DELETE /guid/{g}/businessmetadata/{bm}`              | `removeBusinessAttributes` (one)         | `remove_business_metadata_of` (covered)                 | CLE-07         |
+| `GET /businessmetadata/import/template`               | `produceTemplate`                        | `business_metadata_template` (covered)                  | CLE-09         |
+| `POST /businessmetadata/import`                       | `importBMAttributes`                     | `import_business_metadata` (covered)                    | CLE-09         |
+| `POST /guid/{g}/labels`                               | `setLabels`                              | `set_labels` (covered)                                  | CLE-06         |
+| `PUT /guid/{g}/labels`                                | `addLabels`                              | `add_labels` (covered)                                  | CLE-06         |
+| `DELETE /guid/{g}/labels`                             | `removeLabels`                           | `remove_labels` (covered)                               | CLE-06         |
+| `POST /uniqueAttribute/type/{t}/labels`               | `setLabels` (unique)                     | `set_labels_by_unique_attributes` (covered)             | CLE-03, CLE-06 |
+| `PUT /uniqueAttribute/type/{t}/labels`                | `addLabels` (unique)                     | `add_labels_by_unique_attributes` (covered)             | CLE-03, CLE-06 |
+| `DELETE /uniqueAttribute/type/{t}/labels`             | `removeLabels` (unique)                  | `remove_labels_by_unique_attributes` (covered)          | CLE-03, CLE-06 |
 
 Bodies, reused whole (DD-309): `AtlasEntityWithExtInfo`,
-`AtlasEntitiesWithExtInfo`, `AtlasEntityHeader`, `AtlasEntityHeaders`,
+`AtlasEntitiesWithExtInfo`, `AtlasEntity` (inside them), `AtlasEntityHeaders`,
 `AtlasClassifications`, `AtlasClassification`, `ClassificationAssociateRequest`,
 `EntityMutationResponse` (the create/update/delete/purge answers),
-`EntityAuditEventV2`, `EntityAuditActionV2`. The client imports them from
-`aurelius-atlas-model` and defines none.
+`EntityAuditEventV2`, `EntityAuditActionV2`, `BulkImportResponse`. The client
+imports them from `aurelius-atlas-model` and defines none. The one exception is
+`DeleteType`, which lives server-side in `aurelius-atlas-core`: the client
+states the three-value wire enum itself (DD-311).
 
 ## Aurelius origin
 
@@ -127,7 +131,9 @@ DD-309 (reused bodies), DD-310 (bytes for file routes) in [8.8's
   for each. The CLE-06 label-verb test pins all three verbs in one test so a
   future swap fails loudly.
 - Unit: the 8.8 conventions re-pinned here — a `delete_type=None` call sends no
-  `deleteType` (CLE-04), and a set flag renders `true` (CL-13).
+  `deleteType` (CLE-04), a set flag renders `true` (CL-13), and the
+  business-metadata pair names CL-64's first tests (8.8's Acceptance allows the
+  pair to land them here).
 - e2e: the first real consumer lands with this PR or its follower — a
   container test that drives `AtlasClient.entity` against the running server and
   compares against the same fixtures the server's own e2e uses (8.4's pattern;

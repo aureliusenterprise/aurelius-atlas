@@ -16,17 +16,20 @@ propagates as ``httpx``'s own error — mapping it to an HTTP status is the app'
 
 The paths mirror the server's routes verbatim: ``routes/admin.py`` under
 ``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, the
-discovery routes of ``routes/discovery.py`` under ``/api/atlas/v2/search``
-(CL-13), and the lineage feed of ``routes/lineage.py`` under
-``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
+entity routes of ``routes/entity.py`` under ``/api/atlas/v2/entity``
+(CLE-01..CLE-12, 8.9), the discovery routes of ``routes/discovery.py`` under
+``/api/atlas/v2/search`` (CL-13), and the lineage feed of ``routes/lineage.py``
+under ``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
 """
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
 import httpx2 as httpx
+from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
+from aurelius_atlas_model.bulk_import import BulkImportResponse
 from aurelius_atlas_model.discovery import (
     AtlasQuickSearchResult,
     AtlasSearchResult,
@@ -34,6 +37,16 @@ from aurelius_atlas_model.discovery import (
     QuickSearchParameters,
     SearchParameters,
     SortOrder,
+)
+from aurelius_atlas_model.instance import (
+    AtlasClassification,
+    AtlasClassifications,
+    AtlasEntitiesWithExtInfo,
+    AtlasEntityHeader,
+    AtlasEntityHeaders,
+    AtlasEntityWithExtInfo,
+    ClassificationAssociateRequest,
+    EntityMutationResponse,
 )
 from aurelius_atlas_model.lineage import LineageOnDemandConstraints
 from aurelius_atlas_model.typedef import (
@@ -51,7 +64,13 @@ from aurelius_atlas_model.typedef import (
 from pydantic import ValidationError
 
 from aurelius_atlas_server_client.lineage import Direction, LineageInfo
-from aurelius_atlas_server_client.models import AtlasErrorInfo, AtlasSessionInfo, AtlasStatus, AtlasVersion
+from aurelius_atlas_server_client.models import (
+    AtlasErrorInfo,
+    AtlasSessionInfo,
+    AtlasStatus,
+    AtlasVersion,
+    DeleteType,
+)
 
 type TokenSource = str | Callable[[], str]
 """Where the bearer token comes from: a fixed token, or a callable that yields one.
@@ -152,11 +171,18 @@ class _Api:
         method: str,
         path: str,
         *,
-        params: Mapping[str, Any] | None = None,
-        body: dict[str, Any] | None = None,
+        params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
+        body: Any = None,  # noqa: ANN401 - a JSON request body: a model's to_json(), or any JSON value (EWR-15)
+        files: Mapping[str, tuple[str, bytes]] | None = None,
     ) -> httpx.Response:
-        """One request with the bearer header; a non-2xx answer raises (CL-03..CL-05)."""
-        response = await self.http.request(method, path, params=params, json=body, headers=_bearer(self.token))
+        """One request with the bearer header; a non-2xx answer raises (CL-03..CL-05).
+
+        ``files`` sends ``multipart/form-data`` instead of JSON (CL-64) — the two
+        are never given together.
+        """
+        response = await self.http.request(
+            method, path, params=params, json=body, files=files, headers=_bearer(self.token)
+        )
         if response.status_code >= CLIENT_ERROR:
             raise AtlasClientError(response.status_code, _error_info(response))
         return response
@@ -166,8 +192,8 @@ class _Api:
         method: str,
         path: str,
         *,
-        params: Mapping[str, Any] | None = None,
-        body: dict[str, Any] | None = None,
+        params: Mapping[str, Any] | list[tuple[str, Any]] | None = None,
+        body: Any = None,  # noqa: ANN401 - the JSON body of the answer, parsed by the caller's model
     ) -> Any:  # noqa: ANN401 - the JSON body of the answer, parsed by the caller's model
         """One request answered with JSON (CL-11)."""
         return (await self.request(method, path, params=params, body=body)).json()
@@ -427,6 +453,357 @@ class SearchApi:
         return AtlasSuggestionsResult.model_validate(answer)
 
 
+class EntityApi:
+    """The entity resource of an :class:`AtlasClient` (CLE-01..CLE-12): ``client.entity``.
+
+    The paths mirror ``routes/entity.py`` (37 routes); the bodies are
+    ``aurelius-atlas-model``'s, reused whole (DD-309). The client validates no
+    request body the server validates — it sends the model's ``to_json()`` and
+    lets the server answer (CLE-12). A unique-attribute read or delete renders
+    each entry as an ``attr:<name>`` query parameter, the bulk read as
+    ``attr_<n>:<name>``, 1-based, in order (CLE-03).
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def by_guid(
+        self, guid: str, *, min_ext_info: bool = False, ignore_relationships: bool = False
+    ) -> AtlasEntityWithExtInfo:
+        """``GET /guid/{guid}``: the entity and the entities it owns (ERD-02, CLE-02)."""
+        params = _present(minExtInfo=min_ext_info, ignoreRelationships=ignore_relationships)
+        return AtlasEntityWithExtInfo.model_validate(
+            await self._api.json("GET", f"{ENTITY_ROOT}/guid/{guid}", params=params)
+        )
+
+    async def header_by_guid(self, guid: str) -> AtlasEntityHeader:
+        """``GET /guid/{guid}/header``: the entity's header with its classifications (ERD-07)."""
+        return AtlasEntityHeader.model_validate(await self._api.json("GET", f"{ENTITY_ROOT}/guid/{guid}/header"))
+
+    async def by_unique_attributes(
+        self,
+        type_name: str,
+        attributes: Mapping[str, Any],
+        *,
+        min_ext_info: bool = False,
+        ignore_relationships: bool = False,
+    ) -> AtlasEntityWithExtInfo:
+        """``GET /uniqueAttribute/type/{t}``: the entity holding the ``attr:`` values (ERD-08, CLE-02, CLE-03)."""
+        params = _attr_params(attributes) | _present(minExtInfo=min_ext_info, ignoreRelationships=ignore_relationships)
+        return AtlasEntityWithExtInfo.model_validate(
+            await self._api.json("GET", f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}", params=params)
+        )
+
+    async def header_by_unique_attributes(self, type_name: str, attributes: Mapping[str, Any]) -> AtlasEntityHeader:
+        """``GET /uniqueAttribute/type/{t}/header``: the header of the entity holding the values (ERD-07, CLE-03)."""
+        return AtlasEntityHeader.model_validate(
+            await self._api.json(
+                "GET", f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/header", params=_attr_params(attributes)
+            )
+        )
+
+    async def entities_by_unique_attributes(
+        self,
+        type_name: str,
+        attribute_sets: Sequence[Mapping[str, Any]],
+        *,
+        min_ext_info: bool = False,
+        ignore_relationships: bool = False,
+    ) -> AtlasEntitiesWithExtInfo:
+        """``GET /bulk/uniqueAttribute/type/{t}``: the entity each ``attr_<n>:`` set finds (ERD-08, CLE-02, CLE-03).
+
+        The sets are 1-based in the query, in the order given (DV-19).
+        """
+        params = _attr_set_params(attribute_sets) | _present(
+            minExtInfo=min_ext_info, ignoreRelationships=ignore_relationships
+        )
+        return AtlasEntitiesWithExtInfo.model_validate(
+            await self._api.json("GET", f"{ENTITY_ROOT}/bulk/uniqueAttribute/type/{type_name}", params=params)
+        )
+
+    async def by_guids(
+        self, guids: Sequence[str], *, min_ext_info: bool = False, ignore_relationships: bool = False
+    ) -> AtlasEntitiesWithExtInfo:
+        """``GET /bulk``: the entities of every ``guid``, in order (ERD-01, CLE-02)."""
+        params = _present(minExtInfo=min_ext_info, ignoreRelationships=ignore_relationships)
+        return AtlasEntitiesWithExtInfo.model_validate(
+            await self._api.json(
+                "GET", f"{ENTITY_ROOT}/bulk", params=[("guid", guid) for guid in guids] + list(params.items())
+            )
+        )
+
+    async def audit_events(  # noqa: PLR0913 - the audit route's query parameters, as routes/entity.py reads them
+        self,
+        guid: str,
+        *,
+        action: EntityAuditActionV2 | None = None,
+        start_key: str | None = None,
+        count: int | None = None,
+        offset: int | None = None,
+        sort_by: str | None = None,
+        sort_order: str | None = None,
+    ) -> list[EntityAuditEventV2]:
+        """``GET /{guid}/audit``: the entity's audit events (AUD-06..AUD-09, CLE-10).
+
+        Each parameter travels only when set; an absent ``count`` the server
+        reads as 100 and an absent ``offset`` as -1 — so, unlike ``_present``,
+        this drops only the values left as ``None``: a ``count`` of 0 is a
+        choice, not a default.
+        """
+        params = {
+            name: value
+            for name, value in {
+                "auditAction": action,
+                "startKey": start_key,
+                "count": count,
+                "offset": offset,
+                "sortBy": sort_by,
+                "sortOrder": sort_order,
+            }.items()
+            if value is not None
+        }
+        answer = await self._api.json("GET", f"{ENTITY_ROOT}/{guid}/audit", params=params)
+        return [EntityAuditEventV2.model_validate(event) for event in answer]
+
+    async def changed_classifications(self, since: int) -> AtlasEntityHeaders:
+        """``GET /bulk/headers``: the entities whose classifications changed since ``since`` (CAU-07, CLE-11).
+
+        ``since`` is the ``tagUpdateStartTime`` epoch millis; the client sends no
+        end time — the server uses its own clock.
+        """
+        return AtlasEntityHeaders.model_validate(
+            await self._api.json("GET", f"{ENTITY_ROOT}/bulk/headers", params={"tagUpdateStartTime": since})
+        )
+
+    async def create_or_update(self, entity: AtlasEntityWithExtInfo) -> EntityMutationResponse:
+        """``POST ""``: create the entity, and the entities it names, or update them (EWR-02)."""
+        return EntityMutationResponse.model_validate(await self._api.json("POST", ENTITY_ROOT, body=entity.to_json()))
+
+    async def create_or_update_bulk(self, entities: AtlasEntitiesWithExtInfo) -> EntityMutationResponse:
+        """``POST /bulk``: create or update every entity (EWR-02)."""
+        return EntityMutationResponse.model_validate(
+            await self._api.json("POST", f"{ENTITY_ROOT}/bulk", body=entities.to_json())
+        )
+
+    async def partial_update_attribute(
+        self,
+        guid: str,
+        name: str | None,
+        value: Any,  # noqa: ANN401 - the attribute value, any JSON value (EWR-15)
+    ) -> EntityMutationResponse:
+        """``PUT /guid/{guid}``: set the attribute ``name`` of the entity to ``value`` (EWR-15).
+
+        The body is the bare JSON value; the server reads whatever it is.
+        """
+        return EntityMutationResponse.model_validate(
+            await self._api.json("PUT", f"{ENTITY_ROOT}/guid/{guid}", params=_present(name=name), body=value)
+        )
+
+    async def partial_update_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], entity: AtlasEntityWithExtInfo
+    ) -> EntityMutationResponse:
+        """``PUT /uniqueAttribute/type/{t}``: partially update the entity holding the values (EWR-14, CLE-03)."""
+        return EntityMutationResponse.model_validate(
+            await self._api.json(
+                "PUT",
+                f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}",
+                params=_attr_params(attributes),
+                body=entity.to_json(),
+            )
+        )
+
+    async def delete_by_guid(self, guid: str, *, delete_type: DeleteType | None = None) -> EntityMutationResponse:
+        """``DELETE /guid/{guid}``: the entity and what it owns (EDL-01, CLE-04).
+
+        An absent ``delete_type`` sends no parameter: the server applies its own
+        setting (EDL-04).
+        """
+        return EntityMutationResponse.model_validate(
+            await self._api.json("DELETE", f"{ENTITY_ROOT}/guid/{guid}", params=_present(deleteType=delete_type))
+        )
+
+    async def delete_by_guids(
+        self, guids: Sequence[str], *, delete_type: DeleteType | None = None
+    ) -> EntityMutationResponse:
+        """``DELETE /bulk``: the entities of every ``guid`` and what they own (EDL-01, CLE-04)."""
+        params = [("guid", guid) for guid in guids] + list(_present(deleteType=delete_type).items())
+        return EntityMutationResponse.model_validate(
+            await self._api.json("DELETE", f"{ENTITY_ROOT}/bulk", params=params)
+        )
+
+    async def delete_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], *, delete_type: DeleteType | None = None
+    ) -> EntityMutationResponse:
+        """``DELETE /uniqueAttribute/type/{t}``: the entity holding the values (EDL-02, CLE-03, CLE-04)."""
+        params = _attr_params(attributes) | _present(deleteType=delete_type)
+        return EntityMutationResponse.model_validate(
+            await self._api.json("DELETE", f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}", params=params)
+        )
+
+    async def get_classification(self, guid: str, classification_name: str) -> AtlasClassification:
+        """``GET /guid/{g}/classification/{c}``: the entity's classification of the name (CLS-03)."""
+        return AtlasClassification.model_validate(
+            await self._api.json("GET", f"{ENTITY_ROOT}/guid/{guid}/classification/{classification_name}")
+        )
+
+    async def get_classifications(self, guid: str) -> AtlasClassifications:
+        """``GET /guid/{g}/classifications``: the entity's classifications, as a ``PList`` (CLS-03)."""
+        return AtlasClassifications.model_validate(
+            await self._api.json("GET", f"{ENTITY_ROOT}/guid/{guid}/classifications")
+        )
+
+    async def add_classifications(self, guid: str, classifications: Sequence[AtlasClassification]) -> None:
+        """``POST /guid/{g}/classifications``: attach the classifications (CLS-04, CLE-05). Answers 204."""
+        await self._api.request(
+            "POST", f"{ENTITY_ROOT}/guid/{guid}/classifications", body=[c.to_json() for c in classifications]
+        )
+
+    async def add_classifications_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], classifications: Sequence[AtlasClassification]
+    ) -> None:
+        """``POST /uniqueAttribute/type/{t}/classifications``: attach the classifications (CLS-06, CLE-03, CLE-05)."""
+        await self._api.request(
+            "POST",
+            f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/classifications",
+            params=_attr_params(attributes),
+            body=[c.to_json() for c in classifications],
+        )
+
+    async def update_classifications(self, guid: str, classifications: Sequence[AtlasClassification]) -> None:
+        """``PUT /guid/{g}/classifications``: change the entity's classifications (CLS-08, CLE-05). Answers 204."""
+        await self._api.request(
+            "PUT", f"{ENTITY_ROOT}/guid/{guid}/classifications", body=[c.to_json() for c in classifications]
+        )
+
+    async def update_classifications_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], classifications: Sequence[AtlasClassification]
+    ) -> None:
+        """``PUT /uniqueAttribute/type/{t}/classifications``: change them (CLS-06, CLE-03, CLE-05). Answers 204."""
+        await self._api.request(
+            "PUT",
+            f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/classifications",
+            params=_attr_params(attributes),
+            body=[c.to_json() for c in classifications],
+        )
+
+    async def delete_classification(
+        self, guid: str, classification_name: str, *, associated_entity_guid: str | None = None
+    ) -> None:
+        """``DELETE /guid/{g}/classification/{c}``: remove it (CLS-09, CLE-05). Answers 204."""
+        await self._api.request(
+            "DELETE",
+            f"{ENTITY_ROOT}/guid/{guid}/classification/{classification_name}",
+            params=_present(associatedEntityGuid=associated_entity_guid),
+        )
+
+    async def delete_classification_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], classification_name: str
+    ) -> None:
+        """``DELETE /uniqueAttribute/type/{t}/classification/{c}``: remove it (CLS-06, CLE-03, CLE-05)."""
+        await self._api.request(
+            "DELETE",
+            f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/classification/{classification_name}",
+            params=_attr_params(attributes),
+        )
+
+    async def associate_classification(self, request_body: ClassificationAssociateRequest) -> None:
+        """``POST /bulk/classification``: attach one classification to many entities (CLS-07, CLE-01). Answers 204."""
+        await self._api.request("POST", f"{ENTITY_ROOT}/bulk/classification", body=request_body.to_json())
+
+    async def set_classifications(self, headers: AtlasEntityHeaders) -> Any:  # noqa: ANN401 - the parsed JSON array (DV-36)
+        """``POST /bulk/setClassifications``: each header's entity gets its classifications (CLA-04, CLE-08).
+
+        The answer is a JSON array of per-guid summaries, not a model (the
+        server's DV-36 text); the client returns it parsed, never reordered.
+        """
+        return await self._api.json("POST", f"{ENTITY_ROOT}/bulk/setClassifications", body=headers.to_json())
+
+    async def add_or_update_business_metadata(
+        self, guid: str, attributes: Mapping[str, Mapping[str, Any] | None], *, is_overwrite: bool = False
+    ) -> None:
+        """``POST /guid/{g}/businessmetadata``: the values set, all replaced with ``is_overwrite`` (BMD-01, CLE-07)."""
+        await self._api.request(
+            "POST",
+            f"{ENTITY_ROOT}/guid/{guid}/businessmetadata",
+            params=_present(isOverwrite=is_overwrite),
+            body=dict(attributes),
+        )
+
+    async def remove_business_metadata(self, guid: str, attributes: Mapping[str, Mapping[str, Any] | None]) -> None:
+        """``DELETE /guid/{g}/businessmetadata``: the body's attributes removed (BMD-05, CLE-07). Answers 204."""
+        await self._api.request("DELETE", f"{ENTITY_ROOT}/guid/{guid}/businessmetadata", body=dict(attributes))
+
+    async def add_or_update_business_metadata_of(self, guid: str, bm_name: str, attributes: Mapping[str, Any]) -> None:
+        """``POST /guid/{g}/businessmetadata/{bm}``: one metadata's values set (BMD-03, CLE-07). Answers 204."""
+        await self._api.request("POST", f"{ENTITY_ROOT}/guid/{guid}/businessmetadata/{bm_name}", body=dict(attributes))
+
+    async def remove_business_metadata_of(self, guid: str, bm_name: str, attributes: Mapping[str, Any]) -> None:
+        """``DELETE /guid/{g}/businessmetadata/{bm}``: one metadata's attributes, or all, removed (BMD-05, CLE-07)."""
+        await self._api.request(
+            "DELETE", f"{ENTITY_ROOT}/guid/{guid}/businessmetadata/{bm_name}", body=dict(attributes)
+        )
+
+    async def business_metadata_template(self) -> tuple[bytes, str]:
+        """``GET /businessmetadata/import/template``: the download as bytes and content type (BMI-01, CLE-09, CL-64)."""
+        response = await self._api.request("GET", f"{ENTITY_ROOT}/businessmetadata/import/template")
+        return response.content, response.headers.get("content-type", "")
+
+    async def import_business_metadata(self, file_name: str, content: bytes) -> BulkImportResponse:
+        """``POST /businessmetadata/import``: the file's rows applied (BMI-02..BMI-05, CLE-09, CL-64).
+
+        The file is the bytes the caller holds — never a path read from disk.
+        """
+        answer = await self._api.request(
+            "POST", f"{ENTITY_ROOT}/businessmetadata/import", files={"file": (file_name, content)}
+        )
+        return BulkImportResponse.model_validate(answer.json())
+
+    async def set_labels(self, guid: str, labels: Sequence[str]) -> None:
+        """``POST /guid/{g}/labels``: the entity's labels become these (LBL-01, LBL-02, CLE-06). Answers 204."""
+        await self._api.request("POST", f"{ENTITY_ROOT}/guid/{guid}/labels", body=list(labels))
+
+    async def add_labels(self, guid: str, labels: Sequence[str]) -> None:
+        """``PUT /guid/{g}/labels``: these labels added to the entity's (LBL-01, LBL-03, CLE-06). Answers 204."""
+        await self._api.request("PUT", f"{ENTITY_ROOT}/guid/{guid}/labels", body=list(labels))
+
+    async def remove_labels(self, guid: str, labels: Sequence[str]) -> None:
+        """``DELETE /guid/{g}/labels``: these labels taken from the entity's (LBL-01, LBL-04, CLE-06). Answers 204."""
+        await self._api.request("DELETE", f"{ENTITY_ROOT}/guid/{guid}/labels", body=list(labels))
+
+    async def set_labels_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], labels: Sequence[str]
+    ) -> None:
+        """``POST /uniqueAttribute/type/{t}/labels``: the entity holding the values gets the labels (LBL-02, CLE-06)."""
+        await self._api.request(
+            "POST",
+            f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/labels",
+            params=_attr_params(attributes),
+            body=list(labels),
+        )
+
+    async def add_labels_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], labels: Sequence[str]
+    ) -> None:
+        """``PUT /uniqueAttribute/type/{t}/labels``: added to that entity's labels (LBL-03, CLE-03, CLE-06)."""
+        await self._api.request(
+            "PUT",
+            f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/labels",
+            params=_attr_params(attributes),
+            body=list(labels),
+        )
+
+    async def remove_labels_by_unique_attributes(
+        self, type_name: str, attributes: Mapping[str, Any], labels: Sequence[str]
+    ) -> None:
+        """``DELETE /uniqueAttribute/type/{t}/labels``: taken from that entity's labels (LBL-04, CLE-03, CLE-06)."""
+        await self._api.request(
+            "DELETE",
+            f"{ENTITY_ROOT}/uniqueAttribute/type/{type_name}/labels",
+            params=_attr_params(attributes),
+            body=list(labels),
+        )
+
+
 class LineageApi:
     """The lineage resource of an :class:`AtlasClient` (CL-61..CL-63): ``client.lineage``.
 
@@ -489,6 +866,20 @@ def _present(**params: Any) -> dict[str, Any]:  # noqa: ANN401 - the query param
     return {name: value for name, value in params.items() if value is not None and value != 0}
 
 
+def _attr_params(attributes: Mapping[str, Any]) -> dict[str, Any]:
+    """The unique-attribute values as ``attr:<name>`` parameters, as the route reads them (CLE-03, ERD-08)."""
+    return {f"attr:{name}": value for name, value in attributes.items()}
+
+
+def _attr_set_params(attribute_sets: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Each set's unique-attribute values as ``attr_<n>:<name>``, 1-based, in order (CLE-03, DV-19)."""
+    return {
+        f"attr_{index}:{name}": value
+        for index, attributes in enumerate(attribute_sets, start=1)
+        for name, value in attributes.items()
+    }
+
+
 def _parse_def(payload: dict[str, Any]) -> AtlasBaseTypeDef:
     """The definition of any kind, parsed into its category's model (TYR-01, TYR-02)."""
     kind = TypeCategory.__members__.get(str(payload.get("category", "")))
@@ -512,6 +903,7 @@ class AtlasClient:
         api = _Api(self._http, token)
         self.admin = AdminApi(api)
         self.types = TypesApi(api)
+        self.entity = EntityApi(api)
         self.search = SearchApi(api)
         self.lineage = LineageApi(api)
 
