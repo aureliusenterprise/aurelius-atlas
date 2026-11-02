@@ -7146,6 +7146,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A failed import for nothing to remove helps no one</td>
 <td>6.3</td>
 </tr>
+<tr>
+<td>DV-130</td>
+<td>Import/export</td>
+<td><code>admin/expimp/audit</code> fails on an entry the user may not read: the scrubbed entry has no times to unbox</td>
+<td>The entry is left out</td>
+<td>A reader's missing privilege should hide what it cannot read, not fail the list</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 
