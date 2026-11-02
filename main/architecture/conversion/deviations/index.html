@@ -7122,6 +7122,30 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Our documents name entities by GUID; a rename rewrites them all</td>
 <td>6.3</td>
 </tr>
+<tr>
+<td>DV-127</td>
+<td>Import/export</td>
+<td>An import's <code>transformers</code> option changes entities through <code>AtlasEntityTransformer</code> and the Hive and HDFS entity handlers</td>
+<td>The option is not applied</td>
+<td>The handlers rewrite Hive and HDFS models the catalogue does not hold; the <code>transforms</code> option covers the generic rewrites</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-128</td>
+<td>Import/export</td>
+<td>An incremental export of <code>hive_db</code> or <code>hive_table</code> extracts through <code>IncrementalExportEntityProvider</code>, and an import of one replicates table deletions (<code>TableReplicationRequestProcessor</code>)</td>
+<td>The generic incremental fetch; no table replication</td>
+<td>Both serve Hive replication only</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-129</td>
+<td>Import/export</td>
+<td>A <code>removeClassification</code> transform of an entity without classifications fails on the null list</td>
+<td>The entity is left as it is</td>
+<td>A failed import for nothing to remove helps no one</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 
