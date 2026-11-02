@@ -25,6 +25,10 @@ consumers import from the package root only, never a subfolder path.
   `{ body, contentType }` pair of DD-315 where the twin returns a tuple
 - `src/lib/atlas/atlas-entities.service.ts` — `AtlasEntitiesService`
   (`/atlas/v2/entity/**`, DET-03 — the 2.3+7.6 wiring's client, DD-187)
+- `src/lib/atlas/lineage.service.ts` — `LineageService` (`/atlas/v2/lineage/**`,
+  ALN-01..04): the three `LineageREST` routes — the graph, its on-demand form,
+  and the unique-attribute lookup; `depth`/`direction` always go as query
+  parameters (the twin's shape, not the `searchParams()` absence rule)
 - `src/lib/atlas/atlas-typedef.ts` — the typedef DTO cluster with the server's camelCase
   wire names (APC-03); `src/lib/atlas/atlas-search.ts` — the search DTO cluster
   (`SearchParameters`, `AtlasSearchResult`, `AtlasQuickSearchResult`, …);
@@ -33,7 +37,8 @@ consumers import from the package root only, never a subfolder path.
   (with `AtlasObjectId`); `src/lib/atlas/atlas-impexp.ts` — the export/import DTOs
   and `AtlasExportAnswer` (DD-315); `src/lib/atlas/atlas-mutation.ts` —
   `EntityMutationResponse`; `src/lib/atlas/atlas-patches.ts` / `atlas-tasks.ts` —
-  the patch/task DTOs; `src/lib/atlas/atlas-error.ts` — the Atlas
+  the patch/task DTOs; `src/lib/atlas/atlas-lineage.ts` — the lineage DTOs
+  (`AtlasLineageInfo`, `LineageOnDemandConstraints`, …); `src/lib/atlas/atlas-error.ts` — the Atlas
   error body (SRV-04, APC-04), shared with `entities.service.ts`
 - `src/lib/entities.service.ts` — `EntitiesService` (HTTP + SSE) and the example API
   types — the FastAPI example's client, outside the Atlas folder by design;
@@ -55,6 +60,10 @@ consumers import from the package root only, never a subfolder path.
   routes and models — change the endpoints on both sides in the same PR. The
   saved-searches 204 reads as `None` on the Python side and a `null` body here
   (CSD-03 ↔ ACS-03, DD-314).
+- The lineage wire contract has the same twin: `AtlasClient.lineage` (CL-61..63)
+  in `libs/python/aurelius-atlas-server-client` covers the same three routes of
+  `routes/lineage.py` — change them on both sides in the same PR. Both twins
+  always send `depth` and `direction` on the two GET routes (ALN-01).
 - The admin wire contract has the same twin: `AtlasClient.admin` (CL-11,
   CLW-01..06) covers the same twelve routes of `routes/admin.py` — change them
   on both sides in the same PR. `export` returns `(bytes, content-type)` there

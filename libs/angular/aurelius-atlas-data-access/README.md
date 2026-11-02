@@ -1,6 +1,7 @@
 # aurelius-atlas-data-access
 
-Typed Angular data layer: the Atlas REST client (typedefs, admin) and the client
+Typed Angular data layer: the Atlas REST client (typedefs, admin, search,
+lineage) and the client
 for the Aurelius example backend (HTTP + SSE), with the TypeScript types mirroring
 each API contract.
 
@@ -15,11 +16,18 @@ Part of the template **spine**.
   liveness/readiness texts, the patch records, purge, export/import, and the
   task list (`/atlas/admin/**`) — `AdminREST` of server 2.x/5.x (APC-02,
   AAC-01..07); the twin of `AtlasClient.admin` (CL-11, CLW-01..06)
+- `LineageService` — the lineage endpoints (`/atlas/v2/lineage/**`): the
+  lineage graph of an entity, its on-demand form with per-guid constraints,
+  and the graph of the entity a unique attribute names — `LineageREST` of
+  server 5.x (ALN-01..04); the twin of `AtlasClient.lineage` (CL-61..63)
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from
   `libs/python/aurelius-atlas-model` (`impexp.py`, `instance/`, `patches.py`,
   `tasks.py`)
+- `atlas-lineage.ts` — the lineage DTOs (`AtlasLineageInfo`,
+  `LineageOnDemandConstraints`, …), mirrored by hand from
+  `aurelius_atlas_model/lineage.py`
 - `SearchService` — the search endpoints (`/atlas/v2/search/**`): the basic
   search (POST/GET), attribute, full-text, the quick search with its facets
   (POST/GET), term suggestions, the DSL search, and the seven saved-search
@@ -65,7 +73,8 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 > to the saved-search DTOs in `atlas-profile.ts` and
 > `aurelius_atlas_model/profile.py`, and to the admin DTOs in
 > `atlas-impexp.ts`/`atlas-mutation.ts`/`atlas-patches.ts`/`atlas-tasks.ts` and
-> `aurelius_atlas_model/impexp.py`/`instance/`/`patches.py`/`tasks.py`.
+> `aurelius_atlas_model/impexp.py`/`instance/`/`patches.py`/`tasks.py`, and to
+> the lineage DTOs in `atlas-lineage.ts` and `aurelius_atlas_model/lineage.py`.
 
 ## Testing
 
