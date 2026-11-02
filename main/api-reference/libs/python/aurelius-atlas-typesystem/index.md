@@ -799,7 +799,7 @@ Attributes:
   `__CLASSIFICATION_ROOT`; not registered, resolved by every registry (THY-05).
 - **`CLASSIFICATION_ROOT_NAME`** –
 - **`ENTITY_HEADER_ATTRIBUTES`** –
-- **`ENTITY_ROOT`** –
+- **`ENTITY_ROOT`** (`EntityType`) –
 
   `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
 - **`ENTITY_ROOT_NAME`** –
@@ -830,7 +830,7 @@ ENTITY_HEADER_ATTRIBUTES = ('name', 'description', 'owner', 'createTime')
 ### ENTITY\_ROOT
 
 ```
-ENTITY_ROOT = EntityType(_root_entity_def())
+ENTITY_ROOT: EntityType = _RootEntityType()
 ```
 
 `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
@@ -4802,7 +4802,7 @@ Attributes:
 - **`DYN_ATTRIBUTE_PREFIX`** –
 
   The entity type option naming a dynamic attribute: `dynAttribute:<name>`, its value the template.
-- **`ENTITY_ROOT`** –
+- **`ENTITY_ROOT`** (`EntityType`) –
 
   `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
 
@@ -4817,7 +4817,7 @@ The entity type option naming a dynamic attribute: `dynAttribute:<name>`, its va
 ### ENTITY\_ROOT
 
 ```
-ENTITY_ROOT = EntityType(_root_entity_def())
+ENTITY_ROOT: EntityType = _RootEntityType()
 ```
 
 `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
