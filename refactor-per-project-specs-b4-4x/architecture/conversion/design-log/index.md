@@ -2,7 +2,7 @@
 
 The archive of the technical decisions made during the conversion that are too implementation-specific for an ADR but must not be lost: storage layout, identifiers, query translation, test tooling. Business-level decisions are ADRs in [Architecture Decisions](<https://aureliusenterprise.github.io/refactor-per-project-specs-b4-4x/architecture/adr/index.md>).
 
-Each new entry lives in the `design.md` of the increment that makes it, next to that increment's spec ([ADR 051](<https://aureliusenterprise.github.io/refactor-per-project-specs-b4-4x/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>)); where, is what the [Moved entries](<#moved-entries>) index keeps per number. This page holds the entries written before that layout (DD-001 to DD-094, DD-240 to DD-243 and DD-252 are moved out; what is listed below stays): it is read-only history. Nothing is appended here.
+Each new entry lives in the `design.md` of the increment that makes it, next to that increment's spec ([ADR 051](<https://aureliusenterprise.github.io/refactor-per-project-specs-b4-4x/architecture/adr/051-the-conversion-proceeds-in-specified-increments/index.md>)); where, is what the [Moved entries](<#moved-entries>) index keeps per number. This page holds the entries written before that layout (DD-001 to DD-094, DD-240 to DD-244 and DD-252 are moved out; what is listed below stays): it is read-only history. Nothing is appended here.
 
 ## Rules
 
@@ -140,7 +140,6 @@ Each new entry lives in the `design.md` of the increment that makes it, next to 
 | [DD-237](<#dd-237-index-refresh-moves-from-reads-to-writes>) | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes | 9.3 | Accepted |
 | [DD-238](<#dd-238-the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server>) | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted | 9.3 | Accepted |
 | [DD-239](<#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage>) | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage | 9.4 | Accepted |
-| [DD-244](<#dd-244-saved-searches-wait-for-authentication>) | Saved searches wait for authentication | 4.5 | Accepted |
 | [DD-245](<#dd-245-lineage-walks-the-relationships-of-the-process-edges>) | Lineage walks the relationships of the process edges | 5.1 | Proposed |
 | [DD-246](<#dd-246-glossary-objects-are-entities-written-through-the-entity-and-relationship-stores>) | Glossary objects are entities written through the entity and relationship stores | 5.2 | Proposed |
 | [DD-247](<#dd-247-journal-writes-do-not-wait-for-a-refresh>) | Journal writes do not wait for a refresh | cross-cutting | Proposed |
@@ -1830,20 +1829,6 @@ Measured (run 40549779734, fixed fleet, all caches warm on the server): all rest
 
 **Consequences.** The webapp image grows 14→56 MB; the SBOM/license report gains grpc/protobuf/abseil/re2/icu (Apache/BSD). The builder pins the v0.1.2 tag with the cmake-4 policy flag (its `cmake_minimum_required` predates 3.5) and apk's `python-3.14` (the dev image's xcb-proto resolves 3.14; bare `python` is 3.15 now) — reproducible-build facts recorded here. `limit_req` and this module share the `/api/` location: the limiter refuses before the span's `http.status_code` records the 429 (the module samples at the rewrite phase, completes at the log phase — a refused request's span is real, proven in the prototype burst). The v0.1.x line is 2023-frozen (4 open issues, no maintainer activity); re-evaluate at the next nginx baseline (the 1.30 signature check is the compatibility gate — a mismatched module fails at config parse, loudly, at boot). Next free DD: 240.
 
-### DD-244. Saved searches wait for authentication
-
-- **Status:** Accepted
-- **Increment:** 4.5
-- **Date:** 2026-10-30
-
-**Decision.** Increment 4.5 (saved searches and the user profile) follows 6.1 (authentication) instead of preceding 5.1. The roadmap keeps its number; 5.1 lineage is the next increment. The user chose this on 2026-10-30.
-
-**Reason.** Atlas owns every saved search by the logged-in user: `addSavedSearch` sets the owner from the request's user, `getSavedSearches` defaults to that user, and reading, updating, deleting and executing a search check ownership (`checkSavedSearchOwnership`). Until 6.1 the server has no user (DV-04, DV-06); porting 4.5 now would need a temporary owner, a deviation 6.1 would have to undo, and ownership checks that test nothing.
-
-**Alternatives.** One anonymous owner until 6.1: the endpoints sooner, the checks trivially passing. An owner taken from a request header until 6.1: testable checks, but a spoofable identity to remove later.
-
-**Consequences.** `search/saved*` stays unanswered until after 6.1; the dashboards' saved-search menus fail until then, as they did before.
-
 ### DD-245. Lineage walks the relationships of the process edges
 
 - **Status:** Proposed
@@ -2748,6 +2733,7 @@ The entries moved next to the increment they record. The record is the truth; th
 | DD-241 | The parse tree is handed on as typed, immutable nodes | Proposed | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md` |
 | DD-242 | A DSL query is composed into the basic search's filter tree | Proposed | `libs/python/aurelius-atlas-core/specs/4-4-dsl-entities/design.md` |
 | DD-243 | DSL traversals and projections are evaluated in steps | Proposed | `libs/python/aurelius-atlas-core/specs/4-4-dsl-projections/design.md` |
+| DD-244 | Saved searches wait for authentication | Accepted | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md` |
 | DD-252 | DataAccess carries every model object through a registry of DTOs | Proposed | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md` |
 
 > \[!NOTE\] DD-095 to DD-125 and DD-280 were never written. The first band went unused when the `feat/api-client-libraries` branch renumbered its entries to DD-180 and above (DD-179); DD-280's 10.5 step took its decisions in the 10.x specs without a record. Those numbers stay unused.

@@ -5222,17 +5222,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dd-244-saved-searches-wait-for-authentication" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        DD-244. Saved searches wait for authentication
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#dd-245-lineage-walks-the-relationships-of-the-process-edges" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -10734,17 +10723,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dd-244-saved-searches-wait-for-authentication" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        DD-244. Saved searches wait for authentication
-      </span>
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#dd-245-lineage-walks-the-relationships-of-the-process-edges" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -11504,7 +11482,7 @@ translation, test tooling. Business-level decisions are ADRs in
 <p>Each new entry lives in the <code>design.md</code> of the increment that makes it, next to that increment's
 spec (<a href="../../adr/051-the-conversion-proceeds-in-specified-increments/">ADR 051</a>); where, is what
 the <a href="#moved-entries">Moved entries</a> index keeps per number. This page holds the entries written
-before that layout (DD-001 to DD-094, DD-240 to DD-243 and DD-252 are moved out; what is listed
+before that layout (DD-001 to DD-094, DD-240 to DD-244 and DD-252 are moved out; what is listed
 below stays): it is read-only
 history. Nothing is appended here.</p>
 <h2 id="rules">Rules<a class="headerlink" href="#rules" title="Permanent link">&para;</a></h2>
@@ -12178,12 +12156,6 @@ history. Nothing is appended here.</p>
 <td><a href="#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage">DD-239</a></td>
 <td>The webapp's nginx exports <code>/api/</code> spans on the collector's legacy leg; the module builds in the image's dev-stage</td>
 <td>9.4</td>
-<td>Accepted</td>
-</tr>
-<tr>
-<td><a href="#dd-244-saved-searches-wait-for-authentication">DD-244</a></td>
-<td>Saved searches wait for authentication</td>
-<td>4.5</td>
 <td>Accepted</td>
 </tr>
 <tr>
@@ -17434,24 +17406,6 @@ real, proven in the prototype burst). The v0.1.x line is 2023-frozen
 (4 open issues, no maintainer activity); re-evaluate at the next nginx
 baseline (the 1.30 signature check is the compatibility gate — a mismatched
 module fails at config parse, loudly, at boot). Next free DD: 240.</p>
-<h3 id="dd-244-saved-searches-wait-for-authentication">DD-244. Saved searches wait for authentication<a class="headerlink" href="#dd-244-saved-searches-wait-for-authentication" title="Permanent link">&para;</a></h3>
-<ul>
-<li><strong>Status:</strong> Accepted</li>
-<li><strong>Increment:</strong> 4.5</li>
-<li><strong>Date:</strong> 2026-10-30</li>
-</ul>
-<p><strong>Decision.</strong> Increment 4.5 (saved searches and the user profile) follows 6.1 (authentication) instead of
-preceding 5.1. The roadmap keeps its number; 5.1 lineage is the next increment. The user chose this on
-2026-10-30.</p>
-<p><strong>Reason.</strong> Atlas owns every saved search by the logged-in user: <code>addSavedSearch</code> sets the owner from the
-request's user, <code>getSavedSearches</code> defaults to that user, and reading, updating, deleting and executing a
-search check ownership (<code>checkSavedSearchOwnership</code>). Until 6.1 the server has no user (DV-04, DV-06); porting
-4.5 now would need a temporary owner, a deviation 6.1 would have to undo, and ownership checks that test
-nothing.</p>
-<p><strong>Alternatives.</strong> One anonymous owner until 6.1: the endpoints sooner, the checks trivially passing. An owner
-taken from a request header until 6.1: testable checks, but a spoofable identity to remove later.</p>
-<p><strong>Consequences.</strong> <code>search/saved*</code> stays unanswered until after 6.1; the dashboards' saved-search menus fail
-until then, as they did before.</p>
 <h3 id="dd-245-lineage-walks-the-relationships-of-the-process-edges">DD-245. Lineage walks the relationships of the process edges<a class="headerlink" href="#dd-245-lineage-walks-the-relationships-of-the-process-edges" title="Permanent link">&para;</a></h3>
 <ul>
 <li><strong>Status:</strong> Proposed</li>
@@ -20318,6 +20272,12 @@ here is a copy of the one at the time of the move. New entries go to the increme
 <td>DSL traversals and projections are evaluated in steps</td>
 <td>Proposed</td>
 <td><code>libs/python/aurelius-atlas-core/specs/4-4-dsl-projections/design.md</code></td>
+</tr>
+<tr>
+<td>DD-244</td>
+<td>Saved searches wait for authentication</td>
+<td>Accepted</td>
+<td><code>libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md</code></td>
 </tr>
 <tr>
 <td>DD-252</td>
