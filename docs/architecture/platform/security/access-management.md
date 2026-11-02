@@ -5,9 +5,9 @@ This page explains what a signed-in person may do, as decided by the permission 
 person is comes from the identity provider ([ADR 007](../../adr/007-one-shared-identity-provider.md),
 [identity management](identity-management.md)). What they may do comes from the roles the identity provider
 gives them, read by one authorizer in the catalogue server. The rules and their tests are in the increment
-specs [6.2a](../../conversion/increments/6-2-authorization.md),
-[6.2b](../../conversion/increments/6-2-authorization-entities.md) and
-[6.2c](../../conversion/increments/6-2-authorization-search.md).
+specs `6.2a` (the spec: `apps/aurelius-atlas-server/specs/6-2-authorization/spec.md`),
+`6.2b` (the spec: `apps/aurelius-atlas-server/specs/6-2-authorization-entities/spec.md`) and
+`6.2c` (the spec: `apps/aurelius-atlas-server/specs/6-2-authorization-search/spec.md`).
 
 ## The role model
 
