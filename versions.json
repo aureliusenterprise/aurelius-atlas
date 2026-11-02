@@ -1,5 +1,10 @@
 [
   {
+    "version": "test-export-e2e-rides-the-client",
+    "title": "test-export-e2e-rides-the-client",
+    "aliases": []
+  },
+  {
     "version": "refactor-per-project-specs-d-adr-shape",
     "title": "refactor-per-project-specs-d-adr-shape",
     "aliases": []
