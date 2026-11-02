@@ -7066,6 +7066,30 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Hash order is no meaning; a missing file is a client error, as a blank file name is</td>
 <td>5.3</td>
 </tr>
+<tr>
+<td>DV-120</td>
+<td>Import/export</td>
+<td>An export answers <code>Content-Encoding: gzip</code> for a ZIP it does not compress further; an export without a body fails on the null request</td>
+<td>No <code>Content-Encoding</code>; no body is an empty request</td>
+<td>A client that decodes the declared gzip breaks on the ZIP; an empty request is the client's meaning</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-121</td>
+<td>Import/export</td>
+<td>An export's type definitions, metrics and the starting entities found by value come in the hash order of sets and maps</td>
+<td>In the order first met</td>
+<td>Hash order is no meaning; the order met is stable</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-122</td>
+<td>Import/export</td>
+<td>An export item of type <code>hdfs_path</code> that does not exist is created (<code>HdfsPathEntityCreator</code>)</td>
+<td>Not created; the item fails</td>
+<td>The catalogue has no HDFS model, and an export should not write</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 

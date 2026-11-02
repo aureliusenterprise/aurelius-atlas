@@ -696,6 +696,9 @@ Methods:
 - **`now`** –
 
   The current time in epoch milliseconds, as Atlas stores times.
+- **`of_types`** –
+
+  The entities of exactly these types, in any state (EXP-03).
 - **`prepare`** –
 
   Create the indices that are missing (ENS-01).
@@ -828,6 +831,14 @@ now() -> int
 ```
 
 The current time in epoch milliseconds, as Atlas stores times.
+
+#### of\_types
+
+```
+of_types(type_names: Sequence[str]) -> list[StoredEntity]
+```
+
+The entities of exactly these types, in any state (EXP-03).
 
 #### prepare
 
@@ -1389,6 +1400,9 @@ Methods:
 - **`list_tasks`** –
 
   Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+- **`of_types`** –
+
+  Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
 - **`prepare`** –
 
   Create each index behind its alias unless it exists (ENS-01).
@@ -1518,6 +1532,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
 Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+
+#### of\_types
+
+```
+of_types(type_names: Sequence[str]) -> list[VersionedEntity]
+```
+
+Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
 
 #### prepare
 
@@ -1655,6 +1677,9 @@ Methods:
 - **`list_tasks`** –
 
   Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+- **`of_types`** –
+
+  The entities of exactly these types, in any state, as of now (EXP-03).
 - **`prepare`** –
 
   Create the indices that are missing.
@@ -1768,6 +1793,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
 Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+
+#### of\_types
+
+```
+of_types(type_names: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities of exactly these types, in any state, as of now (EXP-03).
 
 #### prepare
 

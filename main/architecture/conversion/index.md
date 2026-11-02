@@ -88,7 +88,9 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 6.2a | Authorization: authorizer, types, admin | The roles that grant Atlas's privileges, the session's permissions, type definition and purge checks | `AtlasAuthorizationUtils`, `AtlasSimpleAuthorizer` | in progress |
 | 6.2b | Authorization: entities | Entity, classification, relationship and glossary checks | `AtlasEntityStoreV2`, `AtlasRelationshipStoreV2` | in progress |
 | 6.2c | Authorization: search and lineage | Search results scrubbed, lineage checked, type listings filtered, the cluster realm's roles; ADR 038 accepted | `AtlasAuthorizationUtils#scrubSearchResults`, `#filterTypesDef`, `EntityLineageService` | in progress |
-| 6.3 | Import, export and migration | Atlas export ZIP format, migration of an existing Atlas | `ExportService`, `ImportService` | planned |
+| 6.3a | Export | `POST admin/export`: the ZIP of the entities an export reaches, their types and its result; full, connected and incremental fetch | `ExportService`, `ZipSink`, the extractors | in progress |
+| 6.3b | Import and migration | `POST admin/import`, `admin/importfile`: type definitions and entities imported with their GUIDs; importing a Java Atlas 2.4 export migrates it | `ImportService`, `ZipSource`, `ImportTypeDefProcessor` | planned |
+| 6.3c | Transforms, incremental and audits | Import transforms and options, the Hive incremental export, replication options, the export and import audits and server records | `ImportTransforms`, `IncrementalExportEntityProvider`, `AuditsWriter`, `ExportImportAuditService` | planned |
 | 6.4 | Hardening | Metrics, observability, load test, index tuning | `AdminResource` metrics | planned |
 | 7.0 | Webapp foundation (umbrella) | The rules every 7.x slice obeys: standalone, signals, shared dumb UI, Vitest and Playwright, `@angular/localize` | Aurelius `apps/atlas` | planned |
 | 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp`: bootstrap, router, runtime config, XLIFF locale bridge, OTel telemetry | Aurelius `apps/atlas/src/app`, `libs/i18n` | in progress |

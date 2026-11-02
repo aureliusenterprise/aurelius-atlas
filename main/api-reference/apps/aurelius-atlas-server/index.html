@@ -1279,6 +1279,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.cluster_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;cluster_name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.dashboard_dir" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2006,6 +2017,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;delete_task
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.export" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;export
       </span>
     </span>
   </a>
@@ -7310,6 +7332,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.cluster_name" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;cluster_name
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.dashboard_dir" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8044,6 +8077,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.export" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;export
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_liveness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8403,6 +8447,11 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Task Poll Seconds"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"cluster_name"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"default"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Cluster Name"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"lineage_on_demand_enabled"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Lineage On Demand Enabled"</span><span class="p">,</span>
@@ -8713,6 +8762,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.task_poll_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.task_poll_seconds">task_poll_seconds</a></code>
                 (<code><span title="float">float</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            cluster_name
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.cluster_name)" href="./#aurelius_atlas_server.settings.ServerSettings.cluster_name">cluster_name</a></code>
+                (<code><span title="str">str</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            lineage_on_demand_enabled
@@ -9115,6 +9173,30 @@ Elasticsearch settings; it does not start without its store.</p>
 
         <p>The identity provider's root (Keycloak), which tokens are verified against and browsers sign in at
 (AUT-02, AUT-05; ADR 007).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.cluster_name" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">cluster_name</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.cluster_name" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">cluster_name</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">'default'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The cluster an export says it comes from: <code>atlas.metadata.namespace</code>, else <code>atlas.cluster.name</code> (EXP-06).</p>
 
     </div>
 
@@ -10672,6 +10754,18 @@ there the cause is the request's own defect, not server internals.</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            export
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.export)" href="./#aurelius_atlas_server.routes.admin.export">export</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>export</code>: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            get_liveness
 
 
@@ -11148,6 +11242,44 @@ there the cause is the request's own defect, not server internals.</p>
     <div class="doc doc-contents ">
 
         <p><code>deleteTask</code>: remove the tasks of the <code>guids</code> given (TSK-06).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.export" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">export</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.export" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">export</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.export(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.export(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.export(body)">body</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Body">Body</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="fastapi.Response">Response</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>export</code>: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).</p>
+<p>One export or import runs at a time unless the request's options name <code>skipLineage</code> or <code>replicatedTo</code>.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="aurelius_atlas_server.errors.AtlasError">AtlasError</span></code>
+            –
+          <div class="doc-md-description">
+            <p><code>UNAUTHORIZED_ACCESS</code>; <code>FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK</code> while another runs;
+<code>BAD_REQUEST</code> for a body that is no export request (DV-10).</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>

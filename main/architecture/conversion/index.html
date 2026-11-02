@@ -6766,10 +6766,24 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
-<td>6.3</td>
-<td>Import, export and migration</td>
-<td>Atlas export ZIP format, migration of an existing Atlas</td>
-<td><code>ExportService</code>, <code>ImportService</code></td>
+<td>6.3a</td>
+<td>Export</td>
+<td><code>POST admin/export</code>: the ZIP of the entities an export reaches, their types and its result; full, connected and incremental fetch</td>
+<td><code>ExportService</code>, <code>ZipSink</code>, the extractors</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.3b</td>
+<td>Import and migration</td>
+<td><code>POST admin/import</code>, <code>admin/importfile</code>: type definitions and entities imported with their GUIDs; importing a Java Atlas 2.4 export migrates it</td>
+<td><code>ImportService</code>, <code>ZipSource</code>, <code>ImportTypeDefProcessor</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>6.3c</td>
+<td>Transforms, incremental and audits</td>
+<td>Import transforms and options, the Hive incremental export, replication options, the export and import audits and server records</td>
+<td><code>ImportTransforms</code>, <code>IncrementalExportEntityProvider</code>, <code>AuditsWriter</code>, <code>ExportImportAuditService</code></td>
 <td>planned</td>
 </tr>
 <tr>

@@ -130,6 +130,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Task Poll Seconds",
 >       "type": "number"
 >     },
+>     "cluster_name": {
+>       "default": "default",
+>       "title": "Cluster Name",
+>       "type": "string"
+>     },
 >     "lineage_on_demand_enabled": {
 >       "default": false,
 >       "title": "Lineage On Demand Enabled",
@@ -327,6 +332,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `delete_type_override` (`bool`)
 > - `tasks_enabled` (`bool`)
 > - `task_poll_seconds` (`float`)
+> - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
 > - `lineage_on_demand_default_node_count` (`int`)
 > - `lineage_max_node_count` (`int`)
@@ -413,6 +419,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The identity provider's root (Keycloak), which tokens are verified against and browsers sign in at (AUT-02, AUT-05; ADR 007).
+>
+> ### cluster\_name
+>
+> ```
+> cluster_name: str = 'default'
+> ```
+>
+> The cluster an export says it comes from: `atlas.metadata.namespace`, else `atlas.cluster.name` (EXP-06).
 >
 > ### dashboard\_dir
 >
@@ -896,6 +910,9 @@ Functions:
 - **`delete_task`** –
 
   `deleteTask`: remove the tasks of the `guids` given (TSK-06).
+- **`export`** –
+
+  `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
@@ -1024,6 +1041,22 @@ delete_task(request: Request) -> Response
 ```
 
 `deleteTask`: remove the tasks of the `guids` given (TSK-06).
+
+### export
+
+```
+export(request: Request, store: Store, body: Body) -> Response
+```
+
+`export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
+
+One export or import runs at a time unless the request's options name `skipLineage` or `replicatedTo`.
+
+Raises:
+
+- `AtlasError` –
+
+  `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK` while another runs; `BAD_REQUEST` for a body that is no export request (DV-10).
 
 ### get\_liveness
 
