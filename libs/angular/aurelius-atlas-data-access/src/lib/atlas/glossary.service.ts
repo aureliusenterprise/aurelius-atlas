@@ -9,6 +9,7 @@ import type {
     AtlasGlossaryExtInfo,
     AtlasGlossaryTerm,
     AtlasRelatedCategoryHeader,
+    AtlasRelatedObjectId,
     GlossarySort,
 } from "./atlas-glossary";
 import type { AtlasExportAnswer, BulkImportResponse } from "./atlas-impexp";
@@ -28,13 +29,14 @@ export type GlossaryPage = {
 };
 
 /**
- * The glossary endpoints of the Atlas server (`GlossaryREST`, AGL-01..07):
- * the first third of `routes/glossary.py` — the thirteen routes about
- * glossaries themselves. Terms (8.21) and categories (8.22) follow. Every
- * URL composes from the injected {@link API_BASE_URL} (APC-01). The Python
- * twin is `AtlasClient.glossary` (CLG-01..CLG-09); its resource-object
- * methods (`glossary.glossaries()`, …) compose into these flat names, as
- * 8.15/8.16 did for lineage and relationships.
+ * The glossary endpoints of the Atlas server (`GlossaryREST`, AGL-01..07,
+ * AGT-01..06): twenty-four of the thirty-two routes of `routes/glossary.py`
+ * — the thirteen about glossaries themselves (8.20) and the eleven about
+ * terms (8.21). Categories (8.22) finish the family. Every URL composes from
+ * the injected {@link API_BASE_URL} (APC-01). The Python twin is
+ * `AtlasClient.glossary` (CLG-01..CLG-09); its resource-object methods
+ * (`glossary.glossaries()`, …) compose into these flat names, as 8.15/8.16
+ * did for lineage and relationships.
  */
 @Injectable({
     providedIn: "root",
@@ -218,6 +220,155 @@ export class GlossaryService {
         const form = new FormData();
         form.append("file", content, fileName);
         return this.http.post<BulkImportResponse>(this.glossaryUrl("/import"), form);
+    }
+
+    /**
+     * The term (`getTerm`, GET `/v2/glossary/term/{guid}` — GTM-01, AGT-01).
+     * @param termGuid the term GUID
+     * @returns the term, bare
+     */
+    getTerm(termGuid: string): Observable<AtlasGlossaryTerm> {
+        return this.http.get<AtlasGlossaryTerm>(this.glossaryUrl(`/term/${encodeURIComponent(termGuid)}`));
+    }
+
+    /**
+     * Create a term (`createTerm`, POST `/v2/glossary/term` — GTM-02,
+     * AGT-01). The anchor is not checked here: a term without one is the
+     * server's `MISSING_MANDATORY_ANCHOR` answer, as in the twin (CLG-05).
+     * @param term the term to create
+     * @returns the created term, with its guid
+     */
+    createTerm(term: AtlasGlossaryTerm): Observable<AtlasGlossaryTerm> {
+        return this.http.post<AtlasGlossaryTerm>(this.glossaryUrl("/term"), term);
+    }
+
+    /**
+     * Create every term (`createTerms`, POST `/v2/glossary/terms` — GTM-02,
+     * AGT-01). Every anchor is the server's check (CLG-05).
+     * @param terms the terms to create
+     * @returns the created terms, in the request's order
+     */
+    createTerms(terms: AtlasGlossaryTerm[]): Observable<AtlasGlossaryTerm[]> {
+        return this.http.post<AtlasGlossaryTerm[]>(this.glossaryUrl("/terms"), terms);
+    }
+
+    /**
+     * Update a term (`updateTerm`, PUT `/v2/glossary/term/{guid}` — GTM-04,
+     * AGT-02). The body guid is not rewritten here: the server grafts the
+     * path GUID onto the body it stores (CLG-08).
+     * @param termGuid the term GUID of the path
+     * @param term the term to store
+     * @returns the updated term
+     */
+    updateTerm(termGuid: string, term: AtlasGlossaryTerm): Observable<AtlasGlossaryTerm> {
+        return this.http.put<AtlasGlossaryTerm>(this.glossaryUrl(`/term/${encodeURIComponent(termGuid)}`), term);
+    }
+
+    /**
+     * Set the given attributes of a term (`partialUpdateTerm`, PUT
+     * `/v2/glossary/term/{guid}/partial` — GTM-04, AGT-02). The body is the
+     * plain JSON object of attribute values (name, the two descriptions,
+     * abbreviation, usage). A field the term does not have stays the
+     * server's answer (`INVALID_PARTIAL_UPDATE_ATTR`).
+     * @param termGuid the term GUID
+     * @param fields the attribute values to set
+     * @returns the whole updated term
+     * @throws a `Error` when `fields` is empty — the server's answer for it
+     * is `BAD_REQUEST` (NO_PARTIAL_UPDATES, GTM-04), so the client refuses
+     * the wasted round trip, as the twin's `_no_fields` does (CLG-03). No
+     * request is made.
+     */
+    partialUpdateTerm(termGuid: string, fields: Record<string, unknown>): Observable<AtlasGlossaryTerm> {
+        if (Object.keys(fields).length === 0) {
+            throw new Error("no fields to set: the server answers BAD_REQUEST (NO_PARTIAL_UPDATES, GTM-04)");
+        }
+        return this.http.put<AtlasGlossaryTerm>(
+            this.glossaryUrl(`/term/${encodeURIComponent(termGuid)}/partial`),
+            fields,
+        );
+    }
+
+    /**
+     * Delete a term (`deleteTerm`, DELETE `/v2/glossary/term/{guid}` —
+     * GTM-05, CLG-09, AGT-03). Answers 204.
+     * @param termGuid the term GUID
+     */
+    deleteTerm(termGuid: string): Observable<void> {
+        return this.http.delete<void>(this.glossaryUrl(`/term/${encodeURIComponent(termGuid)}`));
+    }
+
+    /**
+     * The term's related terms by relation (`getRelatedTerms`, GET
+     * `/v2/glossary/terms/{guid}/related` — GTM-06, CLG-07, AGT-04). The key
+     * is the relation's JSON name (`seeAlso`, `synonyms`, …). The page
+     * parameters the server reads and ignores, the client does not send.
+     * @param termGuid the term GUID
+     * @returns the headers of each relation, keyed by relation name
+     */
+    getRelatedTerms(termGuid: string): Observable<Record<string, AtlasRelatedTermHeader[]>> {
+        return this.http.get<Record<string, AtlasRelatedTermHeader[]>>(
+            this.glossaryUrl(`/terms/${encodeURIComponent(termGuid)}/related`),
+        );
+    }
+
+    /**
+     * The entities assigned to the term (`getAssignedEntities`, GET
+     * `/v2/glossary/terms/{guid}/assignedEntities` — GTA-01, AGT-05). The
+     * paging follows {@link GlossaryPage}.
+     * @param termGuid the term GUID
+     * @param page the paging, or nothing for the server's defaults
+     * @returns the assigned entities of the page
+     */
+    getAssignedEntities(termGuid: string, page: GlossaryPage = {}): Observable<AtlasRelatedObjectId[]> {
+        return this.http.get<AtlasRelatedObjectId[]>(
+            this.glossaryUrl(`/terms/${encodeURIComponent(termGuid)}/assignedEntities`),
+            { params: this.pageParams(page) },
+        );
+    }
+
+    /**
+     * Assign the term to the entities (`assignTerm`, POST
+     * `/v2/glossary/terms/{guid}/assignedEntities` — GTA-02, CLG-04,
+     * AGT-06). The body is the bare array of related object ids; nothing is
+     * checked here. Answers 204.
+     * @param termGuid the term GUID
+     * @param objectIds the entities to assign, as related object ids
+     */
+    assignTerm(termGuid: string, objectIds: AtlasRelatedObjectId[]): Observable<void> {
+        return this.http.post<void>(
+            this.glossaryUrl(`/terms/${encodeURIComponent(termGuid)}/assignedEntities`),
+            objectIds,
+        );
+    }
+
+    /**
+     * Remove the term's assignments from the entities (`removeTermAssignment`,
+     * DELETE `/v2/glossary/terms/{guid}/assignedEntities` — GTA-03, CLG-04,
+     * AGT-06). The body rides `HttpClient.request` — the typed
+     * `HttpClient.delete` takes none. Answers 204.
+     * @param termGuid the term GUID
+     * @param objectIds the assignments to remove, as related object ids
+     */
+    removeTermAssignment(termGuid: string, objectIds: AtlasRelatedObjectId[]): Observable<void> {
+        return this.http.request<void>(
+            "DELETE",
+            this.glossaryUrl(`/terms/${encodeURIComponent(termGuid)}/assignedEntities`),
+            { body: objectIds },
+        );
+    }
+
+    /**
+     * As {@link removeTermAssignment} (PUT
+     * `/v2/glossary/terms/{guid}/assignedEntities` — GTA-03, CLG-04,
+     * AGT-06). Kept so a caller states its intent. Answers 204.
+     * @param termGuid the term GUID
+     * @param objectIds the assignments to disassociate, as related object ids
+     */
+    disassociateTermAssignment(termGuid: string, objectIds: AtlasRelatedObjectId[]): Observable<void> {
+        return this.http.put<void>(
+            this.glossaryUrl(`/terms/${encodeURIComponent(termGuid)}/assignedEntities`),
+            objectIds,
+        );
     }
 
     private glossaryUrl(path: string): string {

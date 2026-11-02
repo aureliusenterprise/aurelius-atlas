@@ -2,11 +2,11 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { API_BASE_URL, provideApiBaseUrl } from "../api-config";
-import type { AtlasGlossary, AtlasGlossaryCategory, AtlasGlossaryTerm } from "./atlas-glossary";
+import type { AtlasGlossary, AtlasGlossaryCategory, AtlasGlossaryTerm, AtlasRelatedObjectId } from "./atlas-glossary";
 import type { BulkImportResponse } from "./atlas-impexp";
 import { GlossaryService } from "./glossary.service";
 
-describe("GlossaryService (AGL-01..07)", () => {
+describe("GlossaryService (AGL-01..07, AGT-01..06)", () => {
     let service: GlossaryService;
     let httpMock: HttpTestingController;
 
@@ -181,6 +181,110 @@ describe("GlossaryService (AGL-01..07)", () => {
         expect(form).toBeInstanceOf(FormData);
         expect((form.get("file") as File).name).toBe("terms.csv");
         req.flush(answer);
+    });
+
+    it("---- 8.21: getTerm reads and create/createTerms post the bare term(s) (AGT-01, GTM-01/02) ----", () => {
+        service.getTerm("t-1").subscribe();
+
+        const get = httpMock.expectOne("/api/atlas/v2/glossary/term/t-1");
+        expect(get.request.method).toBe("GET");
+        get.flush(term);
+
+        service.createTerm(term).subscribe();
+
+        const one = httpMock.expectOne("/api/atlas/v2/glossary/term");
+        expect(one.request.method).toBe("POST");
+        expect(one.request.body).toEqual(term);
+        one.flush(term);
+
+        service.createTerms([term]).subscribe();
+
+        const many = httpMock.expectOne("/api/atlas/v2/glossary/terms");
+        expect(many.request.method).toBe("POST");
+        expect(many.request.body).toEqual([term]);
+        many.flush([term]);
+    });
+
+    it("updateTerm puts the body as given — the server grafts the path guid (AGT-02, CLG-08)", () => {
+        service.updateTerm("t-1", { name: "Revenue (annual)" }).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/term/t-1");
+        expect(req.request.method).toBe("PUT");
+        expect(req.request.body).toEqual({ name: "Revenue (annual)" });
+        req.flush({ ...term, name: "Revenue (annual)" });
+    });
+
+    it("partialUpdateTerm puts the bare attribute map (AGT-02, GTM-04)", () => {
+        service.partialUpdateTerm("t-1", { abbreviation: "Rev", usage: "BUSINESS" }).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/term/t-1/partial");
+        expect(req.request.method).toBe("PUT");
+        expect(req.request.body).toEqual({ abbreviation: "Rev", usage: "BUSINESS" });
+        req.flush(term);
+    });
+
+    it("partialUpdateTerm with no fields raises and makes no request (AGT-02, CLG-03)", () => {
+        expect(() => service.partialUpdateTerm("t-1", {})).toThrow(/NO_PARTIAL_UPDATES/);
+        httpMock.expectNone("/api/atlas/v2/glossary/term/t-1/partial");
+    });
+
+    it("deleteTerm answers 204 as void (AGT-03, GTM-05, CLG-09)", () => {
+        service.deleteTerm("t-1").subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/term/t-1");
+        expect(req.request.method).toBe("DELETE");
+        req.flush(null);
+    });
+
+    it("getRelatedTerms answers the keyed map and sends no paging (AGT-04, GTM-06, CLG-07)", () => {
+        service.getRelatedTerms("t-1").subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/terms/t-1/related");
+        expect(req.request.method).toBe("GET");
+        expect(req.request.params.keys()).toEqual([]);
+        req.flush({ seeAlso: [{ termGuid: "t-2", displayText: "Turnover" }], synonyms: [] });
+    });
+
+    it("getAssignedEntities answers the related object ids, paged as GlossaryPage (AGT-05, GTA-01, CLG-02)", () => {
+        const assigned: AtlasRelatedObjectId[] = [{ guid: "e-1", typeName: "table", displayText: "sales" }];
+        service.getAssignedEntities("t-1").subscribe();
+
+        const plain = httpMock.expectOne("/api/atlas/v2/glossary/terms/t-1/assignedEntities");
+        expect(plain.request.params.keys()).toEqual([]);
+        plain.flush(assigned);
+
+        service.getAssignedEntities("t-1", { limit: -1, offset: 5 }).subscribe();
+
+        const paged = httpMock.expectOne(
+            (r) => r.url === "/api/atlas/v2/glossary/terms/t-1/assignedEntities" && r.params.get("limit") === "-1",
+        );
+        expect(paged.request.params.get("offset")).toBe("5");
+        paged.flush([]);
+    });
+
+    it("the assignment trio sends the bare id array: POST assign, DELETE remove, PUT disassociate (AGT-06, GTA-02/03, CLG-04)", () => {
+        const objectIds: AtlasRelatedObjectId[] = [{ guid: "e-1", typeName: "table" }];
+
+        service.assignTerm("t-1", objectIds).subscribe();
+
+        const assign = httpMock.expectOne("/api/atlas/v2/glossary/terms/t-1/assignedEntities");
+        expect(assign.request.method).toBe("POST");
+        expect(assign.request.body).toEqual(objectIds);
+        assign.flush(null);
+
+        service.removeTermAssignment("t-1", objectIds).subscribe();
+
+        const remove = httpMock.expectOne("/api/atlas/v2/glossary/terms/t-1/assignedEntities");
+        expect(remove.request.method).toBe("DELETE");
+        expect(remove.request.body).toEqual(objectIds);
+        remove.flush(null);
+
+        service.disassociateTermAssignment("t-1", objectIds).subscribe();
+
+        const disassociate = httpMock.expectOne("/api/atlas/v2/glossary/terms/t-1/assignedEntities");
+        expect(disassociate.request.method).toBe("PUT");
+        expect(disassociate.request.body).toEqual(objectIds);
+        disassociate.flush(null);
     });
 
     it("every URL composes from API_BASE_URL (AGL-01, APC-01)", () => {

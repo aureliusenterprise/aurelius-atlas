@@ -32,13 +32,15 @@ Part of the template **spine**.
   template download and file import), and label routes (8.19, ACL-01..09) —
   all thirty-seven `EntityREST` routes of server 2.3/7.6 (DET-03); the twin
   of `AtlasClient.entity` (CLE-01..CLE-12)
-- `GlossaryService` — the glossary endpoints (`/atlas/v2/glossary/**`): this
-  first third (8.20, AGL-01..07) takes the thirteen glossary routes — the
-  paged list, create/update/partial-update/delete, the detailed read, the
-  paged category and term reads (full and header form), and the template
-  download and file import — `GlossaryREST` of server 2.4 (GLS/GIM); the
-  twin of `AtlasClient.glossary` (CLG-01..CLG-09). Terms (8.21) and
-  categories (8.22) follow
+- `GlossaryService` — the glossary endpoints (`/atlas/v2/glossary/**`): the
+  glossary routes (8.20, AGL-01..07) — the paged list, create/update/
+  partial-update/delete, the detailed read, the paged category and term
+  reads (full and header form), and the template download and file import —
+  and the term routes (8.21, AGT-01..06) — the term reads/creates/updates,
+  the partial update, the delete, the related-terms map, and the paged
+  assigned-entities read with its assignment trio — `GlossaryREST` of server
+  2.4 (GLS/GTM/GTA/GIM); the twin of `AtlasClient.glossary` (CLG-01..CLG-09).
+  Categories (8.22) follow
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from

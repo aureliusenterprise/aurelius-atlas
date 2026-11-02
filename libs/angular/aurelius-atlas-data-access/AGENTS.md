@@ -54,17 +54,21 @@ consumers import from the package root only, never a subfolder path.
   (`AtlasRelationshipWithExtInfo`, REL-06), and the soft/hard delete
   (`deleteType` only when chosen)
 - `src/lib/atlas/glossary.service.ts` — `GlossaryService`
-  (`/atlas/v2/glossary/**`, AGL-01..07): the first third of `GlossaryREST`
-  (the glossary family's 13 of 32 routes; terms and categories follow in
-  8.21/8.22) — the paged list and the paged category/term reads (full and
-  header form) send the server's paging defaults as absence (`GlossaryPage`,
-  CLG-02: `limit` -1 and `offset` 0 and `sort` ASC are absences; an explicit
-  `-1` travels), create/update send the bare `AtlasGlossary` (the server
-  grafts the path guid, CLG-08), `partialUpdateGlossary` sends the bare
+  (`/atlas/v2/glossary/**`, AGL-01..07, AGT-01..06): twenty-four of
+  `GlossaryREST`'s 32 routes — the thirteen glossary routes (8.20) and the
+  eleven term routes (8.21); categories follow in 8.22. The paged list, the
+  paged category/term reads, and `getAssignedEntities` send the server's
+  paging defaults as absence (`GlossaryPage`, CLG-02: `limit` -1 and
+  `offset` 0 and `sort` ASC are absences; an explicit `-1` travels);
+  create/update send the bare model (the server grafts the path guid,
+  CLG-08); `partialUpdateGlossary`/`partialUpdateTerm` send the bare
   attribute map (an empty map is the caller's bug — refused client-side, as
-  in the twin, CLG-03), the template download answers the `AtlasExportAnswer`
-  pair (DD-315) and the import posts a `file` form part
-  (`BulkImportResponse`), and the delete answers 204 → `void`. The twin of
+  in the twin, CLG-03); `getRelatedTerms` answers the keyed relation map
+  (CLG-07); the assignment trio (POST/DELETE/PUT) sends the bare
+  `AtlasRelatedObjectId[]` and answers 204 (the DELETE body rides
+  `HttpClient.request`, CLG-04); the template download answers the
+  `AtlasExportAnswer` pair (DD-315) and the import posts a `file` form part
+  (`BulkImportResponse`); the deletes answer 204 → `void`. The twin of
   `AtlasClient.glossary` (CLG-01..CLG-09)
 - `src/lib/atlas/atlas-typedef.ts` — the typedef DTO cluster with the server's camelCase
   wire names (APC-03); `src/lib/atlas/atlas-search.ts` — the search DTO cluster
