@@ -53,7 +53,7 @@ def _happy_upstream(upstream: FakeUpstream) -> None:
     """Set the handler: the fetch answers the lineage, the extract answers the model body."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == f"/v2/lineage/{E_IN}":
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}":
             return upstream.json(200, LINEAGE)
         return upstream.json(200, EXTRACTED)
 
@@ -191,7 +191,7 @@ async def test__the_app_closes_the_pools_it_built(
         response = await http.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
         assert response.status_code == 200
 
-    assert [request.url.path for request in upstream.requests] == [f"/v2/lineage/{E_IN}", "/extract"]
+    assert [request.url.path for request in upstream.requests] == [f"/api/atlas/v2/lineage/{E_IN}", "/extract"]
     assert len(built) == 2
     assert all(pool.is_closed for pool in built)  # the app built them, the app closed them
 
@@ -200,7 +200,7 @@ def _statuses(upstream: FakeUpstream, atlas: list[int]) -> None:
     """Answer the lineage feed from ``atlas`` in order, the extract happily (the trip tests)."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == f"/v2/lineage/{E_IN}":
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}":
             return httpx.Response(atlas.pop(0))
         return upstream.json(200, EXTRACTED)
 
@@ -363,7 +363,7 @@ def _refusing_upstream(upstream: FakeUpstream, path: str) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == path:
             raise httpx.ConnectError(refused, request=request)
-        if request.url.path == f"/v2/lineage/{E_IN}":
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}":
             return upstream.json(200, LINEAGE)
         return upstream.json(200, EXTRACTED)
 
@@ -377,7 +377,7 @@ async def test__an_unreachable_atlas_is_a_502_not_a_crash(
     upstream: FakeUpstream,
 ) -> None:
     """The fetch's transport failure (connect refused) is the handler's 502 Atlas body (LM-07, DV-80)."""
-    _refusing_upstream(upstream, f"/v2/lineage/{E_IN}")
+    _refusing_upstream(upstream, f"/api/atlas/v2/lineage/{E_IN}")
 
     response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))
 
@@ -398,7 +398,7 @@ async def test__an_unreachable_extract_is_a_502(
 
     assert response.status_code == 502
     assert response.json()["errorMessage"] == "the lineage service is unreachable"
-    assert upstream.of(f"/v2/lineage/{E_IN}")  # the chain reached the extract leg
+    assert upstream.of(f"/api/atlas/v2/lineage/{E_IN}")  # the chain reached the extract leg
 
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-07"])

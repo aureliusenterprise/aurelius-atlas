@@ -17,8 +17,8 @@ propagates as ``httpx``'s own error — mapping it to an HTTP status is the app'
 The paths mirror the server's routes verbatim: ``routes/admin.py`` under
 ``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, the
 discovery routes of ``routes/discovery.py`` under ``/api/atlas/v2/search``
-(CL-13), and the ``v2/lineage/{guid}`` feed of the server root (whose route
-lands with 5.1, CL-11).
+(CL-13), and the lineage feed of ``routes/lineage.py`` under
+``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
 """
 
 from collections.abc import Callable, Mapping
@@ -35,6 +35,7 @@ from aurelius_atlas_model.discovery import (
     SearchParameters,
     SortOrder,
 )
+from aurelius_atlas_model.lineage import LineageOnDemandConstraints
 from aurelius_atlas_model.typedef import (
     AtlasBaseTypeDef,
     AtlasBusinessMetadataDef,
@@ -65,18 +66,23 @@ DEFAULT_TIMEOUT_SECONDS = 10.0
 ADMIN_ROOT = "api/atlas/admin"
 TYPES_ROOT = "api/atlas/v2/types"
 DISCOVERY_ROOT = "api/atlas/v2/search"
-LINEAGE_ROOT = "v2/lineage"
+ENTITY_ROOT = "api/atlas/v2/entity"
+GLOSSARY_ROOT = "api/atlas/v2/glossary"
+RELATIONSHIP_ROOT = "api/atlas/v2/relationship"
+LINEAGE_ROOT = "api/atlas/v2/lineage"
 """The route prefixes of the server's resources (``routes/admin.py``, ``routes/types.py``,
-``routes/discovery.py``, 5.1's feed).
+``routes/discovery.py``, ``routes/entity.py``, ``routes/glossary.py``,
+``routes/relationship.py``, ``routes/lineage.py``).
 
 Relative to the httpx client's base URL (CL-01): httpx appends them, so the base
 URL the app passes — trailing slash included, as a pydantic ``HttpUrl`` renders
-one — works as given.
+one — works as given. ``LINEAGE_ROOT`` carries the prefix too (CL-60): the
+server mounts its feed at ``/api/atlas/v2/lineage``, as every other resource
+(DD-308).
 """
 
 CLIENT_ERROR = 400
 """The status where an answer becomes an error: the client-error boundary (CL-04)."""
-"""The route prefixes of the server's resources (``routes/admin.py``, ``routes/types.py``, 5.1's feed)."""
 
 _KIND_MODELS: dict[TypeCategory, type[AtlasBaseTypeDef]] = {
     TypeCategory.ENUM: AtlasEnumDef,
@@ -421,6 +427,57 @@ class SearchApi:
         return AtlasSuggestionsResult.model_validate(answer)
 
 
+class LineageApi:
+    """The lineage resource of an :class:`AtlasClient` (CL-61..CL-63): ``client.lineage``.
+
+    The paths mirror ``routes/lineage.py``; the answer body is this library's
+    ``LineageInfo`` (CL-12) — the lenient, UUID-keyed shape 8.2 consumes, not
+    ``aurelius-atlas-model``'s strict ``AtlasLineageInfo``.
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def get(self, guid: UUID, depth: int = 3, direction: Direction = "BOTH") -> LineageInfo:
+        """``GET api/atlas/v2/lineage/{guid}`` (CL-61, LM-01's upstream) — the entity's lineage graph.
+
+        Raises:
+            AtlasClientError: Any non-2xx answer, including the 404 of a guid with
+                no lineage (LM-05) — the caller maps the statuses.
+        """
+        return LineageInfo.model_validate(
+            await self._api.json("GET", f"{LINEAGE_ROOT}/{guid}", params={"depth": depth, "direction": direction})
+        )
+
+    async def get_on_demand(
+        self, guid: UUID, constraints: Mapping[str, LineageOnDemandConstraints] | None = None
+    ) -> LineageInfo:
+        """``POST api/atlas/v2/lineage/{guid}`` (CL-62): lineage on demand, within the constraints per GUID.
+
+        The constraints are ``aurelius-atlas-model``'s (DD-309). A server with the
+        feature off answers ``LINEAGE_ON_DEMAND_NOT_ENABLED``, raised as usual (CL-04).
+        """
+        body = {guid: constraint.to_json() for guid, constraint in (constraints or {}).items()}
+        return LineageInfo.model_validate(await self._api.json("POST", f"{LINEAGE_ROOT}/{guid}", body=body or None))
+
+    async def get_by_unique_attributes(
+        self,
+        type_name: str,
+        attributes: Mapping[str, Any],
+        depth: int = 3,
+        direction: Direction = "BOTH",
+    ) -> LineageInfo:
+        """``GET api/atlas/v2/lineage/uniqueAttribute/type/{type_name}`` (CL-63): the lineage of the entity.
+
+        The entity is the one holding the ``attr:`` values, as ``routes/lineage.py`` reads them.
+        """
+        params: dict[str, Any] = {f"attr:{name}": value for name, value in attributes.items()}
+        params.update({"depth": depth, "direction": direction})
+        return LineageInfo.model_validate(
+            await self._api.json("GET", f"{LINEAGE_ROOT}/uniqueAttribute/type/{type_name}", params=params)
+        )
+
+
 def _present(**params: Any) -> dict[str, Any]:  # noqa: ANN401 - the query parameter values
     """The endpoint's query parameters: a given value, its Java defaults left out.
 
@@ -456,6 +513,7 @@ class AtlasClient:
         self.admin = AdminApi(api)
         self.types = TypesApi(api)
         self.search = SearchApi(api)
+        self.lineage = LineageApi(api)
 
     def with_token(self, token: TokenSource) -> AtlasClient:
         """The same client speaking with ``token`` — sharing the connection pool (CL-03, LM-04).
@@ -466,14 +524,14 @@ class AtlasClient:
         return AtlasClient(self._http, token)
 
     async def get_lineage(self, guid: UUID, depth: int = 3, direction: Direction = "BOTH") -> LineageInfo:
-        """``GET /v2/lineage/{guid}`` (LM-01's upstream, CL-11/CL-12) — the server route lands with 5.1.
+        """The alias of ``lineage.get`` (CL-61, DD-308) — use ``client.lineage.get``.
+
+        Kept for one release-cycle for the 8.2 app, which calls it. It speaks the
+        fixed path now (``api/atlas/v2/lineage``, the mounted route) — the old
+        bare ``v2/lineage`` answered 404 against this workspace's server.
 
         Raises:
             AtlasClientError: Any non-2xx answer, including the 404 of a guid with
                 no lineage (LM-05) — the caller maps the statuses.
         """
-        return LineageInfo.model_validate(
-            await _Api(self._http, self._token).json(
-                "GET", f"{LINEAGE_ROOT}/{guid}", params={"depth": depth, "direction": direction}
-            )
-        )
+        return await self.lineage.get(guid, depth, direction)

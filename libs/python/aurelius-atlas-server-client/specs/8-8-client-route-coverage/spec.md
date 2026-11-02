@@ -1,6 +1,6 @@
 # 8.8 Client route coverage — foundation and lineage
 
-- **Status:** planned
+- **Status:** in progress
 - **Pull request:** —
 - **Records:** DD-307 (one live-check spec per server route module), DD-308 (the
   `LINEAGE_ROOT` fix), DD-309 (client methods reuse `aurelius-atlas-model` bodies),
@@ -117,7 +117,10 @@ libs/python/aurelius-atlas-server-client/tests`):
 - Updated: the `covers` list in
   `tests/test__aurelius_atlas_server_client_client.py` gains the `lineage`
   methods; the 8.2 app's tests keep passing unmodified (the alias).
-- Trace: `uv run aurelius-atlas-trace check` reports CL-60..CL-65 as named.
+- Trace: `uv run aurelius-atlas-trace check` reports CL-60..CL-63 as named.
+  CL-64 names its first test with the first file route (8.11's export/import, or
+  8.9's business-metadata pair if it lands first); CL-65 is a scope rule and is
+  named by the absence of a login method — no test of its own.
 - e2e: the 8.2 app's e2e keeps its `fixture-atlas` (it answers the legacy
   path); the lineage client's paths prove against the server container when the
   5.1 lineage e2e runs in the same PR set, or a named `AtlasClient`-against-

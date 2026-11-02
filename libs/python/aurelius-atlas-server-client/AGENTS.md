@@ -7,12 +7,14 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 ## Layout
 
 - `aurelius_atlas_server_client/models.py` — admin DTOs and `AtlasErrorInfo`
-- `aurelius_atlas_server_client/lineage.py` — the `v2/lineage/{guid}` body
-  models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
+- `aurelius_atlas_server_client/lineage.py` — the `api/atlas/v2/lineage/{guid}`
+  body models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`admin` / `types` /
-  `search` / `get_lineage` / `with_token`), `AtlasClientError`, `KIND_PATHS`;
+  `search` / `lineage` / `with_token`, plus the `get_lineage` alias of
+  `lineage.get`), `AtlasClientError`, `KIND_PATHS`;
   `search` mirrors `routes/discovery.py` (CL-13), GET parameters as query
-  parameters with the Java defaults (false, 0) left out
+  parameters with the Java defaults (false, 0) left out;
+  `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8)
 
 ## Wiring Checklist
 
@@ -22,8 +24,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   (the client exposes no close, DD-205); the token
   source is `str | Callable[[], str]` — a route forwarding the caller's token
   uses `with_token(token)` per request (shares the pool, closes nothing).
-- The `get_lineage` server route lands with 5.1; the paths here already mirror
-  it (`LINEAGE_ROOT`).
+- The roots mirror the server's mounted prefixes, lineage included
+  (`LINEAGE_ROOT = api/atlas/v2/lineage`, CL-60, DD-308). The 8.2 app's
+  unit/scenario stubs and its e2e `fixture-atlas` answer that path.
 
 ## Conventions
 

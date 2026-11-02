@@ -2,7 +2,7 @@
 
 The lineage body models — ``LineageInfo``, ``EntityHeaderLite``, ``LineageRelation``,
 ``Direction`` — moved to ``aurelius-atlas-server-client`` by increment 8.4 (DD-203,
-CL-12): they are the ``v2/lineage/{guid}`` contract of the Atlas API. This module
+CL-12): they are the ``api/atlas/v2/lineage/{guid}`` contract of the Atlas API. This module
 re-exports them so the app's import path stays, and keeps what the app *is*: the
 flattening (``flatten_relations``, ``PROCESS_TYPES``) and the fixed rules document
 (``LINEAGE_RULES``) the legacy chain posted — 8.2's logic, not a contract.

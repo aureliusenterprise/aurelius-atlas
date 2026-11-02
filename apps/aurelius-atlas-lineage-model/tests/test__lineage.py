@@ -22,7 +22,7 @@ P_LOAD = UUID("00000000-0000-4000-8000-000000000002")
 E_OUT = UUID("00000000-0000-4000-8000-000000000003")
 
 # The lineage body the flattening tests share: a dataset, a process, a dataset,
-# joined by two relations — the shape Atlas's v2/lineage answers.
+# joined by two relations — the shape Atlas's api/atlas/v2/lineage answers.
 LINEAGE: dict[str, Any] = {
     "baseEntityGuid": str(E_IN),
     "lineageDepth": 3,
@@ -146,7 +146,7 @@ async def test__the_extract_request_carries_the_rows_and_fixed_rules(
     """
     upstream.handler = lambda request: (
         upstream.json(200, LINEAGE)
-        if request.url.path == f"/v2/lineage/{E_IN}"
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}"
         else upstream.json(200, {"model": "{}", "metadata": []})
     )
 
@@ -173,14 +173,14 @@ async def test__both_upstream_calls_carry_the_callers_token(
     caller = token()  # the caller's own token, minted for this app's audience
     upstream.handler = lambda request: (
         upstream.json(200, LINEAGE)
-        if request.url.path == f"/v2/lineage/{E_IN}"
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}"
         else upstream.json(200, {"model": "{}", "metadata": []})
     )
 
     response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(caller))
 
     assert response.status_code == 200
-    assert upstream.of(f"/v2/lineage/{E_IN}")[0].headers["authorization"] == f"Bearer {caller}"
+    assert upstream.of(f"/api/atlas/v2/lineage/{E_IN}")[0].headers["authorization"] == f"Bearer {caller}"
     assert upstream.of("/extract")[0].headers["authorization"] == f"Bearer {caller}"
 
 
@@ -190,10 +190,10 @@ async def test__the_fetch_carries_depth_and_direction(
     token: Callable[..., str],
     upstream: FakeUpstream,
 ) -> None:
-    """GET /v2/lineage/{guid}?depth&direction — the legacy's upstream call (LM-01, LM-04)."""
+    """GET /api/atlas/v2/lineage/{guid}?depth&direction — the upstream call (LM-01, LM-04, DD-308)."""
     upstream.handler = lambda request: (
         upstream.json(200, LINEAGE)
-        if request.url.path == f"/v2/lineage/{E_IN}"
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}"
         else upstream.json(200, {"model": "{}", "metadata": []})
     )
 
@@ -202,7 +202,7 @@ async def test__the_fetch_carries_depth_and_direction(
     )
 
     assert response.status_code == 200
-    fetch = upstream.of(f"/v2/lineage/{E_IN}")[0]
+    fetch = upstream.of(f"/api/atlas/v2/lineage/{E_IN}")[0]
     assert dict(httpx.URL(str(fetch.url)).params) == {"depth": "5", "direction": "INPUT"}
 
 
@@ -215,7 +215,7 @@ def _answer_lineage(payload: dict[str, Any]) -> Callable[[httpx.Request], httpx.
     """A handler answering the fetch with the payload and the extract with a model body."""
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == f"/v2/lineage/{E_IN}":
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}":
             return FakeUpstream.json(200, payload)
         return FakeUpstream.json(200, {"model": "{}", "metadata": []})
 
@@ -314,7 +314,7 @@ async def test__a_failing_extract_is_502(
 ) -> None:
     """A data2model answer that is not a 200 is a gateway failure (DV-80)."""
     upstream.handler = lambda request: (
-        upstream.json(200, LINEAGE) if request.url.path == f"/v2/lineage/{E_IN}" else httpx.Response(500)
+        upstream.json(200, LINEAGE) if request.url.path == f"/api/atlas/v2/lineage/{E_IN}" else httpx.Response(500)
     )
 
     response = await client.get("/", params={"guid": str(E_IN)}, headers=_bearer(token()))

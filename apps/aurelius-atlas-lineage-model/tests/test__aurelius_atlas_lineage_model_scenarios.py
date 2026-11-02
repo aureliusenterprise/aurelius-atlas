@@ -37,7 +37,7 @@ def scenario_upstream(upstream: FakeUpstream) -> FakeUpstream:
     extract: dict[str, Any] = json.loads((FIXTURES / "graph.extract.json").read_text())
 
     def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path == f"/v2/lineage/{E_IN}":
+        if request.url.path == f"/api/atlas/v2/lineage/{E_IN}":
             return FakeUpstream.json(200, lineage)
         if request.url.path == "/extract":
             return FakeUpstream.json(200, extract)

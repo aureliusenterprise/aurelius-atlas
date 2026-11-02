@@ -13,9 +13,11 @@ and `libs/python/AGENTS.md`.
 - `aurelius_atlas_server_client/models.py` — `AtlasVersion`, `AtlasStatus`,
   `AtlasSessionInfo`, `AtlasErrorInfo` (the admin shapes and the error body)
 - `aurelius_atlas_server_client/lineage.py` — `LineageInfo`, `LineageRelation`,
-  `EntityHeaderLite`, `Direction` (the `v2/lineage/{guid}` body, CL-12)
+  `EntityHeaderLite`, `Direction` (the `api/atlas/v2/lineage/{guid}` body, CL-12)
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`.admin`, `.types`,
-  `.search`, `get_lineage`, `with_token`), `AtlasClientError`, `TokenSource`.
+  `.search`, `.lineage`, `get_lineage`, `with_token`), `AtlasClientError`,
+  `TokenSource`. `.lineage` (CL-61..CL-63) answers the lineage feed of
+  `routes/lineage.py`: `get`, `get_on_demand`, `get_by_unique_attributes`.
   `.search` (CL-13) answers the discovery routes: the basic POST/GET, attribute,
   fulltext, the quick POST/GET, and suggestions — bodies reused whole from
   `aurelius-atlas-model` (CL-10)
