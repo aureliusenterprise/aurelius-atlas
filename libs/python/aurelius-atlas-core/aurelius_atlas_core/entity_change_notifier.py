@@ -7,7 +7,7 @@ of which the audit listener is the one Aurelius Atlas has (AUD-02, CAU-01 to CAU
 
 from collections.abc import Callable, Collection, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_model.errors import AtlasError
 from aurelius_atlas_model.glossary import AtlasGlossaryTerm
@@ -71,14 +71,30 @@ class EntityChangeListener(Protocol):
         """``onTermDeleted``: the term's assignment to each entity removed."""
         ...
 
+    async def on_labels_added(self, guid: str, labels: Sequence[str], *, user: str | None) -> None:
+        """``onLabelsAdded``: the labels added to the entity."""
+        ...
+
+    async def on_business_attributes_updated(
+        self, guid: str, updated: Mapping[str, Mapping[str, Any]], *, user: str | None
+    ) -> None:
+        """``onBusinessAttributesUpdated``: the values given the business attributes the entity changed."""
+        ...
+
+    async def on_labels_deleted(self, guid: str, labels: Sequence[str], *, user: str | None) -> None:
+        """``onLabelsDeleted``: the labels removed from the entity."""
+        ...
+
 
 @dataclass
 class RequestRecord:
-    """What a request tells the notifier after its write: classifications added directly (CAU-02), then the
-    propagations it added and removed, per entity (DD-086).
+    """What a request tells the notifier after its write: the labels of created entities (LBL-05), classifications
+    added directly (CAU-02), then the propagations it added and removed, per entity (DD-086).
     """  # noqa: D205 - one sentence
 
     added_classifications: list[tuple[list[str], StoredClassification]] = field(default_factory=list)
+    added_labels: list[tuple[str, list[str]]] = field(default_factory=list)
+    business_attributes: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict)
     added: dict[str, list[StoredClassification]] = field(default_factory=dict)
     removed: dict[str, list[StoredClassification]] = field(default_factory=dict)
 
@@ -177,6 +193,21 @@ class EntityChangeNotifier:
         if found:
             for listener in self._listeners:
                 await listener.on_term_deleted(term, found, user=user)
+
+    async def on_labels_updated(
+        self, guid: str, added: Sequence[str], removed: Sequence[str], *, user: str | None
+    ) -> None:
+        """``onLabelsUpdatedFromEntity``: the labels removed from the entity, then those added (LBL-05)."""
+        for listener in self._listeners:
+            await listener.on_labels_deleted(guid, removed, user=user)
+            await listener.on_labels_added(guid, added, user=user)
+
+    async def on_business_attributes_updated(
+        self, guid: str, updated: Mapping[str, Mapping[str, Any]], *, user: str | None
+    ) -> None:
+        """``onBusinessAttributesUpdated``: the business attributes a change updated on the entity (BMD-06)."""
+        for listener in self._listeners:
+            await listener.on_business_attributes_updated(guid, updated, user=user)
 
     async def _existing(self, guids: Sequence[str]) -> list[str]:
         """``getAndCacheEntity``: the GUIDs of entities there are, in order."""

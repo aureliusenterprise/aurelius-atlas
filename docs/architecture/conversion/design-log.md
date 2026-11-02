@@ -189,6 +189,7 @@ history. Nothing is appended here.
 | [DD-297](#dd-297-the-aux-apis-auth_realm-joins-globalrealm)                                                        | The aux APIs' AUTH_REALM was a static `master` config literal; it joins `global.realm` like every other realm-bearing env (CHT-74)                                                                                              | 10.12         | Accepted             |
 | [DD-298](#dd-298-a-stuck-pending-install-release-is-cleared-by-uninstall)                                          | `helm install --wait` against a never-Ready workload leaves the release `pending-install` until uninstalled — runbook warns                                                                                                     | 10.1          | Accepted             |
 | [DD-299](#dd-299-helm-lint-vendors-umbrella-dependencies-like-helm-template)                                       | `helm-lint` runs `helm dep update` before linting: the umbrella's gitignored subchart tarballs otherwise leave a fresh checkout without dependency values                                                                       | 10.12         | Proposed             |
+| [DD-302](#dd-302-business-attributes-are-stored-among-the-entitys-attributes-under-their-qualified-names)          | Business attributes are stored among the entity's attributes under their qualified names                                                                                                                                        | 5.3           | Proposed             |
 
 ### DD-126. The webapp is a new project, not the Aurelius app upgraded in place
 
@@ -7466,6 +7467,28 @@ the machine, so the prefix is uniform and cheap.
 **Consequences.** #205's `Lint & render charts` step goes green on a clean
 runner; the plugin's three render-family targets now share one provenance
 rule: never trust `helm/charts/` to exist. Next free DD: 300.
+
+### DD-302. Business attributes are stored among the entity's attributes under their qualified names
+
+- **Status:** Proposed
+- **Increment:** 5.3b
+- **Date:** 2026-11-01
+
+**Decision.** An entity's business attribute values are kept in its stored document's `attributes`, each
+under the attribute's qualified name, `<business metadata>.<attribute>`, mapped as an entity attribute's value
+is (`EntityMapper`). Reads collect them per business metadata from the entity type's business attributes.
+
+**Reason.** Atlas keeps them as vertex properties of exactly that name, beside the entity's own attributes, and
+maps them with `mapAttribute`. A business metadata's name is a type name, so its qualified names cannot collide
+with an entity attribute's (`<entity type>.<attribute>`). Keeping them in `attributes` means every write that
+copies an entity's attributes keeps them, as Atlas's entity updates leave them, and the search fields can be
+built from them as from the entity's own attributes when business metadata becomes searchable.
+
+**Alternatives.** A separate `businessAttributes` object in the document: closer to the REST shape, but each
+write path would have to carry it across, and the values would need their own mapping and indexing.
+
+**Consequences.** Removing a business metadata type leaves values of its qualified names in stored documents;
+Atlas leaves its vertex properties too. Nothing reads them without the type.
 
 ## Moved entries
 
