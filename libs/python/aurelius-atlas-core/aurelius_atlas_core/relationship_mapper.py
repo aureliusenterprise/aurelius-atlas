@@ -40,8 +40,9 @@ from aurelius_atlas_core.relationship_store import (
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 
-type Resolve = Callable[[Any], str]
-"""The GUID of the entity a reference value names; raises ``INVALID_OBJECT_ID`` when it names none."""
+type Resolve = Callable[[Any], str | None]
+"""The GUID of the entity a reference value names; raises ``INVALID_OBJECT_ID`` when it names none, or answers None
+for an import (IMP-03)."""
 
 
 class RelationshipMapper:
@@ -50,7 +51,9 @@ class RelationshipMapper:
     ``known`` holds the entities the request read, and gains those the mapper reads; ``created`` the entities it
     creates. Entities a relationship change makes updated are added to ``touched``; ``hard`` deletes replaced
     relationships rather than marking them ``DELETED`` (REL-15), as an entity of an internal type always does
-    (GTM-08); owned entities whose relationships were deleted are added to ``dropped`` (OWN-01).
+    (GTM-08); owned entities whose relationships were deleted are added to ``dropped`` (OWN-01). ``importing``
+    keeps the relationship GUIDs given, finds existing relationships by label alone and leaves out a reference to
+    an entity that is not there (IMP-05).
     """
 
     def __init__(  # noqa: PLR0913 - the request's context, as ``EntityMutationContext`` and ``RequestContext``
@@ -65,8 +68,10 @@ class RelationshipMapper:
         hard: bool,
         touched: list[str],
         dropped: list[str],
+        importing: bool = False,
     ) -> None:
         self._store = store
+        self._importing = importing
         self._resolve = resolve
         self._known = known
         self._created = created
@@ -140,7 +145,7 @@ class RelationshipMapper:
         """``mapToVertexByTypeCategory`` for a reference: REL-12."""
         direction = attribute.relationship_edge_direction
         relationship_guid = _relationship_guid(value)
-        if relationship_guid:
+        if relationship_guid and not self._importing:
             current = await self._relationship(relationship_guid)
         else:
             current = edge_for_label(
@@ -150,6 +155,8 @@ class RelationshipMapper:
         target = None
         if value is not None:
             target = self._resolve(value)
+            if target is None:
+                return  # an import leaves out a reference to an entity not there (IMP-05)
             new = await self._map_object_id(attribute, value, guid, target, current)
             if attribute.inverse_ref_attribute is not None:
                 await self._inverse(attribute.inverse_ref_attribute, new, _relationship_attributes(value))
@@ -181,7 +188,10 @@ class RelationshipMapper:
         mapped: list[str] = []
         for index, item in enumerate(items):
             existing = None if appending or index >= len(current) else current[index]
-            new = await self._map_object_id(attribute, item, guid, self._resolve(item), existing)
+            target = self._resolve(item)
+            if target is None:
+                continue  # an import leaves out a reference to an entity not there (IMP-05)
+            new = await self._map_object_id(attribute, item, guid, target, existing)
             if attribute.inverse_ref_attribute is not None:
                 await self._inverse(attribute.inverse_ref_attribute, new, None)  # Java passes the whole array
             mapped.append(new.guid)
@@ -215,10 +225,12 @@ class RelationshipMapper:
         direction = attribute.relationship_edge_direction
         if current is not None:
             return await self._update_relationship(current, guid, target, direction, attributes)
+        given = _relationship_guid(value) if self._importing else None
+        name = str(attribute.relationship_name)
         if direction is EdgeDirection.IN:
-            new, created = await self._get_or_create(target, guid, str(attribute.relationship_name), attributes)
+            new, created = await self._get_or_create(target, guid, name, attributes, given)
         else:
-            new, created = await self._get_or_create(guid, target, str(attribute.relationship_name), attributes)
+            new, created = await self._get_or_create(guid, target, name, attributes, given)
         if created:
             self._touch(target)
         return new
@@ -250,12 +262,18 @@ class RelationshipMapper:
         return new
 
     async def _get_or_create(
-        self, end1: str, end2: str, type_name: str, attributes: Mapping[str, Any] | None
+        self,
+        end1: str,
+        end2: str,
+        type_name: str,
+        attributes: Mapping[str, Any] | None,
+        given: str | None = None,
     ) -> tuple[StoredRelationship, bool]:
-        """``getOrCreate``: an ``ACTIVE`` relationship from ``end1`` to ``end2`` with the label, else a new one.
+        """``getOrCreate``: an ``ACTIVE`` relationship from ``end1`` to ``end2`` with the label, else a new one, of
+        the ``given`` GUID of an import (IMP-05).
 
         Answers it and whether it was created (REL-13).
-        """
+        """  # noqa: D205 - one sentence
         from_entity, to_entity = await self._entity(end1), await self._entity(end2)
         relationship = AtlasRelationship(
             type_name=type_name, attributes=None if attributes is None else dict(attributes)
@@ -277,7 +295,7 @@ class RelationshipMapper:
             from_entity,
             to_entity,
             relationship,
-            guid=self._store.new_guid(),
+            guid=given or self._store.new_guid(),
             now=self._now,
             user=self._user,
         )

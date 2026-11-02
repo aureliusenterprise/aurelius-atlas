@@ -30,7 +30,7 @@ _PRIMITIVES = {TypeCategory.PRIMITIVE, TypeCategory.ENUM}
 _KEEP = object()
 """What a mapping answers when the stored value stays as it is."""
 
-type Resolve = Callable[[Any], str]
+type Resolve = Callable[[Any], str | None]
 """The GUID of the entity a reference value names; raises ``INVALID_OBJECT_ID`` when it names none."""
 
 
