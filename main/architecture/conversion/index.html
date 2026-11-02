@@ -6773,10 +6773,17 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
-<td>6.3b</td>
+<td>6.3b1</td>
+<td>Import mode</td>
+<td>The entity write as an import: GUIDs, system attributes and status kept, classifications and business metadata replaced, missing references left out, no privilege checks, <code>ENTITY_IMPORT_*</code> audits</td>
+<td><code>AtlasEntityStoreV2#createOrUpdateForImport</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.3b2</td>
 <td>Import and migration</td>
-<td><code>POST admin/import</code>, <code>admin/importfile</code>: type definitions and entities imported with their GUIDs; importing a Java Atlas 2.4 export migrates it</td>
-<td><code>ImportService</code>, <code>ZipSource</code>, <code>ImportTypeDefProcessor</code></td>
+<td><code>POST admin/import</code>, <code>admin/importfile</code> (a configured folder only): the ZIP read, type definitions merged, entities imported with retries and GUID clashes resolved; importing a Java Atlas 2.4 export migrates it</td>
+<td><code>ImportService</code>, <code>ZipSource</code>, <code>ImportTypeDefProcessor</code>, <code>RegularImport</code></td>
 <td>planned</td>
 </tr>
 <tr>

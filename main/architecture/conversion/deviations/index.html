@@ -7090,6 +7090,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The catalogue has no HDFS model, and an export should not write</td>
 <td>6.3</td>
 </tr>
+<tr>
+<td>DV-123</td>
+<td>Import/export</td>
+<td>An import's classification events come before the entity's <code>ENTITY_IMPORT_UPDATE</code>, in the same transaction</td>
+<td>After it, each a write of the classification store (DD-305)</td>
+<td>The classification store keeps the one copy of the removal and propagation rules</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-124</td>
+<td>Import/export</td>
+<td>An imported shell entity (<code>isIncomplete</code>) that is not stored is created as a shell vertex</td>
+<td>Created as a full entity</td>
+<td>Exports from a catalogue without hooks hold no shell entities</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 

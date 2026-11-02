@@ -6732,6 +6732,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>in progress</td>
 </tr>
 <tr>
+<td><code>AtlasEntityStoreV2#createOrUpdateForImport</code> and the <code>isImportInProgress</code> branches of <code>preCreateOrUpdate</code>, <code>IDBasedEntityResolver</code>, <code>EntityGraphMapper</code> (<code>createVertexWithGuid</code>, <code>updateSystemAttributes</code>, <code>importActivateEntity</code>, relationship GUIDs), <code>AtlasEntityComparator</code>, <code>EntityAuditListenerV2</code></td>
+<td><code>aurelius_atlas_core.entity_writer</code>, <code>aurelius_atlas_core.entity_discovery</code>, <code>aurelius_atlas_core.relationship_mapper</code>, <code>aurelius_atlas_core.entity_comparator</code>, <code>aurelius_atlas_core.entity_audit_listener</code></td>
+<td>6.3b1</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td><code>AtlasKeycloakAuthenticationProvider</code>, <code>AtlasSecurityConfig</code> (open paths, Keycloak filters, logout), Keycloak's <code>KeycloakAuthenticationEntryPoint</code>, <code>KeycloakAuthenticationProcessingFilter</code>, <code>KeycloakLogoutHandler</code>, <code>AtlasCSRFPreventionFilter</code>, <code>AdminResource#getUserProfile</code> (user, groups, CSRF token)</td>
 <td><code>aurelius_atlas_server.authentication</code>, <code>aurelius_atlas_server.oidc_client</code>, <code>aurelius_atlas_server.routes.login</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.auth</code></td>
 <td>6.1a</td>
