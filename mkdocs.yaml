@@ -187,6 +187,9 @@ nav:
                 - Increments:
                       - architecture/conversion/increments/index.md
                       - Specification Template: architecture/conversion/increments/template.md
+                      - 5.3a Labels: architecture/conversion/increments/5-3-labels.md
+                      - 5.3b Business metadata: architecture/conversion/increments/5-3-business-metadata.md
+                      - 5.3c Business metadata import: architecture/conversion/increments/5-3-business-metadata-import.md
                       - 10.1 Deployment chart foundation: architecture/conversion/increments/10-1-chart-foundation.md
                       - 10.2 Stateful platform charts: architecture/conversion/increments/10-2-stateful-platform.md
                       - 10.3a App and edge charts: architecture/conversion/increments/10-3-app-edge-charts.md
