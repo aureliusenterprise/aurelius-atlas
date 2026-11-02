@@ -27,6 +27,9 @@ so it is written and tested once:
 No HTTP endpoint is added by this increment; the surface rules below govern
 the two libraries' behaviour, which is the contract the 8.x apps build on.
 
+This page is the `aurelius-atlas-otel` part of increment 8.0; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-auth`][part-0].
+
 ## Scope
 
 In scope: `libs/python/aurelius-atlas-otel`, `libs/python/aurelius-atlas-auth`,
@@ -51,9 +54,9 @@ DD-197).
 
 ### Non-negotiables (workspace-wide, restated for 8.x)
 
-CIA-07 (every exporter leg carries the per-service ingest token, defined in
-7.18's spec) is enforced here by `test__export_request_carries_the_bearer_token`
-in the moved suite; the rule id keeps its home in `7-18-collector-ingest-identity.md`.
+CIA-07 (every exporter leg carries the per-service ingest token, defined in 7.18's spec) is enforced here by
+`test__export_request_carries_the_bearer_token` in the moved suite; the rule id keeps its home in
+`libs/python/aurelius-atlas-otel/specs/7-18-collector-ingest-identity/spec.md` .
 
 ## Data contracts
 
@@ -96,3 +99,5 @@ in the moved suite; the rule id keeps its home in `7-18-collector-ingest-identit
   service count (accepted).
 - CSRF for the auxiliary APIs: deferred to the webapp increment that serves
   them; the APIs are bearer-first (CORS + same token), matching the metadata API.
+
+[part-0]: ../../../aurelius-atlas-auth/specs/8-0-auxiliary-api-foundation/spec.md

@@ -52,9 +52,9 @@ collaborators, routes serve, `app.py` composes.
 ## Rules the app keeps
 
 The LM rules live in
-`docs/architecture/conversion/increments/8-2-lineage-model-api.md`; the circuit-breaker
+`apps/aurelius-atlas-lineage-model/specs/8-2-lineage-model-api/spec.md`; the circuit-breaker
 rules (LM-11..LM-15) in
-`docs/architecture/conversion/increments/8-5-lineage-model-circuit-breakers.md`; tests cite
+`apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/spec.md`; tests cite
 them with `@pytest.mark.covers(..., rules=["LM-NN"])` (ADR 056). The legacy reference is
 `.scratch/aurelius` (`backend/m4i-lineage-model/m4i_lineage_model/lineage_model.py`):
 cite the file in any behaviour change — the 12 column names (`m4i_*_process`, LM-03)

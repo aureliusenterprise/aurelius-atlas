@@ -29,7 +29,7 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
 - The app's `rules.py` is a thin re-export of `models.py` — the rules schema
   changes land in the lib, not the app.
 - The rules it keeps (CL-01..CL-05, CL-20, CL-21) are specified by the 8.4 spec
-  (`docs/architecture/conversion/increments/8-4-api-client-libraries.md`).
+  (`libs/python/aurelius-atlas-data2model-client/specs/8-4-api-client-libraries/spec.md`).
 
 ## Conventions
 

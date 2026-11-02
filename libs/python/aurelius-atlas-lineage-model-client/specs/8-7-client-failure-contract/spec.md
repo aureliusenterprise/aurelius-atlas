@@ -4,6 +4,10 @@
 - **Pull request:** — (follows the review of 2026-10-24, DD-214)
 - **Records:** DD-214 (the review that scoped this; reserves CL-08); cites 8.4, ADR 055
 
+This page is the `aurelius-atlas-lineage-model-client` part of increment 8.7; its rule table is the
+increment's shared set. The other parts are with [`aurelius-atlas-server-client`][part-0] and
+[`aurelius-atlas-data2model-client`][part-1] and [`aurelius-atlas-validate-entity-client`][part-2] .
+
 ## Scope
 
 Test-completeness plus one minted rule: the review found the four client
@@ -14,21 +18,13 @@ what happens), a **timeout** (only connect-refused is proven), a
 **token source that raises**, and **`with_token` under concurrency**. This
 increment closes them across all four libraries:
 
-- `aurelius-atlas-server-client` — `AdminApi`, `TypesApi`, and `get_lineage`
-  against garbage 200s; transport timeout; raising token source; concurrent
-  wrappers on the shared pool.
-- `aurelius-atlas-data2model-client` — `extract` against garbage 200s; a 5xx
-  carrying the Atlas body; timeout; raising token source.
 - `aurelius-atlas-lineage-model-client` — `get` against garbage 200s; timeout;
   raising token source; the 5xx/unreachable pair split into one test per
   behaviour, like the other three libraries.
-- `aurelius-atlas-validate-entity-client` — `validate` against garbage 200s; a
-  5xx carrying the Atlas body; timeout; raising token source.
-
-It does **not** deliver: aux API tests (8.6), frontend error UX (7.19),
-container-stopping e2e (9.1), any production-code change — every test below
-pins behaviour the 8.4 clients already have (the review's core finding: the
-code is right, the proofs are missing).
+  It does **not** deliver: aux API tests (8.6), frontend error UX (7.19),
+  container-stopping e2e (9.1), any production-code change — every test below
+  pins behaviour the 8.4 clients already have (the review's core finding: the
+  code is right, the proofs are missing).
 
 ## Semantics
 
@@ -74,23 +70,6 @@ None. No wire behaviour changes; 8.4's DD-203/DD-204/DD-205 stand.
 
 Unit (naming rules per ADR 049; run `uv run pytest libs/python/<lib>/tests`):
 
-- `libs/python/aurelius-atlas-server-client/tests/test__aurelius_atlas_server_client_client.py`
-  — appended: `test__a_200_with_a_body_of_the_wrong_shape_is_the_contract_failing`
-  (CL-08, `AdminApi.version`),
-  `test__a_200_of_plain_text_is_the_contract_failing` (CL-08, `get_lineage`),
-  `test__a_typedefs_answer_of_the_wrong_shape_is_the_contract_failing`
-  (CL-08, `TypesApi.typedefs`),
-  `test__a_timeout_propagates_as_httpxs_own_error` (CL-05, `AdminApi.status`),
-  `test__a_token_source_that_raises_travels_out_unsent` (CL-03,
-  `get_lineage`),
-  `test__with_token_wrappers_serve_concurrent_callers` (CL-03, CL-02,
-  `with_token`).
-- `libs/python/aurelius-atlas-data2model-client/tests/test__aurelius_atlas_data2model_client_client.py`
-  — appended: `test__a_200_with_a_body_of_the_wrong_shape_is_the_contract_failing`
-  (CL-08), `test__a_200_of_plain_text_is_the_contract_failing` (CL-08),
-  `test__a_server_outage_answer_carries_the_status_and_the_fields` (CL-04),
-  `test__a_timeout_propagates_as_httpxs_own_error` (CL-05),
-  `test__a_token_source_that_raises_travels_out_unsent` (CL-03).
 - `libs/python/aurelius-atlas-lineage-model-client/tests/test__aurelius_atlas_lineage_model_client_client.py`
   — appended: the two CL-08 tests, the CL-05 timeout test, the CL-03 raising
   source test (same names); the 8.4 test that packed the 5xx raise and the
@@ -98,12 +77,11 @@ Unit (naming rules per ADR 049; run `uv run pytest libs/python/<lib>/tests`):
   `test__a_server_outage_answer_carries_the_status_and_the_fields` (CL-04)
   and `test__an_unreachable_service_propagates_httpxs_own_error` (CL-05),
   matching the other libraries' one-behaviour-per-test shape.
-- `libs/python/aurelius-atlas-validate-entity-client/tests/test__aurelius_atlas_validate_entity_client_client.py`
-  — appended: the two CL-08 tests,
-  `test__a_server_outage_answer_carries_the_status_and_the_fields` (CL-04),
-  the CL-05 timeout test, the CL-03 raising source test (same names).
+  Gates: `uv run aurelius-atlas-trace check` — CL-08 shows as named (no gap),
+  the gap count does not grow; `nx test <lib> -c ci` green for the four libs
+  (Sonar reads the coverage — no new production code, so no new-code dip);
+  `ruff check` clean.
 
-Gates: `uv run aurelius-atlas-trace check` — CL-08 shows as named (no gap),
-the gap count does not grow; `nx test <lib> -c ci` green for the four libs
-(Sonar reads the coverage — no new production code, so no new-code dip);
-`ruff check` clean.
+[part-0]: ../../../aurelius-atlas-server-client/specs/8-7-client-failure-contract/spec.md
+[part-1]: ../../../aurelius-atlas-data2model-client/specs/8-7-client-failure-contract/spec.md
+[part-2]: ../../../aurelius-atlas-validate-entity-client/specs/8-7-client-failure-contract/spec.md

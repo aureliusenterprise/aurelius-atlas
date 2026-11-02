@@ -74,7 +74,7 @@ recorded as DV-77; the workspace convention it follows is
 
 DV-77 (`deviations.md`): the legacy has no upstream circuit breaker; the port
 guards each upstream with one, opening on 5xx/transport failures only.
-Technical decisions in DD-206 (`design-log.md`): the breakers live in the app
+Technical decisions in DD-206 (`design.md`): the breakers live in the app
 (not the client libraries — DD-205 keeps the libs transport-only); one breaker
 per upstream; the `pybreaker` `calling()` generator seam is the async-safe
 form (the lib's `call_async` is tornado-only and fails on this Python); the
