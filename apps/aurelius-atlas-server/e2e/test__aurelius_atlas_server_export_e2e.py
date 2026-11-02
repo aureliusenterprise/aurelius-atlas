@@ -82,3 +82,32 @@ async def test__an_export_imports_back_into_the_catalogue(client: httpx.AsyncCli
     assert found.status_code == 200
     assert found.json()["operationStatus"] == "SUCCESS"
     assert found.json()["exportResult"]["request"]["itemsToExport"] == [{"guid": guid}]
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.admin.get_cluster",
+    "aurelius_atlas_server.routes.admin.get_export_import_audit",
+    rules=["REP-01", "REP-02", "REP-04", "REP-05"],
+)
+async def test__a_replicating_export_is_audited_and_marks_its_entity(client: httpx.AsyncClient) -> None:
+    """The target server saved, the entity marked ``replicatedTo`` it, the export found in the audit trail."""
+    run = uuid.uuid4().hex
+    name, server = f"e2e_repl_{run}", f"e2e_server_{run}"
+    assert (
+        await client.post(
+            "/api/atlas/v2/types/typedefs", json={"entityDefs": [{"name": name, "superTypes": ["DataSet"]}]}
+        )
+    ).status_code == 200
+    body = {"entity": {"typeName": name, "attributes": {"qualifiedName": f"q_{run}", "name": run}}}
+    guid = (await client.post("/api/atlas/v2/entity", json=body)).json()["mutatedEntities"]["CREATE"][0]["guid"]
+    request = {"itemsToExport": [{"guid": guid}], "options": {"replicatedTo": f"dc${server}"}}
+    assert (await client.post("/api/atlas/admin/export", json=request)).status_code == 200
+
+    target = (await client.get(f"/api/atlas/admin/server/dc${server}")).json()
+    entity = (await client.get(f"/api/atlas/v2/entity/guid/{guid}")).json()["entity"]
+    audits = (await client.get("/api/atlas/admin/expimp/audit", params={"serverName": server})).json()
+
+    assert target["name"] == server
+    assert guid in target["additionalInfo"]["REPL_DETAILS"]
+    assert entity["attributes"]["replicatedTo"] == [{"typeName": "AtlasServer", "guid": target["guid"]}]
+    assert [(entry["operation"], entry["targetServerName"]) for entry in audits] == [("EXPORT", server)]

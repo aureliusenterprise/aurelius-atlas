@@ -1,0 +1,27 @@
+name: A server no export or import named is not found, and the audit trail of a user who ran none is empty
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getCluster
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getExportImportAudit
+    - repository/src/main/java/org/apache/atlas/repository/impexp/AtlasServerService.java#get
+    - repository/src/main/java/org/apache/atlas/repository/impexp/ExportImportAuditService.java#get
+    - repository/src/main/java/org/apache/atlas/repository/ogm/DataAccess.java#load
+    - intg/src/main/java/org/apache/atlas/AtlasErrorCode.java#INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND
+rules: [REP-01, REP-05]
+covers: [aurelius_atlas_server.routes.admin.get_cluster, aurelius_atlas_server.routes.admin.get_export_import_audit]
+stages:
+    - name: a server is looked up by its full name; none of it is the unique-attribute 404
+      request:
+          method: GET
+          url: /api/atlas/admin/server/scenario-no-such-server
+      response:
+          status: 404
+          json:
+              errorCode: ATLAS-404-00-009
+              errorMessage: "Instance AtlasServer with unique attribute {{fullName=scenario-no-such-server}} does not exist"
+    - name: the entries of a user who exported and imported nothing are an empty list
+      request:
+          method: GET
+          url: /api/atlas/admin/expimp/audit?userName=scenario-nobody&operation=EXPORT&limit=10
+      response:
+          status: 200
+          json: []
