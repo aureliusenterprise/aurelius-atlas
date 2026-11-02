@@ -36,14 +36,62 @@ export type AtlasClassification = {
     typeName?: string | null;
     /** The classified entity's guid. */
     entityGuid?: string | null;
+    entityStatus?: AtlasEntityStatus | null;
+    /** Whether the classification propagates to the entity's relationships. */
+    propagate?: boolean | null;
+    /** How the classification propagates to other propagated classifications. */
     propagatePropagation?: "NONE" | "ONE_TO_TWO" | "TWO_TO_ONE" | "BOTH" | null;
     removePropagation?: "NONE" | "ONE_TO_TWO" | "TWO_TO_ONE" | "BOTH" | null;
+    removePropagationsOnEntityDelete?: boolean | null;
+    /** The periods in which the classification applies (ACL-09, ENT-13). */
+    validityPeriods?: (TimeBoundary | null)[] | null;
     /** Epoch milliseconds. */
     classifyTime?: number | null;
     /** Epoch milliseconds; null while the classification is active. */
     removalTime?: number | null;
     visibility?: "VISIBLE" | "CLASSIFICATION_ONLY" | "DEPENDENT" | "OTHER" | null;
     attributes?: Record<string, unknown> | null;
+};
+
+/**
+ * `TimeBoundary`: one validity period of a classification (ENT-13). The times
+ * are strings in Java's `yyyy/MM/dd HH:mm:ss`; `timeZone` is a Java zone id or
+ * null for the server's local time.
+ */
+export type TimeBoundary = {
+    startTime?: string | null;
+    endTime?: string | null;
+    timeZone?: string | null;
+};
+
+/** The order of a `PList` (`SearchFilter.SortType`). */
+export type SortType = "NONE" | "ASC" | "DESC";
+
+/**
+ * `AtlasClassification.AtlasClassifications`: a `PList` of classifications
+ * (CLS-01) — the body of `GET /v2/entity/guid/{guid}/classifications`
+ * (ACL-01). The paging fields carry the server's whole-list answer: the
+ * `startIndex`/`pageSize`/`totalCount` of the page read.
+ */
+export type AtlasClassifications = {
+    list?: AtlasClassification[] | null;
+    startIndex?: number;
+    pageSize?: number;
+    totalCount?: number;
+    sortBy?: string | null;
+    sortType?: SortType | null;
+};
+
+/**
+ * `ClassificationAssociateRequest`: one classification to attach to many
+ * entities, by GUID or by type and unique-attribute sets (CLS-01, CLS-07,
+ * ACL-04).
+ */
+export type ClassificationAssociateRequest = {
+    classification?: AtlasClassification | null;
+    entityGuids?: string[] | null;
+    entitiesUniqueAttributes?: Record<string, unknown>[] | null;
+    entityTypeName?: string | null;
 };
 
 /** A glossary term header, as carried in relationship attributes (`AtlasRelatedTermHeader`). */

@@ -1,9 +1,16 @@
 import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
-import { Observable } from "rxjs";
+import { map, Observable } from "rxjs";
 import { API_BASE_URL } from "../api-config";
 import type { EntityAuditEventV2 } from "./atlas-audit";
-import type { AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo } from "./atlas-entity";
+import type {
+    AtlasClassification,
+    AtlasClassifications,
+    AtlasEntitiesWithExtInfo,
+    AtlasEntityWithExtInfo,
+    ClassificationAssociateRequest,
+} from "./atlas-entity";
+import type { AtlasExportAnswer, BulkImportResponse } from "./atlas-impexp";
 import type { DeleteType, EntityMutationResponse } from "./atlas-mutation";
 import type { AtlasEntityHeader, AtlasEntityHeaders } from "./atlas-search";
 
@@ -25,10 +32,10 @@ export type EntityAuditQuery = {
 /**
  * The entity endpoints of the Atlas server (`EntityREST`, DET-03): the reads
  * of a guid, a unique attribute, a set of guids, and the entity audits
- * (8.17, AEN-01..AEN-07) and the writes and deletes (8.18, AEW-01..AEW-06) —
- * the Angular twin of `AtlasClient.entity`'s reads, writes and deletes
- * (CLE-01..CLE-04, CLE-11, CLE-12). The classification, business-metadata,
- * and label routes come in 8.19. The wire
+ * (8.17, AEN-01..AEN-07), the writes and deletes (8.18, AEW-01..AEW-06), and
+ * the classifications, business metadata, and labels (8.19, ACL-01..ACL-09) —
+ * all thirty-seven routes of `routes/entity.py`, the Angular twin of
+ * `AtlasClient.entity` (CLE-01..CLE-12). The wire
  * format is typed from the Apache Atlas 2.4.0 source (see
  * `atlas-entity.ts`); the endpoints are server 2.3's surface — against
  * today's server (admin and types only) the calls answer 404, and the specs
@@ -358,6 +365,362 @@ export class AtlasEntitiesService {
         return this.http.delete<EntityMutationResponse>(
             this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}`),
             { params },
+        );
+    }
+
+    /**
+     * A classification of the entity with that GUID, by its type name
+     * (`EntityREST.getClassification`, GET `/v2/entity/guid/{guid}/classification/{name}`
+     * — CLS-03, ACL-01).
+     * @param guid the entity GUID
+     * @param classificationName the classification type name
+     */
+    getClassification(guid: string, classificationName: string): Observable<AtlasClassification> {
+        return this.http.get<AtlasClassification>(
+            this.entityUrl(
+                `/guid/${encodeURIComponent(guid)}/classification/${encodeURIComponent(classificationName)}`,
+            ),
+        );
+    }
+
+    /**
+     * The entity's classifications, as an `AtlasClassifications` `PList`
+     * (`EntityREST.getClassifications`, GET `/v2/entity/guid/{guid}/classifications`
+     * — CLS-03, ACL-01). The route reads no paging parameters: the `PList`
+     * carries the whole-list answer.
+     * @param guid the entity GUID
+     */
+    getClassifications(guid: string): Observable<AtlasClassifications> {
+        return this.http.get<AtlasClassifications>(this.entityUrl(`/guid/${encodeURIComponent(guid)}/classifications`));
+    }
+
+    /**
+     * Attach the classifications to the entity (`EntityREST.addClassifications`,
+     * POST `/v2/entity/guid/{guid}/classifications` — CLS-04/CLS-05, ACL-02).
+     * The body is the bare JSON array. Answers 204.
+     * @param guid the entity GUID
+     * @param classifications the classifications to attach
+     */
+    addClassifications(guid: string, classifications: AtlasClassification[]): Observable<void> {
+        return this.http.post<void>(
+            this.entityUrl(`/guid/${encodeURIComponent(guid)}/classifications`),
+            classifications,
+        );
+    }
+
+    /**
+     * Attach the classifications to the entity holding the unique-attribute
+     * values (`add…ByUniqueAttribute`, POST
+     * `/v2/entity/uniqueAttribute/type/{typeName}/classifications` — CLS-06,
+     * ACL-02). Answers 204.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param classifications the classifications to attach
+     */
+    addClassificationsByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        classifications: AtlasClassification[],
+    ): Observable<void> {
+        return this.http.post<void>(
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}/classifications`),
+            classifications,
+            { params: this.attrParams(attributes) },
+        );
+    }
+
+    /**
+     * Change the entity's classifications (`EntityREST.updateClassifications`,
+     * PUT `/v2/entity/guid/{guid}/classifications` — CLS-08, ACL-02). Answers 204.
+     * @param guid the entity GUID
+     * @param classifications the classifications as changed
+     */
+    updateClassifications(guid: string, classifications: AtlasClassification[]): Observable<void> {
+        return this.http.put<void>(
+            this.entityUrl(`/guid/${encodeURIComponent(guid)}/classifications`),
+            classifications,
+        );
+    }
+
+    /**
+     * Change the classifications of the entity holding the unique-attribute
+     * values (PUT `/v2/entity/uniqueAttribute/type/{typeName}/classifications`
+     * — CLS-06, ACL-02). Answers 204.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param classifications the classifications as changed
+     */
+    updateClassificationsByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        classifications: AtlasClassification[],
+    ): Observable<void> {
+        return this.http.put<void>(
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}/classifications`),
+            classifications,
+            { params: this.attrParams(attributes) },
+        );
+    }
+
+    /**
+     * Remove the entity's classification of that type name
+     * (`EntityREST.deleteClassification`, DELETE
+     * `/v2/entity/guid/{guid}/classification/{name}` — CLS-09, ACL-03). The
+     * optional `associatedEntityGuid` travels only when given. Answers 204.
+     * @param guid the entity GUID
+     * @param classificationName the classification type name
+     * @param associatedEntityGuid the propagation's source entity, when given
+     */
+    deleteClassification(guid: string, classificationName: string, associatedEntityGuid?: string): Observable<void> {
+        const params =
+            associatedEntityGuid === undefined
+                ? new HttpParams()
+                : new HttpParams().set("associatedEntityGuid", associatedEntityGuid);
+        return this.http.delete<void>(
+            this.entityUrl(
+                `/guid/${encodeURIComponent(guid)}/classification/${encodeURIComponent(classificationName)}`,
+            ),
+            { params },
+        );
+    }
+
+    /**
+     * Remove the classification of the entity holding the unique-attribute
+     * values (DELETE `/v2/entity/uniqueAttribute/type/{typeName}/classification/{name}`
+     * — CLS-06, ACL-03). Answers 204.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param classificationName the classification type name
+     */
+    deleteClassificationByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        classificationName: string,
+    ): Observable<void> {
+        return this.http.delete<void>(
+            this.entityUrl(
+                `/uniqueAttribute/type/${encodeURIComponent(typeName)}/classification/${encodeURIComponent(classificationName)}`,
+            ),
+            { params: this.attrParams(attributes) },
+        );
+    }
+
+    /**
+     * Attach one classification to many entities, by GUID or by unique
+     * attributes (`EntityREST.addClassification`, POST
+     * `/v2/entity/bulk/classification` — CLS-07, ACL-04). Answers 204. The
+     * client checks nothing — the server answers `INVALID_PARAMETERS`
+     * (CLE-12).
+     * @param request the classification and its targets
+     */
+    associateClassification(request: ClassificationAssociateRequest): Observable<void> {
+        return this.http.post<void>(this.entityUrl("/bulk/classification"), request);
+    }
+
+    /**
+     * Give each header's entity its classifications (`EntityREST.setClassifications`,
+     * POST `/v2/entity/bulk/setClassifications` — CLA-04, ACL-05). The answer
+     * is a JSON array of per-guid summaries, not a model (DV-36): `unknown[]`,
+     * never reordered.
+     * @param headers the entities and their classifications, by guid
+     */
+    setClassifications(headers: AtlasEntityHeaders): Observable<unknown[]> {
+        return this.http.post<unknown[]>(this.entityUrl("/bulk/setClassifications"), headers);
+    }
+
+    /**
+     * Set the entity's business-attribute values, or replace them all with
+     * `isOverwrite` (`EntityREST.addOrUpdateBusinessAttributes`, POST
+     * `/v2/entity/guid/{guid}/businessmetadata` — BMD-01, ACL-06). The body
+     * maps each business-metadata name to its attribute values, or null. The
+     * `isOverwrite` flag travels only when true. Answers 204.
+     * @param guid the entity GUID
+     * @param attributes the values by business-metadata name
+     * @param isOverwrite replace all values instead of setting the given ones
+     */
+    addOrUpdateBusinessMetadata(
+        guid: string,
+        attributes: Record<string, Record<string, unknown> | null>,
+        isOverwrite = false,
+    ): Observable<void> {
+        const params = isOverwrite ? new HttpParams().set("isOverwrite", "true") : new HttpParams();
+        return this.http.post<void>(this.entityUrl(`/guid/${encodeURIComponent(guid)}/businessmetadata`), attributes, {
+            params,
+        });
+    }
+
+    /**
+     * Remove the entity's given business attributes (`removeBusinessAttributes`,
+     * DELETE `/v2/entity/guid/{guid}/businessmetadata` — BMD-05, ACL-06). A
+     * DELETE with a body rides `HttpClient.request` — the typed
+     * `HttpClient.delete` takes none (ACL-06's platform note). Answers 204.
+     * @param guid the entity GUID
+     * @param attributes the attributes to remove, by business-metadata name
+     */
+    removeBusinessMetadata(guid: string, attributes: Record<string, Record<string, unknown> | null>): Observable<void> {
+        return this.http.request<void>("DELETE", this.entityUrl(`/guid/${encodeURIComponent(guid)}/businessmetadata`), {
+            body: attributes,
+        });
+    }
+
+    /**
+     * Set one business metadata's values on the entity (POST
+     * `/v2/entity/guid/{guid}/businessmetadata/{bmName}` — BMD-03, ACL-06).
+     * The body is the bare attribute map — the server files it under the name
+     * in the path. Answers 204.
+     * @param guid the entity GUID
+     * @param bmName the business-metadata name
+     * @param attributes the attribute values
+     */
+    addOrUpdateBusinessMetadataOf(guid: string, bmName: string, attributes: Record<string, unknown>): Observable<void> {
+        return this.http.post<void>(
+            this.entityUrl(`/guid/${encodeURIComponent(guid)}/businessmetadata/${encodeURIComponent(bmName)}`),
+            attributes,
+        );
+    }
+
+    /**
+     * Remove one business metadata's attributes — or all of them, with an
+     * empty map (DELETE `/v2/entity/guid/{guid}/businessmetadata/{bmName}` —
+     * BMD-05, ACL-06). Answers 204.
+     * @param guid the entity GUID
+     * @param bmName the business-metadata name
+     * @param attributes the attribute names to remove
+     */
+    removeBusinessMetadataOf(guid: string, bmName: string, attributes: Record<string, unknown>): Observable<void> {
+        return this.http.request<void>(
+            "DELETE",
+            this.entityUrl(`/guid/${encodeURIComponent(guid)}/businessmetadata/${encodeURIComponent(bmName)}`),
+            { body: attributes },
+        );
+    }
+
+    /**
+     * The business-metadata import template, as a download (`produceTemplate`,
+     * GET `/v2/entity/businessmetadata/import/template` — BMI-01, ACL-07).
+     * The `{ body, contentType }` pair of DD-315's shape, the twin of the
+     * Python client's `(bytes, content-type)` tuple (CLE-09, CL-64).
+     */
+    businessMetadataTemplate(): Observable<AtlasExportAnswer> {
+        return this.http
+            .get(`${this.baseUrl}/atlas/v2/entity/businessmetadata/import/template`, {
+                responseType: "arraybuffer",
+                observe: "response",
+            })
+            .pipe(
+                map((response) => ({
+                    body: response.body,
+                    contentType: response.headers.get("content-type") ?? "",
+                })),
+            );
+    }
+
+    /**
+     * Apply a business-metadata import file (`importBMAttributes`, POST
+     * `/v2/entity/businessmetadata/import` — BMI-02..BMI-05, ACL-07). The
+     * `file` form part carries the bytes; the client never reads a path
+     * (CLE-09).
+     * @param fileName the name the file part carries
+     * @param content the CSV or Excel bytes
+     * @returns the rows the import made and those it could not
+     */
+    importBusinessMetadata(fileName: string, content: Blob): Observable<BulkImportResponse> {
+        const form = new FormData();
+        form.append("file", content, fileName);
+        return this.http.post<BulkImportResponse>(this.entityUrl("/businessmetadata/import"), form);
+    }
+
+    /**
+     * The entity's labels become exactly these (`EntityREST.setLabels`, POST
+     * `/v2/entity/guid/{guid}/labels` — LBL-01/LBL-02, ACL-08). The body is a
+     * bare JSON array of names. Answers 204.
+     * @param guid the entity GUID
+     * @param labels the labels to set
+     */
+    setLabels(guid: string, labels: string[]): Observable<void> {
+        return this.http.post<void>(this.entityUrl(`/guid/${encodeURIComponent(guid)}/labels`), labels);
+    }
+
+    /**
+     * Add the labels to the entity's (`EntityREST.addLabels`, PUT
+     * `/v2/entity/guid/{guid}/labels` — LBL-01/LBL-03, ACL-08). Answers 204.
+     * @param guid the entity GUID
+     * @param labels the labels to add
+     */
+    addLabels(guid: string, labels: string[]): Observable<void> {
+        return this.http.put<void>(this.entityUrl(`/guid/${encodeURIComponent(guid)}/labels`), labels);
+    }
+
+    /**
+     * Take the labels from the entity's (`EntityREST.removeLabels`, DELETE
+     * `/v2/entity/guid/{guid}/labels` — LBL-01/LBL-04, ACL-08). The body
+     * rides `HttpClient.request` (ACL-06's platform note). Answers 204.
+     * @param guid the entity GUID
+     * @param labels the labels to remove
+     */
+    removeLabels(guid: string, labels: string[]): Observable<void> {
+        return this.http.request<void>("DELETE", this.entityUrl(`/guid/${encodeURIComponent(guid)}/labels`), {
+            body: labels,
+        });
+    }
+
+    /**
+     * The labels of the entity holding the unique-attribute values become
+     * exactly these (POST `/v2/entity/uniqueAttribute/type/{typeName}/labels`
+     * — LBL-02, ACL-08). Answers 204.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param labels the labels to set
+     */
+    setLabelsByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        labels: string[],
+    ): Observable<void> {
+        return this.http.post<void>(
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}/labels`),
+            labels,
+            { params: this.attrParams(attributes) },
+        );
+    }
+
+    /**
+     * Add the labels to the entity holding the unique-attribute values (PUT
+     * `/v2/entity/uniqueAttribute/type/{typeName}/labels` — LBL-03, ACL-08).
+     * Answers 204.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param labels the labels to add
+     */
+    addLabelsByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        labels: string[],
+    ): Observable<void> {
+        return this.http.put<void>(
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}/labels`),
+            labels,
+            { params: this.attrParams(attributes) },
+        );
+    }
+
+    /**
+     * Take the labels from the entity holding the unique-attribute values
+     * (DELETE `/v2/entity/uniqueAttribute/type/{typeName}/labels` — LBL-04,
+     * ACL-08). Answers 204.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param labels the labels to remove
+     */
+    removeLabelsByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        labels: string[],
+    ): Observable<void> {
+        return this.http.request<void>(
+            "DELETE",
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}/labels`),
+            { body: labels, params: this.attrParams(attributes) },
         );
     }
 }

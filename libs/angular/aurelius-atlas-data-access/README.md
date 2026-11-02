@@ -24,14 +24,14 @@ Part of the template **spine**.
   create and update (the bare relationship both ways), the always-wrapped read,
   and the soft/hard delete with its `deleteType` — `RelationshipREST` of server
   2.x (AREL-01..04); the twin of `AtlasClient.relationship` (CLR-01..04)
-- `AtlasEntitiesService` — the entity reads, writes, and deletes
-  (`/atlas/v2/entity/**`): the by-guid/by-unique-attribute reads (with the
-  ext-info flags), their header siblings, the bulk reads, the audit events,
-  and the changed-classification headers (8.17); the create/update, partial
-  updates, and soft/hard deletes (8.18, AEW-01..06) — `EntityREST` of server
-  2.3/7.6 (DET-03, AEN-01..07); the twin of `AtlasClient.entity`'s reads,
-  writes, and deletes (CLE-01..04, CLE-11, CLE-12); the classification,
-  business-metadata, and label routes come in 8.19
+- `AtlasEntitiesService` — the entity endpoints (`/atlas/v2/entity/**`): the
+  by-guid/by-unique-attribute reads (with the ext-info flags), their header
+  siblings, the bulk reads, the audit events, and the changed-classification
+  headers (8.17); the create/update, partial updates, and soft/hard deletes
+  (8.18, AEW-01..06); and the classification, business-metadata (with the
+  template download and file import), and label routes (8.19, ACL-01..09) —
+  all thirty-seven `EntityREST` routes of server 2.3/7.6 (DET-03); the twin
+  of `AtlasClient.entity` (CLE-01..CLE-12)
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from
@@ -46,6 +46,10 @@ Part of the template **spine**.
 - `atlas-audit.ts` — the entity-audit DTOs (`EntityAuditEventV2`,
   `EntityAuditActionV2`, `EntityAuditType`), mirrored by hand from
   `aurelius_atlas_model/audit.py`
+- `atlas-entity.ts` — the entity DTO cluster (`AtlasEntity`, the
+  ext-info wrappers, `AtlasClassification` and its `AtlasClassifications`
+  `PList`, `ClassificationAssociateRequest`, `TimeBoundary`), mirrored by
+  hand from `aurelius_atlas_model/instance/`
 - `SearchService` — the search endpoints (`/atlas/v2/search/**`): the basic
   search (POST/GET), attribute, full-text, the quick search with its facets
   (POST/GET), term suggestions, the DSL search, and the seven saved-search

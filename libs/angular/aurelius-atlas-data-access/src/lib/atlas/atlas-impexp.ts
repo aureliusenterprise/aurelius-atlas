@@ -79,3 +79,28 @@ export type AtlasExportAnswer = {
     body: ArrayBuffer | null;
     contentType: string;
 };
+
+/** How one imported row ended (`BulkImportResponse.ImportStatus`). */
+export type ImportStatus = "SUCCESS" | "FAILED";
+
+/**
+ * `ImportInfo`: the glossary and term of an imported row, its status and
+ * remarks. Java's getter for `rowNumber` does not exist, so the server never
+ * writes it — the DTO omits it (APC-03, `bulk_import.py`).
+ */
+export type ImportInfo = {
+    parentObjectName?: string | null;
+    childObjectName?: string | null;
+    importStatus?: ImportStatus | null;
+    remarks?: string | null;
+};
+
+/**
+ * `BulkImportResponse`: the rows an import made and those it could not
+ * (GIM-02, ACL-07) — the answer of the business-metadata and glossary file
+ * imports. Atlas writes each list only when it holds an entry.
+ */
+export type BulkImportResponse = {
+    failedImportInfoList?: ImportInfo[] | null;
+    successImportInfoList?: ImportInfo[] | null;
+};

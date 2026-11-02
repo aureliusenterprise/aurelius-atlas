@@ -4,7 +4,13 @@ import { TestBed } from "@angular/core/testing";
 import { provideApiBaseUrl } from "../api-config";
 import { AtlasEntitiesService } from "./atlas-entities.service";
 import type { EntityAuditEventV2 } from "./atlas-audit";
-import type { AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo } from "./atlas-entity";
+import type {
+    AtlasClassification,
+    AtlasClassifications,
+    AtlasEntitiesWithExtInfo,
+    AtlasEntityWithExtInfo,
+} from "./atlas-entity";
+import type { BulkImportResponse } from "./atlas-impexp";
 import type { EntityMutationResponse } from "./atlas-mutation";
 import type { AtlasEntityHeader, AtlasEntityHeaders } from "./atlas-search";
 
@@ -339,5 +345,234 @@ describe("AtlasEntitiesService (DET-03)", () => {
         expect(req.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
         expect(req.request.params.get("deleteType")).toBe("HARD");
         req.flush({});
+    });
+
+    // ---- 8.19: classifications, business metadata, labels (ACL-01..ACL-09) ----
+
+    it("getClassification reads one classification (ACL-01, CLS-03)", () => {
+        const cls: AtlasClassification = { typeName: "PII", entityGuid: "7a1b", propagate: true };
+        service.getClassification("7a1b", "PII").subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classification/PII");
+        expect(req.request.method).toBe("GET");
+        req.flush(cls);
+    });
+
+    it("getClassifications reads the PList (ACL-01, CLS-03)", () => {
+        const page: AtlasClassifications = { list: [{ typeName: "PII" }], totalCount: 1, pageSize: 1 };
+        service.getClassifications("7a1b").subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classifications");
+        expect(req.request.params.keys()).toEqual([]);
+        req.flush(page);
+    });
+
+    it("addClassifications posts the bare array; PUT changes them (ACL-02, CLS-04/08)", () => {
+        service.addClassifications("7a1b", [{ typeName: "PII" }, { typeName: "CONF" }]).subscribe();
+
+        const post = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classifications");
+        expect(post.request.method).toBe("POST");
+        expect(post.request.body).toEqual([{ typeName: "PII" }, { typeName: "CONF" }]);
+        post.flush({});
+
+        service.updateClassifications("7a1b", [{ typeName: "PII", propagate: false }]).subscribe();
+
+        const put = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classifications");
+        expect(put.request.method).toBe("PUT");
+        expect(put.request.body).toEqual([{ typeName: "PII", propagate: false }]);
+        put.flush({});
+    });
+
+    it("addClassificationsByUniqueAttributes sends attr: params (ACL-02, CLS-06)", () => {
+        service
+            .addClassificationsByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, [{ typeName: "PII" }])
+            .subscribe();
+
+        const req = httpMock.expectOne(
+            (r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table/classifications",
+        );
+        expect(req.request.method).toBe("POST");
+        expect(req.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        expect(req.request.body).toEqual([{ typeName: "PII" }]);
+        req.flush({});
+
+        service
+            .updateClassificationsByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, [
+                { typeName: "PII", propagate: false },
+            ])
+            .subscribe();
+
+        const put = httpMock.expectOne(
+            (r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table/classifications",
+        );
+        expect(put.request.method).toBe("PUT");
+        expect(put.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        put.flush({});
+    });
+
+    it("deleteClassification sends associatedEntityGuid only when given (ACL-03, CLS-09)", () => {
+        service.deleteClassification("7a1b", "PII").subscribe();
+
+        const plain = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classification/PII");
+        expect(plain.request.method).toBe("DELETE");
+        expect(plain.request.params.keys()).toEqual([]);
+        plain.flush({});
+
+        service.deleteClassification("7a1b", "PII", "g-src").subscribe();
+
+        const assoc = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/guid/7a1b/classification/PII");
+        expect(assoc.request.params.get("associatedEntityGuid")).toBe("g-src");
+        assoc.flush({});
+    });
+
+    it("deleteClassificationByUniqueAttributes sends attr: params (ACL-03, CLS-06)", () => {
+        service.deleteClassificationByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, "PII").subscribe();
+
+        const req = httpMock.expectOne(
+            (r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table/classification/PII",
+        );
+        expect(req.request.method).toBe("DELETE");
+        expect(req.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        req.flush({});
+    });
+
+    it("associateClassification posts the request whole (ACL-04, CLS-07)", () => {
+        const request = { classification: { typeName: "PII" }, entityGuids: ["g1", "g2"] };
+        service.associateClassification(request).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/bulk/classification");
+        expect(req.request.method).toBe("POST");
+        expect(req.request.body).toEqual(request);
+        req.flush({});
+    });
+
+    it("setClassifications posts the headers and answers the summary array (ACL-05, CLA-04, DV-36)", () => {
+        service.setClassifications({ guidHeaderMap: { g1: {} } }).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/bulk/setClassifications");
+        expect(req.request.method).toBe("POST");
+        expect(req.request.body).toEqual({ guidHeaderMap: { g1: {} } });
+        req.flush([{ guid: "g1", success: true }]);
+    });
+
+    it("addOrUpdateBusinessMetadata sends the {bm: attrs} map; isOverwrite only when true (ACL-06, BMD-01)", () => {
+        const attrs = { domain: { "domain-name": "Sales" }, owner: null };
+        service.addOrUpdateBusinessMetadata("7a1b", attrs).subscribe();
+
+        const plain = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/businessmetadata");
+        expect(plain.request.method).toBe("POST");
+        expect(plain.request.body).toEqual(attrs);
+        expect(plain.request.params.keys()).toEqual([]);
+        plain.flush({});
+
+        service.addOrUpdateBusinessMetadata("7a1b", attrs, true).subscribe();
+
+        const over = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/guid/7a1b/businessmetadata");
+        expect(over.request.params.get("isOverwrite")).toBe("true");
+        over.flush({});
+    });
+
+    it("removeBusinessMetadata sends a DELETE with a body via request() (ACL-06, BMD-05)", () => {
+        const attrs = { domain: { "domain-name": "Sales" } };
+        service.removeBusinessMetadata("7a1b", attrs).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/businessmetadata");
+        expect(req.request.method).toBe("DELETE");
+        expect(req.request.body).toEqual(attrs);
+        req.flush({});
+    });
+
+    it("the …Of business-metadata pair sends the bare attribute map (ACL-06, BMD-03/05)", () => {
+        service.addOrUpdateBusinessMetadataOf("7a1b", "domain", { "domain-name": "Sales" }).subscribe();
+
+        const post = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/businessmetadata/domain");
+        expect(post.request.method).toBe("POST");
+        expect(post.request.body).toEqual({ "domain-name": "Sales" });
+        post.flush({});
+
+        service.removeBusinessMetadataOf("7a1b", "domain", { "domain-name": null }).subscribe();
+
+        const del = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/businessmetadata/domain");
+        expect(del.request.method).toBe("DELETE");
+        expect(del.request.body).toEqual({ "domain-name": null });
+        del.flush({});
+    });
+
+    it("businessMetadataTemplate answers the bytes pair (ACL-07, BMI-01, DD-315)", () =>
+        new Promise<void>((done, fail) => {
+            const csv = new ArrayBuffer(3);
+            new Uint8Array(csv).set([0x61, 0x62, 0x63]);
+
+            service.businessMetadataTemplate().subscribe({
+                next: (answer) => {
+                    expect(answer.body).toEqual(csv);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/v2/entity/businessmetadata/import/template");
+            expect(req.request.method).toBe("GET");
+            req.flush(csv, { headers: { "content-type": "application/octet-stream" } });
+        }));
+
+    it("importBusinessMetadata posts the file part and answers the bulk response (ACL-07, BMI-02, CLE-09)", () => {
+        const answer: BulkImportResponse = {
+            successImportInfoList: [{ parentObjectName: "g", importStatus: "SUCCESS" }],
+        };
+        service.importBusinessMetadata("attrs.csv", new Blob(["a,b\n"])).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/businessmetadata/import");
+        expect(req.request.method).toBe("POST");
+        const form = req.request.body as FormData;
+        expect(form).toBeInstanceOf(FormData);
+        expect((form.get("file") as File).name).toBe("attrs.csv");
+        req.flush(answer);
+    });
+
+    it("the three label verbs map as the server reads them: POST set, PUT add, DELETE remove (ACL-08, CLE-06)", () => {
+        service.setLabels("7a1b", ["PII"]).subscribe();
+
+        const set = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/labels");
+        expect(set.request.method).toBe("POST");
+        expect(set.request.body).toEqual(["PII"]);
+        set.flush({});
+
+        service.addLabels("7a1b", ["PII"]).subscribe();
+
+        const add = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/labels");
+        expect(add.request.method).toBe("PUT");
+        add.flush({});
+
+        service.removeLabels("7a1b", ["PII"]).subscribe();
+
+        const rm = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/labels");
+        expect(rm.request.method).toBe("DELETE");
+        expect(rm.request.body).toEqual(["PII"]);
+        rm.flush({});
+    });
+
+    it("the unique-attribute label siblings send attr: params and a bare array (ACL-08, CLE-06)", () => {
+        service.setLabelsByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, ["PII"]).subscribe();
+
+        const set = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table/labels");
+        expect(set.request.method).toBe("POST");
+        expect(set.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        expect(set.request.body).toEqual(["PII"]);
+        set.flush({});
+
+        service.addLabelsByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, ["PII"]).subscribe();
+
+        const add = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table/labels");
+        expect(add.request.method).toBe("PUT");
+        add.flush({});
+
+        service.removeLabelsByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, ["PII"]).subscribe();
+
+        const rm = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table/labels");
+        expect(rm.request.method).toBe("DELETE");
+        expect(rm.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        expect(rm.request.body).toEqual(["PII"]);
+        rm.flush({});
     });
 });

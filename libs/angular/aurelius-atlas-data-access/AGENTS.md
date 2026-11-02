@@ -24,18 +24,26 @@ consumers import from the package root only, never a subfolder path.
   `AtlasClient.admin` (CL-11, CLW-01..06); `export` answers the
   `{ body, contentType }` pair of DD-315 where the twin returns a tuple
 - `src/lib/atlas/atlas-entities.service.ts` — `AtlasEntitiesService`
-  (`/atlas/v2/entity/**`, DET-03, AEN-01..07, AEW-01..06 — the 2.3+7.6
-  wiring's client, DD-187): the eight read/audit routes of `routes/entity.py`
-  (8.17) and its seven write/delete routes (8.18) — guid and
+  (`/atlas/v2/entity/**`, DET-03, AEN-01..07, AEW-01..06, ACL-01..09 — the
+  2.3+7.6 wiring's client, DD-187): all thirty-seven routes of
+  `routes/entity.py`. The eight read/audit routes (8.17) — guid and
   unique-attribute reads (`attr:<name>`, flags only when true), the header
   siblings, the bulk reads (repeated `guid`; `attr_<n>:<name>` 1-based,
   DV-19), `getAuditEvents` (drops only unset fields — a 0 `count` travels,
-  CLE-10), `getChangedClassifications` (`tagUpdateStartTime`), the
-  create/update pair (bare bodies), `partialUpdateAttribute` (the bare JSON
-  value as the body, `name` param only when given, EWR-15), and the three
-  deletes (`deleteType` only when chosen, EDL-04); the twin of
-  `AtlasClient.entity`'s reads, writes and deletes (CLE-01..CLE-04, CLE-11,
-  CLE-12); 8.19 adds the classification/business-metadata/label routes
+  CLE-10), `getChangedClassifications` (`tagUpdateStartTime`); the seven
+  write/delete routes (8.18) — `createOrUpdate…`,
+  `partialUpdateAttribute` (the bare JSON value as the body, `name` param
+  only when given, EWR-15), the three deletes (`deleteType` only when
+  chosen, EDL-04); the twenty-two classification/business-metadata/label
+  routes (8.19) — `…Classifications…` (bare array bodies, `AtlasClassifications`
+  PList read), `associateClassification`, `setClassifications` (the DV-36
+  summary array), the business-metadata pair with its `{<bm>: <attrs>}`
+  bodies (`isOverwrite` only when true; the DELETE bodies ride
+  `HttpClient.request` — the typed `delete` takes none), the template
+  download (`AtlasExportAnswer` shape, DD-315) and file import
+  (`BulkImportResponse`), and the six label routes (POST set / PUT add /
+  DELETE remove, CLE-06). The twin of `AtlasClient.entity`
+  (CLE-01..CLE-12)
 - `src/lib/atlas/lineage.service.ts` — `LineageService` (`/atlas/v2/lineage/**`,
   ALN-01..04): the three `LineageREST` routes — the graph, its on-demand form,
   and the unique-attribute lookup; `depth`/`direction` always go as query
@@ -99,13 +107,15 @@ consumers import from the package root only, never a subfolder path.
   body from the raw bytes (CL-04); here a text request keeps its error body as
   text and the caller parses it (AAC-01).
 - The entity wire contract has the same twin: `AtlasClient.entity`
-  (CLE-01..CLE-12) covers all thirty-seven routes of `routes/entity.py`
-  while `AtlasEntitiesService` covers the fifteen reads, audits, writes and
-  deletes of 8.17/8.18 — change a covered route on both sides in the same
-  PR. The audit read differs in shape only: the twin takes six keyword
-  parameters, AEN-05 takes one `EntityAuditQuery` object; both send every
-  given field, only `undefined`/`None` left out. The partial update's
-  optional `name` is the twin's middle parameter moved last (AEW-03's note).
+  (CLE-01..CLE-12) and `AtlasEntitiesService` cover all thirty-seven routes
+  of `routes/entity.py` (8.17/8.18/8.19) — change a route on both sides in
+  the same PR. Shapes differ by platform, not by choice: the audit read
+  takes one `EntityAuditQuery` object here and six keyword parameters in the
+  twin (both drop only unset fields); a DELETE with a body rides
+  `HttpClient.request` here (the typed `delete` takes none); the business-
+  metadata template answers the `AtlasExportAnswer` pair here and a
+  `(bytes, content-type)` tuple there (DD-315); the partial update's optional
+  `name` is the twin's middle parameter moved last (AEW-03's note).
 - The example-backend contract: endpoints (`/entities/*`, `/entities/sse`),
   `Envelope<T>`, and `PaginatedResponse<T>` must match
   `apps/aurelius-atlas-fastapi-example`.
