@@ -36,9 +36,8 @@ The webapp track (7.x) ports the screens; the lineage graph is the one screen fa
 - **Server-side lineage feed first (5.1 before 8.x).** The real data path before the APIs: 5.1 grows lineage semantics without a consumer to specify them, and 8.x stays blocked. Refused — stub first (this ADR's data-path rule).
 - **One app for all three services.** One container, `/lineage_model`, `/data2model`, `/validate_entity` route groups: fewer images, but each legacy service has its own scaling, health, and env story, and the user's deployment decision names one app per legacy service. Refused.
 
-## Consequences
+## Tradeoffs
 
-- The webapp gains a lineage screen family with a working backend path (8.4+): its CSP widens to the auxiliary origins, named at deployment.
-- The deployment topology grows three stateless containers (plus their OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the lineage data stays in the server's store (047), read through `/v2/lineage/{guid}`.
-- `deviations.md` records the deliberate divergences: DV-67 (validate-entity ships as the legacy mock), DV-68 (native ar3 layout replaces m4i-analytics), DV-69 (lineage source stubbed until 5.1).
-- DD-140's audit note stays as history; its lineage/validate exclusion is superseded **by this record**, its App Search exclusion stands.
+- **Positive:** the webapp gains a lineage screen family with a working backend path (8.4+).
+- **Negative:** the webapp's CSP widens to the auxiliary origins, named at deployment, and the deployment topology grows three stateless containers (plus their OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the lineage data stays in the server's store (047), read through `/v2/lineage/{guid}`.
+- **Neutral / follow-ups:** `deviations.md` records the deliberate divergences: DV-67 (validate-entity ships as the legacy mock), DV-68 (native ar3 layout replaces m4i-analytics), DV-69 (lineage source stubbed until 5.1). DD-140's audit note stays as history; its lineage/validate exclusion is superseded **by this record**, its App Search exclusion stands.

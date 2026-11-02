@@ -2154,6 +2154,8 @@
       
         
       
+        
+      
     
     
     
@@ -2719,17 +2721,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Implementation
-      </span>
-    </span>
-  </a>
   
 </li>
       
@@ -3891,6 +3882,33 @@
     
   
   056. Behaviour is proven by executed tests
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../057-the-system-ships-as-helm-charts-that-a-deployment-installs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  057. The system ships as Helm charts
 
     
   </span>
@@ -8478,17 +8496,6 @@
   
 </li>
       
-        <li class="md-nav__item">
-  <a href="#implementation" class="md-nav__link">
-    <span class="md-ellipsis">
-      <span class="md-typeset">
-        Implementation
-      </span>
-    </span>
-  </a>
-  
-</li>
-      
     </ul>
   
 </nav>
@@ -8577,6 +8584,8 @@
       
         
           
+        
+      
         
       
         
@@ -8867,26 +8876,14 @@ registers.</p>
   (<a href=".././008-secrets-never-in-plaintext/">008</a>); who owns its rotation is the
   question a proposed record takes up
   (<a href=".././028-operational-secret-handling-has-a-named-owner/">028</a>).</li>
+<li>The rule governs the boundaries the catalogue keeps: the server to its
+  search store, its identity provider, and its HTTP API. Transport
+  protection belongs to the data-protection record
+  (<a href=".././039-data-is-protected-where-it-travels-and-where-it-rests/">039</a>);
+  this record covers the credential presented once the channel is open.
+  The proof of the rule ran on the event platform and left with that
+  slice (<a href=".././050-the-system-carries-only-what-the-catalogue-needs/">050</a>).</li>
 </ul>
-<h2 id="implementation">Implementation<a class="headerlink" href="#implementation" title="Permanent link">&para;</a></h2>
-<p><strong>Demonstrated, then removed with the slice.</strong> The rule was proven end-to-end
-on the development event platform, which at acceptance ran unauthenticated — a
-defect by this record's definition. The proof, before the slice left
-(<a href=".././050-the-system-carries-only-what-the-catalogue-needs/">050</a>):</p>
-<ul>
-<li>The local Kafka cluster was closed to anonymous callers: token callers
-  arrive with OAuth 2.0 bearer tokens (SASL/OAUTHBEARER over TLS) from a
-  dedicated <code>kafka</code> realm, each a distinct confidential client so the broker's
-  session log names the caller (R1, R2, R3, R6).</li>
-<li>Library exceptions arrive with per-service client certificates under mutual
-  TLS.</li>
-<li>Every E2E suite authenticates over TLS (R5).</li>
-</ul>
-<p><strong>The rule stands</strong> and now governs the boundaries the catalogue keeps: the
-server to its search store, its identity provider, and its HTTP API. Transport
-protection belongs to the data-protection record
-(<a href=".././039-data-is-protected-where-it-travels-and-where-it-rests/">039</a>); this
-record covers the credential presented once the channel is open.</p>
 
 
 

@@ -2245,6 +2245,8 @@
       
         
       
+        
+      
     
     
     
@@ -3825,6 +3827,33 @@
     
   
   056. Behaviour is proven by executed tests
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  057. The system ships as Helm charts
 
     
   </span>
@@ -8504,6 +8533,15 @@ exists to make TLS the default locally, not to travel.</p>
 <p>The architecture page names the rule; these are the specific plaintext exceptions a developer
 sees, each accepted deliberately
 (<a href="../../architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/">ADR 039</a>):</p>
+<details class="question">
+<summary>Why is a plaintext listener a named exception and not a defect?</summary>
+<p>Because it is a developer convenience on a wire that never leaves the
+machine (ADR 039's R4), and R1's rule is that such relaxations are
+written down, not implied. The line R4 guards: the same plaintext path
+outside the development arrangement — the localhost URL copied into a
+deployment — is a defect, which is why each occurrence carries a comment
+naming the record.</p>
+</details>
 <ul>
 <li>The identity provider slice serves a plaintext HTTP listener (port 8080) so the developer
   browser opens a familiar URL; its TLS listener (8443) serves every CI/E2E path.</li>

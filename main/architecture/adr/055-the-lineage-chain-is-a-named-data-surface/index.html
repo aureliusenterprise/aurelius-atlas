@@ -2154,6 +2154,8 @@
       
         
       
+        
+      
     
     
     
@@ -3807,10 +3809,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#tradeoffs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Consequences
+        Tradeoffs
       </span>
     </span>
   </a>
@@ -3841,6 +3843,33 @@
     
   
   056. Behaviour is proven by executed tests
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../057-the-system-ships-as-helm-charts-that-a-deployment-installs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  057. The system ships as Helm charts
 
     
   </span>
@@ -8379,10 +8408,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#consequences" class="md-nav__link">
+  <a href="#tradeoffs" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Consequences
+        Tradeoffs
       </span>
     </span>
   </a>
@@ -8477,6 +8506,8 @@
       
         
           
+        
+      
         
       
         
@@ -8710,18 +8741,20 @@ unported would leave the webapp's lineage slices (7.x) permanently unwired.</p>
   legacy service has its own scaling, health, and env story, and the user's
   deployment decision names one app per legacy service. Refused.</li>
 </ul>
-<h2 id="consequences">Consequences<a class="headerlink" href="#consequences" title="Permanent link">&para;</a></h2>
+<h2 id="tradeoffs">Tradeoffs<a class="headerlink" href="#tradeoffs" title="Permanent link">&para;</a></h2>
 <ul>
-<li>The webapp gains a lineage screen family with a working backend path
-  (8.4+): its CSP widens to the auxiliary origins, named at deployment.</li>
-<li>The deployment topology grows three stateless containers (plus their
-  OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the lineage
-  data stays in the server's store (047), read through <code>/v2/lineage/{guid}</code>.</li>
-<li><code>deviations.md</code> records the deliberate divergences: DV-67 (validate-entity
-  ships as the legacy mock), DV-68 (native ar3 layout replaces m4i-analytics),
-  DV-69 (lineage source stubbed until 5.1).</li>
-<li>DD-140's audit note stays as history; its lineage/validate exclusion is
-  superseded <strong>by this record</strong>, its App Search exclusion stands.</li>
+<li><strong>Positive:</strong> the webapp gains a lineage screen family with a working
+  backend path (8.4+).</li>
+<li><strong>Negative:</strong> the webapp's CSP widens to the auxiliary origins, named at
+  deployment, and the deployment topology grows three stateless containers
+  (plus their OTel/Keycloak plumbing, 8.0) — all stateless, no new store; the
+  lineage data stays in the server's store (047), read through
+  <code>/v2/lineage/{guid}</code>.</li>
+<li><strong>Neutral / follow-ups:</strong> <code>deviations.md</code> records the deliberate
+  divergences: DV-67 (validate-entity ships as the legacy mock), DV-68
+  (native ar3 layout replaces m4i-analytics), DV-69 (lineage source stubbed
+  until 5.1). DD-140's audit note stays as history; its lineage/validate
+  exclusion is superseded <strong>by this record</strong>, its App Search exclusion stands.</li>
 </ul>
 
 
