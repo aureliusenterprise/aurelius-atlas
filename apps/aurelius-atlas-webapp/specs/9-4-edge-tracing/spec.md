@@ -11,10 +11,11 @@ the observability stack: a request refused at the edge (9.3's limiter) never rea
 so it leaves no span, no log in Loki, nothing in Tempo. This increment makes the edge a first-class
 tracing producer:
 
-- **The image carries the native OTel module** (`ngx_otel_module`), built in a Docker builder
-  stage on `dhi.io/nginx:1.30-alpine3.24-dev` — the hardened image plus apk and the distro's
-  build tree — against the exact nginx the runtime image runs, and loaded through the main-context
-  include the hardened image already ships (`ETR-01`, [DD-239](../design-log.md#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage)).
+- **The image carries the native OTel module** ( `ngx_otel_module` ), built in a Docker builder stage on
+  `dhi.io/nginx:1.30-alpine3.24-dev` — the hardened image plus apk and the distro's build tree — against the
+  exact nginx the runtime image runs, and loaded through the main-context include the hardened image already
+  ships ( `ETR-01` ,
+  [DD-239](design.md#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage) ).
 - **Every `/api/` request is a span**: exported to the collector over OTLP/gRPC (TLS, CA-pinned,
   shared ingest token — the legacy leg), W3C context propagated, so the span stitches the
   browser-app trace to the server's request span; static assets stay untraced (`ETR-01`).

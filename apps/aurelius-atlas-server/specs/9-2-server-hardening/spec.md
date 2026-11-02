@@ -8,13 +8,15 @@
 
 The server's own attack surface, closed at the edges a pentest named (H3, M5, L1):
 
-- **TLS is a start-up requirement**: the certificate/key pair joins the settings that have no
-  default, so the server can never serve plaintext (SRV-06, [DD-234](../design-log.md#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext));
-  the image's healthcheck speaks HTTPS accordingly.
-- **A 5xx answer is opaque**: no exception text on the wire, a trace-id request id on the body
-  and a header for support correlation (SRV-07, [DD-235](../design-log.md#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid)).
+- **TLS is a start-up requirement**: the certificate/key pair joins the settings that have no default, so the
+  server can never serve plaintext (SRV-06,
+  [DD-234](design.md#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext) ); the
+  image's healthcheck speaks HTTPS accordingly.
+- **A 5xx answer is opaque**: no exception text on the wire, a trace-id request id on the body and a header
+  for support correlation (SRV-07,
+  [DD-235](design.md#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid) ).
 - **Security response headers** on every answer, split API/dashboard, HSTS with a dev escape
-  (SRV-08, [DD-236](../design-log.md#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path)).
+  (SRV-08, [DD-236](design.md#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path)).
 
 Not in scope:
 
@@ -42,11 +44,12 @@ echoes `exception.getMessage()` into `errorCause` on every status, including 5xx
 
 ## Deviations
 
-- [DV-85](../deviations.md): 5xx answers drop the `errorCause` echo, adding `requestId`.
-- [DV-86](../deviations.md): the dashboard CSP allows inline and eval'd scripts — the
-  vendored bootstrap inlines a build-varying `bust` value (hashes are not stable) and the
-  require-handlebars-plugin compiles templates at runtime with `new Function` (the e2e
-  dashboard boot is the regression guard).
+- [DV-85](../../../../docs/architecture/conversion/deviations.md) : 5xx answers drop the `errorCause` echo,
+  adding `requestId` .
+- [DV-86](../../../../docs/architecture/conversion/deviations.md) : the dashboard CSP allows inline and eval'd
+  scripts — the vendored bootstrap inlines a build-varying `bust` value (hashes are not stable) and the
+  require-handlebars-plugin compiles templates at runtime with `new Function` (the e2e dashboard boot is the
+  regression guard).
 
 ## Acceptance
 

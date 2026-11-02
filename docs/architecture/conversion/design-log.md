@@ -9,7 +9,7 @@ Each new entry lives in the `design.md` of the increment that makes it, next to 
 spec ([ADR 051](../adr/051-the-conversion-proceeds-in-specified-increments.md)); where, is what
 the [Moved entries](#moved-entries) index keeps per number. This page holds the entries written
 before that layout (DD-001 to DD-094, DD-126 to DD-176, DD-180 to DD-213, DD-218 to DD-221,
-DD-240 to DD-246, DD-248 to DD-252 and DD-300 to DD-301 are moved out; what is listed below
+DD-234 to DD-246, DD-248 to DD-252 and DD-300 to DD-301 are moved out; what is listed below
 stays): it is read-only
 history. Nothing is appended here.
 
@@ -61,12 +61,6 @@ history. Nothing is appended here.
 | [DD-231](#dd-231-teardown-downs-the-compose-stacks-prune-only-sweeps-corpses)                                    | CI teardown downs every compose stack: prune only sweeps stopped containers, so the stacks rode through the tail                                                                                                                | cross-cutting | Accepted             |
 | [DD-232](#dd-232-the-ci-pipeline-is-a-fan-out-dag-the-pool-is-per-pod-emptydir)                                  | CI splits into validate then {e2e, scan-sonar, chromatic} on a 3-pod pool; the RWO cache PD retires for per-pod emptyDir                                                                                                        | cross-cutting | Accepted             |
 | [DD-233](#dd-233-the-toolchain-caches-bridge-pod-churn-through-the-cache-server)                                 | Fan-out pods churn: uv/pre-commit/sonar caches bridge across pods on the cache server (cold-pod tax measured away)                                                                                                              | cross-cutting | Accepted             |
-| [DD-234](#dd-234-tls-material-is-a-required-setting-the-server-never-serves-plaintext)                           | TLS material is a required setting: the server never serves plaintext                                                                                                                                                           | 9.2           | Accepted             |
-| [DD-235](#dd-235-a-5xx-answer-is-opaque-and-carries-the-trace-id-as-requestid)                                   | A 5xx answer is opaque and carries the trace id as `requestId`                                                                                                                                                                  | 9.2           | Accepted             |
-| [DD-236](#dd-236-security-response-headers-are-a-pure-asgi-middleware-split-on-api-path)                         | Security response headers are a pure-ASGI middleware split on `/api` path                                                                                                                                                       | 9.2           | Accepted             |
-| [DD-237](#dd-237-index-refresh-moves-from-reads-to-writes)                                                       | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes                                                                                                                               | 9.3           | Accepted             |
-| [DD-238](#dd-238-the-browser-rate-limit-lives-at-the-nginx-edge-not-in-the-server)                               | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                                                                                                                               | 9.3           | Accepted             |
-| [DD-239](#dd-239-the-edge-exports-spans-on-the-legacy-leg-built-in-the-dev-image-stage)                          | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage                                                                                                              | 9.4           | Accepted             |
 | [DD-247](#dd-247-journal-writes-do-not-wait-for-a-refresh)                                                       | Journal writes do not wait for a refresh                                                                                                                                                                                        | cross-cutting | Proposed             |
 | [DD-253](#dd-253-the-chart-contract-suite-lives-at-the-workspace-root-and-renders-with-the-helm-cli)             | The chart-contract suite lives at the workspace root (`tests/`) and asserts rendered manifests via the `helm` CLI                                                                                                               | 10.2          | Accepted             |
 | [DD-254](#dd-254-deploy-time-credential-generation-lands-in-102-with-publish-and-rotation-in-104)                | The umbrella's `randAlphaNum` + `lookup` credential generation ships in 10.2; retrieval/rotation polish stays in 10.4                                                                                                           | 10.2          | Accepted             |
@@ -1092,289 +1086,6 @@ pipeline 27m 48s -> **25m 48s** with the e2e suites now the critical
 path. The restore step's metadata bug (subPath mount roots stay
 root-owned under fsGroup - k8s applies it to volume roots only;
 cache-init chowns them now) shipped in the same change.
-
-### DD-234. TLS material is a required setting; the server never serves plaintext
-
-- **Status:** Accepted
-- **Increment:** 9.2
-- **Date:** 2026-10-27
-
-**Decision.** `TLS_CERT_FILE` and `TLS_KEY_FILE` become required settings with no
-default, joining the store endpoints/password/CA in the SRV-01/SRV-02 idiom: a
-missing one stops start-up with a pydantic error naming the field. The
-both-or-neither pair check is deleted — the "neither" arm no longer exists — and
-`ServerSettings.tls` always returns the pair. `uvicorn_options` always carries
-`ssl_certfile`/`ssl_keyfile`. The image bakes `ENV` defaults pointing at
-`/certs/server.pem` / `/certs/server-key.pem` (DD-216's stack-owned mount), and
-its healthcheck speaks HTTPS with CA verification. SRV-06 supersedes the second
-sentence of SRV-03.
-
-**Reason.** ADR 039 states TLS is the only serving mode, and every deployment
-arrangement (dev, e2e, CI, the compose stacks) already supplies the pair —
-plaintext is reachable only by misconfiguration, and a pentest (H3) counts a
-plaintext listener as the finding it is. Making the setting required turns the
-deployment's silent failure mode (an HTTP listener answering where HTTPS was
-expected) into a start-up error that names itself, which is how every other
-required setting already behaves.
-
-**Alternatives.** (a) Keep the pair rule and fail when both are unset — refused:
-"unset is valid" is the whole hole; it also keeps a dead code path (plaintext
-uvicorn options) in `__main__`. (b) Terminate TLS at the proxy and serve
-plaintext on loopback — refused: ADR 039's store-side pinning applies equally
-server-side, the e2e/dashboards ride the server's own HTTPS, and a loopback-only
-assumption is unenforceable inside a shared pod network. (c) Self-signed
-material generated at start-up when unset — refused: silently untrusted
-material is the failure mode users report as "the browser blocks the site",
-and start-up crypto is the anti-pattern DD-216 removed for the stacks.
-
-**Consequences.** Unit tests supply a stub pair (the `tls_pair` fixture;
-`FilePath` validates existence, uvicorn never starts under test). A bare
-`docker run` of the image without a mounted pair fails at start-up naming
-`AURELIUS_ATLAS_SERVER_TLS_CERT_FILE` — the design working, documented as such.
-The healthcheck no longer has a plaintext branch. Next free DD: 235.
-
-### DD-235. A 5xx answer is opaque and carries the trace id as `requestId`
-
-- **Status:** Accepted
-- **Increment:** 9.2
-- **Date:** 2026-10-27
-
-**Decision.** `atlas_error_handler` stops echoing `errorCause` for a 5xx: the
-body keeps `errorCode`/`errorMessage`, the cause's text goes only to the log (as
-`exc_info`, as before), and the answer gains the current OTel trace id — 32-hex
-`requestId` in the body, `X-Request-Id` in the headers — so a user's screenshot
-correlates to the logged stack trace and the trace. 4xx answers keep SRV-04's
-cause echo; Atlas's own validation messages are client-facing and the parity
-scenarios pin them. DV-85 records the deviation from `AtlasBaseExceptionMapper`.
-
-**Reason.** Pentest M5: the 5xx echo leaks internals (store URLs, index names,
-exception classes from the ES client) to any caller who can trigger a server
-fault — readiness against a downed store leaks the store URI. Atlas echoes
-because its own logs were the only consumer of its UI's error dialogs; Aurelius
-ships the whole OTel pipeline, so a trace id is the correlation key the support
-flow needs, and the body stays Atlas's shape for every field the scenarios pin.
-
-**Alternatives.** (a) Env flag for verbose errors — refused: an always-on
-leak-by-default with a mitigation nobody enables; DD-016's fail-loud philosophy
-is loud in the log, not on the wire. (b) Random per-request uuid as the id —
-refused: the logs carry the trace id already (structlog/OTel), a random id
-correlates to nothing. (c) Suppress 4xx causes too — refused: they are
-parity-pinned client-facing messages (`UNKNOWN_TYPENAME`, validation detail).
-
-**Consequences.** The client model's `errorCause` stays optional (4xx fills it).
-In-process tests have recording spans (instrumented app + SDK provider), so
-`requestId` is assertable; when telemetry is off the field is simply absent.
-The header is additive, so parity scenarios (expected-response headers only) are
-unaffected. Next free DD: 236.
-
-### DD-236. Security response headers are a pure-ASGI middleware split on `/api` path
-
-- **Status:** Accepted
-- **Increment:** 9.2
-- **Date:** 2026-10-27
-
-**Decision.** One pure-ASGI `SecurityHeadersMiddleware`, added first in
-`create_app` so it wraps routers, mounts, and the exception handler. `/api/**`
-answers (by path prefix, so error and 404 answers are covered) get
-`nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, a
-`Permissions-Policy`, `Cache-Control: no-store`, and a CSP that serves no
-documents (`default-src 'none'; base-uri 'none'; frame-ancestors 'none'`). The
-dashboard documents get a same-origin CSP with `'unsafe-inline'` +
-`'unsafe-eval'` scripts and `'unsafe-inline'` styles (DV-86: the vendored
-`index.html.tpl` inlines the build-varying bust value, and the
-require-handlebars-plugin compiles templates at runtime with `new Function` —
-the e2e dashboard boot is the regression guard; what CSP does enforce there is
-`object-src`/`base-uri`/`frame-ancestors` closed and same-origin sources) and
-`SAMEORIGIN` framing; assets fetched with the legacy `?bust=` get
-`public, max-age=31536000, immutable` (the bust param is the legacy's own
-content-versioning; HTML is excluded so a stale page cannot pin itself). HSTS
-(max-age 1y, includeSubDomains) rides every answer when `hsts_enabled` —
-default true, false in the dev `.env` (ADR 039's named dev relaxations: the
-mkcert CA is not browser-trusted, and localhost must not pin). SRV-08.
-
-**Reason.** Pentest L1: clickjacking on the dashboard, MIME sniffing on API
-answers, cacheable API JSON, and a missing HSTS policy. A pure-ASGI stamp on
-`http.response.start` reaches every response path — including the exception
-handler's `JSONResponse` and static-file answers — where `BaseHTTPMiddleware`
-wraps streaming awkwardly and StaticFiles bypasses route-level answers.
-
-**Alternatives.** (a) nginx-terminated headers — refused: the server answers
-directly in e2e and any deployment without the webapp proxy; headers belong to
-the origin. (b) Strict CSP with hashes/nonces for the dashboards — refused for
-now: the vendored `index.html.tpl` inline bootstrap inlines the build-varying
-`<%- bust %>` value, so hashes churn per build (DV-86); the dashboard
-retirement (6.3) removes the surface. (c) starlette `CORSMiddleware`/`GZip`
-stacking — refused: none of them set these headers; this is one small
-middleware, not a framework feature.
-
-**Consequences.** Header tests cover API, 404, dashboard, bust-asset and
-HSTS-off answers. The parity runner compares expected response headers only, so
-additive headers keep every scenario green. The dev compose stacks carry
-`HSTS_ENABLED=false` explicitly (e2e images do not read `.env`). Next free DD: 237.
-
-### DD-237. Index refresh moves from reads to writes
-
-- **Status:** Accepted
-- **Increment:** 9.3
-- **Date:** 2026-10-28
-
-**Decision.** Every write a search reads carries `refresh="wait_for"`:
-the entity/linked bulk (`EntityDocuments.write`), the entity restore, the
-linked restore, the journal put and delete, and the audit append
-(`put_events`). No read path calls `indices.refresh` — `count_type`,
-`referring`, `classified`, `search`, `terms`, `journal`, `list_tasks`,
-`count_linked_type`, `classifications_of_types`, `list_events`,
-`entities_with_tag_changes` all lose theirs. Reservations stay unrefreshed:
-they are read by `mget`, which is real time (ENS-04). `wait_for` (not `true`)
-also waits for the _concurrent_ writes' refresh — the pair that keeps a
-reader from seeing half of one bulk (DV-16's shape, unchanged). ENS-11.
-
-**Reason.** Pentest M6: every read paid a full index refresh on the request's
-critical path — a search, a count, an audit listing each forced a refresh of
-the entities (or audits) index. That is a denial-of-service lever on the
-store, not a feature: `refresh` is a write-path affordance, and Apache Atlas
-refreshes nothing on reads (JanusGraph's transactional graph cache makes it
-pointless there). Read-your-writes (ENS-04, ENS-07's visible contract) needs
-the refresh _once_, at the write that created the fact; paying for it on
-every reader multiplies the cost by the read:write ratio.
-
-**Alternatives.** (a) `refresh=true` — refused: it forces a refresh of every
-shard immediately and serialises concurrent writers on it; `wait_for` joins
-the refresh the write's own request triggers. (b) Refresh only on the writes
-that mutate what the UI searches (bulk, restore) and leave journal/audit on
-reads — refused: the journal read is recovery's (a restart reads entries
-written moments before), the audit list rides the audit append; a partial
-move re-introduces the read-side cost on the paths kept. (c) No refresh at
-all, tolerate stale reads — refused: ENS-04's read-your-writes is
-scenario-pinned (write → search returns the entity), and Atlas's
-transactional visibility is the parity behaviour. (d) A `searchRequestCache`
--style read-your-writes (ES's real-time GETs + `search_after` on `seq_no`):
-ES's `mget`-real-time + `wait_for`-refresh pair is the same guarantee with
-less machinery.
-
-**Consequences.** Write latency rises (the response waits for the refresh);
-read latency falls off a cliff at the p99. The fake client records the
-`refresh` kwarg of every write (`write_refreshes`) and keeps counting
-`indices.refresh` calls (`refreshes`), so the unit tests pin both halves:
-writes carry `wait_for`, reads call refresh never. The e2e parity scenarios
-(write → search sequences) are the acceptance over the real store — they
-stay green unchanged, which _is_ the read-your-writes proof. Supersedes the
-read-side refresh rationale in DD-043, DD-048, DD-057 (their decisions
-stand; only the refresh's location moves). Next free DD: 238.
-
-### DD-238. The browser rate limit lives at the nginx edge, not in the server
-
-- **Status:** Accepted
-- **Increment:** 9.3
-- **Date:** 2026-10-28
-
-**Decision.** The webapp's nginx (`nginx.conf.template`, mirrored by
-`e2e/config/nginx.conf`) carries a `limit_req` leaky bucket on the `/api/`
-proxy: key `$binary_remote_addr` through a `geo`/`map` pair that maps the
-private ranges (RFC 1918 + loopback) to the empty key — nginx does not
-account requests with an empty key — `rate=300r/m`, `burst=100`, `nodelay`,
-`limit_req_status 429`. The server itself has no limiter: no middleware,
-no setting, no 429 error code in the enum. uvicorn's `forwarded_allow_ips`
-becomes a server setting (default `127.0.0.1`) so the webapp proxy hop is
-declared and the access log / OTel peer attributes key on the browser's
-address, not the proxy's (SRV-10). The e2e bucket is test-sized (60r/m,
-burst 20) so the burst test can outspend it sequentially. SRV-09.
-
-**Reason.** Pentest M6's search-cost half: a browser (or a script posing as
-one) can fire unbounded searches. The limit belongs where the browser is:
-at the webapp edge, nginx already terminates TLS, proxies `/api/`, stamps
-headers — the bucket is one more line of the same job, runs in C, shares
-state across workers in one shm zone, and refuses before a request costs a
-handler, a query, or an ES fan-out. The user's steer: internal apps are not
-the concern — a service bursting the API is working, a browser flooding it
-is attacking; the private-range allowlist is exactly that split. An
-application-layer limiter (pure-ASGI token bucket; slowapi/limits) was
-built and removed: it also limits the internal callers nobody worries
-about, its limits are per-process (a multi-worker deployment multiplies the
-budget), and uvicorn's default trust (`127.0.0.1`) makes every proxied
-request look like the proxy — every browser sharing one bucket. `limits`
-is also a transitive dependency of a library that is removable (the
-observability stack), a coupling DD-238's removal notes must keep straight.
-
-**Alternatives.** (a) The pure-ASGI middleware (built first) — removed for
-the reasons above; kept as a fallback only if a deployment runs the server
-without the webapp edge and wants a limiter (the server has no knob for it
-now). (b) slowapi — refused: Flask/FastAPI decorator middleware, same
-per-process limitation, new vocabulary (strategy/storage) for one rule.
-(c) `X-Forwarded-For`-keyed limiting in nginx (`realip` module) — refused:
-the browser cannot spoof the TCP address nginx sees; the webapp is the only
-front door, no realip hop is needed. (d) Elasticsearch-side throttling
-(`search.max_concurrent_shard_requests`) — refused for this increment: it
-protects the store from the server, not the server from browsers.
-
-**Consequences.** The refusal is nginx's 429 (HTML, no Atlas error body, no
-`Retry-After` — `limit_req` sends none): DV-87 records the deviation, the
-webapp's alert drawer (ALR-05) is the UX for the refused call. Deployments
-that front the server with something other than the webapp nginx get no
-limiter — that is the product boundary, stated in the spec. A deployment
-whose internal callers arrive from public addresses must extend the geo
-allowlist. `forwarded_allow_ips` ships `127.0.0.1` (uvicorn's own default —
-the setting exists to _name the proxy_, not to trust more by default). Next
-free DD: 239.
-
-### DD-239. The edge exports spans on the legacy leg, built in the dev-image stage
-
-- **Status:** Accepted
-- **Increment:** 9.4
-- **Date:** 2026-10-28
-
-**Decision.** The webapp's nginx becomes an OTLP producer through the native
-`ngx_otel_module` (v0.1.2), compiled in a Docker builder stage on
-`dhi.io/nginx:1.30-alpine3.24-dev` against the exact nginx source the runtime
-image ships, loaded via the main-context include the hardened image already
-provides (`/etc/nginx/modules/*.conf`), and exporting the `/api/` spans to the
-collector's **legacy gRPC leg** (4320: TLS, CA-pinned, shared ingest token).
-The edge span propagates W3C context (`extract|inject`), so it stitches
-browser-app trace → edge span → server request span; static assets stay
-untraced. The edge is a producer, not a user: the collector stamps no user
-identity on it (CIA-09's rule, edge edition). ETR-01..03. (Numbering note:
-PR #155 reserves DD-237/238; 239 here assumes it merges first.)
-
-**Reason.** The edge is the browser's only entry point and the one hop the
-stack cannot see; once 9.3's limiter lands, refusals (429) exist _only_ at the
-edge — nginx's refusal lines go to container stderr, which the collector does
-not collect (OTLP-only receivers), so without this the event is invisible in
-Tempo/Loki/Grafana. The module's native span carries the edge's own view
-(`http.status_code`, `net.sock.peer.addr`, the matched route) and joins the
-trace the browser started. The 2022 blog's Lua/OpenTelemetry-Collector-sidecar
-route is obsolete next to the native module (nginx measures third-party
-tracing at ~50% request cost, native at 10-15%).
-
-**Alternatives.** (a) Per-service OAuth like every other producer — the
-module's export headers are config-parse-time **static strings** with no
-refresh hook (source: `addExporterHeader` validates at parse, the exporter
-builds once in `initWorkerProcess`), so a minted Keycloak JWT expires minutes
-in; a gateway collector presenting `oauth2client` to the services leg is the
-recorded upgrade path, not this increment. The legacy leg is the defined home
-for producers that cannot present a JWT (CIA-10 — Keycloak and the FastAPI
-example ride it). (b) The `-dev` image as runtime — it is a toolchain, not a
-product; the runtime stage is the hardened image plus the module's 93-lib
-closure (~42 MB, gRPC/protobuf/abseil/ICU: gRPC pulls ICU at runtime, verified
-by ldd). (c) `filelog`-tailing nginx's stderr into Loki — answers "where are
-the refusal logs" with lines, not spans: no trace join, no client-side
-stitch, and the collector has no container-log receiver today; the span
-supersedes the log line. (d) The module from nginx.org's prebuilt dynmodules —
-built for glibc nginx.org binaries; our base is the hardened musl image
-(module signature is feature-flag checked, and musl will not resolve Alpine's
-dangling soname symlinks — the builder tars the closure dereferenced, `-h`).
-
-**Consequences.** The webapp image grows 14→56 MB; the SBOM/license report
-gains grpc/protobuf/abseil/re2/icu (Apache/BSD). The builder pins the v0.1.2
-tag with the cmake-4 policy flag (its `cmake_minimum_required` predates 3.5)
-and apk's `python-3.14` (the dev image's xcb-proto resolves 3.14; bare
-`python` is 3.15 now) — reproducible-build facts recorded here.
-`limit_req` and this module share the `/api/` location: the limiter refuses
-before the span's `http.status_code` records the 429 (the module samples at
-the rewrite phase, completes at the log phase — a refused request's span is
-real, proven in the prototype burst). The v0.1.x line is 2023-frozen
-(4 open issues, no maintainer activity); re-evaluate at the next nginx
-baseline (the 1.30 signature check is the compatibility gate — a mismatched
-module fails at config parse, loudly, at boot). Next free DD: 240.
 
 ### DD-247. Journal writes do not wait for a refresh
 
@@ -3610,205 +3321,211 @@ The entries moved next to the increment they record. The record is the truth; th
 here is a copy of the one at the time of the move. New entries go to the increment's
 `design.md`, never here.
 
-| #      | Decision                                                                                             | Status           | Design record                                                                          |
-| ------ | ---------------------------------------------------------------------------------------------------- | ---------------- | -------------------------------------------------------------------------------------- |
-| DD-001 | Reference is Apache Atlas 2.4.0, and both dashboards are served                                      | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-002 | Atlas code lives in aurelius-atlas projects split by layer                                           | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-003 | Template projects are renamed to the aurelius-atlas prefix                                           | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-004 | The SPA keeps tokens in memory and renews them silently                                              | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
-| DD-005 | The store uses the official async Elasticsearch client                                               | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
-| DD-006 | Development and tests run Elasticsearch with security on                                             | Proposed         | `dev/elasticsearch/specs/0-2-elasticsearch-infrastructure/design.md`                   |
-| DD-007 | The Elasticsearch test fixture ships with the store library                                          | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
-| DD-008 | A yellow cluster is healthy                                                                          | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
-| DD-009 | Traceability is checked from collected markers, not from a test run                                  | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
-| DD-010 | The traceability check covers Atlas code from increment 0.2 on                                       | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
-| DD-011 | The test report is generated from JUnit, coverage and trace files                                    | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
-| DD-012 | Parity scenarios are YAML files run as parametrised pytest tests                                     | Proposed         | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
-| DD-013 | A scenario response is compared exactly, except at declared paths                                    | Proposed         | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
-| DD-014 | Scenario facts reach the report as test properties                                                   | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-4-parity-harness/design.md`                  |
-| DD-015 | The server is a FastAPI application with one router per Atlas resource                               | Proposed         | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
-| DD-016 | The server does not start without its store                                                          | Proposed         | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
-| DD-017 | The dashboards are vendored unchanged and built with dart-sass on Node 24                            | Proposed         | `apps/aurelius-atlas-dashboard/specs/0-6-dashboards/design.md`                         |
-| DD-018 | The server serves the dashboards from the API's origin                                               | Proposed         | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
-| DD-019 | The template examples stay until the plan is done                                                    | Proposed         | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
-| DD-020 | Typedef models are Pydantic models that read and write Atlas's JSON                                  | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
-| DD-021 | Set-valued fields keep each name once, in first-seen order                                           | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
-| DD-022 | Typedef timestamps are aware datetimes, written as epoch milliseconds                                | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
-| DD-023 | Atlas errors live in the model library                                                               | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
-| DD-024 | The registry is updated on a transient copy under a re-entrant lock                                  | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
-| DD-025 | The type system ports the definition side only                                                       | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
-| DD-026 | Dynamic attributes and search lookups wait for their increments                                      | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
-| DD-027 | Derived type sets keep first-seen order                                                              | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
-| DD-028 | The type definitions are one Elasticsearch document                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
-| DD-029 | Server processes share the type definitions through the document's version                           | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
-| DD-030 | The store asks the entity store whether a type is in use                                             | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
-| DD-031 | The patch records live in the typedef document                                                       | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
-| DD-032 | The built-in models are vendored unchanged and read from a directory                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
-| DD-033 | Start-up loading is one change per model file and per patch                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
-| DD-034 | Lists of type definitions are sorted by name                                                         | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
-| DD-035 | Type scenarios create what they read and delete it at their end                                      | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
-| DD-036 | Start-up loading tries a raced change again                                                          | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
-| DD-037 | Instance models are one module per Java class                                                        | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-entity-models/design.md`                   |
-| DD-038 | Attribute values stay plain JSON values until their types read them                                  | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-entity-models/design.md`                   |
-| DD-039 | One Atlas JSON codec reads floats as decimals and writes them with their digits                      | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-value-types/design.md`                     |
-| DD-040 | Java values are held as the Python values closest to them                                            | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
-| DD-041 | The type system is one module per Java type class too                                                | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
-| DD-042 | A validity period without a time zone is in UTC                                                      | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
-| DD-043 | Entities are documents of one index, their attributes under qualified names                          | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
-| DD-044 | A GUID is a random UUID                                                                              | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
-| DD-045 | Unique values are reserved by create-only documents                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
-| DD-046 | A multi-entity write is all or nothing, through a journal                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
-| DD-047 | Entities are written conditionally on their Elasticsearch version                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
-| DD-048 | A type is in use while the entity index holds one of it                                              | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
-| DD-049 | Attribute values are stored normalised; a struct inline, a reference as a GUID                       | Proposed         | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
-| DD-050 | Relationship attributes read empty until relationships are stored                                    | Superseded by DD | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
-| DD-051 | Entity reads are tested on entities written through the store until 2.4                              | Proposed         | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
-| DD-052 | A request is mapped in memory and written once; a lost race runs it again                            | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
-| DD-053 | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1           | Superseded by DD | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
-| DD-054 | Dynamic attributes are evaluated in first-seen dependency order                                      | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
-| DD-055 | Scenarios name what they create with a per-run value                                                 | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
-| DD-056 | An entity write also removes documents, journaled like the others                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
-| DD-057 | Entities referring to one are found through an indexed field of GUIDs                                | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
-| DD-058 | A stored reference stands for an edge: active for a delete, deleted for a purge                      | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
-| DD-059 | The delete type and its override are server settings                                                 | Proposed         | `apps/aurelius-atlas-server/specs/2-5-delete-semantics/design.md`                      |
-| DD-060 | The owned-reference cascade moves from 3.2 to 2.5                                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
-| DD-061 | Relationships are documents of their own index, listed by both ends                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-instances/design.md`           |
-| DD-062 | An entity write also writes relationships, all or nothing                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-instances/design.md`           |
-| DD-063 | 3.1 is split into relationship instances and relationship attributes                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-instances/design.md`           |
-| DD-064 | Relationship attribute values are relationships                                                      | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
-| DD-065 | A relationship keeps one array index, the last writer's                                              | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
-| DD-066 | Relationship attributes are mapped in memory and written with the entities                           | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
-| DD-067 | Delete cascades follow owned relationships from 3.1b                                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
-| DD-068 | Owned entities an update drops are deleted through a view of the request                             | Proposed         | `libs/python/aurelius-atlas-core/specs/3-2-ownership-cascades/design.md`               |
-| DD-069 | A reference to a deleted entity stands for a deleted edge when reviving                              | Proposed         | `libs/python/aurelius-atlas-core/specs/3-2-ownership-cascades/design.md`               |
-| DD-070 | Classification instances are documents of their own index, listed by their entity                    | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
-| DD-071 | An entity write also writes classification instances, all or nothing                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
-| DD-072 | The propagation defaults are Atlas's defaults                                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
-| DD-073 | 3.3 is split into direct classifications and the bulk associator                                     | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
-| DD-074 | `bulk/headers` moves to 3.5                                                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-bulk-classifications/design.md`             |
-| DD-075 | A propagated classification is listed by the entities it reaches                                     | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
-| DD-076 | The entities a classification reached are found through an indexed field                             | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
-| DD-077 | Propagation runs within the request until 3.4b                                                       | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
-| DD-078 | 3.4 is split into propagation and propagation tasks                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
-| DD-079 | Tasks are documents of their own index, written with the change that records them                    | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-propagation-tasks/design.md`                |
-| DD-080 | Every server process runs tasks, each claimed with a lease                                           | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-propagation-tasks/design.md`                |
-| DD-081 | Tasks are enabled by a server setting, on by default                                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-propagation-tasks/design.md`                |
-| DD-082 | Audit events are documents of their own index, written after the change                              | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
-| DD-083 | Audit events keep Atlas's event keys and their order                                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
-| DD-084 | The entity writer tells a change notifier what it changed                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
-| DD-085 | Classification events are collected in the request and recorded after its write                      | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-classification-audit/design.md`             |
-| DD-086 | Tag propagation records the propagations a request added and removed                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-classification-audit/design.md`             |
-| DD-087 | Basic search is split into entity and classification search                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
-| DD-088 | Entity attributes are searched in typed search fields named after their defining type                | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
-| DD-089 | A search is a query of the entity documents, ordered by creation when no sort is given               | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
-| DD-090 | A classification search finds instances first, then the entities listing them                        | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-classification-search/design.md`            |
-| DD-091 | Free text is split from quick search                                                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-free-text/design.md`                        |
-| DD-092 | String search fields carry an analysed text sub-field, searched with Atlas's weights                 | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-free-text/design.md`                        |
-| DD-093 | Facets are aggregations of the search's own query                                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-quick-search/design.md`                     |
-| DD-094 | Suggestions are terms aggregations of the text sub-fields                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-quick-search/design.md`                     |
-| DD-126 | The webapp is a new project, not the Aurelius app upgraded in place                                  | Proposed         | `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/design.md`                     |
-| DD-127 | Signals replace the custom store; each slice owns its state                                          | Proposed         | `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/design.md`                     |
-| DD-128 | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                         | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
-| DD-129 | Google Analytics and clickstream are dropped, not ported                                             | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
-| DD-130 | The webapp's config is a typed AppConfig, and `environment.ts` is not ported                         | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
-| DD-131 | Webapp purity is a checked gate, not a review convention                                             | Proposed         | `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/design.md`                     |
-| DD-132 | The wildcard fallback redirects to the destination, not through the root                             | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
-| DD-133 | Operational telemetry lands with 7.1; the auth wiring stays with 7.3                                 | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
-| DD-134 | The design-system slice ports the in-use components, not the library                                 | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
-| DD-135 | Component services dissolve into signal state; nothing is ported as a store                          | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
-| DD-136 | Shared chrome strings are localisation units keyed by the legacy dictionary paths                    | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
-| DD-137 | The purity gate is made executable over `libs/angular`                                               | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
-| DD-138 | The Storybook preview loads `@angular/localize/init`                                                 | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
-| DD-139 | The client owns the base URL; the proxy forwards the prefix untouched                                | Proposed         | `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/design.md`          |
-| DD-140 | The REST client ports the live surface; the search client is redesigned in 7.4                       | Proposed         | `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/design.md`          |
-| DD-141 | Auth is guarded at the app root; the bearer token is stated inert until 6.1                          | Proposed         | `apps/aurelius-atlas-webapp/specs/7-3-api-client-auth/design.md`                       |
-| DD-142 | The webapp e2e stack runs the real Atlas server behind the proxy                                     | Proposed         | `apps/aurelius-atlas-webapp/specs/7-3-api-client-auth/design.md`                       |
-| DD-143 | The landing page is ported statically; search affordances and Shell chrome join the search slice     | Proposed         | `apps/aurelius-atlas-webapp/specs/7-5-browse-landing/design.md`                        |
-| DD-144 | i18n ids carry no description suffix; the bridge key must equal the extracted id                     | Proposed         | `apps/aurelius-atlas-webapp/specs/7-5-browse-landing/design.md`                        |
-| DD-145 | The Shell chrome is ported search-free; the root composes header and footer                          | Proposed         | `apps/aurelius-atlas-webapp/specs/7-11-shell-chrome/design.md`                         |
-| DD-146 | Session chrome injects the keycloak-js `Keycloak` instance, not keycloak-angular's `KeycloakService` | Accepted         | `apps/aurelius-atlas-webapp/specs/7-11-shell-chrome/design.md`                         |
-| DD-147 | Dev Keycloak users carry `default-roles-master` explicitly                                           | Accepted         | `apps/aurelius-atlas-webapp/specs/7-11-shell-chrome/design.md`                         |
-| DD-148 | The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned                      | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
-| DD-149 | Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet                       | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
-| DD-150 | The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid                     | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
-| DD-151 | The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics                                | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
-| DD-152 | The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map                        | Proposed         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
-| DD-153 | The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor                       | Proposed         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
-| DD-154 | The entity card emits `entityClicked`; the caller navigates                                          | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-13-ui-components-details/design.md`            |
-| DD-155 | The select is one field with a `searchRequested` output                                              | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-13-ui-components-details/design.md`            |
-| DD-156 | The brand ships a dark ink ramp on Bulma's dark hosts                                                | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-13-ui-components-details/design.md`            |
-| DD-157 | The drawer is a new ui-lib component, not a Modal or a dropdown                                      | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-158 | The telemetry switch stops exports immediately and starts them on reload                             | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-159 | The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default          | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-160 | Settings are a facade over one owner service per category                                            | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-161 | Settings are browser-scoped localStorage; server-side persistence is the follow-up slice             | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-162 | The drawer animates in and out; the layer's life is the exit animation's                             | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-163 | The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped                    | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-164 | The Appearance picker is the ui-lib Select; the Select gains `searchVisible`                         | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-165 | About shows one version; the server is not fetched                                                   | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-166 | The settings panel is a routed overlay in the `drawer` aux outlet                                    | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-167 | Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings   | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-168 | The navbar follows the scheme: the dark slate band                                                   | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-169 | Settings headings are the controls' accessible names                                                 | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-170 | The active locale is filled with the Aurelius blue                                                   | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
-| DD-171 | The alerts store groups by a quiet window                                                            | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
-| DD-172 | The app's ErrorHandler chains: alert, then trace                                                     | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
-| DD-173 | The HTTP reporter: 5xx and network failures on /api                                                  | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
-| DD-174 | The bell: severity badge and ring, one outlet                                                        | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
-| DD-175 | AlertList and Badge are ui-lib presentational components                                             | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-176 | The chip's pinned pair; Clear all in the drawer head                                                 | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-180 | The inbox bar: severity chips, read tracking, Clear all in the bar                                   | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-181 | The drawer's body is the scroll container                                                            | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-182 | The inbox bar is one joined group, severity-coloured, ramp order                                     | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-183 | The inbox bar is one height: the count badge is compacted                                            | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-184 | The void chip: an empty severity greys out                                                           | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-185 | Show all is gone: the bar's shape never shifts                                                       | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
-| DD-186 | Entity details arrives as a routed skeleton; its data spine joins 2.3                                | Proposed         | `apps/aurelius-atlas-webapp/specs/7-6-entity-details/design.md`                        |
-| DD-187 | The entity client is built test-first against the Atlas wire format                                  | Proposed         | `apps/aurelius-atlas-webapp/specs/7-6-entity-details/design.md`                        |
-| DD-188 | One API base: the client's URLs all ride the API_BASE_URL token                                      | Accepted         | `apps/aurelius-atlas-webapp/specs/7-6-entity-details/design.md`                        |
-| DD-189 | The details chip is the classification chip; its sources project in                                  | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
-| DD-190 | The type-name badge is extracted from entity-card                                                    | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
-| DD-191 | Details navigation is a shell; the scroll directive stays app-side                                   | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
-| DD-192 | The count bar is section-stats: one component, two call sites                                        | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
-| DD-193 | Collector ingest is authenticated in two legs: user JWTs for browsers, a shared token for services   | Proposed         | `dev/observability/specs/7-17-collector-ingest-auth/design.md`                         |
-| DD-194 | The collector stamps the verified user onto the telemetry: `enduser.id`                              | Accepted         | `dev/observability/specs/7-17-collector-ingest-auth/design.md`                         |
-| DD-195 | The collector rides out Keycloak's boot: bounded restart, awaited readiness                          | Accepted         | `dev/observability/specs/7-17-collector-ingest-auth/design.md`                         |
-| DD-196 | The service leg graduates to per-service identity: Keycloak client-credentials JWTs, azp-stamped     | Proposed         | `libs/python/aurelius-atlas-otel/specs/7-18-collector-ingest-identity/design.md`       |
-| DD-197 | The auxiliary APIs share one foundation: the OTel and auth libs                                      | Proposed         | `libs/python/aurelius-atlas-auth/specs/8-0-auxiliary-api-foundation/design.md`         |
-| DD-198 | The 8.x ports are pandas-free: pydantic rule models, plain row maps                                  | Proposed         | `apps/aurelius-atlas-data2model/specs/8-1-data2model-api/design.md`                    |
-| DD-199 | App unit tests clear the injected `.env` prefix in an autouse fixture                                | Accepted         | `apps/aurelius-atlas-data2model/specs/8-1-data2model-api/design.md`                    |
-| DD-200 | The 8.2 proxy app injects its upstream HTTP client; the e2e Atlas is a canned-file server            | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-2-lineage-model-api/design.md`              |
-| DD-201 | The 8.3 mock ships as module data; the verifier is injectable                                        | Accepted         | `apps/aurelius-atlas-validate-entity/specs/8-3-validate-entity-api/design.md`          |
-| DD-202 | One issuer world: producers mint on the TLS listener, the collector validates both                   | Accepted         | `dev/observability/specs/7-18-collector-ingest-identity/design.md`                     |
-| DD-203 | The wire contract lives in a client library; the app imports it                                      | Accepted         | `libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/design.md`    |
-| DD-204 | Clients are async httpx with an injectable transport, and read no env                                | Accepted         | `libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/design.md`    |
-| DD-205 | The client's `httpx.AsyncClient` is provided externally                                              | Accepted         | `libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/design.md`    |
-| DD-206 | The lineage-model's upstream breakers live in the app, on pybreaker's `calling()` seam               | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-207 | The lineage-model app follows the example app's provider/route layout                                | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-208 | The lineage flow lives in the route; the chain class is dissolved                                    | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-209 | data2model and validate-entity follow the example app's provider/route layout                        | Proposed         | `apps/aurelius-atlas-data2model/specs/8-1-data2model-api/design.md`                    |
-| DD-210 | Telemetry goes native: the OTel SDK replaces the logfire shell                                       | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-211 | httpx2 replaces httpx across the HTTP surface                                                        | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-212 | The 8.x apps' app/scenario test modules carry their package name                                     | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-213 | The lineage guid is a UUID on every typed surface                                                    | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
-| DD-218 | 7.4 splits in two, and the search bar lands in the hero; the list is infinite scroll                 | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
-| DD-219 | The results URL carries the query only                                                               | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
-| DD-220 | The demo pass restores the search screens' legacy chrome: title, typography, shell and plate         | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
-| DD-221 | The empty query lists every entity through the `_ALL_ENTITY_TYPES` marker                            | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
-| DD-240 | The DSL parser is generated from Atlas's own grammar                                                 | Proposed         | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md`                        |
-| DD-241 | The parse tree is handed on as typed, immutable nodes                                                | Proposed         | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md`                        |
-| DD-242 | A DSL query is composed into the basic search's filter tree                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/4-4-dsl-entities/design.md`                     |
-| DD-243 | DSL traversals and projections are evaluated in steps                                                | Proposed         | `libs/python/aurelius-atlas-core/specs/4-4-dsl-projections/design.md`                  |
-| DD-244 | Saved searches wait for authentication                                                               | Accepted         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
-| DD-245 | Lineage walks the relationships of the process edges                                                 | Proposed         | `libs/python/aurelius-atlas-core/specs/5-1-lineage/design.md`                          |
-| DD-246 | Glossary objects are entities written through the entity and relationship stores                     | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-glossaries-and-categories/design.md`        |
-| DD-248 | An entity's meanings are read from its listed relationships                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-term-assignment/design.md`                  |
-| DD-249 | Uploaded files are read with python-multipart, openpyxl and xlrd                                     | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-glossary-import/design.md`                  |
-| DD-250 | The server authenticates requests itself against the identity provider                               | Proposed         | `apps/aurelius-atlas-server/specs/6-1-authentication/design.md`                        |
-| DD-251 | Browser sessions are kept in the server's memory                                                     | Proposed         | `apps/aurelius-atlas-server/specs/6-1-authentication/design.md`                        |
-| DD-252 | DataAccess carries every model object through a registry of DTOs                                     | Proposed         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
-| DD-300 | Four fixed roles of the server's client grant Atlas's privileges                                     | Proposed         | `apps/aurelius-atlas-server/specs/6-2-authorization/design.md`                         |
-| DD-301 | The stores check through the authorizer they are given                                               | Proposed         | `apps/aurelius-atlas-server/specs/6-2-authorization-entities/design.md`                |
+| #      | Decision                                                                                                           | Status           | Design record                                                                          |
+| ------ | ------------------------------------------------------------------------------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------- |
+| DD-001 | Reference is Apache Atlas 2.4.0, and both dashboards are served                                                    | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-002 | Atlas code lives in aurelius-atlas projects split by layer                                                         | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-003 | Template projects are renamed to the aurelius-atlas prefix                                                         | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-004 | The SPA keeps tokens in memory and renews them silently                                                            | Accepted         | `specs/0-1-adopt-template/design.md`                                                   |
+| DD-005 | The store uses the official async Elasticsearch client                                                             | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
+| DD-006 | Development and tests run Elasticsearch with security on                                                           | Proposed         | `dev/elasticsearch/specs/0-2-elasticsearch-infrastructure/design.md`                   |
+| DD-007 | The Elasticsearch test fixture ships with the store library                                                        | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
+| DD-008 | A yellow cluster is healthy                                                                                        | Proposed         | `libs/python/aurelius-atlas-store-es/specs/0-2-elasticsearch-infrastructure/design.md` |
+| DD-009 | Traceability is checked from collected markers, not from a test run                                                | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
+| DD-010 | The traceability check covers Atlas code from increment 0.2 on                                                     | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
+| DD-011 | The test report is generated from JUnit, coverage and trace files                                                  | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-3-test-report-traceability/design.md`        |
+| DD-012 | Parity scenarios are YAML files run as parametrised pytest tests                                                   | Proposed         | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
+| DD-013 | A scenario response is compared exactly, except at declared paths                                                  | Proposed         | `libs/python/aurelius-atlas-parity/specs/0-4-parity-harness/design.md`                 |
+| DD-014 | Scenario facts reach the report as test properties                                                                 | Proposed         | `libs/python/aurelius-atlas-trace/specs/0-4-parity-harness/design.md`                  |
+| DD-015 | The server is a FastAPI application with one router per Atlas resource                                             | Proposed         | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
+| DD-016 | The server does not start without its store                                                                        | Proposed         | `apps/aurelius-atlas-server/specs/0-5-server-skeleton/design.md`                       |
+| DD-017 | The dashboards are vendored unchanged and built with dart-sass on Node 24                                          | Proposed         | `apps/aurelius-atlas-dashboard/specs/0-6-dashboards/design.md`                         |
+| DD-018 | The server serves the dashboards from the API's origin                                                             | Proposed         | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
+| DD-019 | The template examples stay until the plan is done                                                                  | Proposed         | `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`                            |
+| DD-020 | Typedef models are Pydantic models that read and write Atlas's JSON                                                | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
+| DD-021 | Set-valued fields keep each name once, in first-seen order                                                         | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
+| DD-022 | Typedef timestamps are aware datetimes, written as epoch milliseconds                                              | Proposed         | `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/design.md`                  |
+| DD-023 | Atlas errors live in the model library                                                                             | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
+| DD-024 | The registry is updated on a transient copy under a re-entrant lock                                                | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
+| DD-025 | The type system ports the definition side only                                                                     | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/design.md`              |
+| DD-026 | Dynamic attributes and search lookups wait for their increments                                                    | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
+| DD-027 | Derived type sets keep first-seen order                                                                            | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/design.md`           |
+| DD-028 | The type definitions are one Elasticsearch document                                                                | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
+| DD-029 | Server processes share the type definitions through the document's version                                         | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
+| DD-030 | The store asks the entity store whether a type is in use                                                           | Proposed         | `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/design.md`                    |
+| DD-031 | The patch records live in the typedef document                                                                     | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
+| DD-032 | The built-in models are vendored unchanged and read from a directory                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
+| DD-033 | Start-up loading is one change per model file and per patch                                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`                   |
+| DD-034 | Lists of type definitions are sorted by name                                                                       | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| DD-035 | Type scenarios create what they read and delete it at their end                                                    | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| DD-036 | Start-up loading tries a raced change again                                                                        | Proposed         | `apps/aurelius-atlas-server/specs/1-6-types-rest/design.md`                            |
+| DD-037 | Instance models are one module per Java class                                                                      | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-entity-models/design.md`                   |
+| DD-038 | Attribute values stay plain JSON values until their types read them                                                | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-entity-models/design.md`                   |
+| DD-039 | One Atlas JSON codec reads floats as decimals and writes them with their digits                                    | Proposed         | `libs/python/aurelius-atlas-model/specs/2-1-value-types/design.md`                     |
+| DD-040 | Java values are held as the Python values closest to them                                                          | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
+| DD-041 | The type system is one module per Java type class too                                                              | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
+| DD-042 | A validity period without a time zone is in UTC                                                                    | Proposed         | `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/design.md`                |
+| DD-043 | Entities are documents of one index, their attributes under qualified names                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-044 | A GUID is a random UUID                                                                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-045 | Unique values are reserved by create-only documents                                                                | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-046 | A multi-entity write is all or nothing, through a journal                                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-047 | Entities are written conditionally on their Elasticsearch version                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-048 | A type is in use while the entity index holds one of it                                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/2-2-entity-store/design.md`                     |
+| DD-049 | Attribute values are stored normalised; a struct inline, a reference as a GUID                                     | Proposed         | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
+| DD-050 | Relationship attributes read empty until relationships are stored                                                  | Superseded by DD | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
+| DD-051 | Entity reads are tested on entities written through the store until 2.4                                            | Proposed         | `apps/aurelius-atlas-server/specs/2-3-entity-read-rest/design.md`                      |
+| DD-052 | A request is mapped in memory and written once; a lost race runs it again                                          | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-053 | Relationship attribute values are resolved, but stored only as legacy attributes until 3.1                         | Superseded by DD | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-054 | Dynamic attributes are evaluated in first-seen dependency order                                                    | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-055 | Scenarios name what they create with a per-run value                                                               | Proposed         | `apps/aurelius-atlas-server/specs/2-4-entity-write-rest/design.md`                     |
+| DD-056 | An entity write also removes documents, journaled like the others                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-057 | Entities referring to one are found through an indexed field of GUIDs                                              | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-058 | A stored reference stands for an edge: active for a delete, deleted for a purge                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-059 | The delete type and its override are server settings                                                               | Proposed         | `apps/aurelius-atlas-server/specs/2-5-delete-semantics/design.md`                      |
+| DD-060 | The owned-reference cascade moves from 3.2 to 2.5                                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/2-5-delete-semantics/design.md`                 |
+| DD-061 | Relationships are documents of their own index, listed by both ends                                                | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-instances/design.md`           |
+| DD-062 | An entity write also writes relationships, all or nothing                                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-instances/design.md`           |
+| DD-063 | 3.1 is split into relationship instances and relationship attributes                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-instances/design.md`           |
+| DD-064 | Relationship attribute values are relationships                                                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
+| DD-065 | A relationship keeps one array index, the last writer's                                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
+| DD-066 | Relationship attributes are mapped in memory and written with the entities                                         | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
+| DD-067 | Delete cascades follow owned relationships from 3.1b                                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/3-1-relationship-attributes/design.md`          |
+| DD-068 | Owned entities an update drops are deleted through a view of the request                                           | Proposed         | `libs/python/aurelius-atlas-core/specs/3-2-ownership-cascades/design.md`               |
+| DD-069 | A reference to a deleted entity stands for a deleted edge when reviving                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/3-2-ownership-cascades/design.md`               |
+| DD-070 | Classification instances are documents of their own index, listed by their entity                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
+| DD-071 | An entity write also writes classification instances, all or nothing                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
+| DD-072 | The propagation defaults are Atlas's defaults                                                                      | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
+| DD-073 | 3.3 is split into direct classifications and the bulk associator                                                   | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-direct-classifications/design.md`           |
+| DD-074 | `bulk/headers` moves to 3.5                                                                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/3-3-bulk-classifications/design.md`             |
+| DD-075 | A propagated classification is listed by the entities it reaches                                                   | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
+| DD-076 | The entities a classification reached are found through an indexed field                                           | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
+| DD-077 | Propagation runs within the request until 3.4b                                                                     | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
+| DD-078 | 3.4 is split into propagation and propagation tasks                                                                | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-classification-propagation/design.md`       |
+| DD-079 | Tasks are documents of their own index, written with the change that records them                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-propagation-tasks/design.md`                |
+| DD-080 | Every server process runs tasks, each claimed with a lease                                                         | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-propagation-tasks/design.md`                |
+| DD-081 | Tasks are enabled by a server setting, on by default                                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/3-4-propagation-tasks/design.md`                |
+| DD-082 | Audit events are documents of their own index, written after the change                                            | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
+| DD-083 | Audit events keep Atlas's event keys and their order                                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
+| DD-084 | The entity writer tells a change notifier what it changed                                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-entity-audit/design.md`                     |
+| DD-085 | Classification events are collected in the request and recorded after its write                                    | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-classification-audit/design.md`             |
+| DD-086 | Tag propagation records the propagations a request added and removed                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/3-5-classification-audit/design.md`             |
+| DD-087 | Basic search is split into entity and classification search                                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
+| DD-088 | Entity attributes are searched in typed search fields named after their defining type                              | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
+| DD-089 | A search is a query of the entity documents, ordered by creation when no sort is given                             | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-entity-search/design.md`                    |
+| DD-090 | A classification search finds instances first, then the entities listing them                                      | Proposed         | `libs/python/aurelius-atlas-core/specs/4-1-classification-search/design.md`            |
+| DD-091 | Free text is split from quick search                                                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-free-text/design.md`                        |
+| DD-092 | String search fields carry an analysed text sub-field, searched with Atlas's weights                               | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-free-text/design.md`                        |
+| DD-093 | Facets are aggregations of the search's own query                                                                  | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-quick-search/design.md`                     |
+| DD-094 | Suggestions are terms aggregations of the text sub-fields                                                          | Proposed         | `libs/python/aurelius-atlas-core/specs/4-2-quick-search/design.md`                     |
+| DD-126 | The webapp is a new project, not the Aurelius app upgraded in place                                                | Proposed         | `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/design.md`                     |
+| DD-127 | Signals replace the custom store; each slice owns its state                                                        | Proposed         | `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/design.md`                     |
+| DD-128 | Aurelius dictionaries become XLIFF, migrated whole, with the JSON as fixture                                       | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
+| DD-129 | Google Analytics and clickstream are dropped, not ported                                                           | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
+| DD-130 | The webapp's config is a typed AppConfig, and `environment.ts` is not ported                                       | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
+| DD-131 | Webapp purity is a checked gate, not a review convention                                                           | Proposed         | `apps/aurelius-atlas-webapp/specs/7-0-webapp-foundation/design.md`                     |
+| DD-132 | The wildcard fallback redirects to the destination, not through the root                                           | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
+| DD-133 | Operational telemetry lands with 7.1; the auth wiring stays with 7.3                                               | Proposed         | `apps/aurelius-atlas-webapp/specs/7-1-webapp-shell/design.md`                          |
+| DD-134 | The design-system slice ports the in-use components, not the library                                               | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
+| DD-135 | Component services dissolve into signal state; nothing is ported as a store                                        | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
+| DD-136 | Shared chrome strings are localisation units keyed by the legacy dictionary paths                                  | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
+| DD-137 | The purity gate is made executable over `libs/angular`                                                             | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
+| DD-138 | The Storybook preview loads `@angular/localize/init`                                                               | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-2-design-system/design.md`                     |
+| DD-139 | The client owns the base URL; the proxy forwards the prefix untouched                                              | Proposed         | `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/design.md`          |
+| DD-140 | The REST client ports the live surface; the search client is redesigned in 7.4                                     | Proposed         | `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/design.md`          |
+| DD-141 | Auth is guarded at the app root; the bearer token is stated inert until 6.1                                        | Proposed         | `apps/aurelius-atlas-webapp/specs/7-3-api-client-auth/design.md`                       |
+| DD-142 | The webapp e2e stack runs the real Atlas server behind the proxy                                                   | Proposed         | `apps/aurelius-atlas-webapp/specs/7-3-api-client-auth/design.md`                       |
+| DD-143 | The landing page is ported statically; search affordances and Shell chrome join the search slice                   | Proposed         | `apps/aurelius-atlas-webapp/specs/7-5-browse-landing/design.md`                        |
+| DD-144 | i18n ids carry no description suffix; the bridge key must equal the extracted id                                   | Proposed         | `apps/aurelius-atlas-webapp/specs/7-5-browse-landing/design.md`                        |
+| DD-145 | The Shell chrome is ported search-free; the root composes header and footer                                        | Proposed         | `apps/aurelius-atlas-webapp/specs/7-11-shell-chrome/design.md`                         |
+| DD-146 | Session chrome injects the keycloak-js `Keycloak` instance, not keycloak-angular's `KeycloakService`               | Accepted         | `apps/aurelius-atlas-webapp/specs/7-11-shell-chrome/design.md`                         |
+| DD-147 | Dev Keycloak users carry `default-roles-master` explicitly                                                         | Accepted         | `apps/aurelius-atlas-webapp/specs/7-11-shell-chrome/design.md`                         |
+| DD-148 | The Aurelius brand lands on Bulma 1 tokens, light-forced, legacy metrics pinned                                    | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
+| DD-149 | Critical-CSS inlining is off: the zoneless CSR app never swaps the print sheet                                     | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
+| DD-150 | The sticky footer is the legacy rule verbatim; page content sits on Bulma's grid                                   | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
+| DD-151 | The brand re-emits Bulma 0.9.4's text ramp, not just the body metrics                                              | Accepted         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
+| DD-152 | The accent ramp: primary stays Bulma teal, the accents take the Bootstrap map                                      | Proposed         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
+| DD-153 | The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor                                     | Proposed         | `apps/aurelius-atlas-webapp/specs/7-12-theme-branding-layout/design.md`                |
+| DD-154 | The entity card emits `entityClicked`; the caller navigates                                                        | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-13-ui-components-details/design.md`            |
+| DD-155 | The select is one field with a `searchRequested` output                                                            | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-13-ui-components-details/design.md`            |
+| DD-156 | The brand ships a dark ink ramp on Bulma's dark hosts                                                              | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-13-ui-components-details/design.md`            |
+| DD-157 | The drawer is a new ui-lib component, not a Modal or a dropdown                                                    | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-158 | The telemetry switch stops exports immediately and starts them on reload                                           | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-159 | The theme choice is applied pre-render; SHM-01's light pin is superseded by a light default                        | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-160 | Settings are a facade over one owner service per category                                                          | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-161 | Settings are browser-scoped localStorage; server-side persistence is the follow-up slice                           | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-162 | The drawer animates in and out; the layer's life is the exit animation's                                           | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-163 | The drawer styles itself with fallbacks; Bulma's modal tokens are `.modal`-scoped                                  | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-164 | The Appearance picker is the ui-lib Select; the Select gains `searchVisible`                                       | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-165 | About shows one version; the server is not fetched                                                                 | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-166 | The settings panel is a routed overlay in the `drawer` aux outlet                                                  | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-167 | Settings-drawer polish: lit gear, scheme-following band, Browser-default picker, `.label` headings                 | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-168 | The navbar follows the scheme: the dark slate band                                                                 | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-169 | Settings headings are the controls' accessible names                                                               | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-170 | The active locale is filled with the Aurelius blue                                                                 | Accepted         | `apps/aurelius-atlas-webapp/specs/7-14-settings-panel/design.md`                       |
+| DD-171 | The alerts store groups by a quiet window                                                                          | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
+| DD-172 | The app's ErrorHandler chains: alert, then trace                                                                   | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
+| DD-173 | The HTTP reporter: 5xx and network failures on /api                                                                | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
+| DD-174 | The bell: severity badge and ring, one outlet                                                                      | Accepted         | `apps/aurelius-atlas-webapp/specs/7-15-alerts-drawer/design.md`                        |
+| DD-175 | AlertList and Badge are ui-lib presentational components                                                           | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-176 | The chip's pinned pair; Clear all in the drawer head                                                               | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-180 | The inbox bar: severity chips, read tracking, Clear all in the bar                                                 | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-181 | The drawer's body is the scroll container                                                                          | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-182 | The inbox bar is one joined group, severity-coloured, ramp order                                                   | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-183 | The inbox bar is one height: the count badge is compacted                                                          | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-184 | The void chip: an empty severity greys out                                                                         | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-185 | Show all is gone: the bar's shape never shifts                                                                     | Accepted         | `libs/angular/aurelius-atlas-ui/specs/7-15-alerts-drawer/design.md`                    |
+| DD-186 | Entity details arrives as a routed skeleton; its data spine joins 2.3                                              | Proposed         | `apps/aurelius-atlas-webapp/specs/7-6-entity-details/design.md`                        |
+| DD-187 | The entity client is built test-first against the Atlas wire format                                                | Proposed         | `apps/aurelius-atlas-webapp/specs/7-6-entity-details/design.md`                        |
+| DD-188 | One API base: the client's URLs all ride the API_BASE_URL token                                                    | Accepted         | `apps/aurelius-atlas-webapp/specs/7-6-entity-details/design.md`                        |
+| DD-189 | The details chip is the classification chip; its sources project in                                                | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
+| DD-190 | The type-name badge is extracted from entity-card                                                                  | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
+| DD-191 | Details navigation is a shell; the scroll directive stays app-side                                                 | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
+| DD-192 | The count bar is section-stats: one component, two call sites                                                      | Proposed         | `libs/angular/aurelius-atlas-ui/specs/7-16-ui-components-details-ii/design.md`         |
+| DD-193 | Collector ingest is authenticated in two legs: user JWTs for browsers, a shared token for services                 | Proposed         | `dev/observability/specs/7-17-collector-ingest-auth/design.md`                         |
+| DD-194 | The collector stamps the verified user onto the telemetry: `enduser.id`                                            | Accepted         | `dev/observability/specs/7-17-collector-ingest-auth/design.md`                         |
+| DD-195 | The collector rides out Keycloak's boot: bounded restart, awaited readiness                                        | Accepted         | `dev/observability/specs/7-17-collector-ingest-auth/design.md`                         |
+| DD-196 | The service leg graduates to per-service identity: Keycloak client-credentials JWTs, azp-stamped                   | Proposed         | `libs/python/aurelius-atlas-otel/specs/7-18-collector-ingest-identity/design.md`       |
+| DD-197 | The auxiliary APIs share one foundation: the OTel and auth libs                                                    | Proposed         | `libs/python/aurelius-atlas-auth/specs/8-0-auxiliary-api-foundation/design.md`         |
+| DD-198 | The 8.x ports are pandas-free: pydantic rule models, plain row maps                                                | Proposed         | `apps/aurelius-atlas-data2model/specs/8-1-data2model-api/design.md`                    |
+| DD-199 | App unit tests clear the injected `.env` prefix in an autouse fixture                                              | Accepted         | `apps/aurelius-atlas-data2model/specs/8-1-data2model-api/design.md`                    |
+| DD-200 | The 8.2 proxy app injects its upstream HTTP client; the e2e Atlas is a canned-file server                          | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-2-lineage-model-api/design.md`              |
+| DD-201 | The 8.3 mock ships as module data; the verifier is injectable                                                      | Accepted         | `apps/aurelius-atlas-validate-entity/specs/8-3-validate-entity-api/design.md`          |
+| DD-202 | One issuer world: producers mint on the TLS listener, the collector validates both                                 | Accepted         | `dev/observability/specs/7-18-collector-ingest-identity/design.md`                     |
+| DD-203 | The wire contract lives in a client library; the app imports it                                                    | Accepted         | `libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/design.md`    |
+| DD-204 | Clients are async httpx with an injectable transport, and read no env                                              | Accepted         | `libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/design.md`    |
+| DD-205 | The client's `httpx.AsyncClient` is provided externally                                                            | Accepted         | `libs/python/aurelius-atlas-server-client/specs/8-4-api-client-libraries/design.md`    |
+| DD-206 | The lineage-model's upstream breakers live in the app, on pybreaker's `calling()` seam                             | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-207 | The lineage-model app follows the example app's provider/route layout                                              | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-208 | The lineage flow lives in the route; the chain class is dissolved                                                  | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-209 | data2model and validate-entity follow the example app's provider/route layout                                      | Proposed         | `apps/aurelius-atlas-data2model/specs/8-1-data2model-api/design.md`                    |
+| DD-210 | Telemetry goes native: the OTel SDK replaces the logfire shell                                                     | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-211 | httpx2 replaces httpx across the HTTP surface                                                                      | Proposed         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-212 | The 8.x apps' app/scenario test modules carry their package name                                                   | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-213 | The lineage guid is a UUID on every typed surface                                                                  | Accepted         | `apps/aurelius-atlas-lineage-model/specs/8-5-lineage-model-circuit-breakers/design.md` |
+| DD-218 | 7.4 splits in two, and the search bar lands in the hero; the list is infinite scroll                               | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
+| DD-219 | The results URL carries the query only                                                                             | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
+| DD-220 | The demo pass restores the search screens' legacy chrome: title, typography, shell and plate                       | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
+| DD-221 | The empty query lists every entity through the `_ALL_ENTITY_TYPES` marker                                          | Accepted         | `apps/aurelius-atlas-webapp/specs/7-4a-search-results/design.md`                       |
+| DD-234 | TLS material is a required setting: the server never serves plaintext                                              | Accepted         | `apps/aurelius-atlas-server/specs/9-2-server-hardening/design.md`                      |
+| DD-235 | A 5xx answer is opaque and carries the trace id as `requestId`                                                     | Accepted         | `apps/aurelius-atlas-server/specs/9-2-server-hardening/design.md`                      |
+| DD-236 | Security response headers are a pure-ASGI middleware split on `/api` path                                          | Accepted         | `apps/aurelius-atlas-server/specs/9-2-server-hardening/design.md`                      |
+| DD-237 | Index refresh moves from reads to writes: writes carry `refresh=wait_for`, no read path refreshes                  | Accepted         | `libs/python/aurelius-atlas-core/specs/9-3-search-cost-client-ip/design.md`            |
+| DD-238 | The browser rate limit lives at the nginx edge, not in the server; private ranges are allowlisted                  | Accepted         | `apps/aurelius-atlas-server/specs/9-3-search-cost-client-ip/design.md`                 |
+| DD-239 | The webapp's nginx exports `/api/` spans on the collector's legacy leg; the module builds in the image's dev-stage | Accepted         | `apps/aurelius-atlas-webapp/specs/9-4-edge-tracing/design.md`                          |
+| DD-240 | The DSL parser is generated from Atlas's own grammar                                                               | Proposed         | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md`                        |
+| DD-241 | The parse tree is handed on as typed, immutable nodes                                                              | Proposed         | `libs/python/aurelius-atlas-dsl/specs/4-3-dsl-parser/design.md`                        |
+| DD-242 | A DSL query is composed into the basic search's filter tree                                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/4-4-dsl-entities/design.md`                     |
+| DD-243 | DSL traversals and projections are evaluated in steps                                                              | Proposed         | `libs/python/aurelius-atlas-core/specs/4-4-dsl-projections/design.md`                  |
+| DD-244 | Saved searches wait for authentication                                                                             | Accepted         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
+| DD-245 | Lineage walks the relationships of the process edges                                                               | Proposed         | `libs/python/aurelius-atlas-core/specs/5-1-lineage/design.md`                          |
+| DD-246 | Glossary objects are entities written through the entity and relationship stores                                   | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-glossaries-and-categories/design.md`        |
+| DD-248 | An entity's meanings are read from its listed relationships                                                        | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-term-assignment/design.md`                  |
+| DD-249 | Uploaded files are read with python-multipart, openpyxl and xlrd                                                   | Proposed         | `libs/python/aurelius-atlas-core/specs/5-2-glossary-import/design.md`                  |
+| DD-250 | The server authenticates requests itself against the identity provider                                             | Proposed         | `apps/aurelius-atlas-server/specs/6-1-authentication/design.md`                        |
+| DD-251 | Browser sessions are kept in the server's memory                                                                   | Proposed         | `apps/aurelius-atlas-server/specs/6-1-authentication/design.md`                        |
+| DD-252 | DataAccess carries every model object through a registry of DTOs                                                   | Proposed         | `libs/python/aurelius-atlas-core/specs/4-5-saved-searches/design.md`                   |
+| DD-300 | Four fixed roles of the server's client grant Atlas's privileges                                                   | Proposed         | `apps/aurelius-atlas-server/specs/6-2-authorization/design.md`                         |
+| DD-301 | The stores check through the authorizer they are given                                                             | Proposed         | `apps/aurelius-atlas-server/specs/6-2-authorization-entities/design.md`                |
 
 > [!NOTE]
 > DD-095 to DD-125 and DD-280 were never written. The first band went unused when the
