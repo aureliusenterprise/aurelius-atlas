@@ -8,11 +8,11 @@ Since increment [1.1](specs/1-1-typedef-models/spec.md): the Apache
 Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata),
 their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since
 [1.5](../aurelius-atlas-core/specs/1-5-builtin-models/spec.md): the patch record `AtlasPatch`.
-Since [2.1a](../../../docs/architecture/conversion/increments/2-1-entity-models.md): the entity models of
+Since [2.1a](specs/2-1-entity-models/spec.md): the entity models of
 `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`,
 `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON
 conventions all models share in `aurelius_atlas_model.base`. Since
-[2.1b](../../../docs/architecture/conversion/increments/2-1-value-types.md): Atlas's JSON codec,
+[2.1b](specs/2-1-value-types/spec.md): Atlas's JSON codec,
 `aurelius_atlas_model.codec`, which keeps the digits of decimals.
 
 ```python

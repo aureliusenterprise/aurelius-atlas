@@ -9,15 +9,15 @@ store, which keeps type definitions in one Elasticsearch document and serves the
 Since [1.5](specs/1-5-builtin-models/spec.md): Apache Atlas's built-in
 models and their typedef patches, loaded at start-up. Since
 [1.6](../../../apps/aurelius-atlas-server/specs/1-6-types-rest/spec.md): the store's reads and the search of
-`/v2/types/typedefs`. Since [2.2](../../../docs/architecture/conversion/increments/2-2-entity-store.md): the
+`/v2/types/typedefs`. Since [2.2](specs/2-2-entity-store/spec.md): the
 entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes
 several entities all or nothing through a journal (DD-043 to DD-048). Since
-[2.3](../../../docs/architecture/conversion/increments/2-3-entity-read-rest.md): the entity retriever, which reads
+[2.3](../../../apps/aurelius-atlas-server/specs/2-3-entity-read-rest/spec.md): the entity retriever, which reads
 entities, their owned entities and headers back as Atlas answers them (DD-049, DD-050). Since
-[2.4](../../../docs/architecture/conversion/increments/2-4-entity-write-rest.md): the entity writer, which
+[2.4](../../../apps/aurelius-atlas-server/specs/2-4-entity-write-rest/spec.md): the entity writer, which
 discovers the entities a request names, resolves its references, maps it onto stored entities and writes them
 in one write (DD-052, DD-053). Since
-[2.5](../../../docs/architecture/conversion/increments/2-5-delete-semantics.md): soft and hard deletes and
+[2.5](specs/2-5-delete-semantics/spec.md): soft and hard deletes and
 purges with the owned-reference cascade, through writes that also remove documents and an indexed field of the
 GUIDs each entity refers to (DD-056 to DD-060). Since
 [3.1a](../../../docs/architecture/conversion/increments/3-1-relationship-instances.md): relationship instances,

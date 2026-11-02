@@ -11,34 +11,29 @@ This table is the reference for a move: it fixes the home before files are touch
 PR changes the Status column and nothing else here. Homes follow [ADR 002](../adr/002-modules-are-removable-slices.md):
 a rule belongs to the project whose code it constrains.
 
-## Moved (0.x and 1.x)
+## Moved (0.x, 1.x and 2.x)
 
-| Increment | Spec                         | Home                                                                     | Rules    |
-| --------- | ---------------------------- | ------------------------------------------------------------------------ | -------- |
-| 0.1       | Adopt the template           | `specs/` (workspace root)                                                | ADO      |
-| 0.2       | Elasticsearch infrastructure | `dev/elasticsearch` + `libs/python/aurelius-atlas-store-es`              | ESD, STO |
-| 0.3       | Test report and traceability | `libs/python/aurelius-atlas-trace`                                       | TRC      |
-| 0.4       | Parity harness               | `libs/python/aurelius-atlas-parity` + `libs/python/aurelius-atlas-trace` | SCN, TRC |
-| 0.5       | Server skeleton              | `apps/aurelius-atlas-server`                                             | ADM, SRV |
-| 0.6       | Dashboards served            | `apps/aurelius-atlas-dashboard` + `apps/aurelius-atlas-server`           | DSH      |
-| 1.1       | Typedef models               | `libs/python/aurelius-atlas-model`                                       | TDM      |
-| 1.2       | Type registry                | `libs/python/aurelius-atlas-typesystem`                                  | TRG      |
-| 1.3       | Type hierarchies             | `libs/python/aurelius-atlas-typesystem`                                  | THY      |
-| 1.4       | Typedef store                | `libs/python/aurelius-atlas-core`                                        | TDS      |
-| 1.5       | Built-in models and patches  | `libs/python/aurelius-atlas-core`                                        | MDL      |
-| 1.6       | Types REST                   | `apps/aurelius-atlas-server`                                             | TYR      |
-
-## 2.x — entities and values
-
-| Increment | Spec              | Home                                                                         | Rules | Status           |
-| --------- | ----------------- | ---------------------------------------------------------------------------- | ----- | ---------------- |
-| 2.1a      | Entity models     | `libs/python/aurelius-atlas-model`                                           | ENT   | in `increments/` |
-| 2.1b      | Value types       | `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` | VAL   | in `increments/` |
-| 2.1c      | Entity validation | `libs/python/aurelius-atlas-typesystem`                                      | EVL   | in `increments/` |
-| 2.2       | Entity store      | `libs/python/aurelius-atlas-core`                                            | ENS   | in `increments/` |
-| 2.3       | Entity read REST  | `apps/aurelius-atlas-server`                                                 | ERD   | in `increments/` |
-| 2.4       | Entity write REST | `apps/aurelius-atlas-server`                                                 | EWR   | in `increments/` |
-| 2.5       | Delete semantics  | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server`             | EDL   | in `increments/` |
+| Increment | Spec                         | Home                                                                         | Rules    |
+| --------- | ---------------------------- | ---------------------------------------------------------------------------- | -------- |
+| 0.1       | Adopt the template           | `specs/` (workspace root)                                                    | ADO      |
+| 0.2       | Elasticsearch infrastructure | `dev/elasticsearch` + `libs/python/aurelius-atlas-store-es`                  | ESD, STO |
+| 0.3       | Test report and traceability | `libs/python/aurelius-atlas-trace`                                           | TRC      |
+| 0.4       | Parity harness               | `libs/python/aurelius-atlas-parity` + `libs/python/aurelius-atlas-trace`     | SCN, TRC |
+| 0.5       | Server skeleton              | `apps/aurelius-atlas-server`                                                 | ADM, SRV |
+| 0.6       | Dashboards served            | `apps/aurelius-atlas-dashboard` + `apps/aurelius-atlas-server`               | DSH      |
+| 1.1       | Typedef models               | `libs/python/aurelius-atlas-model`                                           | TDM      |
+| 1.2       | Type registry                | `libs/python/aurelius-atlas-typesystem`                                      | TRG      |
+| 1.3       | Type hierarchies             | `libs/python/aurelius-atlas-typesystem`                                      | THY      |
+| 1.4       | Typedef store                | `libs/python/aurelius-atlas-core`                                            | TDS      |
+| 1.5       | Built-in models and patches  | `libs/python/aurelius-atlas-core`                                            | MDL      |
+| 1.6       | Types REST                   | `apps/aurelius-atlas-server`                                                 | TYR      |
+| 2.1a      | Entity models                | `libs/python/aurelius-atlas-model`                                           | ENT      |
+| 2.1b      | Value types                  | `libs/python/aurelius-atlas-model` + `libs/python/aurelius-atlas-typesystem` | VAL      |
+| 2.1c      | Entity validation            | `libs/python/aurelius-atlas-typesystem`                                      | EVL      |
+| 2.2       | Entity store                 | `libs/python/aurelius-atlas-core`                                            | ENS      |
+| 2.3       | Entity read REST             | `apps/aurelius-atlas-server`                                                 | ERD      |
+| 2.4       | Entity write REST            | `apps/aurelius-atlas-server`                                                 | EWR      |
+| 2.5       | Delete semantics             | `libs/python/aurelius-atlas-core` + `apps/aurelius-atlas-server`             | EDL      |
 
 ## 3.x — relationships, classifications, audit
 

@@ -6,8 +6,12 @@
 
 Increment 2.1 is split in three, each within the size limit of ADR 051: 2.1a ported the entity models,
 2.1b, this specification, ports the value side of the built-in, enum, array and map types, and 2.1c
-(`2-1-entity-validation.md`) the value side of the struct, classification, entity, relationship and business
-metadata types, which validates and normalises entities attribute by attribute (DD-025).
+([`2-1-entity-validation`](../2-1-entity-validation/spec.md)) the value side of the struct,
+classification, entity, relationship and business metadata types, which validates and normalises
+entities attribute by attribute (DD-025).
+
+This page is the `aurelius-atlas-typesystem` part of increment 2.1; its rule table is
+the increment's shared set. The other part is with [`aurelius-atlas-model`](../../../aurelius-atlas-model/specs/2-1-value-types/spec.md).
 
 ## Scope
 
@@ -89,5 +93,4 @@ it, so Aurelius Atlas treats it as invalid.
 
 - `libs/python/aurelius-atlas-typesystem/tests/values/` — VAL-02 to VAL-13 and VAL-15, one test file per
   module, Atlas's value lists translated by DD-040.
-- `libs/python/aurelius-atlas-model/tests/` — VAL-01 and VAL-14.
 - `uv run aurelius-atlas-trace check`.
