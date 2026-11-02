@@ -4175,6 +4175,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -5026,6 +5032,87 @@
     
   
   5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-labels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3a Labels
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-business-metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3b Business metadata
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-business-metadata-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3c Business metadata import
 
     
   </span>
@@ -8671,6 +8758,24 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>GlossaryREST#produceTemplate</code>, <code>#importGlossaryData</code>, <code>GlossaryService#importGlossaryData</code>, <code>GlossaryTermUtils</code> (import), <code>FileUtils</code>, <code>BulkImportResponse</code></td>
 <td><code>aurelius_atlas_server.routes.glossary</code>, <code>aurelius_atlas_core.glossary_service</code>, <code>aurelius_atlas_core.glossary_term_utils</code>, <code>aurelius_atlas_core.file_utils</code>, <code>aurelius_atlas_model.bulk_import</code></td>
 <td>5.2d</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>EntityREST#setLabels</code>, <code>#addLabels</code>, <code>#removeLabels</code>, <code>AtlasEntityStoreV2</code> (labels), <code>EntityGraphMapper#setLabels</code>, <code>#addLabels</code>, <code>#removeLabels</code>, <code>AtlasEntityChangeNotifier#onLabelsUpdatedFromEntity</code>, <code>EntityAuditListenerV2#onLabelsAdded</code>, <code>#onLabelsDeleted</code></td>
+<td><code>aurelius_atlas_core.entity_labels</code>, <code>aurelius_atlas_core.entity_change_notifier</code>, <code>aurelius_atlas_core.entity_audit_listener</code>, <code>aurelius_atlas_server.routes.entity</code></td>
+<td>5.3a</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>EntityREST#addOrUpdateBusinessAttributes</code>, <code>#removeBusinessAttributes</code>, <code>AtlasEntityStoreV2</code> (business attributes, <code>validateBusinessAttributes</code>), <code>EntityGraphMapper#setBusinessAttributes</code>, <code>#addOrUpdateBusinessAttributes</code>, <code>#removeBusinessAttributes</code>, <code>EntityGraphRetriever#getBusinessMetadata</code>, <code>EntityAuditListenerV2#onBusinessAttributesUpdated</code></td>
+<td><code>aurelius_atlas_core.entity_business_metadata</code>, <code>aurelius_atlas_core.entity_retriever</code>, <code>aurelius_atlas_core.entity_writer</code>, <code>aurelius_atlas_core.entity_audit_listener</code>, <code>aurelius_atlas_server.routes.entity</code></td>
+<td>5.3b</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td><code>EntityREST#produceTemplate</code>, <code>#importBMAttributes</code>, <code>AtlasEntityStoreV2#bulkCreateOrUpdateBusinessAttributes</code>, <code>#getBusinessMetadataDefList</code>, <code>#assignMultipleValues</code>, <code>AtlasGraphUtilsV2#assignEnumValues</code> (and its parsers), <code>FileUtils#getBusinessMetadataHeaders</code></td>
+<td><code>aurelius_atlas_core.entity_business_metadata</code>, <code>aurelius_atlas_server.routes.entity</code></td>
+<td>5.3c</td>
 <td>in progress</td>
 </tr>
 <tr>

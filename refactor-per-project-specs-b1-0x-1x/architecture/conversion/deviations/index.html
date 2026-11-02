@@ -4116,6 +4116,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4967,6 +4973,87 @@
     
   
   5.2d Glossary import
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-labels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3a Labels
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-business-metadata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3b Business metadata
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../increments/5-3-business-metadata-import/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  5.3c Business metadata import
 
     
   </span>
@@ -9005,6 +9092,38 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Their privileges are checked first: an invalid definition from a user without them is refused as unauthorized</td>
 <td>The checks sit at the endpoint, before the store</td>
 <td>6.2</td>
+</tr>
+<tr>
+<td>DV-116</td>
+<td>Entities</td>
+<td>An entity's labels, and those a label audit event lists, come in the hash order of a <code>HashSet</code></td>
+<td>In the order first given: a set's labels as given, an add's new labels after the entity's own (DD-021)</td>
+<td>Hash order is an artefact of Java's set, not a meaning; the given order is stable and readable</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>DV-117</td>
+<td>Entities</td>
+<td>An entity's business metadata, its attributes, and the business metadata an audit event tells, come in the hash order of <code>HashMap</code>s</td>
+<td>In the order of the entity type's business metadata and of each one's attributes</td>
+<td>Hash order is an artefact of Java's maps; the type's order is stable</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>DV-118</td>
+<td>Entities</td>
+<td>Adding or updating business attributes with a business metadata given as <code>null</code>, or <code>businessmetadata/{bmName}</code> without a body, fails on a null value: an internal error</td>
+<td>Taken as that business metadata given no values</td>
+<td>A null map is a client's way of saying none; failing on it helps no one</td>
+<td>5.3</td>
+</tr>
+<tr>
+<td>DV-119</td>
+<td>Entities</td>
+<td>A business metadata import applies and lists its entities in a <code>HashMap</code>'s order; an import without a file part fails on the missing part</td>
+<td>In the order the file first names them; no file part is <code>FILE_NAME_NOT_FOUND</code></td>
+<td>Hash order is no meaning; a missing file is a client error, as a blank file name is</td>
+<td>5.3</td>
 </tr>
 </tbody>
 </table>
