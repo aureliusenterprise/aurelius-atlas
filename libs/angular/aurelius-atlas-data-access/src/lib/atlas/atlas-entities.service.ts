@@ -4,6 +4,7 @@ import { Observable } from "rxjs";
 import { API_BASE_URL } from "../api-config";
 import type { EntityAuditEventV2 } from "./atlas-audit";
 import type { AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo } from "./atlas-entity";
+import type { DeleteType, EntityMutationResponse } from "./atlas-mutation";
 import type { AtlasEntityHeader, AtlasEntityHeaders } from "./atlas-search";
 
 /**
@@ -24,13 +25,14 @@ export type EntityAuditQuery = {
 /**
  * The entity endpoints of the Atlas server (`EntityREST`, DET-03): the reads
  * of a guid, a unique attribute, a set of guids, and the entity audits
- * (8.17, AEN-01..AEN-07 — the Angular twin of `AtlasClient.entity`'s reads,
- * CLE-01..CLE-11). The entity writes, classifications, business metadata,
- * and labels routes come in 8.18 and 8.19. The wire format is typed from the
- * Apache Atlas 2.4.0 source (see `atlas-entity.ts`); the endpoints are
- * server 2.3's surface — against today's server (admin and types only) the
- * calls answer 404, and the specs assert the request, not a 200 (DD-140's
- * honesty rule, DD-187).
+ * (8.17, AEN-01..AEN-07) and the writes and deletes (8.18, AEW-01..AEW-06) —
+ * the Angular twin of `AtlasClient.entity`'s reads, writes and deletes
+ * (CLE-01..CLE-04, CLE-11, CLE-12). The classification, business-metadata,
+ * and label routes come in 8.19. The wire
+ * format is typed from the Apache Atlas 2.4.0 source (see
+ * `atlas-entity.ts`); the endpoints are server 2.3's surface — against
+ * today's server (admin and types only) the calls answer 404, and the specs
+ * assert the request, not a 200 (DD-140's honesty rule, DD-187).
  *
  * Every URL composes from the injected {@link API_BASE_URL} with the
  * `/atlas` prefix intact (APC-01, DD-139) — the server API is the webapp's
@@ -237,5 +239,125 @@ export class AtlasEntitiesService {
     getChangedClassifications(since: number): Observable<AtlasEntityHeaders> {
         const params = new HttpParams().set("tagUpdateStartTime", String(since));
         return this.http.get<AtlasEntityHeaders>(this.entityUrl("/bulk/headers"), { params });
+    }
+
+    /**
+     * `deleteType` travels only when given — absent, the server applies its
+     * own setting (EDL-04, AEW-05, CLE-04).
+     */
+    private deleteTypeParams(deleteType?: DeleteType): HttpParams {
+        return deleteType === undefined ? new HttpParams() : new HttpParams().set("deleteType", deleteType);
+    }
+
+    /**
+     * Create the entity — and the entities it names — or update them
+     * (`EntityREST.createOrUpdate`, POST `/v2/entity` — EWR-02, AEW-01). The
+     * body is the bare `AtlasEntityWithExtInfo`; the client validates nothing
+     * the server validates (CLE-12).
+     * @param entity the entity and the entities it refers to
+     * @returns the mutated headers and guid assignments (ENT-17)
+     */
+    createOrUpdateEntity(entity: AtlasEntityWithExtInfo): Observable<EntityMutationResponse> {
+        return this.http.post<EntityMutationResponse>(this.entityUrl(""), entity);
+    }
+
+    /**
+     * Create or update every entity of the bulk body (`EntityREST`'s
+     * `createOrUpdate` of `AtlasEntitiesWithExtInfo`, POST
+     * `/v2/entity/bulk` — EWR-02, AEW-02).
+     * @param entities the entities to write, and the entities they refer to
+     */
+    createOrUpdateEntities(entities: AtlasEntitiesWithExtInfo): Observable<EntityMutationResponse> {
+        return this.http.post<EntityMutationResponse>(this.entityUrl("/bulk"), entities);
+    }
+
+    /**
+     * Set one attribute of the entity with that GUID (`EntityREST`'s
+     * `partialUpdateEntityAttrByGuid`, PUT `/v2/entity/guid/{guid}` — EWR-15,
+     * AEW-03). The body is the bare JSON value — a string, a number, an
+     * array — the server reads whatever it is as the attribute's new value.
+     * The optional `name` names the attribute and travels only when given.
+     * @param guid the entity GUID
+     * @param value the attribute's new value, as JSON
+     * @param name the attribute name, when the body alone does not name it
+     */
+    partialUpdateAttribute(guid: string, value: unknown, name?: string): Observable<EntityMutationResponse> {
+        const params = name === undefined ? new HttpParams() : new HttpParams().set("name", name);
+        return this.http.put<EntityMutationResponse>(this.entityUrl(`/guid/${encodeURIComponent(guid)}`), value, {
+            params,
+        });
+    }
+
+    /**
+     * Partially update the entity that holds the given unique-attribute
+     * values (`EntityREST.partialUpdateEntityByUniqueAttributes`, PUT
+     * `/v2/entity/uniqueAttribute/type/{typeName}` — EWR-14, AEW-04). The
+     * attributes travel as `attr:<name>` parameters (AEN-03) and the body is
+     * the bare `AtlasEntityWithExtInfo` of the fields to change.
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param entity the fields to change, as a sparse entity body
+     */
+    partialUpdateByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        entity: AtlasEntityWithExtInfo,
+    ): Observable<EntityMutationResponse> {
+        return this.http.put<EntityMutationResponse>(
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}`),
+            entity,
+            { params: this.attrParams(attributes) },
+        );
+    }
+
+    /**
+     * Delete the entity with that GUID, and what it owns (`EntityREST.deleteByGuid`,
+     * DELETE `/v2/entity/guid/{guid}` — EDL-01, AEW-05).
+     * @param guid the entity GUID
+     * @param deleteType `SOFT`/`HARD` to override the server's strategy (EDL-04)
+     */
+    deleteEntityByGuid(guid: string, deleteType?: DeleteType): Observable<EntityMutationResponse> {
+        return this.http.delete<EntityMutationResponse>(this.entityUrl(`/guid/${encodeURIComponent(guid)}`), {
+            params: this.deleteTypeParams(deleteType),
+        });
+    }
+
+    /**
+     * Delete the entities of every GUID, and what they own
+     * (`EntityREST.deleteByGuids`, DELETE `/v2/entity/bulk` — EDL-01/EDL-02,
+     * AEW-05). Every GUID travels as a repeated `guid` parameter (AEN-04's
+     * shape).
+     * @param guids the entity GUIDs
+     * @param deleteType `SOFT`/`HARD` to override the server's strategy
+     */
+    deleteEntitiesByGuids(guids: string[], deleteType?: DeleteType): Observable<EntityMutationResponse> {
+        let params = this.deleteTypeParams(deleteType);
+        for (const guid of guids) {
+            params = params.append("guid", guid);
+        }
+        return this.http.delete<EntityMutationResponse>(this.entityUrl("/bulk"), { params });
+    }
+
+    /**
+     * Delete the entity that holds the given unique-attribute values
+     * (`EntityREST.deleteByUniqueAttribute`, DELETE
+     * `/v2/entity/uniqueAttribute/type/{typeName}` — EDL-02, AEW-05).
+     * @param typeName the entity type to look in
+     * @param attributes the unique attribute values that find the entity
+     * @param deleteType `SOFT`/`HARD` to override the server's strategy
+     */
+    deleteEntityByUniqueAttributes(
+        typeName: string,
+        attributes: Record<string, unknown>,
+        deleteType?: DeleteType,
+    ): Observable<EntityMutationResponse> {
+        let params = this.attrParams(attributes);
+        if (deleteType !== undefined) {
+            params = params.set("deleteType", deleteType);
+        }
+        return this.http.delete<EntityMutationResponse>(
+            this.entityUrl(`/uniqueAttribute/type/${encodeURIComponent(typeName)}`),
+            { params },
+        );
     }
 }

@@ -24,12 +24,14 @@ Part of the template **spine**.
   create and update (the bare relationship both ways), the always-wrapped read,
   and the soft/hard delete with its `deleteType` — `RelationshipREST` of server
   2.x (AREL-01..04); the twin of `AtlasClient.relationship` (CLR-01..04)
-- `AtlasEntitiesService` — the entity reads (`/atlas/v2/entity/**`): the
-  by-guid/by-unique-attribute reads (with the ext-info flags), their header
-  siblings, the bulk reads, the audit events, and the changed-classification
-  headers — `EntityREST` of server 2.3/7.6 (DET-03, AEN-01..07); the twin of
-  `AtlasClient.entity`'s reads (CLE-01..CLE-11); the entity writes and the
-  classification/business-metadata/label routes come in 8.18 and 8.19
+- `AtlasEntitiesService` — the entity reads, writes, and deletes
+  (`/atlas/v2/entity/**`): the by-guid/by-unique-attribute reads (with the
+  ext-info flags), their header siblings, the bulk reads, the audit events,
+  and the changed-classification headers (8.17); the create/update, partial
+  updates, and soft/hard deletes (8.18, AEW-01..06) — `EntityREST` of server
+  2.3/7.6 (DET-03, AEN-01..07); the twin of `AtlasClient.entity`'s reads,
+  writes, and deletes (CLE-01..04, CLE-11, CLE-12); the classification,
+  business-metadata, and label routes come in 8.19
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from

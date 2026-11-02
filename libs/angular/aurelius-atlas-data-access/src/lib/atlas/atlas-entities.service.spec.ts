@@ -4,7 +4,8 @@ import { TestBed } from "@angular/core/testing";
 import { provideApiBaseUrl } from "../api-config";
 import { AtlasEntitiesService } from "./atlas-entities.service";
 import type { EntityAuditEventV2 } from "./atlas-audit";
-import type { AtlasEntityWithExtInfo } from "./atlas-entity";
+import type { AtlasEntitiesWithExtInfo, AtlasEntityWithExtInfo } from "./atlas-entity";
+import type { EntityMutationResponse } from "./atlas-mutation";
 import type { AtlasEntityHeader, AtlasEntityHeaders } from "./atlas-search";
 
 /**
@@ -231,4 +232,112 @@ describe("AtlasEntitiesService (DET-03)", () => {
             expect(req.request.params.get("tagUpdateStartTime")).toBe("1700000000000");
             req.flush(answer);
         }));
+
+    // ---- 8.18: the writes and the deletes (AEW-01..AEW-05) ----
+
+    it("createOrUpdateEntity posts the bare body and answers the mutation response (AEW-01, EWR-02)", () =>
+        new Promise<void>((done, fail) => {
+            const answer: EntityMutationResponse = {
+                mutatedEntities: { CREATE: [{ guid: "g1", typeName: "sales_table" }] },
+                guidAssignments: { "-1": "g1" },
+            };
+            service
+                .createOrUpdateEntity({ entity: { guid: "-1", typeName: "sales_table", attributes: {} } })
+                .subscribe({
+                    next: (result) => {
+                        expect(result).toEqual(answer);
+                        done();
+                    },
+                    error: fail,
+                });
+
+            const req = httpMock.expectOne("/api/atlas/v2/entity");
+            expect(req.request.method).toBe("POST");
+            expect(req.request.body).toEqual({ entity: { guid: "-1", typeName: "sales_table", attributes: {} } });
+            req.flush(answer);
+        }));
+
+    it("createOrUpdateEntities posts the bulk body to /bulk (AEW-02, EWR-02)", () => {
+        service
+            .createOrUpdateEntities({
+                entities: [
+                    { guid: "g1", typeName: "t" },
+                    { guid: "g2", typeName: "t" },
+                ],
+            })
+            .subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/entity/bulk");
+        expect(req.request.method).toBe("POST");
+        expect((req.request.body as AtlasEntitiesWithExtInfo).entities?.length).toBe(2);
+        req.flush({});
+    });
+
+    it("partialUpdateAttribute PUTs the bare value; name travels only when given (AEW-03, EWR-15)", () => {
+        service.partialUpdateAttribute("7a1b", "orders", "name").subscribe();
+
+        const named = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/guid/7a1b");
+        expect(named.request.method).toBe("PUT");
+        expect(named.request.body).toBe("orders");
+        expect(named.request.params.get("name")).toBe("name");
+        named.flush({});
+
+        service.partialUpdateAttribute("7a1b", 42).subscribe();
+
+        const unnamed = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/guid/7a1b");
+        expect(unnamed.request.body).toBe(42);
+        expect(unnamed.request.params.keys()).toEqual([]);
+        unnamed.flush({});
+    });
+
+    it("partialUpdateByUniqueAttributes PUTs the sparse body with attr: params (AEW-04, EWR-14)", () => {
+        service
+            .partialUpdateByUniqueAttributes(
+                "sales_table",
+                { qualifiedName: "s1.t.o" },
+                { entity: { guid: "g1", typeName: "sales_table", attributes: { description: "d" } } },
+            )
+            .subscribe();
+
+        const req = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table");
+        expect(req.request.method).toBe("PUT");
+        expect(req.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        expect((req.request.body as AtlasEntityWithExtInfo).entity?.attributes?.["description"]).toBe("d");
+        req.flush({});
+    });
+
+    it("deleteEntityByGuid sends deleteType only when given (AEW-05, EDL-01, EDL-04)", () => {
+        service.deleteEntityByGuid("7a1b").subscribe();
+
+        const plain = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        expect(plain.request.method).toBe("DELETE");
+        expect(plain.request.params.keys()).toEqual([]);
+        plain.flush({});
+
+        service.deleteEntityByGuid("7a1b", "HARD").subscribe();
+
+        const hard = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/guid/7a1b");
+        expect(hard.request.params.get("deleteType")).toBe("HARD");
+        hard.flush({});
+    });
+
+    it("deleteEntitiesByGuids sends repeated guid params plus optional deleteType (AEW-05, EDL-02)", () => {
+        service.deleteEntitiesByGuids(["g1", "g2"], "SOFT").subscribe();
+
+        const req = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/bulk");
+        expect(req.request.method).toBe("DELETE");
+        expect(req.request.params.getAll("guid")).toEqual(["g1", "g2"]);
+        expect(req.request.params.get("deleteType")).toBe("SOFT");
+        req.flush({});
+    });
+
+    it("deleteEntityByUniqueAttributes sends attr: params and optional deleteType (AEW-05, EDL-02)", () => {
+        service.deleteEntityByUniqueAttributes("sales_table", { qualifiedName: "s1.t.o" }, "HARD").subscribe();
+
+        const req = httpMock.expectOne((r) => r.url === "/api/atlas/v2/entity/uniqueAttribute/type/sales_table");
+        expect(req.request.method).toBe("DELETE");
+        expect(req.request.params.get("attr:qualifiedName")).toBe("s1.t.o");
+        expect(req.request.params.get("deleteType")).toBe("HARD");
+        req.flush({});
+    });
 });
