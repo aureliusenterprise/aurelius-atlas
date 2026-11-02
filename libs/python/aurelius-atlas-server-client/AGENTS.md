@@ -10,13 +10,16 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 - `aurelius_atlas_server_client/lineage.py` — the `api/atlas/v2/lineage/{guid}`
   body models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`admin` / `types` /
-  `entity` / `search` / `lineage` / `with_token`, plus the `get_lineage` alias of
-  `lineage.get`), `AtlasClientError`, `KIND_PATHS`;
+  `entity` / `glossary` / `search` / `lineage` / `with_token`, plus the
+  `get_lineage` alias of `lineage.get`), `AtlasClientError`, `KIND_PATHS`;
   `search` mirrors `routes/discovery.py` (CL-13), GET parameters as query
   parameters with the Java defaults (false, 0) left out;
   `entity` mirrors `routes/entity.py` (CLE-01..CLE-12, 8.9 — bodies from
   `aurelius-atlas-model`, `attr:`/`attr_<n>:` parameters, the client's own
   `DeleteType` per DD-311);
+  `glossary` mirrors `routes/glossary.py` (CLG-01..CLG-09, 8.10 — the `_page`
+  parameters as absence, the client's own `GlossarySort` per DD-312, the
+  import pair as bytes per DD-310);
   `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8)
 - `specs/<increment>/spec.md` — the per-module coverage matrices (DD-307): a
   change to a server `routes/*.py` updates its spec's matrix in the same PR.

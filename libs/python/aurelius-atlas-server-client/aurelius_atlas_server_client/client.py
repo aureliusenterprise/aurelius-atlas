@@ -17,14 +17,15 @@ propagates as ``httpx``'s own error — mapping it to an HTTP status is the app'
 The paths mirror the server's routes verbatim: ``routes/admin.py`` under
 ``/api/atlas/admin``, ``routes/types.py`` under ``/api/atlas/v2/types``, the
 entity routes of ``routes/entity.py`` under ``/api/atlas/v2/entity``
-(CLE-01..CLE-12, 8.9), the discovery routes of ``routes/discovery.py`` under
-``/api/atlas/v2/search`` (CL-13), and the lineage feed of ``routes/lineage.py``
-under ``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
+(CLE-01..CLE-12, 8.9), the glossary routes of ``routes/glossary.py`` under
+``/api/atlas/v2/glossary`` (CLG-01..CLG-09, 8.10), the discovery routes of
+``routes/discovery.py`` under ``/api/atlas/v2/search`` (CL-13), and the lineage
+feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage`` (CL-60..CL-63, 8.8).
 """
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 from uuid import UUID
 
 import httpx2 as httpx
@@ -38,6 +39,14 @@ from aurelius_atlas_model.discovery import (
     SearchParameters,
     SortOrder,
 )
+from aurelius_atlas_model.glossary import (
+    AtlasGlossary,
+    AtlasGlossaryCategory,
+    AtlasGlossaryExtInfo,
+    AtlasGlossaryTerm,
+    AtlasRelatedCategoryHeader,
+    AtlasRelatedTermHeader,
+)
 from aurelius_atlas_model.instance import (
     AtlasClassification,
     AtlasClassifications,
@@ -45,6 +54,7 @@ from aurelius_atlas_model.instance import (
     AtlasEntityHeader,
     AtlasEntityHeaders,
     AtlasEntityWithExtInfo,
+    AtlasRelatedObjectId,
     ClassificationAssociateRequest,
     EntityMutationResponse,
 )
@@ -102,6 +112,15 @@ server mounts its feed at ``/api/atlas/v2/lineage``, as every other resource
 
 CLIENT_ERROR = 400
 """The status where an answer becomes an error: the client-error boundary (CL-04)."""
+
+type GlossarySort = Literal["ASC", "DESC"]
+"""The glossary reads' ``sort`` parameter (CLG-02, GLS-05).
+
+The wire vocabulary is the server's own: ``routes/glossary.py`` reads anything
+but ``DESC`` as ascending, so ``ASC`` — the default — travels as absence.
+``aurelius-atlas-model``'s ``SortOrder`` is a different vocabulary
+(``ASCENDING``/``DESCENDING``, the search parameter) and is not this one.
+"""
 
 _KIND_MODELS: dict[TypeCategory, type[AtlasBaseTypeDef]] = {
     TypeCategory.ENUM: AtlasEnumDef,
@@ -804,6 +823,273 @@ class EntityApi:
         )
 
 
+class GlossaryApi:
+    """The glossary resource of an :class:`AtlasClient` (CLG-01..CLG-09): ``client.glossary``.
+
+    The paths mirror ``routes/glossary.py`` (32 routes); the bodies are
+    ``aurelius-atlas-model``'s ``glossary`` module, reused whole (DD-309). The
+    paged reads send the server's ``limit``/``offset``/``sort`` defaults as
+    absence (CLG-02); the create methods do not check the anchor locally
+    (CLG-05) and the updates send the body as given (CLG-08) — the server
+    answers. The two file routes cross as bytes (CLG-06, CL-64).
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def glossaries(
+        self, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasGlossary]:
+        """``GET ""``: every glossary, paged and sorted (GLS-05, CLG-02)."""
+        params = _page_params(limit, offset, sort)
+        answer = await self._api.json("GET", GLOSSARY_ROOT, params=params)
+        return [AtlasGlossary.model_validate(glossary) for glossary in answer]
+
+    async def create_glossary(self, glossary: AtlasGlossary) -> AtlasGlossary:
+        """``POST ""``: create the glossary (GLS-02)."""
+        return AtlasGlossary.model_validate(await self._api.json("POST", GLOSSARY_ROOT, body=glossary.to_json()))
+
+    async def import_template(self) -> tuple[bytes, str]:
+        """``GET /import/template``: the download as bytes and content type (GIM-06, CLG-06, CL-64)."""
+        response = await self._api.request("GET", f"{GLOSSARY_ROOT}/import/template")
+        return response.content, response.headers.get("content-type", "")
+
+    async def import_data(self, file_name: str, content: bytes) -> BulkImportResponse:
+        """``POST /import``: the file's terms created (GIM-01..GIM-05, CLG-06, CL-64).
+
+        The file is the bytes the caller holds — never a path read from disk.
+        """
+        answer = await self._api.request("POST", f"{GLOSSARY_ROOT}/import", files={"file": (file_name, content)})
+        return BulkImportResponse.model_validate(answer.json())
+
+    async def term(self, term_guid: str) -> AtlasGlossaryTerm:
+        """``GET /term/{guid}``: the term (GTM-01)."""
+        return AtlasGlossaryTerm.model_validate(await self._api.json("GET", f"{GLOSSARY_ROOT}/term/{term_guid}"))
+
+    async def create_term(self, term: AtlasGlossaryTerm) -> AtlasGlossaryTerm:
+        """``POST /term``: create the term; the anchor is the server's check (GTM-02, CLG-05)."""
+        return AtlasGlossaryTerm.model_validate(
+            await self._api.json("POST", f"{GLOSSARY_ROOT}/term", body=term.to_json())
+        )
+
+    async def create_terms(self, terms: Sequence[AtlasGlossaryTerm]) -> list[AtlasGlossaryTerm]:
+        """``POST /terms``: create every term; the anchors are the server's check (GTM-02, CLG-05)."""
+        answer = await self._api.json("POST", f"{GLOSSARY_ROOT}/terms", body=[term.to_json() for term in terms])
+        return [AtlasGlossaryTerm.model_validate(term) for term in answer]
+
+    async def update_term(self, term_guid: str, term: AtlasGlossaryTerm) -> AtlasGlossaryTerm:
+        """``PUT /term/{guid}``: update the term of the path's GUID (GTM-04, CLG-08).
+
+        The server grafts the path GUID onto the body — a body without one is
+        the caller's model, sent as given.
+        """
+        return AtlasGlossaryTerm.model_validate(
+            await self._api.json("PUT", f"{GLOSSARY_ROOT}/term/{term_guid}", body=term.to_json())
+        )
+
+    async def partial_update_term(self, term_guid: str, fields: Mapping[str, Any]) -> AtlasGlossaryTerm:
+        """``PUT /term/{guid}/partial``: set the given attributes of the term (GTM-04, CLG-03).
+
+        The body is the plain JSON object of attribute values; no fields at all
+        is a caller bug the client refuses rather than a wasted round trip —
+        the server's own answer for it is ``BAD_REQUEST`` (NO_PARTIAL_UPDATES).
+        A field the term does not have stays the server's answer too
+        (``INVALID_PARTIAL_UPDATE_ATTR``).
+
+        Raises:
+            ValueError: ``fields`` is empty.
+        """
+        _no_fields(fields, "GTM-04")
+        return AtlasGlossaryTerm.model_validate(
+            await self._api.json("PUT", f"{GLOSSARY_ROOT}/term/{term_guid}/partial", body=dict(fields))
+        )
+
+    async def delete_term(self, term_guid: str) -> None:
+        """``DELETE /term/{guid}``: delete the term (GTM-05, CLG-09). Answers 204."""
+        await self._api.request("DELETE", f"{GLOSSARY_ROOT}/term/{term_guid}")
+
+    async def related_terms(self, term_guid: str) -> dict[str, list[AtlasRelatedTermHeader]]:
+        """``GET /terms/{guid}/related``: the term's related terms by relation (GTM-06, CLG-07).
+
+        The key is the relation's JSON name (``seeAlso``, ``synonyms``, …); the
+        page parameters the server reads and ignores, the client does not send.
+        """
+        answer = await self._api.json("GET", f"{GLOSSARY_ROOT}/terms/{term_guid}/related")
+        return {
+            relation: [AtlasRelatedTermHeader.model_validate(header) for header in headers]
+            for relation, headers in answer.items()
+        }
+
+    async def assigned_entities(
+        self, term_guid: str, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasRelatedObjectId]:
+        """``GET /terms/{guid}/assignedEntities``: the term's active assignments (GTA-01, CLG-02)."""
+        answer = await self._api.json(
+            "GET", f"{GLOSSARY_ROOT}/terms/{term_guid}/assignedEntities", params=_page_params(limit, offset, sort)
+        )
+        return [AtlasRelatedObjectId.model_validate(entity) for entity in answer]
+
+    async def assign_term(self, term_guid: str, object_ids: Sequence[AtlasRelatedObjectId]) -> None:
+        """``POST /terms/{guid}/assignedEntities``: assign the term to the entities (GTA-02, CLG-04). 204."""
+        await self._api.request(
+            "POST",
+            f"{GLOSSARY_ROOT}/terms/{term_guid}/assignedEntities",
+            body=[object_id.to_json() for object_id in object_ids],
+        )
+
+    async def remove_term_assignment(self, term_guid: str, object_ids: Sequence[AtlasRelatedObjectId]) -> None:
+        """``DELETE /terms/{guid}/assignedEntities``: remove the assignments (GTA-03, CLG-04). 204."""
+        await self._api.request(
+            "DELETE",
+            f"{GLOSSARY_ROOT}/terms/{term_guid}/assignedEntities",
+            body=[object_id.to_json() for object_id in object_ids],
+        )
+
+    async def disassociate_term_assignment(self, term_guid: str, object_ids: Sequence[AtlasRelatedObjectId]) -> None:
+        """``PUT /terms/{guid}/assignedEntities``: as the ``DELETE`` (GTA-03, CLG-04).
+
+        Kept so a caller states its intent. Answers 204.
+        """
+        await self._api.request(
+            "PUT",
+            f"{GLOSSARY_ROOT}/terms/{term_guid}/assignedEntities",
+            body=[object_id.to_json() for object_id in object_ids],
+        )
+
+    async def category_terms(
+        self, category_guid: str, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasRelatedTermHeader]:
+        """``GET /category/{guid}/terms``: the category's terms, paged (GTM-06, CLG-02)."""
+        answer = await self._api.json(
+            "GET", f"{GLOSSARY_ROOT}/category/{category_guid}/terms", params=_page_params(limit, offset, sort)
+        )
+        return [AtlasRelatedTermHeader.model_validate(term) for term in answer]
+
+    async def category(self, category_guid: str) -> AtlasGlossaryCategory:
+        """``GET /category/{guid}``: the category (GCT-01)."""
+        return AtlasGlossaryCategory.model_validate(
+            await self._api.json("GET", f"{GLOSSARY_ROOT}/category/{category_guid}")
+        )
+
+    async def related_categories(self, category_guid: str) -> dict[str, list[AtlasRelatedCategoryHeader]]:
+        """``GET /category/{guid}/related``: its parent and children (GCT-07, CLG-07).
+
+        The keys are ``parent`` and ``children``; a missing relation is absent.
+        """
+        answer = await self._api.json("GET", f"{GLOSSARY_ROOT}/category/{category_guid}/related")
+        return {
+            relation: [AtlasRelatedCategoryHeader.model_validate(header) for header in headers]
+            for relation, headers in answer.items()
+        }
+
+    async def create_category(self, category: AtlasGlossaryCategory) -> AtlasGlossaryCategory:
+        """``POST /category``: create the category; the anchor is the server's check (GCT-02, CLG-05)."""
+        return AtlasGlossaryCategory.model_validate(
+            await self._api.json("POST", f"{GLOSSARY_ROOT}/category", body=category.to_json())
+        )
+
+    async def create_categories(self, categories: Sequence[AtlasGlossaryCategory]) -> list[AtlasGlossaryCategory]:
+        """``POST /categories``: create every category; anchors are the server's check (GCT-02, CLG-05)."""
+        answer = await self._api.json(
+            "POST", f"{GLOSSARY_ROOT}/categories", body=[category.to_json() for category in categories]
+        )
+        return [AtlasGlossaryCategory.model_validate(category) for category in answer]
+
+    async def update_category(self, category_guid: str, category: AtlasGlossaryCategory) -> AtlasGlossaryCategory:
+        """``PUT /category/{guid}``: update the category of the path's GUID (GCT-04, CLG-08)."""
+        return AtlasGlossaryCategory.model_validate(
+            await self._api.json("PUT", f"{GLOSSARY_ROOT}/category/{category_guid}", body=category.to_json())
+        )
+
+    async def partial_update_category(self, category_guid: str, fields: Mapping[str, Any]) -> AtlasGlossaryCategory:
+        """``PUT /category/{guid}/partial``: set the given attributes (GCT-05, CLG-03).
+
+        Raises:
+            ValueError: ``fields`` is empty (the server's NO_PARTIAL_UPDATES).
+        """
+        _no_fields(fields, "GCT-05")
+        return AtlasGlossaryCategory.model_validate(
+            await self._api.json("PUT", f"{GLOSSARY_ROOT}/category/{category_guid}/partial", body=dict(fields))
+        )
+
+    async def delete_category(self, category_guid: str) -> None:
+        """``DELETE /category/{guid}``: delete the category (GCT-06, CLG-09). Answers 204."""
+        await self._api.request("DELETE", f"{GLOSSARY_ROOT}/category/{category_guid}")
+
+    async def glossary(self, glossary_guid: str) -> AtlasGlossary:
+        """``GET /{guid}``: the glossary (GLS-01, GLS-06)."""
+        return AtlasGlossary.model_validate(await self._api.json("GET", f"{GLOSSARY_ROOT}/{glossary_guid}"))
+
+    async def detailed_glossary(self, glossary_guid: str) -> AtlasGlossaryExtInfo:
+        """``GET /{guid}/detailed``: the glossary with its terms and categories by GUID (GLS-06)."""
+        return AtlasGlossaryExtInfo.model_validate(
+            await self._api.json("GET", f"{GLOSSARY_ROOT}/{glossary_guid}/detailed")
+        )
+
+    async def glossary_categories(
+        self, glossary_guid: str, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasGlossaryCategory]:
+        """``GET /{guid}/categories``: the glossary's categories, paged (GLS-05, CLG-02)."""
+        answer = await self._api.json(
+            "GET",
+            f"{GLOSSARY_ROOT}/{glossary_guid}/categories",
+            params=_page_params(limit, offset, sort),
+        )
+        return [AtlasGlossaryCategory.model_validate(category) for category in answer]
+
+    async def glossary_categories_headers(
+        self, glossary_guid: str, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasRelatedCategoryHeader]:
+        """``GET /{guid}/categories/headers``: the category headers, paged (GLS-05, CLG-02)."""
+        answer = await self._api.json(
+            "GET",
+            f"{GLOSSARY_ROOT}/{glossary_guid}/categories/headers",
+            params=_page_params(limit, offset, sort),
+        )
+        return [AtlasRelatedCategoryHeader.model_validate(header) for header in answer]
+
+    async def glossary_terms(
+        self, glossary_guid: str, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasGlossaryTerm]:
+        """``GET /{guid}/terms``: the glossary's terms, paged (GTM-06, CLG-02)."""
+        answer = await self._api.json(
+            "GET", f"{GLOSSARY_ROOT}/{glossary_guid}/terms", params=_page_params(limit, offset, sort)
+        )
+        return [AtlasGlossaryTerm.model_validate(term) for term in answer]
+
+    async def glossary_terms_headers(
+        self, glossary_guid: str, *, limit: int | None = None, offset: int = 0, sort: GlossarySort | None = None
+    ) -> list[AtlasRelatedTermHeader]:
+        """``GET /{guid}/terms/headers``: the term headers, paged (GTM-06, CLG-02)."""
+        answer = await self._api.json(
+            "GET",
+            f"{GLOSSARY_ROOT}/{glossary_guid}/terms/headers",
+            params=_page_params(limit, offset, sort),
+        )
+        return [AtlasRelatedTermHeader.model_validate(header) for header in answer]
+
+    async def update_glossary(self, glossary_guid: str, glossary: AtlasGlossary) -> AtlasGlossary:
+        """``PUT /{guid}``: update the glossary of the path's GUID (GLS-03, CLG-08)."""
+        return AtlasGlossary.model_validate(
+            await self._api.json("PUT", f"{GLOSSARY_ROOT}/{glossary_guid}", body=glossary.to_json())
+        )
+
+    async def partial_update_glossary(self, glossary_guid: str, fields: Mapping[str, Any]) -> AtlasGlossary:
+        """``PUT /{guid}/partial``: set the given attributes of the glossary (GLS-03, CLG-03).
+
+        Raises:
+            ValueError: ``fields`` is empty (the server's NO_PARTIAL_UPDATES).
+        """
+        _no_fields(fields, "GLS-03")
+        return AtlasGlossary.model_validate(
+            await self._api.json("PUT", f"{GLOSSARY_ROOT}/{glossary_guid}/partial", body=dict(fields))
+        )
+
+    async def delete_glossary(self, glossary_guid: str) -> None:
+        """``DELETE /{guid}``: delete the glossary (GLS-04, CLG-09). Answers 204."""
+        await self._api.request("DELETE", f"{GLOSSARY_ROOT}/{glossary_guid}")
+
+
 class LineageApi:
     """The lineage resource of an :class:`AtlasClient` (CL-61..CL-63): ``client.lineage``.
 
@@ -880,6 +1166,28 @@ def _attr_set_params(attribute_sets: Sequence[Mapping[str, Any]]) -> dict[str, A
     }
 
 
+def _no_fields(fields: Mapping[str, Any], rule: str) -> None:
+    """Refuse an empty partial-update body client-side (CLG-03).
+
+    The server's own answer for it is ``BAD_REQUEST`` (NO_PARTIAL_UPDATES);
+    ``rule`` names the server rule (GTM-04 / GCT-05 / GLS-03) the caller can
+    match on.
+    """
+    if not fields:
+        msg = f"no fields to set: the server answers BAD_REQUEST (NO_PARTIAL_UPDATES, {rule})"
+        raise ValueError(msg)
+
+
+def _page_params(limit: int | None, offset: int, sort: GlossarySort | None) -> dict[str, Any]:
+    """The glossary reads' paging parameters, the server's defaults left out (CLG-02, GLS-05).
+
+    The server reads an absent ``limit`` as -1 (every item), an absent
+    ``offset`` as 0 and an absent ``sort`` as ``ASC`` — so a default travels as
+    its absence, and a caller that passes ``limit=-1`` explicitly is sent one.
+    """
+    return _present(limit=limit, offset=offset, sort=sort)
+
+
 def _parse_def(payload: dict[str, Any]) -> AtlasBaseTypeDef:
     """The definition of any kind, parsed into its category's model (TYR-01, TYR-02)."""
     kind = TypeCategory.__members__.get(str(payload.get("category", "")))
@@ -904,6 +1212,7 @@ class AtlasClient:
         self.admin = AdminApi(api)
         self.types = TypesApi(api)
         self.entity = EntityApi(api)
+        self.glossary = GlossaryApi(api)
         self.search = SearchApi(api)
         self.lineage = LineageApi(api)
 
