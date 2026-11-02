@@ -6,7 +6,7 @@ import type { AtlasGlossary, AtlasGlossaryCategory, AtlasGlossaryTerm, AtlasRela
 import type { BulkImportResponse } from "./atlas-impexp";
 import { GlossaryService } from "./glossary.service";
 
-describe("GlossaryService (AGL-01..07, AGT-01..06)", () => {
+describe("GlossaryService (AGL-01..07, AGT-01..06, AGC-01..04)", () => {
     let service: GlossaryService;
     let httpMock: HttpTestingController;
 
@@ -285,6 +285,73 @@ describe("GlossaryService (AGL-01..07, AGT-01..06)", () => {
         expect(disassociate.request.method).toBe("PUT");
         expect(disassociate.request.body).toEqual(objectIds);
         disassociate.flush(null);
+    });
+
+    it("---- 8.22: getCategoryTerms is paged, getCategory reads, getRelatedCategories answers the map (AGC-01, GCT-01/07) ----", () => {
+        service.getCategoryTerms("c-1", { offset: 20 }).subscribe();
+
+        const terms = httpMock.expectOne(
+            (r) => r.url === "/api/atlas/v2/glossary/category/c-1/terms" && r.params.get("offset") === "20",
+        );
+        terms.flush([{ termGuid: "t-1", displayText: "Revenue" }]);
+
+        service.getCategory("c-1").subscribe();
+
+        const cat = httpMock.expectOne("/api/atlas/v2/glossary/category/c-1");
+        expect(cat.request.method).toBe("GET");
+        cat.flush(category);
+
+        service.getRelatedCategories("c-1").subscribe();
+
+        const related = httpMock.expectOne("/api/atlas/v2/glossary/category/c-1/related");
+        related.flush({ parent: [{ categoryGuid: "c-0", displayText: "Catalogue" }] });
+    });
+
+    it("createCategory/createCategories post the bare category(s) (AGC-02, GCT-02)", () => {
+        service.createCategory(category).subscribe();
+
+        const one = httpMock.expectOne("/api/atlas/v2/glossary/category");
+        expect(one.request.method).toBe("POST");
+        expect(one.request.body).toEqual(category);
+        one.flush(category);
+
+        service.createCategories([category]).subscribe();
+
+        const many = httpMock.expectOne("/api/atlas/v2/glossary/categories");
+        expect(many.request.method).toBe("POST");
+        expect(many.request.body).toEqual([category]);
+        many.flush([category]);
+    });
+
+    it("updateCategory puts the body as given — the server grafts the path guid (AGC-03, GCT-04, CLG-08)", () => {
+        service.updateCategory("c-1", { name: "Product Lines" }).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/category/c-1");
+        expect(req.request.method).toBe("PUT");
+        expect(req.request.body).toEqual({ name: "Product Lines" });
+        req.flush({ ...category, name: "Product Lines" });
+    });
+
+    it("partialUpdateCategory puts the bare attribute map (AGC-03, GCT-05)", () => {
+        service.partialUpdateCategory("c-1", { shortDescription: "Product lines." }).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/category/c-1/partial");
+        expect(req.request.method).toBe("PUT");
+        expect(req.request.body).toEqual({ shortDescription: "Product lines." });
+        req.flush(category);
+    });
+
+    it("partialUpdateCategory with no fields raises and makes no request (AGC-03, CLG-03)", () => {
+        expect(() => service.partialUpdateCategory("c-1", {})).toThrow(/NO_PARTIAL_UPDATES/);
+        httpMock.expectNone("/api/atlas/v2/glossary/category/c-1/partial");
+    });
+
+    it("deleteCategory answers 204 as void (AGC-04, GCT-06, CLG-09)", () => {
+        service.deleteCategory("c-1").subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/glossary/category/c-1");
+        expect(req.request.method).toBe("DELETE");
+        req.flush(null);
     });
 
     it("every URL composes from API_BASE_URL (AGL-01, APC-01)", () => {

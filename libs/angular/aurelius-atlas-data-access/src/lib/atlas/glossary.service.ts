@@ -30,10 +30,10 @@ export type GlossaryPage = {
 
 /**
  * The glossary endpoints of the Atlas server (`GlossaryREST`, AGL-01..07,
- * AGT-01..06): twenty-four of the thirty-two routes of `routes/glossary.py`
- * — the thirteen about glossaries themselves (8.20) and the eleven about
- * terms (8.21). Categories (8.22) finish the family. Every URL composes from
- * the injected {@link API_BASE_URL} (APC-01). The Python twin is
+ * AGT-01..06, AGC-01..04): all thirty-two routes of `routes/glossary.py` —
+ * the thirteen about glossaries themselves (8.20), the eleven about terms
+ * (8.21), and the eight about categories (8.22). Every URL composes from the
+ * injected {@link API_BASE_URL} (APC-01). The Python twin is
  * `AtlasClient.glossary` (CLG-01..CLG-09); its resource-object methods
  * (`glossary.glossaries()`, …) compose into these flat names, as 8.15/8.16
  * did for lineage and relationships.
@@ -369,6 +369,115 @@ export class GlossaryService {
             this.glossaryUrl(`/terms/${encodeURIComponent(termGuid)}/assignedEntities`),
             objectIds,
         );
+    }
+
+    /**
+     * The category's terms, paged (`categoryTerms`, GET
+     * `/v2/glossary/category/{guid}/terms` — GTM-06, AGC-01). The paging
+     * follows {@link GlossaryPage}.
+     * @param categoryGuid the category GUID
+     * @param page the paging, or nothing for the server's defaults
+     * @returns the term headers of the page
+     */
+    getCategoryTerms(categoryGuid: string, page: GlossaryPage = {}): Observable<AtlasRelatedTermHeader[]> {
+        return this.http.get<AtlasRelatedTermHeader[]>(
+            this.glossaryUrl(`/category/${encodeURIComponent(categoryGuid)}/terms`),
+            { params: this.pageParams(page) },
+        );
+    }
+
+    /**
+     * The category (`category`, GET `/v2/glossary/category/{guid}` — GCT-01,
+     * AGC-01).
+     * @param categoryGuid the category GUID
+     * @returns the category, bare
+     */
+    getCategory(categoryGuid: string): Observable<AtlasGlossaryCategory> {
+        return this.http.get<AtlasGlossaryCategory>(this.glossaryUrl(`/category/${encodeURIComponent(categoryGuid)}`));
+    }
+
+    /**
+     * The category's parent and children (`relatedCategories`, GET
+     * `/v2/glossary/category/{guid}/related` — GCT-07, CLG-07, AGC-01). The
+     * keys are `parent` and `children`; a missing relation is absent.
+     * @param categoryGuid the category GUID
+     * @returns the headers of each relation, keyed by relation name
+     */
+    getRelatedCategories(categoryGuid: string): Observable<Record<string, AtlasRelatedCategoryHeader[]>> {
+        return this.http.get<Record<string, AtlasRelatedCategoryHeader[]>>(
+            this.glossaryUrl(`/category/${encodeURIComponent(categoryGuid)}/related`),
+        );
+    }
+
+    /**
+     * Create a category (`createCategory`, POST `/v2/glossary/category` —
+     * GCT-02, AGC-02). The anchor is not checked here: a category without
+     * one is the server's `MISSING_MANDATORY_ANCHOR` answer, as in the twin
+     * (CLG-05).
+     * @param category the category to create
+     * @returns the created category, with its guid
+     */
+    createCategory(category: AtlasGlossaryCategory): Observable<AtlasGlossaryCategory> {
+        return this.http.post<AtlasGlossaryCategory>(this.glossaryUrl("/category"), category);
+    }
+
+    /**
+     * Create every category (`createCategories`, POST
+     * `/v2/glossary/categories` — GCT-02, AGC-02). Every anchor is the
+     * server's check (CLG-05).
+     * @param categories the categories to create
+     * @returns the created categories, in the request's order
+     */
+    createCategories(categories: AtlasGlossaryCategory[]): Observable<AtlasGlossaryCategory[]> {
+        return this.http.post<AtlasGlossaryCategory[]>(this.glossaryUrl("/categories"), categories);
+    }
+
+    /**
+     * Update a category (`updateCategory`, PUT `/v2/glossary/category/{guid}`
+     * — GCT-04, AGC-03). The body guid is not rewritten here: the server
+     * grafts the path GUID onto the body it stores (CLG-08).
+     * @param categoryGuid the category GUID of the path
+     * @param category the category to store
+     * @returns the updated category
+     */
+    updateCategory(categoryGuid: string, category: AtlasGlossaryCategory): Observable<AtlasGlossaryCategory> {
+        return this.http.put<AtlasGlossaryCategory>(
+            this.glossaryUrl(`/category/${encodeURIComponent(categoryGuid)}`),
+            category,
+        );
+    }
+
+    /**
+     * Set the given attributes of a category (`partialUpdateCategory`, PUT
+     * `/v2/glossary/category/{guid}/partial` — GCT-05, AGC-03). The body is
+     * the plain JSON object of attribute values (name, the two
+     * descriptions). A field the category does not have stays the server's
+     * answer (`INVALID_PARTIAL_UPDATE_ATTR`).
+     * @param categoryGuid the category GUID
+     * @param fields the attribute values to set
+     * @returns the whole updated category
+     * @throws a `Error` when `fields` is empty — the server's answer for it
+     * is `BAD_REQUEST` (NO_PARTIAL_UPDATES, GCT-05), so the client refuses
+     * the wasted round trip, as the twin's `_no_fields` does (CLG-03). No
+     * request is made.
+     */
+    partialUpdateCategory(categoryGuid: string, fields: Record<string, unknown>): Observable<AtlasGlossaryCategory> {
+        if (Object.keys(fields).length === 0) {
+            throw new Error("no fields to set: the server answers BAD_REQUEST (NO_PARTIAL_UPDATES, GCT-05)");
+        }
+        return this.http.put<AtlasGlossaryCategory>(
+            this.glossaryUrl(`/category/${encodeURIComponent(categoryGuid)}/partial`),
+            fields,
+        );
+    }
+
+    /**
+     * Delete a category (`deleteCategory`, DELETE
+     * `/v2/glossary/category/{guid}` — GCT-06, CLG-09, AGC-04). Answers 204.
+     * @param categoryGuid the category GUID
+     */
+    deleteCategory(categoryGuid: string): Observable<void> {
+        return this.http.delete<void>(this.glossaryUrl(`/category/${encodeURIComponent(categoryGuid)}`));
     }
 
     private glossaryUrl(path: string): string {

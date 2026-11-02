@@ -36,11 +36,13 @@ Part of the template **spine**.
   glossary routes (8.20, AGL-01..07) — the paged list, create/update/
   partial-update/delete, the detailed read, the paged category and term
   reads (full and header form), and the template download and file import —
-  and the term routes (8.21, AGT-01..06) — the term reads/creates/updates,
-  the partial update, the delete, the related-terms map, and the paged
-  assigned-entities read with its assignment trio — `GlossaryREST` of server
-  2.4 (GLS/GTM/GTA/GIM); the twin of `AtlasClient.glossary` (CLG-01..CLG-09).
-  Categories (8.22) follow
+  the term routes (8.21, AGT-01..06) — the term reads/creates/updates, the
+  partial update, the delete, the related-terms map, and the paged
+  assigned-entities read with its assignment trio — and the category routes
+  (8.22, AGC-01..04) — the category read, its paged terms, its related
+  map, create/update/partial-update/delete — all thirty-two `GlossaryREST`
+  routes of server 2.4 (GLS/GTM/GTA/GCT/GIM); the twin of
+  `AtlasClient.glossary` (CLG-01..CLG-09)
 - `atlas-impexp.ts` / `atlas-mutation.ts` / `atlas-patches.ts` /
   `atlas-tasks.ts` — the export/import, mutation-response, patch-record, and
   task DTOs with the server's camelCase wire names, mirrored by hand from
