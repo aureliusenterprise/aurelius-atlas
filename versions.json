@@ -15,11 +15,6 @@
     "aliases": []
   },
   {
-    "version": "dependabot-uv-types-boto3-full--gte-1.43.119",
-    "title": "dependabot-uv-types-boto3-full--gte-1.43.119",
-    "aliases": []
-  },
-  {
     "version": "dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0",
     "title": "dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0",
     "aliases": []
