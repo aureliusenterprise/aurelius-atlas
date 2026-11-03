@@ -2046,6 +2046,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_cluster
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_export_import_audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_export_import_audit
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_liveness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8132,6 +8154,28 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_cluster" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_cluster
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_export_import_audit" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_export_import_audit
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_liveness" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -10837,8 +10881,9 @@ there the cause is the request's own defect, not server internals.</p>
 
     <div class="doc doc-contents first">
 
-        <p>The admin endpoints of <code>AdminResource</code>: version, status, session, liveness, readiness, patches, purge, tasks.</p>
-<p>ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.</p>
+        <p>The admin endpoints of <code>AdminResource</code>: version, status, session, liveness, readiness, patches, purge, tasks,
+export, import, servers and their audit trail.</p>
+<p>ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.</p>
 
 
 
@@ -10875,6 +10920,30 @@ there the cause is the request's own defect, not server internals.</p>
             –
             <div class="doc-md-description">
               <p><code>export</code>: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_cluster
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.get_cluster)" href="./#aurelius_atlas_server.routes.admin.get_cluster">get_cluster</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>getCluster</code>: the server of the full name, with the replication it recorded (REP-01).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_export_import_audit
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.get_export_import_audit)" href="./#aurelius_atlas_server.routes.admin.get_export_import_audit">get_export_import_audit</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>getExportImportAudit</code>: the audit entries of the values given, the server either end (REP-05).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -11416,6 +11485,69 @@ there the cause is the request's own defect, not server internals.</p>
           </div>
         </li>
     </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.get_cluster" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_cluster</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.get_cluster" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_cluster</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.get_cluster(server_name)">server_name</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.get_cluster(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.get_cluster(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasJSONResponse (aurelius_atlas_server.errors.AtlasJSONResponse)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse">AtlasJSONResponse</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>getCluster</code>: the server of the full name, with the replication it recorded (REP-01).</p>
+<p>Atlas checks no admin privilege here, only the entity reads of its store (DD-307).</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="aurelius_atlas_server.errors.AtlasError">AtlasError</span></code>
+            –
+          <div class="doc-md-description">
+            <p><code>INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND</code> for none.</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.get_export_import_audit" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_export_import_audit</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.get_export_import_audit" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_export_import_audit</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.get_export_import_audit(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.get_export_import_audit(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasJSONResponse (aurelius_atlas_server.errors.AtlasJSONResponse)" href="./#aurelius_atlas_server.errors.AtlasJSONResponse">AtlasJSONResponse</a></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>getExportImportAudit</code>: the audit entries of the values given, the server either end (REP-05).</p>
+<p>Query parameters <code>serverName</code>, <code>userName</code>, <code>operation</code>, <code>startTime</code>, <code>endTime</code>, <code>limit</code> and
+<code>offset</code>. Atlas checks no admin privilege here, only the entity reads of its search (DD-307).</p>
 
 
     </div>
