@@ -80,6 +80,11 @@
     "aliases": []
   },
   {
+    "version": "fix-6-3c3-boot-audit-batch",
+    "title": "fix-6-3c3-boot-audit-batch",
+    "aliases": []
+  },
+  {
     "version": "fix-ingest-one-issuer",
     "title": "fix-ingest-one-issuer",
     "aliases": []
