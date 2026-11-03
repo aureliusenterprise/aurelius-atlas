@@ -957,10 +957,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1012,60 +1008,6 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-fastapi-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-frontend-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
                 
               
                 
@@ -1348,10 +1290,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1520,33 +1458,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api-reference/libs/python/aurelius-atlas-lineage-model-client/" class="md-nav__link">
         
   
@@ -1636,33 +1547,6 @@
     
   
   aurelius-atlas-parity
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-sdk
 
     
   </span>
@@ -7255,8 +7139,8 @@ checks a PR must pass:</p>
 <p class="admonition-title">Two expat CVEs and a musl CVE are accepted on a temporary basis</p>
 <p>CVE-2026-77214 and CVE-2026-102633 (<code>expat</code>/<code>libexpat</code> 2.8.5-r1, from the server image's
 hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened
-base image carried the fix yet; so is CVE-2026-107891 (<code>musl</code> 1.2.6-r2, from the frontend
-example image's hardened base, fixed in 1.2.6-r3). The acceptance expires with the next base-image refresh —
+base image carried the fix yet; so is CVE-2026-107891 (<code>musl</code> 1.2.6-r2, from the webapp image's
+hardened base, fixed in 1.2.6-r3). The acceptance expires with the next base-image refresh —
 the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.</p>
 </div>
 <p>To do once the last 0.x increment is done:</p>
@@ -7271,9 +7155,9 @@ the checklist below is the re-decision, and an accepted risk that nobody re-chec
 </ul>
 </li>
 <li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Re-check the accepted musl vulnerability.</strong> CVE-2026-107891 in <code>musl</code> and <code>musl-utils</code> 1.2.6-r2
-      comes from the base image <code>dhi.io/nginx:1.30-alpine3.24</code> of <code>aurelius-atlas-frontend-example</code>, and is
-      fixed in 1.2.6-r3. It was accepted in SonarCloud on #139, because no hardened image with the fix
-      existed yet. Before closing it:<ul>
+      comes from the base image <code>dhi.io/nginx:1.30-alpine3.24</code> of <code>aurelius-atlas-webapp</code> (it moved
+      with it from <code>aurelius-atlas-frontend-example</code>), and is fixed in 1.2.6-r3. It was accepted in
+      SonarCloud on #139, because no hardened image with the fix existed yet. Before closing it:<ul>
 <li>Check that the current base image ships musl 1.2.6-r3 or later.</li>
 <li>Check that SonarCloud has closed the two issues as fixed.</li>
 <li>If either check fails, reopen the issues and decide again.</li>
@@ -7281,15 +7165,18 @@ the checklist below is the re-decision, and an accepted risk that nobody re-chec
 </li>
 </ul>
 <h2 id="after-the-plan">After the plan<a class="headerlink" href="#after-the-plan" title="Permanent link">&para;</a></h2>
-<p>To do once 6.4 is done, not numbered as an increment yet
-(<code>DD-019</code> (the record: <code>apps/aurelius-atlas-server/specs/0-6-dashboards/design.md</code>)):</p>
+<p>(<code>DD-019</code> (the record: <code>apps/aurelius-atlas-server/specs/0-6-dashboards/design.md</code>)):</p>
 <ul class="task-list">
-<li class="task-list-item"><label class="task-list-control"><input type="checkbox"/><span class="task-list-indicator"></span></label> <strong>Remove the template's examples.</strong> The FastAPI example service, the Angular example screen,
-      <code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code>, <code>libs/angular/*</code>, <code>libs/styles</code>, <code>dev/postgres</code>
-      and the Angular, Storybook and Chromatic toolchain leave (ADR 050).<ul>
-<li><code>dev/keycloak</code> stays for 6.1 and takes over <code>pg_hba.conf</code> from <code>dev/postgres</code>.</li>
-<li>The rules are tested by a test-only <code>tools/workspace</code> project without a Sonar target.</li>
-<li>They are kept until then because the project's second phase needs them again.</li>
+<li class="task-list-item"><label class="task-list-control"><input type="checkbox" checked/><span class="task-list-indicator"></span></label> <strong>Remove the template's examples.</strong> Done: the FastAPI example service, the Angular example
+      screen, <code>aurelius-atlas-example</code>, <code>aurelius-atlas-sdk</code>, <code>dev/postgres</code> and <code>schemas/avro/</code>
+      left once the Atlas server, webapp, and Elasticsearch store replaced them (ADR 050).<ul>
+<li><code>dev/keycloak</code> owns <code>pg_hba.conf</code> now (the copy left <code>dev/postgres</code>).</li>
+<li>The Angular libraries, <code>libs/styles</code>, and the Angular/Storybook/Chromatic toolchain stay:
+  the webapp consumes them, so they are no longer example scaffolding. DD-019's wider plan to
+  remove them still applies only if a future increment replaces them.</li>
+<li>The <code>otel-postgres</code> Keycloak ingest client stays by choice: increment 10.9's client set is
+  under review (#183..#186, #195), and a realm-asset edit now would collide. A later increment
+  drops it with the other unused clients.</li>
 </ul>
 </li>
 </ul>

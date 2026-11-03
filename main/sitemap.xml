@@ -13,12 +13,6 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/apps/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-fastapi-example/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-frontend-example/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/apps/aurelius-atlas-server/</loc>
       </url>
       <url>
@@ -49,9 +43,6 @@
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-dsl/</loc>
       </url>
       <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-example/</loc>
-      </url>
-      <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-lineage-model-client/</loc>
       </url>
       <url>
@@ -62,9 +53,6 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-parity/</loc>
-      </url>
-      <url>
-        <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-sdk/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/main/api-reference/libs/python/aurelius-atlas-server-client/</loc>

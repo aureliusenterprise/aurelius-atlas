@@ -40,7 +40,6 @@ The path from first signal to all-clear (ADR 041 R2); the owner is the maintaine
 | --- | --- |
 | Elasticsearch: `aurelius-atlas-typedefs` (entity indices from 2.2, audit from 3.5) | `aurelius-atlas-server` |
 | Keycloak realm and its Postgres database | `dev/keycloak` |
-| Example Postgres database (template slice) | `aurelius-atlas-fastapi-example`, removed with it (DD-019) |
 | Operational signals (metrics, logs, traces) | `dev/observability`, custodian of a shared store (ADR 042 R2) |
 
 The catalogue's store has one writer — the server — so shape arbitration has no live subject in the spine; it applies from the first dataset with a second reader-writer.

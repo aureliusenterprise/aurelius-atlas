@@ -1177,10 +1177,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1232,60 +1228,6 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-fastapi-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-frontend-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
                 
               
                 
@@ -1568,10 +1510,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1740,33 +1678,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api-reference/libs/python/aurelius-atlas-lineage-model-client/" class="md-nav__link">
         
   
@@ -1856,33 +1767,6 @@
     
   
   aurelius-atlas-parity
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-sdk
 
     
   </span>
@@ -6703,8 +6587,8 @@ they must be edited by hand. Work through this list top to bottom; each item nam
 graph errors. A stale reference anywhere breaks the graph immediately.</p>
 </details>
 <h3 id="3-python-package-names">3. Python package names<a class="headerlink" href="#3-python-package-names" title="Permanent link">&para;</a></h3>
-<p>Python packages use underscored names derived from the project (<code>aurelius_atlas_fastapi_example</code>, <code>aurelius_atlas_sdk</code>,
-<code>aurelius_atlas_example</code>, <code>aurelius_kafka</code>, <code>aurelius_aws_lambda</code>). Renaming a package means renaming its
+<p>Python packages use underscored names derived from the project (<code>aurelius_atlas_server</code>,
+<code>aurelius_atlas_store_es</code>, <code>aurelius_atlas_trace</code>). Renaming a package means renaming its
 directory, the <code>name</code> and <code>packages</code> fields in its <code>pyproject.toml</code>, and <strong>every import</strong> across apps,
 libs, and <code>e2e/</code> test modules.</p>
 <h3 id="4-java-packages-and-the-avro-namespace">4. Java packages and the Avro namespace<a class="headerlink" href="#4-java-packages-and-the-avro-namespace" title="Permanent link">&para;</a></h3>
@@ -6748,8 +6632,8 @@ Developers need a <code>docker login</code> on their host too — see
 until your projects exist there).</p>
 <h3 id="8-keycloak-realm-and-clients">8. Keycloak realm and clients<a class="headerlink" href="#8-keycloak-realm-and-clients" title="Permanent link">&para;</a></h3>
 <p>The development realm import (<code>dev/keycloak/import/master.json</code>) defines a client with id <code>aurelius</code>.
-Rename it there and in both consumers: <code>apps/aurelius-atlas-frontend-example/dev/config.json</code> and
-<code>apps/aurelius-atlas-frontend-example/e2e/config/config.json</code> (<code>clientId</code>).</p>
+Rename it there and in both consumers: <code>apps/aurelius-atlas-webapp/dev/config.json</code> and
+<code>apps/aurelius-atlas-webapp/e2e/config/config.json</code> (<code>clientId</code>).</p>
 <h3 id="9-documentation-references">9. Documentation references<a class="headerlink" href="#9-documentation-references" title="Permanent link">&para;</a></h3>
 <p>After the code renames, sweep the prose: project READMEs, <code>docs/api-reference/</code>, and the design guide all
 name example projects and the Avro subject. <code>zensical build --strict</code> will catch broken nav, but not stale

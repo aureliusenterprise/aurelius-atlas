@@ -18,7 +18,7 @@ workspace = true
 
 Keycloak bearer-token authentication for Aurelius Atlas services (8.0, DD-197).
 
-Ported from the template's FastAPI example (the workspace's reference for the pattern: `apps/aurelius-atlas-fastapi-example/.../providers/auth.py`), reshaped as a per-service object so each application owns one :class:`KeycloakAuth` built from its own settings — no module-level caches shared across applications.
+Ported from the template's FastAPI example (since removed, ADR 050), reshaped as a per-service object so each application owns one :class:`KeycloakAuth` built from its own settings — no module-level caches shared across applications.
 
 The verification story (AUX-02..AUX-05):
 

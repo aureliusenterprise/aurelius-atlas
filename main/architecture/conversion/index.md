@@ -164,7 +164,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 >
 > **Two expat CVEs and a musl CVE are accepted on a temporary basis**
 >
-> CVE-2026-77214 and CVE-2026-102633 (`expat`/`libexpat` 2.8.5-r1, from the server image's hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened base image carried the fix yet; so is CVE-2026-107891 (`musl` 1.2.6-r2, from the frontend example image's hardened base, fixed in 1.2.6-r3). The acceptance expires with the next base-image refresh — the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.
+> CVE-2026-77214 and CVE-2026-102633 (`expat`/`libexpat` 2.8.5-r1, from the server image's hardened base) are fixed upstream in 2.9.0-r0 but accepted in SonarCloud because no hardened base image carried the fix yet; so is CVE-2026-107891 (`musl` 1.2.6-r2, from the webapp image's hardened base, fixed in 1.2.6-r3). The acceptance expires with the next base-image refresh — the checklist below is the re-decision, and an accepted risk that nobody re-checks is drift.
 
 To do once the last 0.x increment is done:
 
@@ -173,7 +173,7 @@ To do once the last 0.x increment is done:
   - Check that the current base image ships expat 2.9.0 or later.
   - Check that SonarCloud has closed the four issues as fixed.
   - If either check fails, reopen the issues and decide again.
-- [ ] **Re-check the accepted musl vulnerability.** CVE-2026-107891 in `musl` and `musl-utils` 1.2.6-r2 comes from the base image `dhi.io/nginx:1.30-alpine3.24` of `aurelius-atlas-frontend-example`, and is fixed in 1.2.6-r3. It was accepted in SonarCloud on \#139, because no hardened image with the fix existed yet. Before closing it:
+- [ ] **Re-check the accepted musl vulnerability.** CVE-2026-107891 in `musl` and `musl-utils` 1.2.6-r2 comes from the base image `dhi.io/nginx:1.30-alpine3.24` of `aurelius-atlas-webapp` (it moved with it from `aurelius-atlas-frontend-example`), and is fixed in 1.2.6-r3. It was accepted in SonarCloud on \#139, because no hardened image with the fix existed yet. Before closing it:
 
   - Check that the current base image ships musl 1.2.6-r3 or later.
   - Check that SonarCloud has closed the two issues as fixed.
@@ -181,10 +181,10 @@ To do once the last 0.x increment is done:
 
 ## After the plan
 
-To do once 6.4 is done, not numbered as an increment yet (`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)):
+(`DD-019` (the record: `apps/aurelius-atlas-server/specs/0-6-dashboards/design.md`)):
 
-- [ ] **Remove the template's examples.** The FastAPI example service, the Angular example screen, `aurelius-atlas-example`, `aurelius-atlas-sdk`, `libs/angular/*`, `libs/styles`, `dev/postgres` and the Angular, Storybook and Chromatic toolchain leave (ADR 050).
+- [x] **Remove the template's examples.** Done: the FastAPI example service, the Angular example screen, `aurelius-atlas-example`, `aurelius-atlas-sdk`, `dev/postgres` and `schemas/avro/` left once the Atlas server, webapp, and Elasticsearch store replaced them (ADR 050).
 
-  - `dev/keycloak` stays for 6.1 and takes over `pg_hba.conf` from `dev/postgres`.
-  - The rules are tested by a test-only `tools/workspace` project without a Sonar target.
-  - They are kept until then because the project's second phase needs them again.
+  - `dev/keycloak` owns `pg_hba.conf` now (the copy left `dev/postgres`).
+  - The Angular libraries, `libs/styles`, and the Angular/Storybook/Chromatic toolchain stay: the webapp consumes them, so they are no longer example scaffolding. DD-019's wider plan to remove them still applies only if a future increment replaces them.
+  - The `otel-postgres` Keycloak ingest client stays by choice: increment 10.9's client set is under review (\#183..\#186, \#195), and a realm-asset edit now would collide. A later increment drops it with the other unused clients.

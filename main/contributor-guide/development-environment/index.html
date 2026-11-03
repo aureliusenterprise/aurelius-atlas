@@ -1110,10 +1110,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1165,60 +1161,6 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-fastapi-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-frontend-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
                 
               
                 
@@ -1501,10 +1443,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1673,33 +1611,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../api-reference/libs/python/aurelius-atlas-lineage-model-client/" class="md-nav__link">
         
   
@@ -1789,33 +1700,6 @@
     
   
   aurelius-atlas-parity
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-sdk
 
     
   </span>
@@ -6624,12 +6508,6 @@ is in <a href="../tls-certificates/">TLS Certificates</a>.</p>
 <td>TLS only; loopback-pinned (CHT-101)</td>
 </tr>
 <tr>
-<td>Postgres (examples)</td>
-<td><code>${DATABASE_PORT}</code> → 5432</td>
-<td><code>postgres</code></td>
-<td>Keycloak keeps its own, on its network</td>
-</tr>
-<tr>
 <td>Keycloak</td>
 <td>8080 / 8443</td>
 <td><code>keycloak</code></td>
@@ -6656,7 +6534,7 @@ is in <a href="../tls-certificates/">TLS Certificates</a>.</p>
 </tbody>
 </table>
 <p>Each slice documents its own services, images, and run commands in its colocated README:
-<code>dev/elasticsearch</code>, <code>dev/keycloak</code>, <code>dev/postgres</code>, <code>dev/observability</code>.</p>
+<code>dev/elasticsearch</code>, <code>dev/keycloak</code>, <code>dev/observability</code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Keycloak's port 8080 is development-only</p>
 <p>The plaintext 8080 listener exists so browser sign-in works in the dev stack; 8443 is the
@@ -6704,8 +6582,8 @@ reviewed change to every pin at once, approved by the maintainers team.</p>
 </tr>
 <tr>
 <td>PostgreSQL</td>
-<td>18 (Keycloak's database and the template example only — ADR 047)</td>
-<td><code>dev/postgres</code>, <code>dev/keycloak</code> compose image tags</td>
+<td>18 (Keycloak's database only — ADR 047)</td>
+<td><code>dev/keycloak</code> compose image tags</td>
 </tr>
 </tbody>
 </table>
@@ -6720,11 +6598,10 @@ when every pin above moves in one change.</p>
 <ul>
 <li><code>apps</code>: Contains the main applications and services that make up the workspace.</li>
 <li><code>dev</code>: Compose files and configuration for the supporting development infrastructure (Elasticsearch,
-  Keycloak, Postgres, observability stack).</li>
+  Keycloak, observability stack).</li>
 <li><code>docs</code>: Central location for all project documentation, guides, and reference materials.</li>
 <li><code>libs</code>: Shared libraries and utilities used by multiple applications within the monorepo.</li>
 <li><code>reports</code>: License and vulnerability report generators.</li>
-<li><code>schemas</code>: Avro event schemas used by the template's example library only.</li>
 <li><code>secrets</code>: Your personal SOPS/age key; this folder is excluded from version control.</li>
 <li><code>tools</code>: Custom automation (Nx plugins) that wires builds, containers, secrets, and docs into <code>Nx</code>.</li>
 </ul>

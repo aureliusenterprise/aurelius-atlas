@@ -957,10 +957,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1012,60 +1008,6 @@
             </label>
             <ul class="md-nav__list" data-md-scrollfix>
               
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../../api-reference/apps/aurelius-atlas-fastapi-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-fastapi-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../../api-reference/apps/aurelius-atlas-frontend-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-frontend-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
                 
               
                 
@@ -1348,10 +1290,6 @@
       
         
       
-        
-      
-        
-      
     
     
     
@@ -1520,33 +1458,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/python/aurelius-atlas-example/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-example
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../../../api-reference/libs/python/aurelius-atlas-lineage-model-client/" class="md-nav__link">
         
   
@@ -1636,33 +1547,6 @@
     
   
   aurelius-atlas-parity
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-                
-              
-                
-                  
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../../../api-reference/libs/python/aurelius-atlas-sdk/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-  aurelius-atlas-sdk
 
     
   </span>
@@ -6671,14 +6555,6 @@ in Sonar, not here.</p>
 <td>401, any-body-accepted (DV-67)</td>
 <td>a mock app: 405 and oversized body only</td>
 </tr>
-<tr>
-<td>fastapi-example</td>
-<td>102</td>
-<td>21</td>
-<td>—</td>
-<td>401/403/503, SSE cancellation, breaker</td>
-<td>template code: out of scope (see <a href="#scope-and-exemptions">Scope</a>)</td>
-</tr>
 </tbody>
 </table>
 <h3 id="python-libraries">Python libraries<a class="headerlink" href="#python-libraries" title="Permanent link">&para;</a></h3>
@@ -6742,16 +6618,6 @@ in Sonar, not here.</p>
 <td>18 / 14 / 12</td>
 <td>same shape; timeouts, 5xx, non-JSON 200 thin</td>
 </tr>
-<tr>
-<td>sdk</td>
-<td>29</td>
-<td><code>aws.py</code>, <code>msal.py</code>, <code>logger.py</code> have zero tests — template, out of scope</td>
-</tr>
-<tr>
-<td>example</td>
-<td>16</td>
-<td>template, out of scope</td>
-</tr>
 </tbody>
 </table>
 <h3 id="frontend">Frontend<a class="headerlink" href="#frontend" title="Permanent link">&para;</a></h3>
@@ -6789,7 +6655,7 @@ in Sonar, not here.</p>
 <td>97.0%</td>
 <td>97.3%</td>
 <td>Atlas-error body on 404/400 (two services)</td>
-<td><code>admin.service</code> / <code>entities.service</code>: <strong>zero</strong> failure tests</td>
+<td><code>admin.service</code>: <strong>zero</strong> failure tests</td>
 </tr>
 <tr>
 <td>observability</td>
@@ -6800,28 +6666,12 @@ in Sonar, not here.</p>
 <td>the branch hole is init/teardown; <code>opentelemetry-session.ts</code> has no own spec</td>
 </tr>
 <tr>
-<td>frontend-example</td>
-<td>67</td>
-<td>82.2%</td>
-<td>79.4%</td>
-<td>debounce, search error</td>
-<td><code>app.config.ts initialize()</code> untested; editor save/delete never fail</td>
-</tr>
-<tr>
 <td>webapp e2e</td>
 <td>32 × 3 browsers</td>
 <td>—</td>
 <td>—</td>
 <td>unauthenticated redirect, collector 401s, deep link, unknown route</td>
 <td>no server-500 → alert-panel proof; no logout round-trip</td>
-</tr>
-<tr>
-<td>example e2e</td>
-<td>14</td>
-<td>—</td>
-<td>—</td>
-<td>proxy 401s, zero results</td>
-<td>CRUD is happy-path-only against a DB-seeded stack</td>
 </tr>
 <tr>
 <td>dashboard</td>
@@ -6936,14 +6786,6 @@ in Sonar, not here.</p>
 <td>●● drawer/modal</td>
 <td>●●</td>
 </tr>
-<tr>
-<td>frontend-example</td>
-<td>○ editor never validated</td>
-<td>○</td>
-<td>○ one service</td>
-<td>○ debounce</td>
-<td>○</td>
-</tr>
 </tbody>
 </table>
 <p>The pattern: <strong>infrastructure failures are a strength</strong> (lineage-model,
@@ -6977,14 +6819,9 @@ libraries. These findings are ranked backlog, not drops:</p>
    tests but is opt-in; wiring it into the PR gate is an open call.</li>
 </ol>
 <h2 id="scope-and-exemptions">Scope and exemptions<a class="headerlink" href="#scope-and-exemptions" title="Permanent link">&para;</a></h2>
-<p>Template code stays out of the hardening scope (the trace check already
-excludes it; this review confirms the exemption):</p>
+<p>The template's example code left the workspace (ADR 050), so the exemptions
+this review first recorded for it are closed. One exemption remains:</p>
 <ul>
-<li><code>aurelius-atlas-fastapi-example</code> — the template's example app; broad tests
-  already, no parity contract, not trace-checked.</li>
-<li><code>aurelius-atlas-sdk</code>'s <code>aws.py</code>, <code>msal.py</code>, <code>logger.py</code> and
-  <code>aurelius-atlas-example</code> — template starting points (ADR 050 removed the
-  slices that used them).</li>
 <li><code>aurelius-atlas-dashboard</code> — vendored Apache Atlas source (DD-017); its
   regression net is the server e2e, by policy.</li>
 </ul>
