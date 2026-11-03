@@ -8705,6 +8705,15 @@ Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to str
 }
 ```
 
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
 #### model\_config
 
 ```

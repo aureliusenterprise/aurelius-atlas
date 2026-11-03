@@ -7154,6 +7154,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A reader's missing privilege should hide what it cannot read, not fail the list</td>
 <td>6.3</td>
 </tr>
+<tr>
+<td>DV-131</td>
+<td>Import/export</td>
+<td>An export or <code>importData</code> whose items include one named by GUID alone fails on the null type name when its admin audit counts the items by type, after the operation ran</td>
+<td>The item is counted in <code>resultCount</code> but not by type</td>
+<td>The operation succeeded; its audit should not turn it into an error</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 
