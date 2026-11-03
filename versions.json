@@ -53,5 +53,10 @@
     "version": "dependabot-pre_commit-https--github.com-astral-sh-ruff-pre-commit-0.17.3",
     "title": "dependabot-pre_commit-https--github.com-astral-sh-ruff-pre-commit-0.17.3",
     "aliases": []
+  },
+  {
+    "version": "chore-remove-template-example-stack",
+    "title": "chore-remove-template-example-stack",
+    "aliases": []
   }
 ]
