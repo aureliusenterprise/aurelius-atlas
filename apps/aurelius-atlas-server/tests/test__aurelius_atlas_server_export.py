@@ -3,9 +3,11 @@
 import io
 import json
 import zipfile
+from pathlib import Path
 
 import httpx2 as httpx
 import pytest
+from base_models import base_models
 from fake_issuer import FakeIssuer
 from fastapi import FastAPI
 
@@ -19,6 +21,12 @@ TYPES = {
         }
     ]
 }
+
+
+@pytest.fixture
+def models_dir(tmp_path: Path) -> Path:
+    """Atlas's base model: an export or import records its servers and audit entry (REP-02)."""
+    return base_models(tmp_path)
 
 
 async def entity(client: httpx.AsyncClient) -> str:
