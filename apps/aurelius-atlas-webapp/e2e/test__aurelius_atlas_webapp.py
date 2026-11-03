@@ -518,26 +518,29 @@ def test__burger_menu_opens_the_dropdown_with_the_logout_entry(authenticated: Pa
     expect(logout).to_be_visible()
 
 
-def test__details_skeleton_renders_at_the_deep_link(authenticated: Page, root_url: str) -> None:
-    """A direct visit to /search/details/<guid> renders the skeleton, localized (DET-07, DET-01).
+def test__details_screen_answers_a_404_deep_link_with_the_empty_state(authenticated: Page, root_url: str) -> None:
+    """A direct visit to /search/details/<unknown guid> renders the empty screen (DET-07, DET-13).
 
-    The URL is the screen's whole state (DD-186): the skeleton renders at
-    the deep link with no entity behind it — server 2.3 is planned — and
-    the chrome strings ride the bridge in both locales (DET-04).
+    The URL is the screen's whole state (DD-186): the screen fetches the
+    guid (DET-08), the server answers 404 (the store owns it, DET-03), and
+    the screen keeps the empty shape — the fallback title, zero rows — with
+    no alert for the 404 (DET-13: the empty state answers it, ALR-05's
+    silence). The chrome strings ride the bridge (DET-04).
     """
-    api_requests: list[str] = []
-    authenticated.on("request", lambda request: api_requests.append(request.url))
-
     authenticated.goto(urljoin(root_url, "/en-US/search/details/7a1b-2c3d"))
 
     expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entity type")
     expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Description")
     expect(authenticated.locator(".aurelius-details-nav .menu-label")).to_have_text("Details")
-    expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Key")
-    expect(authenticated.locator(".aurelius-details-properties tbody tr")).to_have_count(0)
-
-    # The skeleton fetches nothing (DET-02): the entity endpoint is 2.3's.
-    assert [url for url in api_requests if "/api/" in url] == []
+    # The description box shows the legacy placeholder line (DET-10, DD-321).
+    expect(authenticated.locator(".aurelius-details-description")).to_have_count(0)
+    expect(authenticated.locator(".aurelius-details-description-empty")).to_have_text("No description available.")
+    # Zero rows: the legacy shell's swap shows the placeholder in place of
+    # the table, headers included (DET-11).
+    expect(authenticated.locator(".aurelius-details-properties")).to_have_count(0)
+    expect(authenticated.locator(".aurelius-details-properties-empty")).to_have_text("No data available")
+    # The 404 adds no alert (DET-13): the bell carries no unread dot.
+    expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(0)
 
 
 def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: str) -> None:
@@ -546,7 +549,8 @@ def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: s
 
     expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entiteit type")
     expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Beschrijving")
-    expect(authenticated.locator(".aurelius-details-properties thead th").nth(0)).to_have_text("Sleutel")
+    expect(authenticated.locator(".aurelius-details-description-empty")).to_have_text("Geen beschrijving beschikbaar.")
+    expect(authenticated.locator(".aurelius-details-properties-empty")).to_have_text("Geen gegevens beschikbaar")
 
 
 def _seed_entities(page: Page, root_url: str, token: str, type_name: str, names: list[str]) -> dict[str, str]:
@@ -635,11 +639,12 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     for name in names:
         expect(rows.filter(has_text=name)).to_have_count(1)
 
-    # The card → details deep link (SRH-05): the clicked guid rides the URL.
+    # The card → details deep link (SRH-05): the clicked guid rides the URL,
+    # and the header renders the live entity the read answers (7.20, DET-09).
     clicked = names[0]
     rows.filter(has_text=clicked).locator("a").first.click()
     expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guids['-0']}$"))
-    expect(authenticated.locator("h1.aurelius-details-title")).to_be_visible()
+    expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(clicked)
 
     # The results URL is the screen's state (SRH-02): reload re-runs the
     # search from the URL alone and the hero shows the query.
@@ -650,6 +655,43 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     # SRH-10: the same screen in Dutch — the count word rides the bridge.
     authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={quote(query)}"))
     expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+resultaten"))
+
+
+def test__details_screen_shows_a_seeded_entity(authenticated: Page, root_url: str, user_token: str) -> None:
+    """A seeded entity opened at its details URL renders from the read (DET-14).
+
+    The 7.20 data spine: the screen fetches the guid (DET-08), the header
+    shows the seeded name and the type line (DET-09), and the description box
+    carries the seeded ``description`` — the Atlas model types carry their
+    text there (DET-10, DD-320). The properties table holds zero rows and the
+    count reads 0: ``name`` and ``qualifiedName`` ride the title (blacklisted
+    per DET-11), and ``description`` rides the box.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}details"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    # The seed helper carries qualifiedName/name only; set a description
+    # (EWR-15's attribute update) so the description box has its text — the
+    # Atlas model types carry the text in ``description`` (DET-10, DD-320).
+    updated = authenticated.request.put(
+        urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+        params={"name": "description"},
+        data=json.dumps("A seeded description."),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert updated.status == 200, updated.text()
+
+    authenticated.goto(urljoin(root_url, f"/en-US/search/details/{guid}"))
+
+    expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(name)
+    expect(authenticated.locator(".aurelius-details-type")).to_contain_text("DataSet")
+    expect(authenticated.locator(".aurelius-details-description")).to_have_text("A seeded description.")
+    expect(authenticated.locator(".aurelius-details-property-count")).to_have_text("0")
+    # Zero rows: the placeholder stands in for the whole table (DET-11).
+    expect(authenticated.locator(".aurelius-details-properties")).to_have_count(0)
+    expect(authenticated.locator(".aurelius-details-properties-empty")).to_have_text("No data available")
 
 
 def test__business_explore_lists_glossary_entities_without_a_url_query(

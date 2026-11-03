@@ -48,7 +48,11 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   strings to components that aren't in the catalogue — extend the fixtures and
   regenerate when the legacy app gains keys.
 - The legacy source for parity comparison is the clone at
-  `.scratch/aurelius` (commit-pinned; see 7-0 spec).
+  `.scratch/aurelius` — a developer's own clone (git-ignored, never
+  committed), pinned to commit `b057389828c10497dd52d9efd4c16547c282c005`
+  of `aureliusenterprise/aurelius` (clone it with
+  `git clone --filter=blob:none <github-url> .scratch/aurelius`); the 7-0
+  spec's porting rules cite it.
 
 ## Commands
 
