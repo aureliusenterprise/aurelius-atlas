@@ -1,7 +1,7 @@
 name: aurelius-atlas-lineage-model-e2e
 
 # The 8.2 chain (DD-200): the app under test, the real 8.1 data2model, and a
-# canned-file fixture Atlas. The fixture answers GET /v2/lineage/<guid> from
+# canned-file fixture Atlas. The fixture answers GET /api/atlas/v2/lineage/<guid>
 # files under fixtures/ (python http.server maps the URL path to the file), so
 # the app's upstream calls run over real HTTP between containers; the graph
 # then flows through the real extraction. The 5.1 slice replaces the fixture
@@ -11,7 +11,7 @@ services:
         image: dhi.io/python:3.14-alpine3.24
         # The base image's Cmd is `python3` with no entrypoint, so the command
         # carries the interpreter. http.server maps the URL path to the file
-        # path: GET /v2/lineage/<guid> serves fixtures/v2/lineage/<guid>, and an
+        # path: GET /api/atlas/v2/lineage/<guid> serves that file, and an
         # absent guid is a 404 — the app's 204 path (LM-05).
         command: ["python3", "-m", "http.server", "21000", "--directory", "/fixtures"]
         volumes:
@@ -22,7 +22,7 @@ services:
                     "CMD",
                     "python3",
                     "-c",
-                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/v2/lineage/00000000-0000-4000-8000-000000000001', timeout=5).close()",
+                    "import urllib.request; urllib.request.urlopen('http://127.0.0.1:21000/api/atlas/v2/lineage/00000000-0000-4000-8000-000000000001', timeout=5).close()",
                 ]
             interval: 5s
             timeout: 5s

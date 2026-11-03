@@ -7,12 +7,30 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 ## Layout
 
 - `aurelius_atlas_server_client/models.py` — admin DTOs and `AtlasErrorInfo`
-- `aurelius_atlas_server_client/lineage.py` — the `v2/lineage/{guid}` body
-  models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
+- `aurelius_atlas_server_client/lineage.py` — the `api/atlas/v2/lineage/{guid}`
+  body models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`admin` / `types` /
-  `search` / `get_lineage` / `with_token`), `AtlasClientError`, `KIND_PATHS`;
-  `search` mirrors `routes/discovery.py` (CL-13), GET parameters as query
-  parameters with the Java defaults (false, 0) left out
+  `entity` / `glossary` / `relationship` / `search` / `lineage` / `with_token`,
+  plus the `get_lineage` alias of `lineage.get`), `AtlasClientError`,
+  `KIND_PATHS`;
+  `search` mirrors `routes/discovery.py` (CL-13 by 8.4, plus CSD-01..CSD-06,
+  8.12 — the DSL search and the saved searches, the 204 of a missing profile
+  read as `None`; its Angular twin is `SearchService`, ACS-01..06 of 8.13,
+  where the 204 rides the body as `null` per DD-314), GET parameters as query
+  parameters with the Java defaults (false, 0) left out;
+  `entity` mirrors `routes/entity.py` (CLE-01..CLE-12, 8.9 — bodies from
+  `aurelius-atlas-model`, `attr:`/`attr_<n>:` parameters, the client's own
+  `DeleteType` per DD-311);
+  `glossary` mirrors `routes/glossary.py` (CLG-01..CLG-09, 8.10 — the `_page`
+  parameters as absence, the client's own `GlossarySort` per DD-312, the
+  import pair as bytes per DD-310);
+  `relationship` mirrors `routes/relationship.py` (CLR-01..CLR-04, 8.11);
+  `admin` mirrors `routes/admin.py` (the five 8.4 reads plus CLW-01..CLW-07,
+  8.11 — the export/import ZIP pair as bytes per DD-310, the import's
+  `request` part as a form field per DD-313);
+  `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8)
+- `specs/<increment>/spec.md` — the per-module coverage matrices (DD-307): a
+  change to a server `routes/*.py` updates its spec's matrix in the same PR.
 
 ## Wiring Checklist
 
@@ -22,8 +40,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   (the client exposes no close, DD-205); the token
   source is `str | Callable[[], str]` — a route forwarding the caller's token
   uses `with_token(token)` per request (shares the pool, closes nothing).
-- The `get_lineage` server route lands with 5.1; the paths here already mirror
-  it (`LINEAGE_ROOT`).
+- The roots mirror the server's mounted prefixes, lineage included
+  (`LINEAGE_ROOT = api/atlas/v2/lineage`, CL-60, DD-308). The 8.2 app's
+  unit/scenario stubs and its e2e `fixture-atlas` answer that path.
 
 ## Conventions
 
@@ -31,10 +50,13 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   bearer on every request (CL-03); `AtlasClientError` on >=400 with
   `status_code` and `.info` (CL-04);
   transport failures propagate as `httpx2` errors (CL-05).
-- `routes/admin.py` / `routes/types.py` / `routes/discovery.py` of the server
-  are the source of truth for paths — mirror changes here in the same PR
-  (the server's `e2e/test__aurelius_atlas_server_search_e2e.py` proves the
-  discovery paths against the container).
+- `routes/admin.py` / `routes/types.py` / `routes/entity.py` /
+  `routes/glossary.py` / `routes/relationship.py` / `routes/discovery.py` /
+  `routes/lineage.py` of the server are the source of truth for paths — mirror
+  changes here, and the module spec's matrix, in the
+  same PR (the server's
+  `e2e/test__aurelius_atlas_server_search_e2e.py` proves the discovery paths
+  against the container).
 
 ## Commands
 

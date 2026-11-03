@@ -35,8 +35,8 @@ collaborators, routes serve, `app.py` composes.
   `breaker_fail_max`/`breaker_reset_timeout`, LM-15 — the auth library's issuer-breaker shape)
 - `aurelius_atlas_lineage_model/lineage.py` — the 12-column flattener
   (`flatten_relations`, LM-02/LM-03), the legacy `LINEAGE_RULES` document
-  verbatim (LM-04); re-exports the `v2/lineage` contract models (the client
-  lib's, 8.4) and `UpstreamError` so their import paths stay
+  verbatim (LM-04); re-exports the `api/atlas/v2/lineage` contract models (the
+  client lib's, 8.4) and `UpstreamError` so their import paths stay
 - `aurelius_atlas_lineage_model/__main__.py` — the uvicorn entry point (port 21002)
 - `scenarios/` — the parity scenario, read from the Aurelius source; `scenarios/fixtures/`
   are generated (scratch tool, not CI) and committed: `graph.lineage.json` (the canned
@@ -92,8 +92,9 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
   liveness healthcheck.
 - `e2e/docker-compose.yaml` — the 8.2 chain (DD-200): this app + the **real** data2model
   image (certs mounted from its project) + a fixture Atlas (`python -m http.server` over
-  `e2e/fixtures/`, where `v2/lineage/<guid>` is the canned graph, named for the fixed
-  UUID guid the scenario fixtures carry (DV-78)); the collector on the observability network, Keycloak through
+  `e2e/fixtures/`, where `api/atlas/v2/lineage/<guid>` is the canned graph, named for
+  the fixed UUID guid the scenario fixtures carry (DV-78, DD-308)); the collector on
+  the observability network, Keycloak through
   `keycloak.localhost:host-gateway`.
 
 ## Helm chart

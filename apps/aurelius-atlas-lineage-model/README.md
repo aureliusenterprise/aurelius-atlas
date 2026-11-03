@@ -7,7 +7,7 @@ legacy lineage graph drew, ported from the Aurelius `m4i-lineage-model` service
 ([ADR 055](../../docs/architecture/adr/055-the-lineage-chain-is-a-named-data-surface.md)).
 
 Introduced by increment 8.2. The app is a proxy with a flattener: it calls the
-Atlas `v2/lineage` feed and the 8.1 data2model API, forwarding the caller's
+Atlas `api/atlas/v2/lineage` feed and the 8.1 data2model API, forwarding the caller's
 bearer token to both, and answers the extraction verbatim
 ([spec](specs/8-2-lineage-model-api/spec.md)).
 Each upstream is guarded by its own circuit breaker (increment 8.5, DV-77):

@@ -13,16 +13,86 @@ stay separated from the Atlas surface. `src/index.ts` re-exports everything;
 consumers import from the package root only, never a subfolder path.
 
 - `src/lib/atlas/type-defs.service.ts` — `TypeDefsService` (`/atlas/v2/types/**`, TYR-01..10)
-- `src/lib/atlas/search.service.ts` — `SearchService` (`/atlas/v2/search/**`, APC-11:
-  the basic/attribute/fulltext/quick searches and suggestions of server 4.1/4.2;
-  GET parameters drop the Java defaults, as the routes read an absent parameter)
-- `src/lib/atlas/admin.service.ts` — `AdminService` (`/atlas/admin/**`, ADM-01/02/05)
+- `src/lib/atlas/search.service.ts` — `SearchService` (`/atlas/v2/search/**`, APC-11,
+  ACS-01..06): the basic/attribute/fulltext/quick searches, the suggestions, the
+  DSL search and the seven saved-search routes of server 4.1–4.5;
+  GET parameters drop the Java defaults, as the routes read an absent parameter;
+  `getSavedSearches` keeps the server's 204 as a `null` body (DD-314)
+- `src/lib/atlas/admin.service.ts` — `AdminService` (`/atlas/admin/**`, ADM-01..05,
+  AAC-01..07): version/status/session, the liveness/readiness texts, the patch
+  records, purge, export/import, and the task list — the twin of
+  `AtlasClient.admin` (CL-11, CLW-01..06); `export` answers the
+  `{ body, contentType }` pair of DD-315 where the twin returns a tuple
 - `src/lib/atlas/atlas-entities.service.ts` — `AtlasEntitiesService`
-  (`/atlas/v2/entity/**`, DET-03 — the 2.3+7.6 wiring's client, DD-187)
+  (`/atlas/v2/entity/**`, DET-03, AEN-01..07, AEW-01..06, ACL-01..09 — the
+  2.3+7.6 wiring's client, DD-187): all thirty-seven routes of
+  `routes/entity.py`. The eight read/audit routes (8.17) — guid and
+  unique-attribute reads (`attr:<name>`, flags only when true), the header
+  siblings, the bulk reads (repeated `guid`; `attr_<n>:<name>` 1-based,
+  DV-19), `getAuditEvents` (drops only unset fields — a 0 `count` travels,
+  CLE-10), `getChangedClassifications` (`tagUpdateStartTime`); the seven
+  write/delete routes (8.18) — `createOrUpdate…`,
+  `partialUpdateAttribute` (the bare JSON value as the body, `name` param
+  only when given, EWR-15), the three deletes (`deleteType` only when
+  chosen, EDL-04); the twenty-two classification/business-metadata/label
+  routes (8.19) — `…Classifications…` (bare array bodies, `AtlasClassifications`
+  PList read), `associateClassification`, `setClassifications` (the DV-36
+  summary array), the business-metadata pair with its `{<bm>: <attrs>}`
+  bodies (`isOverwrite` only when true; the DELETE bodies ride
+  `HttpClient.request` — the typed `delete` takes none), the template
+  download (`AtlasExportAnswer` shape, DD-315) and file import
+  (`BulkImportResponse`), and the six label routes (POST set / PUT add /
+  DELETE remove, CLE-06). The twin of `AtlasClient.entity`
+  (CLE-01..CLE-12)
+- `src/lib/atlas/lineage.service.ts` — `LineageService` (`/atlas/v2/lineage/**`,
+  ALN-01..04): the three `LineageREST` routes — the graph, its on-demand form,
+  and the unique-attribute lookup; `depth`/`direction` always go as query
+  parameters (the twin's shape, not the `searchParams()` absence rule)
+- `src/lib/atlas/relationship.service.ts` — `RelationshipService`
+  (`/atlas/v2/relationship/**`, AREL-01..04): create/update (bare
+  `AtlasRelationship` both ways), the always-wrapped read
+  (`AtlasRelationshipWithExtInfo`, REL-06), and the soft/hard delete
+  (`deleteType` only when chosen)
+- `src/lib/atlas/glossary.service.ts` — `GlossaryService`
+  (`/atlas/v2/glossary/**`, AGL-01..07, AGT-01..06, AGC-01..04): all
+  thirty-two routes of `GlossaryREST` — the thirteen glossary routes (8.20),
+  the eleven term routes (8.21), and the eight category routes (8.22). The
+  paged list, the paged category/term reads, `getAssignedEntities`, and
+  `getCategoryTerms` send the server's paging defaults as absence
+  (`GlossaryPage`, CLG-02: `limit` -1 and `offset` 0 and `sort` ASC are
+  absences; an explicit `-1` travels); create/update send the bare model
+  (the server grafts the path guid, CLG-08); `partialUpdate…` sends the bare
+  attribute map (an empty map is the caller's bug — refused client-side, as
+  in the twin, CLG-03); `getRelatedTerms`/`getRelatedCategories` answer the
+  keyed relation map (CLG-07); the assignment trio (POST/DELETE/PUT) sends
+  the bare `AtlasRelatedObjectId[]` and answers 204 (the DELETE body rides
+  `HttpClient.request`, CLG-04); the template download answers the
+  `AtlasExportAnswer` pair (DD-315) and the import posts a `file` form part
+  (`BulkImportResponse`); the deletes answer 204 → `void`. The anchors are
+  the server's check (CLG-05). The twin of `AtlasClient.glossary`
+  (CLG-01..CLG-09)
 - `src/lib/atlas/atlas-typedef.ts` — the typedef DTO cluster with the server's camelCase
   wire names (APC-03); `src/lib/atlas/atlas-search.ts` — the search DTO cluster
   (`SearchParameters`, `AtlasSearchResult`, `AtlasQuickSearchResult`, …);
-  `src/lib/atlas/atlas-entity.ts` — the entity DTOs; `src/lib/atlas/atlas-error.ts` — the Atlas
+  `src/lib/atlas/atlas-profile.ts` — the saved-search DTOs (`AtlasUserSavedSearch`,
+  `SavedSearchType`, SVS-01); `src/lib/atlas/atlas-entity.ts` — the entity DTOs
+  (with `AtlasObjectId`); `src/lib/atlas/atlas-impexp.ts` — the export/import DTOs
+  and `AtlasExportAnswer` (DD-315); `src/lib/atlas/atlas-mutation.ts` —
+  `EntityMutationResponse` (with `DeleteType`, DD-311's client-side vocabulary);
+  `src/lib/atlas/atlas-patches.ts` / `atlas-tasks.ts` —
+  the patch/task DTOs;
+  `src/lib/atlas/atlas-lineage.ts` — the lineage DTOs
+  (`AtlasLineageInfo`, `LineageOnDemandConstraints`, …);
+  `src/lib/atlas/atlas-relationship.ts` — the relationship DTOs
+  (`AtlasRelationship`, `AtlasRelationshipWithExtInfo`);
+  `src/lib/atlas/atlas-audit.ts` — the entity-audit DTOs
+  (`EntityAuditEventV2`, `EntityAuditActionV2`, `EntityAuditType`);
+  `src/lib/atlas/atlas-glossary.ts` — the glossary DTOs (`AtlasGlossary`,
+  `AtlasGlossaryCategory`, `AtlasGlossaryTerm`, `AtlasGlossaryExtInfo`,
+  `AtlasRelatedObjectId`, the header types, `GlossarySort`);
+  `AtlasRelatedTermHeader` itself stays in `atlas-entity.ts` — one wire type,
+  both uses (APC-03);
+  `src/lib/atlas/atlas-error.ts` — the Atlas
   error body (SRV-04, APC-04), shared with `entities.service.ts`
 - `src/lib/entities.service.ts` — `EntitiesService` (HTTP + SSE) and the example API
   types — the FastAPI example's client, outside the Atlas folder by design;
@@ -39,9 +109,43 @@ consumers import from the package root only, never a subfolder path.
   and `libs/python/aurelius-atlas-model` **by hand** — when the Python model changes,
   update `atlas-typedef.ts` / `atlas-search.ts` too (increments 7.3, 7.4's client
   half per DD-217, spec `libs/angular/aurelius-atlas-data-access/specs/7-3-api-client-auth/spec.md`).
-- The search wire contract has a Python twin: `AtlasClient.search` (CL-13) in
-  `libs/python/aurelius-atlas-server-client` reads the same routes and models —
-  change the endpoints on both sides in the same PR.
+- The search wire contract has a Python twin: `AtlasClient.search` (CL-13,
+  CSD-01..06) in `libs/python/aurelius-atlas-server-client` reads the same
+  routes and models — change the endpoints on both sides in the same PR. The
+  saved-searches 204 reads as `None` on the Python side and a `null` body here
+  (CSD-03 ↔ ACS-03, DD-314).
+- The lineage wire contract has the same twin: `AtlasClient.lineage` (CL-61..63)
+  in `libs/python/aurelius-atlas-server-client` covers the same three routes of
+  `routes/lineage.py` — change them on both sides in the same PR. Both twins
+  always send `depth` and `direction` on the two GET routes (ALN-01).
+- The relationship wire contract has the same twin: `AtlasClient.relationship`
+  (CLR-01..04) covers the same four routes of `routes/relationship.py` —
+  change them on both sides in the same PR. `getById` always answers the
+  `AtlasRelationshipWithExtInfo` wrapper on both sides (REL-06).
+- The admin wire contract has the same twin: `AtlasClient.admin` (CL-11,
+  CLW-01..06) covers the same twelve routes of `routes/admin.py` — change them
+  on both sides in the same PR. `export` returns `(bytes, content-type)` there
+  and answers the typed `AtlasExportAnswer` pair here (CLW-03 ↔ AAC-04,
+  DD-315). On the plain-text health routes the twin parses the Atlas error
+  body from the raw bytes (CL-04); here a text request keeps its error body as
+  text and the caller parses it (AAC-01).
+- The entity wire contract has the same twin: `AtlasClient.entity`
+  (CLE-01..CLE-12) and `AtlasEntitiesService` cover all thirty-seven routes
+  of `routes/entity.py` (8.17/8.18/8.19) — change a route on both sides in
+  the same PR. Shapes differ by platform, not by choice: the audit read
+  takes one `EntityAuditQuery` object here and six keyword parameters in the
+  twin (both drop only unset fields); a DELETE with a body rides
+  `HttpClient.request` here (the typed `delete` takes none); the business-
+  metadata template answers the `AtlasExportAnswer` pair here and a
+  `(bytes, content-type)` tuple there (DD-315); the partial update's optional
+  `name` is the twin's middle parameter moved last (AEW-03's note).
+- The glossary wire contract has the same twin: `AtlasClient.glossary`
+  (CLG-01..CLG-09) and `GlossaryService` cover `routes/glossary.py` in three
+  increments (8.20 the glossaries, 8.21 terms, 8.22 categories) — change a
+  route on both sides in the same PR. The paging rule is shared: a glossary
+  read's default (`limit` -1, `offset` 0, `sort` ASC) travels as absence and
+  an explicit value always travels (CLG-02). `AtlasRelatedTermHeader` is one
+  type on each side, not two (APC-03).
 - The example-backend contract: endpoints (`/entities/*`, `/entities/sse`),
   `Envelope<T>`, and `PaginatedResponse<T>` must match
   `apps/aurelius-atlas-fastapi-example`.

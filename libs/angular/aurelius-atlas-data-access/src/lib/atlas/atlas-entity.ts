@@ -17,6 +17,17 @@
 /** An entity's lifecycle state (`AtlasEntity.STATUS`, `EntityStatus`). */
 export type AtlasEntityStatus = "ACTIVE" | "DELETE_PENDING" | "PURPOSED_DELETE" | "INPUT_PHASE_COMPLETE";
 
+/**
+ * An entity reference (`AtlasObjectId`): its guid, or its type name and the
+ * unique attribute values that identify it. The export request's
+ * `itemsToExport` is a list of these (EXP-01); the entity routes take them too.
+ */
+export type AtlasObjectId = {
+    guid?: string | null;
+    typeName?: string | null;
+    uniqueAttributes?: Record<string, unknown> | null;
+};
+
 /** A classification on an entity (`AtlasClassification`). */
 export type AtlasClassification = {
     /** The entity attribute the classification is attached to, if any. */
@@ -25,8 +36,15 @@ export type AtlasClassification = {
     typeName?: string | null;
     /** The classified entity's guid. */
     entityGuid?: string | null;
+    entityStatus?: AtlasEntityStatus | null;
+    /** Whether the classification propagates to the entity's relationships. */
+    propagate?: boolean | null;
+    /** How the classification propagates to other propagated classifications. */
     propagatePropagation?: "NONE" | "ONE_TO_TWO" | "TWO_TO_ONE" | "BOTH" | null;
     removePropagation?: "NONE" | "ONE_TO_TWO" | "TWO_TO_ONE" | "BOTH" | null;
+    removePropagationsOnEntityDelete?: boolean | null;
+    /** The periods in which the classification applies (ACL-09, ENT-13). */
+    validityPeriods?: (TimeBoundary | null)[] | null;
     /** Epoch milliseconds. */
     classifyTime?: number | null;
     /** Epoch milliseconds; null while the classification is active. */
@@ -35,11 +53,71 @@ export type AtlasClassification = {
     attributes?: Record<string, unknown> | null;
 };
 
-/** A glossary term header, as carried in relationship attributes (`AtlasRelatedTermHeader`). */
-export type AtlasRelatedTermHeader = {
-    guid?: string | null;
-    displayText?: string | null;
+/**
+ * `TimeBoundary`: one validity period of a classification (ENT-13). The times
+ * are strings in Java's `yyyy/MM/dd HH:mm:ss`; `timeZone` is a Java zone id or
+ * null for the server's local time.
+ */
+export type TimeBoundary = {
+    startTime?: string | null;
+    endTime?: string | null;
+    timeZone?: string | null;
 };
+
+/** The order of a `PList` (`SearchFilter.SortType`). */
+export type SortType = "NONE" | "ASC" | "DESC";
+
+/**
+ * `AtlasClassification.AtlasClassifications`: a `PList` of classifications
+ * (CLS-01) — the body of `GET /v2/entity/guid/{guid}/classifications`
+ * (ACL-01). The paging fields carry the server's whole-list answer: the
+ * `startIndex`/`pageSize`/`totalCount` of the page read.
+ */
+export type AtlasClassifications = {
+    list?: AtlasClassification[] | null;
+    startIndex?: number;
+    pageSize?: number;
+    totalCount?: number;
+    sortBy?: string | null;
+    sortType?: SortType | null;
+};
+
+/**
+ * `ClassificationAssociateRequest`: one classification to attach to many
+ * entities, by GUID or by type and unique-attribute sets (CLS-01, CLS-07,
+ * ACL-04).
+ */
+export type ClassificationAssociateRequest = {
+    classification?: AtlasClassification | null;
+    entityGuids?: string[] | null;
+    entitiesUniqueAttributes?: Record<string, unknown>[] | null;
+    entityTypeName?: string | null;
+};
+
+/**
+ * A glossary term and the attributes of a relationship to it — the header
+ * glossaries, categories and terms carry, and the entity's
+ * `relationshipAttributes.meanings.meaning` list (`AtlasRelatedTermHeader`,
+ * glossary.py). The glossary server fills `termGuid`; a relationship-attribute
+ * usage carries `guid` instead — both forms are optional so one type serves
+ * both, kept in step with the Python model by hand (APC-03).
+ */
+export type AtlasRelatedTermHeader = {
+    /** The relationship-attribute form's guid; the glossary form uses `termGuid`. */
+    guid?: string | null;
+    termGuid?: string | null;
+    relationGuid?: string | null;
+    displayText?: string | null;
+    description?: string | null;
+    expression?: string | null;
+    steward?: string | null;
+    source?: string | null;
+    status?: AtlasTermRelationshipStatus | null;
+    qualifiedName?: string | null;
+};
+
+/** How far a term's relationship to another term got (`AtlasTermRelationshipStatus`). */
+export type AtlasTermRelationshipStatus = "DRAFT" | "ACTIVE" | "DEPRECATED" | "OBSOLETE" | "OTHER";
 
 /** The `meanings` value of `relationshipAttributes` (`AtlasRelatedTerms`). */
 export type AtlasRelatedTerms = {
@@ -123,10 +201,23 @@ export type AtlasEntity = {
  */
 export type AtlasEntityWithExtInfo = {
     entity?: AtlasEntity | null;
+    /** The entities the main entity refers to, keyed by guid (ENT-10, ERD-02 — AEN-01). */
+    referredEntities?: Record<string, AtlasEntity> | null;
     reftypeDefs?: unknown[] | null;
     structDefs?: unknown[] | null;
     classificationDefs?: unknown[] | null;
     guidance?: string | null;
     /** The page size of the entity's classification list, when paged. */
     totalNumberOfClassifications?: number | null;
+};
+
+/**
+ * `AtlasEntitiesWithExtInfo`: the body of a bulk read or write (ENT-10) —
+ * `entities` and `referredEntities`, the entities they refer to, keyed by guid.
+ * `GET /v2/entity/bulk` and the bulk unique-attribute read answer it (ERD-01,
+ * ERD-08); the entity writes (8.18) send it.
+ */
+export type AtlasEntitiesWithExtInfo = {
+    entities?: AtlasEntity[] | null;
+    referredEntities?: Record<string, AtlasEntity> | null;
 };

@@ -1,6 +1,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
+import type { AtlasUserSavedSearch } from "./atlas-profile";
 import {
     AtlasQuickSearchResult,
     AtlasSearchResult,
@@ -24,6 +25,13 @@ describe("SearchService", () => {
         aggregationMetrics: { __typeName: [{ name: "hive_table", count: 2 }] },
     };
     const suggestions: AtlasSuggestionsResult = { prefixString: "pi", suggestions: ["PII"] };
+    const savedSearch: AtlasUserSavedSearch = {
+        guid: "g-9",
+        ownerName: "aurelius-writer",
+        name: "my_tables",
+        searchType: "BASIC",
+        searchParameters: { query: "table" },
+    };
 
     beforeEach(() => {
         TestBed.configureTestingModule({
@@ -188,6 +196,150 @@ describe("SearchService", () => {
                 r.params.keys().length === 1,
         );
         req.flush(suggestions);
+    });
+
+    it("searchUsingDsl sends the given parameters and drops the Java defaults (ACS-01, DSE-01)", () => {
+        service.searchUsingDsl({ query: "from t", typeName: "Asset", classification: "PII", limit: 5 }).subscribe();
+
+        const req = httpMock.expectOne(
+            (r) =>
+                r.url === "/api/atlas/v2/search/dsl" &&
+                r.params.get("query") === "from t" &&
+                r.params.get("typeName") === "Asset" &&
+                r.params.get("classification") === "PII" &&
+                r.params.get("limit") === "5" &&
+                r.params.keys().length === 4,
+        );
+        expect(req.request.method).toBe("GET");
+        req.flush({ ...searchResult, queryType: "DSL" });
+    });
+
+    it("searchUsingDsl with no parameters sends none; the server's length error surfaces typed (ACS-01, APC-04)", () =>
+        new Promise<void>((done, fail) => {
+            service.searchUsingDsl().subscribe({
+                error: (error) => {
+                    expect(error.status).toBe(400);
+                    expect(error.error.errorCode).toBe("ATLAS-400-00-008");
+                    done();
+                },
+                next: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/v2/search/dsl");
+            expect(req.request.params.keys()).toEqual([]);
+            req.flush(
+                { errorCode: "ATLAS-400-00-008", errorMessage: "The query length is more than 4096." },
+                { status: 400, statusText: "Bad Request" },
+            );
+        }));
+
+    it("addSavedSearch posts the saved search as body (ACS-02, SVS-02)", () =>
+        new Promise<void>((done, fail) => {
+            service.addSavedSearch(savedSearch).subscribe({
+                next: (saved) => {
+                    expect(saved).toEqual(savedSearch);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/v2/search/saved");
+            expect(req.request.method).toBe("POST");
+            expect(req.request.body).toEqual(savedSearch);
+            req.flush(savedSearch);
+        }));
+
+    it("updateSavedSearch puts the saved search as body (ACS-02, SVS-03)", () => {
+        service.updateSavedSearch(savedSearch).subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/search/saved");
+        expect(req.request.method).toBe("PUT");
+        expect(req.request.body).toEqual(savedSearch);
+        req.flush(savedSearch);
+    });
+
+    it("getSavedSearches answers the list with no parameters (ACS-03, SVS-04)", () =>
+        new Promise<void>((done, fail) => {
+            service.getSavedSearches().subscribe({
+                next: (saved) => {
+                    expect(saved).toEqual([savedSearch]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/v2/search/saved");
+            expect(req.request.method).toBe("GET");
+            expect(req.request.params.keys()).toEqual([]);
+            req.flush([savedSearch]);
+        }));
+
+    it("getSavedSearches sends the user parameter (ACS-03, SVS-04)", () => {
+        service.getSavedSearches("aurelius-reader").subscribe();
+
+        const req = httpMock.expectOne(
+            (r) =>
+                r.url === "/api/atlas/v2/search/saved" &&
+                r.params.get("user") === "aurelius-reader" &&
+                r.params.keys().length === 1,
+        );
+        req.flush([]);
+    });
+
+    it("getSavedSearches keeps the 204 of no profile as null, not [] (ACS-03, DD-314)", () =>
+        new Promise<void>((done, fail) => {
+            service.getSavedSearches().subscribe({
+                next: (saved) => {
+                    expect(saved).toBeNull();
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/v2/search/saved");
+            req.flush(null, { status: 204, statusText: "No Content" });
+        }));
+
+    it("getSavedSearch reads by encoded name with the optional user (ACS-04, SVS-04)", () => {
+        service.getSavedSearch("my tables", "aurelius-reader").subscribe();
+
+        const req = httpMock.expectOne(
+            (r) => r.url === "/api/atlas/v2/search/saved/my%20tables" && r.params.get("user") === "aurelius-reader",
+        );
+        expect(req.request.method).toBe("GET");
+        req.flush(savedSearch);
+    });
+
+    it("deleteSavedSearch DELETEs by guid and answers 204 (ACS-04, SVS-05)", () =>
+        new Promise<void>((done, fail) => {
+            service.deleteSavedSearch("g-9").subscribe({
+                next: () => done(),
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/v2/search/saved/g-9");
+            expect(req.request.method).toBe("DELETE");
+            req.flush(null, { status: 204, statusText: "No Content" });
+        }));
+
+    it("executeSavedSearchByName runs the named search, user optional (ACS-05, SVS-06)", () => {
+        service.executeSavedSearchByName("my_tables", "aurelius-reader").subscribe();
+
+        const req = httpMock.expectOne(
+            (r) =>
+                r.url === "/api/atlas/v2/search/saved/execute/my_tables" && r.params.get("user") === "aurelius-reader",
+        );
+        expect(req.request.method).toBe("GET");
+        req.flush(searchResult);
+    });
+
+    it("executeSavedSearchByGuid runs the search of the guid, without a user (ACS-05, SVS-06)", () => {
+        service.executeSavedSearchByGuid("g-9").subscribe();
+
+        const req = httpMock.expectOne("/api/atlas/v2/search/saved/execute/guid/g-9");
+        expect(req.request.method).toBe("GET");
+        expect(req.request.params.keys()).toEqual([]);
+        req.flush(searchResult);
     });
 
     it("a failed call carries the typed Atlas error body (APC-04)", () =>

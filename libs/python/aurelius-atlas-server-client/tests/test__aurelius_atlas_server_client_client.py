@@ -83,14 +83,14 @@ async def test__an_empty_token_travels_unauthenticated(recorder: Recorder) -> No
     rules=["CL-11", "CL-12", "CL-03"],
 )
 async def test__get_lineage_reads_the_feed_with_depth_and_direction(recorder: Recorder) -> None:
-    """``GET /v2/lineage/{guid}?depth&direction`` (the feed 5.1 serves; 8.2 is its first caller)."""
+    """``GET /api/atlas/v2/lineage/{guid}?depth&direction`` (the feed 5.1 serves; 8.2 is its first caller)."""
     recorder.answer(200, LINEAGE)
 
     await _client(recorder).get_lineage(E_1, depth=5, direction="INPUT")
 
     sent = recorder.sent()
     assert sent.method == "GET"
-    assert sent.url.path == f"/v2/lineage/{E_1}"
+    assert sent.url.path == f"/api/atlas/v2/lineage/{E_1}"
     assert dict(sent.url.params) == {"depth": "5", "direction": "INPUT"}
 
 
@@ -105,7 +105,7 @@ async def test__the_base_url_passes_through_as_given(recorder: Recorder) -> None
 
     await AtlasClient(http, "tok").get_lineage(E_1)
 
-    assert recorder.sent().url.path == f"/v2/lineage/{E_1}"
+    assert recorder.sent().url.path == f"/api/atlas/v2/lineage/{E_1}"
 
 
 @pytest.mark.covers("aurelius_atlas_server_client.client.AtlasClient.get_lineage", rules=["CL-04"])
@@ -127,10 +127,13 @@ async def test__get_lineage_raises_with_the_status_of_the_answer(recorder: Recor
     "aurelius_atlas_server_client.client.AdminApi.session",
     "aurelius_atlas_server_client.client.AdminApi.liveness",
     "aurelius_atlas_server_client.client.AdminApi.readiness",
-    rules=["CL-11", "CL-10", "CL-03"],
+    rules=["CL-11", "CL-10", "CL-03", "CLW-07"],
 )
 async def test__the_admin_resource_answers_the_server_routes(recorder: Recorder) -> None:
-    """The five admin calls, their paths mirroring ``routes/admin.py``, bearer on each (ADM-01..ADM-05)."""
+    """The five admin calls, their paths mirroring ``routes/admin.py``, bearer on each (ADM-01..ADM-05).
+
+    8.11's CLW-07: these five stay as 8.4 shipped them while the seven writes join the class.
+    """
     recorder.answer(200, VERSION)
     recorder.answer(200, {"Status": "ACTIVE"})
     recorder.answer(200, {"userName": "analyst", "groups": [], "timezones": ["UTC"], "_csrfToken": "t"})

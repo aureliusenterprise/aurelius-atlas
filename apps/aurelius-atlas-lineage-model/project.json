@@ -15,16 +15,6 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_lineage_model",
     "tags": [],
     "targets": {
-        "e2e": {
-            "dependsOn": [
-                { "target": "decrypt" },
-                { "dependencies": true, "target": "decrypt" },
-                { "target": "certgen" },
-                { "target": "docker-build" },
-                { "dependencies": true, "target": "up" },
-                { "projects": ["aurelius-atlas-data2model"], "target": "docker-build" }
-            ]
-        },
         "serve": {
             "continuous": true,
             "dependsOn": [
