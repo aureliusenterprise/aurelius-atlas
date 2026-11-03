@@ -18,7 +18,7 @@ from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
-from aurelius_atlas_core.typedef_audit_listener import TypeDefAuditListener
+from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.atlas_audit import AuditOperation
@@ -129,8 +129,7 @@ def create_app(
             )
             await typedef_store.load()
             admin_audits = AtlasAuditService(entity_store)
-            typedef_store.change_listeners.append(TypeDefAuditListener(admin_audits))
-            await ModelLoader(typedef_store).load(settings.models_dir)
+            await _load_models(typedef_store, admin_audits, settings.models_dir)
             await entity_store.recover()
             app.state.typedef_store = typedef_store
             app.state.entity_store = entity_store
@@ -236,6 +235,18 @@ def _authentication(
     """The verifier, the sign-in client and the sessions (AUT-02 to AUT-06)."""
     verifier = auth if auth is not None else build_auth(settings)
     return verifier, build_oidc(settings, verifier, oidc_http), SessionStore(settings.session_timeout_seconds)
+
+
+async def _load_models(store: TypedefStore, audits: AtlasAuditService, models_dir: Path) -> None:
+    """Load the models with their typedef changes audited, the start's writes held to one write (ADA-03, DD-316).
+
+    One write per change adds a store refresh each to the start, minutes for Atlas's whole catalogue — long
+    enough for the container's health check to give up before the server answers.
+    """
+    boot_audits = BufferedTypeDefAuditListener(audits)
+    store.change_listeners.append(boot_audits)
+    await ModelLoader(store).load(models_dir)
+    await boot_audits.flush()
 
 
 async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:

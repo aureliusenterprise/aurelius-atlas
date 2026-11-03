@@ -6,13 +6,20 @@ Read from Apache Atlas 2.4.0's ``AtlasAuditService``, ``AtlasAuditEntryDTO``, ``
 
 import json
 import logging
+from collections.abc import Sequence
 
 import pytest
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditEntryDTO, AtlasAuditService, entry_of
 from aurelius_atlas_core.authorization import AtlasPrivilege, Granted
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
-from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_store import (
+    ClassificationChange,
+    EntityChange,
+    EntityStore,
+    RelationshipChange,
+    TaskChange,
+)
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.request_context import RequestContext, bound, current, current_user
@@ -21,7 +28,7 @@ from aurelius_atlas_core.testing.memory import (
     MemoryEntityDocuments,
     MemoryTypedefDocument,
 )
-from aurelius_atlas_core.typedef_audit_listener import TypeDefAuditListener
+from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener, TypeDefAuditListener
 from aurelius_atlas_core.typedef_change_listener import ChangedTypeDefs
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.atlas_audit import AtlasAuditEntry, AuditOperation, AuditSearchParameters
@@ -57,6 +64,24 @@ async def search(store: EntityStore, **parameters: object) -> list[AtlasAuditEnt
 def criterion(name: str, value: str, operator: str = "eq") -> dict[str, str]:
     """A filter criterion."""
     return {"attributeName": name, "operator": operator, "attributeValue": value}
+
+
+def _count_store_writes(store: EntityStore) -> list[int]:
+    """How many entities each write of ``store`` carries, in call order (DD-316)."""
+    writes: list[int] = []
+    written = store.write
+
+    async def counting(
+        changes: Sequence[EntityChange],
+        relationship_changes: Sequence[RelationshipChange] = (),
+        classification_changes: Sequence[ClassificationChange] = (),
+        task_changes: Sequence[TaskChange] = (),
+    ) -> None:
+        writes.append(len(changes))
+        await written(changes, relationship_changes, classification_changes, task_changes)
+
+    store.write = counting
+    return writes
 
 
 @pytest.mark.covers(
@@ -223,6 +248,57 @@ async def test__each_typedef_change_is_audited_by_kind() -> None:
     assert table is not None
     await listener.on_change(ChangedTypeDefs(created=[table], updated=[table, table]))
     assert len(await search(store, limit=50)) == 6  # only the creation
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.atlas_audit_service.AtlasAuditService.add_all",
+    "aurelius_atlas_core.atlas_audit_service.AtlasAuditService.entry",
+    rules=["ADA-02", "ADA-03"],
+)
+async def test__many_entries_written_at_once_are_one_write_of_the_store() -> None:
+    """DD-316: a batch of admin audits goes to the store in one write, each entry kept and readable."""
+    store, _ = await catalogue()
+    writes = _count_store_writes(store)
+    service = AtlasAuditService(store)
+    entries = [
+        service.entry(AuditOperation.TYPE_DEF_CREATE, f"k{i}", "{}", 1, start_time=i, end_time=i) for i in range(30)
+    ]
+    await service.add_all([entry for entry in entries if entry is not None])
+
+    assert writes == [30]  # one write of the store, not one per entry
+    found = await search(store, sortBy="startTime", sortOrder="ASCENDING", limit=50)
+    assert [entry.params for entry in found] == [f"k{i}" for i in range(30)]
+    assert len({entry.guid for entry in found}) == 30  # each entry got its own GUID
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.typedef_audit_listener.BufferedTypeDefAuditListener.on_change",
+    "aurelius_atlas_core.typedef_audit_listener.BufferedTypeDefAuditListener.flush",
+    rules=["ADA-03"],
+)
+async def test__the_start_holds_its_typedef_audits_and_writes_them_at_once() -> None:
+    """DD-316: the load's changes are held, written in one write at the end; a later change is written now."""
+    store, types = await catalogue()
+    writes = _count_store_writes(store)
+    listener = BufferedTypeDefAuditListener(AtlasAuditService(store))
+    types.change_listeners.append(listener)
+
+    await types.create_types_def(AtlasTypesDef.model_validate(TABLE))
+    await types.create_types_def(AtlasTypesDef.model_validate({"entityDefs": [{"name": "ada_second"}]}))
+    assert writes == []  # held while the models load
+
+    await listener.flush()
+    assert writes == [2]  # the two changes' entries: one write of the store
+
+    await types.create_types_def(AtlasTypesDef.model_validate({"entityDefs": [{"name": "ada_third"}]}))
+    assert writes == [2, 1]  # written at once after the flush
+
+    found = await search(store, limit=50)
+    assert sorted((str(entry.operation), entry.result_count) for entry in found) == [
+        ("TYPE_DEF_CREATE", 1),
+        ("TYPE_DEF_CREATE", 1),
+        ("TYPE_DEF_CREATE", 2),
+    ]
 
 
 @pytest.mark.covers(
