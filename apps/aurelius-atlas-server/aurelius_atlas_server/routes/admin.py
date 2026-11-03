@@ -13,6 +13,7 @@ from importlib.metadata import version
 from typing import Any
 from zoneinfo import available_timezones
 
+from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
 from aurelius_atlas_core.atlas_server_service import AtlasServerService
 from aurelius_atlas_core.audits_writer import AuditsWriter
 from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
@@ -21,6 +22,8 @@ from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_core.zip_sink import ZipSink
+from aurelius_atlas_model import codec
+from aurelius_atlas_model.atlas_audit import AuditOperation, AuditSearchParameters
 from aurelius_atlas_model.impexp import (
     OPTION_KEY_REPLICATED_TO,
     OPTION_SKIP_LINEAGE,
@@ -29,6 +32,7 @@ from aurelius_atlas_model.impexp import (
     AtlasImportResult,
     AtlasServer,
 )
+from aurelius_atlas_model.instance import AtlasObjectId
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request, Response
 from fastapi.responses import PlainTextResponse
@@ -41,6 +45,9 @@ from aurelius_atlas_server.routes.entity import INT_RANGE, Body, Store, java_num
 from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
+
+OPERATION_STATUS = "operationStatus"
+"""The option an export's or import's admin audit adds its status as (ADA-02)."""
 
 ADMIN = APIRouter(prefix="/api/atlas/admin", tags=["Admin"])
 
@@ -168,7 +175,14 @@ async def purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONR
         validate_param_length("guid", guid)
     if guids:
         verify_access(request, AtlasPrivilege.ADMIN_PURGE, "purge entity: guids=", guids)  # AUZ-05
-    return AtlasJSONResponse(content=(await writer(request, store).purge_by_ids(guids)).to_json())
+    response = await writer(request, store).purge_by_ids(guids)
+    purged = response.get_purged_entities()
+    if purged:  # ADA-02
+        params = "[" + ", ".join(guids) + "]"  # List.toString
+        await AtlasAuditService(store).add(
+            AuditOperation.PURGE, params, response.get_purged_entities_ids(), len(purged)
+        )
+    return AtlasJSONResponse(content=response.to_json())
 
 
 @ADMIN.post("/export")
@@ -202,6 +216,9 @@ async def export(request: Request, store: Store, body: Body) -> Response:
     finally:
         if exclusive:
             lock.release()
+    if "options" in export_request.model_fields_set and export_request.items_to_export:
+        options = {**export_request.options, OPERATION_STATUS: result.operation_status.value}
+        await _audit_items(store, AuditOperation.EXPORT, export_request.items_to_export, options)
     if not sink.guids and export_request.omit_zip_response_for_empty_export():
         return Response(status_code=204)
     return Response(
@@ -248,7 +265,8 @@ async def import_data(request: Request, store: Store) -> AtlasJSONResponse:
         except AtlasError as error:
             if error.code is not AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP:
                 raise
-            result = AtlasImportResult(time_stamp=store.now())
+            return AtlasJSONResponse(content=AtlasImportResult(time_stamp=store.now()).to_json())
+    await _audit_import(store, result)
     return AtlasJSONResponse(content=result.to_json())
 
 
@@ -270,6 +288,68 @@ async def import_file(request: Request, store: Store, body: Body) -> AtlasJSONRe
         importer = await _importer(request, store)
         result = await importer.run_file(import_request or AtlasImportRequest(), folder, *_who(request))
     return AtlasJSONResponse(content=result.to_json())
+
+
+async def _audit_import(store: Store, result: AtlasImportResult) -> None:
+    """``addToImportOperationAudits``: the export's items by type, or without an export request the import's
+    metrics and its count of entities (ADA-02).
+    """  # noqa: D205 - one sentence
+    options = {OPERATION_STATUS: result.operation_status.value}
+    exported = None if result.export_result is None else result.export_result.request
+    if exported is not None:
+        await _audit_items(store, AuditOperation.IMPORT, exported.items_to_export, options)
+        return
+    metrics = codec.dumps(result.metrics).decode()
+    await AtlasAuditService(store).add(
+        AuditOperation.IMPORT, codec.dumps(options).decode(), metrics, len(result.processed_entities)
+    )
+
+
+async def _audit_items(
+    store: Store, operation: AuditOperation, items: list[AtlasObjectId], options: dict[str, Any]
+) -> None:
+    """``auditImportExportOperations``: the options as the parameters, the items counted by type as the result,
+    and their count; an item without a type is not counted by type (DV-131).
+    """  # noqa: D205 - one sentence
+    by_type: dict[str, int] = {}
+    for item in items:
+        if item.type_name is not None:
+            by_type[item.type_name] = by_type.get(item.type_name, 0) + 1
+    params, counted = codec.dumps(options).decode(), codec.dumps(by_type).decode()
+    await AtlasAuditService(store).add(operation, params, counted, len(items))
+
+
+@ADMIN.post("/audits")
+async def get_atlas_audits(request: Request, store: Store, body: Body) -> AtlasJSONResponse:
+    """``getAtlasAudits``: the admin audits the search parameters find (ADA-04); it needs ``ADMIN_AUDITS``.
+
+    Raises:
+        AtlasError: ``UNAUTHORIZED_ACCESS``; ``INVALID_PARAMETERS`` for no body; ``UNKNOWN_ATTRIBUTE``;
+            ``BAD_REQUEST`` for a body that is no search (DV-10).
+    """
+    verify_access(request, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits")
+    try:
+        parameters = None if body is None else AuditSearchParameters.model_validate(body)
+    except ValueError as error:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditSearchParameters: {error}") from error
+    found = await AtlasAuditService(store, authorizer=authorizer(request)).get(parameters)
+    return AtlasJSONResponse(content=[entry.to_json() for entry in found])
+
+
+@ADMIN.get("/audit/{audit_guid}/details")
+async def get_audit_details(audit_guid: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getAuditDetails``: the entity headers a purge's audit names, ``limit`` (10) from ``offset`` (ADA-05).
+
+    Atlas checks no admin privilege here, only the entity read of the entry.
+
+    Raises:
+        AtlasError: ``INSTANCE_GUID_NOT_FOUND``; ``UNAUTHORIZED_ACCESS``; ``INTERNAL_ERROR`` for an audit other
+            than a purge.
+    """
+    limit, offset = java_number(request, "limit", 10, INT_RANGE), java_number(request, "offset", 0, INT_RANGE)
+    service = AtlasAuditService(store, authorizer=authorizer(request))
+    found = await service.details(audit_guid, request.app.state.entity_audits, limit, offset)
+    return AtlasJSONResponse(content=[header.to_json() for header in found])
 
 
 def _import_request(text: str) -> AtlasImportRequest | None:

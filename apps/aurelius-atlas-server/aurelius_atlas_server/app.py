@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import version
@@ -9,6 +10,7 @@ from pathlib import Path
 
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
+from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
@@ -16,8 +18,10 @@ from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
+from aurelius_atlas_core.typedef_audit_listener import TypeDefAuditListener
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_model.atlas_audit import AuditOperation
 from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline, setup_telemetry
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -28,6 +32,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.oidc_client import OidcClient
+from aurelius_atlas_server.request_context import RequestContextMiddleware
 from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, LOGIN, RELATIONSHIP, TYPES
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
@@ -107,6 +112,7 @@ def create_app(
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         LOGGER.info("Starting %s %s", app.title, app.version)
+        started = int(time.time() * 1000)
         worker: TaskWorker | None = None
         await store.open()
         try:
@@ -122,6 +128,8 @@ def create_app(
                 refresh_seconds=settings.typedef_refresh_seconds,
             )
             await typedef_store.load()
+            admin_audits = AtlasAuditService(entity_store)
+            typedef_store.change_listeners.append(TypeDefAuditListener(admin_audits))
             await ModelLoader(typedef_store).load(settings.models_dir)
             await entity_store.recover()
             app.state.typedef_store = typedef_store
@@ -133,6 +141,7 @@ def create_app(
                 entity_store.task_listeners.append(worker.wake)
                 worker.start()
                 app.state.task_worker = worker
+            await _audit_server_status(admin_audits, started)
             yield
         finally:
             if worker is not None:
@@ -155,18 +164,7 @@ def create_app(
     app.state.store = store
     app.state.type_registry = registry
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
-    # Every request's user, or its 401 or sign-in (AUT-01 to AUT-08); added first, so the security headers
-    # below wrap its answers too.
-    app.add_middleware(AuthenticationMiddleware)
-    # Security response headers on every answer — the API and the dashboards
-    # alike (SRV-08, DD-236). Added before the routers mount, so it wraps
-    # them all; the instrumentor below wraps this middleware.
-    app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
-    app.add_exception_handler(AtlasError, atlas_error_handler)
-    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN):
-        app.include_router(router)
-    if settings.dashboard_dir is not None:
-        mount_dashboards(app, settings.dashboard_dir)
+    _mount(app, settings)
 
     # Telemetry (SHL-14, DD-196, DD-210): the OTLP export is the app's own
     # pipeline when the ingest credential is configured — exporters whose
@@ -185,6 +183,25 @@ def create_app(
     FastAPIInstrumentor.instrument_app(app)
     LOGGER.setLevel(settings.log_level.upper())
     return app
+
+
+def _mount(app: FastAPI, settings: ServerSettings) -> None:
+    """The middleware, the error handler, the routers and the dashboards."""
+    # Each request's user and client bound for the admin audits its changes write (ADA-02): added before the
+    # authentication, so it runs inside it, once the user is known.
+    app.add_middleware(RequestContextMiddleware)
+    # Every request's user, or its 401 or sign-in (AUT-01 to AUT-08); added before the security headers, so
+    # they wrap its answers too.
+    app.add_middleware(AuthenticationMiddleware)
+    # Security response headers on every answer — the API and the dashboards
+    # alike (SRV-08, DD-236). Added before the routers mount, so it wraps
+    # them all; the instrumentor below wraps this middleware.
+    app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
+    app.add_exception_handler(AtlasError, atlas_error_handler)
+    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN):
+        app.include_router(router)
+    if settings.dashboard_dir is not None:
+        mount_dashboards(app, settings.dashboard_dir)
 
 
 def _ingest_pipeline(settings: ServerSettings) -> IngestPipeline | None:
@@ -219,3 +236,16 @@ def _authentication(
     """The verifier, the sign-in client and the sessions (AUT-02 to AUT-06)."""
     verifier = auth if auth is not None else build_auth(settings)
     return verifier, build_oidc(settings, verifier, oidc_http), SessionStore(settings.session_timeout_seconds)
+
+
+async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:
+    """``auditServerStatus``: ``SERVER_START`` from the start to now, then ``SERVER_STATE_ACTIVE`` now (ADA-02).
+
+    A failure is only logged, as Atlas logs it.
+    """
+    now = int(time.time() * 1000)
+    try:
+        await audits.add(AuditOperation.SERVER_START, None, None, 0, start_time=started, end_time=now)
+        await audits.add(AuditOperation.SERVER_STATE_ACTIVE, None, None, 0, start_time=now, end_time=now)
+    except AtlasError:
+        LOGGER.exception("Exception occurred during audit")
