@@ -6787,10 +6787,24 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
-<td>6.3c</td>
-<td>Transforms, incremental and audits</td>
-<td>Import transforms and options, the Hive incremental export, replication options, the export and import audits and server records</td>
-<td><code>ImportTransforms</code>, <code>IncrementalExportEntityProvider</code>, <code>AuditsWriter</code>, <code>ExportImportAuditService</code></td>
+<td>6.3c1</td>
+<td>Import transforms</td>
+<td>The <code>transforms</code> option of an import: text, attribute, classification and status rewrites per type and its sub types</td>
+<td><code>ImportTransforms</code>, <code>ImportTransformer</code>, <code>ImportTransformsShaper</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.3c2</td>
+<td>Replication and audits</td>
+<td><code>replicatedTo</code> and <code>replicatedFrom</code>, server records, the export and import audit trail, <code>admin/expimp/audit</code>, <code>admin/server/{name}</code></td>
+<td><code>AuditsWriter</code>, <code>ExportImportAuditService</code>, <code>AtlasServerService</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.3c3</td>
+<td>Admin audits</td>
+<td><code>admin/audits</code>, <code>admin/audit/{guid}/details</code>: the audit of purges, exports, imports, type changes and server starts</td>
+<td><code>AtlasAuditService</code></td>
 <td>planned</td>
 </tr>
 <tr>
