@@ -9,6 +9,7 @@ patch, written with the patch's change (DD-031).
 import asyncio
 import functools
 import json
+import logging
 import re
 import time
 from collections.abc import Awaitable, Callable, Iterable
@@ -43,6 +44,7 @@ from aurelius_atlas_core.stored_form import (
     stamp_updated,
     stored_typedef,
 )
+from aurelius_atlas_core.typedef_change_listener import ChangedTypeDefs, TypeDefChangeListener
 from aurelius_atlas_core.typedef_document import (
     DocumentVersion,
     StoredTypedefs,
@@ -79,6 +81,8 @@ _DONE = {PatchStatus.APPLIED, PatchStatus.SKIPPED}
 
 type TypeUsage = Callable[[str], Awaitable[bool]]
 """Whether entities, classifications or relationships of a type exist (DD-030)."""
+
+LOGGER = logging.getLogger(__name__)
 
 
 async def never_in_use(_type_name: str) -> bool:
@@ -316,6 +320,8 @@ class TypedefStore:
         self._stored = _Stored()
         self._version: DocumentVersion | None = None
         self._checked_at: float | None = None
+        self.change_listeners: list[TypeDefChangeListener] = []
+        """``typeDefChangeListeners``: told of each change once it is written (ADA-03)."""
 
     async def load(self) -> None:
         """Prepare the document and load every stored definition into the registry (``init``, TDS-12)."""
@@ -397,7 +403,9 @@ class TypedefStore:
             transient.update_types(created)
             return _Outcome(created, stored)
 
-        return await self._change(apply)
+        created = await self._change(apply)
+        await self._notify(ChangedTypeDefs(created=_all(created)))
+        return created
 
     async def update_types_def(self, types_def: AtlasTypesDef, user: str | None = None) -> AtlasTypesDef:
         """Update the definitions found by GUID, else name (``updateTypesDef``, TDS-07, TDS-08, TDS-10).
@@ -413,7 +421,9 @@ class TypedefStore:
             stored = self._stored.copy()
             return _Outcome(self._update(transient, stored, types_def, user), stored)
 
-        return await self._change(apply)
+        updated = await self._change(apply)
+        await self._notify(ChangedTypeDefs(updated=_all(updated)))
+        return updated
 
     def _update(
         self,
@@ -449,22 +459,23 @@ class TypedefStore:
             AtlasError: A definition is invalid or refers to an unknown type.
         """
 
-        async def apply(transient: TransientTypeRegistry) -> _Outcome[AtlasTypesDef]:
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[ChangedTypeDefs]:
             to_create = types_to_create(types_def, self.registry)
             to_update = types_to_update(types_def, self.registry, check_type_version=check_type_version)
             if to_create.is_empty() and to_update.is_empty():
-                return _Outcome(AtlasTypesDef(), None, commit=False)
+                return _Outcome(ChangedTypeDefs(), None, commit=False)
             transient.update_types_without_resolving(to_update)
             _add_resolving(transient, to_create)
             stored = self._stored.copy()
             now = self._now()
             created = _all(_Creation(transient, stored, now, user).run(to_create))
             updated = _all(_Update(transient, stored, now, user).run(to_update))
-            result = types_def_of([*created, *updated])
-            transient.update_types(result)
-            return _Outcome(result, stored)
+            transient.update_types(types_def_of([*created, *updated]))
+            return _Outcome(ChangedTypeDefs(created=created, updated=updated), stored)
 
-        return await self._change(apply)
+        changed = await self._change(apply)
+        await self._notify(changed)
+        return types_def_of([*changed.created, *changed.updated])
 
     async def apply_patch(self, patch: AtlasPatch, decide: Callable[[TypeRegistry], PatchChange]) -> PatchStatus | None:
         """Apply a typedef patch unless its record says it is done, and record how it ended (MDL-05, MDL-06).
@@ -476,8 +487,10 @@ class TypedefStore:
         Returns:
             How the patch ended, or None when its record says it was applied or skipped before.
         """
+        patched: list[AtlasBaseTypeDef] = []
 
         async def apply(transient: TransientTypeRegistry) -> _Outcome[PatchStatus | None]:
+            patched.clear()
             recorded = self._stored.patches.get(str(patch.id)) if patch.id else None
             if recorded is not None and recorded.status in _DONE:
                 return _Outcome(None, None, commit=False)
@@ -485,7 +498,7 @@ class TypedefStore:
             try:
                 change = decide(self.registry)
                 if change.update is not None:
-                    self._update(transient, stored, change.update, None, change.patching)
+                    patched.extend(_all(self._update(transient, stored, change.update, None, change.patching)))
                 status, changed = change.status, change.update is not None
             except AtlasError:
                 stored, status, changed = self._stored.copy(), PatchStatus.FAILED, False
@@ -495,7 +508,9 @@ class TypedefStore:
                 return _Outcome(status, None, commit=False)
             return _Outcome(status, stored, commit=changed)
 
-        return await self._change(apply)
+        status = await self._change(apply)
+        await self._notify(ChangedTypeDefs(updated=list(patched)))
+        return status
 
     async def delete_types_def(self, types_def: AtlasTypesDef) -> None:
         """Delete the definitions found by GUID, else name, unless something refers to them (TDS-09, TDS-10).
@@ -504,13 +519,24 @@ class TypedefStore:
             AtlasError: A definition is not found, is in use or is referred to.
         """
 
-        async def apply(transient: TransientTypeRegistry) -> _Outcome[None]:
+        async def apply(transient: TransientTypeRegistry) -> _Outcome[list[AtlasBaseTypeDef]]:
             stored = self._stored.copy()
-            await _Deletion(stored, self._usage).run(types_def)
+            deletion = _Deletion(stored, self._usage)
+            await deletion.run(types_def)
             transient.remove_types(types_def)
-            return _Outcome(None, stored)
+            return _Outcome(deletion.removed, stored)
 
-        await self._change(apply)
+        await self._notify(ChangedTypeDefs(deleted=await self._change(apply)))
+
+    async def _notify(self, changed: ChangedTypeDefs) -> None:
+        """``notifyListeners``: each listener told of a change that changed something; its failure only logged."""
+        if changed.is_empty():
+            return
+        for listener in self.change_listeners:
+            try:
+                await listener.on_change(changed)
+            except Exception:
+                LOGGER.exception("OnChange failed for listener %s", type(listener).__name__)
 
     def patches(self) -> list[AtlasPatch]:
         """The patch records, sorted by id as Java compares strings (``AtlasPatchRegistry.getAllPatches``, ENS-10)."""
@@ -870,6 +896,7 @@ class _Deletion:
     stored: _Stored
     usage: TypeUsage
     deleted: set[str] = field(default_factory=set)
+    removed: list[AtlasBaseTypeDef] = field(default_factory=list)
 
     async def run(self, types_def: AtlasTypesDef) -> None:
         graph = (TypeCategory.RELATIONSHIP, TypeCategory.STRUCT, TypeCategory.CLASSIFICATION, TypeCategory.ENTITY)
@@ -894,6 +921,7 @@ class _Deletion:
         if kind is TypeCategory.ENTITY and self._referrers(found, relationships=True):
             raise AtlasError(AtlasErrorCode.TYPE_HAS_RELATIONSHIPS, found.name)
         self.deleted.add(str(found.name))
+        self.removed.append(found)
         return found
 
     def _delete(self, typedef: AtlasBaseTypeDef) -> None:
