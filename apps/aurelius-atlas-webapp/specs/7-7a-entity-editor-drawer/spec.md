@@ -1,6 +1,6 @@
 # 7.7a Entity editor drawer (edit + create core)
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** —
 - **Records:** DD-322..DD-328; relies on DD-166 (the drawer outlet shape),
   DD-300 (the four roles), ADR 051 (port rules)
