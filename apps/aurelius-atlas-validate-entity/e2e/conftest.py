@@ -72,13 +72,17 @@ def keycloak() -> DockerCompose:
     return compose
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture()
 def token(keycloak: DockerCompose, settings: Settings) -> str:
     """A bearer token for the app, minted from the dev realm as the dev writer.
 
     The public `aurelius` client's password grant (import/master.json): the
     token carries azp `aurelius`, the audience the app accepts — the audience
     of the webapp tokens the browser's editor sends (AUX-04, DV-75).
+
+    Minted per test, not per session: the realm issues 60-second access tokens
+    (`accessTokenLifespan` in import/master.json) and the suite runs longer
+    than that, so one shared token expires mid-run.
     """
     port = keycloak.get_service_port("keycloak", 8443)
     deadline = time.monotonic() + MINT_TIMEOUT_SECONDS
