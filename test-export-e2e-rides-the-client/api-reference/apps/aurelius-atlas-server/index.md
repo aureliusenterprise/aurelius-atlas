@@ -923,9 +923,9 @@ A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the 
 
 ## aurelius\_atlas\_server.routes.admin
 
-The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, purge, tasks.
+The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, purge, tasks, export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.
 
 Functions:
 
@@ -935,6 +935,12 @@ Functions:
 - **`export`** –
 
   `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
+- **`get_cluster`** –
+
+  `getCluster`: the server of the full name, with the replication it recorded (REP-01).
+- **`get_export_import_audit`** –
+
+  `getExportImportAudit`: the audit entries of the values given, the server either end (REP-05).
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
@@ -1085,6 +1091,32 @@ Raises:
 - `AtlasError` –
 
   `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK` while another runs; `BAD_REQUEST` for a body that is no export request (DV-10).
+
+### get\_cluster
+
+```
+get_cluster(server_name: str, request: Request, store: Store) -> AtlasJSONResponse
+```
+
+`getCluster`: the server of the full name, with the replication it recorded (REP-01).
+
+Atlas checks no admin privilege here, only the entity reads of its store (DD-307).
+
+Raises:
+
+- `AtlasError` –
+
+  `INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND` for none.
+
+### get\_export\_import\_audit
+
+```
+get_export_import_audit(request: Request, store: Store) -> AtlasJSONResponse
+```
+
+`getExportImportAudit`: the audit entries of the values given, the server either end (REP-05).
+
+Query parameters `serverName`, `userName`, `operation`, `startTime`, `endTime`, `limit` and `offset`. Atlas checks no admin privilege here, only the entity reads of its search (DD-307).
 
 ### get\_liveness
 
