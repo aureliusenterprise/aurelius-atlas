@@ -64,6 +64,7 @@ async def test__the_start_and_type_changes_are_audited(client: httpx.AsyncClient
     assert start["startTime"] <= start["endTime"] == active["startTime"]
     assert (created[0]["userName"], created[0]["params"], created[0]["resultCount"]) == ("admin", "ENTITY", 1)
     assert created[0]["clientId"] == "127.0.0.1"
+    assert len(created) == 2  # the request's, and the models' at the start as one entry (DD-316)
     assert created[-1]["resultCount"] > 1  # the base model, loaded at the start
     assert (refused.status_code, refused.json()["errorMessage"]) == (
         403,

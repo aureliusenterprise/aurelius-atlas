@@ -4,19 +4,26 @@ search and details (ADA-01 to ADA-05).
 
 import socket
 import time
+from collections.abc import Sequence
 from typing import Any
 
 from aurelius_atlas_model.atlas_audit import AtlasAuditEntry, AuditOperation, AuditSearchParameters
 from aurelius_atlas_model.discovery import FilterCriteria, SearchParameters
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
-from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityHeader, AtlasEntityWithExtInfo
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntity,
+    AtlasEntityHeader,
+    AtlasEntityWithExtInfo,
+)
+from aurelius_atlas_typesystem.builtin.object_id_type import is_assigned_guid
 
 from aurelius_atlas_core.authorization import ALLOW_ALL, SCRUBBED_GUID, AtlasPrivilege, Authorizer
-from aurelius_atlas_core.data_access import DataAccess
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_core.entity_audit_repository import EntityAuditRepository
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.request_context import current, current_user
 
 AUDIT_ENTRY_TYPE = "__AtlasAuditEntry"
@@ -84,11 +91,29 @@ class AtlasAuditService:
         (ADA-02).
         A catalogue without the base model, which defines the entries' type, keeps none (DD-308).
         """  # noqa: D205 - one sentence
+        entry = self.entry(operation, params, result, result_count, start_time=start_time, end_time=end_time)
+        if entry is not None:
+            await self.add_all([entry])
+
+    def entry(  # noqa: PLR0913 - Atlas's arguments
+        self,
+        operation: AuditOperation,
+        params: str | None,
+        result: str | None,
+        result_count: int,
+        *,
+        start_time: int | None = None,
+        end_time: int | None = None,
+    ) -> AtlasAuditEntry | None:
+        """``add``'s entry, unbuilt and unwritten: None when the catalogue keeps none (DD-308).
+
+        A caller that gathers many entries writes them with :meth:`add_all` (DD-316).
+        """
         if self._store.registry.entity_type(AUDIT_ENTRY_TYPE) is None:
-            return
-        context, user = current(), current_user()
-        entry = AtlasAuditEntry(
-            user_name=user,
+            return None
+        context = current()
+        return AtlasAuditEntry(
+            user_name=current_user(),
             operation=operation,
             client_id=context.client_ip_address or _this_host(),
             start_time=context.request_time if start_time is None else start_time,
@@ -97,7 +122,24 @@ class AtlasAuditService:
             result=result,
             result_count=result_count,
         )
-        await DataAccess(self._store, {AtlasAuditEntry: AtlasAuditEntryDTO()}, user=user).save(entry)
+
+    async def add_all(self, entries: Sequence[AtlasAuditEntry]) -> None:
+        """``add`` of each, in one write of all their entities (DD-316); a catalogue that keeps none writes nothing.
+
+        An entry of no GUID of the store gets its own placeholder, so one write creates each of them.
+        """
+        if not entries or self._store.registry.entity_type(AUDIT_ENTRY_TYPE) is None:
+            return
+        dto = AtlasAuditEntryDTO()
+        entities = []
+        for placeholder, entry in enumerate(entries):
+            [entity] = dto.to_entities(entry)
+            if not is_assigned_guid(entity.guid):
+                entity.guid = f"-{placeholder}"
+            entities.append(entity)
+        await EntityWriter(self._store, user=current_user()).create_or_update(
+            AtlasEntitiesWithExtInfo(entities=entities)
+        )
 
     async def get(self, parameters: AuditSearchParameters | None) -> list[AtlasAuditEntry]:
         """``get``: the entries the filters find, a page in the order asked; those scrubbed left out (ADA-04).
