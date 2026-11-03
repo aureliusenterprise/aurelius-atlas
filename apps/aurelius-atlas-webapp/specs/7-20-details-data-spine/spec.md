@@ -1,6 +1,6 @@
 # 7.20 Details data spine
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-317 (the breadcrumb trail is app state with no source yet),
   DD-318 (the details read drives the loading, failure, and not-found states);
