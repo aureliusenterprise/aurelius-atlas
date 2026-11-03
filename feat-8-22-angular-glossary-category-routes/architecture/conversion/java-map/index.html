@@ -6756,6 +6756,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>in progress</td>
 </tr>
 <tr>
+<td><code>AdminResource#getAtlasAudits</code>, <code>#getAuditDetails</code>, <code>#purgeByIds</code> (its audit), <code>#addToExportOperationAudits</code>, <code>#addToImportOperationAudits</code>, <code>EmbeddedServer#auditServerStatus</code>, <code>AtlasAuditService</code>, <code>AtlasAuditEntryDTO</code>, <code>TypeDefAuditListener</code>, <code>TypeDefChangeListener</code>, <code>ChangedTypeDefs</code>, <code>RequestContext</code> (user, client, request time), <code>AtlasAuditEntry</code>, <code>AuditSearchParameters</code></td>
+<td><code>aurelius_atlas_core.atlas_audit_service</code>, <code>aurelius_atlas_core.typedef_audit_listener</code>, <code>aurelius_atlas_core.typedef_change_listener</code>, <code>aurelius_atlas_core.typedef_store</code>, <code>aurelius_atlas_core.request_context</code>, <code>aurelius_atlas_model.atlas_audit</code>, <code>aurelius_atlas_server.request_context</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_server.app</code></td>
+<td>6.3c3</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td><code>AtlasKeycloakAuthenticationProvider</code>, <code>AtlasSecurityConfig</code> (open paths, Keycloak filters, logout), Keycloak's <code>KeycloakAuthenticationEntryPoint</code>, <code>KeycloakAuthenticationProcessingFilter</code>, <code>KeycloakLogoutHandler</code>, <code>AtlasCSRFPreventionFilter</code>, <code>AdminResource#getUserProfile</code> (user, groups, CSRF token)</td>
 <td><code>aurelius_atlas_server.authentication</code>, <code>aurelius_atlas_server.oidc_client</code>, <code>aurelius_atlas_server.routes.login</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.auth</code></td>
 <td>6.1a</td>

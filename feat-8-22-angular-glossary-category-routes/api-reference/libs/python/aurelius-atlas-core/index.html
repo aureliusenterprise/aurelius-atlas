@@ -1582,6 +1582,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_store.LOGGER" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;LOGGER
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_store.TypeUsage" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1653,6 +1664,17 @@
   
     <nav class="md-nav" aria-label="TypedefStore">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_store.TypedefStore.change_listeners" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;change_listeners
+      </span>
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_store.TypedefStore.registry" class="md-nav__link">
@@ -10029,6 +10051,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_store.LOGGER" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;LOGGER
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_store.TypeUsage" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -10100,6 +10133,17 @@
   
     <nav class="md-nav" aria-label="TypedefStore">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_store.TypedefStore.change_listeners" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;change_listeners
+      </span>
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_store.TypedefStore.registry" class="md-nav__link">
@@ -14093,6 +14137,18 @@ patch, written with the patch's change (DD-031).</p>
             <p>How long a process answers from its registry before it checks for another process's change (DD-029).</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            LOGGER
+
+
+  
+      module-attribute
+   (aurelius_atlas_core.typedef_store.LOGGER)" href="./#aurelius_atlas_core.typedef_store.LOGGER">LOGGER</a></code></b>
+          –
+          <div class="doc-md-description">
+            
+          </div>
+        </li>
     </ul>
 
 
@@ -14148,6 +14204,28 @@ patch, written with the patch's change (DD-031).</p>
     <div class="doc doc-contents ">
 
         <p>How long a process answers from its registry before it checks for another process's change (DD-029).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_core.typedef_store.LOGGER" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">LOGGER</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.typedef_store.LOGGER" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">LOGGER</span> <span class="o">=</span> <span class="n"><a class="autorefs autorefs-internal" title="Logging (logging)" href="../../../../architecture/platform/observability/logging/#logging">logging</a></span><span class="o">.</span><span class="n"><span title="logging.getLogger">getLogger</span></span><span class="p">(</span><span class="n"><span title="__name__">__name__</span></span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
 
     </div>
 
@@ -14550,6 +14628,19 @@ attributes may then be removed, a relationship's category may change and its end
 <p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            change_listeners
+
+
+  
+      instance-attribute
+   (aurelius_atlas_core.typedef_store.TypedefStore.change_listeners)" href="./#aurelius_atlas_core.typedef_store.TypedefStore.change_listeners">change_listeners</a></code></b>
+              (<code><span title="list">list</span>[<span title="aurelius_atlas_core.typedef_change_listener.TypeDefChangeListener">TypeDefChangeListener</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p><code>typeDefChangeListeners</code>: told of each change once it is written (ADA-03).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            registry
 
 
@@ -14573,6 +14664,30 @@ attributes may then be removed, a relationship's category may change and its end
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="aurelius_atlas_core.typedef_store.TypedefStore.change_listeners" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">change_listeners</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.typedef_store.TypedefStore.change_listeners" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">change_listeners</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="aurelius_atlas_core.typedef_change_listener.TypeDefChangeListener">TypeDefChangeListener</span></span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>typeDefChangeListeners</code>: told of each change once it is written (ADA-03).</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 

@@ -935,6 +935,12 @@ Functions:
 - **`export`** –
 
   `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
+- **`get_atlas_audits`** –
+
+  `getAtlasAudits`: the admin audits the search parameters find (ADA-04); it needs `ADMIN_AUDITS`.
+- **`get_audit_details`** –
+
+  `getAuditDetails`: the entity headers a purge's audit names, `limit` (10) from `offset` (ADA-05).
 - **`get_cluster`** –
 
   `getCluster`: the server of the full name, with the replication it recorded (REP-01).
@@ -988,6 +994,9 @@ Attributes:
 - **`NAME`** –
 - **`NOT_READY`** –
 - **`NO_CONTENT`** –
+- **`OPERATION_STATUS`** –
+
+  The option an export's or import's admin audit adds its status as (ADA-02).
 - **`READY`** –
 - **`UI_SETTINGS`** (`dict[str, Any]`) –
 
@@ -1038,6 +1047,14 @@ NOT_READY = 'Service not ready to accept client requests'
 ```
 NO_CONTENT = 204
 ```
+
+### OPERATION\_STATUS
+
+```
+OPERATION_STATUS = 'operationStatus'
+```
+
+The option an export's or import's admin audit adds its status as (ADA-02).
 
 ### READY
 
@@ -1091,6 +1108,36 @@ Raises:
 - `AtlasError` –
 
   `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK` while another runs; `BAD_REQUEST` for a body that is no export request (DV-10).
+
+### get\_atlas\_audits
+
+```
+get_atlas_audits(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+```
+
+`getAtlasAudits`: the admin audits the search parameters find (ADA-04); it needs `ADMIN_AUDITS`.
+
+Raises:
+
+- `AtlasError` –
+
+  `UNAUTHORIZED_ACCESS`; `INVALID_PARAMETERS` for no body; `UNKNOWN_ATTRIBUTE`; `BAD_REQUEST` for a body that is no search (DV-10).
+
+### get\_audit\_details
+
+```
+get_audit_details(audit_guid: str, request: Request, store: Store) -> AtlasJSONResponse
+```
+
+`getAuditDetails`: the entity headers a purge's audit names, `limit` (10) from `offset` (ADA-05).
+
+Atlas checks no admin privilege here, only the entity read of the entry.
+
+Raises:
+
+- `AtlasError` –
+
+  `INSTANCE_GUID_NOT_FOUND`; `UNAUTHORIZED_ACCESS`; `INTERNAL_ERROR` for an audit other than a purge.
 
 ### get\_cluster
 
