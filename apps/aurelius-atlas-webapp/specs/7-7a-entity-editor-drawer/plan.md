@@ -137,10 +137,15 @@ String(-Math.floor(Math.random() * 1e15))}` with a uuid `qualifiedName`
       negative numeric one is the create idiom the e2e seed already sends).
       Then `createOrUpdateEntity({entity})`; on the answer take the real guid
       (`guidAssignments[<temp>]` for create, the route guid otherwise) and
-      `updateClassifications(realGuid, chosen)` (DD-326 — exactly two
-      requests; an empty `chosen` replaces with the empty list). On both
-      answers: `router.navigate(["/search/details", realGuid], { outlets: {
-drawer: null } })`. On any `error`: one
+      apply the classification diff (DD-326, corrected mid-increment: the
+      replace `PUT` cannot attach or detach, so the gained tags ride one
+      `addClassifications` POST and the lost ones one DELETE each; a kept tag
+      sends nothing). On every answer: the `EntitySaved` tick (DD-327) and
+      the root compound navigation `router.navigate([{ outlets: { primary:
+["search", "details", realGuid], drawer: null } }])` (DD-328 — a string path
+      with a trailing `{outlets}` clears nothing: the outlet instruction
+      applies inside the walked primary child, not the root where the drawer
+      lives). On any `error`: one
       `alerts.add({severity:"error", source:"search", ...})`, `saving`
       cleared, nothing navigated (EDT-08).
 2. No spec for the store by itself — the component spec drives every path

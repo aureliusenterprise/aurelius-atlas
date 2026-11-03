@@ -1,0 +1,46 @@
+/*
+ * The entity editor drawer body (EDT-01..EDT-08, DD-322): the drawer
+ * (DD-157) carries the panel chrome and Bulma carries the controls, so
+ * this file is only the rhythm between the fields, the tag row, and the
+ * classification box — the settings panel's shape (DD-167).
+ */
+.aurelius-editor-field + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+.aurelius-editor-classifications {
+    margin-top: 1.5rem;
+}
+
+/* The chosen tags (EDT-05): the tag and its delete sit together, the
+   delete tight against the tag like a Bulma `tag` with `delete`. */
+.aurelius-editor-tag-delete {
+    margin-left: 0.25rem;
+    padding: 0 0.375rem;
+}
+
+.aurelius-editor-classification-control {
+    margin-top: 0.5rem;
+}
+
+/* The repeating text list (EDT-03): one input per row, its delete beside
+   it; rows stack tightly so the list reads as one field. */
+.aurelius-editor-multi-row {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.aurelius-editor-multi-row .input {
+    flex: 1;
+}
+
+.aurelius-editor-notification {
+    margin-top: 1.5rem;
+}
+
+.aurelius-editor-busy,
+.aurelius-editor-loading {
+    margin-bottom: 0.75rem;
+}

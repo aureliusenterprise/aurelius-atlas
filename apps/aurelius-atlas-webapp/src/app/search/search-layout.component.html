@@ -17,6 +17,21 @@
                     (querySubmitted)="onQuerySubmitted($event)"
                 ></aurelius-atlas-ui-search-field>
             </div>
+            <!-- The create affordance (EDT-09, DD-324): the legacy DATA_STEWARD
+                 editor `+`, gated on the atlas-write grant. Opens the
+                 create-mode editor drawer through the `drawer` aux outlet. -->
+            @if (canWrite()) {
+                <div class="level-right">
+                    <button
+                        type="button"
+                        class="button is-small is-primary aurelius-create-entity"
+                        [attr.aria-label]="createLabel"
+                        (click)="openCreate()"
+                    >
+                        <fa-icon aria-hidden="true" [icon]="faPlus"></fa-icon>
+                    </button>
+                </div>
+            }
         </div>
     </ng-container>
 </aurelius-atlas-ui-hero>

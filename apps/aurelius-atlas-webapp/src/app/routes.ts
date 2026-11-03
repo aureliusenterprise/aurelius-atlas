@@ -72,6 +72,21 @@ export const routes: Routes = [
                 outlet: "drawer",
                 loadComponent: () => import("./alerts/alerts-panel.component").then((m) => m.AlertsPanel),
             },
+            // The entity editor drawer, the third route in the one `drawer`
+            // outlet (EDT-01, DD-322): the details pencil navigates to
+            // `(drawer:edit-entity:guid)` and the hero `+` to `(drawer:create-entity)`.
+            // The mode rides the route segment (no store sentinel, DD-325); the
+            // outlet swaps it in over whatever screen is underneath.
+            {
+                path: "edit-entity/:guid",
+                outlet: "drawer",
+                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
+            {
+                path: "create-entity",
+                outlet: "drawer",
+                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain
             // '**' -> '' -> '/search/browse' lands on the default destination.

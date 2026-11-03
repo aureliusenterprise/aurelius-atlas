@@ -1,0 +1,288 @@
+import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { ActivatedRoute, Router } from "@angular/router";
+import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
+import { faXmark } from "@fortawesome/free-solid-svg-icons";
+import { map } from "rxjs";
+
+import { Drawer, Select } from "aurelius-atlas-ui";
+
+import { EditorState } from "./editor-state";
+import { type EditorField, type EditorLabels, buildFields, mergeOntoEntity, toFormValues } from "./form-fields";
+
+/** A picker row for the ui-lib {@link Select} (its `displayField` is `label`). */
+type PickerRow = { name: string; label: string };
+
+/** An enum option row (EDT-03's enum kind — the Select's `displayField`). */
+type EnumRow = { value: string };
+
+/**
+ * The entity editor drawer (EDT-01..EDT-08, DD-322): the routed panel in the
+ * `drawer` aux outlet beside the settings and alerts panels (the AlertsPanel
+ * shape — the open state rides the URL, dismissal navigates the outlet away),
+ * reached from the details pencil (`edit-entity/:guid`) and the search hero's
+ * `+` (`create-entity`). The editor owns its entity read (EDT-02) and shares
+ * no store with the screen underneath (DD-322).
+ *
+ * The form is generic: one control per attribute the entity's own definition
+ * (plus its supertype chain) carries (EDT-03, DD-323); create mode starts at
+ * a type picker over the shipped entity typedefs (EDT-04). The footer is
+ * Save only (EDT-10 — the Delete is 7.9's, and there is no Cancel: dismissal
+ * is the drawer's X/backdrop/Escape, EDT-01). Save merges the form onto the
+ * entity, POSTs it, then replaces the classifications through the one PUT
+ * (EDT-06, DD-326), and lands on the entity's details screen.
+ */
+@Component({
+    imports: [Drawer, FontAwesomeModule, ReactiveFormsModule, Select],
+    providers: [EditorState],
+    selector: "aurelius-atlas-webapp-entity-editor",
+    templateUrl: "./entity-editor.component.html",
+    styleUrl: "./entity-editor.component.scss",
+    changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class EntityEditor {
+    protected readonly state = inject(EditorState);
+
+    private readonly router = inject(Router);
+
+    /** The drawer's open state — true for the panel's whole life (EDT-01). */
+    readonly active = signal(true);
+
+    /** Whether a Save was attempted — shows the notification (EDT-07). */
+    protected readonly saveAttempted = signal(false);
+
+    /** The form, a signal so the field-set rebuild repaints (EDT-03). */
+    protected readonly form = signal(new FormGroup<Record<string, AbstractControl>>({}));
+
+    /** The route's `:guid` (edit mode) — the editor reads its own entity. */
+    private readonly guid = toSignal(inject(ActivatedRoute).paramMap.pipe(map((params) => params.get("guid") ?? "")), {
+        initialValue: "",
+    });
+
+    /** The mode, off the route segment — no store sentinel (EDT-01, DD-325). */
+    private readonly isCreate = inject(ActivatedRoute).routeConfig?.path?.startsWith("create") ?? false;
+
+    /** The fields the form renders (EDT-03), from the store's typedefs. */
+    protected readonly fields = computed(() => {
+        const typeName = this.state.typeName();
+        const defs = this.state.entityDefsByName();
+        const def = typeName ? defs.get(typeName) : undefined;
+
+        return def ? buildFields(def, defs, this.state.enumsByName(), this.labels) : [];
+    });
+
+    /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
+     * input is a mutable array, so the map yields a fresh one (not readonly). */
+    protected readonly pickerRows = computed<PickerRow[]>(() =>
+        this.state.pickerTypes().map(({ name, label }) => ({ name, label })),
+    );
+
+    /** The classification box's datalist suggestions (EDT-05). */
+    protected readonly suggestions = computed(() =>
+        this.state.applicableClassifications().map((def) => def.name ?? ""),
+    );
+
+    /** The chosen tags that carry a name (EDT-05) — the template's tag row. */
+    protected readonly chosenTags = computed(() =>
+        this.state
+            .chosen()
+            .filter((tag) => typeof tag.typeName === "string" && tag.typeName !== "")
+            .map((tag) => ({ typeName: tag.typeName as string })),
+    );
+
+    /** The create-mode picker shows until a type is chosen (EDT-04). */
+    protected readonly pickerVisible = computed(() => this.isCreate && this.state.selectedTypeName() === null);
+
+    protected readonly drawerTitle = computed(() => (this.isCreate ? this.createTitle : this.editTitle));
+
+    /** The tag box's input: typing filters, Enter adds (EDT-05). */
+    protected readonly classificationInput = new FormControl("", { nonNullable: true });
+
+    protected readonly closeLabel = $localize`:@@components.modal.close:Close`;
+
+    protected readonly editTitle = $localize`:@@search.editEntity.editEntity:Edit entity`;
+
+    protected readonly createTitle = $localize`:@@search.createEntity.newEntity:Create new entity`;
+
+    protected readonly pickerLabel = $localize`:@@search.details.typeSelect.label:Entity type`;
+
+    protected readonly classificationsLabel = $localize`:@@search.components.editor.attribute.classifications:Classifications`;
+
+    protected readonly classificationsPlaceholder = $localize`:@@search.components.editor.components.classificationsInput.addPlaceholder:Add a classification...`;
+
+    protected readonly noClassifications = $localize`:@@search.components.editor.components.classificationsInput.noClassificationsAvailable:No classifications available`;
+
+    protected readonly deleteLabel = $localize`:@@search.components.editor.delete:Delete`;
+
+    protected readonly saveLabel = $localize`:@@search.components.editor.save:Save`;
+
+    /** The multi row's delete icon. */
+    protected readonly faXmark = faXmark;
+
+    protected readonly nameRequired = $localize`:@@search.components.editor.attribute.nameRequired:Name is required.`;
+
+    protected readonly notificationLine = $localize`:@@search.components.editor.attribute.notification:This entity can't be saved because one or more required fields are missing.`;
+
+    protected readonly loadingLine = $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`;
+
+    protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
+
+    private readonly labels: EditorLabels = {
+        name: $localize`:@@search.components.editor.attribute.name:Name*`,
+        definition: $localize`:@@search.components.editor.attribute.definition:Definition`,
+    };
+
+    /** The field-set signature the last build used (the rebuild guard). */
+    private builtSignature = "";
+
+    constructor() {
+        this.state.mode.set(this.isCreate ? "create" : "edit");
+        this.state.loadTypeDefs();
+
+        // The entity read follows the route's guid (EDT-02) — edit mode only;
+        // create seeds its entity at the type pick (DD-325).
+        effect(() => {
+            const guid = this.guid();
+            if (!this.isCreate && guid) {
+                this.state.loadEntity(guid);
+            }
+        });
+
+        // (Re)build the form when the field set changes: create at the type
+        // pick, edit once the entity and the typedefs have both answered.
+        effect(() => {
+            const signature = this.fields()
+                .map((field) => `${field.name}:${field.kind}`)
+                .join(",");
+            if (signature !== "" && signature !== this.builtSignature) {
+                this.builtSignature = signature;
+                this.form.set(this.buildForm());
+            }
+        });
+    }
+
+    /** The form for the current field set, seeded from the entity (EDT-02). */
+    private buildForm(): FormGroup<Record<string, AbstractControl>> {
+        const values = toFormValues(this.state.entity() ?? {}, this.fields());
+        const controls: Record<string, AbstractControl> = {};
+
+        for (const field of this.fields()) {
+            const validators = field.required ? [Validators.required] : [];
+            if (field.kind === "multi") {
+                const array = new FormArray<FormControl<string>>(
+                    [...((values[field.name] as string[]) ?? []).map(String), ""].map(
+                        (row) => new FormControl(row, { nonNullable: true }),
+                    ),
+                    { validators },
+                );
+                // The list repeats: the blank trailing row becomes real on
+                // typing and a new blank row joins (EDT-03). The valueChanges
+                // subscription sees post-update values, unlike a DOM handler.
+                array.valueChanges.subscribe(() => {
+                    const last = array.at(array.length - 1);
+
+                    if (last !== undefined && String(last.value ?? "").trim() !== "") {
+                        array.push(new FormControl("", { nonNullable: true }));
+                    }
+                });
+                controls[field.name] = array;
+            } else {
+                controls[field.name] = new FormControl(
+                    { value: values[field.name], disabled: field.disabled },
+                    { validators },
+                );
+            }
+        }
+
+        return new FormGroup(controls);
+    }
+
+    /** Whether a control shows its error (touched, or a Save was tried, EDT-07). */
+    protected showError(field: EditorField): boolean {
+        const control = this.form().get(field.name);
+
+        return control !== null && control.invalid && (control.touched || this.saveAttempted());
+    }
+
+    /** The multi field's row controls (EDT-03's repeating text list). */
+    protected rowsOf(field: EditorField): readonly FormControl[] {
+        const array = this.form().get(field.name);
+
+        return array instanceof FormArray ? (array.controls as unknown as readonly FormControl[]) : [];
+    }
+
+    /** Drop one multi row; the list always keeps its blank trailing row. */
+    protected removeMultiRow(field: EditorField, index: number): void {
+        const array = this.form().get(field.name) as FormArray<FormControl<string>>;
+
+        array.removeAt(index);
+        if (array.length === 0) {
+            array.push(new FormControl("", { nonNullable: true }));
+        }
+    }
+
+    /** The enum field's options (EDT-03's enum kind). */
+    protected enumRows(field: EditorField): EnumRow[] {
+        return (field.enumValues ?? []).map((value) => ({ value }));
+    }
+
+    /** The enum field's selected row, read off the control. */
+    protected enumSelected(field: EditorField): EnumRow | null {
+        const current = String(this.form().get(field.name)?.value ?? "");
+
+        return (field.enumValues ?? []).includes(current) ? { value: current } : null;
+    }
+
+    /** Write an enum pick into the control (the Select carries no accessor). */
+    protected enumPicked(field: EditorField, row: EnumRow | null): void {
+        this.form()
+            .get(field.name)
+            ?.setValue(row?.value ?? "");
+    }
+
+    /** Add the typed classification when it names an applicable type (EDT-05). */
+    protected addClassification(): void {
+        const typed = (this.classificationInput.value ?? "").trim();
+
+        if (this.suggestions().includes(typed)) {
+            this.state.addClassification(typed);
+        }
+        this.classificationInput.setValue("");
+    }
+
+    /** Remove a chosen tag (EDT-05). */
+    protected removeClassification(typeName: string): void {
+        this.state.removeClassification(typeName);
+    }
+
+    /** Choose the create-mode type (EDT-04), seeding the entity (DD-325). */
+    protected pickType(row: PickerRow | null): void {
+        if (row) {
+            this.state.beginCreate(row.name);
+        }
+    }
+
+    /** Save (EDT-06/07): invalid bails marked-touched; valid merges and saves. */
+    protected save(): void {
+        this.saveAttempted.set(true);
+        if (this.form().invalid) {
+            this.form().markAllAsTouched();
+
+            return;
+        }
+        const entity = this.state.entity();
+        if (!entity?.typeName) {
+            return;
+        }
+        const merged = mergeOntoEntity(entity, this.fields(), this.form().getRawValue() as Record<string, unknown>);
+
+        this.state.save(merged, entity.guid ?? "");
+    }
+
+    /** Dismiss (EDT-01): X, backdrop, Escape — navigate the outlet away. */
+    protected close(): void {
+        this.active.set(false);
+        this.router.navigate([{ outlets: { drawer: null } }]);
+    }
+}

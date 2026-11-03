@@ -173,43 +173,122 @@ create and the deferred bulk).
 and the e2e helpers already send. A user-visible consequence: after create,
 the address is the server's guid, never the temporary one.
 
-### DD-326. Classifications save through one replace call, not the add/remove diff
+### DD-326. Classifications save through the add/remove diff, not the replace call
 
 - **Status:** Proposed
 - **Increment:** 7.7a
 - **Date:** 2026-11-03
 
-**Decision.** After the entity POST succeeds, the editor replaces the entity's
-classifications with one `PUT /api/atlas/v2/entity/guid/{guid}/classifications`
-call carrying the form's final own-classification list (CLS-08, the client
-method since 8.7). The editor's tag box shows only the classifications the
-entity owns (`entityGuid` equal to the entity's guid); classifications
+**Decision.** After the entity POST succeeds, the editor applies the
+classification difference between the tag box and the entity's own
+classifications at load (the same diff the legacy `EntityUpdateService`
+runs): the tags gained ride one
+`POST /api/atlas/v2/entity/guid/{guid}/classifications`, the tags lost ride
+one `DELETE /api/atlas/v2/entity/guid/{guid}/classification/{name}` each, and
+a kept tag sends nothing. The editor's tag box shows only the classifications
+the entity owns (`entityGuid` equal to the entity's guid); classifications
 propagated from other entities appear on the details screen but not in the
-form (EDT-05). Save is exactly two requests: entity, then classifications.
+form, so the diff can never touch them (EDT-05).
 
-**Reason.** The legacy `EntityUpdateService` diffs the form's classifications
-against the loaded ones and issues one POST-add and one DELETE per difference
-(0 to N + M calls), because its m4i editors render only some of an entity's
-classifications and the diff must not touch the rest. The 7.7a form is the
-whole own-classification set by construction (EDT-05 lists every applicable
-classification), so the replace endpoint says exactly what the form says. The
-replace call is already ported on both sides (server CLS-08, client 8.7) and
-answers 204 with the authorization checked per classification (AUZ-08). The
-two-step shape (entity POST, then classifications) is the legacy shape and
-the server's own model: an entity POST ignores classifications given inside
-it (2.4's deferral table notes it lands with 3.3), so they cannot ride the
-same call.
+**Reason.** This entry first specified the replace call
+(`PUT .../classifications`, CLS-08) on the ground that the 7.7a form is the
+whole own-classification set, so a replace says what the form says. That
+premise failed against the fact: `updateClassifications` on both sides
+(Apache Atlas 2.4's `EntityGraphMapper`, and this product's port in
+`aurelius_atlas_core/entity_classifications.py`, covered by
+`test__entity_classifications.py`) _changes attached tags_ — every given
+classification must already be attached to the entity, and a name the entity
+does not carry answers `CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY`. A live
+probe against this server confirmed it end to end: a create mode's new tag
+through the PUT answers 400/404, and through POST-add plus DELETE it lands
+and reads back (204/204). The replace also cannot remove: a tag missing from
+its body stays attached. Only the diff expresses attach-and-detach.
 
-**Alternatives.** (a) Port the diff (refused — same end state, more calls,
-two endpoint families, and its reason — hidden classifications the diff must
-preserve — does not exist in this form). (b) Send classifications inside the
-entity body (refused — the server ignores them there; the deferral table in
-2.4 says so).
+**Alternatives.** (a) The replace call (refused — factually broken, above;
+this entry's first shape, corrected in the same increment before any
+acceptance). (b) Send classifications inside the entity body (refused — the
+server ignores them there; the deferral table in 2.4 says so).
 
-**Consequences.** A save that only touches attributes still sends the
-classifications list it read; that is harmless (a replace with equal content)
-and keeps one code path. A refused classification replace leaves the entity
-saved (the two steps are not one transaction, the legacy's known shape
-carried forward), so EDT-08's failure alert fires with the user's edits kept.
-Propagated classifications stay out of reach of both the form and the replace
-body, so a save cannot sever an inherited tag.
+**Consequences.** A save's writes are 1 (entity) + 0..N + 0..M calls; a save
+that only touches attributes sends no classification call at all (the diff is
+empty — cheaper than the replace's always-one). A refused classification
+write leaves the entity saved (the steps are not one transaction, the
+legacy's known shape carried forward), so EDT-08's failure alert fires with
+the user's edits kept. Propagated classifications stay out of reach of the
+diff, so a save cannot sever an inherited tag. Create mode: the gained tags
+are stamped with the real guid from `guidAssignments` before the POST-add
+(the attach names its entity, and a temporary guid is refused — live-probed).
+The save fires the `EntitySaved` tick (DD-327) after the last write.
+
+### DD-327. The save fires a one-way "entity saved" tick to the screen underneath
+
+- **Status:** Proposed
+- **Increment:** 7.7a
+- **Date:** 2026-11-03
+
+**Decision.** After the save's second call answers, the editor fires a
+one-way event — a root-provided `EntitySaved` signal carrying `{guid, seq}`
+— and navigates. A details screen that is already mounted for that guid
+subscribes and re-reads its entity. The editor and the details screen share
+no entity data, only the tick (the exception to DD-322's no-shared-store
+rule, scoped to one event).
+
+**Reason.** The drawer opens over the primary screen without changing it
+(EDT-01), and the save navigates to the same URL the screen underneath
+already holds — Angular reuses the mounted details component, its guid
+effect sees no change, and without the tick the landed screen paints the
+pre-edit entity. EDT-12's read-back (the new text on the details header
+after a save) fails on the stale component. The seq counter re-fires on a
+repeat save of the same guid and lets a screen mounted _after_ the save
+(the create flow's landing) skip a tick its own URL read already answers.
+
+**Alternatives.** (a) A route resolver priming a shared store (refused —
+the DD-322 alternative (c), the legacy's coupling). (b) A forced outlet
+remount on the save navigation (refused — the router has no clean "remount
+the reused component" lever; a `:refresh=` query parameter would leak chrome
+into the entity's URL). (c) No tick, and the e2e reloads the page before
+the read-back (refused — the user would see stale data until a manual
+reload; the legacy's full-screen editor never had this state, its save
+always created the details component fresh).
+
+**Consequences.** One tiny root signal joins the two screens' otherwise
+independent reads; the tick carries only the guid, so it can never feed a
+stale value. The editor's drawer component still owns its read end to end
+(DD-322 holds for the entity, the event is not entity data).
+
+### DD-328. The save's navigation is one compound outlet command, not a string path with a trailing outlet
+
+**Status:** Proposed (correction found while proving the increment, before
+acceptance — it replaces what the plan's step 1 said, so no accepted decision
+changes.)
+
+**Decision.** The save lands on the entity's details with one root compound
+command — `router.navigate([{ outlets: { primary: ["search", "details",
+realGuid], drawer: null } }])` — not the path form
+`router.navigate(["/search/details", realGuid, { outlets: { drawer: null } }])`
+the plan first sketched.
+
+**Reason.** The router applies a trailing `{outlets}` command of a string-path
+array inside the _primary child_ segment group the path walked into, not the
+root group where the named outlet lives (router
+`createUrlTreeFromSegmentGroup`/`updateSegmentGroupChildren`: the outlets map is
+taken from the walked group's children, and a child the command list does not
+name — here the root's `drawer` — is copied back untouched). So the path form
+re-reads the details URL and leaves the `(drawer:edit-entity/<guid>)` segment
+mounted: the e2e's URL assertion caught the drawer surviving its own save.
+Unit tests cannot see this — they spy `Router.navigate` and never run the
+router. The compound command anchors at the root (its first command is the
+outlets map), which is also what `close()` and the settings and alerts panels
+already use.
+
+**Alternatives.** (a) A `relativeTo`-rooted string command (refused — same
+anchoring rule, still not the root's own children; the compound is the
+router's documented form for this). (b) Two navigations, one for the primary
+and one to clear the drawer (refused — a double location change, and the
+second can race the first's activation).
+
+**Consequences.** The save navigation reads as one root-level instruction;
+the same compound shape already closes the drawer from `close()`, so the
+editor has one outlet idiom end to end. The e2e's URL identity assertion
+(EDT-01's no-reload proof) is what pins this — the unit specs assert the
+call, the e2e asserts the landed URL.

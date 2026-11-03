@@ -193,6 +193,7 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     assert config["keycloak"]["url"] == "https://keycloak.atlas.test"
     assert config["keycloak"]["realm"] == "aurelius-atlas"  # CHT-74: global.realm
     assert config["otelExporterUrl"] == "/otel/v1/traces"
+    assert config["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324
     mounts = {
         m["mountPath"]: m for m in container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")["volumeMounts"]
     }

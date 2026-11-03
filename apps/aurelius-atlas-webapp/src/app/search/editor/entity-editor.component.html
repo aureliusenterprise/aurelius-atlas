@@ -1,0 +1,192 @@
+<!--
+  The entity editor drawer body (EDT-01..EDT-08, DD-322): the routed panel
+  in the `drawer` aux outlet, carried by the ui-lib drawer (the settings /
+  alerts shape). The drawer's own X, backdrop, and Escape close it (EDT-01)
+  — the footer carries Save only (EDT-10), no Cancel.
+
+  i18n ids are the catalogue bridge keys (EDT-11, DD-128 bridge). Strings
+  bound into component inputs live in TypeScript as $localize (BRW-02), so
+  only plain text carries markers here — descriptions are comments, never
+  `id|description` suffixes (DD-144).
+-->
+<aurelius-atlas-ui-drawer
+    [(active)]="active"
+    [title]="drawerTitle()"
+    [ariaLabel]="closeLabel"
+    (cancelRequested)="close()"
+>
+    <!-- The footer (EDT-10): Save only, in the head's action slot so it never
+         scrolls away. Busy while the save is in flight. -->
+    <button
+        type="button"
+        drawer-actions
+        class="button is-small is-primary aurelius-editor-save"
+        [disabled]="state.saving()"
+        [attr.aria-busy]="state.saving() ? 'true' : null"
+        (click)="save()"
+    >
+        <!-- Save. -->
+        <span i18n="@@search.components.editor.save">Save</span>
+    </button>
+
+    @if (state.saving()) {
+        <p class="help aurelius-editor-busy" role="status">{{ savingLine }}</p>
+    }
+
+    @if (state.loading() && !state.entity()) {
+        <p class="help aurelius-editor-loading" role="status">{{ loadingLine }}</p>
+    }
+
+    <!-- Create mode, before the type pick: the picker over the shipped entity
+         typedefs (EDT-04). The ui-lib Select as a plain dropdown. -->
+    @if (pickerVisible()) {
+        <div class="aurelius-editor-picker">
+            <aurelius-atlas-ui-select
+                [options]="pickerRows()"
+                displayField="label"
+                [label]="pickerLabel"
+                [value]="null"
+                [searchVisible]="false"
+                (valueChange)="pickType($event)"
+            ></aurelius-atlas-ui-select>
+        </div>
+    } @else if (!state.loading() || state.entity()) {
+        <!-- The field set (EDT-03): one control per editable attribute, in the
+             resolved order. Each control binds through [formControl]; the form
+             group is the validity root and is not itself bound to a directive. -->
+        <form class="aurelius-editor-form" [formGroup]="form()">
+            @for (field of fields(); track field.name) {
+                <div class="field aurelius-editor-field" [attr.data-field]="field.name">
+                    @if (field.kind === "boolean") {
+                        <label class="checkbox aurelius-editor-checkbox">
+                            <input type="checkbox" [formControlName]="field.name" />
+                            <span>{{ field.label }}</span>
+                        </label>
+                    } @else if (field.kind === "enum") {
+                        <aurelius-atlas-ui-select
+                            [options]="enumRows(field)"
+                            displayField="value"
+                            [label]="field.label"
+                            [value]="enumSelected(field)"
+                            [searchVisible]="false"
+                            (valueChange)="enumPicked(field, $event)"
+                        ></aurelius-atlas-ui-select>
+                    } @else if (field.kind === "multi") {
+                        <p class="label">{{ field.label }}</p>
+                        <div class="control aurelius-editor-multi" [formArrayName]="field.name">
+                            @for (row of rowsOf(field); track $index) {
+                                <div class="aurelius-editor-multi-row">
+                                    <input type="text" class="input" [formControlName]="$index.toString()" />
+                                    <button
+                                        type="button"
+                                        class="button is-small is-ghost aurelius-editor-multi-delete"
+                                        [attr.aria-label]="deleteLabel"
+                                        (click)="removeMultiRow(field, $index)"
+                                    >
+                                        <fa-icon [icon]="faXmark"></fa-icon>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    } @else {
+                        <label class="label" [for]="'editor-' + field.name">
+                            {{ field.label }}
+                            @if (field.required) {
+                                <span class="has-text-danger">*</span>
+                            }
+                        </label>
+                        <div class="control">
+                            @switch (field.kind) {
+                                @case ("textarea") {
+                                    <textarea
+                                        class="textarea"
+                                        [id]="'editor-' + field.name"
+                                        [formControlName]="field.name"
+                                        [attr.required]="field.required || null"
+                                    ></textarea>
+                                }
+                                @case ("number") {
+                                    <input
+                                        type="number"
+                                        class="input"
+                                        [id]="'editor-' + field.name"
+                                        [formControlName]="field.name"
+                                        [attr.required]="field.required || null"
+                                    />
+                                }
+                                @case ("date") {
+                                    <input
+                                        type="datetime-local"
+                                        class="input"
+                                        [id]="'editor-' + field.name"
+                                        [formControlName]="field.name"
+                                    />
+                                }
+                                @default {
+                                    <input
+                                        type="text"
+                                        class="input aurelius-editor-text"
+                                        [id]="'editor-' + field.name"
+                                        [formControlName]="field.name"
+                                        [attr.required]="field.required || null"
+                                    />
+                                }
+                            }
+                        </div>
+                    }
+                    @if (showError(field)) {
+                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                    }
+                </div>
+            }
+
+            <!-- The classification box (EDT-05): chosen tags with a delete, and
+                 an input that adds an applicable type on Enter. The datalist
+                 lists what applies to this entity's type. -->
+            <div class="field aurelius-editor-classifications">
+                <p class="label">{{ classificationsLabel }}</p>
+                @if (state.chosen().length > 0) {
+                    <div class="tags aurelius-editor-tags">
+                        @for (tag of chosenTags(); track tag.typeName) {
+                            <span class="tag is-info aurelius-editor-tag">{{ tag.typeName }}</span>
+                            <button
+                                type="button"
+                                class="button is-small is-ghost aurelius-editor-tag-delete"
+                                [attr.aria-label]="deleteLabel"
+                                (click)="removeClassification(tag.typeName)"
+                            >
+                                <fa-icon [icon]="faXmark"></fa-icon>
+                            </button>
+                        }
+                    </div>
+                }
+                <div class="control aurelius-editor-classification-control">
+                    <input
+                        type="text"
+                        class="input aurelius-editor-classification-input"
+                        [formControl]="classificationInput"
+                        [attr.placeholder]="classificationsPlaceholder"
+                        [attr.list]="'editor-classification-suggestions'"
+                        (keyup.enter)="addClassification()"
+                    />
+                    <datalist id="editor-classification-suggestions">
+                        @for (name of suggestions(); track name) {
+                            <option [value]="name"></option>
+                        }
+                    </datalist>
+                </div>
+                @if (suggestions().length === 0 && state.chosen().length === 0) {
+                    <p class="help aurelius-editor-no-classifications">{{ noClassifications }}</p>
+                }
+            </div>
+
+            <!-- The required-fields notification (EDT-07): shown when a Save was
+                 attempted and the form is invalid. -->
+            @if (saveAttempted() && form().invalid) {
+                <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
+                    {{ notificationLine }}
+                </div>
+            }
+        </form>
+    }
+</aurelius-atlas-ui-drawer>
