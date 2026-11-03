@@ -6,7 +6,7 @@ Read from ``EntityREST`` of Apache Atlas 2.4.0; the classification rules themsel
 
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.testing.entity_samples import CLASSIFICATION_TYPES, SAMPLE_TYPES
 

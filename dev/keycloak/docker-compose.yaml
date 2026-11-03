@@ -74,7 +74,7 @@ services:
             # cannot present a Keycloak-minted JWT at its own cold boot
             # (DD-193's chicken-and-egg, scoped to exactly this by DD-196).
             # Its native OTLP (gRPC) rides the shared ingest token on the
-            # legacy leg (4320; the FastAPI example is its only other user).
+            # legacy leg (4320; the webapp's edge exporter is its other user).
             OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
             # The collector requires the shared ingest token (DD-193, CIA-04);
@@ -158,7 +158,7 @@ services:
         volumes:
             - data:/var/lib/postgresql
             - ./certs:/certs:ro
-            - ../postgres/pg_hba.conf:/conf/pg_hba.conf:ro
+            - ./pg_hba.conf:/conf/pg_hba.conf:ro
 
     metrics-puller:
         # Slice-owned OTel collector: scrapes the Keycloak metadata Postgres

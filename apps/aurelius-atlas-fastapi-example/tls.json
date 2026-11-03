@@ -1,5 +1,0 @@
-{
-    "services": {
-        "aurelius-atlas-fastapi-example": ["aurelius-atlas-fastapi-example", "localhost", "127.0.0.1"]
-    }
-}

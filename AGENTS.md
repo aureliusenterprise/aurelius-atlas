@@ -17,8 +17,9 @@ there is no central index.
 1. **Install dependencies**: `npm ci` (root) + `uv sync`
 2. **Docker Hub login**: `docker login` — all base/infra images come from `dhi.io` (Docker Hardened Images)
    and pulls fail as `unauthorized` without it.
-3. **Run an app**: `npx nx serve <project>` — required dev infrastructure (Keycloak, Postgres,
-   observability) starts automatically via target `dependsOn`; there is no root compose file.
+3. **Run an app**: `npx nx serve <project>` — required dev infrastructure (Keycloak,
+   Elasticsearch, observability) starts automatically via target `dependsOn`; there is no root
+   compose file.
 4. **Run pre-commit**: `pre-commit run --all-files` (fix any issues)
 5. **Verify**: `nx run-many --target=test -c ci` (or target a specific project)
 
@@ -70,7 +71,7 @@ Versions live in `package.json`, `pyproject.toml`, and
 - **Monorepo tool**: Nx + uv (Python workspace)
 - **Languages**: Python, TypeScript (Angular)
 - **Frontend**: Angular, SCSS, Storybook, Vitest
-- **Backend**: FastAPI, SQLAlchemy/SQLModel (template examples)
+- **Backend**: FastAPI (the Atlas server and the auxiliary APIs), Elasticsearch as the store
 - **Infra**: Docker, Postgres, Keycloak, observability stack (Prometheus/Grafana/Tempo)
 - **Quality**: ESLint, Ruff, Prettier, SonarQube, pre-commit hooks
 - **Docs**: Zensical (Material design) with mkdocstrings
@@ -83,14 +84,18 @@ how it is wired lives in its own `AGENTS.md`. It exists because slice
 boundaries are a workspace-wide rule — which projects may leave together, and
 what to unwire when they do.
 
-The **spine** (keep this): `aurelius-atlas-server`, `aurelius-atlas-frontend-example`,
-`aurelius-atlas-fastapi-example`, `libs/python/aurelius-atlas-sdk`, `libs/python/aurelius-atlas-store-es`,
+The **spine** (keep this): `aurelius-atlas-server`, `aurelius-atlas-webapp`,
+`libs/python/aurelius-atlas-store-es`,
 `libs/python/aurelius-atlas-trace`, `libs/python/aurelius-atlas-parity`, `libs/angular/*`,
-`dev/elasticsearch`, `dev/postgres`, `dev/keycloak`, `dev/observability`, `helm/`
+`dev/elasticsearch`, `dev/keycloak`, `dev/observability`, `helm/`
 (ADR 057), plus the workflow (CI, pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
 slices and its Java tooling were removed when the template was adopted (ADR 050).
+The template's example stack (`aurelius-atlas-fastapi-example`, `aurelius-atlas-frontend-example`,
+`libs/python/aurelius-atlas-example`, `libs/python/aurelius-atlas-sdk`, `dev/postgres`,
+`schemas/avro/`) left once the Atlas server, webapp, and Elasticsearch store replaced
+it (ADR 050); `dev/keycloak` took over `pg_hba.conf`.
 
 When removing a slice, update all of: root `pyproject.toml` (uv members, dev groups, uv.sources),
 `implicitDependencies`/`dependsOn` in `project.json` files, `.env` keys,
@@ -102,14 +107,14 @@ and the `mkdocs.yaml` nav.
 - **Python**: Uses `pyproject.toml` per package. venv at root `.venv/`. Ruff for lint/format, pytest for tests.
 - **TypeScript**: ESLint + Prettier. Angular libraries use ng-packagr for publishing.
 - **Pre-commit**: Runs Prettier, ESLint, Ruff on all files. Always commit through pre-commit.
-- **Schemas**: Avro schemas in `schemas/avro/`. Pydantic-avro for serialization.
+- **Schemas**: Atlas REST JSON models in `libs/python/aurelius-atlas-model`.
 - **Release**: Nx release with changelog generation (conventional commits).
 - **SonarQube**: Analysis configured per app via `sonar-project.properties`.
 - **Secrets**: Real secrets live in per-project `.env.enc` (SOPS). Plaintext `.env` files hold
   dev defaults only. The age key is generated per developer on first devcontainer start.
 - **Env var prefixes**: Nx injects each project's `.env` into **every** task's environment for
-  that project, so app-owned settings must carry a per-project prefix — `AURELIUS_ATLAS_FASTAPI_`,
-  `AURELIUS_ATLAS_FRONTEND_` — to prevent cross-project shadowing (pydantic `env_prefix`).
+  that project, so app-owned settings must carry a per-project prefix — `AURELIUS_ATLAS_SERVER_`,
+  `AURELIUS_ATLAS_WEBAPP_` — to prevent cross-project shadowing (pydantic `env_prefix`).
   Names consumed by **third-party** code stay bare: `OTEL_*`, `POSTGRES_*`/`PG*` (image entrypoints),
   `KC_*`/`KEYCLOAK_*`, `NODE_EXTRA_CA_CERTS`, Node `PORT`, `SONAR_TOKEN`, and
   `TLS_TRUSTSTORE_PASSWORD` (shared compose interpolation). When renaming a key in

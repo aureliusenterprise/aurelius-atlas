@@ -11,5 +11,5 @@ commands. The [architecture](../architecture/index.md) trees state the technolog
 properties the component must keep. A page's **Design** section carries this detail, with the ADR
 that owns each rule linked.
 
-- [Apps](apps/index.md) — the services: the Atlas server and the template examples
+- [Apps](apps/index.md) — the services: the Atlas server and the auxiliary APIs
 - [Libs](libs/index.md) — the Python, Angular, and style libraries the apps consume

@@ -181,7 +181,7 @@ def bridge_logging(*logger_names: str) -> None:
     """Route the named loggers' stdlib records into the OTel log pipeline (DD-210).
 
     Each logger carries exactly one ``LoggingHandler`` on the installed
-    logger provider, with propagation off — the fastapi-example's log tail,
+    logger provider, with propagation off — the FastAPI services' log tail,
     replacing the handler wiring the logfire shell needed.
 
     :param logger_names: the loggers to bridge (the app's and uvicorn's)

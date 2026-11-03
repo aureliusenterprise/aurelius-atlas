@@ -33,7 +33,7 @@ covers wiring specific to this lib; workspace-wide rules live in the root
 ## Wiring Checklist
 
 - `tsconfig.base.json` — `aurelius-atlas-observability` path alias used by the frontend.
-- Consumed in `apps/aurelius-atlas-frontend-example` `app.config.ts`; the exporter is
+- Consumed in `apps/aurelius-atlas-webapp` `app.config.ts`; the exporter is
   chosen by the **app**, not here (the lib defaults to `ConsoleSpanExporter`).
 - Dev trace export goes through the frontend's `/otel` proxy
   (`proxy.conf.json` → collector `:4318`) — no collector host config in the lib.

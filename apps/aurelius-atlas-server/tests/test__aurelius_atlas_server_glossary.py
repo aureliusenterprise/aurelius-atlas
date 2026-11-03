@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 

@@ -1,16 +1,16 @@
 # aurelius-atlas-data-access
 
 Typed Angular data layer: the Atlas REST client (`TypeDefsService`, `AdminService`)
-against `aurelius-atlas-server`, and the client for the FastAPI example backend.
-This file covers wiring specific to this lib; workspace-wide rules live in the root
-`AGENTS.md` and the Angular lib recipe in `libs/angular/AGENTS.md`.
+against `aurelius-atlas-server`. This file covers wiring specific to this lib;
+workspace-wide rules live in the root `AGENTS.md` and the Angular lib recipe in
+`libs/angular/AGENTS.md`.
 
 ## Layout
 
 The Atlas API clients live in `src/lib/atlas/` — one subfolder per backend
-contract, so future API clients (the example backend today, others tomorrow)
-stay separated from the Atlas surface. `src/index.ts` re-exports everything;
-consumers import from the package root only, never a subfolder path.
+contract, so future API clients stay separated from the Atlas surface.
+`src/index.ts` re-exports everything; consumers import from the package root
+only, never a subfolder path.
 
 - `src/lib/atlas/type-defs.service.ts` — `TypeDefsService` (`/atlas/v2/types/**`, TYR-01..10)
 - `src/lib/atlas/search.service.ts` — `SearchService` (`/atlas/v2/search/**`, APC-11,
@@ -93,10 +93,8 @@ consumers import from the package root only, never a subfolder path.
   `AtlasRelatedTermHeader` itself stays in `atlas-entity.ts` — one wire type,
   both uses (APC-03);
   `src/lib/atlas/atlas-error.ts` — the Atlas
-  error body (SRV-04, APC-04), shared with `entities.service.ts`
-- `src/lib/entities.service.ts` — `EntitiesService` (HTTP + SSE) and the example API
-  types — the FastAPI example's client, outside the Atlas folder by design;
-  `src/index.ts` is the public API
+  error body (SRV-04, APC-04)
+- `src/index.ts` is the public API
 - `src/lib/api-config.ts` — `API_BASE_URL` injection token (root default `/api`) and
   `provideApiBaseUrl()`; every service builds all URLs from it (APC-01)
 - `.spec.ts` files colocated with source
@@ -146,14 +144,7 @@ consumers import from the package root only, never a subfolder path.
   read's default (`limit` -1, `offset` 0, `sort` ASC) travels as absence and
   an explicit value always travels (CLG-02). `AtlasRelatedTermHeader` is one
   type on each side, not two (APC-03).
-- The example-backend contract: endpoints (`/entities/*`, `/entities/sse`),
-  `Envelope<T>`, and `PaginatedResponse<T>` must match
-  `apps/aurelius-atlas-fastapi-example`.
-- `Entity` mirrors `libs/python/aurelius-atlas-example` **by hand** — when the Python
-  model changes, update this type too (see that lib's AGENTS.md for the full
-  ripple list).
-- `package.json` — peer deps: Angular `^22` (the workspace), `ngx-sse-client ^21`
-  (its own peer range allows it).
+- `package.json` — peer deps: Angular `^22` (the workspace).
 
 ## Commands
 
@@ -166,13 +157,11 @@ nx build aurelius-atlas-data-access        # ng-packagr-lite package build
 
 - Every backend endpoint gets a typed method here — components never call
   `HttpClient` directly.
-- New response shapes go in the types file next to `Entity`, exported from
+- New response shapes go in the types file next to the Atlas DTOs, exported from
   `src/index.ts`.
-- SSE stays on `ngx-sse-client` with cleanup on destroy; don't hand-roll
-  `EventSource`.
 
 ## Removal
 
 Part of the spine. Removing it means removing the `aurelius-atlas-data-access` alias and
-all imports in `aurelius-atlas-frontend-example` (its components would need their own
+all imports in `aurelius-atlas-webapp` (its components would need their own
 HTTP calls), plus its `mkdocs.yaml` entries.

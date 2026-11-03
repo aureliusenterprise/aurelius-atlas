@@ -16,7 +16,7 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
 ## Wiring Checklist
 
 - Exposes the Docker network `aurelius-atlas-dev-elasticsearch-network`.
-- `implicitDependencies` on `aurelius-atlas-dev-observability`, as for dev/postgres: the
+- `implicitDependencies` on `aurelius-atlas-dev-observability`: the
   `metrics-puller` joins the external `aurelius-atlas-dev-observability-network`. Prometheus series carry
   `exported_job="dev-elasticsearch"`.
 - The puller exports on the collector's **per-service leg** with its own

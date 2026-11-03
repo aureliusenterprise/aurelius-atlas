@@ -29,9 +29,8 @@ rules live in the root `AGENTS.md`.
   interaction), the frontend dashboard reads the live cumulative `_bucket`
   instead of `rate()` to avoid NaN between ticks.
 - `config/grafana/` — file-provisioned datasources and the **dashboards**
-  folder: one dashboard per app/dev stack (`aurelius-atlas-fastapi`,
-  `aurelius-atlas-frontend`, `aurelius-atlas-webapp`, `aurelius-atlas-keycloak`,
-  `aurelius-atlas-postgres`, `aurelius-atlas-elasticsearch`,
+  folder: one dashboard per app/dev stack (`aurelius-atlas-webapp`,
+  `aurelius-atlas-keycloak`, `aurelius-atlas-elasticsearch`,
   `aurelius-atlas-observability-stack`), all in the
   "Aurelius" folder. They are plain JSON edited in the repo (Grafana's UI
   edits are lost on recreate), keyed by the telemetry identities the slices
@@ -88,15 +87,15 @@ rules live in the root `AGENTS.md`.
   starve on shared stacks (ESD-06, DD-202). Discovery is a startup dependency
   on Keycloak, and the container gets `keycloak.localhost:host-gateway` since
   `:8443` is loopback-published.
-- Consumers started via `nx serve`: the FastAPI example (OTLP, legacy leg :4321),
-  Keycloak (`implicitDependencies` here; native OTLP on the legacy leg :4320,
-  its puller on the per-service leg :4317), the Atlas server (`nx serve` chains
-  dev-keycloak since DD-196 — its export mints ingest JWTs), and the frontend
-  (via its `/otel` dev proxy to the browser leg at `:4318`).
-- Slices that own components speaking no OTLP (databases) ship their own
-  **`metrics-puller`** sidecar — a Collector that scrapes locally, next to the
-  targets and credentials, and pushes OTLP here: `dev-postgres` (app PG) and
-  `keycloak-infra` (Keycloak's PG). Keep this project slice-agnostic: it
+- Consumers started via `nx serve`: Keycloak (`implicitDependencies` here;
+  native OTLP on the legacy leg :4320, its puller on the per-service leg
+  :4317), the Atlas server (`nx serve` chains dev-keycloak since DD-196 — its
+  export mints ingest JWTs), and the webapp (via its `/otel` dev proxy to the
+  browser leg at `:4318`).
+- Slices that own components speaking no OTLP (databases, the store) ship their
+  own **`metrics-puller`** sidecar — a Collector that scrapes locally, next to
+  the targets and credentials, and pushes OTLP here (`dev-elasticsearch`,
+  `keycloak-infra` — Keycloak's PG). Keep this project slice-agnostic: it
   receives from whoever exports, and never scrapes other slices directly.
 - Containers run as unprivileged user `65532` — keep bind-mounted config
   readable by that uid.
@@ -173,5 +172,5 @@ npx nx run aurelius-atlas-dev-observability:helm-template
 ## Removal
 
 Part of the spine (workflow reference architecture). Removing it means dropping
-the OTLP export wiring from the FastAPI example, Keycloak, and the frontend's
+the OTLP export wiring from the Atlas server, Keycloak, and the webapp's
 `/otel` proxy and `aurelius-atlas-observability` usage.

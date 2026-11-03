@@ -36,7 +36,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   `/certs/truststore.p12` via `JAVA_OPTS`; Quarkus' gRPC sender ignores
   `OTEL_EXPORTER_OTLP_CERTIFICATE`).
 - The Keycloak **metadata Postgres** is covered by the slice's
-  **`metrics-puller`** service (same pattern as dev/postgres): the Collector's `postgresql` receiver scrapes
+  **`metrics-puller`** service: the Collector's `postgresql` receiver scrapes
   `postgres-keycloak` and pushes OTLP over the observability network the
   stack already joins — the server itself exports natively, the database
   speaks no OTLP, so the puller complements rather than duplicates.
@@ -46,9 +46,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   automated mint — E2E suites, all slice pullers, the apps' OTLP ingest — uses
   `:8443` (DD-202), so the listener a token's `iss` carries is uniform across
   producers; the collector validates both listeners. The
-  issuer each client uses must match the auth settings the FastAPI example
-  validates and the frontend's `/config.json` advertises — change them
-  together (`e2e/config/config.json` and the e2e compose use 8443).
+  issuer each client uses must match the auth settings the APIs validate and the
+  webapp's `/config.json` advertises — change them together
+  (`e2e/config/config.json` and the e2e compose use 8443).
 - The default network carries the `keycloak.localhost` **alias** so
   in-network OAuth clients (Kafka broker, e2e stacks) resolve it without
   `extra_hosts: host-gateway` — that mapping points at `docker0`, which is
@@ -58,11 +58,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   the CA; server cert via the install-copy startup pattern).
 - Realms/clients/test users live in `import/master.json`; edit there rather
   than mutating the running container (changes are lost on recreate otherwise).
-    - `import/master.json` declares the dev identities: `aurelius-writer`
-      (carries the `aurelius-write` client role on the `aurelius` client — the
-      FastAPI example's write gate, `AURELIUS_ATLAS_FASTAPI_AUTH_WRITE_ROLE`) and
-      `aurelius-reader` (read-only), so the authorization model is declarative —
-      the Atlas server's roles (`atlas-read`, `-write`, `-types`, `-admin` on the
+    - `import/master.json` declares the dev identities: `aurelius-writer` and
+      `aurelius-reader`, so the authorization model is declarative — the Atlas
+      server's roles (`atlas-read`, `-write`, `-types`, `-admin` on the
       `aurelius-atlas-server` client, DD-300) go to the writer all and the reader
       `atlas-read`, and are scope-mapped into the `aurelius` client's tokens —
       no init sidecar. Passwords are `${DEV_USER_*_PASSWORD}` placeholders
@@ -81,12 +79,10 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
       changed users and restart Keycloak — the boot import then recreates just
       the missing users with fresh placeholder resolution.
-- The `aurelius` client (frontend SPA, public) has explicit loopback redirect
-  URIs and web origins: `http(s)://localhost|127.0.0.1:4200` (example
-  `nx serve`), `http(s)://localhost|127.0.0.1:4300|4301` (webapp `nx serve`,
-  en-US/nl-NL), `https://localhost:18443` (example e2e) and
-  `https://localhost:18444` (webapp e2e's fixed host ports). Keep them in
-  sync when ports change. The client's `defaultClientScopes` include the
+- The `aurelius` client (webapp SPA, public) has explicit loopback redirect
+  URIs and web origins: `http(s)://localhost|127.0.0.1:4300|4301` (webapp
+  `nx serve`, en-US/nl-NL) and `https://localhost:18444` (webapp e2e's fixed
+  host ports). Keep them in sync when ports change. The client's `defaultClientScopes` include the
   realm's `otel-ingest` scope (DD-193): its audience mapper stamps
   `aud: otel-collector` on user tokens, which is what the OTel collector's
   browser-leg OIDC receiver requires (`azp` stays `aurelius`, so the APIs'
@@ -123,7 +119,7 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
   `IGNORE_EXISTING` rule above applies to client secrets too), then restart the
   producers. Adding/renaming an `otel-*` client has the same rule: a running
   stack will not pick up the import.
-- The frontend's `serve` target depends on this project's `serve`.
+- The webapp's `serve` target depends on this project's `serve`.
 - Realm imports can carry `${VAR}` placeholders resolved from the container
   environment; substitution needs the
   `-Dkeycloak.migration.replace-placeholders=true` JVM flag in `JAVA_OPTS`
@@ -204,5 +200,6 @@ npx nx run aurelius-atlas-dev-keycloak:helm-template
 
 ## Removal
 
-Part of the spine. Removing it means replacing auth in the FastAPI example and
-dropping the Keycloak config/interceptor wiring from the frontend.
+Part of the spine. Removing it means replacing auth in the Atlas server and the
+auxiliary APIs and dropping the Keycloak config/interceptor wiring from the
+webapp.

@@ -11,7 +11,7 @@ import json
 import uuid
 import zipfile
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_model.impexp import AtlasExportRequest, OperationStatus
 from aurelius_atlas_model.instance import (

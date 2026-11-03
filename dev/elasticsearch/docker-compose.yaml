@@ -128,8 +128,9 @@ services:
 networks:
     default:
         name: aurelius-atlas-dev-elasticsearch-network
-    # The dev telemetry stack (dev/observability); see dev/postgres for why
-    # attaching to the external network is safe.
+    # The dev telemetry stack (dev/observability). Attaching to the external
+    # network is safe: the puller is the only joiner and names its series
+    # `exported_job="dev-elasticsearch"`.
     observability:
         name: aurelius-atlas-dev-observability-network
         external: true

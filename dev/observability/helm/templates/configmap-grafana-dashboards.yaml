@@ -1,5 +1,5 @@
 {{/*
-The Grafana dashboards ConfigMap (CHT-40): the seven accepted dashboards as
+The Grafana dashboards ConfigMap (CHT-40): the four accepted dashboards as
 byte-copy assets (files/dashboards/, DD-256 — the suite byte-compares each
 against dev/observability/config/grafana/dashboards/). Their queries are the
 contract: the exported_job pins are what the pullers keep (DD-266), so the

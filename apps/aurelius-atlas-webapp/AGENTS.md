@@ -142,7 +142,5 @@ providers, `createAuthGuard` wrapper and `rootAuthGuard` in `routes.ts`,
 `public/silent-check-sso.html`, the Keycloak locations in the nginx configs, the
 webapp-port origins on the `aurelius` client in
 `dev/keycloak/import/master.json`, and the `authenticated` fixture in
-`e2e/conftest.py` (the example app shares the client, so the Keycloak import
-entry stays as long as the example lives).
-The example app (`aurelius-atlas-frontend-example`) stays — it is the pattern
-reference and spine member; the webapp only replaces it once 7.x completes.
+`e2e/conftest.py` (the webapp is that client's only consumer, so its import
+entry leaves with the auth wiring).

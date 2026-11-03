@@ -43,7 +43,7 @@ services:
             # The dev telemetry stack (started by conftest first): the collector
             # answers as `otel-collector` here — the name in its certificate.
             # Its publishes are loopback-pinned (CIA-03), so service DNS is the
-            # only path (as in the fastapi example's e2e stack).
+            # only path.
             observability: {}
         ports:
             # Fixed host port, mirroring the webapp's 18444: the conftest's

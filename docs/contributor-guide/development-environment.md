@@ -133,14 +133,13 @@ is in [TLS Certificates](tls-certificates.md).
 | ------------------------- | -------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |
 | Atlas server              | 21000                                  | app             | Atlas's own port                                                                                       |
 | Elasticsearch             | 127.0.0.1:${ELASTICSEARCH_PORT} → 9200 | `elasticsearch` | TLS only; loopback-pinned (CHT-101)                                                                    |
-| Postgres (examples)       | `${DATABASE_PORT}` → 5432              | `postgres`      | Keycloak keeps its own, on its network                                                                 |
 | Keycloak                  | 8080 / 8443                            | `keycloak`      | 8080 dev convenience; 8443 is the verified TLS path                                                    |
 | OTel collector            | 127.0.0.1:4317 / 4318 / 4319           | `observability` | OTLP: 4318 browser leg (user JWT), 4317/4319 service leg (shared token); TLS (DD-193), loopback-pinned |
 | Prometheus / Loki / Tempo | 127.0.0.1:9090 / 3100 / 3200           | `observability` | Loopback-pinned (CHT-101); Grafana datasources ride the compose network                                |
 | Grafana                   | 127.0.0.1:3000                         | `observability` | Loopback only                                                                                          |
 
 Each slice documents its own services, images, and run commands in its colocated README:
-`dev/elasticsearch`, `dev/keycloak`, `dev/postgres`, `dev/observability`.
+`dev/elasticsearch`, `dev/keycloak`, `dev/observability`.
 
 !!! WARNING "Keycloak's port 8080 is development-only"
 
@@ -155,14 +154,14 @@ runtime the system runs on has one declared window. The pins named here are the 
 names where they live, not their values, so there is one place to update. A major-version bump is a
 reviewed change to every pin at once, approved by the maintainers team.
 
-| Runtime       | Supported window                                                 | Pins live in                                                                                                              |
-| ------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Python        | 3.14 only                                                        | `pyproject.toml` (`requires-python`), `.devcontainer` python feature, server `Dockerfile` base image, pyright/ruff target |
-| Node.js       | 24 (LTS jod)                                                     | `.devcontainer` node feature, dashboard `build.Dockerfile`                                                                |
-| Java          | 21 (dev tooling for the vendored dashboards' build only)         | `.devcontainer` java feature                                                                                              |
-| Elasticsearch | 9.x (dev image 9.5)                                              | `dev/elasticsearch/docker-compose.yaml` image tag                                                                         |
-| Keycloak      | 26.x                                                             | `dev/keycloak/docker-compose.yaml` image tag                                                                              |
-| PostgreSQL    | 18 (Keycloak's database and the template example only — ADR 047) | `dev/postgres`, `dev/keycloak` compose image tags                                                                         |
+| Runtime       | Supported window                                         | Pins live in                                                                                                              |
+| ------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| Python        | 3.14 only                                                | `pyproject.toml` (`requires-python`), `.devcontainer` python feature, server `Dockerfile` base image, pyright/ruff target |
+| Node.js       | 24 (LTS jod)                                             | `.devcontainer` node feature, dashboard `build.Dockerfile`                                                                |
+| Java          | 21 (dev tooling for the vendored dashboards' build only) | `.devcontainer` java feature                                                                                              |
+| Elasticsearch | 9.x (dev image 9.5)                                      | `dev/elasticsearch/docker-compose.yaml` image tag                                                                         |
+| Keycloak      | 26.x                                                     | `dev/keycloak/docker-compose.yaml` image tag                                                                              |
+| PostgreSQL    | 18 (Keycloak's database only — ADR 047)                  | `dev/keycloak` compose image tags                                                                                         |
 
 Minor and patch releases inside a window follow the dependency rule
 ([ADR 020](../architecture/adr/020-dependencies-stay-current-by-default.md)); the floor rises only
@@ -178,11 +177,10 @@ The workspace is organized as a monorepo, which means that all the projects are 
 
     - `apps`: Contains the main applications and services that make up the workspace.
     - `dev`: Compose files and configuration for the supporting development infrastructure (Elasticsearch,
-      Keycloak, Postgres, observability stack).
+      Keycloak, observability stack).
     - `docs`: Central location for all project documentation, guides, and reference materials.
     - `libs`: Shared libraries and utilities used by multiple applications within the monorepo.
     - `reports`: License and vulnerability report generators.
-    - `schemas`: Avro event schemas used by the template's example library only.
     - `secrets`: Your personal SOPS/age key; this folder is excluded from version control.
     - `tools`: Custom automation (Nx plugins) that wires builds, containers, secrets, and docs into `Nx`.
 

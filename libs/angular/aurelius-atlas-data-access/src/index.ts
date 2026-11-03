@@ -19,4 +19,3 @@ export * from "./lib/atlas/lineage.service";
 export * from "./lib/atlas/relationship.service";
 export * from "./lib/atlas/search.service";
 export * from "./lib/atlas/type-defs.service";
-export * from "./lib/entities.service";

@@ -389,7 +389,7 @@ def test__datasources_pin_uids_and_crosslinks(obs_docs: list[dict[str, Any]]) ->
 
 @pytest.mark.covers(rules=["CHT-40"])
 def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None:
-    """Provider + all seven dashboards byte-identical to dev (CHT-40, DD-256).
+    """Provider + all four dashboards byte-identical to dev (CHT-40, DD-256).
 
     Their queries (the exported_job pins) are the contract.
     """
@@ -403,7 +403,7 @@ def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None
     dev_dir = DEV_CONFIG / "grafana/dashboards"
     expected = sorted(path.name for path in dev_dir.glob("*.json"))
     assert sorted(dashboards["data"]) == expected
-    assert len(expected) == 7
+    assert len(expected) == 4
     for name in expected:
         assert dashboards["data"][name].encode() == (dev_dir / name).read_bytes()
 
