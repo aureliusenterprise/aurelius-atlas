@@ -1,7 +1,8 @@
-"""The admin endpoints of ``AdminResource``: version, status, session, liveness, readiness, patches, purge, tasks.
+"""The admin endpoints of ``AdminResource``: version, status, session, liveness, readiness, patches, purge, tasks,
+export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06.
-"""
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.
+"""  # noqa: D205 - one sentence
 
 import json
 import socket
@@ -12,6 +13,9 @@ from importlib.metadata import version
 from typing import Any
 from zoneinfo import available_timezones
 
+from aurelius_atlas_core.atlas_server_service import AtlasServerService
+from aurelius_atlas_core.audits_writer import AuditsWriter
+from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.task_management import TaskManagement
@@ -23,6 +27,7 @@ from aurelius_atlas_model.impexp import (
     AtlasExportRequest,
     AtlasImportRequest,
     AtlasImportResult,
+    AtlasServer,
 )
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Request, Response
@@ -30,9 +35,9 @@ from fastapi.responses import PlainTextResponse
 from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
-from aurelius_atlas_server.authorization import AtlasPrivilege, privileges, verify_access
+from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, privileges, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
-from aurelius_atlas_server.routes.entity import Body, Store, updater, writer
+from aurelius_atlas_server.routes.entity import INT_RANGE, Body, Store, java_number, updater, writer
 from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
@@ -188,7 +193,9 @@ async def export(request: Request, store: Store, body: Body) -> Response:
         await lock.acquire()
     try:
         sink = ZipSink()
-        service = ExportService(store, cluster_name=request.app.state.settings.cluster_name)
+        service = ExportService(
+            store, cluster_name=request.app.state.settings.cluster_name, audits=_audits(request, store)
+        )
         client = "" if request.client is None else request.client.host
         result = await service.run(sink, export_request, acting_user(request), socket.gethostname(), client)
         content = sink.close()
@@ -275,7 +282,49 @@ def _import_request(text: str) -> AtlasImportRequest | None:
 
 async def _importer(request: Request, store: Store) -> ImportService:
     """The import service, its types current, its entities written as the request's user (IMS-04)."""
-    return ImportService(store, await refreshed_typedef_store(request), updater(request, store))
+    return ImportService(
+        store, await refreshed_typedef_store(request), updater(request, store), audits=_audits(request, store)
+    )
+
+
+def _audits(request: Request, store: Store) -> AuditsWriter:
+    """The audit trail of the request's export or import, this server named as the settings name it (REP-02)."""
+    return AuditsWriter(store, cluster_name=request.app.state.settings.cluster_name, user=acting_user(request))
+
+
+@ADMIN.get("/server/{server_name}")
+async def get_cluster(server_name: str, request: Request, store: Store) -> AtlasJSONResponse:
+    """``getCluster``: the server of the full name, with the replication it recorded (REP-01).
+
+    Atlas checks no admin privilege here, only the entity reads of its store (DD-307).
+
+    Raises:
+        AtlasError: ``INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND`` for none.
+    """
+    service = AtlasServerService(store, user=acting_user(request), authorizer=authorizer(request))
+    found = await service.get(AtlasServer(name=server_name, full_name=server_name))
+    return AtlasJSONResponse(content=found.to_json())
+
+
+@ADMIN.get("/expimp/audit")
+async def get_export_import_audit(request: Request, store: Store) -> AtlasJSONResponse:
+    """``getExportImportAudit``: the audit entries of the values given, the server either end (REP-05).
+
+    Query parameters ``serverName``, ``userName``, ``operation``, ``startTime``, ``endTime``, ``limit`` and
+    ``offset``. Atlas checks no admin privilege here, only the entity reads of its search (DD-307).
+    """
+    query = request.query_params
+    service = ExportImportAuditService(store, user=acting_user(request), authorizer=authorizer(request))
+    found = await service.get(
+        query.get("userName"),
+        query.get("operation"),
+        query.get("serverName"),
+        query.get("startTime"),
+        query.get("endTime"),
+        java_number(request, "limit", 0, INT_RANGE),
+        java_number(request, "offset", 0, INT_RANGE),
+    )
+    return AtlasJSONResponse(content=[entry.to_json() for entry in found])
 
 
 def _who(request: Request) -> tuple[str | None, str, str]:
