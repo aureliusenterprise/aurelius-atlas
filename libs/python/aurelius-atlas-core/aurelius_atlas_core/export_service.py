@@ -19,6 +19,7 @@ from aurelius_atlas_model.impexp import (
 )
 from aurelius_atlas_model.instance import AtlasEntity, AtlasEntityWithExtInfo, AtlasObjectId
 
+from aurelius_atlas_core.audits_writer import AuditsWriter
 from aurelius_atlas_core.entities_extractor import EntitiesExtractor, TraversalDirection
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
@@ -97,11 +98,17 @@ class ExportContext:
 
 
 class ExportService:
-    """Exports the entities of ``store`` as Atlas does; ``cluster_name`` names where they come from (EXP-06)."""
+    """Exports the entities of ``store`` as Atlas does; ``cluster_name`` names where they come from (EXP-06).
 
-    def __init__(self, store: EntityStore, *, cluster_name: str = CLUSTER_NAME_DEFAULT) -> None:
+    ``audits``, when given, records each export and the replication it asks for (REP-02 to REP-04).
+    """
+
+    def __init__(
+        self, store: EntityStore, *, cluster_name: str = CLUSTER_NAME_DEFAULT, audits: AuditsWriter | None = None
+    ) -> None:
         self._store = store
         self._cluster_name = cluster_name
+        self._audits = audits
         self._retriever = EntityRetriever(store)
         self._extractor = EntitiesExtractor(store)
         self._types = ExportTypeProcessor(store)
@@ -136,7 +143,10 @@ class ExportService:
         sink.set_export_order(context.entity_creation_order)
         sink.set_types_def(result.data.types_def if result.data is not None else None)
         result.operation_status = overall_operation_status(statuses)
-        result.increment_metrics_counter("duration", self._store.now() - start)
+        end = self._store.now()
+        result.increment_metrics_counter("duration", end - start)
+        if self._audits is not None:
+            await self._audits.write_export(user_name, result, start, end, context.entity_creation_order)
         result.data = None
         sink.set_result(result)
         return result
