@@ -91,6 +91,7 @@ Attributes:
 - **`DEFAULT_REFRESH_SECONDS`** –
 
   How long a process answers from its registry before it checks for another process's change (DD-029).
+- **`LOGGER`** –
 
 ### ADD\_MANDATORY\_ATTRIBUTE
 
@@ -107,6 +108,12 @@ DEFAULT_REFRESH_SECONDS = 5.0
 ```
 
 How long a process answers from its registry before it checks for another process's change (DD-029).
+
+### LOGGER
+
+```
+LOGGER = logging.getLogger(__name__)
+```
 
 ### TypeUsage
 
@@ -210,7 +217,18 @@ Methods:
 
 Attributes:
 
+- **`change_listeners`** (`list[TypeDefChangeListener]`) –
+
+  `typeDefChangeListeners`: told of each change once it is written (ADA-03).
 - **`registry`** –
+
+#### change\_listeners
+
+```
+change_listeners: list[TypeDefChangeListener] = []
+```
+
+`typeDefChangeListeners`: told of each change once it is written (ADA-03).
 
 #### registry
 

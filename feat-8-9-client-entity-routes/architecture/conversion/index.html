@@ -6804,7 +6804,14 @@ checks a PR must pass:</p>
 <td>6.3c3</td>
 <td>Admin audits</td>
 <td><code>admin/audits</code>, <code>admin/audit/{guid}/details</code>: the audit of purges, exports, imports, type changes and server starts</td>
-<td><code>AtlasAuditService</code></td>
+<td><code>AtlasAuditService</code>, <code>TypeDefAuditListener</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.3c4</td>
+<td>Entity audit aging</td>
+<td><code>admin/audits/ageout</code>: the entity audits aged out by age, count and action, on demand and on a schedule</td>
+<td><code>AuditReductionService</code>, <code>AuditReductionTaskFactory</code></td>
 <td>planned</td>
 </tr>
 <tr>
