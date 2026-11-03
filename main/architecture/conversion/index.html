@@ -7025,6 +7025,111 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
+<td>8.8</td>
+<td>Client route coverage: foundation and lineage</td>
+<td><code>AtlasClient.lineage</code> (CL-60..65, DD-307..310): the <code>LINEAGE_ROOT</code> fix to <code>api/atlas/v2/lineage</code> (DV-69's repoint), the three <code>LineageREST</code> client routes, the per-module live-check coverage matrix</td>
+<td>Aurelius <code>libs/atlas/api</code>, <code>LineageREST</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.9</td>
+<td>Client route coverage: entity</td>
+<td><code>AtlasClient.entity</code> (CLE-01..12, DD-311): the 37 routes of <code>routes/entity.py</code> — reads, writes, deletes, classifications, business metadata, labels, audits</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.10</td>
+<td>Client route coverage: glossary</td>
+<td><code>AtlasClient.glossary</code> (CLG-01..09, DD-312): the 32 routes of <code>routes/glossary.py</code> — glossaries, categories, terms, assignments, the CSV import</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.11</td>
+<td>Client route coverage: relationship and admin writes</td>
+<td><code>AtlasClient.relationship</code> (CLR-01..04) and <code>AtlasClient.admin</code> completed (CLW-01..07, DD-313): patches, purge, the export/import ZIP pair, tasks</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>RelationshipClient</code>/<code>AdminClient</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.12</td>
+<td>Client route coverage: saved searches and DSL</td>
+<td><code>AtlasClient.search</code> completed (CSD-01..06): the seven saved-search routes and <code>GET /dsl</code></td>
+<td>Aurelius <code>libs/atlas/api</code> <code>DiscoveryClient</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.13</td>
+<td>Angular search twin: saved searches and DSL</td>
+<td><code>SearchService</code> completed (ACS-01..06, DD-314): the same eight routes of <code>routes/discovery.py</code> land on the Angular side, closing the pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>DiscoveryClient</code> (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.14</td>
+<td>Angular admin twin: the admin write routes</td>
+<td><code>AdminService</code> completed (AAC-01..07, DD-315): the nine write and health routes of <code>routes/admin.py</code> — health texts, patches, purge, the export/import ZIP pair, tasks — land on the Angular side, closing the CL-11 pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>AdminClient</code> (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.15</td>
+<td>Angular lineage twin: the three LineageREST routes</td>
+<td><code>LineageService</code> (ALN-01..04): the three routes of <code>routes/lineage.py</code> — the graph, its on-demand form, the unique-attribute lookup — land on the Angular side, closing the CL-61..63 pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>LineageREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.16</td>
+<td>Angular relationship twin: the four RelationshipREST routes</td>
+<td><code>RelationshipService</code> (AREL-01..04): the four routes of <code>routes/relationship.py</code> — create, update, the always-wrapped read, the soft/hard delete — land on the Angular side, closing the CLR pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>RelationshipClient</code> (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.17</td>
+<td>Angular entity twin (1/3): the reads and audits</td>
+<td><code>AtlasEntitiesService</code> grows (AEN-01..07): the eight read/audit routes of <code>routes/entity.py</code> — guid/unique-attribute/bulk reads, audit events, changed-classification headers — first third of the CLE pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.18</td>
+<td>Angular entity twin (2/3): the writes and deletes</td>
+<td><code>AtlasEntitiesService</code> grows (AEW-01..06): the seven write/delete routes of <code>routes/entity.py</code> — create/update, the two partial updates, the soft/hard deletes — second third of the CLE pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.19</td>
+<td>Angular entity twin (3/3): classifications, BM, labels</td>
+<td><code>AtlasEntitiesService</code> grows (ACL-01..09): the twenty-two classification/business-metadata/label routes of <code>routes/entity.py</code> — closing all thirty-seven routes of the CLE pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.20</td>
+<td>Angular glossary twin (1/3): the glossaries</td>
+<td><code>GlossaryService</code> (AGL-01..07): the thirteen glossary routes of <code>routes/glossary.py</code> — the paged list, the detailed read, the paged category/term reads, create/update/partial/delete, the template and file import — first third of the CLG pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.21</td>
+<td>Angular glossary twin (2/3): the terms</td>
+<td><code>GlossaryService</code> grows (AGT-01..06): the eleven term routes of <code>routes/glossary.py</code> — reads/creates/updates, the partial update, the delete, the related-terms map, the paged assigned-entities read and its assignment trio — second third of the CLG pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>8.22</td>
+<td>Angular glossary twin (3/3): the categories</td>
+<td><code>GlossaryService</code> grows (AGC-01..04): the eight category routes of <code>routes/glossary.py</code> — the category read, its paged terms and related map, create/update/partial/delete — closing all thirty-two routes of the CLG pair DD-217 opened</td>
+<td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin (Angular)</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>9.1</td>
 <td>Targeted resilience e2e</td>
 <td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
