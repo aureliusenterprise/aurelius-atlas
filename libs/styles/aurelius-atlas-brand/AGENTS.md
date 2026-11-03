@@ -16,10 +16,10 @@ specific to this lib; workspace-wide rules live in the root `AGENTS.md`.
 ## Wiring Checklist
 
 - Consumed as the npm package `@aurelius/atlas-brand` via a `file:` dependency in
-  `apps/aurelius-atlas-frontend-example/package.json` — this is the one scoped
-  specifier; Angular libs use bare path aliases instead.
+  the root `package.json` — this is the one scoped specifier; Angular libs use
+  bare path aliases instead.
 - `aurelius-atlas-ui` (`.storybook/styles.scss` and component styles) and
-  `aurelius-atlas-frontend-example` global styles both build on these tokens.
+  `aurelius-atlas-webapp` global styles both build on these tokens.
 - Depends on `bulma` and `@fortawesome/fontawesome-free` — declare them here,
   not in consuming projects.
 - No build targets by design: plain SCSS consumed directly by bundlers.

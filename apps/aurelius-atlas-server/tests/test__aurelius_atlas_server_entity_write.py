@@ -6,7 +6,7 @@ the write rules themselves are tested on ``EntityWriter`` in ``aurelius-atlas-co
 
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES, WRITE_TYPES
 

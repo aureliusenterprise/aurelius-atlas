@@ -36,10 +36,10 @@ rather than to each backend.
 nx serve aurelius-atlas-dev-observability
 ```
 
-Grafana is on `http://localhost:3000`. The FastAPI example, Keycloak, the
-frontend (via its `/otel` dev proxy) all export here automatically when started
-through `nx serve`/`nx up`. Components that speak no OTLP (databases) arrive
-via a slice-owned `metrics-puller` sidecar in postgres and keycloak. The OTLP
+Grafana is on `http://localhost:3000`. The Atlas server, Keycloak, and the
+webapp (via its `/otel` dev proxy) all export here automatically when started
+through `nx serve`/`nx up`. Components that speak no OTLP (the store, Keycloak's
+database) arrive via a slice-owned `metrics-puller` sidecar. The OTLP
 receivers serve TLS only — exporters trust the local CA (each project's
 `certs/`, `nx certgen`) — and authenticate the writer in three credential-typed
 legs (DD-193, DD-196): the browser leg (4318) validates the signed-in user's
@@ -48,8 +48,8 @@ Keycloak token (OIDC, audience `otel-collector`), the per-service leg
 (the pullers' `oauth2client` extension, the Atlas server's refresh shim), and
 the legacy leg (4320/4321) demands the shared ingest token
 (`OTEL_COLLECTOR_INGEST_TOKEN`, this project's `.env.enc`) for the producers
-that cannot present a Keycloak JWT (Keycloak's native OTLP, the FastAPI
-example). A bearer works on exactly one leg. The verified writer is stamped on
+that cannot present a Keycloak JWT (Keycloak's native OTLP). A bearer works on
+exactly one leg. The verified writer is stamped on
 the telemetry (`enduser.id` from `sub`, `otel.ingest.client` from `azp`,
 DD-194/DD-196). The browser-facing UI ports (Grafana, Prometheus) stay
 plaintext on a developer machine (ADR 039).

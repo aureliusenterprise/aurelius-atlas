@@ -8,7 +8,7 @@ import asyncio
 import logging
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.testing.entity_samples import CLASSIFICATION_TYPES, SAMPLE_TYPES

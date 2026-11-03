@@ -26,7 +26,6 @@ Unit counts are test functions (an `it.each` expands to more at runtime);
 | data2model      | 47                | 3 + 1 scenario              | 92.1% | 401, body-shape 400, rule-ref 400                                      | view-edge selection and dynamic views are at 0% — a whole documented feature (DTM-06/07) untested |
 | lineage-model   | 56                | 5 + 1 scenario              | 98.7% | 502 / 204, breaker open / half-open, fail-before-call (the best suite) | the transport-failure handler and the data2model-side fast-fail are the two uncovered lines       |
 | validate-entity | 25                | 4 + 1 scenario              | 99.3% | 401, any-body-accepted (DV-67)                                         | a mock app: 405 and oversized body only                                                           |
-| fastapi-example | 102               | 21                          | —     | 401/403/503, SSE cancellation, breaker                                 | template code: out of scope (see [Scope](#scope-and-exemptions))                                  |
 
 ### Python libraries
 
@@ -44,41 +43,36 @@ All 14 have offline suites; totals in brackets.
 | trace                 | 57           | the meta-library is its own best customer                                                           |
 | server-client         | 25           | typed errors on 4xx; **2xx-with-garbage-body untested per resource**                                |
 | d2m / lm / ve clients | 18 / 14 / 12 | same shape; timeouts, 5xx, non-JSON 200 thin                                                        |
-| sdk                   | 29           | `aws.py`, `msal.py`, `logger.py` have zero tests — template, out of scope                           |
-| example               | 16           | template, out of scope                                                                              |
 
 ### Frontend
 
-| Project          | Unit                           | Stmts | Branch | Non-happy today                                                    | Gap found                                                                           |
-| ---------------- | ------------------------------ | ----- | ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
-| webapp           | 177                            | 81.9% | 75.0%  | the ALR layer: 5xx interceptor, error handler, silent 4xx          | session lifecycle (logout, refresh, expiry) at zero; no out-of-order-response tests |
-| ui               | 191 (+73 stories, 57 `play()`) | 95.9% | 94.7%  | keyboard/a11y dismissal, drawer reopen-mid-close                   | `dark-mode.component` spec is a create-check only                                   |
-| data-access      | 46                             | 97.0% | 97.3%  | Atlas-error body on 404/400 (two services)                         | `admin.service` / `entities.service`: **zero** failure tests                        |
-| observability    | 58                             | 88.5% | 67.2%  | 3xx–502 spans, timeout, network                                    | the branch hole is init/teardown; `opentelemetry-session.ts` has no own spec        |
-| frontend-example | 67                             | 82.2% | 79.4%  | debounce, search error                                             | `app.config.ts initialize()` untested; editor save/delete never fail                |
-| webapp e2e       | 32 × 3 browsers                | —     | —      | unauthenticated redirect, collector 401s, deep link, unknown route | no server-500 → alert-panel proof; no logout round-trip                             |
-| example e2e      | 14                             | —     | —      | proxy 401s, zero results                                           | CRUD is happy-path-only against a DB-seeded stack                                   |
-| dashboard        | 0                              | —     | —      | the server e2e drives both dashboards in Chromium                  | accepted policy gap (DD-017, ADR 046)                                               |
+| Project       | Unit                           | Stmts | Branch | Non-happy today                                                    | Gap found                                                                           |
+| ------------- | ------------------------------ | ----- | ------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| webapp        | 177                            | 81.9% | 75.0%  | the ALR layer: 5xx interceptor, error handler, silent 4xx          | session lifecycle (logout, refresh, expiry) at zero; no out-of-order-response tests |
+| ui            | 191 (+73 stories, 57 `play()`) | 95.9% | 94.7%  | keyboard/a11y dismissal, drawer reopen-mid-close                   | `dark-mode.component` spec is a create-check only                                   |
+| data-access   | 46                             | 97.0% | 97.3%  | Atlas-error body on 404/400 (two services)                         | `admin.service`: **zero** failure tests                                             |
+| observability | 58                             | 88.5% | 67.2%  | 3xx–502 spans, timeout, network                                    | the branch hole is init/teardown; `opentelemetry-session.ts` has no own spec        |
+| webapp e2e    | 32 × 3 browsers                | —     | —      | unauthenticated redirect, collector 401s, deep link, unknown route | no server-500 → alert-panel proof; no logout round-trip                             |
+| dashboard     | 0                              | —     | —      | the server e2e drives both dashboards in Chromium                  | accepted policy gap (DD-017, ADR 046)                                               |
 
 ## The five-category matrix
 
 Each suite scored per non-happy category: **●●** proven · **○** partial ·
 **—** absent · **n/a** no such surface exists.
 
-| Suite                  | Input & validation       | Business rule / auth | Infrastructure             | Interrupted / async         | Edge-case behaviour          |
-| ---------------------- | ------------------------ | -------------------- | -------------------------- | --------------------------- | ---------------------------- |
-| server                 | ●●                       | ●●                   | ○ startup/readiness only   | —                           | ○                            |
-| data2model             | ●●                       | ●● auth              | n/a stateless              | —                           | ●● engine nulls              |
-| lineage-model          | ●●                       | ●● auth              | ●● the reference           | ○ breakers; timeout missing | ●● fail-before-call          |
-| validate-entity        | ○ accepts-any by design  | ●●                   | n/a                        | —                           | ●●                           |
-| core / typesystem      | ●●                       | ●● deep              | ○ write-failure, conflicts | ○ two-process e2e           | ●●                           |
-| store-es / auth / otel | ●● settings              | ●● 401/403 matrix    | ●●                         | ○ close/cleanup             | ●●                           |
-| client libraries       | ●● model validation      | ●● typed 4xx         | ○ connect-only             | —                           | thin                         |
-| webapp                 | ○ form validation thin   | ○ guards only        | ●● the ALR layer           | ○ preferences rehydrate     | ○ a11y; no rage/double-click |
-| data-access            | ●● api-config            | ○                    | ○ two services             | ○                           | ○                            |
-| observability          | ○                        | ●● ingest-auth       | ●●                         | ○ session-id reload         | ○ branch hole                |
-| ui                     | ●● states                | n/a                  | n/a                        | ●● drawer/modal             | ●●                           |
-| frontend-example       | ○ editor never validated | ○                    | ○ one service              | ○ debounce                  | ○                            |
+| Suite                  | Input & validation      | Business rule / auth | Infrastructure             | Interrupted / async         | Edge-case behaviour          |
+| ---------------------- | ----------------------- | -------------------- | -------------------------- | --------------------------- | ---------------------------- |
+| server                 | ●●                      | ●●                   | ○ startup/readiness only   | —                           | ○                            |
+| data2model             | ●●                      | ●● auth              | n/a stateless              | —                           | ●● engine nulls              |
+| lineage-model          | ●●                      | ●● auth              | ●● the reference           | ○ breakers; timeout missing | ●● fail-before-call          |
+| validate-entity        | ○ accepts-any by design | ●●                   | n/a                        | —                           | ●●                           |
+| core / typesystem      | ●●                      | ●● deep              | ○ write-failure, conflicts | ○ two-process e2e           | ●●                           |
+| store-es / auth / otel | ●● settings             | ●● 401/403 matrix    | ●●                         | ○ close/cleanup             | ●●                           |
+| client libraries       | ●● model validation     | ●● typed 4xx         | ○ connect-only             | —                           | thin                         |
+| webapp                 | ○ form validation thin  | ○ guards only        | ●● the ALR layer           | ○ preferences rehydrate     | ○ a11y; no rage/double-click |
+| data-access            | ●● api-config           | ○                    | ○ two services             | ○                           | ○                            |
+| observability          | ○                       | ●● ingest-auth       | ●●                         | ○ session-id reload         | ○ branch hole                |
+| ui                     | ●● states               | n/a                  | n/a                        | ●● drawer/modal             | ●●                           |
 
 The pattern: **infrastructure failures are a strength** (lineage-model,
 store-es, auth set the house style — fakes with recording seams, breakers
@@ -114,14 +108,9 @@ libraries. These findings are ranked backlog, not drops:
 
 ## Scope and exemptions
 
-Template code stays out of the hardening scope (the trace check already
-excludes it; this review confirms the exemption):
+The template's example code left the workspace (ADR 050), so the exemptions
+this review first recorded for it are closed. One exemption remains:
 
-- `aurelius-atlas-fastapi-example` — the template's example app; broad tests
-  already, no parity contract, not trace-checked.
-- `aurelius-atlas-sdk`'s `aws.py`, `msal.py`, `logger.py` and
-  `aurelius-atlas-example` — template starting points (ADR 050 removed the
-  slices that used them).
 - `aurelius-atlas-dashboard` — vendored Apache Atlas source (DD-017); its
   regression net is the server e2e, by policy.
 

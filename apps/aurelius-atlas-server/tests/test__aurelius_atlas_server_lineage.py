@@ -7,7 +7,7 @@ Read from ``LineageREST`` of Apache Atlas 2.4.0; the traversal itself is tested 
 import json
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from fastapi import FastAPI

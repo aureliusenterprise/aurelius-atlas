@@ -39,18 +39,19 @@ nothing to install by hand beyond Docker and VS Code.
    a while; it also generates your personal secrets key into `secrets/keys.txt`.
 4. Register your secrets key (see [Secrets Management](docs/contributor-guide/secrets-management.md)) —
    until you do, test and serve commands fail at the decryption step.
-5. Run an example:
+5. Serve the Atlas server:
 
     ```bash
-    npx nx serve aurelius-atlas-fastapi-example
+    npx nx serve aurelius-atlas-server
     ```
 
-    Development infrastructure (Keycloak, Postgres, observability) starts automatically.
+    Development infrastructure (Keycloak, Elasticsearch, observability) starts automatically;
+    the API and the dashboards answer on `https://localhost:21000`.
 
 6. Verify your setup:
 
     ```bash
-    nx test aurelius-atlas-fastapi-example -c ci
+    nx test aurelius-atlas-server -c ci
     ```
 
 ??? WARNING "First-run expectations"
@@ -66,9 +67,10 @@ nothing to install by hand beyond Docker and VS Code.
 
 ## What is in the box
 
-Today the repository still carries the template's spine examples (an Angular frontend, a FastAPI backend,
-Postgres) next to the Atlas projects as they are added; the examples leave once the Atlas server and
-dashboard replace them (increment 0.5). The
+The repository carries the Atlas projects: the server (`apps/aurelius-atlas-server`), the webapp
+(`apps/aurelius-atlas-webapp`), the vendored Atlas dashboards, the Elasticsearch store, the
+`dev/` infrastructure stacks (Elasticsearch, Keycloak, observability), and the deployment charts.
+The template's example stack left once these replaced it (ADR 050). The
 [Development Environment](docs/contributor-guide/development-environment.md) guide walks through the
 directory layout, and `npx nx graph` visualizes how the projects fit together.
 

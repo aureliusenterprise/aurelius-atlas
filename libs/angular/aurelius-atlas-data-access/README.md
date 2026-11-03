@@ -1,9 +1,8 @@
 # aurelius-atlas-data-access
 
 Typed Angular data layer: the Atlas REST client (typedefs, admin, search,
-lineage) and the client
-for the Aurelius example backend (HTTP + SSE), with the TypeScript types mirroring
-each API contract.
+lineage, entities, glossary), with the TypeScript types mirroring each API
+contract.
 
 Part of the template **spine**.
 
@@ -78,21 +77,15 @@ Part of the template **spine**.
   `libs/python/aurelius-atlas-model` (`aurelius_atlas_model/typedef.py`)
 - `atlas-error.ts` — the Atlas error body (`errorCode`/`errorMessage`/`errorCause`,
   SRV-04) and its extractor
-- `EntitiesService` — CRUD and search against the FastAPI example
-  (`/entities/*`), plus `GET /entities/sse` live updates via
-  `ngx-sse-client` (auto-reconnecting, cleaned up on destroy)
 - `API_BASE_URL` / `provideApiBaseUrl()` — the base URL the API is reachable under
   (defaults to `/api`); consuming apps provide it from their runtime config
-- `Entity` — the domain type mirroring `libs/python/aurelius-atlas-example`
-- `Envelope<T>`, `PaginatedResponse<T>`, `FindAllQueryParams` — API response and
-  query shapes
 
 ## Usage
 
 ```ts
-import { EntitiesService, provideApiBaseUrl, TypeDefsService, type Entity } from "aurelius-atlas-data-access";
+import { provideApiBaseUrl, SearchService, TypeDefsService } from "aurelius-atlas-data-access";
 
-private readonly entities = inject(EntitiesService);
+private readonly search = inject(SearchService);
 private readonly typedefs = inject(TypeDefsService);
 
 // In the app's environment providers (defaults to "/api" if omitted):
@@ -103,9 +96,9 @@ this.typedefs.getTypedefs({ excludeInternalTypesAndReferences: true });
 ```
 
 > [!NOTE]
-> `Entity` here and the Python `Entity` model are kept in sync by hand — update
-> both when the domain model changes. The same applies to the typedef DTOs in
-> `atlas-typedef.ts` and `aurelius_atlas_model/typedef.py` (APC-03), and to the
+> The wire types mirror the Python models by hand — update both when a model
+> changes. That covers the typedef DTOs in `atlas-typedef.ts` and
+> `aurelius_atlas_model/typedef.py` (APC-03), the
 > search DTOs in `atlas-search.ts` and `aurelius_atlas_model/discovery.py`, and
 > to the saved-search DTOs in `atlas-profile.ts` and
 > `aurelius_atlas_model/profile.py`, and to the admin DTOs in

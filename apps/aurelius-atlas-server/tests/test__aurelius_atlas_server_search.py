@@ -6,7 +6,7 @@ Read from ``DiscoveryREST`` of Apache Atlas 2.4.0; the search itself is tested o
 
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES
 

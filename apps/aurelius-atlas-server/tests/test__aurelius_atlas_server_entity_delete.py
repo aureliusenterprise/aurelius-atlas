@@ -8,7 +8,7 @@ on ``EntityWriter`` in ``aurelius-atlas-core``.
 from collections.abc import AsyncIterator
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES
 from aurelius_atlas_server import ServerSettings, create_app

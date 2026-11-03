@@ -6,7 +6,7 @@ and the repository in ``aurelius-atlas-core``.
 
 from typing import Any
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES
 

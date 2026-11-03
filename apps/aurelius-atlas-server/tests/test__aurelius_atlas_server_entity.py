@@ -7,7 +7,7 @@ creates them over REST (DD-051).
 
 from typing import Any, cast
 
-import httpx
+import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES, sample_entity, sample_types

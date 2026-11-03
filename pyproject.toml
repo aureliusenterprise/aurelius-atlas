@@ -14,15 +14,12 @@ dev = [
     "aurelius-atlas-data2model",
     "aurelius-atlas-data2model-client",
     "aurelius-atlas-dsl",
-    "aurelius-atlas-example",
-    "aurelius-atlas-fastapi-example",
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
     "aurelius-atlas-lineage-model-client",
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
-    "aurelius-atlas-sdk[full]",
     "aurelius-atlas-server",
     "aurelius-atlas-server-client",
     "aurelius-atlas-store-es[testing]",
@@ -31,15 +28,12 @@ dev = [
     "aurelius-atlas-validate-entity",
     "aurelius-atlas-validate-entity-client",
     "aurelius-atlas-vulnerability-report",
-    "alembic>=1.18",
     "mike",
     "mkdocstrings>=1.0.8",
     "mkdocstrings-python>=2.0.10",
     "playwright>=1.64.0",
     "pre-commit>=4.7.0",
-    "psycopg[binary]>=3.3.6",
     "pydantic>=2.14.1",
-    "pydantic-avro>=0.9.0",
     "pydantic-settings>=2.16.1",
     "pymdown-extensions>=12.2",
     "pyright>=1.1.403",
@@ -50,13 +44,9 @@ dev = [
     "pytest-playwright>=0.10.0",
     "pytest-sugar>=1.0.0",
     "python-dotenv>=1.2.4",
-    "python-keycloak>=7.1",
     "ruff>=0.15.16",
-    "sqlalchemy>=2.1.4",
-    "sqlmodel>=0.0.24",
     "tenacity>=9.2.1",
     "testcontainers>=4.14",
-    "timeout-decorator>=0.5.0",
     "trustme>=1.1",
     "zensical>=0.0.70",
     "griffe-pydantic>=1.3.2",
@@ -81,13 +71,7 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-dsl]
 workspace = true
 
-[tool.uv.sources.aurelius-atlas-example]
-workspace = true
-
 [tool.uv.sources.aurelius-atlas-auth]
-workspace = true
-
-[tool.uv.sources.aurelius-atlas-fastapi-example]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-license-report]
@@ -106,9 +90,6 @@ workspace = true
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-parity]
-workspace = true
-
-[tool.uv.sources.aurelius-atlas-sdk]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-server]
@@ -140,18 +121,15 @@ members = [
     "apps/aurelius-atlas-data2model",
     "apps/aurelius-atlas-lineage-model",
     "apps/aurelius-atlas-validate-entity",
-    "apps/aurelius-atlas-fastapi-example",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
     "libs/python/aurelius-atlas-core",
     "libs/python/aurelius-atlas-data2model-client",
     "libs/python/aurelius-atlas-dsl",
-    "libs/python/aurelius-atlas-example",
     "libs/python/aurelius-atlas-lineage-model-client",
     "libs/python/aurelius-atlas-model",
     "libs/python/aurelius-atlas-otel",
     "libs/python/aurelius-atlas-parity",
-    "libs/python/aurelius-atlas-sdk",
     "libs/python/aurelius-atlas-server-client",
     "libs/python/aurelius-atlas-store-es",
     "libs/python/aurelius-atlas-trace",
@@ -161,18 +139,12 @@ members = [
     "reports/aurelius-atlas-vulnerability-report",
 ]
 
-# What the traceability check covers (ADR 049, DD-010): every workspace member except these template
+# What the traceability check covers (ADR 049, DD-010): every workspace member except these
 # projects, without their `testing` subpackages, and the rules of every specification from 0.2 on.
 [tool.aurelius-atlas-trace]
 deviations = "docs/architecture/conversion/deviations.md"
 enforce-from = "0.2"
-exclude-projects = [
-    "apps/aurelius-atlas-fastapi-example",
-    "libs/python/aurelius-atlas-example",
-    "libs/python/aurelius-atlas-sdk",
-    "reports/aurelius-atlas-license-report",
-    "reports/aurelius-atlas-vulnerability-report",
-]
+exclude-projects = ["reports/aurelius-atlas-license-report", "reports/aurelius-atlas-vulnerability-report"]
 exclude-subpackages = ["generated", "testing"]
 # The per-project specs trees ("<project>/specs/N-M-slug/spec.md"); the workspace
 # root holds the pre-move pages under docs/ and the specs of workspace-wide
@@ -247,7 +219,7 @@ ignore = [
 select = ["ALL"]
 
 [tool.ruff.lint.flake8-type-checking]
-runtime-evaluated-base-classes = ["pydantic.BaseModel", "sqlalchemy.orm.DeclarativeBase"]
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 
 [tool.ruff.lint.per-file-ignores]
