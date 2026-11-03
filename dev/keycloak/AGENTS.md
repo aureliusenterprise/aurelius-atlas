@@ -48,7 +48,9 @@ project; workspace-wide rules live in the root `AGENTS.md`.
   producers; the collector validates both listeners. The
   issuer each client uses must match the auth settings the APIs validate and the
   webapp's `/config.json` advertises — change them together
-  (`e2e/config/config.json` and the e2e compose use 8443).
+  (`dev/config.json`, `e2e/config/config.json`, and the e2e compose all use
+  8443; `:8080` stays browser-only, as its tokens carry an `iss` the APIs
+  reject).
 - The default network carries the `keycloak.localhost` **alias** so
   in-network OAuth clients (Kafka broker, e2e stacks) resolve it without
   `extra_hosts: host-gateway` — that mapping points at `docker0`, which is
