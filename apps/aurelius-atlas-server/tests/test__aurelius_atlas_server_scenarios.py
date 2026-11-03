@@ -8,9 +8,9 @@ from aurelius_atlas_parity import Scenario, load_scenarios, run_scenario
 
 SCENARIOS = Path(__file__).parents[1] / "scenarios"
 CORE_MODELS = (Path("0000-Area0") / "0010-base_model.json", Path("0000-Area0") / "0011-glossary_model.json")
-NEEDS_CORE_MODELS = ("glossary/", "lineage/", "search/saved")
+NEEDS_CORE_MODELS = ("admin/replication", "glossary/", "lineage/", "search/saved")
 """Scenarios on the base and glossary models' types (``DataSet``, ``Process``, ``AtlasGlossary``, the profile's),
-which the e2e server loads with every model."""
+and the server and audit types of ``admin/replication``, which the e2e server loads with every model."""
 
 
 def core_models(directory: Path) -> Path:
