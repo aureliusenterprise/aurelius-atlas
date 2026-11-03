@@ -3,6 +3,7 @@
 Atlas writes both with ``NON_NULL``: an absent field is left out, an empty list or map kept.
 """
 
+import json
 from enum import StrEnum
 from typing import Any
 
@@ -153,3 +154,59 @@ class AtlasImportResult(AtlasModel):
     def increment_metrics_counter(self, key: str, increment_by: int = 1) -> None:
         """``incrementMeticsCounter``: add to the count of ``key``."""
         self.metrics[key] = self.metrics.get(key, 0) + increment_by
+
+
+OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR = "skipUpdateReplicationAttr"
+KEY_REPLICATION_DETAILS = "REPL_DETAILS"
+OPERATION_EXPORT = "EXPORT"
+OPERATION_IMPORT = "IMPORT"
+
+
+def skip_update_replication_attr(options: dict[str, Any]) -> bool:
+    """``skipUpdateReplicationAttr``: the option, a boolean or ``true`` in any case (REP-03)."""
+    value = options.get(OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR)
+    if isinstance(value, str):
+        return value.lower() == "true"
+    return value is True
+
+
+def replicated(options: dict[str, Any], key: str) -> str:
+    """``getOptionKeyReplicatedTo`` and ``…From``: the option's text, empty when it is not given (REP-03)."""
+    value = options.get(key)
+    return "" if value is None else _java_text(value)
+
+
+class AtlasServer(AtlasModel):
+    """``AtlasServer``: a catalogue an export or import names, and the replication it recorded (REP-01)."""
+
+    guid: str = "-1"
+    name: str | None = None
+    full_name: str | None = None
+    display_name: str | None = None
+    additional_info: dict[str, str] | None = None
+    urls: list[str] | None = None
+
+    def set_additional_info_repl(self, guid: str, modified: int) -> None:
+        """``setAdditionalInfoRepl``: the GUID's replication time in ``REPL_DETAILS``, or the GUID taken out at 0."""
+        info = dict(self.additional_info or {})
+        details = json.loads(info[KEY_REPLICATION_DETAILS]) if KEY_REPLICATION_DETAILS in info else {}
+        if modified == 0:
+            details.pop(guid, None)
+        else:
+            details[guid] = modified
+        info[KEY_REPLICATION_DETAILS] = json.dumps(details, separators=(",", ":"))
+        self.additional_info = info
+
+
+class ExportImportAuditEntry(AtlasModel):
+    """``ExportImportAuditEntry``: one export or import, its user, servers, times and result (REP-02)."""
+
+    guid: str = "-1"
+    user_name: str | None = None
+    operation: str | None = None
+    operation_params: str | None = None
+    start_time: int = 0
+    end_time: int = 0
+    result_summary: str | None = None
+    source_server_name: str | None = None
+    target_server_name: str | None = None

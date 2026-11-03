@@ -14,6 +14,7 @@ from aurelius_atlas_model.impexp import AtlasExportResult
 from aurelius_atlas_model.instance import AtlasEntityWithExtInfo
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
+from aurelius_atlas_core.import_transforms import ImportTransforms
 from aurelius_atlas_core.zip_sink import ATLAS_EXPORT_INFO_NAME, ATLAS_EXPORT_ORDER_NAME, ATLAS_TYPESDEF_NAME
 
 EMPTY_ZIP = "Attempting to import empty ZIP."
@@ -43,6 +44,8 @@ class ZipSource:
         self._position = 0
         self.position = 0
         """``getPosition``: how many entities were read."""
+        self.import_transform: ImportTransforms | None = None
+        """``setImportTransform``: the transforms each entity read goes through (ITR-01)."""
 
     def types_def(self) -> AtlasTypesDef:
         """``getTypesDef``: the export's types, none when the ZIP holds none."""
@@ -64,7 +67,8 @@ class ZipSource:
         self._position += 1
         self.position += 1
         found = self._json(guid)
-        return AtlasEntityWithExtInfo.model_validate(found) if isinstance(found, dict) else None
+        entity = AtlasEntityWithExtInfo.model_validate(found) if isinstance(found, dict) else None
+        return entity if self.import_transform is None else self.import_transform.apply(entity)
 
     def set_position(self, index: int) -> None:
         """``setPosition``: the entities up to and with ``index`` skipped."""
