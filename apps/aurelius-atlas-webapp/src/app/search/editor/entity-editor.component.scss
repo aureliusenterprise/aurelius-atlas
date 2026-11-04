@@ -30,8 +30,8 @@
 }
 
 /*
- * The Delete's hold donut (EDT-19, DD-349): the button is a plain Bulma
- * button, and while the hold runs it behaves like `is-loading` — the label
+ * The Delete's hold donut (EDT-19, DD-349): the button is solid danger, and
+ * while the hold runs it behaves like `is-loading` — the label
  * clears (Bulma's own trick, so the button keeps its width) and a donut
  * appears in the spinner's place: a 1em circle stroked 2px in the spinner's
  * colour token (UIC-03 — no literal colour). The ring is an SVG circle

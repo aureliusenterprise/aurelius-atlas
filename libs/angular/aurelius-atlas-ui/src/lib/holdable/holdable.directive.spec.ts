@@ -93,4 +93,20 @@ describe("Holdable (7.7c)", () => {
         fixture.detectChanges();
         expect(button.style.getPropertyValue("--aurelius-hold-progress")).toBe("0");
     });
+
+    it("marks the holding state on the host, and clears it on the outcome", () => {
+        // The caller's CSS hooks this attribute (the editor's donut shows on
+        // it), so it must carry the literal word, not a wrapped value.
+        expect(button.getAttribute("data-aurelius-hold")).toBeNull();
+
+        button.dispatchEvent(pointer("pointerdown"));
+        expect(button.getAttribute("data-aurelius-hold")).toBe("holding");
+
+        button.dispatchEvent(pointer("pointerup"));
+        expect(button.getAttribute("data-aurelius-hold")).toBeNull();
+
+        button.dispatchEvent(pointer("pointerdown"));
+        vi.advanceTimersByTime(2000);
+        expect(button.getAttribute("data-aurelius-hold")).toBeNull();
+    });
 });

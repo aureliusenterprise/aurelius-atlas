@@ -1,4 +1,4 @@
-import { Directive, ElementRef, HostBinding, HostListener, inject, input, output, signal } from "@angular/core";
+import { Directive, ElementRef, HostListener, inject, input, output, signal } from "@angular/core";
 import { Subscription, timer } from "rxjs";
 
 /** The fill's refresh step, in milliseconds — smooth enough to read as motion. */
@@ -38,9 +38,8 @@ export class Holdable {
     /** The hold's fraction (0 to 1) — readable by a spec; the fill reads the CSS var. */
     readonly progress = signal(0);
 
-    /** Reflects the fraction so a caller's CSS can fill without a binding. */
-    @HostBinding("attr.data-aurelius-hold")
-    protected readonly holdState = signal<"idle" | "holding">("idle");
+    /** The hold's phase — readable by a spec; the host attribute is the caller's hook. */
+    readonly holdState = signal<"idle" | "holding">("idle");
 
     private readonly el = inject(ElementRef<HTMLElement>);
 
@@ -51,6 +50,7 @@ export class Holdable {
     protected onDown(): void {
         const totalMs = this.holdFor() * 1000;
         this.holdState.set("holding");
+        this.el.nativeElement.setAttribute("data-aurelius-hold", "holding");
         this.running?.unsubscribe();
         this.running = timer(0, TICK_MS).subscribe((tick) => {
             const fraction = Math.min((tick * TICK_MS) / totalMs, 1);
@@ -76,6 +76,7 @@ export class Holdable {
         this.running?.unsubscribe();
         this.running = null;
         this.holdState.set("idle");
+        this.el.nativeElement.removeAttribute("data-aurelius-hold");
         this.setProgress(0);
         this.held.emit(completed);
     }

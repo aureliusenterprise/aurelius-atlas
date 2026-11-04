@@ -498,12 +498,14 @@ directive's own spec.
 - **Increment:** 7.7c
 - **Date:** 2026-11-04
 
-**Decision.** The Delete is a plain Bulma button. While the hold runs it
-behaves like Bulma's own `is-loading`: the label clears (Bulma's `color:
-transparent`, so the button keeps its width) and a donut appears in the
-spinner's place. The donut is the spinner's look, an SVG circle stroked 2px
-in `--bulma-loading-color` at 1em, centred where the `is-loading` spinner
-sits. The circle carries `pathLength="1"`, so one CSS animation of
+**Decision.** The Delete is a solid danger button (Bulma's `is-danger`).
+While the hold runs it behaves like Bulma's own `is-loading`: the label
+clears (Bulma's `color: transparent`, so the button keeps its width) and a
+donut appears in the spinner's place. The donut is the spinner's look, an SVG
+circle stroked 2px in `--bulma-loading-color` at 1em, centred where the
+`is-loading` spinner sits (on the danger fill that token is the light text
+colour, so the ring reads on the red, as Bulma's own spinner does). The
+circle carries `pathLength="1"`, so one CSS animation of
 `stroke-dashoffset` (1 to 0) draws the ring clockwise from the top (the SVG
 rides a quarter turn). The animation plays exactly once (`forwards`): its
 duration is the hold's own seconds, which the template binds once
@@ -526,15 +528,20 @@ keeps the ring and the confirm in step.
 aliased, jagged edges). (b) The directive sweeping a `--aurelius-hold-progress`
 custom property the caller fills each frame (refused: per-frame JS, and the
 reviewer wanted a CSS animation timed to the hold). (c) Canvas (refused: no
-markup, and a stroke is simpler). (d) Keep it solid danger with a ring inside
-the edge, the shape first shipped in this increment (refused: the reviewer
-preferred the plain button and a spinner-like donut).
+markup, and a stroke is simpler). (d) The ring inside the button's edge, the
+shape first shipped in this increment (refused: the reviewer wanted the
+spinner-like donut in the label's place; the solid danger fill the reviewer
+also asked for stays).
 
 **Consequences.** The look rides the caller's SCSS, not the directive
-(UIC-03, and the directive stays paint-free per DD-348). `@property` is not
-needed: `stroke-dashoffset` animates natively. The in-flight DELETE keeps
-Bulma's real `is-loading` spinner (EDT-18), so the button shows the growing
-donut while held and the stock spinner while the request runs. The editor
-spec asserts the donut markup and the shared duration number; the animation
-itself is reviewed in the Storybook mock (`Holdable`, Closing once), whose
-play() test asserts the one play and the closed end.
+(UIC-03, and the directive stays paint-free per DD-348). The SCSS shows the
+donut on the directive's `data-aurelius-hold="holding"` host attribute, so
+that attribute must carry the literal word (the directive writes it
+imperatively; a `@HostBinding` on a signal stringifies the Signal object, not
+its value, and the states never match). `@property` is not needed:
+`stroke-dashoffset` animates natively. The in-flight DELETE keeps Bulma's
+real `is-loading` spinner (EDT-18), so the button shows the growing donut
+while held and the stock spinner while the request runs. The editor spec
+asserts the donut markup, the danger class, and the shared duration number;
+the animation itself is reviewed in the Storybook mock (`Holdable`, Closing
+once), whose play() test asserts the one play and the closed end.

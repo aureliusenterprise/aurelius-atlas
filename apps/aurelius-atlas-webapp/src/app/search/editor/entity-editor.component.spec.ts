@@ -832,6 +832,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         arrive(fixture, httpMock);
 
         const del = compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete");
+        // Destructive, and it reads that way (EDT-19).
+        expect(del?.classList.contains("is-danger")).toBe(true);
         // The donut is the SVG ring stroke with a unit path, so the CSS
         // animation can draw it with one dashoffset sweep.
         const circle = del?.querySelector("svg.aurelius-hold-donut circle");
