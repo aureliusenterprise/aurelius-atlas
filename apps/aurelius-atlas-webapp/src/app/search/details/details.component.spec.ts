@@ -5,7 +5,7 @@ import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } fr
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
-import { faPencil } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
 import type { AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
@@ -357,11 +357,12 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(pencil?.getAttribute("aria-label")).toBe("Edit entity");
         expect(pencil?.querySelector("fa-icon")).toBeTruthy();
 
-        // The glyph is the legacy edit button's `fa-pencil` (DD-346): the
-        // rendered icon input, pinned by identity — the pen glyph rendered
-        // here unnoticed until a user compared it against the reference.
+        // The glyph is the demo header's edit icon — FA's `fa-edit`, i.e.
+        // FA6 `faPenToSquare` (DD-346): the rendered icon input, pinned by
+        // identity — earlier glyphs rendered here unnoticed until a user
+        // compared the button against the demo.
         const icon = fixture.debugElement.query(By.css("button.aurelius-details-edit fa-icon"));
-        expect(icon.componentInstance.icon()).toBe(faPencil);
+        expect(icon.componentInstance.icon()).toBe(faPenToSquare);
     });
 
     it("hides the editor pencil without the grant (EDT-09)", () => {

@@ -26,13 +26,12 @@
 }
 
 /*
- * The editor pencil (EDT-09): top-right of the header box, the legacy
- * header's corner affordance. Absolute so the title keeps its line.
- * The reference renders it as a bordered pill (`btn btn-action btn-sm`:
- * a 1px keppel border, transparent fill, 4px radius, a 14px glyph),
- * not a borderless ghost — the pill's keppel #37bb9b is the legacy
- * accent, pinned here as the badge/type-name sheets pin their palette
- * (DD-346).
+ * The editor pencil (EDT-09): top-right of the header box, the demo
+ * header's corner affordance (DD-346) — a bare `icon is-large
+ * has-text-link` glyph in a chromeless button: the link-blue
+ * pen-to-square, no border, no fill. The button carries no Bulma
+ * classes, so the UA's button chrome is reset here; the corner placement
+ * is absolute so the title keeps its line.
  */
 .aurelius-details-header {
     position: relative;
@@ -42,18 +41,15 @@
     position: absolute;
     right: 0.75rem;
     top: 0.75rem;
-    border: 1px solid #37bb9b; // $color_keppel_approx (legacy btn-action)
-    border-radius: 4px; // the legacy .btn-action radius, not Bulma's
-    background-color: transparent;
-    color: #37bb9b;
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    line-height: 0; // the icon box is the button's whole box
 
-    fa-icon {
-        font-size: 14px; // the legacy .btn-action font-size, on the glyph
-    }
-
-    &:hover {
-        background-color: #37bb9b;
-        border-color: #37bb9b;
-        color: #fff; // the legacy hover ink ($white)
+    &:focus-visible {
+        outline: 2px solid hsl(var(--bulma-link-h), var(--bulma-link-s), var(--bulma-link-l));
+        outline-offset: 2px;
     }
 }
