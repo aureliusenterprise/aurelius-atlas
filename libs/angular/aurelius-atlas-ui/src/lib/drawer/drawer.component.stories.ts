@@ -155,8 +155,8 @@ const footerTemplate = `
     </div>
     <div drawer-footer>
         <div class="buttons is-right">
-            <button type="button" class="button is-small is-danger is-outlined">Delete</button>
-            <button type="button" class="button is-small is-primary">Save</button>
+            <button type="button" class="button is-danger is-outlined">Delete</button>
+            <button type="button" class="button is-primary">Save</button>
         </div>
     </div>
 </aurelius-atlas-ui-drawer>

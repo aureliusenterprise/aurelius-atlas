@@ -816,6 +816,13 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         const foot = [...compiled.querySelectorAll<HTMLButtonElement>('[role="dialog"] .aurelius-drawer-foot button')];
         expect(foot.map((button) => normalize(button.textContent))).toEqual(["Delete", "Save"]);
         expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
+        // The pair rides Bulma's own group container (DD-350): it carries
+        // the spacing between the buttons and their right alignment.
+        const actions = compiled.querySelector(".aurelius-editor-actions");
+        expect(actions?.classList.contains("buttons")).toBe(true);
+        expect(actions?.classList.contains("is-right")).toBe(true);
+        // Normally sized: Bulma's normal size is the absence of a class.
+        expect(foot.every((button) => !button.classList.contains("is-small"))).toBe(true);
         expect([...compiled.querySelectorAll("button")].some((b) => normalize(b.textContent) === "Cancel")).toBe(false);
     });
 

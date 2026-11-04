@@ -545,3 +545,37 @@ while held and the stock spinner while the request runs. The editor spec
 asserts the donut markup, the danger class, and the shared duration number;
 the animation itself is reviewed in the Storybook mock (`Holdable`, Closing
 once), whose play() test asserts the one play and the closed end.
+
+### DD-350. The commit pair rides Bulma's `buttons` container, normally sized
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The Delete and Save sit in Bulma's `buttons is-right` container
+(the reviewer asked for the button guide's spacing, and normal size). The
+carrier div lost its hand-rolled `display: flex` and `justify-content:
+flex-end`. Bulma's container carries the display, the `0.75rem` gap between
+the buttons, and the right alignment. Both buttons dropped `is-small`, so
+they take Bulma's normal control size. The editor's own SCSS keeps one rule
+only: the projected foot div grows across the drawer's foot bar, because
+that bar is a flex row and a content-sized child cannot reach the right
+edge.
+
+**Reason.** Bulma's Button documentation makes the `.buttons` container the
+only way a group of buttons gets its spacing (the gap), and a bare flex div
+re-invents it badly. The hand-rolled pair had no gap at all, and its
+right-alignment never worked: the child sized to its content, so pushing its
+own content right moved nothing. The reviewer also asked for the normal
+size, which in Bulma is the absence of a size class.
+
+**Alternatives.** (a) A `gap` on the existing hand-rolled div (refused: the
+button guide's own container exists, and reusing it retires the custom
+rule). (b) Keep `is-small` (refused: the reviewer asked for the normal
+size).
+
+**Consequences.** The Holdable stories drop `is-small` too, so the mock and
+the app show the same button. The mock's pinned demo button keeps its inline
+`font-size` (that is the story's enlarged display, not a size class). The
+drawer's foot story already used `buttons is-right`, so the two screens now
+share one idiom.

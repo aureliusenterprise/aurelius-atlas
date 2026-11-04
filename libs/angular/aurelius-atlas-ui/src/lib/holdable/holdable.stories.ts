@@ -85,7 +85,7 @@ const template = `${fill}
     [holdFor]="holdFor"
     [style.--aurelius-hold-duration]="holdFor + 's'"
     (held)="onHeld($event)"
-    class="button is-small is-danger aurelius-hold-button aurelius-hold-story-button"
+    class="button is-danger aurelius-hold-button aurelius-hold-story-button"
 ><span>Hold to delete</span>${donut}</button>
 `;
 
@@ -164,7 +164,7 @@ export const ClosingOnce: Story = {
     },
     render: () => ({
         template: `${fill}
-<button type="button" class="button is-small is-danger aurelius-hold-button aurelius-hold-mock" data-aurelius-hold="holding" style="--aurelius-hold-duration: 3s; font-size: 22px; padding: 16px 28px;"><span>Hold to delete</span>${donut}</button>
+<button type="button" class="button is-danger aurelius-hold-button aurelius-hold-mock" data-aurelius-hold="holding" style="--aurelius-hold-duration: 3s; font-size: 22px; padding: 16px 28px;"><span>Hold to delete</span>${donut}</button>
 <p class="is-size-7">The real animation, played once: the label clears and the round donut grows clockwise from the top for 3 seconds, then the ring is fully closed and holds. Press and hold the <em>Hold to delete</em> button in <strong>Completed Hold</strong> for the interactive one.</p>`,
     }),
 };
