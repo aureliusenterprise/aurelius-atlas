@@ -442,6 +442,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(httpMock.match((request) => request.method === "POST" || request.method === "PUT")).toHaveLength(0);
         const error = compiled.querySelector(".aurelius-editor-error");
         expect(normalize(error?.textContent)).toBe("Name is required.");
+        // Bulma's is-danger paints the invalid control red (EDT-07, DD-332).
+        expect(compiled.querySelector("#editor-name")?.classList.contains("is-danger")).toBe(true);
         const notification = compiled.querySelector<HTMLElement>(".aurelius-editor-notification");
         expect(normalize(notification?.textContent)).toBe(
             "This entity can't be saved because one or more required fields are missing.",

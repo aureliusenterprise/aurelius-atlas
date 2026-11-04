@@ -98,6 +98,8 @@
                             displayField="value"
                             [label]="field.label"
                             [value]="enumSelected(field)"
+                            [invalid]="showError(field)"
+                            [requiredErrorMessage]="nameRequired"
                             [searchVisible]="false"
                             (valueChange)="enumPicked(field, $event)"
                         ></aurelius-atlas-ui-select>
@@ -106,7 +108,12 @@
                         <div class="control aurelius-editor-multi" [formArrayName]="field.name">
                             @for (row of rowsOf(field); track $index) {
                                 <div class="aurelius-editor-multi-row">
-                                    <input type="text" class="input" [formControlName]="$index.toString()" />
+                                    <input
+                                        type="text"
+                                        class="input"
+                                        [class.is-danger]="showError(field)"
+                                        [formControlName]="$index.toString()"
+                                    />
                                     <button
                                         type="button"
                                         class="button is-small is-ghost aurelius-editor-multi-delete"
@@ -130,6 +137,7 @@
                                 @case ("textarea") {
                                     <textarea
                                         class="textarea"
+                                        [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
                                         [formControlName]="field.name"
                                         [attr.required]="field.required || null"
@@ -139,6 +147,7 @@
                                     <input
                                         type="number"
                                         class="input"
+                                        [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
                                         [formControlName]="field.name"
                                         [attr.required]="field.required || null"
@@ -148,6 +157,7 @@
                                     <input
                                         type="datetime-local"
                                         class="input"
+                                        [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
                                         [formControlName]="field.name"
                                     />
@@ -156,6 +166,7 @@
                                     <input
                                         type="text"
                                         class="input aurelius-editor-text"
+                                        [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
                                         [formControlName]="field.name"
                                         [attr.required]="field.required || null"
@@ -164,7 +175,10 @@
                             }
                         </div>
                     }
-                    @if (showError(field)) {
+                    <!-- The error line under the control (EDT-07). The enum
+                         rides the Select's own help line (its `invalid`
+                         input, DD-332), so it is not duplicated here. -->
+                    @if (showError(field) && field.kind !== "enum") {
                         <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
                     }
                 </div>

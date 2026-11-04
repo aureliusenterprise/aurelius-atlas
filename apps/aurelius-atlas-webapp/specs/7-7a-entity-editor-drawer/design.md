@@ -404,3 +404,35 @@ failed Save must say so again; the next Save resets the dismissal).
 the dismissal is one local signal, no state leaves the component. The unit
 spec pins the order (notification precedes the first field) and the
 dismiss-then-save round-trip.
+
+### DD-332. An invalid control paints with Bulma's `is-danger`
+
+**Status:** Proposed (usability fix on the delivered drawer, from user review
+before acceptance — it adds how EDT-07 shows the bad fields, so no accepted
+decision changes.)
+
+**Decision.** Every control with a shown error (the same `showError` gate as
+the help line: touched, or a Save was attempted) carries Bulma's danger
+state: text, number, date, and the multi rows take `is-danger` on the
+control, a textarea on its `textarea` element, and the enum rides the
+`Select`'s own `invalid` input (the lib paints `select.is-danger` + the
+help line, UIC-14's shape). Red borders replace the invisible invalid state.
+
+**Reason.** The drawer painted nothing on an invalid control: the error was
+only the small help line under the field and the star by the label, easy to
+miss on a dozen-field form (user report on `aws_s3_object`). Bulma's form
+general guide defines `is-danger` as the control's invalid paint — the
+red border is what the user asked to see, and it appears exactly when the
+help line appears, so one gate drives both.
+
+**Alternatives.** (a) A red label (refused — Bulma does not paint labels for
+field state; the guide's control border is the convention). (b) Angular's
+`ng-invalid` CSS without the class (refused — re-implementing the Bulma
+palette; the class is the library's own signal). (c) Painting on every
+invalid control before any touch (refused — a fresh form would open all-red;
+the touched/attempted gate is EDT-07's existing rule).
+
+**Consequences.** No SCSS of its own — Bulma carries the border and the
+help-line colour. The enum path reuses the lib's shipped `invalid` input, so
+the ui library changes not at all. The EDT-07 unit spec pins the class on
+the name input after a failed Save.
