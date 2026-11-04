@@ -16,6 +16,7 @@ observability chart. Every rule is labelled `team: maintainers`, the owner of th
 | Store red or silent       | critical | Elasticsearch reports red, or its metrics stop                          | 2m  |
 | Collector down            | critical | Prometheus cannot scrape the collector                                  | 2m  |
 | Collector export failures | warning  | the collector failed to deliver to Tempo, Prometheus or Loki            | 5m  |
+| Snapshot overdue          | critical | the store's last successful snapshot is more than two hours old         | 15m |
 
 Three of them watch silence: the server, every other part, and the collector itself. A part added
 later inherits "Part silent" as soon as it exports through the collector. Each rule's description

@@ -1,0 +1,78 @@
+{{/*
+The restore Job (SNP-07, ADR 026): the server's image running the snapshot
+command, `restore --replace`, against the store the Deployment uses. It renders
+only with restore.enabled, and only while replicaCount is 0: a server writing
+during a restore would recreate an index the restore brings back. The pod
+carries the server's selector labels, so the store's network policy admits it
+(CHT-64). The procedure is the Backup & Restore page's.
+*/}}
+{{- if .Values.restore.enabled }}
+{{- if ne (int .Values.replicaCount) 0 }}
+{{- fail "restore.enabled needs replicaCount=0: no server may write while the store is restored" }}
+{{- end }}
+{{- $fullname := include "atlas-server.fullname" . -}}
+{{- $esSecret := default (printf "%s-elasticsearch" .Release.Name) .Values.credentialSecrets.elasticsearch -}}
+{{- $store := include "atlas-server.storeService" . -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: {{ printf "%s-restore" $fullname }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+spec:
+    backoffLimit: 0
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-server.labels" . | nindent 16 }}
+        spec:
+            restartPolicy: Never
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            containers:
+                -   name: restore
+                    image: {{ include "atlas-server.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    command:
+                        - python
+                        - -m
+                        - aurelius_atlas_server.snapshots
+                        - restore
+                        - --replace
+                        {{- with .Values.restore.snapshot }}
+                        - --snapshot
+                        - {{ . | quote }}
+                        {{- end }}
+                    env:
+                        - name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS
+                          value: {{ printf "[\"https://%s:%d\"]" $store (int .Values.store.port) | quote }}
+                        - name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ $esSecret }}
+                                  key: elastic-password
+                        {{- range $key, $value := .Values.config }}
+                        {{- if or (hasPrefix "AURELIUS_ATLAS_SERVER_ELASTICSEARCH_" $key) (hasPrefix "AURELIUS_ATLAS_SERVER_SNAPSHOT_" $key) }}
+                        - name: {{ $key }}
+                          value: {{ $value | quote }}
+                        {{- end }}
+                        {{- end }}
+                    volumeMounts:
+                        - name: tls
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            volumes:
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-server.tlsSecretName" . }}
+{{- end }}

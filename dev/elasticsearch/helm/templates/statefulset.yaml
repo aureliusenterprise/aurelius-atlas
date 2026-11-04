@@ -117,6 +117,9 @@ spec:
                     volumeMounts:
                         - name: data
                           mountPath: /usr/share/elasticsearch/data
+                        - name: snapshots
+                          # path.repo (SNP-01): the snapshots' own claim.
+                          mountPath: /usr/share/elasticsearch/snapshots
                         - name: config
                           # The seeded config dir (writable: the keystore
                           # lands here, DD-282 Tier 3).
@@ -200,6 +203,9 @@ spec:
                               path: ca.pem
                 -   name: agent
                     emptyDir: {}
+                -   name: snapshots
+                    persistentVolumeClaim:
+                        claimName: {{ printf "%s-snapshots" $fullname }}
             {{- with .Values.nodeSelector }}
             nodeSelector:
                 {{- toYaml . | nindent 16 }}

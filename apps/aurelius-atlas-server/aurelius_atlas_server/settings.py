@@ -4,8 +4,10 @@ from pathlib import Path
 from typing import Literal
 
 from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
+from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
+from aurelius_atlas_store_es.snapshots import SnapshotPolicy
 from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -15,14 +17,45 @@ ENV_PREFIX = "AURELIUS_ATLAS_SERVER_"
 DEFAULT_PORT = 21000
 """The port Apache Atlas listens on."""
 
+SNAPSHOT_INDICES = (f"{INDEX_PREFIX}-*",)
+"""The indices a snapshot holds and a restore brings back: all the server's (SNP-01, SNP-05)."""
+
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels both uvicorn and the OTel console accept."""
 
 
-class ServerSettings(BaseSettings):
-    """How the server runs and where its store is."""
+class StoreAccessSettings(BaseSettings):
+    """Where the store is and where its snapshots are: all the snapshot command needs (SNP-04, SNP-05)."""
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra="ignore")
+
+    elasticsearch_hosts: list[HttpUrl] = Field(min_length=1)
+    """Base URLs of the Elasticsearch nodes, as a JSON list: ``["https://localhost:9200"]``."""
+
+    elasticsearch_username: str = "elastic"
+    """User for the store."""
+
+    elasticsearch_password: SecretStr
+    """Password for the store; never shown in logs."""
+
+    elasticsearch_ca_certs: FilePath
+    """PEM file with the certificate authority of the Elasticsearch server certificate."""
+
+    snapshot_location: str = "aurelius-atlas"
+    """The repository's directory, below the store's ``path.repo`` (SNP-01)."""
+
+    def store_settings(self) -> StoreSettings:
+        """The settings of the Elasticsearch store."""
+        return StoreSettings(
+            hosts=self.elasticsearch_hosts,
+            username=self.elasticsearch_username,
+            password=self.elasticsearch_password,
+            ca_certs=self.elasticsearch_ca_certs,
+        )
+
+
+class ServerSettings(StoreAccessSettings):
+    """How the server runs and where its store is."""
 
     host: str = "localhost"
     """The interface to listen on; the container image sets ``0.0.0.0``."""
@@ -157,20 +190,21 @@ class ServerSettings(BaseSettings):
     audit_aging_scheduler_initial_delay_in_min: int = 1
     """``atlas.audit.aging.scheduler.initial.delay.in.min``: at least 1 (AGE-05)."""
 
+    snapshot_enabled: bool = False
+    """Whether the server puts the store's snapshot policy at start and watches its runs (SNP-01 to SNP-03). The
+    chart turns it on; the dev store's data is disposable."""
+
+    snapshot_schedule: str = "0 0 * * * ?"
+    """When a snapshot is taken, as an Elasticsearch cron expression in UTC: every hour on the hour (SNP-02)."""
+
+    snapshot_retention: str = "7d"
+    """How long a snapshot is kept, as an Elasticsearch time unit (SNP-02)."""
+
+    snapshot_check_minutes: int = Field(default=15, ge=1)
+    """How often the server reads how the policy's last runs went (SNP-03)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
-
-    elasticsearch_hosts: list[HttpUrl] = Field(min_length=1)
-    """Base URLs of the Elasticsearch nodes, as a JSON list: ``["https://localhost:9200"]``."""
-
-    elasticsearch_username: str = "elastic"
-    """User for the store."""
-
-    elasticsearch_password: SecretStr
-    """Password for the store; never shown in logs."""
-
-    elasticsearch_ca_certs: FilePath
-    """PEM file with the certificate authority of the Elasticsearch server certificate."""
 
     otel_token_url: HttpUrl | None = None
     """The issuer's token endpoint for the OTLP ingest credential (7.18,
@@ -229,13 +263,13 @@ class ServerSettings(BaseSettings):
         """The certificate and key to serve HTTPS with (SRV-03, SRV-06, DD-234)."""
         return Path(self.tls_cert_file), Path(self.tls_key_file)
 
-    def store_settings(self) -> StoreSettings:
-        """The settings of the Elasticsearch store."""
-        return StoreSettings(
-            hosts=self.elasticsearch_hosts,
-            username=self.elasticsearch_username,
-            password=self.elasticsearch_password,
-            ca_certs=self.elasticsearch_ca_certs,
+    def snapshot_policy(self) -> SnapshotPolicy:
+        """The snapshot policy of the server's indices, every index of ``INDEX_PREFIX`` (SNP-01, SNP-02)."""
+        return SnapshotPolicy(
+            indices=SNAPSHOT_INDICES,
+            location=self.snapshot_location,
+            schedule=self.snapshot_schedule,
+            expire_after=self.snapshot_retention,
         )
 
     def audit_aging_config(self) -> AuditAgingConfig:
