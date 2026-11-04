@@ -1078,11 +1078,22 @@ Functions:
 
 Attributes:
 
+- **`BRIDGED_LOGGERS`** –
+
+  The loggers whose records the collector receives (OBS-01): the server's, its libraries' and uvicorn's errors.
 - **`DASHBOARD_V3_DIR`** –
 
   Where `dashboardv3` sits in the dashboard directory, and below which path it is served.
 - **`LOGGER`** –
 - **`NAME`** –
+
+### BRIDGED\_LOGGERS
+
+```
+BRIDGED_LOGGERS = (NAME, 'aurelius_atlas_core', 'aurelius_atlas_store_es', 'uvicorn.error')
+```
+
+The loggers whose records the collector receives (OBS-01): the server's, its libraries' and uvicorn's errors.
 
 ### DASHBOARD\_V3\_DIR
 

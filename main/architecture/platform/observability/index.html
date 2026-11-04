@@ -6220,13 +6220,11 @@
 
 <h1 id="observability">Observability<a class="headerlink" href="#observability" title="Permanent link">&para;</a></h1>
 <p>How Aurelius Atlas raises its hand when it is broken (ADR 040): metrics, logs, traces, and alerts.
-The system's own signals arrive with increment 6.4. A signal collection stack runs in the
-development arrangement today (<code>dev/observability</code>); which products, and their ports, are in
-<a href="../../../contributor-guide/development-environment/#dev-topology">Dev Topology</a>.</p>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 6.4 (hardening); see <a href="../../">Architecture</a>.</p>
-</div>
+Every part sends its signals to one collection point, the OpenTelemetry collector, which passes
+them to Prometheus, Loki and Tempo; Grafana shows them and evaluates the alert rules. The
+development arrangement runs that stack in <code>dev/observability</code>; which products, and their ports,
+are in <a href="../../../contributor-guide/development-environment/#dev-topology">Dev Topology</a>. The
+observability chart runs the same stack on a cluster.</p>
 <table>
 <thead>
 <tr>
@@ -6238,21 +6236,22 @@ development arrangement today (<code>dev/observability</code>); which products, 
 <tbody>
 <tr>
 <td><a href="monitoring/">Monitoring</a></td>
-<td>Metrics endpoints, scraped signals, dashboards</td>
-<td>6.4</td>
+<td>The signals each part sends, the dashboards</td>
+<td>6.4c</td>
 </tr>
 <tr>
 <td><a href="logging/">Logging</a></td>
-<td>Structured logs, correlation, retention</td>
-<td>6.4</td>
+<td>The server's log records, their correlation to traces</td>
+<td>6.4c</td>
 </tr>
 <tr>
 <td><a href="alerting/">Alerting</a></td>
-<td>Alert rules on liveness, readiness, store health</td>
-<td>6.4</td>
+<td>The alert rules, their destination, how to see one fire</td>
+<td>6.4c</td>
 </tr>
 </tbody>
 </table>
+<p>How long each signal is kept is the retention of increment 6.4d (ADR 025).</p>
 
 
 
