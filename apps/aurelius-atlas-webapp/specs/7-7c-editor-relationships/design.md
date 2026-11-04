@@ -408,3 +408,86 @@ demo's anchor only gets from its href. Any future parity work that
 cites "the demo" must measure the live app first — the vendored v3
 source under `apps/aurelius-atlas-dashboard` is the legacy baseline for
 REST/behaviour, not the look of the demo's newer UI.
+
+### DD-347. The editor's commit pair moves to the drawer's foot bar
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The Drawer gains a fixed foot bar: content with the
+`drawer-footer` attribute projects into it, below the scrolling body
+(UIC-25). The editor moves Save out of the drawer head into the bar and
+adds Delete beside it (EDT-19). Delete shows in edit mode only and only
+for a holder of the `atlas-write` grant (EDT-09's seam). The hold IS the
+confirm: no modal, no second click. A completed hold sends
+`DELETE /api/atlas/v2/entity/guid/{guid}` with no `deleteType` (EDL-04,
+the server strategy), closes the drawer, and lands on browse. A refused
+or failed delete alerts through the alerts store (EDT-08's shape) and
+keeps the drawer open. The busy pair (the spinner, `aria-busy`, and the
+status line) rides the acting button in the bar (EDT-18 amended). The
+strings reuse catalogue keys (`search.components.editor.delete`,
+`search.services.entityDelete.delete`), so SHL-08 holds.
+
+**Reason.** The user reported the head crowded once the editor grew the
+pickers, and asked for a static footer with the save and delete buttons.
+The legacy editor had exactly that shape (its footer: Delete holdable
+beside Save, delete lands the user on the search screen), and the demo
+app carries the same footer. The settings and alerts drawers never
+project a footer, and the bar hides while empty (`:empty`), so the slot
+is additive.
+
+**Alternatives.** (a) Keep Save in the head and add Delete beside it
+(refused: the user asked for the head to hold the title and the X only).
+(b) A confirm modal for delete (refused: the legacy pattern is the hold,
+which the user named. A modal would also add a string the frozen
+dictionary cannot carry). (c) Land on details after a delete (refused:
+the deleted entity has no details to show. The legacy lands on search,
+browse here).
+
+**Consequences.** The e2e selector `button.aurelius-editor-save` is
+unchanged, so EDT-12's scenarios ride it as they are. EDT-10 in the 7.7a
+spec is amended in place (PR #258 has not merged), and its deferral row
+for the delete flow now defers only the UX polish the legacy never had
+(tooltips, keyboard hold). The delete itself leaves 7.9's plate.
+
+### DD-348. The hold-to-confirm directive is a ui-library port, pointer-only
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** `aurelius-atlas-ui-hold` (the `Holdable` directive) lives in
+the ui library. It listens to pointer events: pointerdown starts a 50 ms
+sweep, and pointerup, pointerleave, or pointercancel before the time ends
+fires `held(false)`. After `holdFor` seconds (default 3) it fires
+`held(true)` once and stops the sweep. While held it writes the fraction
+(0 to 1) into the host's `--aurelius-hold-progress` custom property. The
+caller paints the fill from that property, so the directive carries no
+colour (UIC-03). The Delete button's sheet grows a danger-coloured wash
+from the left with `transform: scaleX()`.
+
+**Reason.** The reference (`models4insight-holdable`, Aurelius 17) is a
+reusable directive on the same mechanic: a timer on mousedown, a cancel on
+mouseup or leave, a confirm at the deadline. Pointer events cover mouse
+and touch in one set, so a phone confirms a delete too. The legacy's
+mouse-only listener does not. The fill belongs to the caller because the
+ui library bans literal colours (UIC-03) and the wash is the Delete
+button's design, not the directive's. A keyboard hold is out: the legacy
+never had one, and a hold needs a keydown/keyup pair with its own focus
+story (deferred, in 7.7a's deferral table).
+
+**Alternatives.** (a) Keep the directive in the webapp (refused: the shape
+is reusable chrome with no data wiring, which is the ui library's line
+per UIC-15). (b) Copy the legacy's mousedown/mouseup (refused: it drops
+touch, and pointer events are the modern superset). (c) Drive the fill
+with a Web Animations keyframe (refused: the caller's CSS needs the live
+fraction anyway, and a custom property keeps the directive paint-free).
+
+**Consequences.** The dictionary freezes keys (SHL-08), so the legacy's
+`holdable.tooltip.single/plural` tooltip strings cannot ship: the hold
+carries no tooltip, and the rule says so (EDT-19). The spec drives timers
+with `vi.useFakeTimers()`, because the zoneless test env runs no
+`fakeAsync`. The editor's spec fires the directive's output directly
+instead of replaying a pointer sweep. The sweep itself is specced at the
+directive's own spec.

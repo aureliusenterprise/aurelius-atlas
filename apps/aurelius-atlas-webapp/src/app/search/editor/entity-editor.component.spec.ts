@@ -6,15 +6,19 @@
  * field builder and the merge are specced at their owner (form-fields);
  * here: the read (EDT-02), the picker (EDT-04), the tag box (EDT-05), the
  * save's two requests and navigation (EDT-06, DD-326), the invalid save
- * (EDT-07), the failed save (EDT-08), dismissal (EDT-01), and the footer's
- * shape (EDT-10).
+ * (EDT-07), the failed save (EDT-08), dismissal (EDT-01), and the commit
+ * foot (EDT-10 amended by EDT-19, DD-347 — Delete + Save in the foot, the
+ * hold mechanic specced at the directive).
  */
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
+
+import { Holdable } from "aurelius-atlas-ui";
 
 import type { AtlasEntityWithExtInfo, AtlasTypesDef } from "aurelius-atlas-data-access";
 
@@ -138,7 +142,8 @@ function setup({
     guid = "7a1b",
     create = false,
     createType = "",
-}: { guid?: string; create?: boolean; createType?: string } = {}) {
+    atlasWrite = true,
+}: { guid?: string; create?: boolean; createType?: string; atlasWrite?: boolean } = {}) {
     const paramMap = new Subject<ParamMap>();
     TestBed.configureTestingModule({
         imports: [EntityEditor],
@@ -154,7 +159,7 @@ function setup({
                 },
             },
             { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
-            { provide: Keycloak, useValue: { hasResourceRole: () => true } },
+            { provide: Keycloak, useValue: { hasResourceRole: () => atlasWrite } },
         ],
     });
     const fixture = TestBed.createComponent(EntityEditor);
@@ -188,7 +193,16 @@ function arrive(
 
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
-describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
+/**
+ * The Delete button's hold directive instance, so a spec can fire `held`
+ * the way the pointer sweep would (the hold timing itself is specced at the
+ * directive, not re-tested here).
+ */
+function holdDirective(fixture: ComponentFixture<EntityEditor>): Holdable {
+    return fixture.debugElement.query(By.directive(Holdable)).injector.get(Holdable);
+}
+
+describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
     it("fetches its own entity and the typedefs on arrival (EDT-02, EDT-04)", () => {
         const { httpMock } = setup();
 
@@ -790,17 +804,78 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(compiled.querySelector(".aurelius-editor-busy")).toBeNull();
     });
 
-    it("the footer holds Save only (EDT-10)", () => {
+    it("the head carries only the X; the foot holds Delete and Save (EDT-10, EDT-19, DD-347)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
-        const buttons = [
+        const head = [
             ...compiled.querySelectorAll<HTMLButtonElement>('[role="dialog"] .aurelius-drawer-head button'),
-        ];
-        const labels = buttons.map((button) => normalize(button.textContent) || button.getAttribute("aria-label"));
-        expect(labels).toEqual(["Save", "Close"]); // Save + the drawer's own X
-        expect([...compiled.querySelectorAll("button")].some((b) => normalize(b.textContent) === "Delete")).toBe(false);
+        ].map((button) => normalize(button.textContent) || button.getAttribute("aria-label"));
+        expect(head).toEqual(["Close"]); // the drawer's own X — Save left the head
+
+        const foot = [...compiled.querySelectorAll<HTMLButtonElement>('[role="dialog"] .aurelius-drawer-foot button')];
+        expect(foot.map((button) => normalize(button.textContent))).toEqual(["Delete", "Save"]);
+        expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
         expect([...compiled.querySelectorAll("button")].some((b) => normalize(b.textContent) === "Cancel")).toBe(false);
+    });
+
+    it("the foot hides Delete in create mode (EDT-19: nothing to delete yet)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true });
+        arriveTypeDefs(fixture, httpMock);
+
+        expect(compiled.querySelector("button.aurelius-editor-delete")).toBeNull();
+        expect(normalize(compiled.querySelector("button.aurelius-editor-save")?.textContent)).toBe("Save");
+    });
+
+    it("a completed hold deletes the entity and lands on browse (EDT-19)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete")!.click();
+        // The directive's (held) fires true only after the hold; drive it as
+        // the directive would (the hold mechanic is specced at the directive).
+        const directive = holdDirective(fixture);
+        directive.held.emit(true);
+        fixture.detectChanges();
+
+        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        expect(request.request.method).toBe("DELETE");
+        request.flush({ guidAssignments: {} });
+        fixture.detectChanges();
+
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
+    });
+
+    it("a premature release does nothing (EDT-19: the hold is the confirm)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        holdDirective(fixture).held.emit(false);
+        fixture.detectChanges();
+
+        httpMock.expectNone((req) => req.url.startsWith("/api/atlas/v2/entity/guid/7a1b") && req.method === "DELETE");
+        expect(navigate).not.toHaveBeenCalled();
+        expect(compiled.querySelector(".aurelius-drawer-panel")).toBeTruthy();
+    });
+
+    it("a refused delete alerts and keeps the drawer (EDT-19, EDT-08's shape)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        holdDirective(fixture).held.emit(true);
+        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        request.flush(
+            { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
+            { status: 403, statusText: "Forbidden" },
+        );
+        fixture.detectChanges();
+
+        expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
+        expect(navigate).not.toHaveBeenCalled();
+        expect(compiled.querySelector('[role="dialog"]')).toBeTruthy();
     });
 
     it("dismissal navigates the drawer outlet away (EDT-01)", () => {

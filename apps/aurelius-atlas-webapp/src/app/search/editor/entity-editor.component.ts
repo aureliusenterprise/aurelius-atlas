@@ -15,8 +15,9 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
-import { ClassificationChip, Drawer, Select } from "aurelius-atlas-ui";
+import { ClassificationChip, Drawer, Holdable, Select } from "aurelius-atlas-ui";
 
+import { canWriteEntities } from "./can-write-entities";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
 import {
@@ -61,7 +62,15 @@ type EditorValue = string | number | boolean | string[] | null;
  * entity's details screen.
  */
 @Component({
-    imports: [ClassificationChip, Drawer, EntityRelationshipInput, FontAwesomeModule, FormField, Select],
+    imports: [
+        ClassificationChip,
+        Drawer,
+        EntityRelationshipInput,
+        FontAwesomeModule,
+        FormField,
+        Holdable,
+        Select,
+    ],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
@@ -272,6 +281,22 @@ export class EntityEditor {
     protected readonly loadingLine = $localize`:@@search.services.entityDetails.retrieve:Retrieving the entity details`;
 
     protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
+
+    protected readonly deletingLine = $localize`:@@search.services.entityDelete.delete:Deleting the entity`;
+
+    /** Whether the token may write (EDT-09) — the Delete's gate (EDT-19). */
+    protected readonly canWrite = canWriteEntities();
+
+    /**
+     * Whether the Delete shows (EDT-19): an existing entity (edit mode —
+     * create has no guid to delete) that the token may write. The reference
+     * gates the same two ways (role, and a guid that is not a create's
+     * temporary negative one).
+     */
+    protected readonly deleteShown = computed(() => !this.isCreate && this.canWrite());
+
+    /** The foot's status line: whichever write is in flight names itself. */
+    protected readonly busyLine = computed(() => (this.state.deleting() ? this.deletingLine : this.savingLine));
 
     /** The field-set signature the last build used (the rebuild guard). */
     private builtSignature = "";
@@ -639,6 +664,19 @@ export class EntityEditor {
         );
 
         this.state.save(withRelationships, entity.guid ?? "");
+    }
+
+    /**
+     * The Delete's hold (EDT-19): the directive fires true only after the
+     * three-second hold; a release before that fires false and does nothing
+     * — the hold is the confirmation, no dialog. The edit-mode guid is the
+     * store's own entity read (EDT-02).
+     */
+    protected deleteHeld(confirmed: boolean): void {
+        const guid = this.state.entity()?.guid;
+        if (confirmed && guid) {
+            this.state.delete(guid);
+        }
     }
 
     /** Dismiss (EDT-01): X, backdrop, Escape — navigate the outlet away. */

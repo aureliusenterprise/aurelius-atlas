@@ -146,3 +146,45 @@ export const HeadActions: Story = {
         props: { active: true as boolean },
     }),
 };
+
+const footerTemplate = `
+<aurelius-atlas-ui-drawer #drawer [active]="active" title="Edit entity" ariaLabel="Close">
+    <div class="content">
+        <p class="title is-6">Name</p>
+        <input class="input" value="sales_process" />
+    </div>
+    <div drawer-footer>
+        <div class="buttons is-right">
+            <button type="button" class="button is-small is-danger is-outlined">Delete</button>
+            <button type="button" class="button is-small is-primary">Save</button>
+        </div>
+    </div>
+</aurelius-atlas-ui-drawer>
+`;
+
+/**
+ * The foot slot (UIC-25): content carrying `drawer-footer` sits in a fixed
+ * bar below the scrolling body, so a drawer's commit actions (the editor's
+ * Save / Delete) never scroll away and never crowd the head. The play()
+ * checks the bar's place in the panel — after the body, outside it.
+ */
+export const FooterCommit: Story = {
+    args: { active: true },
+    play: async ({ canvas }) => {
+        const dialog = canvas.getByRole("dialog", { name: "Edit entity" });
+        const foot = dialog.querySelector(".aurelius-drawer-foot");
+        const body = dialog.querySelector(".aurelius-drawer-body");
+        const save = canvas.getByRole("button", { name: "Save" });
+        // The foot holds the actions and sits after the body, in the panel
+        // — not inside it, so a long form cannot push the bar away.
+        expect(foot?.contains(save)).toBe(true);
+        expect(foot?.parentElement).toBe(dialog);
+        expect(body?.contains(save)).toBe(false);
+        const after = [...(dialog?.children ?? [])].indexOf(foot as HTMLElement);
+        expect(after).toBe([...(dialog?.children ?? [])].indexOf(body as HTMLElement) + 1);
+    },
+    render: () => ({
+        template: footerTemplate,
+        props: { active: true as boolean },
+    }),
+};

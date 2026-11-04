@@ -118,6 +118,26 @@ $aurelius-drawer-motion-duration: 200ms;
     padding: var(--bulma-modal-card-head-padding, 2rem);
 }
 
+/*
+ * The fixed foot bar (UIC-25): outside the scrolling body, so a drawer's
+ * commit actions stay put. It copies the head's chrome — the same border
+ * and inset — on the opposite edge, and is `flex-shrink: 0` so a long
+ * body cannot squeeze it (the modal-card's body/foot padding pair, Bulma's
+ * own anatomy). With no projected content (settings, alerts) `:empty`
+ * hides it, so the bar costs those drawers nothing.
+ */
+.aurelius-drawer-foot {
+    border-top: 1px solid var(--bulma-scheme-main-bis);
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--bulma-block-spacing);
+    padding: var(--bulma-modal-card-head-padding, 2rem);
+}
+
+.aurelius-drawer-foot:empty {
+    display: none;
+}
+
 // The exit pass (DD-162): `closing()` adds the class, the panel's
 // animationend removes the layer. `forwards` holds the end state so the
 // drawer never flashes back before the layer is dropped.

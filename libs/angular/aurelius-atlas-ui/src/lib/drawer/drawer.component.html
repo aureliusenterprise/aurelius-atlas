@@ -45,6 +45,16 @@
                 <ng-content select="[drawer-content]"></ng-content>
                 <ng-content></ng-content>
             </div>
+            <!--
+                The foot slot (UIC-25): content carrying the `drawer-footer`
+                attribute sits in a fixed bar below the scrolling body, so a
+                drawer's commit actions (the editor's Save / Delete) never
+                scroll away and never crowd the head. The bar hides when
+                nothing projects into it (settings, alerts).
+            -->
+            <div class="aurelius-drawer-foot">
+                <ng-content select="[drawer-footer]"></ng-content>
+            </div>
         </div>
     </div>
 }

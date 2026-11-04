@@ -2,9 +2,10 @@
 
 - **Status:** proposed
 - **Pull request:** —
-- **Records:** DD-338..DD-346; extends 7.7a (EDT-03/EDT-06); relies on
+- **Records:** DD-338..DD-348; extends 7.7a (EDT-03/EDT-06); relies on
   DD-140 (the App Search index is not ported), UIC-16/UIC-24 (the chip and its
-  delete), DD-335/DD-336 (the tag-box anatomy this reuses)
+  delete), DD-335/DD-336 (the tag-box anatomy this reuses), UIC-25 (the
+  drawer's foot slot)
 
 ## Scope
 
@@ -40,6 +41,9 @@ Delivered here:
   in the form (EDT-17), the way the name field is (EDT-07)
 - the single-cardinality picker: it holds at most one chip; the input is
   hidden while the chip is there, as the legacy picker hid it
+- the editor foot: the commit pair (Delete, Save) moves to the drawer's fixed
+  foot bar (EDT-19), and Delete confirms by a three-second hold, the legacy
+  pattern (DD-347/DD-348)
 
 Explicitly not delivered here, with the increment that will:
 
@@ -68,7 +72,8 @@ in the docstring).
 | EDT-15 | Editing seeds the pickers from `entity.relationshipAttributes`: each key's list keeps only the entries whose `relationshipStatus` is `ACTIVE` (the server keeps removed edges in the read as `DELETED`); `SINGLE` fields seed from the first ACTIVE entry. The chips keep the entity's `displayText`, `typeName` and guid for display and for the save. The `DELETED` entries are never shown, never sent, and never block re-adding their entity (EDT-16's parity note). Create mode seeds nothing.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | EDT-16 | Save extends EDT-06's merge: for every picker the form rendered, the entity body's `relationshipAttributes` carries that key's full value — a list of one object per chip (`guid`, `typeName` (the chip's own, so a subtype keeps its name), `displayText`, `relationshipType` (the field definition's `relationshipTypeName` when it carries one), and `relationshipStatus: "ACTIVE"`), or — for a `SINGLE` field — that one object alone. An emptied multi picker sends the empty list and an emptied `SINGLE` picker sends null; both remove the key's edge(s) (the server marks each `DELETED`). The merge also drops each rendered key from `attributes`: the picker owns the key, and a reference left in `attributes` re-attaches the edge the picker just removed (the server moves an attribute-named relationship value back into `relationshipAttributes` — `compactAttributes`, probed live). A key no picker rendered (an attribute of a type set the form does not walk, or a value the read carried beyond the defs) passes through untouched, exactly as an unwritten attribute does. No `DELETED` seed entry is ever echoed into the body — echoing one would re-list a removed edge. A target whose edge the server already marked `DELETED` stays `DELETED` after a save that re-adds it: Apache Atlas 2.4 reuses the edge its lookup finds for the position and leaves it as it is (`EntityGraphMapper#updateRelationship` returns the current edge when it reaches the target), and this port keeps that reading. The e2e does not name this rule; no client can undo it (the relationship API's create answers `RELATIONSHIP_ALREADY_EXISTS` for the tombstoned pair).                         |
 | EDT-17 | A required relationship attribute (EDT-13's marker) with an empty picker makes the save behave as an invalid form behaves in EDT-07: the save fires no request, the field's control marks touched with Bulma's danger state, the `search.components.editor.attribute.notification` line rides at the top of the form, and the help line under the picker names what is missing. A save attempt re-shows the notification until dismissed. Every picker string rides a catalogue key the app already ships (`search.components.editor.components.relationshipsInput.addPlaceholder` and `.selectPlaceholder` as the input's placeholder by cardinality, `search.components.editor.delete` on the chip's delete); no key is added (SHL-08).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| EDT-18 | While a save is in flight — from the click until the server answers (the same span `editor-state.save()` guards) — the Save button is disabled, carries Bulma's `is-loading` spinner, and is marked `aria-busy="true"`, and the `search.services.entityUpdate.save` line ("Saving the entity") shows under the footer as a live status (DD-342). A refused save (EDT-07/EDT-17) or a failed one (EDT-08) ends the state with the drawer open and the edits kept; a saved save navigates away. No new string (SHL-08).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| EDT-18 | While a save or a delete is in flight (the spans `editor-state.save()` and `editor-state.delete()` guard) the acting button is disabled, carries Bulma's `is-loading` spinner, and is marked `aria-busy="true"`, and the status line shows in the foot as a live status (DD-342): `search.services.entityUpdate.save` ("Saving the entity") for a save, `search.services.entityDelete.delete` ("Deleting the entity") for a delete. The other button is disabled too, so one commit runs at a time. A refused save (EDT-07/EDT-17) or a failed one (EDT-08) ends the state with the drawer open and the edits kept; a saved save navigates away. No new string (SHL-08).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| EDT-19 | The foot bar (the drawer's `drawer-footer` slot, UIC-25) holds the commit pair. Save is EDT-18's button, unchanged. Delete shows in edit mode only (create has nothing to delete) and only for a writer (EDT-09's `atlas-write` grant, the same seam the pencil rides). A click is not enough: the `aurelius-atlas-ui-hold` directive (DD-348) fires its completion only after the pointer has held the button for three seconds, and only that completion sends `DELETE /api/atlas/v2/entity/guid/{guid}` (EDL-04: no `deleteType`, so the server strategy applies). An early release, leave, or cancel sends nothing. A red fill sweeps from the left as the hold runs (the directive's `--aurelius-hold-progress` custom property, painted by the caller's CSS per UIC-03). A deleted entity closes the drawer and lands on browse. A refused or failed delete (4xx/5xx) alerts through the app's alerts store (EDT-08's shape) and keeps the drawer open. The strings ride catalogue keys (`search.components.editor.delete`, `search.services.entityDelete.delete`), and no key is added (SHL-08). The hold carries no tooltip: the legacy key (`holdable.tooltip.*`) is not in the shipped dictionary fixtures, and none may be added.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 
 ## Aurelius origin
 
@@ -84,7 +89,13 @@ The Aurelius 17 app (`.scratch/aurelius`, commit `b057389828c10497dd52d9efd4c165
 - `apps/atlas/src/app/search/components/editor/editor.component.*` and the
   per-type forms — the hard-coded relationship fields (m4i types only);
   DD-338 replaces them with the def-driven field set, the same call 7.7a made
-  for plain attributes (DD-323)
+  for plain attributes (DD-323). Its footer is EDT-19's shape: Delete (danger,
+  holdable, edit mode only) beside Save (success), and a deleted entity
+  navigates to the search screen
+- `libs/directives/src/lib/holdable/holdable.directive.ts` — the hold
+  mechanic EDT-19 ports (`models4insight-holdable`): a timer that starts on
+  mousedown, cancels on mouseup/leave, and confirms once the hold passes the
+  given seconds (DD-348)
 
 Parity reference (stock Apache Atlas 2.4, vendored at
 `apps/aurelius-atlas-dashboard/dashboardv2/`):
@@ -113,13 +124,16 @@ by the target entity's own status), so a removed relationship reappears in
 the stock editor; EDT-15 keeps the tombstones out, so a reopened editor
 shows the relationships that exist.
 
-Against the Aurelius product, two intended differences are recorded beside
+Against the Aurelius product, three intended differences are recorded beside
 this spec. The picker searches the entity store's attribute search instead
 of the App Search index the legacy used (DD-339, the successor of DD-140 —
 the index this product does not have). The chips lead with the entity type's
 name instead of the legacy's type icon (DD-341 — `iconsByType` is app
-metadata that never ported). The deferral table carries the rest, including
-the accepted `DELETED`-edge parity (DD-340).
+metadata that never ported). The hold listens to pointer events instead of
+the legacy's mouse events, so a touch press confirms too (DD-348), and it
+carries no tooltip because the legacy tooltip key is not in the shipped
+dictionary fixtures (EDT-19, SHL-08). The deferral table carries the rest,
+including the accepted `DELETED`-edge parity (DD-340).
 
 ## Acceptance
 
@@ -146,12 +160,24 @@ the accepted `DELETED`-edge parity (DD-340).
       a save with a required picker empty fires no request and shows the
       field error and the notification (EDT-17); a normal save posts the
       entity body with `relationshipAttributes` merged per EDT-16 and
-      navigates as EDT-06 does.
-    - `i18n-completeness.spec.ts` unchanged and green (EDT-17: no key is
-      added).
-- ui library: none new — the chip (UIC-16/24), the box anatomy (DD-335/336)
-  and the Bulma dropdown already ship; the picker component lives in the
-  webapp because it searches (DD-341).
+      navigates as EDT-06 does. The head carries only the X, and the foot
+      holds Delete and Save (EDT-10, EDT-19). Create mode hides Delete
+      (EDT-19). A completed hold sends the DELETE by guid and lands on
+      browse (EDT-19). A premature release sends nothing (EDT-19). A
+      refused delete alerts and keeps the drawer (EDT-19, EDT-08's shape).
+    - `i18n-completeness.spec.ts` unchanged and green (EDT-17/EDT-19: no key
+      is added).
+- ui library:
+    - `src/lib/holdable/holdable.directive.spec.ts` — the hold mechanic
+      (EDT-19, DD-348): a quick press cancels and completes nothing, a full
+      hold confirms once, a leave mid-hold cancels, and the fill property
+      sweeps and clears.
+    - `src/lib/drawer/drawer.component.spec.ts` — the `drawer-footer` slot
+      (UIC-25, DD-347): projected content lands in the foot bar after the
+      body, and the bar stays empty for a drawer that projects none.
+    - The picker component itself lives in the webapp because it searches
+      (DD-341); the chip (UIC-16/24), the box anatomy (DD-335/336) and the
+      Bulma dropdown already ship.
 - e2e (`nx e2e aurelius-atlas-webapp`): the scenarios below run in the
   chromium/firefox/webkit matrix against the shared dev stack, self-cleaning
   through the purge helper (DD-223: no shared-service restarts). The dev
@@ -178,8 +204,9 @@ the accepted `DELETED`-edge parity (DD-340).
        save is refused while the picker is empty; picking a target the
        scenario seeds by name through the API helper lands the create and
        shows the chip on reopen.
-- Storybook: none — the webapp ships no Storybook host and the picker lives
-  outside the ui library (7.7a's precedent).
+- Storybook: `drawer` gains a foot story (UIC-25) and `holdable` gains the
+  two hold stories (DD-348). The webapp ships no Storybook host and the
+  picker lives outside the ui library (7.7a's precedent).
 - `nx test aurelius-atlas-webapp -c ci`, `nx lint aurelius-atlas-webapp`,
   `nx run aurelius-atlas-webapp:check-purity`, `nx build aurelius-atlas-webapp`,
   `uv run aurelius-atlas-trace check` reports the EDT gaps as expected

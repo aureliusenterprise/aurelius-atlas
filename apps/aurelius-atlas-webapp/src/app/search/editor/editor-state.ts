@@ -75,6 +75,9 @@ export class EditorState {
     /** Whether a save is in flight (the Save button's busy state). */
     readonly saving = signal(false);
 
+    /** Whether a delete is in flight (the Delete button's busy state, EDT-19). */
+    readonly deleting = signal(false);
+
     /** The entity type the form renders (edit: the entity's, create: the pick). */
     readonly typeName = computed(() =>
         this.mode() === "create" ? this.selectedTypeName() : (this.entity()?.typeName ?? null),
@@ -289,6 +292,40 @@ export class EditorState {
             severity: "error",
             message: $localize`:@@search.services.entityUpdate.save:Saving the entity`,
             source: "search",
+        });
+    }
+
+    /**
+     * Delete the entity (EDT-19, DD-347): one `DELETE .../guid/{guid}` —
+     * the hold-to-confirm lives at the button, so the store trusts its
+     * caller. No `deleteType` rides: the server's own strategy answers
+     * (EDL-04, the reference's shape). Success closes the drawer and lands
+     * on the browse landing — the deleted entity's details are not a
+     * destination; a refusal adds one alert and keeps the drawer (EDT-08's
+     * shape).
+     * @param guid the entity's guid (edit mode only — the button's gate)
+     */
+    delete(guid: string): void {
+        if (this.deleting() || this.saving()) {
+            return;
+        }
+        this.deleting.set(true);
+        this.entities.deleteEntityByGuid(guid).subscribe({
+            next: () => {
+                this.deleting.set(false);
+                // The screen underneath is the deleted entity's details;
+                // it is not a destination any more — the browse landing
+                // is (the reference routes 'search', our landing).
+                this.router.navigate([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
+            },
+            error: () => {
+                this.deleting.set(false);
+                this.alerts.add({
+                    severity: "error",
+                    message: $localize`:@@search.services.entityDelete.delete:Deleting the entity`,
+                    source: "search",
+                });
+            },
         });
     }
 

@@ -18,6 +18,45 @@
     margin-top: 1.5rem;
 }
 
+/* The commit foot (EDT-19, DD-347): the status line sits above the pair,
+   the buttons right-aligned (Delete then Save, the reference's order). */
+.aurelius-editor-foot .aurelius-editor-busy {
+    margin-bottom: 0.5rem;
+}
+
+.aurelius-editor-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+/*
+ * The Delete's hold fill (EDT-19): the directive sweeps
+ * `--aurelius-hold-progress` (0→1) on the button while held; a red wash
+ * grows from the left as the confirmation. The label rides above the fill
+ * (relative z-index) so it stays legible. Colour is the Bulma danger
+ * family, spelled from the root accent ramp (UIC-03 — no literal hex).
+ */
+.aurelius-editor-delete {
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+        background-color: hsl(var(--bulma-danger-h), var(--bulma-danger-s), var(--bulma-danger-l));
+        bottom: 0;
+        content: "";
+        left: 0;
+        position: absolute;
+        top: 0;
+        transform: scaleX(var(--aurelius-hold-progress, 0));
+        transform-origin: left center;
+        width: 100%;
+    }
+
+    span {
+        position: relative;
+    }
+}
+
 /* The classification box (EDT-05, DD-335): one bordered box — the Bulma
    input's own look, built from the root control vars Bulma exposes —
    holding the chips and the text input inline. The box grows as tags are

@@ -155,6 +155,35 @@ describe("Drawer", () => {
         expect(children.indexOf("aurelius-alert-inbox")).toBeLessThan(children.indexOf("aurelius-drawer-body"));
     });
 
+    it("projects drawer-footer content into the foot, below the body (UIC-25)", () => {
+        const hosted = TestBed.createComponent(FooterHostComponent);
+        hosted.detectChanges();
+        hosted.componentInstance.drawer.open();
+        hosted.detectChanges();
+
+        const panel = hosted.nativeElement.querySelector(".aurelius-drawer-panel");
+        const foot = panel.querySelector(".aurelius-drawer-foot");
+        // The foot bar is a fixed strip outside the scrolling body: the
+        // commit actions never scroll away (UIC-25).
+        expect(foot?.textContent.trim()).toBe("Save");
+        expect(foot?.parentElement).toBe(panel);
+        expect(hosted.nativeElement.querySelector(".aurelius-drawer-body .aurelius-editor-save")).toBeNull();
+        // Order: head, body, foot.
+        const children = [...(panel.children as NodeListOf<HTMLElement>)].map((c) => c.className.split(" ")[0]);
+        expect(children.indexOf("aurelius-drawer-body")).toBeLessThan(children.indexOf("aurelius-drawer-foot"));
+    });
+
+    it("leaves the foot empty when nothing projects into it (UIC-25)", () => {
+        // The bare drawer (settings, alerts) projects no footer: the bar
+        // stays empty, which is what its :empty rule hides on.
+        component.open();
+        fixture.detectChanges();
+
+        const foot = fixture.nativeElement.querySelector(".aurelius-drawer-foot");
+        expect(foot).toBeTruthy();
+        expect(foot.childNodes).toHaveLength(0);
+    });
+
     it.each([
         ["a scrim click", ".aurelius-drawer-scrim"],
         ["the close button", ".aurelius-drawer-head .delete"],
@@ -239,5 +268,20 @@ class HeadActionHostComponent {
     `,
 })
 class SubheadHostComponent {
+    @ViewChild("drawer") drawer!: Drawer;
+}
+
+@Component({
+    imports: [Drawer],
+    template: `
+        <aurelius-atlas-ui-drawer #drawer title="Edit entity">
+            <p>the form</p>
+            <div drawer-footer>
+                <button type="button" class="button is-small aurelius-editor-save">Save</button>
+            </div>
+        </aurelius-atlas-ui-drawer>
+    `,
+})
+class FooterHostComponent {
     @ViewChild("drawer") drawer!: Drawer;
 }
