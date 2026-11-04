@@ -22,10 +22,13 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   answer, split `/api` path vs dashboard; HSTS gated on `hsts_enabled` (SRV-08, DD-236). TLS material
   is a required setting — the server never serves plaintext (SRV-06, DD-234)
 - OTLP ingest (DD-196) lives in the shared `aurelius-atlas-otel` lib (DD-197):
-  `app.py::_ingest_pipeline` maps `ServerSettings.otel_*` into
-  `build_otlp_pipeline`, installed by the lib's `setup_telemetry` on the
-  native OTel providers (DD-210: the app owns its export; the static env
-  headers cannot carry a 60s JWT)
+  `app.py::_telemetry` maps `ServerSettings.otel_*` (`_ingest_source`) into
+  `build_otlp_pipeline` and `build_otlp_log_processor`, installed by the lib's
+  `setup_telemetry` on the native OTel providers (DD-210: the app owns its
+  export; the static env headers cannot carry a 60s JWT). `BRIDGED_LOGGERS`
+  send their records to the collector and still to stdout (OBS-01, DD-320)
+- `e2e/load.py` + `e2e/test__aurelius_atlas_server_load_e2e.py` — the load test
+  (LOD-01..03, DD-321), run with the e2e suite; `AURELIUS_ATLAS_LOAD_*` tune it
 - `aurelius_atlas_server/authentication.py` — `AuthenticationMiddleware`, `SessionStore`, `user_of`: each
   request's user from its bearer token or browser session, the 401 or sign-in redirect, the CSRF check (6.1a,
   DD-250); `oidc_client.py` — `OidcClient`: the confidential client's code flow, refresh and sign-out;

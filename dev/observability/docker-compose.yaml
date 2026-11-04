@@ -154,6 +154,9 @@ services:
         volumes:
             - ./config/grafana/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml:ro
             - ./config/grafana/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml:ro
+            # The alert rules (ADR 040, OBS-03). Dev provisions no contact point: the rules fire in Grafana's
+            # alert list only, routed to its default policy (OBS-04).
+            - ./config/grafana/alerting/rules.yaml:/etc/grafana/provisioning/alerting/rules.yaml:ro
             - ./config/grafana/dashboards:/var/lib/grafana/dashboards:ro
             - grafana-data:/var/lib/grafana
 
