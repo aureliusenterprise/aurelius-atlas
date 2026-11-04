@@ -17,6 +17,7 @@ from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAudit
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.metrics_service import MetricsService
 from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
@@ -25,7 +26,7 @@ from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.atlas_audit import AuditOperation
 from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline, setup_telemetry
-from aurelius_atlas_store_es import ElasticsearchStore
+from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
@@ -34,6 +35,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
+from aurelius_atlas_server.metrics_scheduler import MetricsScheduler
 from aurelius_atlas_server.oidc_client import OidcClient
 from aurelius_atlas_server.request_context import RequestContextMiddleware
 from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, LOGIN, RELATIONSHIP, TYPES
@@ -119,7 +121,7 @@ def create_app(
         started = int(time.time() * 1000)
         _start(metrics_util)
         worker: TaskWorker | None = None
-        aging: AuditAgingScheduler | None = None
+        schedules: list[AuditAgingScheduler | MetricsScheduler] = []
         await store.open()
         try:
             entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
@@ -143,11 +145,15 @@ def create_app(
             app.state.task_management = TaskManagement(entity_store, notifier=audit, audits=entity_audits)
             worker = _task_worker(app, settings, entity_store)
             await _audit_server_status(admin_audits, started)
-            aging = _audit_aging(settings, entity_store)
+            schedules = [
+                scheduler
+                for scheduler in (_audit_aging(settings, entity_store), _metrics_schedule(app, settings, entity_store))
+                if scheduler is not None
+            ]
             yield
         finally:
-            if aging is not None:
-                await aging.stop()
+            for scheduler in schedules:
+                await scheduler.stop()
             if worker is not None:
                 await worker.stop()
             await store.close()
@@ -284,6 +290,23 @@ def _audit_aging(settings: ServerSettings, store: EntityStore) -> AuditAgingSche
     )
     aging.start()
     return aging
+
+
+def _metrics_schedule(app: FastAPI, settings: ServerSettings, store: EntityStore) -> MetricsScheduler | None:
+    """The metrics stored and purged on their schedule and started, unless its interval is 0 (MHS-05)."""
+    if settings.metrics_persist_interval_minutes == 0:
+        return None
+    search_store: ElasticsearchStore = app.state.store
+
+    async def connected() -> bool:
+        return (await search_store.health()).status is HealthStatus.UP
+
+    service = MetricsService(
+        store, app.state.metrics_util, namespace=settings.cluster_name, ttl_hours=settings.metrics_ttl_hours
+    )
+    scheduler = MetricsScheduler(service, connected, interval_minutes=settings.metrics_persist_interval_minutes)
+    scheduler.start()
+    return scheduler
 
 
 def _task_worker(app: FastAPI, settings: ServerSettings, store: EntityStore) -> TaskWorker | None:

@@ -1,11 +1,16 @@
-"""``AtlasMetrics``: what ``admin/metrics`` answers, grouped metrics by name (MET-01).
+"""``AtlasMetrics``, ``AtlasMetricsStat`` and ``AtlasMetricsMapToChart``: what ``admin/metrics`` answers, grouped
+metrics by name (MET-01), and the metrics stored on a schedule (MHS-01).
 
-Ported from Apache Atlas 2.4.0 ``org.apache.atlas.model.metrics.AtlasMetrics``.
-"""
+Ported from Apache Atlas 2.4.0 ``org.apache.atlas.model.metrics``.
+"""  # noqa: D205 - one sentence
 
+import itertools
+import time
 from typing import Any
 
-from aurelius_atlas_model.base import AtlasModel
+from pydantic import Field
+
+from aurelius_atlas_model.base import AtlasModel, JavaInt
 
 PREFIX_CONNECTION_STATUS = "ConnectionStatus:"
 PREFIX_NOTIFICATION = "Notification:"
@@ -72,3 +77,59 @@ class AtlasMetrics(AtlasModel):
         """``getNumericMetric``: the metric when it is a number, else None."""
         found = self.metric(group_key, key)
         return found if isinstance(found, int | float) and not isinstance(found, bool) else None
+
+
+STATUS_CATEGORY = ("Active", "Deleted", "Shell")
+"""The states a stored metric's type data counts, as ``AtlasEntityUtil`` names them."""
+
+METRICS_ID_PREFIX = "atlas_metrics_"
+
+_next_id = itertools.count(time.monotonic_ns())
+
+
+def new_guid() -> str:
+    """``AtlasBaseModelObject#init``: a new object's negative GUID."""
+    return f"-{next(_next_id)}"
+
+
+class AtlasMetricsStat(AtlasModel):
+    """``AtlasMetricsStat``: the metrics collected at a time, kept ``timeToLiveMillis``; ``typeData`` the counts of
+    the types a range asks for, by state (MHS-01).
+    """  # noqa: D205 - one sentence
+
+    guid: str = Field(default_factory=new_guid)
+    metrics_id: str | None = None
+    collection_time: JavaInt = 0
+    time_to_live_millis: JavaInt = 0
+    type_data: dict[str, Any] | None = None
+    metrics: AtlasMetrics | None = None
+
+    @classmethod
+    def of(
+        cls, metrics: AtlasMetrics, time_to_live_millis: int, namespace: str, type_names: list[str] | None = None
+    ) -> AtlasMetricsStat:
+        """``AtlasMetricsStat(metrics, timeToLiveMillis, listOfTypeNames)``: collected at the metrics' collection
+        time, its id of that time and ``namespace``, the type data of ``type_names`` (none without names).
+        """  # noqa: D205 - one sentence
+        collection_time = int(metrics.metric("general", "collectionTime") or 0)
+        type_data = None
+        if type_names:
+            entity = (metrics.data or {}).get("entity", {})
+            type_data = {
+                name: {status: (entity.get(f"entity{status}") or {}).get(name, 0) for status in STATUS_CATEGORY}
+                for name in type_names
+            }
+        return cls(
+            metrics_id=f"{METRICS_ID_PREFIX}{collection_time}@{namespace}",
+            collection_time=collection_time,
+            time_to_live_millis=time_to_live_millis,
+            type_data=type_data,
+            metrics=metrics,
+        )
+
+
+class AtlasMetricsMapToChart(AtlasModel):
+    """``AtlasMetricsMapToChart``: a state's counts of a type, as ``[collectionTime, count]`` pairs (MHS-04)."""
+
+    key: str
+    values: list[list[int]]

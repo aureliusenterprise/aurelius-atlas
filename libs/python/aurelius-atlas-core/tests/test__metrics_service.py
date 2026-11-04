@@ -1,6 +1,7 @@
-"""The metrics of ``admin/metrics`` (MET-01 to MET-04), on the in-memory documents.
+"""The metrics of ``admin/metrics`` (MET-01 to MET-04) and those stored (MHS-01 to MHS-05), in memory.
 
-Read from Apache Atlas 2.4.0's ``MetricsService#getMetrics``, ``AtlasMetricsUtil#getStats``, ``AtlasMetricsCounter``,
+Read from Apache Atlas 2.4.0's ``MetricsService``, ``AtlasMetricsStat``, ``AtlasMetricsStatDTO``,
+``AtlasMetricsUtil#getStats``, ``AtlasMetricsCounter``,
 ``AtlasMetricJVMUtil`` and its ``MetricsServiceTest``.
 """
 
@@ -22,7 +23,9 @@ from aurelius_atlas_core.metrics_util import (
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo
+from aurelius_atlas_model.metrics import AtlasMetricsStat
 from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef, TypeCategory
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
@@ -210,3 +213,117 @@ def test__the_system_details_are_the_python_process() -> None:
     info = system_info()
     assert len(info["os.spec"].split(", ")) == 3
     assert int(info["os.vcpus"]) >= 1
+
+
+async def stored_metrics() -> tuple[MetricsService, list[float], dict[str, str]]:
+    """The catalogue's metrics stored at 1, 2 and 3 hours, kept 2 hours; the clock settable."""
+    store, _, guids = await catalogue()
+    now = [HOUR / 1000]
+    store = EntityStore(store.registry, store._documents, clock=lambda: now[0])  # noqa: SLF001 - the same documents
+    service = MetricsService(store, AtlasMetricsUtil(), namespace="cl1", ttl_hours=2)
+    for hour in (1, 2, 3):
+        now[0] = hour * HOUR / 1000
+        await service.save_metrics(store_connected=True)
+    return service, now, guids
+
+
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.save_metrics_stat", rules=["MHS-01"])
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.save_metrics", rules=["MHS-01", "MHS-05"])
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.metrics_stat", rules=["MHS-01"])
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsStatDTO.to_entities", rules=["MHS-01"])
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsStatDTO.from_entity", rules=["MHS-01"])
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsStatDTO.unique_attributes", rules=["MHS-01"])
+async def test__the_metrics_are_stored_once_per_collection_time() -> None:
+    """An id of the time and namespace, kept the configured hours; the same time again, or no id, is refused."""
+    service, _, _ = await stored_metrics()
+    [latest, *_] = await service.get_all_metrics_stats(min_info=False)
+    assert (latest.metrics_id, latest.collection_time, latest.time_to_live_millis) == (
+        f"atlas_metrics_{3 * HOUR}@cl1",
+        3 * HOUR,
+        2 * HOUR,
+    )
+    assert latest.metrics is not None
+    assert latest.metrics.metric("general", "entityCount") == 3
+    assert not latest.guid.startswith("-")
+    with pytest.raises(AtlasError) as again:
+        await service.save_metrics(store_connected=True)
+    with pytest.raises(AtlasError) as missing:
+        await service.save_metrics_stat(AtlasMetricsStat())
+    assert again.value.code is AtlasErrorCode.METRICSSTAT_ALREADY_EXISTS
+    assert again.value.message == f"Metric Statistics already collected at {3 * HOUR}"
+    assert (missing.value.code, missing.value.message) == (
+        AtlasErrorCode.BAD_REQUEST,
+        "MetricsStat definition missing.",
+    )
+
+
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.get_all_metrics_stats", rules=["MHS-02"])
+@pytest.mark.covers(
+    "aurelius_atlas_core.metrics_service.MetricsService.get_metrics_stat_by_collection_time", rules=["MHS-02"]
+)
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.metrics_stat_id", rules=["MHS-02"])
+async def test__the_stored_metrics_are_listed_latest_first_and_read_by_time() -> None:
+    """With ``min_info`` without their metrics; by a time stored, else not found."""
+    service, _, _ = await stored_metrics()
+    brief = await service.get_all_metrics_stats(min_info=True)
+    found = await service.get_metrics_stat_by_collection_time(2 * HOUR)
+    with pytest.raises(AtlasError) as unknown:
+        await service.get_metrics_stat_by_collection_time(5)
+    assert [stat.collection_time for stat in brief] == [3 * HOUR, 2 * HOUR, HOUR]
+    assert {stat.metrics is None for stat in brief} == {True}
+    assert (found.collection_time, found.metrics is not None) == (2 * HOUR, True)
+    assert unknown.value.code is AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND
+    assert service.metrics_stat_id(7) == "atlas_metrics_7@cl1"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.metrics_service.MetricsService.get_metrics_in_range_by_type_names", rules=["MHS-03"]
+)
+@pytest.mark.covers("aurelius_atlas_model.metrics.AtlasMetricsStat.of", rules=["MHS-03"])
+async def test__a_range_answers_new_stats_with_the_type_data_of_its_type_names() -> None:
+    """Both ends included, the latest first; each a new object: a negative GUID, no metrics, the asked types' counts."""
+    service, _, _ = await stored_metrics()
+    ranged = await service.get_metrics_in_range_by_type_names(2 * HOUR, 3 * HOUR, ["met_table", "nope"])
+    plain = await service.get_metrics_in_range_by_type_names(0, 2 * HOUR, [])
+    with pytest.raises(AtlasError) as reversed_range:
+        await service.get_metrics_in_range_by_type_names(5, 5, [])
+    assert [stat.collection_time for stat in ranged] == [3 * HOUR, 2 * HOUR]
+    first = ranged[0].to_json()
+    assert first["guid"].startswith("-")
+    assert "metrics" not in first
+    assert first["typeData"] == {
+        "met_table": {"Active": 1, "Deleted": 1, "Shell": 0},
+        "nope": {"Active": 0, "Deleted": 0, "Shell": 0},
+    }
+    assert [stat.collection_time for stat in plain] == [2 * HOUR, HOUR]
+    assert {stat.type_data is None for stat in plain} == {True}
+    assert reversed_range.value.code is AtlasErrorCode.INVALID_PARAMETERS
+    assert reversed_range.value.message == "invalid parameters: startTime: '5', should be less than, endTime: '5'"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.metrics_service.MetricsService.get_metrics_for_chart_by_type_names", rules=["MHS-04"]
+)
+async def test__a_chart_pairs_each_states_counts_with_their_times_earliest_first() -> None:
+    """Active, Deleted and Shell series per type; a range with no metrics has none."""
+    service, _, _ = await stored_metrics()
+    charts = await service.get_metrics_for_chart_by_type_names(HOUR, 2 * HOUR, ["met_view"])
+    empty = await service.get_metrics_for_chart_by_type_names(10 * HOUR, 11 * HOUR, ["met_view"])
+    assert [chart.to_json() for chart in charts["met_view"]] == [
+        {"key": "Active", "values": [[HOUR, 1], [2 * HOUR, 1]]},
+        {"key": "Deleted", "values": [[HOUR, 0], [2 * HOUR, 0]]},
+        {"key": "Shell", "values": [[HOUR, 1], [2 * HOUR, 1]]},
+    ]
+    assert empty == {"met_view": []}
+    assert await service.get_metrics_for_chart_by_type_names(HOUR, 2 * HOUR, []) == {}
+
+
+@pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.purge_metrics_stats", rules=["MHS-05"])
+async def test__the_metrics_past_their_time_to_live_are_purged() -> None:
+    """Those collected more than the TTL ago are deleted, and so no longer listed; one of exactly the TTL stays."""
+    service, now, _ = await stored_metrics()
+    now[0] = 4 * HOUR / 1000
+    purged = await service.purge_metrics_stats()
+    assert [stat.collection_time for stat in purged] == [HOUR]
+    assert [stat.collection_time for stat in await service.get_all_metrics_stats(min_info=True)] == [3 * HOUR, 2 * HOUR]
+    assert await service.purge_metrics_stats() == []

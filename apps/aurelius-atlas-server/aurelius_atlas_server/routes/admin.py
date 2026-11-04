@@ -1,10 +1,12 @@
 """The admin endpoints of ``AdminResource``: version, status, session, liveness, readiness, patches, metrics, purge,
 tasks, export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04,
+MHS-01 to MHS-04.
 """  # noqa: D205 - one sentence
 
 import json
+import re
 import socket
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -17,6 +19,7 @@ from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
 from aurelius_atlas_core.atlas_server_service import AtlasServerService
 from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
 from aurelius_atlas_core.audits_writer import AuditsWriter
+from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
@@ -44,7 +47,16 @@ from starlette.datastructures import UploadFile
 from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, privileges, verify_access
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
-from aurelius_atlas_server.routes.entity import INT_RANGE, Body, Store, java_number, updater, writer
+from aurelius_atlas_server.routes.entity import (
+    INT_RANGE,
+    INVALID_PARAMETER,
+    Body,
+    Store,
+    first_value,
+    java_number,
+    updater,
+    writer,
+)
 from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
@@ -171,9 +183,90 @@ async def get_metrics(request: Request, store: Store) -> dict[str, Any]:
     """  # noqa: D205 - one sentence
     search_store: ElasticsearchStore = request.app.state.store
     report = await search_store.health()
-    service = MetricsService(store, request.app.state.metrics_util, authorizer=authorizer(request))
-    metrics = await service.get_metrics(store_connected=report.status is HealthStatus.UP)
+    metrics = await _metrics_service(request, store).get_metrics(store_connected=report.status is HealthStatus.UP)
     return metrics.to_json()
+
+
+LONG_RANGE = (-(2**63), 2**63 - 1)
+JAVA_LONG = re.compile(r"[+-]?\d+")
+
+
+def _metrics_service(request: Request, store: EntityStore) -> MetricsService:
+    """The metrics of ``store`` as the request's user reads them, kept as the settings say (MHS-01)."""
+    settings: ServerSettings = request.app.state.settings
+    return MetricsService(
+        store,
+        request.app.state.metrics_util,
+        authorizer=authorizer(request),
+        namespace=settings.cluster_name,
+        ttl_hours=settings.metrics_ttl_hours,
+    )
+
+
+def _java_long(name: str, value: str) -> int:
+    """``Long.parseLong`` of a parameter.
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for text that is no ``long`` (DV-136).
+    """
+    if not JAVA_LONG.fullmatch(value) or not LONG_RANGE[0] <= int(value) <= LONG_RANGE[1]:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, INVALID_PARAMETER.format(value=value, name=name))
+    return int(value)
+
+
+def _time_range(request: Request) -> tuple[int, int, list[str]]:
+    """The ``startTime``, ``endTime`` and ``typeName`` parameters of a range (MHS-03).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` for a missing or blank time, or one that is no ``long`` (DV-136);
+            ``INVALID_QUERY_PARAM_LENGTH`` for a long one.
+    """
+    start, end = first_value(request, "startTime"), first_value(request, "endTime")
+    if start is None or not start.strip() or end is None or not end.strip():
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, "startTime or endTime is null/empty.")
+    validate_param_length("startTime", start)
+    validate_param_length("endTime", end)
+    type_names = request.query_params.getlist("typeName")
+    for type_name in type_names:
+        validate_param_length("typeName", type_name)
+    return _java_long("startTime", start), _java_long("endTime", end), type_names
+
+
+@ADMIN.get("/metricsstats")
+async def get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]]:
+    """``getAllMetrics``: every stored metric, the latest first; with ``mininfo``, the default, without the metrics
+    (MHS-02).
+    """  # noqa: D205 - one sentence
+    min_info = first_value(request, "mininfo")
+    found = await _metrics_service(request, store).get_all_metrics_stats(
+        min_info=min_info is None or min_info.lower() == "true"
+    )
+    return [stat.to_json() for stat in found]
+
+
+@ADMIN.get("/metricsstat/{collection_time}")
+async def get_metrics_by_collection_time(request: Request, store: Store, collection_time: str) -> dict[str, Any]:
+    """``getMetricsByCollectionTime``: the metric stored at that time (MHS-02)."""
+    validate_param_length("collectionTime", collection_time)
+    service = _metrics_service(request, store)
+    found = await service.get_metrics_stat_by_collection_time(_java_long("collectionTime", collection_time))
+    return found.to_json()
+
+
+@ADMIN.get("/metricsstats/range")
+async def get_metrics_in_time_range(request: Request, store: Store) -> list[dict[str, Any]]:
+    """``getMetricsInTimeRange``: the metrics stored in the range, with the type data of the type names (MHS-03)."""
+    start, end, type_names = _time_range(request)
+    found = await _metrics_service(request, store).get_metrics_in_range_by_type_names(start, end, type_names)
+    return [stat.to_json() for stat in found]
+
+
+@ADMIN.get("/metricsstats/charts")
+async def get_metrics_for_chart_by_type_names(request: Request, store: Store) -> dict[str, list[dict[str, Any]]]:
+    """``getMetricsForChartByTypeNames``: per type name, its counts in the range by state (MHS-04)."""
+    start, end, type_names = _time_range(request)
+    charts = await _metrics_service(request, store).get_metrics_for_chart_by_type_names(start, end, type_names)
+    return {name: [chart.to_json() for chart in found] for name, found in charts.items()}
 
 
 @ADMIN.put("/purge")
