@@ -207,9 +207,9 @@ export class Details {
 
     /**
      * The pencil was clicked (EDT-01, DD-322): open the editor drawer over
-     * this screen — the `drawer` aux outlet carries `edit-entity/:guid`.
+     * this screen — the `drawer` aux outlet carries `edit/:guid`.
      */
     protected edit(): void {
-        void this.router.navigate([{ outlets: { drawer: ["edit-entity", this.guid()] } }]);
+        void this.router.navigate([{ outlets: { drawer: ["edit", this.guid()] } }]);
     }
 }

@@ -21,14 +21,14 @@ type EnumRow = { value: string };
  * The entity editor drawer (EDT-01..EDT-08, DD-322): the routed panel in the
  * `drawer` aux outlet beside the settings and alerts panels (the AlertsPanel
  * shape — the open state rides the URL, dismissal navigates the outlet away),
- * reached from the details pencil (`edit-entity/:guid`) and the search hero's
- * `+` (`create-entity`). The editor owns its entity read (EDT-02) and shares
+ * reached from the details pencil (`edit/:guid`) and the search hero's
+ * `+` (`create`). The editor owns its entity read (EDT-02) and shares
  * no store with the screen underneath (DD-322).
  *
  * The form is generic: one control per attribute the entity's own definition
  * (plus its supertype chain) carries (EDT-03, DD-323); create mode picks the
  * type from a picker over the shipped entity typedefs (EDT-04) — the chosen
- * type rides the route (`create-entity/<type>`, DD-330), so the picker stays
+ * type rides the route (`create/<type>`, DD-330), so the picker stays
  * above the form as a field and a re-pick switches the type, re-seeding the
  * form. The footer is Save only (EDT-10 — the Delete is 7.9's, and there is
  * no Cancel: dismissal is the drawer's X/backdrop/Escape, EDT-01). Save
@@ -185,7 +185,7 @@ export class EntityEditor {
         });
 
         // Create mode seeds its entity from the route's type (DD-330): the
-        // bare `create-entity` shows the picker alone, and every pick or
+        // bare `create` shows the picker alone, and every pick or
         // switch lands here through the URL — the same seed path (DD-325),
         // which clears the tag box and the typed fields (EDT-04's switch).
         effect(() => {
@@ -325,7 +325,7 @@ export class EntityEditor {
      */
     protected pickType(row: PickerRow | null): void {
         if (row && row.name !== this.routeType()) {
-            void this.router.navigate([{ outlets: { drawer: ["create-entity", row.name] } }]);
+            void this.router.navigate([{ outlets: { drawer: ["create", row.name] } }]);
         }
     }
 

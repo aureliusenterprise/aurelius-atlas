@@ -468,3 +468,31 @@ uses `is-info`; parity is the point).
 catalogue key. Live-measured against the demo: field, submit button and
 `+` all 40px tall, `+` 40x40, background `rgb(23, 162, 184)` — the
 demo's values.
+
+### DD-334. The editor drawer's route segments are `create` and `edit`
+
+**Status:** Proposed (naming fix on the delivered drawer family, from user
+review before acceptance — it renames the two route segments EDT-01
+names.)
+
+**Decision.** The drawer's editor routes rename: `edit-entity/:guid` ->
+`edit/:guid`, `create-entity` -> `create`, `create-entity/:type` ->
+`create/:type`. The URLs read `(drawer:edit/<guid>)` and
+`(drawer:create/<type>)`.
+
+**Reason.** The `drawer` outlet already names the panel —
+`(drawer:create-entity)` says "entity" twice (user request: shorter).
+The other outlet members are single words (`settings`, `alerts`), and the
+mode test (`routeConfig.path.startsWith("create")`) is unaffected.
+
+**Alternatives.** (a) Keep the old segments as aliases (refused — nothing
+deep-links them yet: no docs page, no bookmark rule, and the e2e set is
+in-repo; an alias pair doubles the route table for no migration).
+(b) `new` instead of `create` (refused — the component's mode flag, the
+picker code, and EDT-01/04/06 all say create).
+
+**Consequences.** Three route paths, three navigate sites, the unit
+expectations, and the e2e URL patterns rename together. The legacy's
+`create-entity`/`edit-entity` full-screen routes (7.0's port note) are
+historical record and keep their names in the spec's Java/legacy porting
+table.

@@ -68,9 +68,9 @@ export class SearchLayout {
 
     /**
      * The hero's `+` was clicked (EDT-01, DD-322): open the create-mode
-     * editor drawer — the `drawer` aux outlet carries `create-entity`.
+     * editor drawer — the `drawer` aux outlet carries `create`.
      */
     protected openCreate(): void {
-        void this.router.navigate([{ outlets: { drawer: ["create-entity"] } }]);
+        void this.router.navigate([{ outlets: { drawer: ["create"] } }]);
     }
 }

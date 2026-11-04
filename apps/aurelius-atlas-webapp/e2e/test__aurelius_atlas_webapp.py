@@ -773,7 +773,7 @@ def _open_editor_from_details(page: Page, root_url: str, guid: str) -> None:
     pencil.click()
 
     expect(page.locator(".aurelius-drawer")).to_be_visible()
-    expect(page).to_have_url(re.compile(r"\(drawer:edit-entity"))
+    expect(page).to_have_url(re.compile(r"\(drawer:edit"))
 
 
 def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, user_token: str) -> None:
@@ -920,14 +920,14 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
 
     # The type is part of the path (DD-330), and the form for the chosen
     # type arrived with it: an empty required name, no entity yet.
-    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create-entity/DataSet\)$"))
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/DataSet\)$"))
     expect(authenticated.locator("#editor-name")).to_have_value("")
 
     # Switching (EDT-04): a half-typed draft is dropped, the picker stays
     # selected at the new type, and switching back re-seeds the DataSet form.
     authenticated.locator("#editor-name").fill("half-typed")
     authenticated.locator(".aurelius-editor-picker select").select_option(label="Process")
-    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create-entity/Process\)$"))
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/Process\)$"))
     authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
     expect(authenticated.locator("#editor-name")).to_have_value("")
 

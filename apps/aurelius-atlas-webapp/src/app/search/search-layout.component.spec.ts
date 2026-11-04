@@ -141,6 +141,6 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-create-entity")!.click();
 
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create-entity"] } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create"] } }]);
     });
 });

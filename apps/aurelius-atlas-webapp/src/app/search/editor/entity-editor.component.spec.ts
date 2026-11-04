@@ -100,7 +100,7 @@ function setup({
                 provide: ActivatedRoute,
                 useValue: {
                     paramMap,
-                    routeConfig: { path: create ? "create-entity/:type" : "edit-entity/:guid" },
+                    routeConfig: { path: create ? "create/:type" : "edit/:guid" },
                 },
             },
             { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
@@ -228,7 +228,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
 
         // The type is part of the path: the pick is a navigation, and the
         // form appears only when the route arrives with the type (DD-330).
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create-entity", "DataSet"] } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "DataSet"] } }]);
         expect(compiled.querySelector("form")).toBeNull();
         httpMock.verify(); // no entity read in create mode (EDT-02's edit-only)
     });
@@ -293,7 +293,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         select.value = refIndex;
         select.dispatchEvent(new Event("change"));
         fixture.detectChanges();
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create-entity", "Referenceable"] } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "Referenceable"] } }]);
 
         // The router answers: the same component with the new type param. The
         // DataSet form is gone (Referenceable carries no rendered field —

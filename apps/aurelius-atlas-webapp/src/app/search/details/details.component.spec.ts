@@ -364,14 +364,14 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(compiled.querySelector("button.aurelius-details-edit")).toBeNull();
     });
 
-    it("the pencil opens the editor drawer at edit-entity/:guid (EDT-01, DD-322)", () => {
+    it("the pencil opens the editor drawer at edit/:guid (EDT-01, DD-322)", () => {
         const { fixture, compiled, httpMock } = setup("pencil-guid");
         arrive(fixture, httpMock);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-details-edit")!.click();
 
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["edit-entity", "pencil-guid"] } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["edit", "pencil-guid"] } }]);
     });
 
     it("the editor's save tick re-reads this screen's entity (DD-327)", () => {
