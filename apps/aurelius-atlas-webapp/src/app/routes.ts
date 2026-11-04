@@ -76,7 +76,13 @@ export const routes: Routes = [
             // outlet (EDT-01, DD-322): the details pencil navigates to
             // `(drawer:edit-entity:guid)` and the hero `+` to `(drawer:create-entity)`.
             // The mode rides the route segment (no store sentinel, DD-325); the
-            // outlet swaps it in over whatever screen is underneath.
+            // outlet swaps it in over whatever screen is underneath. Create
+            // carries the chosen type as a route parameter (DD-330): the bare
+            // segment opens the picker, `create-entity/<type>` opens the form
+            // for that type, and a re-pick navigates the new type in — the
+            // type is part of the path, so switching is a URL change. Two
+            // route entries, not one optional segment: the Angular router
+            // has no optional path segments (a `?` in a path is literal).
             {
                 path: "edit-entity/:guid",
                 outlet: "drawer",
@@ -84,6 +90,11 @@ export const routes: Routes = [
             },
             {
                 path: "create-entity",
+                outlet: "drawer",
+                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
+            {
+                path: "create-entity/:type",
                 outlet: "drawer",
                 loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
             },

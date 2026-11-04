@@ -26,12 +26,15 @@ type EnumRow = { value: string };
  * no store with the screen underneath (DD-322).
  *
  * The form is generic: one control per attribute the entity's own definition
- * (plus its supertype chain) carries (EDT-03, DD-323); create mode starts at
- * a type picker over the shipped entity typedefs (EDT-04). The footer is
- * Save only (EDT-10 — the Delete is 7.9's, and there is no Cancel: dismissal
- * is the drawer's X/backdrop/Escape, EDT-01). Save merges the form onto the
- * entity, POSTs it, then replaces the classifications through the one PUT
- * (EDT-06, DD-326), and lands on the entity's details screen.
+ * (plus its supertype chain) carries (EDT-03, DD-323); create mode picks the
+ * type from a picker over the shipped entity typedefs (EDT-04) — the chosen
+ * type rides the route (`create-entity/<type>`, DD-330), so the picker stays
+ * above the form as a field and a re-pick switches the type, re-seeding the
+ * form. The footer is Save only (EDT-10 — the Delete is 7.9's, and there is
+ * no Cancel: dismissal is the drawer's X/backdrop/Escape, EDT-01). Save
+ * merges the form onto the entity, POSTs it, then replaces the
+ * classifications through the one PUT (EDT-06, DD-326), and lands on the
+ * entity's details screen.
  */
 @Component({
     imports: [ClassificationChip, Drawer, FontAwesomeModule, ReactiveFormsModule, Select],
@@ -55,13 +58,20 @@ export class EntityEditor {
     /** The form, a signal so the field-set rebuild repaints (EDT-03). */
     protected readonly form = signal(new FormGroup<Record<string, AbstractControl>>({}));
 
+    private readonly route = inject(ActivatedRoute);
+
     /** The route's `:guid` (edit mode) — the editor reads its own entity. */
-    private readonly guid = toSignal(inject(ActivatedRoute).paramMap.pipe(map((params) => params.get("guid") ?? "")), {
+    private readonly guid = toSignal(this.route.paramMap.pipe(map((params) => params.get("guid") ?? "")), {
+        initialValue: "",
+    });
+
+    /** The route's `:type` (create mode, DD-330) — "" before the first pick. */
+    private readonly routeType = toSignal(this.route.paramMap.pipe(map((params) => params.get("type") ?? "")), {
         initialValue: "",
     });
 
     /** The mode, off the route segment — no store sentinel (EDT-01, DD-325). */
-    private readonly isCreate = inject(ActivatedRoute).routeConfig?.path?.startsWith("create") ?? false;
+    private readonly isCreate = this.route.routeConfig?.path?.startsWith("create") ?? false;
 
     /** The fields the form renders (EDT-03), from the store's typedefs. */
     protected readonly fields = computed(() => {
@@ -91,8 +101,31 @@ export class EntityEditor {
             .map((tag) => ({ typeName: tag.typeName as string })),
     );
 
-    /** The create-mode picker shows until a type is chosen (EDT-04). */
-    protected readonly pickerVisible = computed(() => this.isCreate && this.state.selectedTypeName() === null);
+    /** The create-mode type field: the picker stays above the form (EDT-04, DD-330). */
+    protected readonly pickerVisible = computed(() => this.isCreate);
+
+    /** Edit mode's static type text (EDT-04): the type never changes there. */
+    protected readonly staticType = computed(() => (!this.isCreate ? (this.state.entity()?.typeName ?? "") : ""));
+
+    /** The picker's selected row, read off the route's type (DD-330). The
+     * row must be the pickerRows() array's own object — the Select matches
+     * its value by identity. */
+    protected readonly pickerSelected = computed<PickerRow | null>(
+        () => this.pickerRows().find((row) => row.name === this.routeType()) ?? null,
+    );
+
+    /** Whether a create type switch is in flight (the form's loading slot). */
+    protected readonly typeSwitching = computed(
+        () => this.isCreate && this.routeType() !== "" && this.state.selectedTypeName() !== this.routeType(),
+    );
+
+    /** Whether the form renders: create once a type is seeded (not mid-
+     * switch), edit once the read answered (EDT-02's loading line). */
+    protected readonly formVisible = computed(() =>
+        this.isCreate
+            ? this.state.typeName() !== null && !this.typeSwitching()
+            : !this.state.loading() || this.state.entity() !== null,
+    );
 
     protected readonly drawerTitle = computed(() => (this.isCreate ? this.createTitle : this.editTitle));
 
@@ -140,8 +173,7 @@ export class EntityEditor {
         this.state.mode.set(this.isCreate ? "create" : "edit");
         this.state.loadTypeDefs();
 
-        // The entity read follows the route's guid (EDT-02) — edit mode only;
-        // create seeds its entity at the type pick (DD-325).
+        // The entity read follows the route's guid (EDT-02) — edit mode only.
         effect(() => {
             const guid = this.guid();
             if (!this.isCreate && guid) {
@@ -149,13 +181,26 @@ export class EntityEditor {
             }
         });
 
-        // (Re)build the form when the field set changes: create at the type
-        // pick, edit once the entity and the typedefs have both answered.
+        // Create mode seeds its entity from the route's type (DD-330): the
+        // bare `create-entity` shows the picker alone, and every pick or
+        // switch lands here through the URL — the same seed path (DD-325),
+        // which clears the tag box and the typed fields (EDT-04's switch).
         effect(() => {
-            const signature = this.fields()
+            const type = this.routeType();
+            if (this.isCreate && type !== "" && this.state.selectedTypeName() !== type) {
+                this.state.beginCreate(type);
+            }
+        });
+
+        // (Re)build the form when the field set changes: create at the type
+        // pick or switch, edit once the entity and the typedefs have both
+        // answered. The type names the signature (DD-330) so a switch to a
+        // field-less type still drops the old form.
+        effect(() => {
+            const signature = `${this.state.typeName() ?? ""}|${this.fields()
                 .map((field) => `${field.name}:${field.kind}`)
-                .join(",");
-            if (signature !== "" && signature !== this.builtSignature) {
+                .join(",")}`;
+            if (signature !== this.builtSignature) {
                 this.builtSignature = signature;
                 this.form.set(this.buildForm());
             }
@@ -269,10 +314,15 @@ export class EntityEditor {
         this.state.removeClassification(typeName);
     }
 
-    /** Choose the create-mode type (EDT-04), seeding the entity (DD-325). */
+    /**
+     * Choose or switch the create-mode type (EDT-04, DD-330): navigate the
+     * drawer segment to the new type — the URL is the state, so the seed
+     * effect above rebuilds the form. An empty pick (the placeholder) is
+     * ignored: there is no type-less form to show.
+     */
     protected pickType(row: PickerRow | null): void {
-        if (row) {
-            this.state.beginCreate(row.name);
+        if (row && row.name !== this.routeType()) {
+            void this.router.navigate([{ outlets: { drawer: ["create-entity", row.name] } }]);
         }
     }
 

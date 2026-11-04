@@ -84,7 +84,11 @@ const TYPEDEFS: AtlasTypesDef = {
  * body appears only after the drawer component renders the panel, so
  * `arrive` flushes both reads and settles the screen.
  */
-function setup({ guid = "7a1b", create = false }: { guid?: string; create?: boolean } = {}) {
+function setup({
+    guid = "7a1b",
+    create = false,
+    createType = "",
+}: { guid?: string; create?: boolean; createType?: string } = {}) {
     const paramMap = new Subject<ParamMap>();
     TestBed.configureTestingModule({
         imports: [EntityEditor],
@@ -96,7 +100,7 @@ function setup({ guid = "7a1b", create = false }: { guid?: string; create?: bool
                 provide: ActivatedRoute,
                 useValue: {
                     paramMap,
-                    routeConfig: { path: create ? "create-entity" : "edit-entity/:guid" },
+                    routeConfig: { path: create ? "create-entity/:type" : "edit-entity/:guid" },
                 },
             },
             { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
@@ -106,10 +110,12 @@ function setup({ guid = "7a1b", create = false }: { guid?: string; create?: bool
     const fixture = TestBed.createComponent(EntityEditor);
     if (!create) {
         paramMap.next(convertToParamMap({ guid }));
+    } else if (createType !== "") {
+        paramMap.next(convertToParamMap({ type: createType }));
     }
     fixture.detectChanges();
     const compiled = fixture.nativeElement as HTMLElement;
-    return { fixture, compiled, httpMock: TestBed.inject(HttpTestingController) };
+    return { fixture, compiled, httpMock: TestBed.inject(HttpTestingController), paramMap };
 }
 
 /** Flush the typedefs read (every mode makes it) and settle. */
@@ -181,6 +187,14 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(tags).toEqual(["PII"]);
     });
 
+    it("edit mode renders the entity's type as static text, not a picker (EDT-04, DD-330)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        expect(compiled.querySelector(".aurelius-editor-picker")).toBeNull();
+        expect(normalize(compiled.querySelector(".aurelius-editor-type")?.textContent)).toBe("DataSet");
+    });
+
     it("create mode: the picker lists the shipped types minus glossary and internals (EDT-04)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true });
         arriveTypeDefs(fixture, httpMock);
@@ -195,10 +209,11 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
             .map((option) => option.textContent);
         expect(dataRows).toEqual(["Asset", "DataSet", "Referenceable"]);
         expect(options).not.toContain("AtlasGlossary");
+        // The bare route (no type yet): the picker alone, no form (DD-330).
         expect(compiled.querySelector("form")).toBeNull();
     });
 
-    it("the type pick seeds the create form with a negative guid (EDT-04, DD-325)", () => {
+    it("the type pick navigates the drawer segment to the type (EDT-04, DD-330)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true });
         arriveTypeDefs(fixture, httpMock);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
@@ -211,7 +226,20 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         select.dispatchEvent(new Event("change"));
         fixture.detectChanges();
 
-        expect(compiled.querySelector(".aurelius-editor-picker")).toBeNull();
+        // The type is part of the path: the pick is a navigation, and the
+        // form appears only when the route arrives with the type (DD-330).
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create-entity", "DataSet"] } }]);
+        expect(compiled.querySelector("form")).toBeNull();
+        httpMock.verify(); // no entity read in create mode (EDT-02's edit-only)
+    });
+
+    it("the route's type seeds the create form with a negative guid (EDT-04, DD-325, DD-330)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        // The picker stays above the form, selected at the route's type.
+        expect(compiled.querySelector(".aurelius-editor-picker select")).toBeTruthy();
         const names = [...compiled.querySelectorAll<HTMLInputElement>("input.aurelius-editor-text")].map((input) =>
             input.id.replace("editor-", ""),
         );
@@ -246,6 +274,42 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         // the entity's details (EDT-06, DD-326).
         httpMock.verify();
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "9999"], drawer: null } }]);
+    });
+
+    it("switching the type re-seeds the form through the route (EDT-04, DD-330)", () => {
+        const { fixture, compiled, httpMock, paramMap } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "half-typed";
+        nameInput.dispatchEvent(new Event("input"));
+
+        // Re-pick in the picker: the switch is a navigation to the new type.
+        const select = compiled.querySelector<HTMLSelectElement>(".aurelius-editor-picker select")!;
+        const refIndex = [...select.querySelectorAll("option")].find(
+            (option) => option.value !== "" && option.textContent === "Referenceable",
+        )!.value;
+        select.value = refIndex;
+        select.dispatchEvent(new Event("change"));
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create-entity", "Referenceable"] } }]);
+
+        // The router answers: the same component with the new type param. The
+        // DataSet form is gone (Referenceable carries no rendered field —
+        // qualifiedName never renders, EDT-03) and a save posts the new type.
+        paramMap.next(convertToParamMap({ type: "Referenceable" }));
+        fixture.detectChanges();
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")).toBeNull();
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const posted = (post.request.body as { entity: { typeName: string; guid: string } }).entity;
+        expect(posted.typeName).toBe("Referenceable");
+        expect(Number(posted.guid)).toBeLessThan(0); // a fresh seed, not the old temp entity
+        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        httpMock.verify();
     });
 
     it("the tag box adds an applicable type on Enter and removes it (EDT-05)", () => {

@@ -337,3 +337,40 @@ specs and the e2e name the chip's delete class
 (`.aurelius-classification-chip-delete`) and the host keeps
 `.aurelius-editor-tag` on the chip element, so the tag-count and text
 selectors stay the same.
+
+### DD-330. The create type rides the drawer route, and the picker stays
+
+**Status:** Proposed (refinement of the delivered drawer, from user review
+before acceptance — it changes what EDT-04 renders, so no accepted decision
+changes.)
+
+**Decision.** The create route becomes `create-entity/:type?`. The bare
+segment opens the picker alone. A type pick (or re-pick) navigates the
+`drawer` outlet to `create-entity/<type>`; the editor seeds the entity from
+the route parameter through the same `beginCreate` path (DD-325), and the
+picker stays above the form as the "Entity type" field, selected at the
+route's type, so switching types is a URL change. Editing renders the type
+as static read-only text (the static label EDT-04 always required).
+
+**Reason.** The user asked to switch the type after the first pick. With the
+picker replaced by the form, a wrong pick abandons the drawer; with the type
+in the path, the switch is one dropdown change, the URL names what the form
+builds, and a reload of the drawer keeps the type. The route owns the mode
+already (DD-325's "no store sentinel"), so the type belongs to the route
+too — the component reads `:type` and the seed effect replaces the stored
+entity, which clears the tag box and the typed fields (EDT-04's switch).
+
+**Alternatives.** (a) A "Change type" link that clears the store signal and
+shows the picker again (refused — the type vanishes from the URL, a reload
+loses it, and a second "picker visible" state enters the component). (b) The
+picker as a field with the switch kept in the store only (refused — the URL
+would lie: `create-entity` with a Process form). (c) Reuse the `Select`'s
+`disabled` for the edit-mode type (refused — it would send the entity's type
+through the picker exclusion filter; plain text is what EDT-04 always said).
+
+**Consequences.** The outlet's create URL is the type's address, matching
+`edit-entity/:guid`. An in-flight switch shows nothing stale: the form gate
+holds until the route arrives with the type. The form-rebuild signature
+gains the type name so a switch to a field-less type drops the old form. The
+drawer's `close()` and the save's compound navigation are unchanged (DD-328
+holds). The spec's EDT-04 is amended in the same PR.

@@ -37,20 +37,32 @@
         <p class="help aurelius-editor-loading" role="status">{{ loadingLine }}</p>
     }
 
-    <!-- Create mode, before the type pick: the picker over the shipped entity
-         typedefs (EDT-04). The ui-lib Select as a plain dropdown. -->
+    <!-- Create mode: the type field over the shipped entity typedefs
+         (EDT-04, DD-330). It stays above the form after the pick — the
+         chosen type rides the route, so re-picking switches the type and
+         re-seeds the form. The ui-lib Select as a plain dropdown. -->
     @if (pickerVisible()) {
         <div class="aurelius-editor-picker">
             <aurelius-atlas-ui-select
                 [options]="pickerRows()"
                 displayField="label"
                 [label]="pickerLabel"
-                [value]="null"
+                [value]="pickerSelected()"
                 [searchVisible]="false"
                 (valueChange)="pickType($event)"
             ></aurelius-atlas-ui-select>
         </div>
-    } @else if (!state.loading() || state.entity()) {
+    }
+    @if (formVisible()) {
+        <!-- Editing renders the type as static text (EDT-04, DD-330): the
+             type never changes there, so no control — unlike create, where
+             the picker above is how the type is chosen and switched. -->
+        @if (staticType()) {
+            <div class="field aurelius-editor-static-type">
+                <p class="label">{{ pickerLabel }}</p>
+                <p class="is-size-7 aurelius-editor-type">{{ staticType() }}</p>
+            </div>
+        }
         <!-- The field set (EDT-03): one control per editable attribute, in the
              resolved order. Each control binds through [formControl]; the form
              group is the validity root and is not itself bound to a directive. -->

@@ -899,10 +899,11 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
     """The hero `+` opens the picker; a chosen type and a name create an entity (EDT-04, EDT-12).
 
     Create mode (DD-325's payload idiom, server-side): the picker lists the
-    shipped types (EDT-04), DataSet is chosen, the form is empty, Save sends
-    the negative temp guid, and the landing URL carries the server's guid
-    from ``guidAssignments`` — the new entity's details, titled by the
-    entered name.
+    shipped types (EDT-04), DataSet is chosen — the type rides the drawer's
+    URL segment (DD-330) — the form is empty, a switch to Process and back
+    re-seeds it (EDT-04), Save sends the negative temp guid, and the landing
+    URL carries the server's guid from ``guidAssignments`` — the new entity's
+    details, titled by the entered name.
     """
     run = secrets.token_hex(4)
     name = f"zz{run}created"
@@ -917,7 +918,17 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
 
     authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
 
-    # The form for the chosen type: an empty required name, no entity yet.
+    # The type is part of the path (DD-330), and the form for the chosen
+    # type arrived with it: an empty required name, no entity yet.
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create-entity/DataSet\)$"))
+    expect(authenticated.locator("#editor-name")).to_have_value("")
+
+    # Switching (EDT-04): a half-typed draft is dropped, the picker stays
+    # selected at the new type, and switching back re-seeds the DataSet form.
+    authenticated.locator("#editor-name").fill("half-typed")
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="Process")
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create-entity/Process\)$"))
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
     expect(authenticated.locator("#editor-name")).to_have_value("")
 
     authenticated.locator("#editor-name").fill(name)
