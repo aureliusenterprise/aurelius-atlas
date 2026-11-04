@@ -48,9 +48,17 @@ class FakeIndices:
         """Whether ``name`` is an alias of a created index."""
         return name in self._client.aliases
 
-    async def create(self, *, index: str, aliases: dict[str, Any] | None = None, **_settings: object) -> dict[str, Any]:
-        """Create ``index`` with ``aliases``; settings and mappings are accepted and ignored."""
+    async def create(
+        self,
+        *,
+        index: str,
+        aliases: dict[str, Any] | None = None,
+        settings: dict[str, Any] | None = None,
+        **_mappings: object,
+    ) -> dict[str, Any]:
+        """Create ``index`` with ``aliases``; its settings are kept, its mappings accepted and ignored."""
         self._client.documents.setdefault(index, {})
+        self._client.index_settings[index] = dict(settings or {})
         for alias in aliases or {}:
             self._client.aliases[alias] = index
         return {"acknowledged": True, "index": index}
@@ -60,9 +68,10 @@ class FakeIndices:
         self._client.mapping_updates.append(index)
         return {"acknowledged": True}
 
-    async def put_settings(self, *, index: str, **_settings: object) -> dict[str, Any]:
-        """Count the call; the fake keeps no settings."""
+    async def put_settings(self, *, index: str, settings: dict[str, Any]) -> dict[str, Any]:
+        """Count the call and merge the settings into the index behind ``index``."""
         self._client.settings_updates.append(index)
+        self._client.index_settings.setdefault(self._client.aliases.get(index, index), {}).update(settings)
         return {"acknowledged": True}
 
     async def refresh(self, *, index: str) -> dict[str, Any]:
@@ -92,6 +101,8 @@ class FakeClient:
         self.primary_term = 1
         self.mapping_updates: list[str] = []
         self.settings_updates: list[str] = []
+        self.index_settings: dict[str, dict[str, Any]] = {}
+        """The settings of each created index, by its name: those it was created with, then each update's."""
         self.seq_no = -1
         self.refreshes: list[str] = []
         self.write_refreshes: list[tuple[str, str]] = []

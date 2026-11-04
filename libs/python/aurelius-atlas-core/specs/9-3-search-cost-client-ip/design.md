@@ -9,7 +9,7 @@ never edited except its status line, and a changed decision is a new entry that 
 
 ### DD-237. Index refresh moves from reads to writes
 
-- **Status:** Accepted
+- **Status:** Accepted; its choice of `wait_for` superseded by [DD-322](../../../../../apps/aurelius-atlas-server/specs/6-4-retention/design.md#dd-322-a-write-refreshes-what-it-wrote)
 - **Increment:** 9.3
 - **Date:** 2026-10-28
 

@@ -78,6 +78,9 @@ services:
         command:
             - "--config.file=/etc/prometheus/prometheus.yaml"
             - "--storage.tsdb.path=/var/prometheus"
+            # The metrics' lifetime (RET-02, ADR 025): the chart's
+            # prometheus.retention, stated here rather than left to the default.
+            - "--storage.tsdb.retention.time=15d"
             - "--web.enable-otlp-receiver"
         healthcheck:
             test: ["CMD", "promtool", "check", "ready"]
@@ -149,6 +152,9 @@ services:
             - GF_PATHS_DATA=/var/lib/grafana/data
             - GF_PATHS_LOGS=/var/lib/grafana/logs
             - GF_PATHS_PLUGINS=/var/lib/grafana/plugins
+            # The alert history's lifetime (RET-05): the chart's
+            # grafana.alerting.historyMaxAge.
+            - GF_UNIFIED_ALERTING_STATE_HISTORY_ANNOTATIONS_MAX_AGE=30d
         ports:
             - "127.0.0.1:3000:3000"
         volumes:

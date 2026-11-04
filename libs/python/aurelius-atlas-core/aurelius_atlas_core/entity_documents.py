@@ -33,7 +33,7 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
-from aurelius_atlas_core.typedef_document import DocumentVersion
+from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, DocumentVersion
 
 INDEX_PREFIX = "aurelius-atlas"
 """The prefix of the three aliases; tests give their own."""
@@ -69,10 +69,10 @@ LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification |
 JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
 
-WRITE_REFRESH = "wait_for"
-"""Every write's ``refresh`` parameter (ENS-11, DD-237): the response returns after the documents are visible,
-so the next read sees them — no read path pays a refresh of its own. ``wait_for`` (not ``true``) also waits
-for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk."""
+WRITE_REFRESH = "true"
+"""Every write's ``refresh`` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
+returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own,
+and no write waits for the index's next scheduled refresh."""
 
 REFERRING_PAGE = 1000
 """How many referring entities one search page holds (DD-057)."""
@@ -403,6 +403,7 @@ class ElasticsearchEntityDocuments:
         """Create each index behind its alias unless it exists (ENS-01).
 
         An existing entity index gets the fields it lacks mapped, as ``references`` (EDL-10); mapped ones stay.
+        Every existing index gets the settings of a new one, as its replicas (IDX-02).
         """
         mappings = {
             self._entities: ENTITY_MAPPING,
@@ -414,18 +415,20 @@ class ElasticsearchEntityDocuments:
         }
         limit = {"index.mapping.total_fields.limit": ENTITY_FIELD_LIMIT}
         for alias, mapping in mappings.items():
+            settings = INDEX_SETTINGS | limit if alias == self._entities else INDEX_SETTINGS
             if not await self._client.indices.exists_alias(name=alias):
                 await self._client.indices.create(
                     index=f"{alias}-000001",
                     aliases={alias: {"is_write_index": True}},
                     mappings=mapping,
-                    settings=limit if alias == self._entities else None,
+                    settings=settings,
                 )
-            elif alias == self._entities:
+                continue
+            if alias == self._entities:
                 await self._client.indices.put_mapping(
                     index=alias, properties=mapping["properties"], dynamic_templates=mapping["dynamic_templates"]
                 )
-                await self._client.indices.put_settings(index=alias, settings=limit)
+            await self._client.indices.put_settings(index=alias, settings=settings)
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
         """``mget`` of the entity index: real time, as a get by id is (ENS-04)."""

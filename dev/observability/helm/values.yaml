@@ -101,6 +101,7 @@ prometheus:
         repository: dhi.io/prometheus
         tag: "3.13-debian13"
         digest: sha256:585a54e52b97d4400aaa4c7ef9470add072362b236cd7fb4e8aacdd371121109
+    # How long Prometheus keeps the metrics (RET-02); the compose states the same.
     retention: 15d
     resources:
         requests:
@@ -190,6 +191,8 @@ grafana:
     alerting:
         webhookSecret: ""
         repeatInterval: 4h
+        # How long Grafana keeps the alerts' state history (RET-05).
+        historyMaxAge: 30d
     # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
     # the default posture is kubectl port-forward (runbook).
     probes:

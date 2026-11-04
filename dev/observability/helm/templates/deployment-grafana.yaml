@@ -87,6 +87,8 @@ spec:
                             value: /var/lib/grafana/logs
                         -   name: GF_PATHS_PLUGINS
                             value: /var/lib/grafana/plugins
+                        -   name: GF_UNIFIED_ALERTING_STATE_HISTORY_ANNOTATIONS_MAX_AGE
+                            value: {{ .Values.grafana.alerting.historyMaxAge | quote }}
                         -   name: GF_SECURITY_ADMIN_USER
                             valueFrom:
                                 secretKeyRef:

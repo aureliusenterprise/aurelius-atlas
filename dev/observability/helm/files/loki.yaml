@@ -24,6 +24,16 @@ schema_config:
               prefix: index_
               period: 24h
 
+# The logs' lifetime (RET-03, ADR 025): the compactor deletes every stream's
+# chunks once they are 30 days old.
+compactor:
+    working_directory: /loki/compactor
+    retention_enabled: true
+    delete_request_store: filesystem
+
+limits_config:
+    retention_period: 720h
+
 analytics:
     reporting_enabled: false
 

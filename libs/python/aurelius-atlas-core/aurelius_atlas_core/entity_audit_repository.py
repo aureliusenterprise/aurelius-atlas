@@ -15,6 +15,7 @@ from aurelius_atlas_model.audit_reduction import AtlasAuditAgingType
 from elasticsearch import AsyncElasticsearch
 
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
+from aurelius_atlas_core.typedef_document import INDEX_SETTINGS
 
 AUDIT_INDEX = f"{INDEX_PREFIX}-entity-audits"
 """The alias of the audit index (DD-082)."""
@@ -86,16 +87,21 @@ class ElasticsearchEntityAuditRepository:
         self.alias = f"{prefix}-entity-audits"
 
     async def prepare(self) -> None:
-        """Create the index behind its alias unless it exists."""
+        """Create the index behind its alias unless it exists; an existing one gets a new one's settings (IDX-02)."""
         if not await self._client.indices.exists_alias(name=self.alias):
             await self._client.indices.create(
-                index=f"{self.alias}-000001", aliases={self.alias: {"is_write_index": True}}, mappings=AUDIT_MAPPING
+                index=f"{self.alias}-000001",
+                aliases={self.alias: {"is_write_index": True}},
+                mappings=AUDIT_MAPPING,
+                settings=INDEX_SETTINGS,
             )
+        else:
+            await self._client.indices.put_settings(index=self.alias, settings=INDEX_SETTINGS)
 
     async def put_events(self, events: Sequence[EntityAuditEventV2]) -> None:
         """Index each event as a new document, in one bulk request.
 
-        The append is refreshed, so the listing that follows it is current (ENS-11).
+        The append refreshes the index, so the listing that follows it is current (ENS-11, IDX-01).
 
         Raises:
             RuntimeError: Elasticsearch did not keep an event.
