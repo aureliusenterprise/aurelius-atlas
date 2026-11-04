@@ -7046,6 +7046,30 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The operation succeeded; its audit should not turn it into an error</td>
 <td>6.3</td>
 </tr>
+<tr>
+<td>DV-132</td>
+<td>Audits</td>
+<td>An aging finds its entities by a search of all entity types that also takes the type names as a free-text query</td>
+<td>By their types alone</td>
+<td>The free-text query only narrows by text that happens to hold the type names</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-133</td>
+<td>Audits</td>
+<td>The configured aging is scheduled on the active instance</td>
+<td>Every server process schedules it; the pending limit bounds the tasks they queue</td>
+<td>Every process is active here (DV-38)</td>
+<td>6.3</td>
+</tr>
+<tr>
+<td>DV-134</td>
+<td>Audits</td>
+<td><code>admin/audits/ageout</code> without a body fails on the missing criteria</td>
+<td>It answers 204, as criteria with aging off do</td>
+<td>A request asking for nothing should not be a server error</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 

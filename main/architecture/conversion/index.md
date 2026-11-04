@@ -94,7 +94,7 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 6.3c1 | Import transforms | The `transforms` option of an import: text, attribute, classification and status rewrites per type and its sub types | `ImportTransforms`, `ImportTransformer`, `ImportTransformsShaper` | in progress |
 | 6.3c2 | Replication and audits | `replicatedTo` and `replicatedFrom`, server records, the export and import audit trail, `admin/expimp/audit`, `admin/server/{name}` | `AuditsWriter`, `ExportImportAuditService`, `AtlasServerService` | in progress |
 | 6.3c3 | Admin audits | `admin/audits`, `admin/audit/{guid}/details`: the audit of purges, exports, imports, type changes and server starts | `AtlasAuditService`, `TypeDefAuditListener` | in progress |
-| 6.3c4 | Entity audit aging | `admin/audits/ageout`: the entity audits aged out by age, count and action, on demand and on a schedule | `AuditReductionService`, `AuditReductionTaskFactory` | planned |
+| 6.3c4 | Entity audit aging | `admin/audits/ageout`: the entity audits aged out by age, count and action, on demand and on a schedule | `AtlasAuditReductionService`, `AuditReductionTask` | planned |
 | 6.4 | Hardening | Metrics, observability, load test, index tuning | `AdminResource` metrics | planned |
 | 7.0 | Webapp foundation (umbrella) | The rules every 7.x slice obeys: standalone, signals, shared dumb UI, Vitest and Playwright, `@angular/localize` | Aurelius `apps/atlas` | planned |
 | 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp`: bootstrap, router, runtime config, XLIFF locale bridge, OTel telemetry | Aurelius `apps/atlas/src/app`, `libs/i18n` | in progress |
