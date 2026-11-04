@@ -21,27 +21,27 @@ type Story = StoryObj<Holdable>;
 /** The `held` emissions the play() tests collect. */
 const emissions: boolean[] = [];
 
-// The caller's fill (the editor's own sheet does the same, UIC-03: the
-// colour comes from the Bulma danger ramp, no literal hex).
+// The caller's ring (the editor's own sheet does the same, UIC-03: the
+// colour comes from the Bulma danger ramp, no literal hex). The ring rides
+// inside the solid button's edge and closes clockwise as the hold runs.
 const fill = `
 <style>
-.aurelius-hold-story-button {
-    overflow: hidden;
-    position: relative;
-}
 .aurelius-hold-story-button::before {
-    background-color: hsl(var(--bulma-danger-h), var(--bulma-danger-s), var(--bulma-danger-l));
-    bottom: 0;
+    background-image: conic-gradient(
+        from 0deg,
+        transparent calc(var(--aurelius-hold-progress, 0) * 360deg),
+        var(--bulma-danger-invert) calc(var(--aurelius-hold-progress, 0) * 360deg)
+    );
+    border-radius: inherit;
+    bottom: 3px;
     content: "";
-    left: 0;
+    left: 3px;
+    mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) center /
+        calc(100% - 4px) calc(100% - 4px) no-repeat;
+    pointer-events: none;
     position: absolute;
-    top: 0;
-    transform: scaleX(var(--aurelius-hold-progress, 0));
-    transform-origin: left center;
-    width: 100%;
-}
-.aurelius-hold-story-button span {
-    position: relative;
+    right: 3px;
+    top: 3px;
 }
 </style>
 `;
@@ -52,7 +52,7 @@ const template = `${fill}
     aurelius-atlas-ui-hold
     [holdFor]="holdFor"
     (held)="onHeld($event)"
-    class="button is-small is-danger is-outlined aurelius-hold-story-button"
+    class="button is-small is-danger aurelius-hold-story-button"
 ><span>Hold to delete</span></button>
 `;
 

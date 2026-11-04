@@ -841,6 +841,13 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
         const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
         expect(request.request.method).toBe("DELETE");
+        // In flight the Delete is the acting button: spinner, busy, disabled,
+        // and the status line names the delete (EDT-18, DD-342).
+        const del = compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete");
+        expect(del?.classList.contains("is-loading")).toBe(true);
+        expect(del?.getAttribute("aria-busy")).toBe("true");
+        expect(del?.disabled).toBe(true);
+        expect(normalize(compiled.querySelector(".aurelius-editor-busy")?.textContent)).toBe("Deleting the entity");
         request.flush({ guidAssignments: {} });
         fixture.detectChanges();
 

@@ -30,30 +30,34 @@
 }
 
 /*
- * The Delete's hold fill (EDT-19): the directive sweeps
- * `--aurelius-hold-progress` (0→1) on the button while held; a red wash
- * grows from the left as the confirmation. The label rides above the fill
- * (relative z-index) so it stays legible. Colour is the Bulma danger
- * family, spelled from the root accent ramp (UIC-03 — no literal hex).
+ * The Delete's hold ring (EDT-19): the button is solid danger, and the
+ * directive sweeps `--aurelius-hold-progress` (0→1) on it while held. The
+ * ring rides just inside the button's edge and starts whole (the rest
+ * state shows what the hold must close); as the hold runs, the arc shrinks
+ * clockwise from the top until nothing is left at the confirming moment.
+ * A conic gradient carries the arc and a two-layer mask (the `exclude`
+ * composite) cuts the hole, so the button's own fill shows through and the
+ * label rides untouched. Colours come from the Bulma danger ramp (UIC-03 —
+ * no literal hex; the mask gradients' black is a shape, not a colour).
  */
 .aurelius-editor-delete {
-    overflow: hidden;
-    position: relative;
-
     &::before {
-        background-color: hsl(var(--bulma-danger-h), var(--bulma-danger-s), var(--bulma-danger-l));
-        bottom: 0;
+        background-image: conic-gradient(
+            from 0deg,
+            transparent calc(var(--aurelius-hold-progress, 0) * 360deg),
+            var(--bulma-danger-invert) calc(var(--aurelius-hold-progress, 0) * 360deg)
+        );
+        border-radius: inherit;
+        bottom: 3px;
         content: "";
-        left: 0;
+        left: 3px;
+        mask:
+            linear-gradient(#000 0 0) exclude,
+            linear-gradient(#000 0 0) center / calc(100% - 4px) calc(100% - 4px) no-repeat;
+        pointer-events: none;
         position: absolute;
-        top: 0;
-        transform: scaleX(var(--aurelius-hold-progress, 0));
-        transform-origin: left center;
-        width: 100%;
-    }
-
-    span {
-        position: relative;
+        right: 3px;
+        top: 3px;
     }
 }
 

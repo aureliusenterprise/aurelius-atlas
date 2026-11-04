@@ -29,9 +29,10 @@
             @if (deleteShown()) {
                 <button
                     type="button"
-                    class="button is-small is-danger is-outlined aurelius-editor-delete"
+                    class="button is-small is-danger aurelius-editor-delete"
                     aurelius-atlas-ui-hold
                     [holdFor]="3"
+                    [class.is-loading]="state.deleting()"
                     [disabled]="state.deleting() || state.saving()"
                     [attr.aria-busy]="state.deleting() ? 'true' : null"
                     (held)="deleteHeld($event)"

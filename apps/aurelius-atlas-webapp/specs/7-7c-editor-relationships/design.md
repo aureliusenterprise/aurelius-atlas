@@ -464,15 +464,17 @@ fires `held(false)`. After `holdFor` seconds (default 3) it fires
 `held(true)` once and stops the sweep. While held it writes the fraction
 (0 to 1) into the host's `--aurelius-hold-progress` custom property. The
 caller paints the fill from that property, so the directive carries no
-colour (UIC-03). The Delete button's sheet grows a danger-coloured wash
-from the left with `transform: scaleX()`.
+colour (UIC-03). The Delete button is solid danger; its sheet draws a
+ring just inside the button's edge with a conic gradient and a two-layer
+mask, and the ring's arc shrinks clockwise from the top as the hold runs,
+closing fully at the confirming moment.
 
 **Reason.** The reference (`models4insight-holdable`, Aurelius 17) is a
 reusable directive on the same mechanic: a timer on mousedown, a cancel on
 mouseup or leave, a confirm at the deadline. Pointer events cover mouse
 and touch in one set, so a phone confirms a delete too. The legacy's
-mouse-only listener does not. The fill belongs to the caller because the
-ui library bans literal colours (UIC-03) and the wash is the Delete
+mouse-only listener does not. The ring belongs to the caller because the
+ui library bans literal colours (UIC-03) and the ring is the Delete
 button's design, not the directive's. A keyboard hold is out: the legacy
 never had one, and a hold needs a keydown/keyup pair with its own focus
 story (deferred, in 7.7a's deferral table).
