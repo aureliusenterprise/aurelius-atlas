@@ -75,9 +75,6 @@ const fill = `
 .aurelius-hold-button[data-aurelius-hold="holding"] > .aurelius-hold-donut > circle {
     animation: aurelius-hold-draw var(--aurelius-hold-duration, 3s) linear forwards;
 }
-.aurelius-hold-button[data-aurelius-hold="holding"] > .aurelius-hold-loop > circle {
-    animation-iteration-count: infinite;
-}
 </style>
 `;
 
@@ -143,16 +140,31 @@ export const EarlyRelease: Story = {
 };
 
 /**
- * The animation itself, replayed: the button is pinned to the holding state
- * and the real animation loops forever, so the review can watch the full
- * cycle — the label clears, the round donut grows clockwise from the top over
- * 3 seconds, and at the end the ring is whole and the loop restarts. The
- * editor's Delete would ride the same look; this is the mock under review.
+ * The animation itself, as shipped: the button is pinned to the holding state
+ * and the real animation plays exactly once over the 3-second hold and stays
+ * put — the label clears, the round donut grows clockwise from the top, and
+ * when the time is up the ring is fully closed and holds there (the CSS
+ * `forwards` fill). The play() asserts that one play and the closed end. The
+ * editor's Delete rides this same look; this is the mock under review.
  */
-export const ClosingLoop: Story = {
+export const ClosingOnce: Story = {
+    play: async ({ canvasElement }) => {
+        const circle = canvasElement.querySelector("circle");
+        if (!circle) throw new Error("the donut is missing");
+        // One play over the hold, then it holds closed (no loop).
+        expect(getComputedStyle(circle).animationIterationCount).toBe("1");
+        expect(getComputedStyle(circle).animationFillMode).toBe("forwards");
+        // Once the time is up, the ring is fully closed and stays so.
+        await waitFor(() => expect(getComputedStyle(circle).strokeDashoffset).toBe("0px"), {
+            timeout: 5000,
+        });
+        await waitFor(() => expect(getComputedStyle(circle).strokeDashoffset).toBe("0px"), {
+            timeout: 500,
+        });
+    },
     render: () => ({
         template: `${fill}
-<button type="button" class="button is-small aurelius-hold-button aurelius-hold-mock" data-aurelius-hold="holding" style="--aurelius-hold-duration: 3s; font-size: 22px; padding: 16px 28px;"><span>Hold to delete</span>${donut.replace("aurelius-hold-donut", "aurelius-hold-donut aurelius-hold-loop")}</button>
-<p class="is-size-7">The real animation, looped: the label clears and the round donut grows clockwise from the top for 3 seconds, the loop restarts at the full ring. Press and hold the <em>Hold to delete</em> button in <strong>Completed Hold</strong> for the interactive one.</p>`,
+<button type="button" class="button is-small aurelius-hold-button aurelius-hold-mock" data-aurelius-hold="holding" style="--aurelius-hold-duration: 3s; font-size: 22px; padding: 16px 28px;"><span>Hold to delete</span>${donut}</button>
+<p class="is-size-7">The real animation, played once: the label clears and the round donut grows clockwise from the top for 3 seconds, then the ring is fully closed and holds. Press and hold the <em>Hold to delete</em> button in <strong>Completed Hold</strong> for the interactive one.</p>`,
     }),
 };
