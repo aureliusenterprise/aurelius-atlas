@@ -395,6 +395,57 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(items.map((item) => normalize(item.textContent))).toEqual(["CONFIDENTIAL"]);
     });
 
+    it("the input is a labelled combobox pointing at the active option (EDT-05, DD-336)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock);
+
+        const input = compiled.querySelector<HTMLInputElement>("#editor-classification-input")!;
+        expect(input.getAttribute("role")).toBe("combobox");
+        expect(input.getAttribute("aria-autocomplete")).toBe("list");
+        // The label names it (no unlabeled-field ambiguity for a reader).
+        const label = compiled.querySelector<HTMLElement>("#editor-classifications-label")!;
+        expect(input.getAttribute("aria-labelledby")).toBe(label.id);
+        // With nothing typed the panel is shut, so no activedescendant yet.
+        expect(input.getAttribute("aria-expanded")).toBe("false");
+
+        input.dispatchEvent(new Event("focusin", { bubbles: true }));
+        fixture.detectChanges();
+        // PII and CONFIDENTIAL apply to DataSet; Down moves the active row.
+        expect(input.getAttribute("aria-expanded")).toBe("true");
+        expect(input.getAttribute("aria-controls")).toBe("editor-classification-listbox");
+        expect(input.getAttribute("aria-activedescendant")).toBe("editor-classification-option-0");
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+        fixture.detectChanges();
+        expect(input.getAttribute("aria-activedescendant")).toBe("editor-classification-option-1");
+    });
+
+    it("Enter commits the keyboard-active option (EDT-05, DD-336)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock);
+
+        const input = compiled.querySelector<HTMLInputElement>("#editor-classification-input")!;
+        input.dispatchEvent(new Event("focusin", { bubbles: true }));
+        fixture.detectChanges();
+        // Down lands on the second row (CONFIDENTIAL); Enter adds it.
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true }));
+        fixture.detectChanges();
+        input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter", bubbles: true }));
+        fixture.detectChanges();
+
+        const tags = [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
+        expect(tags).toEqual(["CONFIDENTIAL"]);
+    });
+
+    it("a type with nothing applicable disables the box and says so (EDT-05, DD-336)", () => {
+        // Referenceable has no applicable classification among the defs.
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "Referenceable" });
+        arriveTypeDefs(fixture, httpMock);
+
+        expect(compiled.querySelector(".aurelius-editor-classification-box.is-disabled")).toBeTruthy();
+        expect(compiled.querySelector<HTMLInputElement>("#editor-classification-input")!.disabled).toBe(true);
+        expect(compiled.querySelector(".aurelius-editor-no-classifications")).toBeTruthy();
+    });
+
     it("save posts the merged entity; unchanged tags send nothing (EDT-06, DD-326)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);

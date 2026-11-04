@@ -547,3 +547,72 @@ Keyboard: typing filters, Enter adds an exact-or-filtered-first name
 specs replace DD-329's datalist-pick test with panel filter/pick/Escape
 pins. Live-probed: 40px bordered box, blue focus ring, panel 367px over
 a 369px box opening above it, picked tag never re-offered.
+
+### DD-336. The classification box is a keyboard combobox and disables when it has nothing to offer
+
+**Status:** Proposed (accessibility fix on the delivered drawer, from user
+review before acceptance — it adds how EDT-05's box is operable and when
+it yields, changing no stored value or request.)
+
+**Decision.** Four things, all on the tag box (EDT-05, on top of
+DD-335's box):
+
+1. The input is a proper combobox (ARIA 1.2): `role="combobox"`, named by
+   its label through `aria-labelledby`, `aria-controls`/`aria-expanded`,
+   `aria-autocomplete="list"`, and `aria-activedescendant` pointing at the
+   open panel's active option. Down/Up move the active option (the panel
+   rows carry matching ids and `aria-selected`); Enter adds it. A match
+   that starts with the typed text leads the list, so Enter commits the
+   closest name — the old exact-else-first rule kept in the panel order.
+2. With nothing left to add (no applicable type remains for the entity's
+   type), the input and its box disable and take the input's muted look,
+   and the "No classifications available" help line shows (it now shows
+   whenever nothing applies, not only when the box is also empty, so a
+   dead input is explained). Chosen tags keep their delete — that is the
+   chip's control, not the input's, so a full box can still hand a tag
+   back even with no more to add.
+3. The panel rows clear the 24px target floor (2.5rem desktop, 3rem on
+   coarse pointers), and the panel already caps at 15rem and scrolls, so
+   on a phone it stays inside the drawer rather than running off-screen.
+4. (In the ui lib, UIC-24's row amended) the chip's delete — Bulma's
+   `delete.is-small`, a 1rem dot — grows to Bulma's own `is-large` size
+   (2rem) on coarse pointers through the dimensions variable Bulma
+   exposes, so the strokes scale with it and no geometry is redrawn.
+
+**Reason.** Screen readers had nothing to announce: the label was a
+`<p class="label">` that never named the input, the panel was an
+unconnected `listbox`, and the mouse-only pick left keyboard users with
+Tab-to-each-row at best (the user's accessibility review). On a 390px
+drawer the old rows and the tiny chip delete sat under the touch-target
+floor, and the empty box invited typing that could only match nothing
+(the user's second ask). A combobox is the ARIA pattern for exactly this
+control; the browser-vetted alternative was refused below.
+
+**Alternatives.** (a) A native `<select>` (refused — it cannot carry the
+chips and free-text filter in one box; DD-335 already moved off the
+`<datalist>` for the same look reason). (b) roving tabindex that moves
+DOM focus into the panel (refused — the listbox pattern's
+`aria-activedescendant` keeps focus in the input so typing and arrowing
+share one control; roving focus fights the filter-as-you-type). (c)
+disable the whole field including the chips (refused — deleting a wrongly
+chosen tag is still valid when nothing new applies). (d) widen the chip
+delete with a `::after` hit-area from the editor via `::ng-deep` (refused
+— Bulma draws the X with the button's own `::before`/`::after`, so a third
+pseudo is wrong, and the editor styling a lib child's internals is the
+wrong owner; the lib owns its control). (e) a `width <= 768px` media
+query for touch (refused — touch is capability, not width; used
+`pointer: coarse`).
+
+**Consequences.** The combobox state is ~4 signals (box focus, panel
+open, typed text, active index) plus a re-clamp effect; the active index
+resets on focus and re-clamps as the filter narrows. Enter's meaning
+narrows to "add the active option" while the panel is open, and stays
+"add the exact typed name" while it is shut (the pre-DD-335 rule, so a
+full-name add with the panel dismissed still works — the e2e's fill-and-
+Enter path is unchanged). No new catalogue keys: the disabled box reuses
+the shipped `noClassifications` line. Live-probed on a 390px viewport and
+under a coarse-pointer emulation: 40px rows (48px coarse), the chip
+delete 32px (from 16), the panel drop-up inside the viewport, the
+active row painted and matching `aria-activedescendant`, Enter committing
+it, and the box disabled with the help line on a type with nothing
+applicable.

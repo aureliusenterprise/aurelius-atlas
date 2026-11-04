@@ -81,8 +81,46 @@
     overflow-y: auto;
 }
 
+/* The rows clear the 24px WCAG target-size floor (DD-336). */
 .aurelius-editor-classification-box .dropdown-item {
+    min-height: 2.5rem;
     white-space: nowrap;
+}
+
+/* The active (keyboard) option (DD-336): the input keeps focus and points
+   here through aria-activedescendant, so Down/Up have a visible row —
+   Bulma's own `.dropdown-item.is-active` carries the fill. */
+
+/* The disabled box (DD-336): the field has nothing left to offer, so the
+   box takes the input's disabled look — the muted fill and text — while
+   any chosen chips stay live (their delete is the chip's, UIC-24, so the
+   box can still hand a tag back). The caret input carries the disabled
+   attr, so this only paints the field and drops its focus ring. */
+.aurelius-editor-classification-box.is-disabled {
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-bis-l));
+    border-color: var(--bulma-border-weak);
+    color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-text-weak-l));
+}
+
+.aurelius-editor-classification-box.is-disabled:focus-within {
+    box-shadow: none;
+}
+
+/* Touch pointers (DD-336): the panel rows grow to a thumb-tappable 3rem. */
+@media screen and (pointer: coarse) {
+    .aurelius-editor-classification-box .dropdown-item {
+        min-height: 3rem;
+    }
+}
+
+/* Narrow viewports (DD-336): the box lets the input claim a full line so
+   the caret is not crushed between long chips on a small drawer. (The
+   chip delete's own touch target is the ClassificationChip's concern —
+   UIC-24 — not styled here.) */
+@media screen and (width <= 768px) {
+    .aurelius-editor-classification-box .aurelius-editor-classification-input {
+        flex-basis: 100%;
+    }
 }
 
 /* The repeating text list (EDT-03): one input per row, its delete beside

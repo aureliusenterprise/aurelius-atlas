@@ -146,19 +146,46 @@ export class EntityEditor {
      * DD-335): Escape closes it, the next typed character opens it again. */
     protected readonly suggestionsOpen = signal(true);
 
-    /** The suggestions the typed text filters (EDT-05, DD-335). */
+    /** The suggestions the typed text filters (EDT-05, DD-335): a match
+     * that starts with the text leads, so Enter (which adds the active
+     * option, DD-336) commits the closest name — the old exact-else-first
+     * rule kept in the panel order. */
     protected readonly filteredSuggestions = computed(() => {
         const typed = this.typedText().trim().toLowerCase();
+        if (typed === "") {
+            return this.suggestions();
+        }
+        const matches = this.suggestions().filter((name) => name.toLowerCase().includes(typed));
 
-        return typed === ""
-            ? this.suggestions()
-            : this.suggestions().filter((name) => name.toLowerCase().includes(typed));
+        return [
+            ...matches.filter((name) => name.toLowerCase().startsWith(typed)),
+            ...matches.filter((name) => !name.toLowerCase().startsWith(typed)),
+        ];
     });
 
     /** Whether the suggestion panel shows (EDT-05, DD-335). */
     protected readonly dropdownShown = computed(
         () => this.boxFocused() && this.suggestionsOpen() && this.filteredSuggestions().length > 0,
     );
+
+    /** The keyboard-active option (DD-336): the panel's first row until
+     * Down/Up move it; re-clamped as the filter narrows. */
+    protected readonly activeSuggestion = signal(0);
+
+    /** The active option's id, for the combobox's aria-activedescendant. */
+    protected readonly activeSuggestionId = computed(() =>
+        this.dropdownShown() ? `editor-classification-option-${this.activeSuggestion()}` : null,
+    );
+
+    /** Whether the box has nothing to offer (DD-336): with no applicable
+     * type left to add, the input disables — typing could only match
+     * nothing. Chosen tags keep their delete (they ride the chips, not
+     * this control), so the field can still hand a tag back. */
+    protected readonly classificationDisabled = computed(() => this.suggestions().length === 0);
+
+    /** Whether the "no classifications" help line shows (DD-336): the
+     * field explains its disabled state, so a dead input is not a puzzle. */
+    protected readonly helpLineShown = computed(() => this.suggestions().length === 0);
 
     protected readonly closeLabel = $localize`:@@components.modal.close:Close`;
 
@@ -231,6 +258,26 @@ export class EntityEditor {
             if (signature !== this.builtSignature) {
                 this.builtSignature = signature;
                 this.form.set(this.buildForm());
+            }
+        });
+
+        // The tag input disables with the field (DD-336): nothing applies
+        // and nothing is chosen, so typing could only match nothing. Chosen
+        // tags keep their delete (they ride the chips, not this control).
+        effect(() => {
+            if (this.classificationDisabled()) {
+                this.classificationInput.disable({ emitEvent: false });
+            } else {
+                this.classificationInput.enable({ emitEvent: false });
+            }
+        });
+
+        // The active option re-clamps as the filter narrows (DD-336): a
+        // typed prefix can shrink the list under the current index.
+        effect(() => {
+            const count = this.filteredSuggestions().length;
+            if (count > 0 && this.activeSuggestion() >= count) {
+                this.activeSuggestion.set(0);
             }
         });
     }
@@ -315,18 +362,27 @@ export class EntityEditor {
     }
 
     /**
-     * Add the typed classification when it names an applicable type (EDT-05).
-     * Enter and `change` both route here — with the datalist popup open,
-     * picking a suggestion commits through `change`, never `keyup.enter`, so
-     * Enter alone misses the add (DD-329). The input clears only on a real
-     * add: a miss keeps the text so the user can see what did not apply.
+     * Add the typed classification (EDT-05). With the panel open, Enter
+     * commits the active option (DD-336) — the panel is the listbox and
+     * Down/Up move what Enter adds. With it shut, the old rule stands: the
+     * typed text must name an applicable type exactly. The input clears
+     * only on a real add: a miss keeps the text so the user can see what
+     * did not apply. (DD-329's `change` commit retired with the datalist,
+     * DD-335.)
      */
     protected addClassification(): void {
+        if (this.dropdownShown()) {
+            const name = this.filteredSuggestions()[this.activeSuggestion()];
+            if (name !== undefined) {
+                this.addNamed(name);
+            }
+
+            return;
+        }
         const typed = (this.classificationInput.value ?? "").trim();
 
         if (typed !== "" && this.suggestions().includes(typed)) {
-            this.state.addClassification(typed);
-            this.classificationInput.setValue("");
+            this.addNamed(typed);
         }
     }
 
@@ -334,6 +390,7 @@ export class EntityEditor {
     protected onBoxFocusIn(): void {
         this.boxFocused.set(true);
         this.suggestionsOpen.set(true);
+        this.activeSuggestion.set(0);
     }
 
     /** Focus left the box (EDT-05, DD-335): the panel closes. Moving into
@@ -351,8 +408,37 @@ export class EntityEditor {
      * path the native datalist took before (DD-329's note retired here). */
     protected pickSuggestion(event: MouseEvent, name: string): void {
         event.preventDefault();
+        this.addNamed(name);
+    }
+
+    /** Add a named tag and clear the input (the pick and Enter path). */
+    private addNamed(name: string): void {
         this.state.addClassification(name);
         this.classificationInput.setValue("");
+    }
+
+    /**
+     * Down/Up move the combobox's active option (DD-336) — the panel is
+     * the listbox, the input keeps focus and carries
+     * `aria-activedescendant`; Enter (the keyup path above) adds the
+     * active option. A closed panel (typed text matching nothing, or a
+     * fresh focus) falls through to the old Enter rule (DD-336 keeps
+     * exact-name Enter working with the panel shut).
+     */
+    protected onSuggestionKeys(event: KeyboardEvent): void {
+        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
+            return;
+        }
+        event.preventDefault();
+        const count = this.filteredSuggestions().length;
+        if (count === 0) {
+            return;
+        }
+        this.suggestionsOpen.set(true);
+        const step = event.key === "ArrowDown" ? 1 : -1;
+        const from = this.dropdownShown() ? this.activeSuggestion() : step === 1 ? -1 : count;
+        const next = (from + step + count) % count;
+        this.activeSuggestion.set(next);
     }
 
     /** Escape inside the box (EDT-05, DD-335): close the panel, keep the

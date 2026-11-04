@@ -184,8 +184,8 @@
                 </div>
             }
 
-            <!-- The classification box (EDT-05, DD-335): one bordered box —
-                 the control's own look — holding the chosen chips (the
+            <!-- The classification box (EDT-05, DD-335, DD-336): one bordered
+                 box — the control's own look — holding the chosen chips (the
                  details page's chips, UIC-24 delete) inline before the
                  caret, and the text input. The box is a Bulma dropdown:
                  while it holds focus, the applicable types that match the
@@ -195,11 +195,17 @@
                  the menu's stretch to the box's width is the component's
                  own rule — Bulma has no dropdown full-width modifier).
                  Typed-or-clicked in. Clicks commit through mousedown (the
-                 panel's click never lands — focus moves first, DD-335). -->
+                 panel's click never lands — focus moves first, DD-335).
+                 The input is the combobox (DD-336): the label names it,
+                 Down/Up move the active option (aria-activedescendant),
+                 Enter commits it; with nothing applicable left the input
+                 disables and says so through the help line, so the box
+                 cannot invite typing that matches nothing. -->
             <div class="field aurelius-editor-classifications">
-                <p class="label">{{ classificationsLabel }}</p>
+                <p class="label" id="editor-classifications-label">{{ classificationsLabel }}</p>
                 <div
                     class="dropdown is-up control aurelius-editor-classification-box"
+                    [class.is-disabled]="classificationDisabled()"
                     [class.is-active]="dropdownShown()"
                     (focusin)="onBoxFocusIn()"
                     (focusout)="onBoxFocusOut($event)"
@@ -216,22 +222,37 @@
                     }
                     <input
                         type="text"
+                        id="editor-classification-input"
                         class="aurelius-editor-classification-input"
                         [formControl]="classificationInput"
                         [attr.placeholder]="classificationsPlaceholder"
+                        [attr.aria-labelledby]="'editor-classifications-label'"
+                        [attr.aria-describedby]="helpLineShown() ? 'editor-classifications-help' : null"
                         [attr.aria-expanded]="dropdownShown()"
+                        [attr.aria-autocomplete]="'list'"
+                        [attr.aria-controls]="dropdownShown() ? 'editor-classification-listbox' : null"
+                        [attr.aria-activedescendant]="activeSuggestionId()"
+                        role="combobox"
                         autocomplete="off"
                         (keyup.enter)="addClassification()"
                         (keydown.escape)="onSuggestionEscape($event)"
+                        (keydown)="onSuggestionKeys($event)"
                     />
-                    <div class="dropdown-menu" role="listbox" [attr.aria-label]="classificationsLabel">
+                    <div
+                        class="dropdown-menu"
+                        id="editor-classification-listbox"
+                        role="listbox"
+                        [attr.aria-label]="classificationsLabel"
+                    >
                         <div class="dropdown-content">
-                            @for (name of filteredSuggestions(); track name) {
+                            @for (name of filteredSuggestions(); track name; let i = $index) {
                                 <button
                                     type="button"
                                     class="dropdown-item"
                                     role="option"
-                                    [attr.aria-selected]="false"
+                                    [id]="'editor-classification-option-' + i"
+                                    [attr.aria-selected]="i === activeSuggestion()"
+                                    [class.is-active]="i === activeSuggestion()"
                                     (mousedown)="pickSuggestion($event, name)"
                                     (click)="pickSuggestion($event, name)"
                                 >
@@ -241,8 +262,10 @@
                         </div>
                     </div>
                 </div>
-                @if (suggestions().length === 0 && state.chosen().length === 0) {
-                    <p class="help aurelius-editor-no-classifications">{{ noClassifications }}</p>
+                @if (helpLineShown()) {
+                    <p class="help aurelius-editor-no-classifications" id="editor-classifications-help">
+                        {{ noClassifications }}
+                    </p>
                 }
             </div>
         </form>

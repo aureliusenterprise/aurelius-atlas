@@ -21,6 +21,7 @@ import { faAngleDoubleRight, faHashtag } from "@fortawesome/free-solid-svg-icons
     selector: "aurelius-atlas-ui-classification-chip",
     imports: [CommonModule, FontAwesomeModule],
     templateUrl: "./classification-chip.component.html",
+    styleUrl: "./classification-chip.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClassificationChip {

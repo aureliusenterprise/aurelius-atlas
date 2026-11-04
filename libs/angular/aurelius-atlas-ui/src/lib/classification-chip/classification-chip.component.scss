@@ -1,0 +1,16 @@
+/*
+ * The chip (UIC-16) is Bulma's `tags.has-addons` assembly and needs no
+ * styling of its own — except the delete's touch target. Bulma's
+ * `delete.is-small` (UIC-24's seat) is a 1rem dot, under the 24px
+ * WCAG 2.5.8 target-size floor; on touch pointers the dot grows to
+ * Bulma's own is-large size (2rem) through the dimensions variable the
+ * library exposes — the strokes are sized off the same variable, so the
+ * glyph scales with it and no geometry is re-implemented. (DD-337, from
+ * the 7.7a editor's review of small screens.)
+ */
+@media screen and (pointer: coarse) {
+    /* Three classes to outrank Bulma's `.delete.is-small` size rule. */
+    .delete.is-small.aurelius-classification-chip-delete {
+        --bulma-delete-dimensions: 2rem;
+    }
+}
