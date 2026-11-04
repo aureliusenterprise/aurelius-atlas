@@ -98,7 +98,8 @@ Status values: *planned*, *in progress*, *in review*, *done*.
 | 6.4a | Metrics | `admin/metrics`: the counts of types, entities and classifications, the server's stats and system details | `MetricsService`, `AtlasMetricsUtil` | in progress |
 | 6.4b | Metrics history | `admin/metricsstats`, `metricsstat/{time}`, its range and charts: the metrics stored on a schedule and purged after their TTL | `MetricsService` (stats), `AdminResource` scheduling | in progress |
 | 6.4c | Observability, alerting, load test | The server's logs over OTLP, its dashboard, the alert rules of ADR 040 and their webhook, a load test of concurrent users | — | in progress |
-| 6.4d | Retention, index tuning, snapshots | The lifetimes of ADR 025, the write refresh and index settings, Elasticsearch snapshots and a rehearsed restore (ADR 026) | — | planned |
+| 6.4d | Retention, index tuning | The lifetimes of ADR 025 for every store, writes that refresh what they wrote, replicas that expand to the cluster (RET-01..07, IDX-01/02) | — | in progress |
+| 6.4e | Snapshots and restore | Elasticsearch snapshots on a schedule and a rehearsed restore (ADR 026) | — | planned |
 | 7.0 | Webapp foundation (umbrella) | The rules every 7.x slice obeys: standalone, signals, shared dumb UI, Vitest and Playwright, `@angular/localize` | Aurelius `apps/atlas` | planned |
 | 7.1 | Webapp shell and localisation | `apps/aurelius-atlas-webapp`: bootstrap, router, runtime config, XLIFF locale bridge, OTel telemetry | Aurelius `apps/atlas/src/app`, `libs/i18n` | in progress |
 | 7.2 | Shared UI components | Legacy shared components as dumb `aurelius-atlas-ui` components, each with a story | Aurelius `libs/components` | in progress |

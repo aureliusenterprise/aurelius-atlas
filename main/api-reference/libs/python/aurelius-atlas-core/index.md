@@ -1188,7 +1188,7 @@ Attributes:
   The alias of the unique value reservations (DD-045).
 - **`WRITE_REFRESH`** –
 
-  Every write's `refresh` parameter (ENS-11, DD-237): the response returns after the documents are visible,
+  Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
 
 ### CLASSIFICATION\_INDEX
 
@@ -1401,10 +1401,10 @@ The alias of the unique value reservations (DD-045).
 ### WRITE\_REFRESH
 
 ```
-WRITE_REFRESH = 'wait_for'
+WRITE_REFRESH = 'true'
 ```
 
-Every write's `refresh` parameter (ENS-11, DD-237): the response returns after the documents are visible, so the next read sees them — no read path pays a refresh of its own. `wait_for` (not `true`) also waits for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk.
+Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own, and no write waits for the index's next scheduled refresh.
 
 ### Linked
 
@@ -1617,7 +1617,7 @@ prepare() -> None
 
 Create each index behind its alias unless it exists (ENS-01).
 
-An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay.
+An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02).
 
 #### put\_journal
 
@@ -3335,12 +3335,23 @@ Classes:
 
 Attributes:
 
+- **`INDEX_SETTINGS`** (`dict[str, Any]`) –
+
+  The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
 - **`TYPEDEF_DOCUMENT_ID`** –
 
   The id of the one document that holds every type definition.
 - **`TYPEDEF_INDEX`** –
 
   The alias of the index that holds the type definitions.
+
+### INDEX\_SETTINGS
+
+```
+INDEX_SETTINGS: dict[str, Any] = {'index.auto_expand_replicas': '0-1'}
+```
+
+The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold it, none on a single node, whose indices are then green, not yellow.
 
 ### TYPEDEF\_DOCUMENT\_ID
 
@@ -3413,6 +3424,8 @@ prepare() -> None
 ```
 
 Create the index behind the alias unless it exists; the document itself is not searched.
+
+An existing index gets the settings of a new one, as its replicas (IDX-02).
 
 #### read
 

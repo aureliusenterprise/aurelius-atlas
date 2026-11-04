@@ -5013,6 +5013,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_document.INDEX_SETTINGS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;INDEX_SETTINGS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_document.TYPEDEF_DOCUMENT_ID" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13566,6 +13577,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_document.INDEX_SETTINGS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;INDEX_SETTINGS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_document.TYPEDEF_DOCUMENT_ID" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -18429,7 +18451,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
    (aurelius_atlas_core.entity_documents.WRITE_REFRESH)" href="./#aurelius_atlas_core.entity_documents.WRITE_REFRESH">WRITE_REFRESH</a></code></b>
           –
           <div class="doc-md-description">
-            <p>Every write's <code>refresh</code> parameter (ENS-11, DD-237): the response returns after the documents are visible,</p>
+            <p>Every write's <code>refresh</code> parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and</p>
           </div>
         </li>
     </ul>
@@ -18997,14 +19019,14 @@ in the typed fields of <code>search</code>, which the dynamic templates map by t
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.WRITE_REFRESH" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">WRITE_REFRESH</span> <span class="o">=</span> <span class="s1">'wait_for'</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">WRITE_REFRESH</span> <span class="o">=</span> <span class="s1">'true'</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Every write's <code>refresh</code> parameter (ENS-11, DD-237): the response returns after the documents are visible,
-so the next read sees them — no read path pays a refresh of its own. <code>wait_for</code> (not <code>true</code>) also waits
-for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk.</p>
+        <p>Every write's <code>refresh</code> parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
+returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own,
+and no write waits for the index's next scheduled refresh.</p>
 
     </div>
 
@@ -19748,7 +19770,8 @@ passed, long after the index's own refresh (DD-247), and acts on each as <code>g
     <div class="doc doc-contents ">
 
         <p>Create each index behind its alias unless it exists (ENS-01).</p>
-<p>An existing entity index gets the fields it lacks mapped, as <code>references</code> (EDL-10); mapped ones stay.</p>
+<p>An existing entity index gets the fields it lacks mapped, as <code>references</code> (EDL-10); mapped ones stay.
+Every existing index gets the settings of a new one, as its replicas (IDX-02).</p>
 
 
     </div>
@@ -26885,6 +26908,19 @@ then the files of its <code>patches</code> sub-directory. A directory without en
 <p><span class="doc-section-title">Attributes:</span></p>
     <ul>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            INDEX_SETTINGS
+
+
+  
+      module-attribute
+   (aurelius_atlas_core.typedef_document.INDEX_SETTINGS)" href="./#aurelius_atlas_core.typedef_document.INDEX_SETTINGS">INDEX_SETTINGS</a></code></b>
+              (<code><span title="dict">dict</span>[<span title="str">str</span>, <span title="typing.Any">Any</span>]</code>)
+          –
+          <div class="doc-md-description">
+            <p>The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            TYPEDEF_DOCUMENT_ID
 
 
@@ -26919,6 +26955,31 @@ then the files of its <code>patches</code> sub-directory. A directory without en
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_core.typedef_document.INDEX_SETTINGS" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">INDEX_SETTINGS</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.typedef_document.INDEX_SETTINGS" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">INDEX_SETTINGS</span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'index.auto_expand_replicas'</span><span class="p">:</span> <span class="s1">'0-1'</span><span class="p">}</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
+it, none on a single node, whose indices are then green, not yellow.</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -27221,6 +27282,7 @@ then the files of its <code>patches</code> sub-directory. A directory without en
     <div class="doc doc-contents ">
 
         <p>Create the index behind the alias unless it exists; the document itself is not searched.</p>
+<p>An existing index gets the settings of a new one, as its replicas (IDX-02).</p>
 
 
     </div>

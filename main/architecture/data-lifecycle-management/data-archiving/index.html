@@ -4593,6 +4593,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Data Archiving
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -4608,6 +4625,81 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lifetimes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Lifetimes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-these-periods" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why these periods
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-each-lifetime-is-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where each lifetime is configured
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting-and-purging" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Deleting and purging
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Snapshots
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -6061,6 +6153,69 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#lifetimes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Lifetimes
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#why-these-periods" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Why these periods
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-each-lifetime-is-configured" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Where each lifetime is configured
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deleting-and-purging" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Deleting and purging
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Snapshots
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -6191,12 +6346,192 @@
 
 
 <h1 id="data-archiving">Data Archiving<a class="headerlink" href="#data-archiving" title="Permanent link">&para;</a></h1>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 2.5 and 6.4, from the increment's semantics spec. See the <a href="../">filling
-map</a> for the page scope and the <a href="../../conversion/">conversion roadmap</a> for
-increment status.</p>
+<p>How long Aurelius Atlas keeps each kind of data, what removes it, and where that is configured
+(<a href="../../adr/025-data-has-a-stated-lifetime/">ADR 025</a>). A lifetime is either a period that a
+mechanism enforces on a schedule, or "unbounded", stated with its reason. The periods were set in
+increment 6.4d. A store that arrives without a row here fails the lifetimes suite
+(<code>tests/test__retention.py</code>).</p>
+<h2 id="lifetimes">Lifetimes<a class="headerlink" href="#lifetimes" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Lifetime</th>
+<th>Removed by</th>
+<th>Store</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Catalogue: entities, relationships, classifications</td>
+<td>unbounded</td>
+<td>a delete, then a purge</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>Type definitions, glossaries, saved searches, profiles</td>
+<td>unbounded</td>
+<td>a delete</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>Entity audits, except an entity's creation</td>
+<td>90 days</td>
+<td>the audit aging, daily</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>An entity's creation audit</td>
+<td>with the entity</td>
+<td>the entity's purge</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>Admin audits, export and import audits</td>
+<td>unbounded</td>
+<td>—</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>Stored metrics (<code>admin/metricsstats</code>)</td>
+<td>14 days</td>
+<td>the metrics purge, hourly</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>The write journal, finished tasks</td>
+<td>until the write finishes</td>
+<td>the write, recovery, the task</td>
+<td><code>dev/elasticsearch:data</code></td>
+</tr>
+<tr>
+<td>Users, realms, clients</td>
+<td>unbounded</td>
+<td>an administrator</td>
+<td><code>dev/keycloak:data</code></td>
+</tr>
+<tr>
+<td>Login and admin events (production realm)</td>
+<td>30 days</td>
+<td>Keycloak's event expiry</td>
+<td><code>dev/keycloak:data</code></td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td>15 days</td>
+<td>Prometheus's retention</td>
+<td><code>dev/observability:prometheus-data</code></td>
+</tr>
+<tr>
+<td>Logs</td>
+<td>30 days</td>
+<td>Loki's compactor</td>
+<td><code>dev/observability:loki-data</code></td>
+</tr>
+<tr>
+<td>Traces</td>
+<td>7 days</td>
+<td>Tempo's retention jobs</td>
+<td><code>dev/observability:tempo-data</code></td>
+</tr>
+<tr>
+<td>Alert state history</td>
+<td>30 days</td>
+<td>Grafana's annotation cleanup</td>
+<td><code>dev/observability:grafana-data</code></td>
+</tr>
+<tr>
+<td>Grafana's users and preferences</td>
+<td>unbounded, disposable</td>
+<td>—</td>
+<td><code>dev/observability:grafana-data</code></td>
+</tr>
+</tbody>
+</table>
+<p>The store column names the dev volume. On a cluster each is the persistent volume of the same
+component in its chart.</p>
+<h2 id="why-these-periods">Why these periods<a class="headerlink" href="#why-these-periods" title="Permanent link">&para;</a></h2>
+<ul>
+<li><strong>The catalogue is unbounded.</strong> It is the record the product exists to keep, and its entries
+  are owned by the people who answer for each dataset
+  (<a href="../../adr/042-every-dataset-has-an-owner-who-answers-for-it/">ADR 042</a>). A deleted entity
+  stays, marked deleted, until it is purged, as in Atlas. The cost grows with the catalogue,
+  not with time.</li>
+<li><strong>Audits are kept 90 days, creations with their entity.</strong> These are Atlas's aging defaults
+  (<code>atlas.audit.default.ageout.ttl.in.days</code>, and creation events left out). Atlas ships aging
+  off; the chart turns it on and sweeps daily, so no event outlives 91 days. The dev stack keeps
+  Atlas's default, aging off, because its data is disposable.</li>
+<li><strong>Admin audits are unbounded.</strong> They record purges, imports and exports, which are rare and
+  small, and they are the trail for the deletions every other lifetime makes. Atlas gives them
+  no lifetime either.</li>
+<li><strong>Signals are kept long enough to look back on an incident.</strong> Metrics are kept 15 days for
+  trends across two weeks. Logs are kept 30 days, which covers an incident reported late. Traces
+  are kept 7 days: they are the largest signal and are read while an incident is fresh.</li>
+<li><strong>Identity events are kept 30 days.</strong> Login and admin events name people and their
+  addresses. Thirty days answers "who signed in" for a recent incident without building a
+  history of each person.</li>
+</ul>
+<h2 id="where-each-lifetime-is-configured">Where each lifetime is configured<a class="headerlink" href="#where-each-lifetime-is-configured" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Lifetime</th>
+<th>Dev</th>
+<th>Chart</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Entity audits</td>
+<td>off (<code>AURELIUS_ATLAS_SERVER_AUDIT_AGING_ENABLED</code>)</td>
+<td>the server chart's <code>config</code>, <code>AUDIT_*</code> keys</td>
+</tr>
+<tr>
+<td>Stored metrics</td>
+<td><code>AURELIUS_ATLAS_SERVER_METRICS_TTL_HOURS</code> (336)</td>
+<td>the same setting</td>
+</tr>
+<tr>
+<td>Identity events</td>
+<td>the dev realm records none</td>
+<td><code>files/aurelius-atlas.json</code>, <code>eventsExpiration</code></td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td><code>--storage.tsdb.retention.time</code> in the compose</td>
+<td><code>prometheus.retention</code></td>
+</tr>
+<tr>
+<td>Logs</td>
+<td><code>config/loki.yaml</code>, <code>limits_config.retention_period</code></td>
+<td>the same file, copied</td>
+</tr>
+<tr>
+<td>Traces</td>
+<td><code>config/tempo.yaml</code>, <code>overrides.defaults.compaction</code></td>
+<td>the same file, copied</td>
+</tr>
+<tr>
+<td>Alert state history</td>
+<td><code>GF_UNIFIED_ALERTING_STATE_HISTORY_ANNOTATIONS_MAX_AGE</code></td>
+<td><code>grafana.alerting.historyMaxAge</code></td>
+</tr>
+</tbody>
+</table>
+<p>A change to a period is a change to one of these files, reviewed like any other (R5).</p>
+<div class="admonition warning">
+<p class="admonition-title">An existing realm keeps its event settings</p>
+<p>Keycloak imports a realm only when it does not exist yet. A cluster installed before 6.4d
+keeps its events until an administrator sets the expiry in the admin console (Realm
+settings, Events).</p>
 </div>
+<h2 id="deleting-and-purging">Deleting and purging<a class="headerlink" href="#deleting-and-purging" title="Permanent link">&para;</a></h2>
+<p>An entity delete marks the entity deleted; a purge (<code>PUT admin/purge</code>) or a hard delete removes
+it, with its relationships and classifications, in one write. The rules are those of increment
+2.5, the delete semantics.</p>
+<h2 id="snapshots">Snapshots<a class="headerlink" href="#snapshots" title="Permanent link">&para;</a></h2>
+<p>Backups of the store, and a rehearsed restore, are increment 6.4e
+(<a href="../../adr/026-the-system-can-be-brought-back-from-a-named-snapshot/">ADR 026</a>).</p>
 
 
 
