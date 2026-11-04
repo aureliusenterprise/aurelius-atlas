@@ -64,14 +64,14 @@
             </div>
         }
         <!-- The field set (EDT-03): one control per editable attribute, in the
-             resolved order. Each control binds through [formControl]; the form
-             group is the validity root and is not itself bound to a directive. -->
-        <form class="aurelius-editor-form" [formGroup]="form()">
+             resolved order. Each control binds through [formField] (DD-354);
+             the signal form owns validity and is not itself bound. -->
+        <form class="aurelius-editor-form" novalidate>
             <!-- The required-fields notification (EDT-07): shown at the top of
                  the form when a Save was attempted and the form is invalid —
                  never below the fold of a long form. Its delete (Bulma's
                  notification anatomy) dismisses it until the next Save (DD-331). -->
-            @if (saveAttempted() && form().invalid && !notificationDismissed()) {
+            @if (saveAttempted() && formInvalid() && !notificationDismissed()) {
                 <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
                     <button
                         type="button"
@@ -89,7 +89,7 @@
                              the input and a bare text node — no wrapper span,
                              which would drop the gap Bulma gives the text. -->
                         <label class="checkbox aurelius-editor-checkbox">
-                            <input type="checkbox" [formControlName]="field.name" />
+                            <input type="checkbox" [formField]="booleanField(field.name)" />
                             {{ field.label }}
                         </label>
                     } @else if (field.kind === "enum") {
@@ -105,14 +105,14 @@
                         ></aurelius-atlas-ui-select>
                     } @else if (field.kind === "multi") {
                         <p class="label">{{ field.label }}</p>
-                        <div class="control aurelius-editor-multi" [formArrayName]="field.name">
-                            @for (row of rowsOf(field); track $index) {
+                        <div class="control aurelius-editor-multi">
+                            @for (row of multiRows(field.name); track row) {
                                 <div class="aurelius-editor-multi-row">
                                     <input
                                         type="text"
                                         class="input"
                                         [class.is-danger]="showError(field)"
-                                        [formControlName]="$index.toString()"
+                                        [formField]="row"
                                     />
                                     <button
                                         type="button"
@@ -139,8 +139,7 @@
                                         class="textarea"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
-                                        [formControlName]="field.name"
-                                        [attr.required]="field.required || null"
+                                        [formField]="textField(field.name)"
                                     ></textarea>
                                 }
                                 @case ("number") {
@@ -149,8 +148,7 @@
                                         class="input"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
-                                        [formControlName]="field.name"
-                                        [attr.required]="field.required || null"
+                                        [formField]="numberField(field.name)"
                                     />
                                 }
                                 @case ("date") {
@@ -159,7 +157,7 @@
                                         class="input"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
-                                        [formControlName]="field.name"
+                                        [formField]="textField(field.name)"
                                     />
                                 }
                                 @default {
@@ -168,8 +166,7 @@
                                         class="input aurelius-editor-text"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
-                                        [formControlName]="field.name"
-                                        [attr.required]="field.required || null"
+                                        [formField]="textField(field.name)"
                                     />
                                 }
                             }
@@ -224,7 +221,9 @@
                         type="text"
                         id="editor-classification-input"
                         class="aurelius-editor-classification-input"
-                        [formControl]="classificationInput"
+                        [value]="classificationText()"
+                        [disabled]="classificationDisabled()"
+                        (input)="classificationText.set($any($event.target).value)"
                         [attr.placeholder]="classificationsPlaceholder"
                         [attr.aria-labelledby]="'editor-classifications-label'"
                         [attr.aria-describedby]="helpLineShown() ? 'editor-classifications-help' : null"

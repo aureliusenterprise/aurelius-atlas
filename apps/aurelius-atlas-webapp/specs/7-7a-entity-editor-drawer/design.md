@@ -651,3 +651,60 @@ border version keeps both exact).
 36px target exists only as invisible geometry. Live-probed under a
 coarse-pointer emulation: dot 16px (was 32), target 36px (floor: 24px),
 X strokes unchanged, tag height unchanged.
+
+### DD-354. The editor's form layer is Signal Forms, not Reactive Forms
+
+- **Status:** Proposed
+- **Increment:** 7.7a
+- **Date:** 2026-11-04
+
+**Decision.** The editor's form is an Angular Signal Form. The model
+is a signal holding one plain value per rendered field, and
+`@angular/forms/signals`'s `form()` wraps it in a field tree. The required
+marker and the unique-attribute lock of EDT-03 are schema rules over the same
+field set the template walks. Each native input binds with `[formField]`. The
+Select and the picker-style controls keep their value-and-event contract and
+write the model in their handlers. The classification box is not a form field
+at all. Its typed text is a plain signal. DD-323's helper pair
+(`form-fields.ts`) is unchanged. It is form-library-neutral.
+
+**Reason.** The user chose the framework on 2026-11-04, while the editor was
+still unreleased: "I'd like to refactor anyways, the editor is not on main yet
+and refactoring now will incur the least cost." The form fits Signal Forms
+better than Reactive Forms on its own terms. The field set is dynamic (EDT-03
+builds it from the type definition), and Signal Forms derives the field tree
+from the model, so a rebuild is one model swap. The old code needed a rebuild
+guard, a `buildForm()` factory, and a manual subscription to grow a multi
+list. The new code needs a seed helper and one effect. The editor is otherwise
+signal-first already, and a `FormControl` was the one island of RxJS left in
+it. The library is stable since Angular 22.0, and the workspace runs 22.2.
+
+**Alternatives.** (a) Keep Reactive Forms (refused at the user's choice — it
+works, and Angular keeps it supported. The cost of switching rises with every
+dependent slice, and 7.7c and 7.7d are next). (b) The compat bridge,
+`compatForm` (refused — it keeps `FormControl` objects inside the model and
+the value tree loses its plain shape. The bridge exists to migrate a large
+form piecemeal, and this form is one component). (c) Template-driven forms
+(refused — the field set is built at runtime, which template-driven forms
+handle poorly). (d) Port the ui-library `markdown-editor` (EDT-20) at the same
+time (deferred to 7.7d's branch, where the component lives. A control
+implements either the value-accessor interface or the Signal Forms control
+interface, never both, so its port rides its own increment).
+
+**Consequences.** Two framework facts shaped the code. `form()` compiles its
+schema when it is created, so the model, the injector, and the field set must
+exist first. And `form()` builds its own effects, which Angular forbids inside
+an effect, so the rebuild effect creates the form through `untracked`. The
+touched-state rule of EDT-07 reads `touched()`/`invalid()` signals instead of
+control properties. The number fields seed `null` when empty, because the
+number input's own empty value is `null` — the merge helper already deletes an
+empty number (EDT-06), so the saved body does not change. The DOM the EDT
+tests pin is the same DOM, and no EDT rule changes meaning. The `@for` over a
+multi field's rows tracks the field node rather than the row's index: Signal
+Forms keeps a stable identity for each item of an array field, and the
+framework's field-state guide names tracking by that identity as the pattern,
+because it keeps every input wired to its own part of the model when rows are
+added or removed. The picker values of 7.7c stay on their own signal, not in
+this model: a picker holds a chip list the save merges separately (EDT-16),
+not an attribute the form writes. The legacy form family's port (DD-323) does
+not name a form library, so no ledger row changes.

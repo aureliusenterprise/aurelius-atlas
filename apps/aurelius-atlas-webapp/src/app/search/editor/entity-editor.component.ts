@@ -1,6 +1,15 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, signal } from "@angular/core";
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    effect,
+    inject,
+    Injector,
+    signal,
+    untracked,
+} from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { AbstractControl, FormArray, FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
+import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
@@ -16,6 +25,9 @@ type PickerRow = { name: string; label: string };
 
 /** An enum option row (EDT-03's enum kind — the Select's `displayField`). */
 type EnumRow = { value: string };
+
+/** One model slot: the value a field of any kind holds (DD-354). */
+type EditorValue = string | number | boolean | string[] | null;
 
 /**
  * The entity editor drawer (EDT-01..EDT-08, DD-322): the routed panel in the
@@ -37,7 +49,7 @@ type EnumRow = { value: string };
  * entity's details screen.
  */
 @Component({
-    imports: [ClassificationChip, Drawer, FontAwesomeModule, ReactiveFormsModule, Select],
+    imports: [ClassificationChip, Drawer, FontAwesomeModule, FormField, Select],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
@@ -58,9 +70,6 @@ export class EntityEditor {
     /** Whether the notification's X hid it — until the next Save (DD-331). */
     protected readonly notificationDismissed = signal(false);
 
-    /** The form, a signal so the field-set rebuild repaints (EDT-03). */
-    protected readonly form = signal(new FormGroup<Record<string, AbstractControl>>({}));
-
     private readonly route = inject(ActivatedRoute);
 
     /** The route's `:guid` (edit mode) — the editor reads its own entity. */
@@ -76,6 +85,11 @@ export class EntityEditor {
     /** The mode, off the route segment — no store sentinel (EDT-01, DD-325). */
     private readonly isCreate = this.route.routeConfig?.path?.startsWith("create") ?? false;
 
+    private readonly labels: EditorLabels = {
+        name: $localize`:@@search.components.editor.attribute.name:Name*`,
+        definition: $localize`:@@search.components.editor.attribute.definition:Definition`,
+    };
+
     /** The fields the form renders (EDT-03), from the store's typedefs. */
     protected readonly fields = computed(() => {
         const typeName = this.state.typeName();
@@ -84,6 +98,20 @@ export class EntityEditor {
 
         return def ? buildFields(def, defs, this.state.enumsByName(), this.labels) : [];
     });
+
+    // The form trio sits below `fields` on purpose: `form()` compiles the
+    // schema eagerly, and the schema pass reads the field set (DD-354).
+
+    /** The form's values, one slot per field — the model {@link form} reads
+     * (EDT-02's seed, EDT-06's source, DD-354). */
+    protected readonly values = signal<Record<string, EditorValue>>({});
+
+    private readonly injector = inject(Injector);
+
+    /** The signal form over {@link values}. A field-set rebuild replaces it
+     * (EDT-03) so a type switch also clears the touched/dirty state, the way
+     * the rebuilt group used to (DD-354). */
+    protected readonly form = signal(this.newForm());
 
     /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
      * input is a mutable array, so the map yields a fresh one (not readonly). */
@@ -132,12 +160,14 @@ export class EntityEditor {
 
     protected readonly drawerTitle = computed(() => (this.isCreate ? this.createTitle : this.editTitle));
 
-    /** The tag box's input: typing filters, Enter adds (EDT-05). */
-    protected readonly classificationInput = new FormControl("", { nonNullable: true });
+    /** Whether the form currently fails its rules (EDT-07) — read through the
+     * field-state signals, not the old FormGroup's `invalid` (DD-354). */
+    protected readonly formInvalid = computed(() => this.form()().invalid());
 
-    /** The typed text as a signal (the FormControl is not one) — it drives
-     * the panel filter (EDT-05, DD-335). */
-    private readonly typedText = toSignal(this.classificationInput.valueChanges, { initialValue: "" });
+    /** The tag box's typed text (EDT-05): typing filters, Enter adds. The
+     * box is not a form field — the tags ride the store, not the model —
+     * so it is a plain signal, not a control (DD-354). */
+    protected readonly classificationText = signal("");
 
     /** Whether the classification box holds focus (EDT-05, DD-335). */
     protected readonly boxFocused = signal(false);
@@ -151,7 +181,7 @@ export class EntityEditor {
      * option, DD-336) commits the closest name — the old exact-else-first
      * rule kept in the panel order. */
     protected readonly filteredSuggestions = computed(() => {
-        const typed = this.typedText().trim().toLowerCase();
+        const typed = this.classificationText().trim().toLowerCase();
         if (typed === "") {
             return this.suggestions();
         }
@@ -216,11 +246,6 @@ export class EntityEditor {
 
     protected readonly savingLine = $localize`:@@search.services.entityUpdate.save:Saving the entity`;
 
-    private readonly labels: EditorLabels = {
-        name: $localize`:@@search.components.editor.attribute.name:Name*`,
-        definition: $localize`:@@search.components.editor.attribute.definition:Definition`,
-    };
-
     /** The field-set signature the last build used (the rebuild guard). */
     private builtSignature = "";
 
@@ -250,25 +275,41 @@ export class EntityEditor {
         // (Re)build the form when the field set changes: create at the type
         // pick or switch, edit once the entity and the typedefs have both
         // answered. The type names the signature (DD-330) so a switch to a
-        // field-less type still drops the old form.
+        // field-less type still drops the old form. The model and the form
+        // are both replaced, so the touched/dirty state clears with the old
+        // field set (DD-354).
         effect(() => {
             const signature = `${this.state.typeName() ?? ""}|${this.fields()
                 .map((field) => `${field.name}:${field.kind}`)
                 .join(",")}`;
             if (signature !== this.builtSignature) {
                 this.builtSignature = signature;
-                this.form.set(this.buildForm());
+                this.values.set(this.seedValues());
+                // `form()` builds its own management effects, which Angular
+                // forbids inside a reactive context. The schema's reads need
+                // no tracking either — the signature above already names the
+                // field set (DD-354).
+                untracked(() => this.form.set(this.newForm()));
             }
         });
 
-        // The tag input disables with the field (DD-336): nothing applies
-        // and nothing is chosen, so typing could only match nothing. Chosen
-        // tags keep their delete (they ride the chips, not this control).
+        // The multi lists repeat: the blank trailing row becomes real on
+        // typing and a new blank row joins (EDT-03). The effect reads the
+        // model, so it sees post-update values, unlike a DOM handler.
         effect(() => {
-            if (this.classificationDisabled()) {
-                this.classificationInput.disable({ emitEvent: false });
-            } else {
-                this.classificationInput.enable({ emitEvent: false });
+            const values = this.values();
+            for (const field of this.fields()) {
+                if (field.kind !== "multi") {
+                    continue;
+                }
+                const list = values[field.name] as string[] | undefined;
+                if (list !== undefined && list.length > 0 && String(list[list.length - 1] ?? "").trim() !== "") {
+                    this.values.update((current) => ({
+                        ...current,
+                        [field.name]: [...((current[field.name] as string[]) ?? []), ""],
+                    }));
+                    return; // one list per pass; the update re-runs the effect
+                }
             }
         });
 
@@ -282,64 +323,94 @@ export class EntityEditor {
         });
     }
 
-    /** The form for the current field set, seeded from the entity (EDT-02). */
-    private buildForm(): FormGroup<Record<string, AbstractControl>> {
-        const values = toFormValues(this.state.entity() ?? {}, this.fields());
-        const controls: Record<string, AbstractControl> = {};
+    /** A fresh signal form over {@link values}, with the current field set's
+     * rules (EDT-03, DD-354). The injector rides because a rebuild calls
+     * this outside an injection context. */
+    private newForm(): FieldTree<Record<string, EditorValue>> {
+        return form(this.values, (path) => this.applyRules(path), { injector: this.injector });
+    }
 
+    /** The form's rules, one pass over the rendered fields (DD-354): the
+     * required marker of EDT-03 becomes `required`, the unique-attribute
+     * lock becomes `disabled`. A boolean skips the rule on purpose: the old
+     * control-level required let `false` through (an unchecked box is a
+     * value, not a gap), and the library's required calls `false` empty. */
+    private applyRules(path: SchemaPathTree<Record<string, EditorValue>>): void {
         for (const field of this.fields()) {
-            const validators = field.required ? [Validators.required] : [];
-            if (field.kind === "multi") {
-                const array = new FormArray<FormControl<string>>(
-                    [...((values[field.name] as string[]) ?? []).map(String), ""].map(
-                        (row) => new FormControl(row, { nonNullable: true }),
-                    ),
-                    { validators },
-                );
-                // The list repeats: the blank trailing row becomes real on
-                // typing and a new blank row joins (EDT-03). The valueChanges
-                // subscription sees post-update values, unlike a DOM handler.
-                array.valueChanges.subscribe(() => {
-                    const last = array.at(array.length - 1);
+            const fieldPath = path[field.name];
+            if (field.required && field.kind !== "boolean") {
+                required(fieldPath);
+            }
+            if (field.disabled) {
+                disabled(fieldPath, { when: () => true });
+            }
+        }
+    }
 
-                    if (last !== undefined && String(last.value ?? "").trim() !== "") {
-                        array.push(new FormControl("", { nonNullable: true }));
-                    }
-                });
-                controls[field.name] = array;
-            } else {
-                controls[field.name] = new FormControl(
-                    { value: values[field.name], disabled: field.disabled },
-                    { validators },
-                );
+    /** The model for the current field set, seeded from the entity (EDT-02).
+     * The number slots seed `null` when empty — the number input's own
+     * empty value (DD-354); the multi lists seed with the blank trailing
+     * row EDT-03 renders (EDT-02). */
+    private seedValues(): Record<string, EditorValue> {
+        // The helper writes a string, a boolean, or a string list per kind;
+        // the cast states that invariant at the model boundary (DD-354).
+        const seeded: Record<string, EditorValue> = {
+            ...(toFormValues(this.state.entity() ?? {}, this.fields()) as Record<string, EditorValue>),
+        };
+        for (const field of this.fields()) {
+            if (field.kind === "number" && seeded[field.name] === "") {
+                seeded[field.name] = null;
+            }
+            if (field.kind === "multi") {
+                seeded[field.name] = [...((seeded[field.name] as string[]) ?? []), ""];
             }
         }
 
-        return new FormGroup(controls);
+        return seeded;
+    }
+
+    /** The field's node in the tree, typed for its input (the dynamic-record
+     * pattern: the binding site restates what the field's kind guarantees). */
+    protected fieldOf(name: string): Field<EditorValue> {
+        return this.form()[name] as unknown as Field<EditorValue>;
+    }
+
+    /** A text/textarea/date slot, typed for the text-like inputs. */
+    protected textField(name: string): Field<string> {
+        return this.form()[name] as unknown as Field<string>;
+    }
+
+    /** A number slot, typed for the number input (`null` is its empty). */
+    protected numberField(name: string): Field<number | null> {
+        return this.form()[name] as unknown as Field<number | null>;
+    }
+
+    /** A boolean slot, typed for the checkbox. */
+    protected booleanField(name: string): Field<boolean> {
+        return this.form()[name] as unknown as Field<boolean>;
+    }
+
+    /** A multi slot's rows (EDT-03's repeating text list) — the iterable
+     * tree over the string array. */
+    protected multiRows(name: string): FieldTree<string[]> {
+        return this.form()[name] as unknown as FieldTree<string[]>;
     }
 
     /** Whether a control shows its error (touched, or a Save was tried, EDT-07). */
     protected showError(field: EditorField): boolean {
-        const control = this.form().get(field.name);
+        const state = this.fieldOf(field.name)();
 
-        return control !== null && control.invalid && (control.touched || this.saveAttempted());
-    }
-
-    /** The multi field's row controls (EDT-03's repeating text list). */
-    protected rowsOf(field: EditorField): readonly FormControl[] {
-        const array = this.form().get(field.name);
-
-        return array instanceof FormArray ? (array.controls as unknown as readonly FormControl[]) : [];
+        return state.invalid() && (state.touched() || this.saveAttempted());
     }
 
     /** Drop one multi row; the list always keeps its blank trailing row. */
     protected removeMultiRow(field: EditorField, index: number): void {
-        const array = this.form().get(field.name) as FormArray<FormControl<string>>;
+        this.values.update((current) => {
+            const list = [...((current[field.name] as string[]) ?? [])];
+            list.splice(index, 1);
 
-        array.removeAt(index);
-        if (array.length === 0) {
-            array.push(new FormControl("", { nonNullable: true }));
-        }
+            return { ...current, [field.name]: list.length === 0 ? [""] : list };
+        });
     }
 
     /** The enum field's options (EDT-03's enum kind). */
@@ -347,18 +418,16 @@ export class EntityEditor {
         return (field.enumValues ?? []).map((value) => ({ value }));
     }
 
-    /** The enum field's selected row, read off the control. */
+    /** The enum field's selected row, read off the model. */
     protected enumSelected(field: EditorField): EnumRow | null {
-        const current = String(this.form().get(field.name)?.value ?? "");
+        const current = String(this.values()[field.name] ?? "");
 
         return (field.enumValues ?? []).includes(current) ? { value: current } : null;
     }
 
-    /** Write an enum pick into the control (the Select carries no accessor). */
+    /** Write an enum pick into the model (the Select carries no accessor). */
     protected enumPicked(field: EditorField, row: EnumRow | null): void {
-        this.form()
-            .get(field.name)
-            ?.setValue(row?.value ?? "");
+        this.values.update((current) => ({ ...current, [field.name]: row?.value ?? "" }));
     }
 
     /**
@@ -379,7 +448,7 @@ export class EntityEditor {
 
             return;
         }
-        const typed = (this.classificationInput.value ?? "").trim();
+        const typed = this.classificationText().trim();
 
         if (typed !== "" && this.suggestions().includes(typed)) {
             this.addNamed(typed);
@@ -414,7 +483,7 @@ export class EntityEditor {
     /** Add a named tag and clear the input (the pick and Enter path). */
     private addNamed(name: string): void {
         this.state.addClassification(name);
-        this.classificationInput.setValue("");
+        this.classificationText.set("");
     }
 
     /**
@@ -484,8 +553,9 @@ export class EntityEditor {
     protected save(): void {
         this.saveAttempted.set(true);
         this.notificationDismissed.set(false);
-        if (this.form().invalid) {
-            this.form().markAllAsTouched();
+        const formState = this.form()();
+        if (formState.invalid()) {
+            formState.markAsTouched();
 
             return;
         }
@@ -493,7 +563,7 @@ export class EntityEditor {
         if (!entity?.typeName) {
             return;
         }
-        const merged = mergeOntoEntity(entity, this.fields(), this.form().getRawValue() as Record<string, unknown>);
+        const merged = mergeOntoEntity(entity, this.fields(), this.values() as Record<string, unknown>);
 
         this.state.save(merged, entity.guid ?? "");
     }
