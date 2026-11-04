@@ -21,133 +21,129 @@
     are the anchors the side navigation links to (the legacy
     details-navigation's scroll targets).
 -->
-<section class="section">
-    <div class="container aurelius-details">
-        <div class="box aurelius-details-header">
-            <!-- The editor affordance (EDT-09, DD-324): the pencil opens the
-                 editor drawer over this screen, shown only with the
-                 atlas-write grant — the legacy header's edit button. -->
-            @if (canWrite()) {
-                <button
-                    type="button"
-                    class="button is-small is-ghost aurelius-details-edit"
-                    [attr.aria-label]="editTitle"
-                    (click)="edit()"
-                >
-                    <fa-icon aria-hidden="true" [icon]="faPen"></fa-icon>
-                </button>
-            }
-            <h1 class="title is-1 entity aurelius-details-title">{{ title() }}</h1>
-            <div class="subtitle name aurelius-details-type">
-                @if (typeName()) {
-                    <aurelius-atlas-ui-type-name [typeName]="typeName()" [showBaseTypeName]="true" />
-                }
-            </div>
-            @if (classifications().length > 0) {
-                <div class="block aurelius-details-classifications field is-grouped is-grouped-multiline">
-                    @for (name of classifications(); track name) {
-                        <div class="control">
-                            <aurelius-atlas-ui-classification-chip [label]="name" />
-                        </div>
-                    }
+<div class="box aurelius-details-header">
+    <!-- The editor affordance (EDT-09, DD-324): the pencil opens the
+         editor drawer over this screen, shown only with the
+         atlas-write grant — the legacy header's edit button. -->
+    @if (canWrite()) {
+        <button
+            type="button"
+            class="button is-small aurelius-details-edit"
+            [attr.aria-label]="editTitle"
+            (click)="edit()"
+        >
+            <fa-icon aria-hidden="true" [icon]="faPencil"></fa-icon>
+        </button>
+    }
+    <h1 class="title is-1 entity aurelius-details-title">{{ title() }}</h1>
+    <div class="subtitle name aurelius-details-type">
+        @if (typeName()) {
+            <aurelius-atlas-ui-type-name [typeName]="typeName()" [showBaseTypeName]="true" />
+        }
+    </div>
+    @if (classifications().length > 0) {
+        <div class="block aurelius-details-classifications field is-grouped is-grouped-multiline">
+            @for (name of classifications(); track name) {
+                <div class="control">
+                    <aurelius-atlas-ui-classification-chip [label]="name" />
                 </div>
             }
-            <aurelius-atlas-ui-breadcrumbs
-                class="aurelius-details-trail"
-                [items]="trail()"
-                [activeGuid]="guid()"
-                (itemClicked)="onCrumbClick($event)"
-            />
-            @if (state.loading() && !entity()) {
-                <p class="aurelius-details-loading" i18n="@@search.services.entityDetails.retrieve">
-                    Retrieving the entity details
-                </p>
-            }
         </div>
+    }
+    <aurelius-atlas-ui-breadcrumbs
+        class="aurelius-details-trail"
+        [items]="trail()"
+        [activeGuid]="guid()"
+        (itemClicked)="onCrumbClick($event)"
+    />
+    @if (state.loading() && !entity()) {
+        <p class="aurelius-details-loading" i18n="@@search.services.entityDetails.retrieve">
+            Retrieving the entity details
+        </p>
+    }
+</div>
 
-        <!-- The legacy default layout's row (default-details.component.html):
+<!-- The legacy default layout's row (default-details.component.html):
              one full-width column holding the description box — the
              `columns` is there for the type layouts' two-column shape, not
              for a sidebar. -->
-        <div class="columns">
-            <div class="column">
-                <div id="description-details" class="box">
-                    <h3 class="title is-3" i18n="@@search.details.default.description">Description</h3>
-                    <!-- The legacy description component (DET-10, DD-321):
+<div class="columns">
+    <div class="column">
+        <div id="description-details" class="box">
+            <h3 class="title is-3" i18n="@@search.details.default.description">Description</h3>
+            <!-- The legacy description component (DET-10, DD-321):
                          the text renders as markdown, and an empty
                          description shows its italic centered placeholder
                          line instead of a blank box. -->
-                    @if (description()) {
-                        <aurelius-atlas-ui-markdown class="aurelius-details-description" [markdown]="description()" />
-                    } @else {
-                        <p class="is-italic has-text-centered aurelius-details-description-empty">
-                            <span i18n="@@search.components.description.notAvailable">No description available.</span>
-                        </p>
-                    }
-                </div>
+            @if (description()) {
+                <aurelius-atlas-ui-markdown class="aurelius-details-description" [markdown]="description()" />
+            } @else {
+                <p class="is-italic has-text-centered aurelius-details-description-empty">
+                    <span i18n="@@search.components.description.notAvailable">No description available.</span>
+                </p>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="box">
+    <nav class="level">
+        <div class="level-item has-text-centered">
+            <div>
+                <p class="heading">
+                    <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
+                </p>
+                <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
             </div>
         </div>
+    </nav>
+</div>
 
-        <div class="box">
-            <nav class="level">
-                <div class="level-item has-text-centered">
-                    <div>
-                        <p class="heading">
-                            <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
-                        </p>
-                        <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
-                    </div>
-                </div>
-            </nav>
-        </div>
-
-        <aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
-            <ng-container header>
-                <h3 class="title is-3" i18n="@@search.details.default.properties">Properties</h3>
-            </ng-container>
-            <ng-container content>
-                <!-- The legacy `sortable-table-shell` swap (DET-11): with
+<aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
+    <ng-container header>
+        <h3 class="title is-3" i18n="@@search.details.default.properties">Properties</h3>
+    </ng-container>
+    <ng-container content>
+        <!-- The legacy `sortable-table-shell` swap (DET-11): with
                      rows, the table; with none, its noData line in place of
                      the whole table, headers included. Zero rows is every
                      no-entity state (DET-02) and an entity whose attributes
                      all ride the header, the box, or the blacklist. -->
-                @if (properties().length > 0) {
-                    <table class="table is-fullwidth aurelius-details-properties">
-                        <thead>
-                            <tr>
-                                <th i18n="@@search.details.components.properties.key">Key</th>
-                                <th i18n="@@search.details.components.properties.value">Value</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @for (property of properties(); track property.key) {
-                                <tr>
-                                    <td>{{ property.key }}</td>
-                                    <td>
-                                        <aurelius-atlas-ui-properties-item
-                                            [value]="property.value"
-                                            (itemClicked)="onLinkClick($event)"
-                                        />
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                } @else {
-                    <p class="content has-text-centered aurelius-details-properties-empty">
-                        <span><i i18n="@@components.sortableTableShell.noData">No data available</i></span>
-                    </p>
-                }
-            </ng-container>
-        </aurelius-atlas-ui-accordion>
+        @if (properties().length > 0) {
+            <table class="table is-fullwidth aurelius-details-properties">
+                <thead>
+                    <tr>
+                        <th i18n="@@search.details.components.properties.key">Key</th>
+                        <th i18n="@@search.details.components.properties.value">Value</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (property of properties(); track property.key) {
+                        <tr>
+                            <td>{{ property.key }}</td>
+                            <td>
+                                <aurelius-atlas-ui-properties-item
+                                    [value]="property.value"
+                                    (itemClicked)="onLinkClick($event)"
+                                />
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        } @else {
+            <p class="content has-text-centered aurelius-details-properties-empty">
+                <span><i i18n="@@components.sortableTableShell.noData">No data available</i></span>
+            </p>
+        }
+    </ng-container>
+</aurelius-atlas-ui-accordion>
 
-        <!-- The side navigation is the 7.16 shell (UIC-18): the sticky
+<!-- The side navigation is the 7.16 shell (UIC-18): the sticky
              circular drop-up at the foot of the screen, its menu items
              projected here as the legacy layout's anchors. -->
-        <aurelius-atlas-ui-details-navigation class="aurelius-details-nav" [label]="navLabel">
-            <li>
-                <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
-            </li>
-        </aurelius-atlas-ui-details-navigation>
-    </div>
-</section>
+<aurelius-atlas-ui-details-navigation class="aurelius-details-nav" [label]="navLabel">
+    <li>
+        <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
+    </li>
+</aurelius-atlas-ui-details-navigation>

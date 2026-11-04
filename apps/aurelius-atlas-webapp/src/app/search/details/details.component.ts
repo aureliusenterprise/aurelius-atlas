@@ -3,7 +3,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
 import type { AtlasEntity } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faPen } from "@fortawesome/free-solid-svg-icons";
+import { faPencil } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
 import {
@@ -74,8 +74,8 @@ export class Details {
     /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
     protected readonly canWrite = canWriteEntities();
 
-    /** The pencil's icon. */
-    protected readonly faPen = faPen;
+    /** The pencil's icon — the legacy edit button's `fa-pencil` (DD-346). */
+    protected readonly faPencil = faPencil;
 
     /** The pencil's accessible name — the drawer's edit title (EDT-11). */
     protected readonly editTitle = $localize`:@@search.editEntity.editEntity:Edit entity`;

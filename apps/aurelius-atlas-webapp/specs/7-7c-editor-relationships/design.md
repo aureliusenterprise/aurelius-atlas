@@ -324,3 +324,78 @@ pins the rendered selection, which every earlier test read through
 `optionLabels()` and could not see. The record joins this increment's
 design (the increment owning the editor now, DD-337's precedent); the
 7.13 UIC-14 row is amended, accepted text aside.
+
+### DD-345. The details screen renders bare into the layout's container
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The details template drops its own `section.section >
+div.container` wrapper and renders its boxes directly, like the browse
+screen does. The search layout owns the page inset (DD-150, placed with
+the layout per DD-218); the details screen is its second consumer to use
+it as intended.
+
+**Reason.** A user compared the details page against the browse page and
+reported a margin around the edges that "doesn't align with the title or
+search bar/plus button". Measured live: the layout insets every routed
+page once (its `section.section > div.container`), and the details
+template opened a second pair, so its boxes sat one container in from
+every other screen — 96px vs 48px on a 1418px viewport, and the boxes'
+right edges stopped short of the hero's `+` button. DD-218 already names
+the rule ("the pages render top-level, the layout insets them"); details
+was the only page breaking it. Measured again after the fix: header box
+and browse card share one left edge, and both right edges meet the `+`
+button's.
+
+**Alternatives.** (a) Give the layout a per-route inset (refused — one
+inset is the rule DD-218 set, and one page broke it). (b) Keep the
+wrapper and shrink its padding (refused — a second container is dead
+structure, and its `.container` max-width re-centres the page rather than
+aligning it).
+
+**Consequences.** The template header and SCSS header comments no longer
+claim an own inset. No selector changes: the specs and e2e drive the
+`.aurelius-details-*` classes, none of which named the wrapper, and the
+`.aurelius-details` class itself had no consumer and left with the div.
+DET-01's rule text never named the wrapper, so the 7.6 spec stands.
+
+### DD-346. The editor pencil is the reference's bordered pill and glyph
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The details header's edit button renders the reference's
+treatment: the `fa-pencil` glyph (FA6 `faPencil`, unicode f303 — the
+successor of the legacy `fa-pencil`), on a bordered pill of the legacy
+`btn-action` shape — 1px keppel (`#37bb9b`) border, transparent fill,
+4px radius, 14px glyph, keppel ink that inverts to white on a keppel
+fill at hover. Bulma's `is-ghost` and the `faPen` glyph (f304) leave.
+
+**Reason.** The same user report compared the button against the demo
+reference: "too small ... and uses a different icon". The reference
+(vendored dashboard, `buttons_tmpl.html` + `form.scss`) ships
+`btn btn-action btn-sm` with a `fa-pencil` — a bordered pill, not a
+ghost. Ours was a borderless `is-ghost is-small` with `faPen`, and
+FA6 renamed the glyphs under the port: f303 (what FA4 called `fa-pencil`)
+is now `faPencil`, while `faPen` is the newer f304 drawing. The demo
+itself could not be probed (its Keycloak login loops), so the vendored
+source is the citation, per ADR 052. The keppel hex is pinned in the
+component sheet as the badge and type-name sheets pin their palette
+(SHM-04's idiom) — Bulma's `is-info` is the theme's cyan, not this green.
+
+**Alternatives.** (a) Bulma `is-info is-light` (refused — the theme's
+info is cyan #17a2b8; the reference pill is keppel). (b) Keep the ghost,
+enlarge it (refused — the user named the reference's look, and the border
+is what makes the affordance visible on the box). (c) Port `btn-action`
+as a shared class (refused — one consumer; the component sheet carries it
+until a second pill needs the same rule).
+
+**Consequences.** The unit test for the pencil (EDT-09) now pins the
+glyph by identity (`icon()` is `faPencil`), which the earlier
+`fa-icon`-exists check could not see — the same class of unnoticed swap
+DD-344's select test caught. The e2e selector (`button.aurelius-details-edit`)
+and the `aria-label` are unchanged. The pill's own 4px radius overrides
+Bulma's control radius on this button only.
