@@ -67,6 +67,21 @@
              resolved order. Each control binds through [formControl]; the form
              group is the validity root and is not itself bound to a directive. -->
         <form class="aurelius-editor-form" [formGroup]="form()">
+            <!-- The required-fields notification (EDT-07): shown at the top of
+                 the form when a Save was attempted and the form is invalid —
+                 never below the fold of a long form. Its delete (Bulma's
+                 notification anatomy) dismisses it until the next Save (DD-331). -->
+            @if (saveAttempted() && form().invalid && !notificationDismissed()) {
+                <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
+                    <button
+                        type="button"
+                        class="delete"
+                        [attr.aria-label]="closeLabel"
+                        (click)="dismissNotification()"
+                    ></button>
+                    {{ notificationLine }}
+                </div>
+            }
             @for (field of fields(); track field.name) {
                 <div class="field aurelius-editor-field" [attr.data-field]="field.name">
                     @if (field.kind === "boolean") {
@@ -198,14 +213,6 @@
                     <p class="help aurelius-editor-no-classifications">{{ noClassifications }}</p>
                 }
             </div>
-
-            <!-- The required-fields notification (EDT-07): shown when a Save was
-                 attempted and the form is invalid. -->
-            @if (saveAttempted() && form().invalid) {
-                <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
-                    {{ notificationLine }}
-                </div>
-            }
         </form>
     }
 </aurelius-atlas-ui-drawer>

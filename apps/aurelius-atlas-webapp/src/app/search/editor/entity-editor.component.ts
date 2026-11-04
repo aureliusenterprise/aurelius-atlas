@@ -55,6 +55,9 @@ export class EntityEditor {
     /** Whether a Save was attempted — shows the notification (EDT-07). */
     protected readonly saveAttempted = signal(false);
 
+    /** Whether the notification's X hid it — until the next Save (DD-331). */
+    protected readonly notificationDismissed = signal(false);
+
     /** The form, a signal so the field-set rebuild repaints (EDT-03). */
     protected readonly form = signal(new FormGroup<Record<string, AbstractControl>>({}));
 
@@ -326,9 +329,15 @@ export class EntityEditor {
         }
     }
 
+    /** Hide the dismissed notification's X; the next Save shows it again. */
+    protected dismissNotification(): void {
+        this.notificationDismissed.set(true);
+    }
+
     /** Save (EDT-06/07): invalid bails marked-touched; valid merges and saves. */
     protected save(): void {
         this.saveAttempted.set(true);
+        this.notificationDismissed.set(false);
         if (this.form().invalid) {
             this.form().markAllAsTouched();
 

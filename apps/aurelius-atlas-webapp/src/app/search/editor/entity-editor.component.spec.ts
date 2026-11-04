@@ -442,9 +442,22 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(httpMock.match((request) => request.method === "POST" || request.method === "PUT")).toHaveLength(0);
         const error = compiled.querySelector(".aurelius-editor-error");
         expect(normalize(error?.textContent)).toBe("Name is required.");
-        expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
+        const notification = compiled.querySelector<HTMLElement>(".aurelius-editor-notification");
+        expect(normalize(notification?.textContent)).toBe(
             "This entity can't be saved because one or more required fields are missing.",
         );
+        // The top of the form, not the bottom: it precedes the first field (DD-331).
+        const firstField = compiled.querySelector(".aurelius-editor-form .aurelius-editor-field");
+        expect(notification!.compareDocumentPosition(firstField!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+        // The delete dismisses it; the next Save brings it back (DD-331).
+        notification!.querySelector<HTMLButtonElement>("button.delete")!.click();
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeNull();
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeTruthy();
     });
 
     it("a refused save adds one alert and keeps the drawer (EDT-08)", () => {

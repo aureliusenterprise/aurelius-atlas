@@ -374,3 +374,33 @@ holds until the route arrives with the type. The form-rebuild signature
 gains the type name so a switch to a field-less type drops the old form. The
 drawer's `close()` and the save's compound navigation are unchanged (DD-328
 holds). The spec's EDT-04 is amended in the same PR.
+
+### DD-331. The required-fields notification sits at the top of the form and dismisses
+
+**Status:** Proposed (usability fix on the delivered drawer, from user review
+before acceptance — it changes where EDT-07's line renders, so no accepted
+decision changes.)
+
+**Decision.** The EDT-07 notification renders at the top of the form, above
+the first field, with Bulma's notification delete button. The X hides the
+line until the next Save attempt, which shows it again.
+
+**Reason.** The line sat after the last field: on a wide type (the shipped
+`aws_s3_object` carries a dozen fields) a failed Save on a short screen
+showed only the yellow box below the fold — the user must scroll to find the
+reason, then scroll again to find the field. At the top the reason is in
+view when the Save bails. Bulma's `notification` already seats a `button.delete`
+in the corner; its aria-label rides the drawer X's key (EDT-11's set, no new
+catalogue key).
+
+**Alternatives.** (a) Scroll to the first invalid control on a failed Save
+(refused — the drawer scrolls with the page behind it and a programmatic
+scroll moves the user's own position; the top line works with no motion).
+(b) Hide the line once the form turns valid (kept — that already happens:
+the gate is `form().invalid`); (c) dismiss forever (refused — a second
+failed Save must say so again; the next Save resets the dismissal).
+
+**Consequences.** The notification keeps its `role="alert"` announcement;
+the dismissal is one local signal, no state leaves the component. The unit
+spec pins the order (notification precedes the first field) and the
+dismiss-then-save round-trip.

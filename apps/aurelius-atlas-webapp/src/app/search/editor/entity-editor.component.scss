@@ -41,8 +41,11 @@
     flex: 1;
 }
 
+/* The required-fields notification (EDT-07, DD-331): the top of the form,
+   so a long form cannot push it below the fold. Bulma carries the box and
+   its delete. */
 .aurelius-editor-notification {
-    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .aurelius-editor-busy,
