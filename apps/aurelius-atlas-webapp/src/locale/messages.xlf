@@ -126,6 +126,18 @@
         <source>Search...</source>
         <note priority="1" from="description">Aurelius dictionary key: components.fuzzySearchInput.searchPlaceholder</note>
       </trans-unit>
+      <trans-unit id="components.markdownEditor.placeholder" datatype="html">
+        <source>Please type some markdown to get started...</source>
+        <note priority="1" from="description">Aurelius dictionary key: components.markdownEditor.placeholder</note>
+      </trans-unit>
+      <trans-unit id="components.markdownEditor.previewLabel" datatype="html">
+        <source>Preview</source>
+        <note priority="1" from="description">Aurelius dictionary key: components.markdownEditor.previewLabel</note>
+      </trans-unit>
+      <trans-unit id="components.markdownEditor.writeLabel" datatype="html">
+        <source>Write</source>
+        <note priority="1" from="description">Aurelius dictionary key: components.markdownEditor.writeLabel</note>
+      </trans-unit>
       <trans-unit id="components.modal.close" datatype="html">
         <source>Close</source>
         <note priority="1" from="description">Aurelius dictionary key: components.modal.close</note>

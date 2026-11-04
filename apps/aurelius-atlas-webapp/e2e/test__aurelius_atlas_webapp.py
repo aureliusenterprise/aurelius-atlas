@@ -844,6 +844,46 @@ def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, u
         _delete_entity(authenticated, root_url, user_token, guid)
 
 
+def test__the_editor_previews_markdown_it_saves(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The description's markdown previews in the drawer and renders on details (EDT-20).
+
+    The write-then-read circle in one scenario: the markdown field's Preview
+    tab renders the typed source through the shared block (UIC-26, DD-352),
+    the save sends the source string unchanged (EDT-06 untouched), and the
+    details description box — the same block (DET-10, DD-321) — shows the
+    same rendered heading. What you preview is what details will show.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}md"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+
+        drawer = authenticated.locator(".aurelius-drawer")
+        area = authenticated.locator("textarea#editor-description")
+        area.fill("# The saved heading")
+
+        drawer.get_by_role("tab", name="Preview").click()
+        preview_heading = drawer.locator(".aurelius-markdown-editor-preview h1.title")
+        expect(preview_heading).to_have_text("The saved heading")
+
+        # Back to Write: the source stays where it was (the pane only hid).
+        drawer.get_by_role("tab", name="Write").click()
+        expect(area).to_have_value("# The saved heading")
+
+        drawer.locator("button.aurelius-editor-save").click()
+
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
+        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        # The details box renders the saved source through the same block:
+        # the heading there is the drawer's preview, one renderer (DD-321).
+        expect(authenticated.locator(".aurelius-details-description h1.title")).to_have_text("The saved heading")
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
 def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_token: str) -> None:
     """A classification added in the drawer lands as a chip on the details header (EDT-05, EDT-12).
 

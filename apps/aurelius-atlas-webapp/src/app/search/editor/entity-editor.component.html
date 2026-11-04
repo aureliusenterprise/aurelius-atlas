@@ -166,13 +166,23 @@
                         </label>
                         <div class="control">
                             @switch (field.kind) {
-                                @case ("textarea") {
-                                    <textarea
-                                        class="textarea"
-                                        [class.is-danger]="showError(field)"
-                                        [id]="'editor-' + field.name"
+                                @case ("markdown") {
+                                    <!-- The description keys (EDT-20, DD-352):
+                                         the ui library's markdown field. The
+                                         control keeps the markdown source
+                                         exactly as the textarea did, so the
+                                         save body (EDT-06) is untouched. The
+                                         component seats the EDT-11 label's
+                                         `for` target through `textareaId`;
+                                         its danger state reads this form's
+                                         field state (UIC-26, DD-354). -->
+                                    <aurelius-atlas-ui-markdown-editor
                                         [formField]="textField(field.name)"
-                                    ></textarea>
+                                        [textareaId]="'editor-' + field.name"
+                                        [writeLabel]="markdownWriteLabel"
+                                        [previewLabel]="markdownPreviewLabel"
+                                        [placeholder]="markdownPlaceholder"
+                                    ></aurelius-atlas-ui-markdown-editor>
                                 }
                                 @case ("number") {
                                     <input

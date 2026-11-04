@@ -6,6 +6,11 @@
         "fuzzySearchInput": {
             "searchPlaceholder": "Zoeken..."
         },
+        "markdownEditor": {
+            "writeLabel": "Schrijven",
+            "previewLabel": "Voorvertoning",
+            "placeholder": "Begin met het typen van markdown..."
+        },
         "modal": {
             "close": "Sluiten"
         },
