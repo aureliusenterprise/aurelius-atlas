@@ -183,6 +183,19 @@ TASK_PAGE = 1000
 CLASSIFICATION_PAGE = 1000
 """How many classification instances one search page holds."""
 
+COUNT_PAGE = 1000
+"""How many buckets one page of a composite count aggregation holds (MET-02)."""
+
+
+@dataclass(frozen=True)
+class TypeCount:
+    """How many entities of a type are in a state, shells (``isIncomplete``) or not (MET-02)."""
+
+    type_name: str
+    state: str
+    incomplete: bool
+    count: int
+
 
 @dataclass(frozen=True)
 class VersionedRelationship:
@@ -344,6 +357,14 @@ class EntityDocuments(Protocol):
 
     async def count_type(self, type_name: str) -> int:
         """How many entities of exactly this type exist, in any state, as of now."""
+        ...
+
+    async def type_counts(self) -> list[TypeCount]:
+        """How many entities there are of each type, state and shell flag, as of now (MET-02)."""
+        ...
+
+    async def linked_type_counts(self, kind: LinkedKind) -> dict[str, int]:
+        """How many documents of the kind there are of each type, as of now (MET-02)."""
         ...
 
     async def search(self, query: SearchQuery) -> SearchHits:
@@ -652,6 +673,39 @@ class ElasticsearchEntityDocuments:
         """Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11)."""
         response = await self._client.count(index=self._entities, query={"term": {"typeName": type_name}})
         return int(response["count"])
+
+    async def type_counts(self) -> list[TypeCount]:
+        """A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11)."""
+        sources = [
+            {"type": {"terms": {"field": "typeName"}}},
+            {"state": {"terms": {"field": "state"}}},
+            {"incomplete": {"terms": {"field": "isIncomplete", "missing_bucket": True}}},
+        ]
+        return [
+            TypeCount(str(key["type"]), str(key["state"]), key["incomplete"] in {True, "true"}, count)
+            for key, count in await self._composite(self._entities, sources)
+        ]
+
+    async def linked_type_counts(self, kind: LinkedKind) -> dict[str, int]:
+        """A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11)."""
+        sources = [{"type": {"terms": {"field": "typeName"}}}]
+        return {str(key["type"]): count for key, count in await self._composite(self._linked[kind], sources)}
+
+    async def _composite(self, index: str, sources: list[dict[str, Any]]) -> list[tuple[dict[str, Any], int]]:
+        """Every bucket of a composite aggregation of the index, page by page."""
+        found: list[tuple[dict[str, Any], int]] = []
+        after: dict[str, Any] | None = None
+        while True:
+            composite: dict[str, Any] = {"size": COUNT_PAGE, "sources": sources}
+            if after is not None:
+                composite["after"] = after
+            response = await self._client.search(index=index, size=0, aggs={"counts": {"composite": composite}})
+            counts = (response.get("aggregations") or {}).get("counts") or {}
+            buckets = counts.get("buckets") or []
+            found += [(bucket["key"], int(bucket["doc_count"])) for bucket in buckets]
+            after = counts.get("after_key")
+            if len(buckets) < COUNT_PAGE or after is None:
+                return found
 
     async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
         """Page through the classification index for the instances of the types by GUID (DD-090).

@@ -231,7 +231,7 @@ class FakeClient:
         With ``sort``, hits are ordered by the sort fields (``_score`` among them) and carry their sort values; a
         plain direction stands a document without the field in with its id, an options object puts it last. Only
         hits after ``search_after`` are answered. The total counts every match; each hit has its ``_score``.
-        ``terms`` aggregations count the values of every match.
+        ``terms`` and ``composite`` aggregations count the values of every match.
         """
         _ = track_total_hits, track_scores
         order = [_sort_clause(clause) for clause in sort or []]
@@ -255,7 +255,10 @@ class FakeClient:
         response: dict[str, Any] = {"hits": {"total": {"value": len(hits)}, "hits": hits[from_ : from_ + size]}}
         if aggs:
             sources = [hit["_source"] for hit in hits]
-            response["aggregations"] = {name: _terms(sources, spec["terms"]) for name, spec in aggs.items()}
+            response["aggregations"] = {
+                name: _composite(sources, spec["composite"]) if "composite" in spec else _terms(sources, spec["terms"])
+                for name, spec in aggs.items()
+            }
         return response
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -375,6 +378,29 @@ def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, 
                 counts[term] = counts.get(term, 0) + 1
     ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[: options.get("size", 10)]
     return {"buckets": [{"key": key, "doc_count": count} for key, count in ordered]}
+
+
+def _composite(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, Any]:
+    """A ``composite`` aggregation of ``terms`` sources, by key with a missing value first, ``size`` buckets after
+    ``after``; a document without a value of a source is left out unless it has ``missing_bucket``.
+    """  # noqa: D205 - one sentence
+    names = [next(iter(source)) for source in options["sources"]]
+    fields = [next(iter(source.values()))["terms"] for source in options["sources"]]
+    counts: dict[tuple[Any, ...], int] = {}
+    for source in sources:
+        held = [_held(source, terms["field"]) for terms in fields]
+        if any(not values and not terms.get("missing_bucket") for values, terms in zip(held, fields, strict=True)):
+            continue
+        key = tuple(values[0] if values else None for values in held)
+        counts[key] = counts.get(key, 0) + 1
+    ordered = sorted(counts.items(), key=lambda item: [(value is not None, value) for value in item[0]])
+    if "after" in options:
+        after = [(options["after"][name] is not None, options["after"][name]) for name in names]
+        ordered = [item for item in ordered if [(value is not None, value) for value in item[0]] > after]
+    buckets = [
+        {"key": dict(zip(names, key, strict=True)), "doc_count": count} for key, count in ordered[: options["size"]]
+    ]
+    return {"buckets": buckets, **({"after_key": buckets[-1]["key"]} if buckets else {})}
 
 
 def _term_in(term: str, words: set[str]) -> bool:

@@ -20,6 +20,7 @@ from aurelius_atlas_core.entity_documents import (
     LinkedKind,
     LinkedWrite,
     Reservation,
+    TypeCount,
     VersionedClassification,
     VersionedEntity,
     VersionedRelationship,
@@ -217,6 +218,14 @@ class EntityStore:
     async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
         """Per search field, its most frequent words beginning with ``prefix`` (DD-094)."""
         return await self._documents.terms(fields, prefix)
+
+    async def type_counts(self) -> list[TypeCount]:
+        """How many entities there are of each type, state and shell flag (MET-02)."""
+        return await self._documents.type_counts()
+
+    async def classification_type_counts(self) -> dict[str, int]:
+        """How many classification instances there are of each type (MET-02)."""
+        return await self._documents.linked_type_counts(LinkedKind.CLASSIFICATION)
 
     async def get_tasks(self, guids: Sequence[str]) -> dict[str, tuple[StoredTask, DocumentVersion]]:
         """The tasks with these GUIDs that exist, as last written (TSK-06, DD-079)."""
