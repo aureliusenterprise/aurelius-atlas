@@ -484,9 +484,9 @@ touch, and pointer events are the modern superset). (c) Drive the fill
 with a Web Animations keyframe (refused: the caller's CSS needs the live
 fraction anyway, and a custom property keeps the directive paint-free).
 
-**Consequences.** The dictionary freezes keys (SHL-08), so the legacy's
-`holdable.tooltip.single/plural` tooltip strings cannot ship: the hold
-carries no tooltip, and the rule says so (EDT-19). The spec drives timers
+**Consequences.** The directive carries no text of its own: the legacy's
+`holdable.tooltip.single/plural` strings ride the caller's button, not the
+directive (the caller carries the tooltip, DD-351, and EDT-19). The spec drives timers
 with `vi.useFakeTimers()`, because the zoneless test env runs no
 `fakeAsync`. The editor's spec fires the directive's output directly
 instead of replaying a pointer sweep. The sweep itself is specced at the
@@ -521,7 +521,7 @@ are smooth. A CSS mask over a bordered box (the first cut) re-clips with
 hard, jagged edges, and a conic-gradient `mask` is aliased the same way. The
 spinner's own anatomy (2px stroke, `--bulma-loading-color`, 1em, centred) is
 what a user already reads as "working", so reusing it makes the hold legible
-without a tooltip (SHL-08 freezes one). Driving the length from one number
+alongside the caller's tooltip (DD-351). Driving the length from one number
 keeps the ring and the confirm in step.
 
 **Alternatives.** (a) A CSS `mask` conic over a bordered circle (refused:
@@ -579,3 +579,47 @@ the app show the same button. The mock's pinned demo button keeps its inline
 `font-size` (that is the story's enlarged display, not a size class). The
 drawer's foot story already used `buttons is-right`, so the two screens now
 share one idiom.
+
+### DD-351. The Delete carries the legacy hold tooltip; its key is vendored
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The Delete carries a tooltip that says "Hold for 3 seconds",
+the legacy directive's own words. The reviewer asked for a hold
+instruction. The string is the Aurelius `holdable.tooltip.single` /
+`holdable.tooltip.plural` pair (the legacy directive's own translation
+file), vendored into both dictionaries and both catalogues. Singular rides
+one second, plural rides any other count, the legacy's rule. The caller
+(the editor) carries it as the button's native `title`, so the directive
+stays text-free (DD-348). The Holdable and drawer stories show a static
+"Hold for 3 seconds" tooltip, since a story owns no dictionary.
+
+**Reason.** A hold is not obvious: nothing says a click does nothing, so
+the tooltip is the instruction. The legacy shipped the same string on the
+same control, so this restores rather than invents. The native `title` is
+the app's own tooltip idiom (the classification chip's description uses
+it, and the legacy chip's tooltip was a `title` too), so it needs no
+overlay component, no positioning, and no colour (UIC-03). The number
+rides the one `deleteHoldSeconds`, the same value the directive and the
+ring already share (DD-349), so the words cannot disagree with the clock.
+
+**Alternatives.** (a) A hand-written literal "Hold to delete" in the
+template (refused: SHL-08 keeps every shown string in the catalogue, and
+the legacy string already says this better, with the count). (b) The
+directive writing its own `data-tooltip`, as the legacy did (refused:
+DD-348 keeps the directive paint-free and text-free, and the ui library
+has no dictionary to read). (c) A Bulma or ui-lib tooltip component
+(refused: none exists, and a `title` is what the legacy used).
+
+**Consequences.** This is the increment's one dictionary addition, against
+the "no key is added" line every EDT rule repeats (SHL-08). The vendored
+JSON fixtures and both XLIFF catalogues gain the pair, so
+`i18n-completeness` (SHL-08) stays green and names the keys rather than
+dropping them. The Dutch text is new (the legacy `holdable` file ships
+English only) and follows the catalogue's existing style, which
+`i18n-completeness` then holds to. The tooltip stays through the hold: the
+animation only clears the label's colour (DD-349), and the ring carries the
+countdown. The 7.7a deferral row now defers the keyboard hold alone, not
+the tooltip.

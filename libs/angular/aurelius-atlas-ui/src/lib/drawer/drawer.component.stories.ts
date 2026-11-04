@@ -155,7 +155,7 @@ const footerTemplate = `
     </div>
     <div drawer-footer>
         <div class="buttons is-right">
-            <button type="button" class="button is-danger is-outlined">Delete</button>
+            <button type="button" class="button is-danger is-outlined" title="Hold for 3 seconds">Delete</button>
             <button type="button" class="button is-primary">Save</button>
         </div>
     </div>

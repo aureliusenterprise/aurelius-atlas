@@ -297,11 +297,25 @@ export class EntityEditor {
 
     /**
      * The Delete's hold, in seconds (EDT-19): the reference's hold-to-delete
-     * counts three. The same value rides the directive's `holdFor` and the
-     * ring's CSS animation duration (`--aurelius-hold-duration`), so the
-     * drawing and the clock can never drift apart.
+     * counts three. The same value rides the directive's `holdFor`, the
+     * ring's CSS animation duration (`--aurelius-hold-duration`), and the
+     * tooltip's number, so the drawing, the clock, and the words can never
+     * drift apart. Typed `number`, not the literal, so the tooltip's
+     * singular/plural choice (the legacy rule, DD-351) compiles for any
+     * count and marks both bridge keys.
      */
-    protected readonly deleteHoldSeconds = 3;
+    protected readonly deleteHoldSeconds: number = 3;
+
+    /**
+     * The Delete's hold instruction (EDT-19, DD-351): the vendored
+     * `holdable.tooltip.*` pair, single or plural by the hold's seconds —
+     * the legacy directive's own rule. The caller carries it (DD-348 keeps
+     * the directive paint- and text-free) as the button's native tooltip.
+     */
+    protected readonly deleteTooltip =
+        this.deleteHoldSeconds === 1
+            ? $localize`:@@holdable.tooltip.single:Hold for ${this.deleteHoldSeconds}:seconds: second`
+            : $localize`:@@holdable.tooltip.plural:Hold for ${this.deleteHoldSeconds}:seconds: seconds`;
 
     /** The foot's status line: whichever write is in flight names itself. */
     protected readonly busyLine = computed(() => (this.state.deleting() ? this.deletingLine : this.savingLine));

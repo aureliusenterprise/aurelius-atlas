@@ -60,6 +60,12 @@
     "fields": "Datavelden",
     "hasContent": "Bevat Inhoud",
     "hasParent": "Heeft Bovenliggend Object",
+    "holdable": {
+        "tooltip": {
+            "single": "Houd {{seconds}} seconde ingedrukt",
+            "plural": "Houd {{seconds}} seconden ingedrukt"
+        }
+    },
     "high_risk": "Hoog risico",
     "input": "Invoer",
     "inputToProcesses": "Invoer voor Processen",

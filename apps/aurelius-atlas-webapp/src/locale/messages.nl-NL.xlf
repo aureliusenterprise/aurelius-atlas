@@ -347,6 +347,16 @@
         <target>Heeft Bovenliggend Object</target>
         <note priority="1" from="description">Aurelius dictionary key: hasParent</note>
       </trans-unit>
+      <trans-unit id="holdable.tooltip.plural" datatype="html">
+        <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> seconds</source>
+        <target>Houd <x id="seconds"/> seconden ingedrukt</target>
+        <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.plural</note>
+      </trans-unit>
+      <trans-unit id="holdable.tooltip.single" datatype="html">
+        <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> second</source>
+        <target>Houd <x id="seconds"/> seconde ingedrukt</target>
+        <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.single</note>
+      </trans-unit>
       <trans-unit id="high_risk" datatype="html">
         <source>High risk</source>
         <target>Hoog risico</target>

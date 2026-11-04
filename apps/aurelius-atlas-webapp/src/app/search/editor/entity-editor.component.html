@@ -36,6 +36,7 @@
                     aurelius-atlas-ui-hold
                     [holdFor]="deleteHoldSeconds"
                     [style.--aurelius-hold-duration]="deleteHoldSeconds + 's'"
+                    [attr.title]="deleteTooltip"
                     [class.is-loading]="state.deleting()"
                     [disabled]="state.deleting() || state.saving()"
                     [attr.aria-busy]="state.deleting() ? 'true' : null"

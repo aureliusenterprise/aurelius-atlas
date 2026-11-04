@@ -847,6 +847,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(circle?.getAttribute("pathLength")).toBe("1");
         // The ring's animation and the directive's clock share one number.
         expect(del?.style.getPropertyValue("--aurelius-hold-duration")).toBe("3s");
+        // The tooltip is the vendored Aurelius string, plural for three.
+        expect(del?.getAttribute("title")).toBe("Hold for 3 seconds");
     });
 
     it("a completed hold deletes the entity and lands on browse (EDT-19)", () => {
