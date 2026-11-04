@@ -1,10 +1,5 @@
 [
   {
-    "version": "phase6-6.4d-retention-snapshots",
-    "title": "phase6-6.4d-retention-snapshots",
-    "aliases": []
-  },
-  {
     "version": "main",
     "title": "main",
     "aliases": []
