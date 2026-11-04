@@ -92,6 +92,13 @@ class ServerSettings(BaseSettings):
     lineage_max_node_count: int = Field(default=9000, ge=1)
     """The relations past which lineage adds none (at most 9,000): ``atlas.lineage.max.node.count`` (LIN-04)."""
 
+    metrics_persist_interval_minutes: int = Field(default=60, ge=0)
+    """How often the metrics are stored, in minutes on their multiples since the epoch; 0 stores none:
+    ``atlas.metrics.persist.schedule`` (MHS-05, DV-137)."""
+
+    metrics_ttl_hours: int = Field(default=336, ge=1)
+    """How long a stored metric is kept: ``atlas.metrics.ttl.hours`` (MHS-01, MHS-05)."""
+
     audit_aging_enabled: bool = False
     """Whether the entity audits age out on a schedule, and ``admin/audits/ageout?useAuditConfig`` ages them:
     ``atlas.audit.aging.enabled`` (AGE-02, AGE-05)."""
