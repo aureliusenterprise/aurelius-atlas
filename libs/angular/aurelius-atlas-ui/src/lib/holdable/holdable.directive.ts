@@ -12,9 +12,10 @@ const TICK_MS = 50;
  *
  * The fill is the caller's: while held the directive writes a
  * `--aurelius-hold-progress` custom property (0 to 1) on the host, and the
- * consumer paints it (a `::after` sized to `calc(var(--aurelius-hold-progress)
- * * 100%)`), keeping colour out of the directive (UIC-03). Without a caller
- * style the directive still gates the action and just carries no fill.
+ * consumer paints it (the editor's Delete draws a donut from a CSS animation
+ * instead, and reads the holding state the directive marks on the host),
+ * keeping colour out of the directive (UIC-03). Without a caller style the
+ * directive still gates the action and just carries no fill.
  *
  * Pointer only, matching the reference: a keyboard hold is a separate
  * affordance the legacy control never had (the deviation is recorded at the

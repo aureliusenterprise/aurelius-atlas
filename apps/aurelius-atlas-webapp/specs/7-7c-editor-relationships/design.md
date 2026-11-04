@@ -463,11 +463,9 @@ sweep, and pointerup, pointerleave, or pointercancel before the time ends
 fires `held(false)`. After `holdFor` seconds (default 3) it fires
 `held(true)` once and stops the sweep. While held it writes the fraction
 (0 to 1) into the host's `--aurelius-hold-progress` custom property. The
-caller paints the fill from that property, so the directive carries no
-colour (UIC-03). The Delete button is solid danger; its sheet draws a
-ring just inside the button's edge with a conic gradient and a two-layer
-mask, and the ring's arc shrinks clockwise from the top as the hold runs,
-closing fully at the confirming moment.
+caller paints any progress itself, so the directive carries no colour
+(UIC-03). The Delete button's look (the donut that grows over the hold) is
+DD-349's.
 
 **Reason.** The reference (`models4insight-holdable`, Aurelius 17) is a
 reusable directive on the same mechanic: a timer on mousedown, a cancel on
@@ -493,3 +491,47 @@ with `vi.useFakeTimers()`, because the zoneless test env runs no
 `fakeAsync`. The editor's spec fires the directive's output directly
 instead of replaying a pointer sweep. The sweep itself is specced at the
 directive's own spec.
+
+### DD-349. The Delete's hold fills a donut that grows over the hold's seconds
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The Delete is a plain Bulma button. While the hold runs it
+behaves like Bulma's own `is-loading`: the label clears (Bulma's `color:
+transparent`, so the button keeps its width) and a donut appears in the
+spinner's place. The donut is the spinner's look, an SVG circle stroked 2px
+in `--bulma-loading-color` at 1em, centred where the `is-loading` spinner
+sits. The circle carries `pathLength="1"`, so one CSS animation of
+`stroke-dashoffset` (1 to 0) draws the ring clockwise from the top (the SVG
+rides a quarter turn). The animation's duration is the hold's own seconds,
+which the template binds once (`--aurelius-hold-duration` from
+`deleteHoldSeconds`) and hands to both the directive and the ring, so the
+drawing and the clock cannot drift apart. An early release drops the
+holding state, which removes the animation, so the next press draws afresh.
+
+**Reason.** The reviewer asked for a donut like the loading spinner that
+fills clockwise over the hold. An SVG stroke is anti-aliased, so its edges
+are smooth. A CSS mask over a bordered box (the first cut) re-clips with
+hard, jagged edges, and a conic-gradient `mask` is aliased the same way. The
+spinner's own anatomy (2px stroke, `--bulma-loading-color`, 1em, centred) is
+what a user already reads as "working", so reusing it makes the hold legible
+without a tooltip (SHL-08 freezes one). Driving the length from one number
+keeps the ring and the confirm in step.
+
+**Alternatives.** (a) A CSS `mask` conic over a bordered circle (refused:
+aliased, jagged edges). (b) The directive sweeping a `--aurelius-hold-progress`
+custom property the caller fills each frame (refused: per-frame JS, and the
+reviewer wanted a CSS animation timed to the hold). (c) Canvas (refused: no
+markup, and a stroke is simpler). (d) Keep it solid danger with a ring inside
+the edge, the shape first shipped in this increment (refused: the reviewer
+preferred the plain button and a spinner-like donut).
+
+**Consequences.** The look rides the caller's SCSS, not the directive
+(UIC-03, and the directive stays paint-free per DD-348). `@property` is not
+needed: `stroke-dashoffset` animates natively. The in-flight DELETE keeps
+Bulma's real `is-loading` spinner (EDT-18), so the button shows the growing
+donut while held and the stock spinner while the request runs. The editor
+spec asserts the donut markup and the shared duration number; the animation
+itself is reviewed in the Storybook mock (`Holdable`, Closing loop).

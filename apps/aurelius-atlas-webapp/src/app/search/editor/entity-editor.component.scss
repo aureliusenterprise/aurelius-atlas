@@ -30,35 +30,56 @@
 }
 
 /*
- * The Delete's hold ring (EDT-19): the button is solid danger, and the
- * directive sweeps `--aurelius-hold-progress` (0→1) on it while held. The
- * ring rides just inside the button's edge and starts whole (the rest
- * state shows what the hold must close); as the hold runs, the arc shrinks
- * clockwise from the top until nothing is left at the confirming moment.
- * A conic gradient carries the arc and a two-layer mask (the `exclude`
- * composite) cuts the hole, so the button's own fill shows through and the
- * label rides untouched. Colours come from the Bulma danger ramp (UIC-03 —
- * no literal hex; the mask gradients' black is a shape, not a colour).
+ * The Delete's hold donut (EDT-19, DD-349): the button is a plain Bulma
+ * button, and while the hold runs it behaves like `is-loading` — the label
+ * clears (Bulma's own trick, so the button keeps its width) and a donut
+ * appears in the spinner's place: a 1em circle stroked 2px in the spinner's
+ * colour token (UIC-03 — no literal colour). The ring is an SVG circle
+ * stroke, not a CSS mask over a border, so its edges are anti-aliased like
+ * the spinner's own. `pathLength="1"` on the circle lets one CSS animation
+ * of `stroke-dashoffset` (1→0) draw it clockwise from the top (the SVG rides
+ * a quarter turn); the animation's duration is the hold's own seconds, via
+ * `--aurelius-hold-duration` the template binds from `deleteHoldSeconds`.
+ * An early release drops `holding`, which removes the animation, so the next
+ * press draws afresh.
  */
-.aurelius-editor-delete {
-    &::before {
-        background-image: conic-gradient(
-            from 0deg,
-            transparent calc(var(--aurelius-hold-progress, 0) * 360deg),
-            var(--bulma-danger-invert) calc(var(--aurelius-hold-progress, 0) * 360deg)
-        );
-        border-radius: inherit;
-        bottom: 3px;
-        content: "";
-        left: 3px;
-        mask:
-            linear-gradient(#000 0 0) exclude,
-            linear-gradient(#000 0 0) center / calc(100% - 4px) calc(100% - 4px) no-repeat;
-        pointer-events: none;
-        position: absolute;
-        right: 3px;
-        top: 3px;
+.aurelius-editor-delete .aurelius-hold-donut {
+    display: none;
+    height: 1em;
+    left: calc(50% - 0.5em);
+    position: absolute;
+    top: calc(50% - 0.5em);
+    transform: rotate(-90deg);
+    width: 1em;
+}
+
+.aurelius-editor-delete .aurelius-hold-donut circle {
+    fill: none;
+    stroke: var(--bulma-loading-color);
+    stroke-dasharray: 1;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+.aurelius-editor-delete[data-aurelius-hold="holding"] {
+    color: transparent !important;
+}
+
+.aurelius-editor-delete[data-aurelius-hold="holding"] .aurelius-hold-donut {
+    display: block;
+}
+
+@keyframes aurelius-editor-hold-draw {
+    from {
+        stroke-dashoffset: 1;
     }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.aurelius-editor-delete[data-aurelius-hold="holding"] .aurelius-hold-donut circle {
+    animation: aurelius-editor-hold-draw var(--aurelius-hold-duration, 3s) linear forwards;
 }
 
 /* The classification box (EDT-05, DD-335): one bordered box — the Bulma

@@ -295,6 +295,14 @@ export class EntityEditor {
      */
     protected readonly deleteShown = computed(() => !this.isCreate && this.canWrite());
 
+    /**
+     * The Delete's hold, in seconds (EDT-19): the reference's hold-to-delete
+     * counts three. The same value rides the directive's `holdFor` and the
+     * ring's CSS animation duration (`--aurelius-hold-duration`), so the
+     * drawing and the clock can never drift apart.
+     */
+    protected readonly deleteHoldSeconds = 3;
+
     /** The foot's status line: whichever write is in flight names itself. */
     protected readonly busyLine = computed(() => (this.state.deleting() ? this.deletingLine : this.savingLine));
 

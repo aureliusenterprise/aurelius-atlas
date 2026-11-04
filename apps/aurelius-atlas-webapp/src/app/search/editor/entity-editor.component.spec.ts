@@ -827,6 +827,19 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(normalize(compiled.querySelector("button.aurelius-editor-save")?.textContent)).toBe("Save");
     });
 
+    it("Delete carries the hold donut sized to the hold (EDT-19)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const del = compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete");
+        // The donut is the SVG ring stroke with a unit path, so the CSS
+        // animation can draw it with one dashoffset sweep.
+        const circle = del?.querySelector("svg.aurelius-hold-donut circle");
+        expect(circle?.getAttribute("pathLength")).toBe("1");
+        // The ring's animation and the directive's clock share one number.
+        expect(del?.style.getPropertyValue("--aurelius-hold-duration")).toBe("3s");
+    });
+
     it("a completed hold deletes the entity and lands on browse (EDT-19)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);

@@ -7,8 +7,10 @@ import { Holdable } from "./holdable.directive";
  * The press-and-hold confirmation for a destructive control (the legacy
  * `models4insight-holdable`): the directive fires `held(true)` only when the
  * pointer stays down for `holdFor` seconds, and `held(false)` on an early
- * release. The caller paints the fill from the `--aurelius-hold-progress`
- * custom property the directive sweeps on the host (7.7c, EDT-19).
+ * release. The caller grows a round donut arc clockwise with a plain CSS
+ * animation that runs for the hold's own duration (7.7c, EDT-19). The base
+ * is a plain Bulma button, and while held the button behaves like
+ * `is-loading`: the label clears and the donut appears in its place.
  */
 const meta: Meta<Holdable> = {
     component: Holdable,
@@ -21,27 +23,60 @@ type Story = StoryObj<Holdable>;
 /** The `held` emissions the play() tests collect. */
 const emissions: boolean[] = [];
 
-// The caller's ring (the editor's own sheet does the same, UIC-03: the
-// colour comes from the Bulma danger ramp, no literal hex). The ring rides
-// inside the solid button's edge and closes clockwise as the hold runs.
+// The base is a plain Bulma button that behaves like `is-loading` while the
+// hold runs: the directive marks the host `data-aurelius-hold="holding"`, the
+// label clears (Bulma's own `color: transparent !important`), and a donut in
+// the spinner's place takes over — a 1em circle stroked 2px (the spinner's
+// own weights) in `--bulma-loading-color`. The ring is an SVG circle stroke,
+// so its edges are anti-aliased — a CSS `mask` over a border circle re-clips
+// with hard, jagged edges. The circle's `pathLength` is 1, which lets
+// `stroke-dasharray: 1` and one CSS animation of `stroke-dashoffset` draw the
+// ring clockwise from the top (the SVG is rotated a quarter turn) with no
+// per-frame JavaScript. The animation's duration is the hold itself: the
+// button passes `holdFor` as `--aurelius-hold-duration`, so the ring is drawn
+// whole exactly when the press has lasted long enough. An early release drops
+// the `holding` state, which removes the animation, so the next press starts
+// a fresh one from the top.
+const donut = `<svg class="aurelius-hold-donut" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.5" [attr.pathLength]="1"></circle></svg>`;
+
 const fill = `
 <style>
-.aurelius-hold-story-button::before {
-    background-image: conic-gradient(
-        from 0deg,
-        transparent calc(var(--aurelius-hold-progress, 0) * 360deg),
-        var(--bulma-danger-invert) calc(var(--aurelius-hold-progress, 0) * 360deg)
-    );
-    border-radius: inherit;
-    bottom: 3px;
-    content: "";
-    left: 3px;
-    mask: linear-gradient(#000 0 0) exclude, linear-gradient(#000 0 0) center /
-        calc(100% - 4px) calc(100% - 4px) no-repeat;
-    pointer-events: none;
+@keyframes aurelius-hold-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+.aurelius-hold-donut {
+    display: none;
+    height: 1em;
+    left: calc(50% - 0.5em);
+    overflow: visible;
     position: absolute;
-    right: 3px;
-    top: 3px;
+    top: calc(50% - 0.5em);
+    transform: rotate(-90deg);
+    width: 1em;
+}
+.aurelius-hold-donut > circle {
+    fill: none;
+    stroke: var(--bulma-loading-color);
+    stroke-dasharray: 1;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+.aurelius-hold-button[data-aurelius-hold="holding"] {
+    color: transparent !important;
+}
+.aurelius-hold-button[data-aurelius-hold="holding"] > .aurelius-hold-donut {
+    display: block;
+}
+.aurelius-hold-button[data-aurelius-hold="holding"] > .aurelius-hold-donut > circle {
+    animation: aurelius-hold-draw var(--aurelius-hold-duration, 3s) linear forwards;
+}
+.aurelius-hold-button[data-aurelius-hold="holding"] > .aurelius-hold-loop > circle {
+    animation-iteration-count: infinite;
 }
 </style>
 `;
@@ -51,9 +86,10 @@ const template = `${fill}
     type="button"
     aurelius-atlas-ui-hold
     [holdFor]="holdFor"
+    [style.--aurelius-hold-duration]="holdFor + 's'"
     (held)="onHeld($event)"
-    class="button is-small is-danger aurelius-hold-story-button"
-><span>Hold to delete</span></button>
+    class="button is-small aurelius-hold-button aurelius-hold-story-button"
+><span>Hold to delete</span>${donut}</button>
 `;
 
 const host = (args: Record<string, unknown>) => ({
@@ -100,8 +136,23 @@ export const EarlyRelease: Story = {
         fireEvent.pointerDown(button);
         fireEvent.pointerUp(button);
         expect(emissions).toEqual([false]);
-        // The fill clears on the cancelled hold.
+        // The donut resets on the cancelled hold.
         expect(button.style.getPropertyValue("--aurelius-hold-progress")).toBe("0");
     },
     render: host,
+};
+
+/**
+ * The animation itself, replayed: the button is pinned to the holding state
+ * and the real animation loops forever, so the review can watch the full
+ * cycle — the label clears, the round donut grows clockwise from the top over
+ * 3 seconds, and at the end the ring is whole and the loop restarts. The
+ * editor's Delete would ride the same look; this is the mock under review.
+ */
+export const ClosingLoop: Story = {
+    render: () => ({
+        template: `${fill}
+<button type="button" class="button is-small aurelius-hold-button aurelius-hold-mock" data-aurelius-hold="holding" style="--aurelius-hold-duration: 3s; font-size: 22px; padding: 16px 28px;"><span>Hold to delete</span>${donut.replace("aurelius-hold-donut", "aurelius-hold-donut aurelius-hold-loop")}</button>
+<p class="is-size-7">The real animation, looped: the label clears and the round donut grows clockwise from the top for 3 seconds, the loop restarts at the full ring. Press and hold the <em>Hold to delete</em> button in <strong>Completed Hold</strong> for the interactive one.</p>`,
+    }),
 };

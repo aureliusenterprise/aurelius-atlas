@@ -20,7 +20,10 @@
          confirm (EDT-19, the demo's holdable), Save commits. Neither sits
          in the head anymore: the head carries the title and the X only.
          Busy rides the pair: Bulma's spinner on the acting button (EDT-18,
-         DD-342) plus the status line above it. -->
+         DD-342) plus the status line above it. While the hold runs, the
+         Delete behaves like `is-loading` itself: the label clears and a
+         donut (the spinner's look, an SVG ring stroke so its edges are
+         smooth) draws clockwise over the hold's own seconds. -->
     <div drawer-footer class="aurelius-editor-foot">
         @if (state.saving() || state.deleting()) {
             <p class="help aurelius-editor-busy" role="status">{{ busyLine() }}</p>
@@ -29,9 +32,10 @@
             @if (deleteShown()) {
                 <button
                     type="button"
-                    class="button is-small is-danger aurelius-editor-delete"
+                    class="button is-small aurelius-editor-delete"
                     aurelius-atlas-ui-hold
-                    [holdFor]="3"
+                    [holdFor]="deleteHoldSeconds"
+                    [style.--aurelius-hold-duration]="deleteHoldSeconds + 's'"
                     [class.is-loading]="state.deleting()"
                     [disabled]="state.deleting() || state.saving()"
                     [attr.aria-busy]="state.deleting() ? 'true' : null"
@@ -39,6 +43,9 @@
                 >
                     <!-- Delete. -->
                     <span i18n="@@search.components.editor.delete">Delete</span>
+                    <svg class="aurelius-hold-donut" viewBox="0 0 16 16" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6.5" pathLength="1"></circle>
+                    </svg>
                 </button>
             }
             <button
