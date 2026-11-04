@@ -15,6 +15,7 @@ from zoneinfo import available_timezones
 
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
 from aurelius_atlas_core.atlas_server_service import AtlasServerService
+from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
 from aurelius_atlas_core.audits_writer import AuditsWriter
 from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
 from aurelius_atlas_core.export_service import ExportService
@@ -24,6 +25,7 @@ from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_core.zip_sink import ZipSink
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.atlas_audit import AuditOperation, AuditSearchParameters
+from aurelius_atlas_model.audit_reduction import AuditReductionCriteria
 from aurelius_atlas_model.impexp import (
     OPTION_KEY_REPLICATED_TO,
     OPTION_SKIP_LINEAGE,
@@ -334,6 +336,33 @@ async def get_atlas_audits(request: Request, store: Store, body: Body) -> AtlasJ
         raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditSearchParameters: {error}") from error
     found = await AtlasAuditService(store, authorizer=authorizer(request)).get(parameters)
     return AtlasJSONResponse(content=[entry.to_json() for entry in found])
+
+
+@ADMIN.post("/audits/ageout")
+async def ageout_audit_data(request: Request, store: Store, body: Body) -> Response:
+    """``ageoutAuditData``: the agings the criteria ask for, or with ``useAuditConfig`` the configuration's, queued
+    as tasks and answered; none queued is 204 (AGE-01 to AGE-03). It needs ``ADMIN_AUDITS``.
+
+    Raises:
+        AtlasError: ``UNAUTHORIZED_ACCESS``; ``BAD_REQUEST`` for a body that is no criteria (DV-10);
+            ``INTERNAL_ERROR`` for action types of which none names an action.
+    """  # noqa: D205 - one sentence
+    verify_access(request, AtlasPrivilege.ADMIN_AUDITS, "Admin Audits Ageout")
+    settings: ServerSettings = request.app.state.settings
+    service = AtlasAuditReductionService(store, settings.audit_aging_config())
+    if (request.query_params.get("useAuditConfig") or "").lower() == "true":
+        tasks = await service.start_by_config()
+    else:
+        try:
+            criteria = AuditReductionCriteria.model_validate(body or {})
+        except ValueError as error:
+            raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"Invalid AuditReductionCriteria: {error}") from error
+        if criteria.default_ageout_ttl_in_days <= 0:
+            criteria.default_ageout_ttl_in_days = settings.audit_default_ageout_ttl_in_days
+        tasks = await service.start_by_criteria(service.build_ageout_criteria(criteria))
+    if not tasks:
+        return Response(status_code=NO_CONTENT)
+    return AtlasJSONResponse(content=[task.to_json() for task in tasks])
 
 
 @ADMIN.get("/audit/{audit_guid}/details")

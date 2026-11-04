@@ -6,7 +6,11 @@ Events are written in one bulk request after the change and read back newest fir
 import pytest
 from aurelius_atlas_core.classification_associator import ClassificationRetriever
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
-from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository, list_events_sorted
+from aurelius_atlas_core.entity_audit_repository import (
+    ElasticsearchEntityAuditRepository,
+    delete_events_v2,
+    list_events_sorted,
+)
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_classifications import EntityClassifications
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
@@ -14,6 +18,7 @@ from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.entity_samples import sample_registry
 from aurelius_atlas_model.audit import EntityAuditActionV2
+from aurelius_atlas_model.audit_reduction import AtlasAuditAgingType
 from aurelius_atlas_model.instance import AtlasClassification, AtlasEntitiesWithExtInfo
 from aurelius_atlas_store_es import ElasticsearchStore
 
@@ -104,3 +109,37 @@ async def test__classification_events_are_recorded_and_their_entities_found(
         "PROPAGATED_CLASSIFICATION_ADD"
     ]
     assert list(changed.guid_header_map or {}) == [guids["-1"]]
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_core.entity_audit_repository.ElasticsearchEntityAuditRepository.delete_events",
+    "aurelius_atlas_core.entity_audit_repository.delete_events_v2",
+    rules=["AGE-04"],
+)
+async def test__an_aging_deletes_a_tables_older_updates(dev_store: ElasticsearchStore, entity_prefix: str) -> None:
+    """A default aging keeping one: the creation stays, the newest update stays, the older one goes."""
+    store = EntityStore(sample_registry(), ElasticsearchEntityDocuments(dev_store.client, prefix=entity_prefix))
+    await store.prepare()
+    audits = ElasticsearchEntityAuditRepository(dev_store.client, prefix=entity_prefix)
+    await audits.prepare()
+    writer = EntityWriter(store, notifier=EntityChangeNotifier(store, [EntityAuditListener(audits, store.now)]))
+    body = {"entities": [{"typeName": "s_table", "guid": "-1", "attributes": {"qualifiedName": "t@age"}}]}
+    guid = ((await writer.create_or_update(AtlasEntitiesWithExtInfo.model_validate(body))).guid_assignments or {})["-1"]
+    for name in ("one", "two"):
+        entity = {"typeName": "s_table", "guid": guid, "attributes": {"qualifiedName": "t@age", "name": name}}
+        await writer.create_or_update(AtlasEntitiesWithExtInfo.model_validate({"entities": [entity]}))
+
+    removed = await delete_events_v2(
+        audits,
+        guid,
+        [],
+        1,
+        0,
+        create_events_ageout_allowed=False,
+        aging_type=AtlasAuditAgingType.DEFAULT,
+        now=store.now(),
+    )
+    left = await audits.list_events(guid, None, None, -1)
+
+    assert [e.action for e in removed] == ["ENTITY_UPDATE"]
+    assert [e.action for e in left] == ["ENTITY_UPDATE", "ENTITY_CREATE"]

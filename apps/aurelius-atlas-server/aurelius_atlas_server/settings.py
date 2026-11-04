@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
+from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
 from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
@@ -91,6 +92,64 @@ class ServerSettings(BaseSettings):
     lineage_max_node_count: int = Field(default=9000, ge=1)
     """The relations past which lineage adds none (at most 9,000): ``atlas.lineage.max.node.count`` (LIN-04)."""
 
+    audit_aging_enabled: bool = False
+    """Whether the entity audits age out on a schedule, and ``admin/audits/ageout?useAuditConfig`` ages them:
+    ``atlas.audit.aging.enabled`` (AGE-02, AGE-05)."""
+
+    audit_default_ageout_enabled: bool = True
+    """``atlas.audit.default.ageout.enabled``: the default aging, of the types no other aging names (AGE-02)."""
+
+    audit_default_ageout_ttl_in_days: int = 90
+    """``atlas.audit.default.ageout.ttl.in.days``: at least ``audit_min_ttl_to_maintain`` (AGE-02)."""
+
+    audit_default_ageout_count: int = 0
+    """``atlas.audit.default.ageout.count``: the newest audits each entity keeps; 0 for no count (AGE-02)."""
+
+    audit_default_ageout_ignore_ttl: bool = False
+    """``atlas.audit.default.ageout.ignore.ttl``: the default aging by count alone (AGE-02)."""
+
+    audit_custom_ageout_ttl_in_days: int = 0
+    """``atlas.audit.custom.ageout.ttl.in.days`` (AGE-02)."""
+
+    audit_custom_ageout_count: int = 0
+    """``atlas.audit.custom.ageout.count`` (AGE-02)."""
+
+    audit_custom_ageout_entity_types: str | None = None
+    """``atlas.audit.custom.ageout.entity.types``: comma-separated, ``<prefix>*`` for all that start so (AGE-02)."""
+
+    audit_custom_ageout_action_types: str | None = None
+    """``atlas.audit.custom.ageout.action.types``: comma-separated action names or prefixes (AGE-02)."""
+
+    audit_sweep_out_enabled: bool = False
+    """``atlas.audit.sweep.out.enabled``: every audit of the sweep's types and actions removed (AGE-02)."""
+
+    audit_sweep_out_entity_types: str | None = None
+    """``atlas.audit.sweep.out.entity.types`` (AGE-02)."""
+
+    audit_sweep_out_action_types: str | None = None
+    """``atlas.audit.sweep.out.action.types`` (AGE-02)."""
+
+    audit_create_events_ageout_allowed: bool = False
+    """``atlas.audit.create.events.ageout.allowed``: creations may age out too (AGE-04)."""
+
+    audit_aging_subtypes_included: bool = True
+    """``atlas.audit.aging.subtypes.included``: an aging's types take their sub types (AGE-04)."""
+
+    audit_min_ttl_to_maintain: int = 7
+    """``atlas.audit.min.ttl.to.maintain``: the least TTL, in days, an aging may have (AGE-02)."""
+
+    audit_min_count_to_maintain: int = 50
+    """``atlas.audit.min.count.to.maintain``: the least count an aging may keep (AGE-02)."""
+
+    audit_reduction_max_pending_tasks: int = 50
+    """``atlas.audit.reduction.max.pending.tasks``: past it no aging is queued (AGE-03)."""
+
+    audit_aging_scheduler_frequency_in_days: int = 30
+    """``atlas.audit.aging.scheduler.frequency.in.days``: at least 1 (AGE-05)."""
+
+    audit_aging_scheduler_initial_delay_in_min: int = 1
+    """``atlas.audit.aging.scheduler.initial.delay.in.min``: at least 1 (AGE-05)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
 
@@ -170,4 +229,26 @@ class ServerSettings(BaseSettings):
             username=self.elasticsearch_username,
             password=self.elasticsearch_password,
             ca_certs=self.elasticsearch_ca_certs,
+        )
+
+    def audit_aging_config(self) -> AuditAgingConfig:
+        """The ``atlas.audit.*`` aging settings of the core's aging (AGE-02)."""
+        return AuditAgingConfig(
+            aging_enabled=self.audit_aging_enabled,
+            default_ageout_enabled=self.audit_default_ageout_enabled,
+            default_ageout_ttl_in_days=self.audit_default_ageout_ttl_in_days,
+            default_ageout_count=self.audit_default_ageout_count,
+            default_ageout_ignore_ttl=self.audit_default_ageout_ignore_ttl,
+            custom_ageout_ttl_in_days=self.audit_custom_ageout_ttl_in_days,
+            custom_ageout_count=self.audit_custom_ageout_count,
+            custom_ageout_entity_types=self.audit_custom_ageout_entity_types,
+            custom_ageout_action_types=self.audit_custom_ageout_action_types,
+            sweep_out_enabled=self.audit_sweep_out_enabled,
+            sweep_out_entity_types=self.audit_sweep_out_entity_types,
+            sweep_out_action_types=self.audit_sweep_out_action_types,
+            create_events_ageout_allowed=self.audit_create_events_ageout_allowed,
+            subtypes_included=self.audit_aging_subtypes_included,
+            min_ttl_to_maintain=self.audit_min_ttl_to_maintain,
+            min_count_to_maintain=self.audit_min_count_to_maintain,
+            max_pending_tasks=self.audit_reduction_max_pending_tasks,
         )
