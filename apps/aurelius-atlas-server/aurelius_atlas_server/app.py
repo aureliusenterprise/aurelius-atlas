@@ -17,6 +17,7 @@ from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAudit
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener
@@ -110,11 +111,13 @@ def create_app(
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
     auth, oidc, sessions = _authentication(settings, auth, oidc_http)
+    metrics_util = AtlasMetricsUtil()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         LOGGER.info("Starting %s %s", app.title, app.version)
         started = int(time.time() * 1000)
+        _start(metrics_util)
         worker: TaskWorker | None = None
         aging: AuditAgingScheduler | None = None
         await store.open()
@@ -163,7 +166,7 @@ def create_app(
     # one export or import at a time (EXP-01, DD-304)
     app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
     app.state.store = store
-    app.state.type_registry = registry
+    app.state.type_registry, app.state.metrics_util = registry, metrics_util
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
     _mount(app, settings)
 
@@ -249,6 +252,12 @@ async def _load_models(store: TypedefStore, audits: AtlasAuditService, models_di
     store.change_listeners.append(boot_audits)
     await ModelLoader(store).load(models_dir)
     await boot_audits.flush()
+
+
+def _start(metrics_util: AtlasMetricsUtil) -> None:
+    """``ActiveInstanceElectorService#start``: without high availability, the server is active as it starts (MET-03)."""
+    metrics_util.on_server_start()
+    metrics_util.on_server_activation()
 
 
 async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:

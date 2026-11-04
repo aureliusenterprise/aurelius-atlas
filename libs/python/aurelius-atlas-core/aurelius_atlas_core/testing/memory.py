@@ -1,5 +1,6 @@
 """``TypedefDocument`` and ``EntityDocuments`` in memory, for unit tests that need no Elasticsearch."""
 
+from collections import Counter
 from collections.abc import Collection, Mapping, Sequence
 from typing import Any
 
@@ -16,6 +17,7 @@ from aurelius_atlas_core.entity_documents import (
     LinkedKind,
     LinkedWrite,
     Reservation,
+    TypeCount,
     VersionedEntity,
     WriteResult,
 )
@@ -266,6 +268,18 @@ class MemoryEntityDocuments:
     async def count_type(self, type_name: str) -> int:
         """Entities of exactly the type."""
         return sum(1 for source, _ in self.entities.values() if source.get("typeName") == type_name)
+
+    async def type_counts(self) -> list[TypeCount]:
+        """Entities by type, state and shell flag, by type name."""
+        tally = Counter(
+            (str(source.get("typeName")), str(source.get("state")), bool(source.get("isIncomplete")))
+            for source, _ in self.entities.values()
+        )
+        return [TypeCount(*key, count) for key, count in sorted(tally.items())]
+
+    async def linked_type_counts(self, kind: LinkedKind) -> dict[str, int]:
+        """Documents of the kind by type."""
+        return dict(Counter(str(source.get("typeName")) for source, _ in self.linked[kind].values()))
 
     async def classifications_of_types(self, type_names: Collection[str] | None) -> list[StoredClassification]:
         """The classification instances of the types, or of every type, by GUID."""

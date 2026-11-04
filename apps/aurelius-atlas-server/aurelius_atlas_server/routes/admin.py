@@ -1,7 +1,7 @@
-"""The admin endpoints of ``AdminResource``: version, status, session, liveness, readiness, patches, purge, tasks,
-export, import, servers and their audit trail.
+"""The admin endpoints of ``AdminResource``: version, status, session, liveness, readiness, patches, metrics, purge,
+tasks, export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04.
 """  # noqa: D205 - one sentence
 
 import json
@@ -20,6 +20,7 @@ from aurelius_atlas_core.audits_writer import AuditsWriter
 from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
+from aurelius_atlas_core.metrics_service import MetricsService
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_core.zip_sink import ZipSink
@@ -161,6 +162,18 @@ async def get_readiness(request: Request) -> str:
     if report.status is not HealthStatus.UP:
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, NOT_READY)
     return READY
+
+
+@ADMIN.get("/metrics")
+async def get_metrics(request: Request, store: Store) -> dict[str, Any]:
+    """``getMetrics``: the counts of the types, entities and classifications the user may read, the server's stats
+    and its system details; a store that is not healthy is ``not-connected`` (MET-01 to MET-04).
+    """  # noqa: D205 - one sentence
+    search_store: ElasticsearchStore = request.app.state.store
+    report = await search_store.health()
+    service = MetricsService(store, request.app.state.metrics_util, authorizer=authorizer(request))
+    metrics = await service.get_metrics(store_connected=report.status is HealthStatus.UP)
+    return metrics.to_json()
 
 
 @ADMIN.put("/purge")
