@@ -2,7 +2,7 @@
 
 - **Status:** done
 - **Pull request:** —
-- **Records:** DD-322..DD-332; relies on DD-166 (the drawer outlet shape),
+- **Records:** DD-322..DD-333; relies on DD-166 (the drawer outlet shape),
   DD-300 (the four roles), ADR 051 (port rules), UIC-24 (the deletable chip)
 
 ## Scope

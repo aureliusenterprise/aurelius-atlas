@@ -24,11 +24,13 @@
                 <div class="level-right">
                     <button
                         type="button"
-                        class="button is-small is-primary aurelius-create-entity"
+                        class="button is-info aurelius-create-entity"
                         [attr.aria-label]="createLabel"
                         (click)="openCreate()"
                     >
-                        <fa-icon aria-hidden="true" [icon]="faPlus"></fa-icon>
+                        <span class="icon is-small">
+                            <fa-icon aria-hidden="true" [icon]="faPlus"></fa-icon>
+                        </span>
                     </button>
                 </div>
             }

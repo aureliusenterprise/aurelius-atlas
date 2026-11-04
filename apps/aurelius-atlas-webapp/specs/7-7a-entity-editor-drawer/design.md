@@ -436,3 +436,35 @@ the touched/attempted gate is EDT-07's existing rule).
 help-line colour. The enum path reuses the lib's shipped `invalid` input, so
 the ui library changes not at all. The EDT-07 unit spec pins the class on
 the name input after a failed Save.
+
+### DD-333. The create `+` matches the demo's square cyan button
+
+**Status:** Proposed (visual fix on the delivered drawer family, from user
+review before acceptance — it changes no rule, only the button's Bulma
+classes and icon seat.)
+
+**Decision.** The hero's create-entity `+` (EDT-09) renders like the
+demo's own: a default-size Bulma `button.is-info` with the plus seated in
+a `span.icon.is-small` — the same icon idiom the search field's submit
+button uses (UIC-05). It drops `is-small` and `is-primary`.
+
+**Reason.** Ours carried `is-small` (2em against the 2.5em field and
+submit button beside it) and `is-primary` (the brand turquoise, which
+washes into the hero band); the bare `fa-icon` without the `icon` wrapper
+made it 52px wide where the demo's is a 40x40 square. The demo's button
+is `button.is-info` — cyan `rgb(23, 162, 184)` — and the brand theme
+already maps Bulma's info to that exact cyan (`$cyan` in the brand
+variables, the Bootstrap-palette port), so the class alone lands the
+demo's colour (user reports: too short, wrong colour, too wide).
+
+**Alternatives.** (a) `is-medium` on all three (refused — the search field
+is the lib's default-size `input`, and resizing the lib component for one
+caller is out of scope for a chrome tweak). (b) SCSS height/colour pins on
+the button (refused — the two classes already equal the demo; Bulma owns
+the sizing and the palette). (c) A custom brand class (refused — the demo
+uses `is-info`; parity is the point).
+
+**Consequences.** Template-only change, no SCSS, no lib change, no new
+catalogue key. Live-measured against the demo: field, submit button and
+`+` all 40px tall, `+` 40x40, background `rgb(23, 162, 184)` — the
+demo's values.
