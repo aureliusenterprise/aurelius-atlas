@@ -1674,6 +1674,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_otel.ingest.build_otlp_log_processor" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;build_otlp_log_processor
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_otel.ingest.build_otlp_pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6278,6 +6289,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_otel.ingest.build_otlp_log_processor" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;build_otlp_log_processor
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_otel.ingest.build_otlp_pipeline" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6534,6 +6556,13 @@ why the header is read per request, not once.</p>
 <p><span class="doc-section-title">Functions:</span></p>
     <ul>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            build_otlp_log_processor (aurelius_atlas_otel.ingest.build_otlp_log_processor)" href="./#aurelius_atlas_otel.ingest.build_otlp_log_processor">build_otlp_log_processor</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The app-owned OTLP log export (OBS-01): a log record processor on the per-service leg.</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            build_otlp_pipeline (aurelius_atlas_otel.ingest.build_otlp_pipeline)" href="./#aurelius_atlas_otel.ingest.build_otlp_pipeline">build_otlp_pipeline</a></code></b>
             –
             <div class="doc-md-description">
@@ -6727,6 +6756,33 @@ out header-less and the collector's 401 is the visible failure
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_otel.ingest.build_otlp_log_processor" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">build_otlp_log_processor</span>
+
+
+<a href="#aurelius_atlas_otel.ingest.build_otlp_log_processor" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">build_otlp_log_processor</span><span class="p">(</span>
+    <span class="n"><span title="aurelius_atlas_otel.ingest.build_otlp_log_processor(endpoint)">endpoint</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_otel.ingest.build_otlp_log_processor(ca_file)">ca_file</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_otel.ingest.build_otlp_log_processor(token_source)">token_source</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            ClientCredentialsTokenSource (aurelius_atlas_otel.ingest.ClientCredentialsTokenSource)" href="./#aurelius_atlas_otel.ingest.ClientCredentialsTokenSource">ClientCredentialsTokenSource</a></span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="opentelemetry.sdk._logs.export.BatchLogRecordProcessor">BatchLogRecordProcessor</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The app-owned OTLP log export (OBS-01): a log record processor on the per-service leg.</p>
+<p>The exporter injects the bearer header per export, as <code>build_otlp_pipeline</code>'s do.</p>
+<p>:param endpoint: the collector's service-leg base (<code>https://host:4319</code>)
+:param ca_file: PEM CA verifying the collector's TLS
+:param token_source: the ingest credential source
+:returns: a log record processor for <code>setup_telemetry</code></p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 

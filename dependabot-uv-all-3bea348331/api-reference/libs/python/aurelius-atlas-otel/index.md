@@ -34,6 +34,9 @@ Classes:
 
 Functions:
 
+- **`build_otlp_log_processor`** –
+
+  The app-owned OTLP log export (OBS-01): a log record processor on the per-service leg.
 - **`build_otlp_pipeline`** –
 
   The app-owned OTLP export (DD-196): a trace processor + metric reader.
@@ -88,6 +91,20 @@ bearer() -> str | None
 A valid bearer token, minting/refreshing as needed.
 
 On mint failure with no usable token, `None` — the request then goes out header-less and the collector's 401 is the visible failure (DD-196: no silent fallback).
+
+### build\_otlp\_log\_processor
+
+```
+build_otlp_log_processor(
+    endpoint: str, ca_file: str | None, token_source: ClientCredentialsTokenSource
+) -> BatchLogRecordProcessor
+```
+
+The app-owned OTLP log export (OBS-01): a log record processor on the per-service leg.
+
+The exporter injects the bearer header per export, as `build_otlp_pipeline`'s do.
+
+:param endpoint: the collector's service-leg base (`https://host:4319`) :param ca\_file: PEM CA verifying the collector's TLS :param token\_source: the ingest credential source :returns: a log record processor for `setup_telemetry`
 
 ### build\_otlp\_pipeline
 
