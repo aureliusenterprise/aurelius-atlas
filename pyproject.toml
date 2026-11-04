@@ -167,7 +167,7 @@ extraPaths = ["apps/aurelius-atlas-lineage-model/tests"]
 root = "apps/aurelius-atlas-lineage-model"
 
 [[tool.pyright.executionEnvironments]]
-extraPaths = ["apps/aurelius-atlas-server/tests"]
+extraPaths = ["apps/aurelius-atlas-server/tests", "apps/aurelius-atlas-server/e2e"]
 root = "apps/aurelius-atlas-server"
 
 [[tool.pyright.executionEnvironments]]

@@ -25,7 +25,13 @@ from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListe
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.atlas_audit import AuditOperation
-from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline, setup_telemetry
+from aurelius_atlas_otel import (
+    ClientCredentialsTokenSource,
+    bridge_logging,
+    build_otlp_log_processor,
+    build_otlp_pipeline,
+    setup_telemetry,
+)
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
@@ -45,6 +51,8 @@ from aurelius_atlas_server.task_worker import TaskWorker
 
 NAME = "aurelius-atlas-server"
 LOGGER = logging.getLogger(NAME)
+BRIDGED_LOGGERS = (NAME, "aurelius_atlas_core", "aurelius_atlas_store_es", "uvicorn.error")
+"""The loggers whose records the collector receives (OBS-01): the server's, its libraries' and uvicorn's errors."""
 
 
 DASHBOARD_V3_DIR = "n"
@@ -176,23 +184,32 @@ def create_app(
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
     _mount(app, settings)
 
+    _telemetry(app, settings)
+    LOGGER.setLevel(settings.log_level.upper())
+    return app
+
+
+def _telemetry(app: FastAPI, settings: ServerSettings) -> None:
+    """The process's traces, metrics and logs, and the app's request spans."""
     # Telemetry (SHL-14, DD-196, DD-210): the OTLP export is the app's own
     # pipeline when the ingest credential is configured — exporters whose
     # session injects a fresh client-credentials JWT per export (the
     # collector's per-service leg, CIA-07). Unset settings mean no OTLP at
     # all: the env-driven leg is off for this server, so a server without an
     # ingest identity exports nothing (DD-196). Debug runs also print spans
-    # to stdout (the dev console, DD-210).
-    ingest = _ingest_pipeline(settings)
+    # to stdout (the dev console, DD-210). The server's and its libraries' logs ride the same leg to the
+    # collector's logs pipeline, and still reach the process's output (OBS-01).
+    source = _ingest_source(settings)
+    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
     setup_telemetry(
         NAME,
         app.version,
-        pipeline=ingest,
+        pipeline=None if source is None else build_otlp_pipeline(settings.otel_endpoint, ca_file, source),
         console=settings.log_level in {"trace", "debug"},
+        log_processor=None if source is None else build_otlp_log_processor(settings.otel_endpoint, ca_file, source),
     )
+    bridge_logging(*BRIDGED_LOGGERS, propagate=True)
     FastAPIInstrumentor.instrument_app(app)
-    LOGGER.setLevel(settings.log_level.upper())
-    return app
 
 
 def _mount(app: FastAPI, settings: ServerSettings) -> None:
@@ -214,24 +231,22 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
         mount_dashboards(app, settings.dashboard_dir)
 
 
-def _ingest_pipeline(settings: ServerSettings) -> IngestPipeline | None:
-    """The app-owned OTLP export for the per-service ingest leg (7.18, DD-196).
+def _ingest_source(settings: ServerSettings) -> ClientCredentialsTokenSource | None:
+    """The credential of the app-owned OTLP export on the per-service ingest leg (7.18, DD-196).
 
     None when the ingest credential is not configured (console-only telemetry).
 
     :param settings: the server settings
-    :returns: (span processor, metric reader) or None
+    :returns: the client-credentials token source, or None
     """
     if settings.otel_token_url is None or settings.otel_client_secret is None:
         return None
-    source = ClientCredentialsTokenSource(
+    return ClientCredentialsTokenSource(
         token_url=str(settings.otel_token_url),
         client_id=settings.otel_client_id,
         client_secret=settings.otel_client_secret.get_secret_value(),
         ca_file=str(settings.otel_ca_file) if settings.otel_ca_file else None,
     )
-    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
-    return build_otlp_pipeline(settings.otel_endpoint, ca_file, source)
 
 
 async def _close(auth: KeycloakAuth, oidc: OidcClient) -> None:

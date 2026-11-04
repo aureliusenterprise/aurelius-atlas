@@ -10,7 +10,7 @@ port-forward to the pod completes the login against the localhost redirect
 the client registers (DD-276). The admin credential joins from
 <release>-grafana-admin as before (CHT-40): with the login form back on it
 is account recovery, not the daily door. Provisioning (datasources +
-dashboard provider) and the dashboards ride ConfigMaps; the GF_PATHS_* pair
+dashboard provider), the dashboards and the alerting (OBS-03/04) ride ConfigMaps; the GF_PATHS_* pair
 keeps every writable path on the one PVC (a dhi-image convention, the
 compose's shape).
 */}}
@@ -97,6 +97,13 @@ spec:
                                 secretKeyRef:
                                     name: {{ include "atlas-observability.grafanaAdminSecretName" . }}
                                     key: password
+                        {{- with .Values.grafana.alerting.webhookSecret }}
+                        -   name: ALERT_WEBHOOK_URL
+                            valueFrom:
+                                secretKeyRef:
+                                    name: {{ . | quote }}
+                                    key: url
+                        {{- end }}
                     ports:
                         -   name: http
                             containerPort: {{ int .Values.grafana.probes.port }}
@@ -131,6 +138,9 @@ spec:
                         -   name: dashboards
                             mountPath: /var/lib/grafana/dashboards
                             readOnly: true
+                        -   name: alerting
+                            mountPath: /etc/grafana/provisioning/alerting
+                            readOnly: true
                         -   name: data
                             mountPath: /var/lib/grafana
             volumes:
@@ -143,6 +153,9 @@ spec:
                 -   name: dashboards
                     configMap:
                         name: {{ $fullname }}-grafana-dashboards
+                -   name: alerting
+                    configMap:
+                        name: {{ $fullname }}-grafana-alerting
                 -   name: data
                     persistentVolumeClaim:
                         claimName: {{ $fullname }}-grafana

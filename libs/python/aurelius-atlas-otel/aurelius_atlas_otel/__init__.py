@@ -4,6 +4,7 @@ from aurelius_atlas_otel.ingest import (
     REFRESH_AHEAD_SECONDS,
     ClientCredentialsTokenSource,
     IngestPipeline,
+    build_otlp_log_processor,
     build_otlp_pipeline,
 )
 from aurelius_atlas_otel.telemetry import (
@@ -21,6 +22,7 @@ __all__ = [
     "IngestPipeline",
     "Providers",
     "bridge_logging",
+    "build_otlp_log_processor",
     "build_otlp_pipeline",
     "build_providers",
     "setup_telemetry",

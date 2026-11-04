@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, cast
 from unittest.mock import Mock
 
 import pytest
-from aurelius_atlas_otel.ingest import ClientCredentialsTokenSource, build_otlp_pipeline
+from aurelius_atlas_otel.ingest import ClientCredentialsTokenSource, build_otlp_log_processor, build_otlp_pipeline
 from aurelius_atlas_otel.telemetry import bridge_logging, build_providers, setup_telemetry
 from opentelemetry import metrics, trace
 from opentelemetry._logs import _internal as logs_internal
@@ -186,3 +186,38 @@ def test__bridge_logging_attaches_exactly_one_handler_each() -> None:
             logger = logging.getLogger(name)
             logger.handlers = handlers
             logger.propagate = propagate
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_otel.telemetry.build_providers", "aurelius_atlas_otel.telemetry.setup_telemetry", rules=["OBS-01"]
+)
+def test__an_app_built_log_processor_makes_the_logger_provider(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Without ``logs``, the app's log processor alone builds the logger provider, and rides it (OBS-01)."""
+    monkeypatch.setattr("aurelius_atlas_otel.ingest.ClientCredentialsTokenSource.bearer", lambda _self: "tok")
+    source = ClientCredentialsTokenSource(token_url="https://kc/token", client_id="otel-svc", client_secret="s")  # noqa: S106 - a test secret
+    processor = build_otlp_log_processor("https://otel-collector:4319", None, source)
+
+    providers = build_providers("svc", "1.0", log_processor=processor)
+
+    assert _log_processors(providers) == ["OTLPLogExporter"]
+    for provider in providers:
+        assert provider is not None
+        provider.shutdown()
+
+    setup_telemetry("svc", "1.0", log_processor=build_otlp_log_processor("https://otel-collector:4319", None, source))
+    assert type(logs_internal.get_logger_provider()).__name__ == "LoggerProvider"
+
+
+@pytest.mark.covers("aurelius_atlas_otel.telemetry.bridge_logging", rules=["OBS-01"])
+def test__a_propagating_bridge_keeps_the_records_flowing_upwards() -> None:
+    """With ``propagate``, the logger keeps its parents' handlers: the process output stays (OBS-01)."""
+    setup_telemetry("svc", "1.0", logs=True)
+    logger = logging.getLogger("bridge-test-propagate")
+    saved = logger.handlers, logger.propagate
+    try:
+        bridge_logging("bridge-test-propagate", propagate=True)
+
+        assert logger.propagate is True
+        assert len([h for h in logger.handlers if isinstance(h, LoggingHandler)]) == 1
+    finally:
+        logger.handlers, logger.propagate = saved
