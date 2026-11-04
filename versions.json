@@ -1,5 +1,10 @@
 [
   {
+    "version": "phase6-6.4a-metrics",
+    "title": "phase6-6.4a-metrics",
+    "aliases": []
+  },
+  {
     "version": "main",
     "title": "main",
     "aliases": []
