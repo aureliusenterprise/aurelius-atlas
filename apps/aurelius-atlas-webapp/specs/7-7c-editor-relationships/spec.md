@@ -2,7 +2,7 @@
 
 - **Status:** proposed
 - **Pull request:** —
-- **Records:** DD-338..DD-343; extends 7.7a (EDT-03/EDT-06); relies on
+- **Records:** DD-338..DD-344; extends 7.7a (EDT-03/EDT-06); relies on
   DD-140 (the App Search index is not ported), UIC-16/UIC-24 (the chip and its
   delete), DD-335/DD-336 (the tag-box anatomy this reuses)
 

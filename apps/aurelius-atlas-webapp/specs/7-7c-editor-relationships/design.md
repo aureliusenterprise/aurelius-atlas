@@ -284,3 +284,43 @@ strings (SHL-08). The e2e's typing scenarios are unaffected — Playwright's
 fill focuses and types within the debounce window, so the browse request
 never fires — and an upward panel keeps its rows visible, as the box's
 e2e scenarios already rely on.
+
+### DD-344. The shared select's placeholder rides a static empty value
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** The ui-library `select`'s placeholder option carries a
+static `value=""` attribute, not the `[value]=""` binding it shipped with.
+A null model now lands the control on that option, so an unchosen select
+shows its `-- … --` placeholder text (UIC-14 amended, 7.13 spec).
+
+**Reason.** A user opening the editor's create drawer found the "Entity
+type" select blank: no chosen type, and no placeholder to say so.
+Live-probed: Angular's `[value]=""` writes the property, which for an
+option falls back to its label text — no content attribute is left, so
+`option.value` reads `"-- Please select a value --"`, ngModel's `""`
+matches no option, `selectedIndex` stays `-1`, and the native control
+renders an empty box. A `value=""` attribute makes the match and the
+placeholder shows. The same defect blanked every consumer whose model
+starts null — the create drawer is the shipped one (the settings theme
+select always binds a row, so it never showed). Fixing it inside the
+shared component (rather than a caller workaround, e.g. a synthetic empty
+first row) keeps the placeholder UIC-14 describes real for every call
+site; the ui library stays HTTP-free and its dumb contract holds.
+
+**Alternatives.** (a) The editor passes its own first row (refused — the
+component already owns the placeholder option; a caller-side fake row
+duplicates it and re-appears at the next call site). (b) Accept the blank
+box (refused — the user's report; a required select that renders nothing
+before the pick looks broken). (c) Keep the binding and select option 0
+in code (refused — the DOM's reflection rule is the root; the static
+attribute is the one-line cause fix).
+
+**Consequences.** One attribute in the shared template; the regression
+test ("shows the placeholder in the control while nothing is chosen")
+pins the rendered selection, which every earlier test read through
+`optionLabels()` and could not see. The record joins this increment's
+design (the increment owning the editor now, DD-337's precedent); the
+7.13 UIC-14 row is amended, accepted text aside.
