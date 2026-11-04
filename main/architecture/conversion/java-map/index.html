@@ -6652,6 +6652,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>in progress</td>
 </tr>
 <tr>
+<td><code>AdminResource#getMetrics</code>, <code>MetricsService#getMetrics</code>, <code>AtlasMetricsUtil</code> (stats), <code>AtlasMetricsCounter</code>, <code>AtlasMetricJVMUtil</code>, <code>ActiveInstanceElectorService#start</code> (its metrics), <code>AtlasMetrics</code></td>
+<td><code>aurelius_atlas_core.metrics_service</code>, <code>aurelius_atlas_core.metrics_util</code>, <code>aurelius_atlas_core.entity_documents</code>, <code>aurelius_atlas_model.metrics</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_server.app</code></td>
+<td>6.4a</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td><code>AtlasKeycloakAuthenticationProvider</code>, <code>AtlasSecurityConfig</code> (open paths, Keycloak filters, logout), Keycloak's <code>KeycloakAuthenticationEntryPoint</code>, <code>KeycloakAuthenticationProcessingFilter</code>, <code>KeycloakLogoutHandler</code>, <code>AtlasCSRFPreventionFilter</code>, <code>AdminResource#getUserProfile</code> (user, groups, CSRF token)</td>
 <td><code>aurelius_atlas_server.authentication</code>, <code>aurelius_atlas_server.oidc_client</code>, <code>aurelius_atlas_server.routes.login</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.auth</code></td>
 <td>6.1a</td>

@@ -2285,6 +2285,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_patches" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8599,6 +8610,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.routes.admin.get_metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;get_metrics
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.routes.admin.get_patches" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12060,9 +12082,9 @@ there the cause is the request's own defect, not server internals.</p>
 
     <div class="doc doc-contents first">
 
-        <p>The admin endpoints of <code>AdminResource</code>: version, status, session, liveness, readiness, patches, purge, tasks,
-export, import, servers and their audit trail.</p>
-<p>ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.</p>
+        <p>The admin endpoints of <code>AdminResource</code>: version, status, session, liveness, readiness, patches, metrics, purge,
+tasks, export, import, servers and their audit trail.</p>
+<p>ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04.</p>
 
 
 
@@ -12171,6 +12193,18 @@ export, import, servers and their audit trail.</p>
             –
             <div class="doc-md-description">
               <p>Whether the server runs (ADM-03).</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            get_metrics
+
+
+  
+      async
+   (aurelius_atlas_server.routes.admin.get_metrics)" href="./#aurelius_atlas_server.routes.admin.get_metrics">get_metrics</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p><code>getMetrics</code>: the counts of the types, entities and classifications the user may read, the server's stats</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -12936,6 +12970,31 @@ than a purge.</p>
     <div class="doc doc-contents ">
 
         <p>Whether the server runs (ADM-03).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_server.routes.admin.get_metrics" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">get_metrics</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.routes.admin.get_metrics" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">get_metrics</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.routes.admin.get_metrics(request)">request</span></span><span class="p">:</span> <span class="n"><span title="fastapi.Request">Request</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.routes.admin.get_metrics(store)">store</span></span><span class="p">:</span> <span class="n"><span title="aurelius_atlas_server.routes.entity.Store">Store</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p><code>getMetrics</code>: the counts of the types, entities and classifications the user may read, the server's stats
+and its system details; a store that is not healthy is <code>not-connected</code> (MET-01 to MET-04).</p>
 
 
     </div>

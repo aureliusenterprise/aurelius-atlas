@@ -6696,13 +6696,27 @@ checks a PR must pass:</p>
 <td>Entity audit aging</td>
 <td><code>admin/audits/ageout</code>: the entity audits aged out by age, count and action, on demand and on a schedule</td>
 <td><code>AtlasAuditReductionService</code>, <code>AuditReductionTask</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.4a</td>
+<td>Metrics</td>
+<td><code>admin/metrics</code>: the counts of types, entities and classifications, the server's stats and system details</td>
+<td><code>MetricsService</code>, <code>AtlasMetricsUtil</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>6.4b</td>
+<td>Metrics history</td>
+<td><code>admin/metricsstats</code>, <code>metricsstat/{time}</code>, its range and charts: the metrics stored on a schedule and purged after their TTL</td>
+<td><code>MetricsService</code> (stats), <code>AdminResource</code> scheduling</td>
 <td>planned</td>
 </tr>
 <tr>
-<td>6.4</td>
+<td>6.4c</td>
 <td>Hardening</td>
-<td>Metrics, observability, load test, index tuning</td>
-<td><code>AdminResource</code> metrics</td>
+<td>Observability, load test, index tuning</td>
+<td>—</td>
 <td>planned</td>
 </tr>
 <tr>

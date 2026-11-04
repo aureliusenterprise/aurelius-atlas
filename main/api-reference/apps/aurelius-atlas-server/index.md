@@ -1225,9 +1225,9 @@ A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the 
 
 ## aurelius\_atlas\_server.routes.admin
 
-The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, purge, tasks, export, import, servers and their audit trail.
+The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, metrics, purge, tasks, export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04.
 
 Functions:
 
@@ -1255,6 +1255,9 @@ Functions:
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
+- **`get_metrics`** –
+
+  `getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats
 - **`get_patches`** –
 
   `getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
@@ -1491,6 +1494,14 @@ get_liveness() -> str
 ```
 
 Whether the server runs (ADM-03).
+
+### get\_metrics
+
+```
+get_metrics(request: Request, store: Store) -> dict[str, Any]
+```
+
+`getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats and its system details; a store that is not healthy is `not-connected` (MET-01 to MET-04).
 
 ### get\_patches
 

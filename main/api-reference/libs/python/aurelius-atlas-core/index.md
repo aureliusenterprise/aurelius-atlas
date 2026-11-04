@@ -681,6 +681,9 @@ Entities of the registry's entity types, and the relationships between them, in 
 
 Methods:
 
+- **`classification_type_counts`** –
+
+  How many classification instances there are of each type (MET-02).
 - **`classifications_of_types`** –
 
   The classification instances of these types, or of every type for None (DD-090).
@@ -732,6 +735,9 @@ Methods:
 - **`terms`** –
 
   Per search field, its most frequent words beginning with `prefix` (DD-094).
+- **`type_counts`** –
+
+  How many entities there are of each type, state and shell flag (MET-02).
 - **`type_in_use`** –
 
   Whether an entity, relationship or classification of exactly this type exists, in any state.
@@ -759,6 +765,14 @@ task_listeners: list[Callable[[], None]] = []
 ```
 
 Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### classification\_type\_counts
+
+```
+classification_type_counts() -> dict[str, int]
+```
+
+How many classification instances there are of each type (MET-02).
 
 #### classifications\_of\_types
 
@@ -901,6 +915,14 @@ terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
 ```
 
 Per search field, its most frequent words beginning with `prefix` (DD-094).
+
+#### type\_counts
+
+```
+type_counts() -> list[TypeCount]
+```
+
+How many entities there are of each type, state and shell flag (MET-02).
 
 #### type\_in\_use
 
@@ -1094,6 +1116,9 @@ Classes:
 - **`Reservation`** –
 
   A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+- **`TypeCount`** –
+
+  How many entities of a type are in a state, shells (`isIncomplete`) or not (MET-02).
 - **`VersionedClassification`** –
 
   A stored classification instance and the version it was read in (DD-047, DD-070).
@@ -1118,6 +1143,9 @@ Attributes:
 - **`CLASSIFICATION_PAGE`** –
 
   How many classification instances one search page holds.
+- **`COUNT_PAGE`** –
+
+  How many buckets one page of a composite count aggregation holds (MET-02).
 - **`ENTITY_FIELD_LIMIT`** –
 
   `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
@@ -1196,6 +1224,14 @@ CLASSIFICATION_PAGE = 1000
 ```
 
 How many classification instances one search page holds.
+
+### COUNT\_PAGE
+
+```
+COUNT_PAGE = 1000
+```
+
+How many buckets one page of a composite count aggregation holds (MET-02).
 
 ### ENTITY\_FIELD\_LIMIT
 
@@ -1415,6 +1451,9 @@ Methods:
 - **`journal`** –
 
   The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
+- **`linked_type_counts`** –
+
+  A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11).
 - **`list_tasks`** –
 
   Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
@@ -1451,6 +1490,9 @@ Methods:
 - **`terms`** –
 
   A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+- **`type_counts`** –
+
+  A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1542,6 +1584,14 @@ journal() -> list[JournalEntry]
 ```
 
 The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has passed, long after the index's own refresh (DD-247), and acts on each as `get_journal` reads it.
+
+#### linked\_type\_counts
+
+```
+linked_type_counts(kind: LinkedKind) -> dict[str, int]
+```
+
+A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11).
 
 #### list\_tasks
 
@@ -1643,6 +1693,14 @@ terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
 
 A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
 
+#### type\_counts
+
+```
+type_counts() -> list[TypeCount]
+```
+
+A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
+
 #### write
 
 ```
@@ -1692,6 +1750,9 @@ Methods:
 - **`journal`** –
 
   Every journal entry, as the last refresh shows them.
+- **`linked_type_counts`** –
+
+  How many documents of the kind there are of each type, as of now (MET-02).
 - **`list_tasks`** –
 
   Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
@@ -1728,6 +1789,9 @@ Methods:
 - **`terms`** –
 
   Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many
+- **`type_counts`** –
+
+  How many entities there are of each type, state and shell flag, as of now (MET-02).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1803,6 +1867,14 @@ journal() -> list[JournalEntry]
 ```
 
 Every journal entry, as the last refresh shows them.
+
+#### linked\_type\_counts
+
+```
+linked_type_counts(kind: LinkedKind) -> dict[str, int]
+```
+
+How many documents of the kind there are of each type, as of now (MET-02).
 
 #### list\_tasks
 
@@ -1899,6 +1971,14 @@ terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
 ```
 
 Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many entities hold each, most first, then by word (DD-094).
+
+#### type\_counts
+
+```
+type_counts() -> list[TypeCount]
+```
+
+How many entities there are of each type, state and shell flag, as of now (MET-02).
 
 #### write
 
@@ -2100,6 +2180,45 @@ key: str
 
 ```
 write_id: str
+```
+
+### TypeCount
+
+```
+TypeCount(type_name: str, state: str, incomplete: bool, count: int)
+```
+
+How many entities of a type are in a state, shells (`isIncomplete`) or not (MET-02).
+
+Attributes:
+
+- **`count`** (`int`) –
+- **`incomplete`** (`bool`) –
+- **`state`** (`str`) –
+- **`type_name`** (`str`) –
+
+#### count
+
+```
+count: int
+```
+
+#### incomplete
+
+```
+incomplete: bool
+```
+
+#### state
+
+```
+state: str
+```
+
+#### type\_name
+
+```
+type_name: str
 ```
 
 ### VersionedClassification
