@@ -6658,6 +6658,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>in progress</td>
 </tr>
 <tr>
+<td><code>AdminResource#scheduleSaveAndDeleteMetrics</code>, <code>#getAllMetrics</code>, <code>#getMetricsByCollectionTime</code>, <code>#getMetricsInTimeRange</code>, <code>#getMetricsForChartByTypeNames</code>, <code>MetricsService</code> (stored metrics), <code>AtlasMetricsStatDTO</code>, <code>AtlasMetricsStat</code>, <code>AtlasMetricsMapToChart</code>, <code>AtlasEntityUtil#metricsToTypeData</code></td>
+<td><code>aurelius_atlas_core.metrics_service</code>, <code>aurelius_atlas_model.metrics</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_server.metrics_scheduler</code>, <code>aurelius_atlas_server.settings</code></td>
+<td>6.4b</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td><code>AtlasKeycloakAuthenticationProvider</code>, <code>AtlasSecurityConfig</code> (open paths, Keycloak filters, logout), Keycloak's <code>KeycloakAuthenticationEntryPoint</code>, <code>KeycloakAuthenticationProcessingFilter</code>, <code>KeycloakLogoutHandler</code>, <code>AtlasCSRFPreventionFilter</code>, <code>AdminResource#getUserProfile</code> (user, groups, CSRF token)</td>
 <td><code>aurelius_atlas_server.authentication</code>, <code>aurelius_atlas_server.oidc_client</code>, <code>aurelius_atlas_server.routes.login</code>, <code>aurelius_atlas_server.routes.admin</code>, <code>aurelius_atlas_auth.auth</code></td>
 <td>6.1a</td>

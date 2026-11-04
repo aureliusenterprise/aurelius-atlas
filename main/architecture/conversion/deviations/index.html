@@ -7078,6 +7078,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>There is no JVM; the process's own figures are what an operator can act on</td>
 <td>6.4a</td>
 </tr>
+<tr>
+<td>DV-136</td>
+<td>Metrics</td>
+<td>A <code>metricsstat</code> or range time that is no <code>long</code> fails with a server error from <code>Long.parseLong</code></td>
+<td><code>BAD_REQUEST</code> naming the parameter</td>
+<td>A client's mistake is a 4xx, as JAX-RS's own conversions answer (DV-39)</td>
+<td>6.4b</td>
+</tr>
+<tr>
+<td>DV-137</td>
+<td>Metrics</td>
+<td>The metrics are stored on the cron <code>atlas.metrics.persist.schedule</code></td>
+<td>On an interval in minutes, at its multiples since the epoch; 0 stores none</td>
+<td>A cron parser for one schedule; the default runs at the start of every hour either way</td>
+<td>6.4b</td>
+</tr>
 </tbody>
 </table>
 

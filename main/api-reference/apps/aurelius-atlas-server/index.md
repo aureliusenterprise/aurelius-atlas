@@ -165,6 +165,18 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Lineage Max Node Count",
 >       "type": "integer"
 >     },
+>     "metrics_persist_interval_minutes": {
+>       "default": 60,
+>       "minimum": 0,
+>       "title": "Metrics Persist Interval Minutes",
+>       "type": "integer"
+>     },
+>     "metrics_ttl_hours": {
+>       "default": 336,
+>       "minimum": 1,
+>       "title": "Metrics Ttl Hours",
+>       "type": "integer"
+>     },
 >     "audit_aging_enabled": {
 >       "default": false,
 >       "title": "Audit Aging Enabled",
@@ -473,6 +485,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `lineage_on_demand_enabled` (`bool`)
 > - `lineage_on_demand_default_node_count` (`int`)
 > - `lineage_max_node_count` (`int`)
+> - `metrics_persist_interval_minutes` (`int`)
+> - `metrics_ttl_hours` (`int`)
 > - `audit_aging_enabled` (`bool`)
 > - `audit_default_ageout_enabled` (`bool`)
 > - `audit_default_ageout_ttl_in_days` (`int`)
@@ -856,6 +870,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > The lowest level of log record the server and uvicorn emit.
 >
+> ### metrics\_persist\_interval\_minutes
+>
+> ```
+> metrics_persist_interval_minutes: int = 60
+> ```
+>
+> How often the metrics are stored, in minutes on their multiples since the epoch; 0 stores none: `atlas.metrics.persist.schedule` (MHS-05, DV-137).
+>
+> ### metrics\_ttl\_hours
+>
+> ```
+> metrics_ttl_hours: int = 336
+> ```
+>
+> How long a stored metric is kept: `atlas.metrics.ttl.hours` (MHS-01, MHS-05).
+>
 > ### model\_config
 >
 > ```
@@ -1227,7 +1257,7 @@ A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the 
 
 The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, metrics, purge, tasks, export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04, MHS-01 to MHS-04.
 
 Functions:
 
@@ -1240,6 +1270,9 @@ Functions:
 - **`export`** –
 
   `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
+- **`get_all_metrics`** –
+
+  `getAllMetrics`: every stored metric, the latest first; with `mininfo`, the default, without the metrics
 - **`get_atlas_audits`** –
 
   `getAtlasAudits`: the admin audits the search parameters find (ADA-04); it needs `ADMIN_AUDITS`.
@@ -1258,6 +1291,15 @@ Functions:
 - **`get_metrics`** –
 
   `getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats
+- **`get_metrics_by_collection_time`** –
+
+  `getMetricsByCollectionTime`: the metric stored at that time (MHS-02).
+- **`get_metrics_for_chart_by_type_names`** –
+
+  `getMetricsForChartByTypeNames`: per type name, its counts in the range by state (MHS-04).
+- **`get_metrics_in_time_range`** –
+
+  `getMetricsInTimeRange`: the metrics stored in the range, with the type data of the type names (MHS-03).
 - **`get_patches`** –
 
   `getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
@@ -1298,7 +1340,9 @@ Attributes:
 - **`DESCRIPTION`** –
 
   What `admin/version` reports instead of Apache Atlas's name and description (DV-03).
+- **`JAVA_LONG`** –
 - **`LIVE`** –
+- **`LONG_RANGE`** –
 - **`NAME`** –
 - **`NOT_READY`** –
 - **`NO_CONTENT`** –
@@ -1332,10 +1376,22 @@ DESCRIPTION = 'Apache Atlas 2.4.0 REST API on Elasticsearch'
 
 What `admin/version` reports instead of Apache Atlas's name and description (DV-03).
 
+### JAVA\_LONG
+
+```
+JAVA_LONG = re.compile('[+-]?\\d+')
+```
+
 ### LIVE
 
 ```
 LIVE = 'Service is live'
+```
+
+### LONG\_RANGE
+
+```
+LONG_RANGE = (-2 ** 63, 2 ** 63 - 1)
 ```
 
 ### NAME
@@ -1431,6 +1487,14 @@ Raises:
 
   `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK` while another runs; `BAD_REQUEST` for a body that is no export request (DV-10).
 
+### get\_all\_metrics
+
+```
+get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]]
+```
+
+`getAllMetrics`: every stored metric, the latest first; with `mininfo`, the default, without the metrics (MHS-02).
+
 ### get\_atlas\_audits
 
 ```
@@ -1502,6 +1566,30 @@ get_metrics(request: Request, store: Store) -> dict[str, Any]
 ```
 
 `getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats and its system details; a store that is not healthy is `not-connected` (MET-01 to MET-04).
+
+### get\_metrics\_by\_collection\_time
+
+```
+get_metrics_by_collection_time(request: Request, store: Store, collection_time: str) -> dict[str, Any]
+```
+
+`getMetricsByCollectionTime`: the metric stored at that time (MHS-02).
+
+### get\_metrics\_for\_chart\_by\_type\_names
+
+```
+get_metrics_for_chart_by_type_names(request: Request, store: Store) -> dict[str, list[dict[str, Any]]]
+```
+
+`getMetricsForChartByTypeNames`: per type name, its counts in the range by state (MHS-04).
+
+### get\_metrics\_in\_time\_range
+
+```
+get_metrics_in_time_range(request: Request, store: Store) -> list[dict[str, Any]]
+```
+
+`getMetricsInTimeRange`: the metrics stored in the range, with the type data of the type names (MHS-03).
 
 ### get\_patches
 
