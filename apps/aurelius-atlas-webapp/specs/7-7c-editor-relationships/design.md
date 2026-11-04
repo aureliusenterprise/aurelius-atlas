@@ -505,11 +505,13 @@ spinner's place. The donut is the spinner's look, an SVG circle stroked 2px
 in `--bulma-loading-color` at 1em, centred where the `is-loading` spinner
 sits. The circle carries `pathLength="1"`, so one CSS animation of
 `stroke-dashoffset` (1 to 0) draws the ring clockwise from the top (the SVG
-rides a quarter turn). The animation's duration is the hold's own seconds,
-which the template binds once (`--aurelius-hold-duration` from
-`deleteHoldSeconds`) and hands to both the directive and the ring, so the
-drawing and the clock cannot drift apart. An early release drops the
-holding state, which removes the animation, so the next press draws afresh.
+rides a quarter turn). The animation plays exactly once (`forwards`): its
+duration is the hold's own seconds, which the template binds once
+(`--aurelius-hold-duration` from `deleteHoldSeconds`) and hands to both the
+directive and the ring, so the drawing and the clock cannot drift apart, and
+at the end of the run the ring is fully closed and stays there. An early
+release drops the holding state, which removes the animation, so the next
+press draws afresh.
 
 **Reason.** The reviewer asked for a donut like the loading spinner that
 fills clockwise over the hold. An SVG stroke is anti-aliased, so its edges
@@ -534,4 +536,5 @@ needed: `stroke-dashoffset` animates natively. The in-flight DELETE keeps
 Bulma's real `is-loading` spinner (EDT-18), so the button shows the growing
 donut while held and the stock spinner while the request runs. The editor
 spec asserts the donut markup and the shared duration number; the animation
-itself is reviewed in the Storybook mock (`Holdable`, Closing loop).
+itself is reviewed in the Storybook mock (`Holdable`, Closing once), whose
+play() test asserts the one play and the closed end.
