@@ -342,6 +342,11 @@ class InMemoryEntityAuditRepository:
         ]
         return found if count == -1 else found[:count]
 
+    async def delete_events(self, entity_id: str, event_keys: Sequence[str]) -> None:
+        """Drop the entity's events of these keys."""
+        keys = set(event_keys)
+        self.events = [event for event in self.events if event.entity_id != entity_id or event.event_key not in keys]
+
     async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
         """The entities with a classification event in the time range, newest key first."""
         events = sorted(self.events, key=lambda event: event.event_key or "", reverse=True)

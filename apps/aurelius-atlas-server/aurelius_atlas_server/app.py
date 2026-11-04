@@ -11,6 +11,7 @@ from pathlib import Path
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
+from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
@@ -29,6 +30,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.oidc_client import OidcClient
@@ -114,6 +116,7 @@ def create_app(
         LOGGER.info("Starting %s %s", app.title, app.version)
         started = int(time.time() * 1000)
         worker: TaskWorker | None = None
+        aging: AuditAgingScheduler | None = None
         await store.open()
         try:
             entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
@@ -134,15 +137,14 @@ def create_app(
             app.state.typedef_store = typedef_store
             app.state.entity_store = entity_store
             audit = EntityChangeNotifier(entity_store, [EntityAuditListener(entity_audits, entity_store.now)])
-            app.state.task_management = TaskManagement(entity_store, notifier=audit)
-            if settings.tasks_enabled:
-                worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
-                entity_store.task_listeners.append(worker.wake)
-                worker.start()
-                app.state.task_worker = worker
+            app.state.task_management = TaskManagement(entity_store, notifier=audit, audits=entity_audits)
+            worker = _task_worker(app, settings, entity_store)
             await _audit_server_status(admin_audits, started)
+            aging = _audit_aging(settings, entity_store)
             yield
         finally:
+            if aging is not None:
+                await aging.stop()
             if worker is not None:
                 await worker.stop()
             await store.close()
@@ -260,3 +262,27 @@ async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:
         await audits.add(AuditOperation.SERVER_STATE_ACTIVE, None, None, 0, start_time=now, end_time=now)
     except AtlasError:
         LOGGER.exception("Exception occurred during audit")
+
+
+def _audit_aging(settings: ServerSettings, store: EntityStore) -> AuditAgingScheduler | None:
+    """The configured aging of the entity audits scheduled and started, when it is enabled (AGE-05)."""
+    if not settings.audit_aging_enabled:
+        return None
+    aging = AuditAgingScheduler(
+        AtlasAuditReductionService(store, settings.audit_aging_config()),
+        frequency_days=settings.audit_aging_scheduler_frequency_in_days,
+        initial_delay_minutes=settings.audit_aging_scheduler_initial_delay_in_min,
+    )
+    aging.start()
+    return aging
+
+
+def _task_worker(app: FastAPI, settings: ServerSettings, store: EntityStore) -> TaskWorker | None:
+    """The worker of the application's tasks, woken by the store's writes and started, when tasks are enabled."""
+    if not settings.tasks_enabled:
+        return None
+    worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
+    store.task_listeners.append(worker.wake)
+    worker.start()
+    app.state.task_worker = worker
+    return worker
