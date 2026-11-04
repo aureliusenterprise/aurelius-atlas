@@ -58,9 +58,12 @@
             @for (field of fields(); track field.name) {
                 <div class="field aurelius-editor-field" [attr.data-field]="field.name">
                     @if (field.kind === "boolean") {
+                        <!-- Bulma's checkbox anatomy (EDT-03): the label wraps
+                             the input and a bare text node — no wrapper span,
+                             which would drop the gap Bulma gives the text. -->
                         <label class="checkbox aurelius-editor-checkbox">
                             <input type="checkbox" [formControlName]="field.name" />
-                            <span>{{ field.label }}</span>
+                            {{ field.label }}
                         </label>
                     } @else if (field.kind === "enum") {
                         <aurelius-atlas-ui-select
@@ -140,23 +143,26 @@
                 </div>
             }
 
-            <!-- The classification box (EDT-05): chosen tags with a delete, and
-                 an input that adds an applicable type on Enter. The datalist
-                 lists what applies to this entity's type. -->
+            <!-- The classification box (EDT-05): chosen tags rendered as the
+                 same chips the details page uses, each with a delete, and an
+                 input that adds an applicable type on Enter or on a datalist
+                 pick (the pick commits through the control's change event).
+                 The datalist lists what applies to this entity's type. -->
             <div class="field aurelius-editor-classifications">
                 <p class="label">{{ classificationsLabel }}</p>
                 @if (state.chosen().length > 0) {
-                    <div class="tags aurelius-editor-tags">
+                    <div class="tags aurelius-editor-tags field is-grouped is-grouped-multiline">
                         @for (tag of chosenTags(); track tag.typeName) {
-                            <span class="tag is-info aurelius-editor-tag">{{ tag.typeName }}</span>
-                            <button
-                                type="button"
-                                class="button is-small is-ghost aurelius-editor-tag-delete"
-                                [attr.aria-label]="deleteLabel"
-                                (click)="removeClassification(tag.typeName)"
-                            >
-                                <fa-icon [icon]="faXmark"></fa-icon>
-                            </button>
+                            <div class="control">
+                                <aurelius-atlas-ui-classification-chip
+                                    class="aurelius-editor-tag"
+                                    [label]="tag.typeName"
+                                    [tooltip]="chipTooltip(tag.typeName)"
+                                    [deletable]="true"
+                                    [deleteLabel]="deleteLabel"
+                                    (remove)="removeClassification(tag.typeName)"
+                                ></aurelius-atlas-ui-classification-chip>
+                            </div>
                         }
                     </div>
                 }
@@ -168,6 +174,7 @@
                         [attr.placeholder]="classificationsPlaceholder"
                         [attr.list]="'editor-classification-suggestions'"
                         (keyup.enter)="addClassification()"
+                        (change)="addClassification()"
                     />
                     <datalist id="editor-classification-suggestions">
                         @for (name of suggestions(); track name) {

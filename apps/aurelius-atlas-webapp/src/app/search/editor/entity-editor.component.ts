@@ -6,7 +6,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
-import { Drawer, Select } from "aurelius-atlas-ui";
+import { ClassificationChip, Drawer, Select } from "aurelius-atlas-ui";
 
 import { EditorState } from "./editor-state";
 import { type EditorField, type EditorLabels, buildFields, mergeOntoEntity, toFormValues } from "./form-fields";
@@ -34,7 +34,7 @@ type EnumRow = { value: string };
  * (EDT-06, DD-326), and lands on the entity's details screen.
  */
 @Component({
-    imports: [Drawer, FontAwesomeModule, ReactiveFormsModule, Select],
+    imports: [ClassificationChip, Drawer, FontAwesomeModule, ReactiveFormsModule, Select],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
@@ -241,14 +241,27 @@ export class EntityEditor {
             ?.setValue(row?.value ?? "");
     }
 
-    /** Add the typed classification when it names an applicable type (EDT-05). */
+    /**
+     * Add the typed classification when it names an applicable type (EDT-05).
+     * Enter and `change` both route here — with the datalist popup open,
+     * picking a suggestion commits through `change`, never `keyup.enter`, so
+     * Enter alone misses the add (DD-329). The input clears only on a real
+     * add: a miss keeps the text so the user can see what did not apply.
+     */
     protected addClassification(): void {
         const typed = (this.classificationInput.value ?? "").trim();
 
-        if (this.suggestions().includes(typed)) {
+        if (typed !== "" && this.suggestions().includes(typed)) {
             this.state.addClassification(typed);
+            this.classificationInput.setValue("");
         }
-        this.classificationInput.setValue("");
+    }
+
+    /** The chip's tooltip: the classification def's description (UIC-16). */
+    protected chipTooltip(typeName: string): string | undefined {
+        return (
+            this.state.typedefsDef()?.classificationDefs?.find((def) => def.name === typeName)?.description ?? undefined
+        );
     }
 
     /** Remove a chosen tag (EDT-05). */

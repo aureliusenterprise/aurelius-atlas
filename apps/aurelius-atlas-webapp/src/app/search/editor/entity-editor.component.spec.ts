@@ -269,10 +269,33 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         fixture.detectChanges();
         expect(tags()).toEqual(["PII", "CONFIDENTIAL"]);
 
-        // Remove the seeded tag through its delete control.
-        compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-tag-delete").item(0).click();
+        // A type that does not apply keeps its text (the input is cleared
+        // only on a real add).
+        expect(input.value).toBe("FINANCE");
+        input.value = "";
+
+        // Remove the seeded tag through the chip's delete control (UIC-24).
+        compiled.querySelectorAll<HTMLButtonElement>(".aurelius-classification-chip-delete").item(0).click();
         fixture.detectChanges();
         expect(tags()).toEqual(["CONFIDENTIAL"]);
+    });
+
+    it("a datalist pick commits through the change event (EDT-05, DD-329)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const input = compiled.querySelector<HTMLInputElement>("input.aurelius-editor-classification-input")!;
+        // Picking a suggestion from the open popup fires `change`, not
+        // `keyup.enter` — the real-browser add path Enter alone misses.
+        input.value = "CONFIDENTIAL";
+        input.dispatchEvent(new Event("input"));
+        input.dispatchEvent(new Event("change"));
+        fixture.detectChanges();
+
+        const tags = () =>
+            [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
+        expect(tags()).toEqual(["PII", "CONFIDENTIAL"]);
+        expect(input.value).toBe(""); // cleared on the add
     });
 
     it("save posts the merged entity; unchanged tags send nothing (EDT-06, DD-326)", () => {
@@ -315,7 +338,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         tagInput.dispatchEvent(new Event("input"));
         tagInput.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
         fixture.detectChanges();
-        compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-tag-delete").item(0).click(); // drop PII
+        compiled.querySelectorAll<HTMLButtonElement>(".aurelius-classification-chip-delete").item(0).click(); // drop PII
         fixture.detectChanges();
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();

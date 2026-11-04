@@ -12,6 +12,9 @@ import { ClassificationChip } from "./classification-chip.component";
 const meta: Meta<ClassificationChip> = {
     component: ClassificationChip,
     title: "Classification Chip",
+    args: {
+        deletable: false,
+    },
 };
 export default meta;
 
@@ -26,6 +29,7 @@ const template = `
     [leadColor]="leadColor"
     [loading]="loading"
     [propagated]="propagated"
+    [deletable]="deletable"
 >
     <div class="dropdown-divider" chip-sources></div>
     <div class="dropdown-item" chip-sources>
@@ -102,6 +106,26 @@ export const Propagated: Story = {
         await expect(trigger!.querySelector("strong")!.textContent).toBe("PII");
         await expect(trigger!.textContent).toContain("originates from the following sources:");
         await expect(trigger!.textContent).toContain("Orders Dataset");
+    },
+    render: host,
+};
+
+/**
+ * The editor's chip (UIC-24): a Bulma delete sits inside the label tag;
+ * clicking it emits `remove` and the caller drops the tag.
+ */
+export const Deletable: Story = {
+    args: {
+        label: "PII",
+        tooltip: "Personally identifiable information",
+        deletable: true,
+    },
+    play: async ({ canvasElement }) => {
+        const button = canvasElement.querySelector(".aurelius-classification-chip-delete");
+        await expect(button).toBeTruthy();
+        await expect(button!.classList.contains("delete")).toBe(true);
+        const label = [...canvasElement.querySelectorAll(".tags .tag")].at(-1) as HTMLElement;
+        await expect(label.contains(button)).toBe(true); // inside the label tag
     },
     render: host,
 };

@@ -292,3 +292,48 @@ the same compound shape already closes the drawer from `close()`, so the
 editor has one outlet idiom end to end. The e2e's URL identity assertion
 (EDT-01's no-reload proof) is what pins this — the unit specs assert the
 call, the e2e asserts the landed URL.
+
+### DD-329. A datalist pick commits through `change`, and the chosen tags reuse the chip
+
+**Status:** Proposed (correction found in review of the delivered drawer,
+before acceptance — it adds what EDT-03 and EDT-05 must render, so no
+accepted decision changes.)
+
+**Decision.** Three fixes from user review of the running drawer. (a) The
+classification input commits an add on both `keyup.enter` and the control's
+`change` event, and clears itself only when the add actually happened. (b) A
+chosen tag renders as the `classification-chip` component, not a plain Bulma
+tag: the webapp passes the type's description as the tooltip, and the chip
+gains a `deletable()` input (UIC-24) that seats a `button.delete.is-small`
+inside the label tag and emits `remove`. (c) A boolean field renders with
+Bulma's checkbox anatomy: a `label.checkbox` wrapping the input and a bare
+text node.
+
+**Reason.** (a) With the native suggestion popup open, Enter or a click
+commits the value through the control's `change` event, never `keyup.enter`,
+so the real-browser add path missed every pick, and the unconditional input
+clear hid the failure. Playwright's `fill` plus Enter bypasses the popup, so
+the e2e could not see it. A kept-on-miss input shows the user what did not
+apply. (b) The legacy editor showed chosen classifications the way the
+details screen shows them — as chips, like its relationship input — and the
+details screen already reuses `ClassificationChip` (UIC-16), so the chip is
+the shared atom and a new lib input is the smallest change. (c) The box sat
+flush against its label text; Bulma gives the text its gap only when the
+label wraps a bare text node, and a wrapper span drops it.
+
+**Alternatives.** (a) A custom dropdown instead of the native datalist
+(refused — the datalist works once `change` is wired; a custom popup is a
+new component for no added rule). (b) A second chip component for the editor
+(refused — the chip's lead, tooltip, and tag shape are identical; only the
+delete differs, and Bulma's `tag > button.delete` is one conditional in the
+shared template). (c) Keep the plain tag plus a separate delete button
+(refused — the user asked for the legacy look, and two elements drift from
+Bulma's insets; the unit and e2e selectors move to the chip's own classes).
+
+**Consequences.** The editor and the details screen paint classifications
+with one atom, so a future chip change lands on both. The lib's public API
+grows two inputs and one output on `ClassificationChip` (UIC-24). The unit
+specs and the e2e name the chip's delete class
+(`.aurelius-classification-chip-delete`) and the host keeps
+`.aurelius-editor-tag` on the chip element, so the tag-count and text
+selectors stay the same.
