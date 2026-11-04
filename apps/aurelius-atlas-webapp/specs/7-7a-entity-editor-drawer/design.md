@@ -616,3 +616,38 @@ delete 32px (from 16), the panel drop-up inside the viewport, the
 active row painted and matching `aria-activedescendant`, Enter committing
 it, and the box disabled with the help line on a type with nothing
 applicable.
+
+### DD-337. The chip delete keeps its small dot and grows an invisible touch ring
+
+**Date:** 2026-11-04 · **Status:** Proposed · **Specs:** EDT-05 (7.7a), UIC-24 (7-16)
+
+**Context.** DD-336 grew the chip's delete dot itself (Bulma's `is-large`,
+2rem) on coarse pointers to clear the touch-target floor. The review
+screenshot settled it: a 32px circle on a 24px tag looks wrong — the mark
+dominates the name it belongs to.
+
+**Decision.** (ui lib, UIC-24's row amended again.) On coarse pointers the
+dot stays Bulma's `is-small` (1rem) and the target grows invisibly
+instead: `--bulma-delete-dimensions` goes to 2.25rem (a 36px target,
+border-box maths), a 0.625rem transparent border absorbs the difference,
+and `background-clip: content-box` keeps the painted circle at 1rem.
+Bulma draws the X as a share of the padding box, which the border holds
+at 1rem, so the glyph is pixel-identical to the desktop chip. Negative
+margins — Bulma's own `.tag .delete` offsets minus the border — take the
+added box back out of the tag's layout, so the dot keeps its exact seat
+and nothing spills.
+
+**Alternatives.** (a) Keep `is-large` (refused — the review's complaint,
+verbatim: "the delete buttons look way too large in comparison to the
+tags/pills"). (b) Grow the dot to `is-medium` (1.5rem, 24px = tag height)
+(refused — flush with the tag's top and bottom edges, still the largest
+thing on the chip). (c) Padding + `background-clip: content-box` instead
+of a border (refused — with border-box sizing the padding shrinks the
+rendered dot instead of widening the hit area, and percentage widths of
+the X bars resolve against the padding box, which padding inflates — the
+border version keeps both exact).
+
+**Consequences.** The visible chip is identical on desktop and touch; the
+36px target exists only as invisible geometry. Live-probed under a
+coarse-pointer emulation: dot 16px (was 32), target 36px (floor: 24px),
+X strokes unchanged, tag height unchanged.

@@ -2,15 +2,29 @@
  * The chip (UIC-16) is Bulma's `tags.has-addons` assembly and needs no
  * styling of its own — except the delete's touch target. Bulma's
  * `delete.is-small` (UIC-24's seat) is a 1rem dot, under the 24px
- * WCAG 2.5.8 target-size floor; on touch pointers the dot grows to
- * Bulma's own is-large size (2rem) through the dimensions variable the
- * library exposes — the strokes are sized off the same variable, so the
- * glyph scales with it and no geometry is re-implemented. (DD-337, from
- * the 7.7a editor's review of small screens.)
+ * WCAG 2.5.8 target-size floor. Growing the dot itself (is-large's 2rem
+ * was the first try) looks out of proportion next to the name — the
+ * chip's tag is 24px tall — so the dot stays 1rem and the target grows
+ * invisibly instead: a transparent border around it, with the circle
+ * clipped to the content box. Bulma sizes the X strokes as a share of
+ * the padding box, which the border keeps at 1rem, so the glyph never
+ * changes. The negative margins (Bulma's `.tag .delete` offsets minus
+ * the border) take the added border back out of the tag's layout and
+ * keep the dot in its exact seat; the grown box paints nothing outside
+ * the dot, so nothing spills over the chip's edge either. (DD-336,
+ * DD-337, from the 7.7a editor's review of small screens.)
  */
 @media screen and (pointer: coarse) {
-    /* Three classes to outrank Bulma's `.delete.is-small` size rule. */
+    /* Three classes to outrank Bulma's `.delete.is-small` size rule —
+     * and its `.tag .delete` margins, which are 0.25rem/-0.375rem here;
+     * each value below is Bulma's minus the 0.625rem border. */
     .delete.is-small.aurelius-classification-chip-delete {
-        --bulma-delete-dimensions: 2rem;
+        /* Border-box maths: 1rem dot + 2 x 0.625rem border = a 2.25rem
+         * (36px) target. */
+        --bulma-delete-dimensions: 2.25rem;
+        background-clip: content-box;
+        border: 0.625rem solid transparent;
+        margin-block: -0.625rem;
+        margin-inline: -0.375rem -1rem;
     }
 }
