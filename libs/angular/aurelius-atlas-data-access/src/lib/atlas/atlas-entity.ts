@@ -137,6 +137,12 @@ export type AtlasRelationshipAttributes = Record<string, unknown> & {
 export type AtlasRelatedEntity = {
     guid?: string | null;
     relationshipGuid?: string | null;
+    /**
+     * The edge's state (`AtlasRelatedEntity.relationshipStatus`): the read
+     * keeps a removed relationship's edge listed as `DELETED`, active edges
+     * as `ACTIVE` (`RelationshipStatus`, live-probed on the v2 read).
+     */
+    relationshipStatus?: "ACTIVE" | "DELETED" | null;
     name?: string | null;
     displayText?: string | null;
     entityStatus?: AtlasEntityStatus | null;

@@ -16,11 +16,13 @@
     (cancelRequested)="close()"
 >
     <!-- The footer (EDT-10): Save only, in the head's action slot so it never
-         scrolls away. Busy while the save is in flight. -->
+         scrolls away. Busy while the save is in flight (EDT-18, DD-342):
+         Bulma's spinner on the button plus the status line below it. -->
     <button
         type="button"
         drawer-actions
         class="button is-small is-primary aurelius-editor-save"
+        [class.is-loading]="state.saving()"
         [disabled]="state.saving()"
         [attr.aria-busy]="state.saving() ? 'true' : null"
         (click)="save()"
@@ -71,7 +73,7 @@
                  the form when a Save was attempted and the form is invalid —
                  never below the fold of a long form. Its delete (Bulma's
                  notification anatomy) dismisses it until the next Save (DD-331). -->
-            @if (saveAttempted() && formInvalid() && !notificationDismissed()) {
+            @if (notificationShown()) {
                 <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
                     <button
                         type="button"
@@ -176,6 +178,37 @@
                          rides the Select's own help line (its `invalid`
                          input, DD-332), so it is not duplicated here. -->
                     @if (showError(field) && field.kind !== "enum") {
+                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                    }
+                </div>
+            }
+
+            <!-- The relationship pickers (EDT-13..EDT-17, DD-338/DD-339/DD-341):
+                 one per relationship attribute of the definition and its
+                 supertypes, after the plain attributes and before the
+                 classification box. Each is the classification box's anatomy
+                 around the attribute search; the chips carry the target
+                 entity's type as their lead (the term chip's pattern, DD-341). -->
+            @for (field of relationshipFields(); track field.name) {
+                <div class="field aurelius-editor-field aurelius-editor-relationship" [attr.data-field]="field.name">
+                    <p class="label" [id]="'editor-relationship-' + field.name + '-label'">
+                        {{ field.label }}
+                        @if (field.required) {
+                            <span class="has-text-danger">*</span>
+                        }
+                    </p>
+                    <div class="control">
+                        <aurelius-atlas-webapp-entity-relationship-input
+                            [field]="field"
+                            [editedGuid]="state.entity()?.guid ?? ''"
+                            [invalid]="relationshipErrorShown(field)"
+                            [label]="field.label"
+                            [deleteLabel]="deleteLabel"
+                            [selected]="picksOf(field)"
+                            (changed)="pickRelationship(field, $event)"
+                        ></aurelius-atlas-webapp-entity-relationship-input>
+                    </div>
+                    @if (relationshipErrorShown(field)) {
                         <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
                     }
                 </div>

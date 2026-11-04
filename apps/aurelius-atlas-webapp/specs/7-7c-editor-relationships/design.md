@@ -1,0 +1,286 @@
+# Design decisions
+
+The `DD-NNN` entries of the increment specified in [`spec.md`](./spec.md). The
+[rules](../../../../docs/architecture/conversion/design-log.md#rules) apply: an
+accepted entry is never edited except its status line, and a changed decision
+is a new entry that supersedes the old one.
+
+## Entries
+
+### DD-338. One def-driven picker per relationship attribute, duplicate names merged
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-05
+
+**Decision.** The editor builds one picker per relationship attribute of the
+entity's definition and its supertype chain (EDT-13), the same walk and the
+same merge rule EDT-03 uses for plain attributes: first definition wins by
+name. The shipped store carries exactly three names the defs hold twice
+(`hive_column.table`, `spark_ml_directory.model`, `spark_ml_directory.
+pipeline`); the merged field keeps the first definition's
+`relationshipTypeName` and sends it in every entry (EDT-16). The stock
+dashboard instead seats a "--Select a Relationship Type--" select above the
+disabled input for exactly those names.
+
+**Reason.** 7.7a replaced the legacy's ten hand-written m4i forms with one
+entityDef-driven form (DD-323) and the same logic applies here: the shipped
+defs carry `relationshipAttributeDefs` for every type a shipped
+relationshipDef names at an end (the server synthesizes them from the 75
+relationshipDefs at the read path), so the form
+needs no hand-written field and no per-type editor. The duplicate selector
+exists in the stock dashboard to let the user pick which edge to write when
+one name has two owners; in the shipped catalogue the three owners sit on
+types nobody creates from this editor (a Hive column, a Spark ML directory),
+and the server's own array path already takes the request entry's
+`relationshipType` first, else the single type the name resolves to. A
+merged field with the first definition's type sends exactly that.
+
+**Alternatives.** (a) Port the stock dashboard's type selector (refused —
+three shipped types only, none creatable through the editor's type picker
+filters an ordinary user reaches; the select would be chrome for an
+unreachable state). (b) Render two pickers for a duplicated name (refused —
+both would edit the same `relationshipAttributes` key, and last-rendered
+would silently win at save). (c) Send no `relationshipType` and let the
+server resolve the name (kept as a fallback only when the def carries no
+`relationshipTypeName` — the server's error for an ambiguous name would then
+surface as EDT-08's alert, which is honest, but the defs do carry the name).
+
+**Consequences.** The picker set reads the defs, never the catalogue of
+types; a future type needs no editor change. The three duplicate names write
+the first owner's edge — recorded here, since the stock dashboard offered a
+choice there.
+
+### DD-339. The picker searches `GET /search/attribute`, the stock dashboard's own contract
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-05
+
+**Decision.** A picker's suggestion search is
+`SearchService.searchUsingAttribute` (`GET /api/atlas/v2/search/attribute`)
+with `typeName` the attribute's target type, `attrName` "name",
+`attrValuePrefix` the typed text, and `limit` 10 (EDT-14). Debounce 250 ms,
+minimum one character. The client drops the edited entity and the already-
+chosen guids from the results.
+
+**Reason.** The legacy picker searched the App Search entity index, which
+this product does not port (DD-140), so 7.7a deferred the pickers until the
+search contract got its own decision. The stock Apache Atlas 2.4 dashboard —
+the product's parity reference (ADR 046) — does not use that index either:
+its `CreateEntityLayoutView` points every relationship select at
+`searchApiUrl('attribute')` with exactly these parameters. The ported server
+answers that endpoint today (increment 4.x, SRC-11; the Angular twin
+`searchUsingAttribute` shipped in 7.3), so the picker costs no server work
+and no new client method. Probed against the live server: the endpoint finds
+`DataSet`s and `AtlasGlossaryTerm`s by name prefix, and an unknown `typeName`
+answers an empty list rather than an error, which is what makes the picker
+safe for a target type the shipped store has no typedef for.
+
+**Alternatives.** (a) `GET /search/basic` with `query` "text\*" (refused —
+it scores over every weighted string field, so a `qualifiedName` or owner
+substring wins rows the dashboard's picker would not show; and it misses
+glossary terms entirely, whose searchable string is the name the index
+tokenises oddly — probed: term exact-name queries answer empty against the
+live store while the attribute search finds them). (b) `GET /search/dsl`
+with a `where name like "text*"` clause (refused — it works, but the stock
+dashboard's contract is `search/attribute`, and DSL string-escaping of typed
+text is one more surface). (c) The full-text search (refused — the stock
+picker is a name-prefix lookup, not a scored relevance list).
+
+**Consequences.** The suggestion list is a name-prefix list, exactly what
+the stock product showed. The client-side exclusion of the edited entity is
+the only filter — the stock's select2 "already selected" behaviour — and
+needs no server rule. The 250 ms debounce and limit 10 are the stock
+numbers, so result-set cost matches the product being replaced.
+
+### DD-340. Full-replace save, ACTIVE-only seed, `DELETED` edges stay dead (Java parity)
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-05
+
+**Decision.** A save sends, for every picker the form rendered, that key's
+full value in `relationshipAttributes` — a list of one object per chip for a
+`SET`/`LIST` field, the one object (or null when emptied) for a `SINGLE`
+field, no `relationshipGuid` (EDT-16). The merge also drops the rendered
+keys from `attributes`, so the picker is the only writer of the key. The
+seed keeps only `relationshipStatus: "ACTIVE"` entries (EDT-15) and a
+`DELETED` entry is never echoed back. A removed edge whose entity is picked
+again stays `DELETED` in the store — the port keeps Apache Atlas 2.4's
+reading, and the editor's UI says the edge is gone (no chip) even while the
+read still lists it tombstoned.
+
+**Reason.** Probed against the live server in every direction: an omitted
+key is untouched (so the pass-through rule of EDT-06 keeps working for
+unrendered keys), a present key is a full replace (the server marks edges
+dropped from the list `DELETED` and keeps them in the read — the seed rule
+exists because of that), `[]` clears all edges, and a client-made
+`relationshipGuid` on a new entry changes nothing (the array path maps by
+position and label; only the import mode honours a given edge guid,
+`RelationshipMapper._map_object_id` / `RelationshipMapper._get_or_create`).
+A `SINGLE` key clears with null, not `[]` — probed: `[]` answers 400
+`ATLAS-400-00-021` "ObjectId is not valid []", and null answers 200 with the
+edge `DELETED`. Null alone is not enough when the def carries the same name
+as a plain attribute too: the server moves an `attributes` copy of a
+relationship-named value back into `relationshipAttributes` and it re-
+attaches the edge (`compactAttributes` / EWR-06, probed on `hive_table.db` —
+the edge stayed `ACTIVE` until the `attributes` copy went too). Dropping the
+rendered keys from `attributes` is therefore part of the save rule, and it
+makes the picker the key's only writer.
+The re-add case was probed three ways — bare re-add, re-add with a fresh
+edge guid, re-add with the tombstone's original edge guid — and the server
+keeps every one `DELETED`. That is Java parity, not a port bug: Java's
+`EntityGraphMapper#mapArrayValue` finds the current edges by label (in any
+state), `updateRelationship` returns the current edge untouched when it
+already reaches the wanted target, and only `activateEntityRelationships`
+flips a `DELETED` edge back — for an entity the import reactivates, never
+for a live update. The relationship API refuses the pair too
+(`RELATIONSHIP_ALREADY_EXISTS`, probed: 409 ATLAS-409-00-004), so no client
+path revives a tombstone on either product. The editor therefore must never
+echo a `DELETED` seed entry: the seed filter is what keeps a reopened editor
+from silently re-listing a removed relationship.
+
+**Alternatives.** (a) Fix the server to revive a re-added edge (refused —
+the expected responses come from the Apache Atlas 2.4 source and its tests
+(ADR 052); Java keeps the edge `DELETED` on a live re-add, and the
+reactivation rule that exists there, `activateEntityRelationships`, is
+already ported as IMP-04). (b) Echo the seed's `relationshipGuid`s on kept
+entries so the server "updates" the right edge (refused — the array path
+ignores a given guid outside import mode, probed; the position-based
+current-edge lookup already keeps a kept edge untouched and exact). (c) Show
+`DELETED` entries as struck-through chips the user can delete again (refused
+— they are not relationships; Java's own read lists them for audit, and this
+product's details screen does not show them either).
+
+**Consequences.** A user who removes a relationship and re-picks the same
+entity sees a chip, and the save reports success, while the store keeps the
+edge `DELETED` — the same silence Apache Atlas 2.4 has. The rule lives in
+the spec's EDT-16 so the behaviour is named, not discovered. The spec's e2e
+avoids a re-add assertion (it can only assert parity).
+
+### DD-341. The picker component lives in the webapp; the chip leads with the entity type
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-05
+
+**Decision.** The picker is one webapp component
+(`entity-relationship-input`), not a ui-library component. It reuses the
+ui-library chip (UIC-16 with the UIC-24 delete) and the DD-335/DD-336 box
+anatomy via the editor's own SCSS. The chip's lead word (the
+`leadLabel`/`leadColor` inputs DD-189 added) is the chosen entity's own
+`typeName` in the `is-info` colour — the term chip's pattern (EDT-14).
+
+**Reason.** The ui library is the dumb-component contract of 7.2: a
+component there takes data and emits events, and never injects an HTTP
+client. The picker's whole job is a live `searchUsingAttribute` round trip,
+which is data-access wiring; the classification box beside it — the same
+anatomy — sits in the editor for the same reason. The webapp's editor owns
+the search service (7.3) and the box already lives at
+`search/editor/`. The chip lead stands in for the legacy's `iconsByType`
+type icon: that map is app metadata the webapp never ported, and the term
+chip's word lead ("Term", DD-189) proves the chip renders a word lead
+without a new part. The target type as the word tells the user what the chip
+is — which two shipped pickers (a `DataSet`'s `model` and its `schema`, both
+pointing elsewhere) need — and costs no catalogue string.
+
+**Alternatives.** (a) A ui-library `relationship-input` component (refused —
+it would need the search injected, breaking 7.2's dumb rule, or a second
+component with an output-callback round trip that duplicates what one
+webapp component does directly). (b) Port an `iconsByType` map (refused —
+hundreds of type→icon entries of legacy app metadata, no shipped screen
+indexes them, and DD-189's colour/word inputs exist exactly so chips need no
+icon). (c) Lead with the relationship name (refused — it repeats the field
+label above the box).
+
+**Consequences.** One more webapp-private control beside the editor and the
+box; the ui library is untouched, so no story and no UIC rule joins (7.7a's
+acceptance precedent). Chip wording is English `typeName` text — the same
+raw type names the details screen's `type-name` component already prints.
+
+### DD-342. The save's in-flight state is named as a rule; its dead CSS joins this increment
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-05
+
+**Decision.** Two changes, one rule. (a) While a save is in flight, the
+Save button also carries Bulma's `is-loading` class (the CSS spinner the
+framework ships) beside the disabled + `aria-busy` state 7.7a already
+applied. (b) The whole in-flight behaviour — from the click until the
+server answers (the span `editor-state.save()` guards), spinner, disabled
+button, and the `search.services.entityUpdate.save` status line under the
+footer — becomes a named rule, EDT-18, with a unit test that watches the
+states across a flush and an error.
+
+**Reason.** A user reported that a save on a slow server looked like
+nothing happened. The mechanism was there and works, but its signal is
+one notch of button fade — on a two-second POST a working save and a
+dead one looked the same. Bulma's `is-loading` is the framework's own
+answer, adds no string (SHL-08) and no SCSS, and what shipped untested
+had no rule id to keep it working (7.7a's acceptance predates the
+convention that shipped behaviour carries a named test). The failure path
+stays as 7.7a designed it (EDT-08: the drawer stays open, the alert rides
+the Alerts bell) — a slower-server notification redesign is out of scope
+here.
+
+**Alternatives.** (a) Move the failure alert into the drawer (refused —
+EDT-08 is accepted 7.7a behaviour, and a changed decision needs its own
+increment). (b) A new in-flight visual treatment (refused — Bulma's
+spinner plus the existing status line is the smallest visible signal).
+(c) Leave it untested (refused — EDT-18 is one unit test).
+
+**Consequences.** One class binding on one button; no new strings, so
+SHL-08 and the catalogue gates are unmoved. The rule joins 7.7c's spec
+because the increment owns the editor right now; the 7.7a spec is not
+edited (accepted records do not change).
+
+### DD-343. An empty focused picker browses five candidates; the panel copies the classification box
+
+- **Status:** Proposed
+- **Increment:** 7.7c
+- **Date:** 2026-11-04
+
+**Decision.** A picker whose box gains focus with an empty input runs the
+same `searchUsingAttribute` round trip with no prefix and `limit` 5 — a
+browse of up to five entities of the target type — instead of an empty
+panel; clearing the text back to empty browses again. The panel's
+placement adopts the classification box's shipped treatment verbatim:
+Bulma's `is-up` (the list opens over the fields above the box) with
+Bulma's own `0.25rem` menu offset — no custom geometry on the picker.
+
+**Reason.** A user trying the pickers reported both: the empty box gave
+no hint of what could be picked (the legacy select2 opened a list on
+focus too), and the panel's placement read wrong twice over — first a
+slit of dead space below the box, then (after a flush fix) an overlap of
+its border. The user named the fix: "the classifications input does this
+well already". The box's `is-up` + offset geometry measures a clean ~3px
+of clearance with no overlap, and the pickers sit where the box sits —
+low in the form, above other controls — so the same placement is the
+right one here too. The server probe (dev store): `attrValuePrefix=""`
+is a valid `startsWith ""` filter that matches every entity of the type,
+and the omitted parameter behaves the same — the browse is the stock
+search with an empty prefix, no new endpoint. Five is the suggestion
+count, not the search's page: typed search keeps the stock's 10 (DD-339).
+
+**Alternatives.** (a) Keep the empty panel (refused — the user's
+intuitiveness report; the legacy picker's focus-opened list is the parity
+behaviour DD-339 retargets). (b) Browse with `limit` 10 (refused — the
+panel is a hint, not a results page; five keeps it glanceable, and typed
+search gives the full ten when the user actually looks). (c) Re-browse on
+every focusin inside the box (refused — chip→delete tabbing would refire
+the search; one browse per box entry). (d) Zero Bulma's offset and hang
+the panel flush below the box (refused — measured: the panel's rounded
+shadow overlaps the box's border; the user preferred the box's treatment
+outright, and one geometry across both controls is the smaller surface).
+
+**Consequences.** The browse's exclusions are the typed search's (chosen
+entities and the edited entity never show). A type with no entities shows
+an empty panel exactly as a no-match search does. One class on the
+wrapper and one `searchFor` extraction in the component; the component
+SCSS keeps no offset rule of its own (Bulma's `is-up` carries it); no new
+strings (SHL-08). The e2e's typing scenarios are unaffected — Playwright's
+fill focuses and types within the debounce window, so the browse request
+never fires — and an upward panel keeps its rows visible, as the box's
+e2e scenarios already rely on.

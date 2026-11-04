@@ -18,7 +18,19 @@ import { map } from "rxjs";
 import { ClassificationChip, Drawer, Select } from "aurelius-atlas-ui";
 
 import { EditorState } from "./editor-state";
-import { type EditorField, type EditorLabels, buildFields, mergeOntoEntity, toFormValues } from "./form-fields";
+import { EntityRelationshipInput } from "./entity-relationship-input.component";
+import {
+    type EditorField,
+    type EditorLabels,
+    type RelationshipField,
+    type RelationshipPick,
+    buildFields,
+    buildRelationshipFields,
+    mergeOntoEntity,
+    mergeRelationshipsOntoEntity,
+    seedRelationshipValues,
+    toFormValues,
+} from "./form-fields";
 
 /** A picker row for the ui-lib {@link Select} (its `displayField` is `label`). */
 type PickerRow = { name: string; label: string };
@@ -49,7 +61,7 @@ type EditorValue = string | number | boolean | string[] | null;
  * entity's details screen.
  */
 @Component({
-    imports: [ClassificationChip, Drawer, FontAwesomeModule, FormField, Select],
+    imports: [ClassificationChip, Drawer, EntityRelationshipInput, FontAwesomeModule, FormField, Select],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
@@ -112,6 +124,21 @@ export class EntityEditor {
      * (EDT-03) so a type switch also clears the touched/dirty state, the way
      * the rebuilt group used to (DD-354). */
     protected readonly form = signal(this.newForm());
+
+    /** The relationship pickers the form renders (EDT-13, DD-338), from the
+     * def's `relationshipAttributeDefs` and its supertype chain. */
+    protected readonly relationshipFields = computed(() => {
+        const typeName = this.state.typeName();
+        const defs = this.state.entityDefsByName();
+        const def = typeName ? defs.get(typeName) : undefined;
+
+        return def ? buildRelationshipFields(def, defs) : [];
+    });
+
+    /** The picker values the form holds (EDT-15's seed, EDT-14's edits). They
+     * ride their own signal, not the form model: a picker's value is a chip
+     * list the save merges separately (EDT-16), not an attribute field. */
+    protected readonly relationshipValues = signal<ReadonlyMap<string, readonly RelationshipPick[]>>(new Map());
 
     /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
      * input is a mutable array, so the map yields a fresh one (not readonly). */
@@ -277,7 +304,8 @@ export class EntityEditor {
         // answered. The type names the signature (DD-330) so a switch to a
         // field-less type still drops the old form. The model and the form
         // are both replaced, so the touched/dirty state clears with the old
-        // field set (DD-354).
+        // field set (DD-354). The pickers re-seed from the entity here too
+        // (EDT-15).
         effect(() => {
             const signature = `${this.state.typeName() ?? ""}|${this.fields()
                 .map((field) => `${field.name}:${field.kind}`)
@@ -290,6 +318,11 @@ export class EntityEditor {
                 // no tracking either — the signature above already names the
                 // field set (DD-354).
                 untracked(() => this.form.set(this.newForm()));
+                this.relationshipValues.set(
+                    new Map(
+                        Object.entries(seedRelationshipValues(this.state.entity() ?? {}, this.relationshipFields())),
+                    ),
+                );
             }
         });
 
@@ -549,12 +582,47 @@ export class EntityEditor {
         this.notificationDismissed.set(true);
     }
 
-    /** Save (EDT-06/07): invalid bails marked-touched; valid merges and saves. */
+    /** The chips a picker holds (the template's seed + the editor's store). */
+    protected picksOf(field: RelationshipField): readonly RelationshipPick[] {
+        return this.relationshipValues().get(field.name) ?? [];
+    }
+
+    /** A picker answers its full new list (EDT-14): the editor holds the value. */
+    protected pickRelationship(field: RelationshipField, picks: readonly RelationshipPick[]): void {
+        this.relationshipValues.update((values) => new Map(values).set(field.name, picks));
+    }
+
+    /** Whether a required picker is empty (EDT-17): an invalid form, one more way. */
+    protected relationshipInvalid(field: RelationshipField): boolean {
+        return field.required && this.picksOf(field).length === 0;
+    }
+
+    /** Whether a picker shows its error (EDT-17 as EDT-07): after a save
+     * attempt only — a fresh empty picker is not yet a mistake. */
+    protected relationshipErrorShown(field: RelationshipField): boolean {
+        return this.relationshipInvalid(field) && this.saveAttempted();
+    }
+
+    /** Whether any required picker is empty — the picker half of the form's validity. */
+    private relationshipsMissing(): boolean {
+        return this.relationshipFields().some((field) => this.relationshipInvalid(field));
+    }
+
+    /** Whether the required-fields notification shows (EDT-07/EDT-17). */
+    protected notificationShown(): boolean {
+        return this.saveAttempted() && (this.formInvalid() || this.relationshipsMissing()) && !this.notificationDismissed();
+    }
+
+    /**
+     * Save (EDT-06/07/16): invalid (a control, or a required picker with no
+     * chip, EDT-17) bails marked-touched; valid merges the attributes and the
+     * pickers' full lists onto the entity, and saves.
+     */
     protected save(): void {
         this.saveAttempted.set(true);
         this.notificationDismissed.set(false);
         const formState = this.form()();
-        if (formState.invalid()) {
+        if (formState.invalid() || this.relationshipsMissing()) {
             formState.markAsTouched();
 
             return;
@@ -564,8 +632,13 @@ export class EntityEditor {
             return;
         }
         const merged = mergeOntoEntity(entity, this.fields(), this.values() as Record<string, unknown>);
+        const withRelationships = mergeRelationshipsOntoEntity(
+            merged,
+            this.relationshipFields(),
+            this.relationshipValues(),
+        );
 
-        this.state.save(merged, entity.guid ?? "");
+        this.state.save(withRelationships, entity.guid ?? "");
     }
 
     /** Dismiss (EDT-01): X, backdrop, Escape — navigate the outlet away. */
