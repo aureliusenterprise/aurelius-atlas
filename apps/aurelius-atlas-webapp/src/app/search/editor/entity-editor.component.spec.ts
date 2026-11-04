@@ -344,22 +344,55 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(tags()).toEqual(["CONFIDENTIAL"]);
     });
 
-    it("a datalist pick commits through the change event (EDT-05, DD-329)", () => {
+    it("the suggestion panel filters on typing and a pick adds the tag (EDT-05, DD-335)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
         const input = compiled.querySelector<HTMLInputElement>("input.aurelius-editor-classification-input")!;
-        // Picking a suggestion from the open popup fires `change`, not
-        // `keyup.enter` — the real-browser add path Enter alone misses.
-        input.value = "CONFIDENTIAL";
-        input.dispatchEvent(new Event("input"));
-        input.dispatchEvent(new Event("change"));
-        fixture.detectChanges();
+        const items = () =>
+            [...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-classification-box .dropdown-item")].map(
+                (item) => normalize(item.textContent),
+            );
 
+        // Focus with no text lists the applicable types (PII already chosen,
+        // so only CONFIDENTIAL applies; FINANCE never does).
+        input.dispatchEvent(new Event("focusin", { bubbles: true }));
+        fixture.detectChanges();
+        expect(items()).toEqual(["CONFIDENTIAL"]);
+
+        // The chosen tag does not reappear as a suggestion; a pick through
+        // the panel's mousedown adds it and clears the input (DD-335 — the
+        // pointer commits before blur, the path the datalist took before).
+        const item = compiled.querySelector<HTMLButtonElement>(".aurelius-editor-classification-box .dropdown-item")!;
+        item.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        fixture.detectChanges();
         const tags = () =>
             [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
         expect(tags()).toEqual(["PII", "CONFIDENTIAL"]);
-        expect(input.value).toBe(""); // cleared on the add
+
+        // Escape inside the box hides the panel, not the drawer (DD-335).
+        input.dispatchEvent(new Event("focusin", { bubbles: true }));
+        fixture.detectChanges();
+        input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-editor-classification-box .dropdown-item")).toBeNull();
+        expect(compiled.querySelector('[role="dialog"]')).toBeTruthy();
+    });
+
+    it("the panel filters to the typed text (EDT-05, DD-335)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const input = compiled.querySelector<HTMLInputElement>("input.aurelius-editor-classification-input")!;
+        input.value = "conf"; // matches CONFIDENTIAL, not PII
+        input.dispatchEvent(new Event("input"));
+        input.dispatchEvent(new Event("focusin", { bubbles: true }));
+        fixture.detectChanges();
+
+        const items = [
+            ...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-editor-classification-box .dropdown-item"),
+        ];
+        expect(items.map((item) => normalize(item.textContent))).toEqual(["CONFIDENTIAL"]);
     });
 
     it("save posts the merged entity; unchanged tags send nothing (EDT-06, DD-326)", () => {

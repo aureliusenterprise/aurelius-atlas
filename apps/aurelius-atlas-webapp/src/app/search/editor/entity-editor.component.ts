@@ -135,6 +135,31 @@ export class EntityEditor {
     /** The tag box's input: typing filters, Enter adds (EDT-05). */
     protected readonly classificationInput = new FormControl("", { nonNullable: true });
 
+    /** The typed text as a signal (the FormControl is not one) — it drives
+     * the panel filter (EDT-05, DD-335). */
+    private readonly typedText = toSignal(this.classificationInput.valueChanges, { initialValue: "" });
+
+    /** Whether the classification box holds focus (EDT-05, DD-335). */
+    protected readonly boxFocused = signal(false);
+
+    /** Whether the panel is open for the current typing run (EDT-05,
+     * DD-335): Escape closes it, the next typed character opens it again. */
+    protected readonly suggestionsOpen = signal(true);
+
+    /** The suggestions the typed text filters (EDT-05, DD-335). */
+    protected readonly filteredSuggestions = computed(() => {
+        const typed = this.typedText().trim().toLowerCase();
+
+        return typed === ""
+            ? this.suggestions()
+            : this.suggestions().filter((name) => name.toLowerCase().includes(typed));
+    });
+
+    /** Whether the suggestion panel shows (EDT-05, DD-335). */
+    protected readonly dropdownShown = computed(
+        () => this.boxFocused() && this.suggestionsOpen() && this.filteredSuggestions().length > 0,
+    );
+
     protected readonly closeLabel = $localize`:@@components.modal.close:Close`;
 
     protected readonly editTitle = $localize`:@@search.editEntity.editEntity:Edit entity`;
@@ -303,6 +328,41 @@ export class EntityEditor {
             this.state.addClassification(typed);
             this.classificationInput.setValue("");
         }
+    }
+
+    /** The box gained focus (EDT-05, DD-335): the panel opens for the box. */
+    protected onBoxFocusIn(): void {
+        this.boxFocused.set(true);
+        this.suggestionsOpen.set(true);
+    }
+
+    /** Focus left the box (EDT-05, DD-335): the panel closes. Moving into
+     * the panel itself (a keyboard tab) keeps the box focused. */
+    protected onBoxFocusOut(event: FocusEvent): void {
+        const next = event.relatedTarget as Node | null;
+        if (next !== null && (event.currentTarget as Node).contains(next)) {
+            return;
+        }
+        this.boxFocused.set(false);
+    }
+
+    /** Pick a suggestion from the panel (EDT-05, DD-335). The click lands
+     * on mousedown, before the input's blur closes the panel — the pointer
+     * path the native datalist took before (DD-329's note retired here). */
+    protected pickSuggestion(event: MouseEvent, name: string): void {
+        event.preventDefault();
+        this.state.addClassification(name);
+        this.classificationInput.setValue("");
+    }
+
+    /** Escape inside the box (EDT-05, DD-335): close the panel, keep the
+     * drawer open — the panel is the innermost layer, like a menu. */
+    protected onSuggestionEscape(event: Event): void {
+        if (!this.dropdownShown()) {
+            return;
+        }
+        event.stopPropagation();
+        this.suggestionsOpen.set(false);
     }
 
     /** The chip's tooltip: the classification def's description (UIC-16). */

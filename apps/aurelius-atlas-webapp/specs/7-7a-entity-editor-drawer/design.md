@@ -496,3 +496,54 @@ expectations, and the e2e URL patterns rename together. The legacy's
 `create-entity`/`edit-entity` full-screen routes (7.0's port note) are
 historical record and keep their names in the spec's Java/legacy porting
 table.
+
+### DD-335. The classification box is one chip-and-caret control with a drop-up panel
+
+**Status:** Proposed (usability fix on the delivered drawer, from user
+review before acceptance — it changes how EDT-05's box presents, not what
+it stores or sends.)
+
+**Decision.** The tag box becomes one bordered box carrying the Bulma
+input's own look (border, radius, height, focus ring, built from the
+control custom properties Bulma exposes at root scope): the chosen chips
+sit inline before the caret and the text input is borderless inside it,
+so the whole control reads as one field that grows with its tags
+(the demo's shape, user-chosen). The suggestions leave the native
+`<datalist>` (user: "not wild about how the search suggestions are
+presented") for a styled panel: a Bulma dropdown on the box, open while
+the box holds focus, filtered on the typed text, scrolling when the
+matches outgrow it. The box is the form's last field, so the panel
+opens UPWARD (Bulma's `is-up`) and stretches to the box's full width
+(the component's own rule — Bulma has no dropdown full-width modifier).
+A pick commits on `mousedown`, before the blur closes the panel; Escape
+inside the box closes the panel only, stopping the event so the drawer
+stays open. DD-329's `(change)` commit retires with the datalist.
+
+**Reason.** The old box was a chips row above a separate full-width
+input — two controls where the demo shows one. And a `<datalist>`
+popup is browser-chrome: unstyled, unlike the app, and its filter is
+the browser's own. One box keeps the eye on one field; the panel can
+match the theme, filter as the box filters, and open upward because the
+box sits at the form's bottom edge, where a downward panel lands past
+the fold.
+
+**Alternatives.** (a) Keep the datalist, style impossible (refused —
+user report). (b) A chips row kept above the box (refused — the demo
+nests the chips in the border; user picked that). (c) A downward panel
+(Bulma's default, refused — the user asked for a drop-up, and the box
+is the form's last field). (d) Click-commit instead of mousedown
+(refused — focus moves to the button first and the box's focusout
+closes the panel before the click lands; mousedown is the listbox idiom).
+(e) `position: fixed` to escape the drawer's clipping (refused — the
+panel stays inside the drawer's scroll port, scrolls with it, and the
+box is rarely near the port's top edge; measured live).
+
+**Consequences.** The component grows ~60 lines of state (focus, panel
+open, filtered matches) and ~50 lines of SCSS; the ui library changes
+not at all — the chips are the shipped `ClassificationChip` (UIC-24).
+The panel is `role="listbox"` with `aria-expanded` on the input.
+Keyboard: typing filters, Enter adds an exact-or-filtered-first name
+(unchanged), Escape backs out of the panel layer by layer. The unit
+specs replace DD-329's datalist-pick test with panel filter/pick/Escape
+pins. Live-probed: 40px bordered box, blue focus ring, panel 367px over
+a 369px box opening above it, picked tag never re-offered.

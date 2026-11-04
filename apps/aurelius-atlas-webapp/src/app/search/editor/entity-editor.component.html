@@ -184,44 +184,62 @@
                 </div>
             }
 
-            <!-- The classification box (EDT-05): chosen tags rendered as the
-                 same chips the details page uses, each with a delete, and an
-                 input that adds an applicable type on Enter or on a datalist
-                 pick (the pick commits through the control's change event).
-                 The datalist lists what applies to this entity's type. -->
+            <!-- The classification box (EDT-05, DD-335): one bordered box —
+                 the control's own look — holding the chosen chips (the
+                 details page's chips, UIC-24 delete) inline before the
+                 caret, and the text input. The box is a Bulma dropdown:
+                 while it holds focus, the applicable types that match the
+                 text ride a full-width panel above the box — the box is
+                 the form's last field, so the panel opens upward over the
+                 fields instead of down past the fold (Bulma's is-up;
+                 the menu's stretch to the box's width is the component's
+                 own rule — Bulma has no dropdown full-width modifier).
+                 Typed-or-clicked in. Clicks commit through mousedown (the
+                 panel's click never lands — focus moves first, DD-335). -->
             <div class="field aurelius-editor-classifications">
                 <p class="label">{{ classificationsLabel }}</p>
-                @if (state.chosen().length > 0) {
-                    <div class="tags aurelius-editor-tags field is-grouped is-grouped-multiline">
-                        @for (tag of chosenTags(); track tag.typeName) {
-                            <div class="control">
-                                <aurelius-atlas-ui-classification-chip
-                                    class="aurelius-editor-tag"
-                                    [label]="tag.typeName"
-                                    [tooltip]="chipTooltip(tag.typeName)"
-                                    [deletable]="true"
-                                    [deleteLabel]="deleteLabel"
-                                    (remove)="removeClassification(tag.typeName)"
-                                ></aurelius-atlas-ui-classification-chip>
-                            </div>
-                        }
-                    </div>
-                }
-                <div class="control aurelius-editor-classification-control">
+                <div
+                    class="dropdown is-up control aurelius-editor-classification-box"
+                    [class.is-active]="dropdownShown()"
+                    (focusin)="onBoxFocusIn()"
+                    (focusout)="onBoxFocusOut($event)"
+                >
+                    @for (tag of chosenTags(); track tag.typeName) {
+                        <aurelius-atlas-ui-classification-chip
+                            class="aurelius-editor-tag"
+                            [label]="tag.typeName"
+                            [tooltip]="chipTooltip(tag.typeName)"
+                            [deletable]="true"
+                            [deleteLabel]="deleteLabel"
+                            (remove)="removeClassification(tag.typeName)"
+                        ></aurelius-atlas-ui-classification-chip>
+                    }
                     <input
                         type="text"
-                        class="input aurelius-editor-classification-input"
+                        class="aurelius-editor-classification-input"
                         [formControl]="classificationInput"
                         [attr.placeholder]="classificationsPlaceholder"
-                        [attr.list]="'editor-classification-suggestions'"
+                        [attr.aria-expanded]="dropdownShown()"
+                        autocomplete="off"
                         (keyup.enter)="addClassification()"
-                        (change)="addClassification()"
+                        (keydown.escape)="onSuggestionEscape($event)"
                     />
-                    <datalist id="editor-classification-suggestions">
-                        @for (name of suggestions(); track name) {
-                            <option [value]="name"></option>
-                        }
-                    </datalist>
+                    <div class="dropdown-menu" role="listbox" [attr.aria-label]="classificationsLabel">
+                        <div class="dropdown-content">
+                            @for (name of filteredSuggestions(); track name) {
+                                <button
+                                    type="button"
+                                    class="dropdown-item"
+                                    role="option"
+                                    [attr.aria-selected]="false"
+                                    (mousedown)="pickSuggestion($event, name)"
+                                    (click)="pickSuggestion($event, name)"
+                                >
+                                    {{ name }}
+                                </button>
+                            }
+                        </div>
+                    </div>
                 </div>
                 @if (suggestions().length === 0 && state.chosen().length === 0) {
                     <p class="help aurelius-editor-no-classifications">{{ noClassifications }}</p>

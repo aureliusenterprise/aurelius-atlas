@@ -18,14 +18,71 @@
     margin-top: 1.5rem;
 }
 
-/* The chosen tags (EDT-05): the classification chips (UIC-24) carry their
-   own spacing — Bulma's `.tags` gap and the delete inset inside the tag. */
-.aurelius-editor-tags {
-    margin-bottom: 0;
+/* The classification box (EDT-05, DD-335): one bordered box — the Bulma
+   input's own look, built from the root control vars Bulma exposes —
+   holding the chips and the text input inline. The box grows as tags are
+   added; a focused box carries the input's focus border and ring. The
+   `dropdown` class (on the element) carries the position and the panel;
+   Bulma's `.dropdown-menu` is hidden unless the box carries `is-active`
+   (the component sets it while focused with matches). */
+.aurelius-editor-classification-box {
+    align-items: center;
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-l));
+    border: var(--bulma-control-border-width) solid var(--bulma-border);
+    border-radius: var(--bulma-control-radius);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--bulma-control-size);
+    gap: 0.375rem;
+    min-height: var(--bulma-control-height);
+    padding: calc(0.5em - 1px) calc(0.75em - 1px);
 }
 
-.aurelius-editor-classification-control {
-    margin-top: 0.5rem;
+.aurelius-editor-classification-box:focus-within {
+    border-color: hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    box-shadow: 0 0 0 0.125em
+        hsla(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l), var(--bulma-focus-shadow-alpha));
+}
+
+/* The text input inside the box (EDT-05, DD-335): the box owns the border
+   and the padding, so the input is borderless, transparent and flush. It
+   keeps the input's line so a lone caret sits at the input's height. */
+.aurelius-editor-classification-box .aurelius-editor-classification-input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: hsl(var(--bulma-text-h), var(--bulma-text-s), var(--bulma-text-strong-l));
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    outline: none;
+    padding: 0;
+}
+
+/* The chip inside the box (EDT-05, DD-335): the chips row's old rhythm is
+   gone — the box's flex gap spaces them, and the tag drops its own margin
+   so the box hugs its contents. */
+.aurelius-editor-classification-box .aurelius-editor-tag {
+    flex: 0 0 auto;
+}
+
+/* The suggestion panel (EDT-05, DD-335): Bulma's dropdown menu carries the
+   panel (position, offset, z-index) and the `is-up` modifier opens it
+   above the box — the box is the form's last field. Bulma's dropdown has
+   no full-width modifier, so the menu stretches to the box's own width
+   here (the box is the relative containing block, and the menu is
+   absolute with left: 0; pinning right: 0 pulls the other edge). The list
+   scrolls when the matches outgrow the panel. */
+.aurelius-editor-classification-box .dropdown-menu {
+    right: 0;
+}
+
+.aurelius-editor-classification-box .dropdown-content {
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+.aurelius-editor-classification-box .dropdown-item {
+    white-space: nowrap;
 }
 
 /* The repeating text list (EDT-03): one input per row, its delete beside
