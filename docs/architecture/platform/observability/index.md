@@ -13,4 +13,5 @@ observability chart runs the same stack on a cluster.
 | [Logging](logging.md)       | The server's log records, their correlation to traces   | 6.4c       |
 | [Alerting](alerting.md)     | The alert rules, their destination, how to see one fire | 6.4c       |
 
-How long each signal is kept is the retention of increment 6.4d (ADR 025).
+Metrics are kept 15 days, logs 30 days, traces 7 days and the alerts' history 30 days; the
+[lifetimes](../../data-lifecycle-management/data-archiving.md) page says why and where each is set (ADR 025).

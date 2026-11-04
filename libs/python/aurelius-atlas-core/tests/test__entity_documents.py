@@ -6,6 +6,7 @@ from typing import Any, cast
 import pytest
 from aurelius_atlas_core import entity_documents
 from aurelius_atlas_core.entity_documents import (
+    ENTITY_FIELD_LIMIT,
     ElasticsearchEntityDocuments,
     EntityDocuments,
     JournalEntry,
@@ -88,7 +89,7 @@ async def test__bulk_writes_create_or_replace_conditionally(documents: Elasticse
     assert await documents.get([]) == {}
 
 
-@pytest.mark.covers(f"{E}.restore", rules=["ENS-07", "ENS-11"])
+@pytest.mark.covers(f"{E}.restore", rules=["ENS-07", "ENS-11", "IDX-01"])
 async def test__restore_puts_back_or_removes(documents: ElasticsearchEntityDocuments, fake: FakeClient) -> None:
     """A state before is indexed again; an entity that did not exist is deleted, twice without error.
 
@@ -103,11 +104,11 @@ async def test__restore_puts_back_or_removes(documents: ElasticsearchEntityDocum
     read = await documents.get(["a", "b"])
     assert set(read) == {"a"}
     assert read["a"].entity.attributes == {"x": 1}
-    assert set(fake.write_refreshes) == {("t-entities", "wait_for")}
+    assert set(fake.write_refreshes) == {("t-entities", "true")}
     assert fake.refreshes == []
 
 
-@pytest.mark.covers(f"{E}.reserve", f"{E}.reservations", f"{E}.release", rules=["ENS-05", "ENS-11"])
+@pytest.mark.covers(f"{E}.reserve", f"{E}.reservations", f"{E}.release", rules=["ENS-05", "ENS-11", "IDX-01"])
 async def test__a_reservation_is_create_only_and_released_by_its_holder(
     documents: ElasticsearchEntityDocuments, fake: FakeClient
 ) -> None:
@@ -130,7 +131,7 @@ async def test__a_reservation_is_create_only_and_released_by_its_holder(
 
 
 @pytest.mark.covers(
-    f"{E}.put_journal", f"{E}.journal", f"{E}.get_journal", f"{E}.delete_journal", rules=["ENS-07", "ENS-11"]
+    f"{E}.put_journal", f"{E}.journal", f"{E}.get_journal", f"{E}.delete_journal", rules=["ENS-07", "ENS-11", "IDX-01"]
 )
 async def test__the_journal_holds_writes_in_flight(documents: ElasticsearchEntityDocuments, fake: FakeClient) -> None:
     """Entries are written and deleted without waiting for a refresh (DD-247), read by write id in real time, and
@@ -162,7 +163,7 @@ def test__a_journal_entry_keeps_the_state_before() -> None:
     assert entry.before_entity("b") is None
 
 
-@pytest.mark.covers(f"{E}.count_type", rules=["ENS-09", "ENS-11"])
+@pytest.mark.covers(f"{E}.count_type", rules=["ENS-09", "ENS-11", "IDX-01"])
 async def test__entities_of_a_type_are_counted_on_the_written_index(
     documents: ElasticsearchEntityDocuments, fake: FakeClient
 ) -> None:
@@ -176,7 +177,7 @@ async def test__entities_of_a_type_are_counted_on_the_written_index(
 
     assert await documents.count_type("table") == 2
     assert await documents.count_type("view") == 0
-    assert set(fake.write_refreshes) == {("t-entities", "wait_for")}
+    assert set(fake.write_refreshes) == {("t-entities", "true")}
     assert fake.refreshes == []
 
 
@@ -215,7 +216,7 @@ def test__both_implementations_are_entity_documents(documents: ElasticsearchEnti
     assert isinstance(MemoryEntityDocuments(), EntityDocuments)
 
 
-@pytest.mark.covers(f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10", "ENS-11"])
+@pytest.mark.covers(f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10", "ENS-11", "IDX-01"])
 async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_deletes(
     documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -243,7 +244,7 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
         ("a", False, True),
     ]
     assert set(await documents.get(["a", "c"])) == {"a"}
-    assert set(fake.write_refreshes) == {("t-entities", "wait_for")}
+    assert set(fake.write_refreshes) == {("t-entities", "true")}
     assert fake.refreshes == []
     assert fake.mapping_updates == ["t-entities"]
 
@@ -288,7 +289,7 @@ async def test__tasks_are_listed_oldest_first_all_or_open(
     f"{E}.get_linked",
     f"{E}.restore_linked",
     f"{E}.count_linked_type",
-    rules=["REL-05", "REL-08", "REL-10", "CLS-12", "ENS-11"],
+    rules=["REL-05", "REL-08", "REL-10", "CLS-12", "ENS-11", "IDX-01"],
 )
 @pytest.mark.parametrize(
     ("kind", "document"),
@@ -317,7 +318,7 @@ async def test__linked_documents_are_written_with_entities_in_one_bulk_request(
     assert await documents.get_linked(kind, []) == {}
     await documents.restore_linked(kind, "r", None)
     assert await documents.count_linked_type(kind, "link") == 0
-    assert set(fake.write_refreshes) == {("t-entities", "wait_for"), (f"t-{kind.value}", "wait_for")}
+    assert set(fake.write_refreshes) == {("t-entities", "true"), (f"t-{kind.value}", "true")}
     assert fake.refreshes == []
 
 
@@ -393,6 +394,20 @@ async def test__a_search_query_selects_in_elasticsearch_what_it_selects_in_memor
         if selects(query, item.search or {})
     ]
     assert ([item.guid for item in found], total) == (expected, len(expected))
+
+
+@pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])
+async def test__every_index_expands_its_replicas_to_the_cluster(fake: FakeClient) -> None:
+    """At most one replica, none on a single node, for each index; one made before gets it at the next start."""
+    await fake.indices.create(index="o-relationships-000001", aliases={"o-relationships": {}})
+    await ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake), prefix="o").prepare()
+
+    replicas = {name: settings.get("index.auto_expand_replicas") for name, settings in fake.index_settings.items()}
+    assert replicas == {
+        f"o-{name}-000001": "0-1"
+        for name in ("entities", "unique-values", "entity-journal", "relationships", "classifications", "tasks")
+    }
+    assert fake.index_settings["o-entities-000001"]["index.mapping.total_fields.limit"] == ENTITY_FIELD_LIMIT
 
 
 @pytest.mark.covers(f"{E}.search", f"{E}.prepare", rules=["SRC-07"])

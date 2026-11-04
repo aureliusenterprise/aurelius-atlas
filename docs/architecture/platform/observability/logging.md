@@ -27,4 +27,4 @@ In Grafana, a span of the trace opens the records written under it (Tempo's link
 | `uvicorn.error`         | the server's own failures, such as a socket or TLS error                                       |
 
 The level is `AURELIUS_ATLAS_SERVER_LOG_LEVEL`; `debug` also prints spans and records to the output.
-How long Loki keeps them is the retention of increment 6.4d.
+Loki deletes them after 30 days ([lifetimes](../../data-lifecycle-management/data-archiving.md)).

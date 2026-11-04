@@ -19,8 +19,8 @@ from load import ENTITY, OperationReport, Sample, atlas_mix, drive, percentile, 
 USERS = int(os.environ.get("AURELIUS_ATLAS_LOAD_USERS", "8"))
 SECONDS = float(os.environ.get("AURELIUS_ATLAS_LOAD_SECONDS", "20"))
 P95_MS = float(os.environ.get("AURELIUS_ATLAS_LOAD_P95_MS", "3000"))
-"""The budget of every operation's 95th percentile (LOD-03). A write waits for the store's next refresh (DD-237),
-a second each, an update two of them: the budget holds those and leaves shared CI runners a second's room."""
+"""The budget of every operation's 95th percentile (LOD-03). A write refreshes what it wrote (DD-322), about half a
+second at the 95th percentile on the dev store: the budget leaves shared CI runners several times that."""
 
 BATCH = 100
 """The guids per delete and purge request of the clean-up."""

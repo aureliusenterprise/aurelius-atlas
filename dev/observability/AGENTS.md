@@ -135,6 +135,14 @@ nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
   `enduser.id` on `otel-*` pushes — machine telemetry wears no user identity
   (DD-196, CIA-09). Read traces back with `GET :3200/api/traces/<id>`
   (plural; Tempo 3.x).
+- Each store's lifetime (RET-02..05, ADR 025) is set in its tool's own
+  config: Prometheus's `--storage.tsdb.retention.time`, Loki's compactor and
+  `limits_config.retention_period`, Tempo's `overrides.defaults.compaction`
+  (Tempo 3 has no top-level `compactor`), Grafana's
+  `GF_UNIFIED_ALERTING_STATE_HISTORY_ANNOTATIONS_MAX_AGE`. Change a period in
+  the compose or config, the chart, and
+  `docs/architecture/data-lifecycle-management/data-archiving.md` together; a new
+  volume needs a row there (`tests/test__retention.py`).
 
 ## Helm chart
 

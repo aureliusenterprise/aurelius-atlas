@@ -3,6 +3,7 @@
     "adminEventsDetailsEnabled": false,
     "adminEventsEnabled": true,
     "attributes": {
+        "adminEventsExpiration": "2592000",
         "cibaAuthRequestedUserHint": "login_hint",
         "cibaBackchannelTokenDeliveryMode": "poll",
         "cibaExpiresIn": "120",
@@ -390,6 +391,7 @@
     "enabled": true,
     "enabledEventTypes": [],
     "eventsEnabled": true,
+    "eventsExpiration": 2592000,
     "eventsListeners": ["jboss-logging"],
     "failureFactor": 10,
     "firstBrokerLoginFlow": "first broker login",
