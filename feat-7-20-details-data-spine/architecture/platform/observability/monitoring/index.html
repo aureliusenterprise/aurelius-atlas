@@ -5532,6 +5532,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Monitoring
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -5547,6 +5564,59 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-server-sends" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the server sends
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dashboards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#load" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Load
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -5627,6 +5697,8 @@
       
         
           
+        
+      
         
       
         
@@ -5793,6 +5865,110 @@
   
 
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8_7_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../resilience/incidents/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Incidents
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_8_7_6" id="__nav_4_8_7_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_8_7_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_8_7_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Incidents
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../resilience/incidents/2026-11-05-rehearsal-server-silent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2026-11-05 Server silent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -6063,6 +6239,47 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-server-sends" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What the server sends
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dashboards" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Dashboards
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#load" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Load
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -6231,12 +6448,88 @@
 
 
 <h1 id="monitoring">Monitoring<a class="headerlink" href="#monitoring" title="Permanent link">&para;</a></h1>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 6.4, from the increment's semantics spec. See the <a href="../">filling
-map</a> for the page scope and the <a href="../../../conversion/">conversion roadmap</a>
-for increment status.</p>
-</div>
+<p>Every part exports its traces and metrics over OTLP to the collector, never straight to a backend.
+The collector's Prometheus exporter turns the metrics into series labelled with the part's name as
+<code>exported_job</code>. Each part signs in to the collector with its own credential: its <code>otel-*</code> client
+of the realm.</p>
+<h2 id="what-the-server-sends">What the server sends<a class="headerlink" href="#what-the-server-sends" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Source</th>
+<th>Keyed by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Traces</td>
+<td>the FastAPI instrumentation; the Elasticsearch client's spans</td>
+<td><code>service.name</code> = <code>aurelius-atlas-server</code></td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td><code>http.server.request.duration</code> and <code>http.server.active_requests</code></td>
+<td><code>http_route</code>, <code>http_request_method</code>, <code>http_response_status_code</code></td>
+</tr>
+<tr>
+<td>Metrics</td>
+<td>the process and CPython groups of the system metrics</td>
+<td><code>exported_instance</code>, one per process</td>
+</tr>
+<tr>
+<td>Logs</td>
+<td>see <a href="../logging/">Logging</a></td>
+<td><code>service_name</code></td>
+</tr>
+</tbody>
+</table>
+<p>The HTTP metrics follow the stable semantic conventions (<code>OTEL_SEMCONV_STABILITY_OPT_IN=http</code>):
+their requests are labelled by route template, such as <code>/api/atlas/v2/entity/guid/{guid}</code>, never by
+the path itself, so a series per entity never appears.</p>
+<h2 id="dashboards">Dashboards<a class="headerlink" href="#dashboards" title="Permanent link">&para;</a></h2>
+<p>The dashboards are plain JSON in <code>dev/observability/config/grafana/dashboards/</code>, byte-copied into
+the chart. They sit in Grafana's "Aurelius" folder:</p>
+<table>
+<thead>
+<tr>
+<th>Dashboard</th>
+<th>What it shows</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Aurelius Atlas Server</td>
+<td>requests by status, latency and errors by route, the process, its logs and traces</td>
+</tr>
+<tr>
+<td>Aurelius Atlas Webapp</td>
+<td>the browser's web vitals and errors</td>
+</tr>
+<tr>
+<td>Keycloak</td>
+<td>the identity server, its JVM and its database</td>
+</tr>
+<tr>
+<td>Elasticsearch</td>
+<td>the store's health, shards, memory and breakers</td>
+</tr>
+<tr>
+<td>Observability Stack</td>
+<td>the collector's throughput and queues, Prometheus, Loki and Tempo themselves</td>
+</tr>
+</tbody>
+</table>
+<p>Each panel's description says its unit and what a bad value looks like. The server dashboard is
+where an alert from <a href="../alerting/">Alerting</a> is read first.</p>
+<h2 id="load">Load<a class="headerlink" href="#load" title="Permanent link">&para;</a></h2>
+<p>The server's load test runs concurrent users through reads, searches, updates and creates against
+the dev store, and reports each operation's percentiles. It runs with the server's e2e suite:</p>
+<div class="highlight"><pre><span></span><code>npx<span class="w"> </span>nx<span class="w"> </span>e2e<span class="w"> </span>aurelius-atlas-server
+</code></pre></div>
+<p><code>AURELIUS_ATLAS_LOAD_USERS</code> (8), <code>AURELIUS_ATLAS_LOAD_SECONDS</code> (20) and <code>AURELIUS_ATLAS_LOAD_P95_MS</code>
+(3000) make the run longer or the budget tighter. Its first runs answer reads and searches in 30 to
+120 ms, and writes in one to two seconds, the time a write waits for the store's refresh.</p>
 
 
 

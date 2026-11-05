@@ -5704,6 +5704,8 @@
       
         
       
+        
+      
     
     
     
@@ -5860,6 +5862,110 @@
   
 
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8_7_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../architecture/platform/resilience/incidents/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Incidents
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_8_7_6" id="__nav_4_8_7_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_8_7_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_8_7_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Incidents
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2026-11-05 Server silent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -6333,8 +6439,9 @@ per project, encrypted with SOPS to the recipient set in <code>.sops.yaml</code>
 <h2 id="incident-response">Incident response<a class="headerlink" href="#incident-response" title="Permanent link">&para;</a></h2>
 <p>The path from first signal to all-clear (ADR 041 R2); the owner is the maintainers team.</p>
 <ol>
-<li><strong>Noticing</strong> — a symptom appears, or (from increment 6.4) an alert fires
-   (<a href="../../architecture/adr/040-the-system-raises-its-hand-when-it-is-broken/">ADR 040</a>). The first
+<li><strong>Noticing</strong> — a symptom appears, or an alert fires
+   (<a href="../../architecture/adr/040-the-system-raises-its-hand-when-it-is-broken/">ADR 040</a>); the alert links
+   its steps on <a href="../../architecture/platform/resilience/incident-management/">Incident Management</a>. The first
    person to notice is the recorder, not the decider.</li>
 <li><strong>Triage</strong> — any maintainer is the decider: confirm impact, choose investigate / mitigate /
    accept. Mitigation on dev systems needs no permission; a mitigation that touches real data needs
@@ -6345,8 +6452,9 @@ per project, encrypted with SOPS to the recipient set in <code>.sops.yaml</code>
 <li><strong>Escalate</strong> — possible data loss pulls in the dataset's owner (below); suspected secret exposure
    switches to the rotation path above.</li>
 <li><strong>All-clear and record</strong> — the decider declares the end and writes the one-page record: symptoms,
-   actions, cause, follow-ups (ADR 041 R5). Follow-ups that should become triggers become alert
-   rules at 6.4 (ADR 041 R6).</li>
+   actions, cause, follow-ups (ADR 041 R5), in
+   <a href="../../architecture/platform/resilience/incidents/">Incidents</a>. Follow-ups that should become
+   triggers become alert rules (ADR 041 R6).</li>
 </ol>
 <h2 id="dataset-ownership">Dataset Ownership<a class="headerlink" href="#dataset-ownership" title="Permanent link">&para;</a></h2>
 <p><a href="../../architecture/adr/042-every-dataset-has-an-owner-who-answers-for-it/">ADR 042</a> R1/R5/R6: the
@@ -6380,8 +6488,10 @@ spine; it applies from the first dataset with a second reader-writer.</p>
 <ul>
 <li><strong>First rehearsal of the secret paths</strong> (rotation, loss, break-glass) on dev secrets in a dev
   environment — before the first deployment that keeps real data (ADR 028 R2).</li>
-<li><strong>First game-day of the incident path</strong> on the dev stack — same gate, and yearly after (ADR 041
-  R3); each rehearsal updates this page.</li>
+<li><strong>Game-day of the incident path</strong> on the dev stack — yearly, and after a change to an alert or its
+  steps (ADR 041 R3). The first walked "Server silent" on 2026-11-05
+  (<a href="../../architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent/">record</a>); each
+  rehearsal leaves a record and fixes what it found.</li>
 </ul>
 
 

@@ -5625,6 +5625,8 @@
       
         
       
+        
+      
     
     
     
@@ -5781,6 +5783,110 @@
   
 
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8_7_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="./incidents/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Incidents
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_8_7_6" id="__nav_4_8_7_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_8_7_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_8_7_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Incidents
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./incidents/2026-11-05-rehearsal-server-silent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2026-11-05 Server silent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -6189,6 +6295,8 @@
       
         
       
+        
+      
     
     
     
@@ -6223,10 +6331,6 @@
 <h1 id="resilience">Resilience<a class="headerlink" href="#resilience" title="Permanent link">&para;</a></h1>
 <p>How Aurelius Atlas fails, recovers, and is kept recoverable. The system promises nothing about
 staying up (ADR 037) but promises a rehearsed path back (ADRs 026, 041).</p>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 6.4 (hardening); see <a href="../../">Architecture</a>.</p>
-</div>
 <table>
 <thead>
 <tr>
@@ -6239,22 +6343,27 @@ staying up (ADR 037) but promises a rehearsed path back (ADRs 026, 041).</p>
 <tr>
 <td><a href="high-availability/">High Availability</a></td>
 <td>Single-node posture, what fails together, the store as the critical dependency</td>
-<td>6.4</td>
+<td>written (6.4f)</td>
 </tr>
 <tr>
 <td><a href="incident-management/">Incident Management</a></td>
 <td>Owner and rehearsed path per failure (ADR 041)</td>
-<td>6.4</td>
+<td>written (6.4f)</td>
 </tr>
 <tr>
 <td><a href="backup-and-restore/">Backup &amp; Restore</a></td>
 <td>Store snapshots, restore drill (ADR 026)</td>
-<td>6.4</td>
+<td>written (6.4e)</td>
 </tr>
 <tr>
 <td><a href="disaster-recovery/">Disaster Recovery</a></td>
 <td>Rebuild from image + snapshot, objectives</td>
-<td>6.4</td>
+<td>written (6.4e)</td>
+</tr>
+<tr>
+<td><a href="incidents/">Incidents</a></td>
+<td>The record of every incident and rehearsal (ADR 041 R5)</td>
+<td>written (6.4f)</td>
 </tr>
 </tbody>
 </table>
