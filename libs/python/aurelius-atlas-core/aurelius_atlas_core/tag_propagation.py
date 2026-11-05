@@ -18,6 +18,7 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
+from aurelius_atlas_core.task_hold import TaskHold
 from aurelius_atlas_core.transaction_view import EntityView
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
@@ -32,11 +33,15 @@ _FROM_END2 = {PropagateTags.TWO_TO_ONE, PropagateTags.BOTH}
 
 @dataclass(frozen=True)
 class Deferral:
-    """Propagation deferred to tasks (TSK-02, DD-081): recorded by ``user`` at ``now``, new GUIDs from ``new_id``."""
+    """Propagation deferred to tasks (TSK-02, DD-081): recorded by ``user`` at ``now``, new GUIDs from ``new_id``.
+
+    ``hold``, an import's, holds the tasks from the workers until it is released (IMT-01).
+    """
 
     user: str | None
     now: int
     new_id: Callable[[], str]
+    hold: TaskHold | None = None
 
 
 @dataclass
@@ -133,6 +138,8 @@ class TagPropagation:
             created_time=deferral.now,
             updated_time=deferral.now,
             parameters=parameters,
+            held_by=None if deferral.hold is None else deferral.hold.id,
+            held_until=None if deferral.hold is None else deferral.hold.until,
         )
         self._tasks.append(task)
         return task

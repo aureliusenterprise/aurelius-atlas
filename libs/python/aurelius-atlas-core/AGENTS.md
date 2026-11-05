@@ -64,7 +64,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   entities (DD-246), `file_utils.py` reads uploaded CSV and Excel files (DD-249)
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
-  stored task
+  stored task; `task_hold.py` (`TaskHold`) holds an import's tasks from the workers until it ends (DD-361)
 - `aurelius_atlas_core/entity_documents.py` — `EntityDocuments` and its Elasticsearch implementation: the entity,
   unique value and journal indices; `stored_entity.py` (`StoredEntity`) and `unique_key.py` (`UniqueKey`)
 - `aurelius_atlas_core/testing/memory.py` — `MemoryTypedefDocument` and `MemoryEntityDocuments` (with injected

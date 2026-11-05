@@ -17,9 +17,8 @@ services:
             AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
             # HSTS off: includeSubDomains on localhost would pin keycloak.localhost to HTTPS in the browser.
             AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
-            # Propagation in the request, not by the task worker (DD-081): an import of propagating
-            # classifications loses its write races to the worker (EWR-16 retries once) and fails.
-            AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-false}
+            # Propagation by the task worker after the request, as Atlas's default; false propagates in it (DD-081).
+            AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'

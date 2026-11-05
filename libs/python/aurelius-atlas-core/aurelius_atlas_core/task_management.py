@@ -23,6 +23,7 @@ from aurelius_atlas_core.entity_store import (
 )
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.tag_propagation import TagPropagation
+from aurelius_atlas_core.task_hold import held
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
 LEASE_MILLISECONDS = 300_000
@@ -74,11 +75,15 @@ class TaskManagement:
         return done
 
     async def _claim(self, task: StoredTask, version: DocumentVersion) -> tuple[StoredTask, DocumentVersion] | None:
-        """``IN_PROGRESS`` with a lease, over the version read; None for one held, failed or claimed by another."""
+        """``IN_PROGRESS`` with a lease, over the version read; None for one held by a claim or an import (IMT-01),
+        failed, or claimed by another.
+        """  # noqa: D205 - one sentence
         now = self._store.now()
         if task.attempt_count >= MAX_ATTEMPT_COUNT:
             return None
         if task.status is TaskStatus.IN_PROGRESS and (task.claimed_until or 0) > now:
+            return None
+        if held(task, now):
             return None
         claimed = task.model_copy(
             update={
