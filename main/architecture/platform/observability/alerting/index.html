@@ -6421,6 +6421,12 @@ observability chart. Every rule is labelled <code>team: maintainers</code>, the 
 <td>the collector failed to deliver to Tempo, Prometheus or Loki</td>
 <td>5m</td>
 </tr>
+<tr>
+<td>Snapshot overdue</td>
+<td>critical</td>
+<td>the store's last successful snapshot is more than two hours old</td>
+<td>15m</td>
+</tr>
 </tbody>
 </table>
 <p>Three of them watch silence: the server, every other part, and the collector itself. A part added

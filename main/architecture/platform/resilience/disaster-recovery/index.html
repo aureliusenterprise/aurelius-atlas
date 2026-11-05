@@ -5777,6 +5777,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Disaster Recovery
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -5792,6 +5809,59 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-objectives" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The objectives
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-fails-and-what-comes-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What fails, and what comes back
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rebuilding" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Rebuilding
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -6063,6 +6133,47 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-objectives" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        The objectives
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-fails-and-what-comes-back" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What fails, and what comes back
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rebuilding" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Rebuilding
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -6233,12 +6344,94 @@
 
 
 <h1 id="disaster-recovery">Disaster Recovery<a class="headerlink" href="#disaster-recovery" title="Permanent link">&para;</a></h1>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 6.4, from the increment's semantics spec. See the <a href="../">filling
-map</a> for the page scope and the <a href="../../../conversion/">conversion roadmap</a>
-for increment status.</p>
-</div>
+<p>How the system comes back when more than one part is lost, and the bounds on what that costs
+(<a href="../../../adr/026-the-system-can-be-brought-back-from-a-named-snapshot/">ADR 026</a>). The parts come back from
+two sources: the released images and charts reproduce the machinery, and the store's snapshots reproduce the
+catalogue (<a href="../backup-and-restore/">Backup &amp; Restore</a>).</p>
+<h2 id="the-objectives">The objectives<a class="headerlink" href="#the-objectives" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Objective</th>
+<th>Value</th>
+<th>Where it comes from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Maximum data loss (R3)</td>
+<td>one hour of catalogue writes, proposed</td>
+<td>the hourly snapshot schedule (SNP-02); the overdue alert at two</td>
+</tr>
+<tr>
+<td>Recovery time (R7)</td>
+<td>measured by the cluster's rehearsal</td>
+<td>11 seconds at the e2e rehearsal's size (SNP-06)</td>
+</tr>
+<tr>
+<td>Oldest point to restore to</td>
+<td>7 days, and at least the newest 24</td>
+<td>the snapshot retention (SNP-02)</td>
+</tr>
+</tbody>
+</table>
+<p>The values are ADR 026's to name. The maximum data loss follows from the schedule: a snapshot every hour, and
+an alert when the newest is two hours old. The recovery time is the cluster's: the time of its restore,
+measured at its size, plus the servers' start.</p>
+<h2 id="what-fails-and-what-comes-back">What fails, and what comes back<a class="headerlink" href="#what-fails-and-what-comes-back" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Lost</th>
+<th>Comes back by</th>
+<th>Lost for good</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>A server pod</td>
+<td>its Deployment</td>
+<td>nothing</td>
+</tr>
+<tr>
+<td>The store's data volume</td>
+<td>a restore of the newest snapshot</td>
+<td>writes since that snapshot</td>
+</tr>
+<tr>
+<td>The catalogue, by a bad change</td>
+<td>a restore of the last snapshot before it</td>
+<td>writes since that snapshot</td>
+</tr>
+<tr>
+<td>The store's node</td>
+<td>its StatefulSet, on its volumes</td>
+<td>nothing, if the volumes survive</td>
+</tr>
+<tr>
+<td>The cluster, its storage survives</td>
+<td>a new install bound to the old volumes, then a restore</td>
+<td>writes since the snapshot</td>
+</tr>
+<tr>
+<td>The cluster and its storage</td>
+<td>a new install and a restore from a copy kept elsewhere, if there is one</td>
+<td>the catalogue, without such a copy</td>
+</tr>
+</tbody>
+</table>
+<p>The last row is the gap: the snapshots live inside the cluster (DD-326). A deployment that must survive the loss
+of its cluster copies the snapshots claim elsewhere on its own schedule, or registers an object store repository
+of its own. Keycloak's users are not backed up (see <a href="../backup-and-restore/">Backup &amp; Restore</a>).</p>
+<h2 id="rebuilding">Rebuilding<a class="headerlink" href="#rebuilding" title="Permanent link">&para;</a></h2>
+<ol>
+<li>Install the umbrella chart of the same release as the lost one, with its values, at
+   <code>atlas-server.replicaCount=0</code>. The store's schema comes from the snapshot, so the release must be the one that
+   wrote it or a later one (ADR 023).</li>
+<li>Bind the snapshots claim to the surviving volume, or put the copy of the repository on it.</li>
+<li>Restore, then start the servers: steps 2 and 3 of <a href="../backup-and-restore/#on-a-cluster">Backup &amp; Restore</a>.</li>
+<li>Check the catalogue: the newest entities, and <code>admin/metrics</code> for its counts.</li>
+</ol>
 
 
 

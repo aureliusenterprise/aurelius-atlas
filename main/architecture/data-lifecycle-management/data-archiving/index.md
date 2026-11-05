@@ -20,6 +20,7 @@ How long Aurelius Atlas keeps each kind of data, what removes it, and where that
 | Traces | 7 days | Tempo's retention jobs | `dev/observability:tempo-data` |
 | Alert state history | 30 days | Grafana's annotation cleanup | `dev/observability:grafana-data` |
 | Grafana's users and preferences | unbounded, disposable | — | `dev/observability:grafana-data` |
+| Snapshots of the store (chart; none in dev) | 7 days, the newest 24 | the snapshot retention | `dev/elasticsearch:snapshots` |
 
 The store column names the dev volume. On a cluster each is the persistent volume of the same component in its chart.
 
@@ -57,4 +58,4 @@ An entity delete marks the entity deleted; a purge (`PUT admin/purge`) or a hard
 
 ## Snapshots
 
-Backups of the store, and a rehearsed restore, are increment 6.4e ([ADR 026](<https://aureliusenterprise.github.io/main/architecture/adr/026-the-system-can-be-brought-back-from-a-named-snapshot/index.md>)).
+The store is snapshotted every hour and each snapshot is kept 7 days ([Backup &amp; Restore](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/backup-and-restore/index.md>)). A snapshot holds what the store held when it was taken, so data a lifetime has removed can live on in a snapshot for up to 7 more days: a stored metric, for example, until 21 days after it was taken. A restore brings such data back, and the next sweep removes it again.

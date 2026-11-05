@@ -6446,6 +6446,12 @@ increment 6.4d. A store that arrives without a row here fails the lifetimes suit
 <td>—</td>
 <td><code>dev/observability:grafana-data</code></td>
 </tr>
+<tr>
+<td>Snapshots of the store (chart; none in dev)</td>
+<td>7 days, the newest 24</td>
+<td>the snapshot retention</td>
+<td><code>dev/elasticsearch:snapshots</code></td>
+</tr>
 </tbody>
 </table>
 <p>The store column names the dev volume. On a cluster each is the persistent volume of the same
@@ -6530,8 +6536,11 @@ settings, Events).</p>
 it, with its relationships and classifications, in one write. The rules are those of increment
 2.5, the delete semantics.</p>
 <h2 id="snapshots">Snapshots<a class="headerlink" href="#snapshots" title="Permanent link">&para;</a></h2>
-<p>Backups of the store, and a rehearsed restore, are increment 6.4e
-(<a href="../../adr/026-the-system-can-be-brought-back-from-a-named-snapshot/">ADR 026</a>).</p>
+<p>The store is snapshotted every hour and each snapshot is kept 7 days
+(<a href="../../platform/resilience/backup-and-restore/">Backup &amp; Restore</a>). A snapshot holds what the store held
+when it was taken, so data a lifetime has removed can live on in a snapshot for up to 7 more days: a stored
+metric, for example, until 21 days after it was taken. A restore brings such data back, and the next sweep
+removes it again.</p>
 
 
 

@@ -22,7 +22,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > ## aurelius\_atlas\_server.settings.ServerSettings
 >
-> Bases: `BaseSettings`
+> Bases: `StoreAccessSettings`
 >
 > How the server runs and where its store is.
 >
@@ -44,6 +44,38 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >   },
 >   "description": "How the server runs and where its store is.",
 >   "properties": {
+>     "elasticsearch_hosts": {
+>       "items": {
+>         "format": "uri",
+>         "maxLength": 2083,
+>         "minLength": 1,
+>         "type": "string"
+>       },
+>       "minItems": 1,
+>       "title": "Elasticsearch Hosts",
+>       "type": "array"
+>     },
+>     "elasticsearch_username": {
+>       "default": "elastic",
+>       "title": "Elasticsearch Username",
+>       "type": "string"
+>     },
+>     "elasticsearch_password": {
+>       "format": "password",
+>       "title": "Elasticsearch Password",
+>       "type": "string",
+>       "writeOnly": true
+>     },
+>     "elasticsearch_ca_certs": {
+>       "format": "file-path",
+>       "title": "Elasticsearch Ca Certs",
+>       "type": "string"
+>     },
+>     "snapshot_location": {
+>       "default": "aurelius-atlas",
+>       "title": "Snapshot Location",
+>       "type": "string"
+>     },
 >     "host": {
 >       "default": "localhost",
 >       "title": "Host",
@@ -300,36 +332,30 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Audit Aging Scheduler Initial Delay In Min",
 >       "type": "integer"
 >     },
+>     "snapshot_enabled": {
+>       "default": false,
+>       "title": "Snapshot Enabled",
+>       "type": "boolean"
+>     },
+>     "snapshot_schedule": {
+>       "default": "0 0 * * * ?",
+>       "title": "Snapshot Schedule",
+>       "type": "string"
+>     },
+>     "snapshot_retention": {
+>       "default": "7d",
+>       "title": "Snapshot Retention",
+>       "type": "string"
+>     },
+>     "snapshot_check_minutes": {
+>       "default": 15,
+>       "minimum": 1,
+>       "title": "Snapshot Check Minutes",
+>       "type": "integer"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
->       "type": "string"
->     },
->     "elasticsearch_hosts": {
->       "items": {
->         "format": "uri",
->         "maxLength": 2083,
->         "minLength": 1,
->         "type": "string"
->       },
->       "minItems": 1,
->       "title": "Elasticsearch Hosts",
->       "type": "array"
->     },
->     "elasticsearch_username": {
->       "default": "elastic",
->       "title": "Elasticsearch Username",
->       "type": "string"
->     },
->     "elasticsearch_password": {
->       "format": "password",
->       "title": "Elasticsearch Password",
->       "type": "string",
->       "writeOnly": true
->     },
->     "elasticsearch_ca_certs": {
->       "format": "file-path",
->       "title": "Elasticsearch Ca Certs",
 >       "type": "string"
 >     },
 >     "otel_token_url": {
@@ -445,11 +471,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >     }
 >   },
 >   "required": [
->     "tls_cert_file",
->     "tls_key_file",
 >     "elasticsearch_hosts",
 >     "elasticsearch_password",
 >     "elasticsearch_ca_certs",
+>     "tls_cert_file",
+>     "tls_key_file",
 >     "auth_server_url",
 >     "auth_client_secret"
 >   ],
@@ -458,14 +484,13 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > }
 > ```
 >
-> Config:
->
-> - `env_prefix`: `ENV_PREFIX`
-> - `frozen`: `True`
-> - `extra`: `ignore`
->
 > Fields:
 >
+> - `elasticsearch_hosts` (`list[HttpUrl]`)
+> - `elasticsearch_username` (`str`)
+> - `elasticsearch_password` (`SecretStr`)
+> - `elasticsearch_ca_certs` (`FilePath`)
+> - `snapshot_location` (`str`)
 > - `host` (`str`)
 > - `port` (`int`)
 > - `log_level` (`LogLevel`)
@@ -506,11 +531,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `audit_reduction_max_pending_tasks` (`int`)
 > - `audit_aging_scheduler_frequency_in_days` (`int`)
 > - `audit_aging_scheduler_initial_delay_in_min` (`int`)
+> - `snapshot_enabled` (`bool`)
+> - `snapshot_schedule` (`str`)
+> - `snapshot_retention` (`str`)
+> - `snapshot_check_minutes` (`int`)
 > - `revision` (`str`)
-> - `elasticsearch_hosts` (`list[HttpUrl]`)
-> - `elasticsearch_username` (`str`)
-> - `elasticsearch_password` (`SecretStr`)
-> - `elasticsearch_ca_certs` (`FilePath`)
 > - `otel_token_url` (`HttpUrl | None`)
 > - `otel_client_id` (`str`)
 > - `otel_client_secret` (`SecretStr | None`)
@@ -964,6 +989,46 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > How long a browser session lasts unused: Atlas's `web.xml` session timeout, 60 minutes (AUT-06).
 >
+> ### snapshot\_check\_minutes
+>
+> ```
+> snapshot_check_minutes: int = 15
+> ```
+>
+> How often the server reads how the policy's last runs went (SNP-03).
+>
+> ### snapshot\_enabled
+>
+> ```
+> snapshot_enabled: bool = False
+> ```
+>
+> Whether the server puts the store's snapshot policy at start and watches its runs (SNP-01 to SNP-03). The chart turns it on; the dev store's data is disposable.
+>
+> ### snapshot\_location
+>
+> ```
+> snapshot_location: str = 'aurelius-atlas'
+> ```
+>
+> The repository's directory, below the store's `path.repo` (SNP-01).
+>
+> ### snapshot\_retention
+>
+> ```
+> snapshot_retention: str = '7d'
+> ```
+>
+> How long a snapshot is kept, as an Elasticsearch time unit (SNP-02).
+>
+> ### snapshot\_schedule
+>
+> ```
+> snapshot_schedule: str = '0 0 * * * ?'
+> ```
+>
+> When a snapshot is taken, as an Elasticsearch cron expression in UTC: every hour on the hour (SNP-02).
+>
 > ### task\_poll\_seconds
 >
 > ```
@@ -1019,6 +1084,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The `atlas.audit.*` aging settings of the core's aging (AGE-02).
+>
+> ### snapshot\_policy
+>
+> ```
+> snapshot_policy() -> SnapshotPolicy
+> ```
+>
+> The snapshot policy of the server's indices, every index of `INDEX_PREFIX` (SNP-01, SNP-02).
 >
 > ### store\_settings
 >
@@ -1168,7 +1241,7 @@ Parameters:
 
   The HTTP client the sign-in calls the provider with; by default one of its own (AUT-05).
 
-The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
+The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080). With snapshots enabled, the store's snapshot policy is put and its runs watched (SNP-01 to SNP-03).
 
 ### mount\_dashboards
 
