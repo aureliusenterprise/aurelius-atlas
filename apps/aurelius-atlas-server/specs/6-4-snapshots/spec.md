@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** to follow
-- **Records:** DD-325, DD-326, DD-327, DD-328; ADR 026 (its acceptance trigger)
+- **Records:** DD-355, DD-356, DD-357, DD-358; ADR 026 (its acceptance trigger)
 
 Nothing is backed up. The store's data volume surviving a recreated container is the only protection, and
 no path brings the catalogue back when that volume is lost. This increment takes snapshots of the store on a
