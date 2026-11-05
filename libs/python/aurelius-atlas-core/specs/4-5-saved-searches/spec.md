@@ -1,6 +1,6 @@
 # 4.5 Saved searches and user profile
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-252, DV-110; relies on DD-244, DD-246, DD-250
 

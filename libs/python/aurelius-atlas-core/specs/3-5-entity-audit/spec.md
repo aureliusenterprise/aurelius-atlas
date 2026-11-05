@@ -1,6 +1,6 @@
 # 3.5a Entity audit
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#127](https://github.com/aureliusenterprise/aurelius-atlas/pull/127)
 - **Records:** DD-082 to DD-084, DV-39, DV-40; relies on DD-049, DD-059
 

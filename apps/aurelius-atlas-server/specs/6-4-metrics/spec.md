@@ -1,7 +1,7 @@
 # 6.4a Metrics
 
-- **Status:** in progress
-- **Pull request:** to follow
+- **Status:** done
+- **Pull request:** #260
 - **Records:** DD-317, DV-135; relies on DV-01 (no notifications consumed) and the type filter (AUZ-14)
 
 `admin/metrics` answers what the dashboards' statistics show: how many types, entities and classifications the

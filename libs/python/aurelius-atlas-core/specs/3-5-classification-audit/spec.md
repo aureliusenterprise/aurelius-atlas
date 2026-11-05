@@ -1,6 +1,6 @@
 # 3.5b Classification audit
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#136](https://github.com/aureliusenterprise/aurelius-atlas/pull/136)
 - **Records:** DD-085, DD-086, DV-41, DV-42; relies on DD-074, DD-077, DD-079, DD-082 to DD-084
 

@@ -1,6 +1,6 @@
 # 6.3c4 Entity audit aging
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-309, DV-132, DV-133, DV-134; relies on the entity audits (AUD-_) and the tasks (TSK-_)
 

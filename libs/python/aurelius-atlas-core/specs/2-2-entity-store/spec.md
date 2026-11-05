@@ -1,6 +1,6 @@
 # 2.2 Entity store
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-043 to DD-048, DV-14 to DV-16; relies on ADR 023, ADR 047, DD-028 to DD-031, DD-039 to
   DD-041

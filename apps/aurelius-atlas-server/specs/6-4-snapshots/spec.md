@@ -1,7 +1,7 @@
 # 6.4e Snapshots and restore
 
-- **Status:** in progress
-- **Pull request:** to follow
+- **Status:** done
+- **Pull request:** #267
 - **Records:** DD-355, DD-356, DD-357, DD-358; ADR 026 (its acceptance trigger)
 
 Nothing is backed up. The store's data volume surviving a recreated container is the only protection, and

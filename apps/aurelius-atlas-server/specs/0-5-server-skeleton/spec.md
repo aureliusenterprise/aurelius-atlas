@@ -1,6 +1,6 @@
 # 0.5 Server skeleton
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-015, DD-016; DV-03, DV-04, DV-05; relies on ADR 052, DD-001, DD-002
 

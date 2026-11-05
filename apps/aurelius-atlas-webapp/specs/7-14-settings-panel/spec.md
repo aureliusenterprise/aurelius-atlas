@@ -1,6 +1,6 @@
 # 7.14 Settings panel
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#105](https://github.com/aureliusenterprise/aurelius-atlas/pull/105)
 - **Records:** DD-157 (the drawer), DD-158 (telemetry toggle semantics), DD-159
   (supersedes SHM-01: `data-theme` follows the stored choice), DD-160 (the settings

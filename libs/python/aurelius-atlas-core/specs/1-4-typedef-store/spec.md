@@ -1,6 +1,6 @@
 # 1.4 Typedef store
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-028, DD-029, DD-030, DV-06; relies on ADR 047, DD-002, DD-005, DD-024
 

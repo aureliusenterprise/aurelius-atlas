@@ -1,7 +1,7 @@
 # 6.4d Retention and index tuning
 
-- **Status:** in progress
-- **Pull request:** to follow
+- **Status:** done
+- **Pull request:** #264
 - **Records:** DD-322, DD-323, DD-324; ADR 025 (its acceptance trigger)
 
 No store states how long it keeps its data. Loki and Keycloak's events keep theirs forever, Tempo and

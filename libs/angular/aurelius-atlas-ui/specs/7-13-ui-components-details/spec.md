@@ -1,6 +1,6 @@
 # 7.13 UI components: details set
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#104](https://github.com/aureliusenterprise/aurelius-atlas/pull/104)
 - **Records:** DD-154, DD-155, DD-156 (the dark ink ramp); relies on ADR 053,
   DD-135, DD-136, DD-142

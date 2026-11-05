@@ -1,6 +1,6 @@
 # 8.8 Client route coverage — foundation and lineage
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** —
 - **Records:** DD-307 (one live-check spec per server route module), DD-308 (the
   `LINEAGE_ROOT` fix), DD-309 (client methods reuse `aurelius-atlas-model` bodies),

@@ -1,6 +1,6 @@
 # 7.17 Collector ingest auth
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#119](https://github.com/aureliusenterprise/aurelius-atlas/pull/119)
 - **Records:** DD-193 (the two-leg ingest proof: user JWTs for browsers, a
   shared token for services); extends ADR 039 (TLS proves the channel, the

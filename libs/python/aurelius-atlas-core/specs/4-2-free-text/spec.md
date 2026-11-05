@@ -1,6 +1,6 @@
 # 4.2a Free text
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#145](https://github.com/aureliusenterprise/aurelius-atlas/pull/145)
 - **Records:** DD-091, DD-092, DV-48, DV-49; ends the `query` part of DV-46; relies on DD-087 to DD-090
 

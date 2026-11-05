@@ -1,6 +1,6 @@
 # 0.6 Dashboards served
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-017, DD-018, DD-019; relies on DD-001, ADR 046
 

@@ -1,6 +1,6 @@
 # 8.18 Angular entity twin (2/3) — the writes and the deletes
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** none new; cites DD-217 (the client lands on both sides of the
   wire), 7.3 (APC-01..APC-04), 8.14 (`EntityMutationResponse`, `DeleteType`),

@@ -1,6 +1,6 @@
 # 5.2b Glossary terms
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** relies on DD-246, DV-99
 

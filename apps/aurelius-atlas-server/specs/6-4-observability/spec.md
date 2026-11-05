@@ -1,7 +1,7 @@
 # 6.4c Observability, alerting and load test
 
-- **Status:** in progress
-- **Pull request:** to follow
+- **Status:** done
+- **Pull request:** #263
 - **Records:** DD-319, DD-320, DD-321; ADR 040 (its acceptance trigger), ADR 041 (the detection gap it names)
 
 The server already sends its traces and metrics to the collector, but not its logs. No dashboard shows its
