@@ -12,5 +12,5 @@ How Aurelius Atlas fails, recovers, and is kept recoverable. The system promises
 | --- | --- | --- |
 | [High Availability](<https://aureliusenterprise.github.io/feat-7-7d-markdown-editor/architecture/platform/resilience/high-availability/index.md>) | Single-node posture, what fails together, the store as the critical dependency | 6.4 |
 | [Incident Management](<https://aureliusenterprise.github.io/feat-7-7d-markdown-editor/architecture/platform/resilience/incident-management/index.md>) | Owner and rehearsed path per failure (ADR 041) | 6.4 |
-| [Backup &amp; Restore](<https://aureliusenterprise.github.io/feat-7-7d-markdown-editor/architecture/platform/resilience/backup-and-restore/index.md>) | Store snapshots, restore drill (ADR 026) | 6.4 |
-| [Disaster Recovery](<https://aureliusenterprise.github.io/feat-7-7d-markdown-editor/architecture/platform/resilience/disaster-recovery/index.md>) | Rebuild from image + snapshot, objectives | 6.4 |
+| [Backup &amp; Restore](<https://aureliusenterprise.github.io/feat-7-7d-markdown-editor/architecture/platform/resilience/backup-and-restore/index.md>) | Store snapshots, restore drill (ADR 026) | written (6.4e) |
+| [Disaster Recovery](<https://aureliusenterprise.github.io/feat-7-7d-markdown-editor/architecture/platform/resilience/disaster-recovery/index.md>) | Rebuild from image + snapshot, objectives | written (6.4e) |
