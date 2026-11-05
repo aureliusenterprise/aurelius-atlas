@@ -2038,6 +2038,8 @@
       
         
       
+        
+      
     
     
     
@@ -3648,6 +3650,33 @@
     
   
   057. The system ships as Helm charts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  058. A new catalogue starts with the m4i types
 
     
   </span>
@@ -7207,6 +7236,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>They run once the import ends: held until then, released in success or failure, held at most an hour (DD-361)</td>
 <td>Conditional writes would make the import lose its races to its own tasks; Atlas's GUID locks make them wait instead</td>
 <td>6.3</td>
+</tr>
+<tr>
+<td>DV-139</td>
+<td>Types</td>
+<td>A new catalogue holds only the types of <code>addons/models</code></td>
+<td>It holds the m4i data dictionary types too, unless <code>m4i_models_enabled</code> is off (ADR 058, DD-362)</td>
+<td>The catalogue's data and the Aurelius applications are in those types</td>
+<td>1.5</td>
 </tr>
 </tbody>
 </table>

@@ -131,6 +131,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Models Dir",
 >       "type": "string"
 >     },
+>     "m4i_models_enabled": {
+>       "default": true,
+>       "title": "M4I Models Enabled",
+>       "type": "boolean"
+>     },
 >     "typedef_refresh_seconds": {
 >       "default": 5.0,
 >       "minimum": 0,
@@ -500,6 +505,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `forwarded_allow_ips` (`str`)
 > - `dashboard_dir` (`DirectoryPath | None`)
 > - `models_dir` (`Path`)
+> - `m4i_models_enabled` (`bool`)
 > - `typedef_refresh_seconds` (`float`)
 > - `delete_type` (`Literal['soft', 'hard']`)
 > - `delete_type_override` (`bool`)
@@ -895,6 +901,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > The lowest level of log record the server and uvicorn emit.
 >
+> ### m4i\_models\_enabled
+>
+> ```
+> m4i_models_enabled: bool = True
+> ```
+>
+> Whether the m4i data dictionary types are loaded at start-up too, after `models_dir`; off loads none and leaves those stored as they are (MDD-01, MDD-03, ADR 058).
+>
 > ### metrics\_persist\_interval\_minutes
 >
 > ```
@@ -916,6 +930,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 > model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra='ignore')
 > ```
+>
+> ### model\_dirs
+>
+> ```
+> model_dirs: list[Path]
+> ```
+>
+> The models directories loaded at start-up, in order (MDD-01).
 >
 > ### models\_dir
 >

@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/">
+        <link rel="prev" href="../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/">
       
       
         <link rel="next" href="./design-log/">
@@ -2038,6 +2038,8 @@
       
         
       
+        
+      
     
     
     
@@ -3648,6 +3650,33 @@
     
   
   057. The system ships as Helm charts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  058. A new catalogue starts with the m4i types
 
     
   </span>
@@ -6481,6 +6510,13 @@ checks a PR must pass:</p>
 <td><code>addons/models</code> loaded at start-up, model patches</td>
 <td><code>AtlasTypeDefStoreInitializer</code>, model patches</td>
 <td>done</td>
+</tr>
+<tr>
+<td>1.5b</td>
+<td>The m4i data dictionary types</td>
+<td>The m4i data dictionary types loaded at start-up after Atlas's models, on by default (MDD-01..04, ADR 058, DD-362)</td>
+<td>— (<code>m4i_atlas_core</code>)</td>
+<td>in review</td>
 </tr>
 <tr>
 <td>1.6</td>
