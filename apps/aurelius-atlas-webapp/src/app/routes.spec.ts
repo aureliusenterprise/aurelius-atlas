@@ -1,23 +1,20 @@
+import { Injector, runInInjectionContext } from "@angular/core";
 import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlSegment } from "@angular/router";
-
-const createAuthGuardMock = vi.hoisted(() => vi.fn((guard: unknown) => guard));
-
-vi.mock("keycloak-angular", () => ({
-    createAuthGuard: createAuthGuardMock,
-}));
+import Keycloak from "keycloak-js";
 
 import { createEntityMatcher, routes } from "./routes";
 import { SEARCH_ROUTES } from "./search/search.routes";
 import { SettingsPanel } from "./settings/settings-panel.component";
 
-// The guard is registered once, at import time. Copy the calls now: Vitest clears mock history before each test.
-const createAuthGuardCalls = [...createAuthGuardMock.mock.calls];
+type GuardFn = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => Promise<boolean>;
 
-type GuardFn = (
-    route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot,
-    authData: { authenticated: boolean; keycloak: { login: (options: { redirectUri: string }) => Promise<void> } },
-) => Promise<boolean>;
+function runGuard(guard: GuardFn, state: RouterStateSnapshot, authenticated: boolean, login: ReturnType<typeof vi.fn>) {
+    const injector = Injector.create({
+        providers: [{ provide: Keycloak, useValue: { authenticated, login } }],
+    });
+
+    return runInInjectionContext(injector, () => guard({} as ActivatedRouteSnapshot, state));
+}
 
 describe("routes", () => {
     it("guards every route from the app root (APC-05, DD-141)", () => {
@@ -141,10 +138,7 @@ describe("routes", () => {
             const login = vi.fn().mockResolvedValue(undefined);
             const state = { url: "/search/browse" } as RouterStateSnapshot;
 
-            const result = await guard({} as ActivatedRouteSnapshot, state, {
-                authenticated: false,
-                keycloak: { login },
-            });
+            const result = await runGuard(guard, state, false, login);
 
             expect(result).toBe(false);
             expect(login).toHaveBeenCalledWith({
@@ -160,7 +154,7 @@ describe("routes", () => {
         const login = vi.fn().mockResolvedValue(undefined);
         const state = { url: "/search/browse" } as RouterStateSnapshot;
 
-        const result = await guard({} as ActivatedRouteSnapshot, state, { authenticated: true, keycloak: { login } });
+        const result = await runGuard(guard, state, true, login);
 
         expect(result).toBe(true);
         expect(login).not.toHaveBeenCalled();
@@ -176,10 +170,7 @@ describe("routes", () => {
         const login = vi.fn().mockResolvedValue(undefined);
         const state = { url: "/search/browse#state=abc&session_state=xyz&code=123" } as RouterStateSnapshot;
 
-        const result = await guard({} as ActivatedRouteSnapshot, state, {
-            authenticated: false,
-            keycloak: { login },
-        });
+        const result = await runGuard(guard, state, false, login);
 
         expect(result).toBe(false);
         expect(login).toHaveBeenCalledWith({
@@ -193,16 +184,16 @@ describe("routes", () => {
         const login = vi.fn().mockResolvedValue(undefined);
         const state = { url: "/search/browse?q=gene%20expression" } as RouterStateSnapshot;
 
-        await guard({} as ActivatedRouteSnapshot, state, { authenticated: false, keycloak: { login } });
+        await runGuard(guard, state, false, login);
 
         expect(login).toHaveBeenCalledWith({
             redirectUri: `${globalThis.location.origin}/search/browse?q=gene%20expression`,
         });
     });
 
-    it("registers the root guard with createAuthGuard, once (DD-141)", () => {
-        expect(createAuthGuardCalls).toHaveLength(1);
-        expect(typeof createAuthGuardCalls[0][0]).toBe("function");
+    it("registers one root authentication guard (DD-141)", () => {
+        expect(routes[0].canActivate).toHaveLength(1);
+        expect(typeof routes[0].canActivate?.[0]).toBe("function");
     });
 });
 
