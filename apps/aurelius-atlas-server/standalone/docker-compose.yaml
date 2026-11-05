@@ -1,0 +1,69 @@
+# The server alone, with the Atlas dashboards, on the dev store and the dev Keycloak (see README.md).
+# SAMPLE_ZIP names an Atlas export ZIP in atlas_sample_data/ to import once the server is up;
+# empty, or a name no file has, imports nothing.
+name: aurelius-atlas-standalone
+
+x-certs: &certs ../certs:/certs:ro
+
+services:
+    aurelius-atlas-server:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        environment:
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # HSTS off: includeSubDomains on localhost would pin keycloak.localhost to HTTPS in the browser.
+            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
+            # Propagation in the request, not by the task worker (DD-081): an import of propagating
+            # classifications loses its write races to the worker (EWR-16 retries once) and fails.
+            AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-false}
+            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            # The dev Keycloak's TLS listener, published on this machine.
+            - keycloak.localhost:host-gateway
+        networks:
+            default:
+                # The name in the server's certificate, which the sample import verifies.
+                aliases:
+                    - aurelius-atlas-server
+            aurelius-atlas-dev-elasticsearch-network: {}
+        ports:
+            # 21001: a sign-in return the realm's aurelius-atlas-server client accepts (serve keeps 21000).
+            - 127.0.0.1:21001:21000
+        volumes:
+            - *certs
+
+    # One shot: waits for the server, signs in as the dev writer and posts SAMPLE_ZIP to admin/import;
+    # without SAMPLE_ZIP, or without its file, it exits at once.
+    sample-import:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        entrypoint: [python, /standalone/import_sample.py]
+        depends_on:
+            - aurelius-atlas-server
+        restart: "no"
+        environment:
+            ATLAS_URL: https://aurelius-atlas-server:21000
+            TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            ATLAS_USERNAME: aurelius-writer
+            ATLAS_PASSWORD: ${DEV_USER_WRITER_PASSWORD:-}
+            CA_FILE: /certs/ca.pem
+            SAMPLE_DIR: /sample
+            SAMPLE_ZIP: ${SAMPLE_ZIP:-}
+            # Atlas's AtlasImportRequest, as JSON: options such as transforms or replicatedFrom.
+            IMPORT_REQUEST: ${SAMPLE_IMPORT_REQUEST:-{}}
+        extra_hosts:
+            - keycloak.localhost:host-gateway
+        volumes:
+            - *certs
+            - ./import_sample.py:/standalone/import_sample.py:ro
+            - ${SAMPLE_DIR:-../../../atlas_sample_data}:/sample:ro
+
+networks:
+    aurelius-atlas-dev-elasticsearch-network:
+        external: true
