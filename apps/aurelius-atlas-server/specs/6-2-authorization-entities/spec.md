@@ -1,6 +1,6 @@
 # 6.2b Authorization: entities, classifications, relationships and the glossary
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-301; relies on DD-300, ADR 038 (accepted with 6.2c)
 

@@ -1,6 +1,6 @@
 # 7.5 Browse landing page
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#101](https://github.com/aureliusenterprise/aurelius-atlas/pull/101)
 - **Records:** ADR 053; DD-143, DD-144; relies on ADR 007, DD-126, DD-128, DD-134,
   DD-135, DD-136, DD-140, DD-141, UIC rules (7.2)

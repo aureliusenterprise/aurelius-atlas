@@ -1,6 +1,6 @@
 # 4.1a Entity search
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#140](https://github.com/aureliusenterprise/aurelius-atlas/pull/140)
 - **Records:** DD-087 to DD-089, DV-43 to DV-46; relies on DD-043, DD-055
 

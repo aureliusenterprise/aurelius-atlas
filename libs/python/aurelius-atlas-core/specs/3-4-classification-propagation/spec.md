@@ -1,6 +1,6 @@
 # 3.4a Classification propagation
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#122](https://github.com/aureliusenterprise/aurelius-atlas/pull/122)
 - **Records:** DD-075 to DD-078, DV-37; ends DV-34; relies on DD-061, DD-062, DD-066, DD-068, DD-070, DD-071
 

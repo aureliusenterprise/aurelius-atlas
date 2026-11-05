@@ -3,8 +3,11 @@
 from pathlib import Path
 from typing import Literal
 
+from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
+from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
+from aurelius_atlas_store_es.snapshots import SnapshotPolicy
 from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -14,14 +17,45 @@ ENV_PREFIX = "AURELIUS_ATLAS_SERVER_"
 DEFAULT_PORT = 21000
 """The port Apache Atlas listens on."""
 
+SNAPSHOT_INDICES = (f"{INDEX_PREFIX}-*",)
+"""The indices a snapshot holds and a restore brings back: all the server's (SNP-01, SNP-05)."""
+
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels both uvicorn and the OTel console accept."""
 
 
-class ServerSettings(BaseSettings):
-    """How the server runs and where its store is."""
+class StoreAccessSettings(BaseSettings):
+    """Where the store is and where its snapshots are: all the snapshot command needs (SNP-04, SNP-05)."""
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra="ignore")
+
+    elasticsearch_hosts: list[HttpUrl] = Field(min_length=1)
+    """Base URLs of the Elasticsearch nodes, as a JSON list: ``["https://localhost:9200"]``."""
+
+    elasticsearch_username: str = "elastic"
+    """User for the store."""
+
+    elasticsearch_password: SecretStr
+    """Password for the store; never shown in logs."""
+
+    elasticsearch_ca_certs: FilePath
+    """PEM file with the certificate authority of the Elasticsearch server certificate."""
+
+    snapshot_location: str = "aurelius-atlas"
+    """The repository's directory, below the store's ``path.repo`` (SNP-01)."""
+
+    def store_settings(self) -> StoreSettings:
+        """The settings of the Elasticsearch store."""
+        return StoreSettings(
+            hosts=self.elasticsearch_hosts,
+            username=self.elasticsearch_username,
+            password=self.elasticsearch_password,
+            ca_certs=self.elasticsearch_ca_certs,
+        )
+
+
+class ServerSettings(StoreAccessSettings):
+    """How the server runs and where its store is."""
 
     host: str = "localhost"
     """The interface to listen on; the container image sets ``0.0.0.0``."""
@@ -91,20 +125,86 @@ class ServerSettings(BaseSettings):
     lineage_max_node_count: int = Field(default=9000, ge=1)
     """The relations past which lineage adds none (at most 9,000): ``atlas.lineage.max.node.count`` (LIN-04)."""
 
+    metrics_persist_interval_minutes: int = Field(default=60, ge=0)
+    """How often the metrics are stored, in minutes on their multiples since the epoch; 0 stores none:
+    ``atlas.metrics.persist.schedule`` (MHS-05, DV-137)."""
+
+    metrics_ttl_hours: int = Field(default=336, ge=1)
+    """How long a stored metric is kept: ``atlas.metrics.ttl.hours`` (MHS-01, MHS-05)."""
+
+    audit_aging_enabled: bool = False
+    """Whether the entity audits age out on a schedule, and ``admin/audits/ageout?useAuditConfig`` ages them:
+    ``atlas.audit.aging.enabled`` (AGE-02, AGE-05)."""
+
+    audit_default_ageout_enabled: bool = True
+    """``atlas.audit.default.ageout.enabled``: the default aging, of the types no other aging names (AGE-02)."""
+
+    audit_default_ageout_ttl_in_days: int = 90
+    """``atlas.audit.default.ageout.ttl.in.days``: at least ``audit_min_ttl_to_maintain`` (AGE-02)."""
+
+    audit_default_ageout_count: int = 0
+    """``atlas.audit.default.ageout.count``: the newest audits each entity keeps; 0 for no count (AGE-02)."""
+
+    audit_default_ageout_ignore_ttl: bool = False
+    """``atlas.audit.default.ageout.ignore.ttl``: the default aging by count alone (AGE-02)."""
+
+    audit_custom_ageout_ttl_in_days: int = 0
+    """``atlas.audit.custom.ageout.ttl.in.days`` (AGE-02)."""
+
+    audit_custom_ageout_count: int = 0
+    """``atlas.audit.custom.ageout.count`` (AGE-02)."""
+
+    audit_custom_ageout_entity_types: str | None = None
+    """``atlas.audit.custom.ageout.entity.types``: comma-separated, ``<prefix>*`` for all that start so (AGE-02)."""
+
+    audit_custom_ageout_action_types: str | None = None
+    """``atlas.audit.custom.ageout.action.types``: comma-separated action names or prefixes (AGE-02)."""
+
+    audit_sweep_out_enabled: bool = False
+    """``atlas.audit.sweep.out.enabled``: every audit of the sweep's types and actions removed (AGE-02)."""
+
+    audit_sweep_out_entity_types: str | None = None
+    """``atlas.audit.sweep.out.entity.types`` (AGE-02)."""
+
+    audit_sweep_out_action_types: str | None = None
+    """``atlas.audit.sweep.out.action.types`` (AGE-02)."""
+
+    audit_create_events_ageout_allowed: bool = False
+    """``atlas.audit.create.events.ageout.allowed``: creations may age out too (AGE-04)."""
+
+    audit_aging_subtypes_included: bool = True
+    """``atlas.audit.aging.subtypes.included``: an aging's types take their sub types (AGE-04)."""
+
+    audit_min_ttl_to_maintain: int = 7
+    """``atlas.audit.min.ttl.to.maintain``: the least TTL, in days, an aging may have (AGE-02)."""
+
+    audit_min_count_to_maintain: int = 50
+    """``atlas.audit.min.count.to.maintain``: the least count an aging may keep (AGE-02)."""
+
+    audit_reduction_max_pending_tasks: int = 50
+    """``atlas.audit.reduction.max.pending.tasks``: past it no aging is queued (AGE-03)."""
+
+    audit_aging_scheduler_frequency_in_days: int = 30
+    """``atlas.audit.aging.scheduler.frequency.in.days``: at least 1 (AGE-05)."""
+
+    audit_aging_scheduler_initial_delay_in_min: int = 1
+    """``atlas.audit.aging.scheduler.initial.delay.in.min``: at least 1 (AGE-05)."""
+
+    snapshot_enabled: bool = False
+    """Whether the server puts the store's snapshot policy at start and watches its runs (SNP-01 to SNP-03). The
+    chart turns it on; the dev store's data is disposable."""
+
+    snapshot_schedule: str = "0 0 * * * ?"
+    """When a snapshot is taken, as an Elasticsearch cron expression in UTC: every hour on the hour (SNP-02)."""
+
+    snapshot_retention: str = "7d"
+    """How long a snapshot is kept, as an Elasticsearch time unit (SNP-02)."""
+
+    snapshot_check_minutes: int = Field(default=15, ge=1)
+    """How often the server reads how the policy's last runs went (SNP-03)."""
+
     revision: str = "UNKNOWN"
     """The source revision the server was built from, reported by ``admin/version`` (ADM-01)."""
-
-    elasticsearch_hosts: list[HttpUrl] = Field(min_length=1)
-    """Base URLs of the Elasticsearch nodes, as a JSON list: ``["https://localhost:9200"]``."""
-
-    elasticsearch_username: str = "elastic"
-    """User for the store."""
-
-    elasticsearch_password: SecretStr
-    """Password for the store; never shown in logs."""
-
-    elasticsearch_ca_certs: FilePath
-    """PEM file with the certificate authority of the Elasticsearch server certificate."""
 
     otel_token_url: HttpUrl | None = None
     """The issuer's token endpoint for the OTLP ingest credential (7.18,
@@ -163,11 +263,33 @@ class ServerSettings(BaseSettings):
         """The certificate and key to serve HTTPS with (SRV-03, SRV-06, DD-234)."""
         return Path(self.tls_cert_file), Path(self.tls_key_file)
 
-    def store_settings(self) -> StoreSettings:
-        """The settings of the Elasticsearch store."""
-        return StoreSettings(
-            hosts=self.elasticsearch_hosts,
-            username=self.elasticsearch_username,
-            password=self.elasticsearch_password,
-            ca_certs=self.elasticsearch_ca_certs,
+    def snapshot_policy(self) -> SnapshotPolicy:
+        """The snapshot policy of the server's indices, every index of ``INDEX_PREFIX`` (SNP-01, SNP-02)."""
+        return SnapshotPolicy(
+            indices=SNAPSHOT_INDICES,
+            location=self.snapshot_location,
+            schedule=self.snapshot_schedule,
+            expire_after=self.snapshot_retention,
+        )
+
+    def audit_aging_config(self) -> AuditAgingConfig:
+        """The ``atlas.audit.*`` aging settings of the core's aging (AGE-02)."""
+        return AuditAgingConfig(
+            aging_enabled=self.audit_aging_enabled,
+            default_ageout_enabled=self.audit_default_ageout_enabled,
+            default_ageout_ttl_in_days=self.audit_default_ageout_ttl_in_days,
+            default_ageout_count=self.audit_default_ageout_count,
+            default_ageout_ignore_ttl=self.audit_default_ageout_ignore_ttl,
+            custom_ageout_ttl_in_days=self.audit_custom_ageout_ttl_in_days,
+            custom_ageout_count=self.audit_custom_ageout_count,
+            custom_ageout_entity_types=self.audit_custom_ageout_entity_types,
+            custom_ageout_action_types=self.audit_custom_ageout_action_types,
+            sweep_out_enabled=self.audit_sweep_out_enabled,
+            sweep_out_entity_types=self.audit_sweep_out_entity_types,
+            sweep_out_action_types=self.audit_sweep_out_action_types,
+            create_events_ageout_allowed=self.audit_create_events_ageout_allowed,
+            subtypes_included=self.audit_aging_subtypes_included,
+            min_ttl_to_maintain=self.audit_min_ttl_to_maintain,
+            min_count_to_maintain=self.audit_min_count_to_maintain,
+            max_pending_tasks=self.audit_reduction_max_pending_tasks,
         )

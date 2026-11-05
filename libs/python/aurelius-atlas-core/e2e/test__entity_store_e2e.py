@@ -1,11 +1,18 @@
-"""The entity store against the dev Elasticsearch (ENS-01, ENS-05, ENS-07, ENS-08, ENS-09)."""
+"""The entity store against the dev Elasticsearch (ENS-01, ENS-05, ENS-07, ENS-08, ENS-09, MET-02)."""
 
 import asyncio
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
 
 import pytest
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, LinkedKind, LinkedWrite, WriteResult
+from aurelius_atlas_core import entity_documents
+from aurelius_atlas_core.entity_documents import (
+    ElasticsearchEntityDocuments,
+    LinkedKind,
+    LinkedWrite,
+    TypeCount,
+    WriteResult,
+)
 from aurelius_atlas_core.entity_store import (
     LEASE_MILLISECONDS,
     EntityChange,
@@ -14,7 +21,7 @@ from aurelius_atlas_core.entity_store import (
 )
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.typedef_document import DocumentVersion
-from aurelius_atlas_model.instance import AtlasEntity
+from aurelius_atlas_model.instance import AtlasEntity, EntityStatus
 from aurelius_atlas_model.typedef import AtlasAttributeDef, AtlasEntityDef, AtlasTypesDef
 from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -160,3 +167,29 @@ async def test__a_write_cut_short_is_undone_by_another_process(
     assert restored.entity.attributes == {"table.qualifiedName": "kept@e2e"}
     await survivor.write([EntityChange(table(survivor, qualifiedName="new@e2e"))])
     await survivor.write([EntityChange(table(survivor, qualifiedName="renamed@e2e"))])
+
+
+@pytest.mark.covers("aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.type_counts", rules=["MET-02"])
+@pytest.mark.covers(
+    "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.linked_type_counts", rules=["MET-02"]
+)
+async def test__the_entities_and_classifications_are_counted_by_type(
+    dev_store: ElasticsearchStore, entity_prefix: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A composite aggregation by type, state and shell flag, read page by page; classifications by type."""
+    monkeypatch.setattr(entity_documents, "COUNT_PAGE", 1)
+    store = await opened(dev_store, entity_prefix)
+    active = table(store, qualifiedName="a@e2e")
+    deleted = table(store, qualifiedName="d@e2e").model_copy(update={"state": EntityStatus.DELETED})
+    shell = table(store, qualifiedName="s@e2e").model_copy(update={"is_incomplete": True})
+    await store.write([EntityChange(active), EntityChange(deleted), EntityChange(shell)])
+    await dev_store.client.index(
+        index=f"{entity_prefix}-classifications", document={"guid": "c1", "typeName": "pii"}, refresh=True
+    )
+
+    assert sorted(await store.type_counts(), key=lambda found: (found.state, found.incomplete)) == [
+        TypeCount("table", "ACTIVE", incomplete=False, count=1),
+        TypeCount("table", "ACTIVE", incomplete=True, count=1),
+        TypeCount("table", "DELETED", incomplete=False, count=1),
+    ]
+    assert await store.classification_type_counts() == {"pii": 1}

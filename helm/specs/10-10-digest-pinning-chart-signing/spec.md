@@ -1,6 +1,6 @@
 # 10.10 Digest-pinned images and signed charts
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** #184 (stacked on #183)
 - **Records:** DD-278 (adds), DD-288 (relies on: the `appVersion` chain),
   DD-290/DD-293 (relies on: plugin-inferred chart targets), CHT-05/07 (relies

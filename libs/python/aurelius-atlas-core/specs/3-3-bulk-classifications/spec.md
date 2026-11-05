@@ -1,6 +1,6 @@
 # 3.3b Bulk classifications
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#120](https://github.com/aureliusenterprise/aurelius-atlas/pull/120)
 - **Records:** DD-074, DV-36; relies on DD-070 to DD-073
 

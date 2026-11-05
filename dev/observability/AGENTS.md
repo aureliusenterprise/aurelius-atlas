@@ -29,8 +29,8 @@ rules live in the root `AGENTS.md`.
   interaction), the frontend dashboard reads the live cumulative `_bucket`
   instead of `rate()` to avoid NaN between ticks.
 - `config/grafana/` — file-provisioned datasources and the **dashboards**
-  folder: one dashboard per app/dev stack (`aurelius-atlas-webapp`,
-  `aurelius-atlas-keycloak`, `aurelius-atlas-elasticsearch`,
+  folder: one dashboard per app/dev stack (`aurelius-atlas-server`,
+  `aurelius-atlas-webapp`, `aurelius-atlas-keycloak`, `aurelius-atlas-elasticsearch`,
   `aurelius-atlas-observability-stack`), all in the
   "Aurelius" folder. They are plain JSON edited in the repo (Grafana's UI
   edits are lost on recreate), keyed by the telemetry identities the slices
@@ -48,6 +48,11 @@ rules live in the root `AGENTS.md`.
   floor = 4 scrape intervals); adjacent buckets sum to the total. Keep
   `rate()` only where the quantity is inherently per-second (throughput,
   quantiles, bytes/s) or high-volume enough that fractions are meaningful.
+- `config/grafana/alerting/rules.yaml` — the Grafana alert rules (OBS-03, ADR 040),
+  byte-copied to `helm/files/grafana-alerting.yaml` (the chart suite compares them).
+  Dev has no contact point; the chart's `grafana.alerting.webhookSecret` adds the
+  maintainers' webhook (OBS-04, DD-319). Rule queries pin `exported_job` like the
+  dashboards' do
 - `scripts/init-grafana.sh` — provisions Grafana datasources on first start
 - `helm/` — the `atlas-observability` chart (its own section below)
 
@@ -130,6 +135,14 @@ nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
   `enduser.id` on `otel-*` pushes — machine telemetry wears no user identity
   (DD-196, CIA-09). Read traces back with `GET :3200/api/traces/<id>`
   (plural; Tempo 3.x).
+- Each store's lifetime (RET-02..05, ADR 025) is set in its tool's own
+  config: Prometheus's `--storage.tsdb.retention.time`, Loki's compactor and
+  `limits_config.retention_period`, Tempo's `overrides.defaults.compaction`
+  (Tempo 3 has no top-level `compactor`), Grafana's
+  `GF_UNIFIED_ALERTING_STATE_HISTORY_ANNOTATIONS_MAX_AGE`. Change a period in
+  the compose or config, the chart, and
+  `docs/architecture/data-lifecycle-management/data-archiving.md` together; a new
+  volume needs a row there (`tests/test__retention.py`).
 
 ## Helm chart
 

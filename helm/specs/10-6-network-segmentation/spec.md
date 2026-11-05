@@ -1,6 +1,6 @@
 # 10.6 Network segmentation
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-271, DD-272 (pre-pentest review findings H2/M10)
 

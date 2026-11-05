@@ -1,6 +1,6 @@
 # 0.3 Test report and traceability
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** ADR 049 (becomes Accepted), DD-009, DD-010, DD-011
 

@@ -1,6 +1,6 @@
 # 8.21 Angular glossary twin (2/3) — the terms
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** none new; cites DD-217 (the client lands on both sides of the
   wire), 7.3 (APC-01..APC-04), 8.18 (the DELETE-with-body idiom), 8.20 (AGL,

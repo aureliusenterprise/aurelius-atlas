@@ -32,8 +32,10 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 import requests
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
@@ -145,3 +147,25 @@ def build_otlp_pipeline(
         session=session,
     )
     return BatchSpanProcessor(span_exporter), PeriodicExportingMetricReader(metric_exporter)
+
+
+def build_otlp_log_processor(
+    endpoint: str,
+    ca_file: str | None,
+    token_source: ClientCredentialsTokenSource,
+) -> BatchLogRecordProcessor:
+    """The app-owned OTLP log export (OBS-01): a log record processor on the per-service leg.
+
+    The exporter injects the bearer header per export, as ``build_otlp_pipeline``'s do.
+
+    :param endpoint: the collector's service-leg base (``https://host:4319``)
+    :param ca_file: PEM CA verifying the collector's TLS
+    :param token_source: the ingest credential source
+    :returns: a log record processor for ``setup_telemetry``
+    """
+    exporter = OTLPLogExporter(
+        endpoint=f"{endpoint}/v1/logs",
+        certificate_file=ca_file,
+        session=_IngestSession(token_source),
+    )
+    return BatchLogRecordProcessor(exporter)

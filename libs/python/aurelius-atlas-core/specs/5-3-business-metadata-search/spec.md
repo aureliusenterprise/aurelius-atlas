@@ -1,6 +1,6 @@
 # 5.3d Business metadata in search
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** relies on DD-088, DD-302
 

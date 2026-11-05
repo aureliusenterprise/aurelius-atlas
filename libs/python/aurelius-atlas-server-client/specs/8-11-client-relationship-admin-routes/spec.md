@@ -1,6 +1,6 @@
 # 8.11 Client route coverage — relationship and the admin writes
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-307 (the per-module live-check spec), DD-309 (bodies reused from
   `aurelius-atlas-model`), DD-310 (file routes carry raw bytes), DD-313 (the

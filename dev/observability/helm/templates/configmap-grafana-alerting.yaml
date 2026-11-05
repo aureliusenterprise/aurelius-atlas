@@ -1,0 +1,39 @@
+{{/*
+The Grafana alerting provisioning (OBS-03, OBS-04): the alert rules as a
+byte-copy asset (files/grafana-alerting.yaml — the suite byte-compares it
+against dev/observability/config/grafana/alerting/rules.yaml), and, when
+grafana.alerting.webhookSecret names a Secret, the maintainers' webhook
+contact point with the notification policy that routes every rule to it.
+The URL never lands here: Grafana reads it from the env the Secret fills
+($__env, R5). Without the Secret the rules fire in Grafana's alert list only.
+*/}}
+{{- if .Values.grafana.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-grafana-alerting
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    rules.yaml: |
+        {{- .Files.Get "files/grafana-alerting.yaml" | nindent 8 }}
+    {{- if .Values.grafana.alerting.webhookSecret }}
+    contact-points.yaml: |
+        apiVersion: 1
+        contactPoints:
+            - orgId: 1
+              name: maintainers
+              receivers:
+                  - uid: maintainers-webhook
+                    type: webhook
+                    settings:
+                        url: $__env{ALERT_WEBHOOK_URL}
+        policies:
+            - orgId: 1
+              receiver: maintainers
+              group_by: ["alertname"]
+              repeat_interval: {{ .Values.grafana.alerting.repeatInterval | quote }}
+    {{- end }}
+{{- end }}

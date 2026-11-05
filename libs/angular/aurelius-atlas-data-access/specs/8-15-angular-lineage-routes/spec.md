@@ -1,6 +1,6 @@
 # 8.15 Angular lineage twin — the three LineageREST routes
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** none new; cites DD-217 (the client lands on both sides of the
   wire), 7.3 (APC-01..APC-04), 8.8 (CL-61..CL-63, the Python twin), and the

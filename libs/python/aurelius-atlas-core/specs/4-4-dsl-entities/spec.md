@@ -1,6 +1,6 @@
 # 4.4a DSL search of entities
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#164](https://github.com/aureliusenterprise/aurelius-atlas/pull/164)
 - **Records:** DD-242, DV-89 to DV-96; relies on DD-087 to DD-092, DD-240, DD-241
 

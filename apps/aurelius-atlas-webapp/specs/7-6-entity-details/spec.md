@@ -1,6 +1,6 @@
 # 7.6 Entity details
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#109](https://github.com/aureliusenterprise/aurelius-atlas/pull/109)
 - **Records:** DD-186 (details skeleton: route contract, gated data), DD-187 (the
   entity client grows with server 2.3), DD-188 (one API base: the client's URLs

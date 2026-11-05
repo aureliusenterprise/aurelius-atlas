@@ -387,9 +387,9 @@ def test__datasources_pin_uids_and_crosslinks(obs_docs: list[dict[str, Any]]) ->
     assert tempo_json["tracesToLogsV2"]["tags"] == ["service.name"]
 
 
-@pytest.mark.covers(rules=["CHT-40"])
+@pytest.mark.covers(rules=["CHT-40", "OBS-02"])
 def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None:
-    """Provider + all four dashboards byte-identical to dev (CHT-40, DD-256).
+    """Provider + all five dashboards byte-identical to dev (CHT-40, DD-256; the server's joins with OBS-02).
 
     Their queries (the exported_job pins) are the contract.
     """
@@ -403,9 +403,48 @@ def test__grafana_assets_are_byte_copies(obs_docs: list[dict[str, Any]]) -> None
     dev_dir = DEV_CONFIG / "grafana/dashboards"
     expected = sorted(path.name for path in dev_dir.glob("*.json"))
     assert sorted(dashboards["data"]) == expected
-    assert len(expected) == 4
+    assert len(expected) == 5
     for name in expected:
         assert dashboards["data"][name].encode() == (dev_dir / name).read_bytes()
+
+
+@pytest.mark.covers(rules=["OBS-03"])
+def test__the_alert_rules_are_a_byte_copy_mounted_for_grafana(obs_docs: list[dict[str, Any]]) -> None:
+    """The rules ride byte-identical to dev, on Grafana's alerting provisioning path (OBS-03, DD-256's guard)."""
+    alerting = find(obs_docs, "ConfigMap", f"{FULLNAME}-grafana-alerting")
+    assert alerting["data"]["rules.yaml"].encode() == (OBS_CHART / "files/grafana-alerting.yaml").read_bytes()
+    assert (OBS_CHART / "files/grafana-alerting.yaml").read_bytes() == (
+        DEV_CONFIG / "grafana/alerting/rules.yaml"
+    ).read_bytes()
+
+    rules = yaml.safe_load(alerting["data"]["rules.yaml"])["groups"][0]["rules"]
+    assert all(rule["labels"]["team"] == "maintainers" for rule in rules)
+    assert {rule["labels"]["severity"] for rule in rules} == {"critical", "warning"}
+
+    grafana = pod_spec(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"))
+    mounts = {
+        m["name"]: m["mountPath"]
+        for m in container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")["volumeMounts"]
+    }
+    assert mounts["alerting"] == "/etc/grafana/provisioning/alerting"
+    volumes = {v["name"]: v for v in grafana["volumes"]}
+    assert volumes["alerting"]["configMap"]["name"] == f"{FULLNAME}-grafana-alerting"
+
+
+@pytest.mark.covers(rules=["OBS-04"])
+def test__a_webhook_secret_routes_every_rule_to_the_maintainers() -> None:
+    """Without the Secret no contact point; with it, the webhook reads its URL from the Secret's env (OBS-04)."""
+    plain = find(helm_render(OBS_CHART, value_files=TEST_VALUES), "ConfigMap", f"{FULLNAME}-grafana-alerting")
+    assert set(plain["data"]) == {"rules.yaml"}
+
+    docs = helm_render(OBS_CHART, value_files=TEST_VALUES, sets=("grafana.alerting.webhookSecret=alert-hook",))
+    provisioned = yaml.safe_load(find(docs, "ConfigMap", f"{FULLNAME}-grafana-alerting")["data"]["contact-points.yaml"])
+    [contact] = provisioned["contactPoints"]
+    assert contact["name"] == "maintainers"
+    assert contact["receivers"][0]["settings"]["url"] == "$__env{ALERT_WEBHOOK_URL}"
+    assert provisioned["policies"][0]["receiver"] == "maintainers"
+    envs = env_map(container(find(docs, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
+    assert envs["ALERT_WEBHOOK_URL"]["valueFrom"]["secretKeyRef"] == {"name": "alert-hook", "key": "url"}
 
 
 @pytest.mark.covers(rules=["CHT-44"])

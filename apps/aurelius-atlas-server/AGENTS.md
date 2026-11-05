@@ -16,16 +16,25 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
   server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
   turns them on and runs on the module loop, where the lifespan started the worker
+- `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts the
+  store's snapshot policy and starts it; it logs failed runs and reports the gauge
+  `aurelius_atlas.snapshot.last_success` (SNP-01 to SNP-03, 6.4e)
+- `aurelius_atlas_server/snapshots.py` — the command `python -m aurelius_atlas_server.snapshots list|take|restore`,
+  reading `StoreAccessSettings` alone; the chart's restore Job runs it (SNP-04, SNP-05, SNP-07). Its e2e
+  rehearsal runs two ES containers of its own, never the dev store
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type;
   a 5xx answer is opaque and carries the trace id as `requestId` (SRV-07, DD-235)
 - `aurelius_atlas_server/security_headers.py` — `SecurityHeadersMiddleware`: security headers on every
   answer, split `/api` path vs dashboard; HSTS gated on `hsts_enabled` (SRV-08, DD-236). TLS material
   is a required setting — the server never serves plaintext (SRV-06, DD-234)
 - OTLP ingest (DD-196) lives in the shared `aurelius-atlas-otel` lib (DD-197):
-  `app.py::_ingest_pipeline` maps `ServerSettings.otel_*` into
-  `build_otlp_pipeline`, installed by the lib's `setup_telemetry` on the
-  native OTel providers (DD-210: the app owns its export; the static env
-  headers cannot carry a 60s JWT)
+  `app.py::_telemetry` maps `ServerSettings.otel_*` (`_ingest_source`) into
+  `build_otlp_pipeline` and `build_otlp_log_processor`, installed by the lib's
+  `setup_telemetry` on the native OTel providers (DD-210: the app owns its
+  export; the static env headers cannot carry a 60s JWT). `BRIDGED_LOGGERS`
+  send their records to the collector and still to stdout (OBS-01, DD-320)
+- `e2e/load.py` + `e2e/test__aurelius_atlas_server_load_e2e.py` — the load test
+  (LOD-01..03, DD-321), run with the e2e suite; `AURELIUS_ATLAS_LOAD_*` tune it
 - `aurelius_atlas_server/authentication.py` — `AuthenticationMiddleware`, `SessionStore`, `user_of`: each
   request's user from its bearer token or browser session, the 401 or sign-in redirect, the CSRF check (6.1a,
   DD-250); `oidc_client.py` — `OidcClient`: the confidential client's code flow, refresh and sign-out;

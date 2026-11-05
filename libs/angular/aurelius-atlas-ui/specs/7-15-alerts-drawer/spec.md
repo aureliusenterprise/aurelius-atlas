@@ -1,6 +1,6 @@
 # 7.15 Alerts drawer
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#107](https://github.com/aureliusenterprise/aurelius-atlas/pull/107)
 - **Records:** DD-171 (the alerts store: windowed grouping, cap), DD-172 (the
   ErrorHandler chain: alert then trace), DD-173 (the HTTP error reporter),

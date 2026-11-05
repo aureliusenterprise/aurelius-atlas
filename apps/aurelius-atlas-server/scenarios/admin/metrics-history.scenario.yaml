@@ -1,0 +1,39 @@
+name: A metrics range needs a start before its end, and charts no type it is not asked for
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getMetricsInTimeRange
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getMetricsForChartByTypeNames
+    - repository/src/main/java/org/apache/atlas/services/MetricsService.java#getMetricsInRangeByTypeNames
+    - repository/src/main/java/org/apache/atlas/services/MetricsService.java#getMetricsForChartByTypeNames
+rules: [MHS-03, MHS-04]
+covers:
+    - aurelius_atlas_server.routes.admin.get_metrics_in_time_range
+    - aurelius_atlas_server.routes.admin.get_metrics_for_chart_by_type_names
+stages:
+    - name: a range without its end
+      request:
+          method: GET
+          url: /api/atlas/admin/metricsstats/range
+          params: { startTime: "1" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-029
+              errorMessage: startTime or endTime is null/empty.
+    - name: a range whose start is not before its end
+      request:
+          method: GET
+          url: /api/atlas/admin/metricsstats/range
+          params: { startTime: "2", endTime: "2" }
+      response:
+          status: 400
+          json:
+              errorCode: ATLAS-400-00-01A
+              errorMessage: "invalid parameters: startTime: '2', should be less than, endTime: '2'"
+    - name: charts of no type name
+      request:
+          method: GET
+          url: /api/atlas/admin/metricsstats/charts
+          params: { startTime: "1", endTime: "2" }
+      response:
+          status: 200
+          json: {}

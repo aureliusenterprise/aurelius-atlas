@@ -1,6 +1,6 @@
 # 8.9 Client route coverage — entity
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-307 (the per-module live-check spec), DD-309 (bodies reused from
   `aurelius-atlas-model`), DD-310 (file routes carry raw bytes), DD-311 (the

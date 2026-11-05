@@ -11,9 +11,11 @@ from uuid import uuid4
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
+from aurelius_atlas_model.audit_reduction import AtlasAuditAgingType
 from elasticsearch import AsyncElasticsearch
 
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
+from aurelius_atlas_core.typedef_document import INDEX_SETTINGS
 
 AUDIT_INDEX = f"{INDEX_PREFIX}-entity-audits"
 """The alias of the audit index (DD-082)."""
@@ -65,6 +67,10 @@ class EntityAuditRepository(Protocol):
         """
         ...
 
+    async def delete_events(self, entity_id: str, event_keys: Sequence[str]) -> None:
+        """Remove the entity's events of these keys (AGE-04)."""
+        ...
+
     async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
         """``getEntitiesWithTagChanges``: entities with a classification event from the one time to before the other.
 
@@ -81,16 +87,21 @@ class ElasticsearchEntityAuditRepository:
         self.alias = f"{prefix}-entity-audits"
 
     async def prepare(self) -> None:
-        """Create the index behind its alias unless it exists."""
+        """Create the index behind its alias unless it exists; an existing one gets a new one's settings (IDX-02)."""
         if not await self._client.indices.exists_alias(name=self.alias):
             await self._client.indices.create(
-                index=f"{self.alias}-000001", aliases={self.alias: {"is_write_index": True}}, mappings=AUDIT_MAPPING
+                index=f"{self.alias}-000001",
+                aliases={self.alias: {"is_write_index": True}},
+                mappings=AUDIT_MAPPING,
+                settings=INDEX_SETTINGS,
             )
+        else:
+            await self._client.indices.put_settings(index=self.alias, settings=INDEX_SETTINGS)
 
     async def put_events(self, events: Sequence[EntityAuditEventV2]) -> None:
         """Index each event as a new document, in one bulk request.
 
-        The append is refreshed, so the listing that follows it is current (ENS-11).
+        The append refreshes the index, so the listing that follows it is current (ENS-11, IDX-01).
 
         Raises:
             RuntimeError: Elasticsearch did not keep an event.
@@ -140,6 +151,13 @@ class ElasticsearchEntityAuditRepository:
                 break
             after = hits[-1]["sort"]
         return found
+
+    async def delete_events(self, entity_id: str, event_keys: Sequence[str]) -> None:
+        """Delete the entity's events of these keys by query, refreshed so the next listing misses them (AGE-04)."""
+        if not event_keys:
+            return
+        query = {"bool": {"filter": [{"term": {"entityId": entity_id}}, {"terms": {"eventKey": list(event_keys)}}]}}
+        await self._client.delete_by_query(index=self.alias, query=query, refresh=True, conflicts="proceed")
 
     async def entities_with_tag_changes(self, from_timestamp: int, to_timestamp: int) -> list[str]:
         """Page through the classification events of the time range (ENS-11: appends refresh)."""
@@ -224,3 +242,83 @@ def sort_events(
 def _case_insensitive(value: str | None) -> str:
     """``String.CASE_INSENSITIVE_ORDER``'s key: each character upper-cased, then lower-cased."""
     return "".join(character.upper().lower() for character in value or "")
+
+
+CREATE_ACTIONS = frozenset({EntityAuditActionV2.ENTITY_CREATE, EntityAuditActionV2.ENTITY_IMPORT_CREATE})
+"""The events an aging keeps unless it may age out creations."""
+DAY_MILLISECONDS = 86_400_000
+
+
+def events_to_age_out(  # noqa: PLR0913 - deleteEventsV2's parameters
+    events: Sequence[EntityAuditEventV2],
+    actions: Sequence[EntityAuditActionV2],
+    count: int,
+    ttl_in_days: int,
+    *,
+    create_events_ageout_allowed: bool,
+    aging_type: AtlasAuditAgingType,
+    now: int,
+) -> list[EntityAuditEventV2]:
+    """``HBaseBasedAuditRepository.deleteEventsV2``: the events of one entity an aging removes (AGE-04).
+
+    Of each action asked (or of all), creations left out unless allowed, newest first: past the ``count`` newest
+    they age out when a count is given or the aging sweeps. Of those kept, the newest ``count`` of them all stay
+    for a default aging or one of all actions, and any older than ``ttl_in_days`` ages out.
+    """
+    by_count = count > 0 or aging_type is AtlasAuditAgingType.SWEEP
+    eligible: list[EntityAuditEventV2] = []
+    kept: list[EntityAuditEventV2] = []
+    for action in sorted(actions) or [None]:
+        listed = sort_events(
+            [
+                event
+                for event in events
+                if (action is None or event.action is action)
+                and (create_events_ageout_allowed or event.action not in CREATE_ACTIONS)
+            ],
+            SORT_COLUMN_TIMESTAMP,
+            descending=True,
+        )
+        if not by_count:
+            kept += listed
+            continue
+        offset = min(len(listed), max(count, 0))
+        kept += listed[:offset]
+        eligible += listed[offset:]
+    if not kept:
+        return eligible
+    if by_count and (aging_type is AtlasAuditAgingType.DEFAULT or not actions):
+        kept = sort_events(kept, SORT_COLUMN_TIMESTAMP, descending=True)
+        if count < len(kept):
+            eligible += kept[count:]
+            kept = kept[:count]
+    if ttl_in_days > 0:
+        cutoff = now - ttl_in_days * DAY_MILLISECONDS
+        eligible += [event for event in kept if event.timestamp < cutoff]
+    return eligible
+
+
+async def delete_events_v2(  # noqa: PLR0913 - deleteEventsV2's parameters
+    repository: EntityAuditRepository,
+    entity_id: str,
+    actions: Sequence[EntityAuditActionV2],
+    count: int,
+    ttl_in_days: int,
+    *,
+    create_events_ageout_allowed: bool,
+    aging_type: AtlasAuditAgingType,
+    now: int,
+) -> list[EntityAuditEventV2]:
+    """``deleteEventsV2``: the entity's events :func:`events_to_age_out` names, removed and answered (AGE-04)."""
+    events = await repository.list_events(entity_id, None, None, -1)
+    removed = events_to_age_out(
+        events,
+        actions,
+        count,
+        ttl_in_days,
+        create_events_ageout_allowed=create_events_ageout_allowed,
+        aging_type=aging_type,
+        now=now,
+    )
+    await repository.delete_events(entity_id, [str(event.event_key) for event in removed])
+    return removed

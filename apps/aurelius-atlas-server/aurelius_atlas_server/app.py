@@ -11,35 +11,51 @@ from pathlib import Path
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
+from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.metrics_service import MetricsService
+from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
 from aurelius_atlas_core.model_loader import ModelLoader
 from aurelius_atlas_core.task_management import TaskManagement
 from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener
 from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.atlas_audit import AuditOperation
-from aurelius_atlas_otel import ClientCredentialsTokenSource, IngestPipeline, build_otlp_pipeline, setup_telemetry
-from aurelius_atlas_store_es import ElasticsearchStore
+from aurelius_atlas_otel import (
+    ClientCredentialsTokenSource,
+    bridge_logging,
+    build_otlp_log_processor,
+    build_otlp_pipeline,
+    setup_telemetry,
+)
+from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
+from aurelius_atlas_store_es.snapshots import SnapshotStatus, prepare_snapshots, snapshot_status
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from opentelemetry import metrics
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
+from aurelius_atlas_server.metrics_scheduler import MetricsScheduler
 from aurelius_atlas_server.oidc_client import OidcClient
 from aurelius_atlas_server.request_context import RequestContextMiddleware
 from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, LOGIN, RELATIONSHIP, TYPES
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.snapshot_watcher import SnapshotWatcher
 from aurelius_atlas_server.task_worker import TaskWorker
 
 NAME = "aurelius-atlas-server"
 LOGGER = logging.getLogger(NAME)
+BRIDGED_LOGGERS = (NAME, "aurelius_atlas_core", "aurelius_atlas_store_es", "uvicorn.error")
+"""The loggers whose records the collector receives (OBS-01): the server's, its libraries' and uvicorn's errors."""
 
 
 DASHBOARD_V3_DIR = "n"
@@ -103,17 +119,21 @@ def create_app(
     The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
     models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
     (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record
-    (TSK-04, DD-080).
+    (TSK-04, DD-080). With snapshots enabled, the store's snapshot policy is put and its runs watched (SNP-01 to
+    SNP-03).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
     auth, oidc, sessions = _authentication(settings, auth, oidc_http)
+    metrics_util = AtlasMetricsUtil()
 
     @asynccontextmanager
     async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         LOGGER.info("Starting %s %s", app.title, app.version)
         started = int(time.time() * 1000)
+        _start(metrics_util)
         worker: TaskWorker | None = None
+        schedules: list[AuditAgingScheduler | MetricsScheduler | SnapshotWatcher] = []
         await store.open()
         try:
             entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
@@ -134,15 +154,22 @@ def create_app(
             app.state.typedef_store = typedef_store
             app.state.entity_store = entity_store
             audit = EntityChangeNotifier(entity_store, [EntityAuditListener(entity_audits, entity_store.now)])
-            app.state.task_management = TaskManagement(entity_store, notifier=audit)
-            if settings.tasks_enabled:
-                worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
-                entity_store.task_listeners.append(worker.wake)
-                worker.start()
-                app.state.task_worker = worker
+            app.state.task_management = TaskManagement(entity_store, notifier=audit, audits=entity_audits)
+            worker = _task_worker(app, settings, entity_store)
             await _audit_server_status(admin_audits, started)
+            schedules = [
+                scheduler
+                for scheduler in (
+                    _audit_aging(settings, entity_store),
+                    _metrics_schedule(app, settings, entity_store),
+                    await _snapshots(settings, store),
+                )
+                if scheduler is not None
+            ]
             yield
         finally:
+            for scheduler in schedules:
+                await scheduler.stop()
             if worker is not None:
                 await worker.stop()
             await store.close()
@@ -161,27 +188,36 @@ def create_app(
     # one export or import at a time (EXP-01, DD-304)
     app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
     app.state.store = store
-    app.state.type_registry = registry
+    app.state.type_registry, app.state.metrics_util = registry, metrics_util
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
     _mount(app, settings)
 
+    _telemetry(app, settings)
+    LOGGER.setLevel(settings.log_level.upper())
+    return app
+
+
+def _telemetry(app: FastAPI, settings: ServerSettings) -> None:
+    """The process's traces, metrics and logs, and the app's request spans."""
     # Telemetry (SHL-14, DD-196, DD-210): the OTLP export is the app's own
     # pipeline when the ingest credential is configured — exporters whose
     # session injects a fresh client-credentials JWT per export (the
     # collector's per-service leg, CIA-07). Unset settings mean no OTLP at
     # all: the env-driven leg is off for this server, so a server without an
     # ingest identity exports nothing (DD-196). Debug runs also print spans
-    # to stdout (the dev console, DD-210).
-    ingest = _ingest_pipeline(settings)
+    # to stdout (the dev console, DD-210). The server's and its libraries' logs ride the same leg to the
+    # collector's logs pipeline, and still reach the process's output (OBS-01).
+    source = _ingest_source(settings)
+    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
     setup_telemetry(
         NAME,
         app.version,
-        pipeline=ingest,
+        pipeline=None if source is None else build_otlp_pipeline(settings.otel_endpoint, ca_file, source),
         console=settings.log_level in {"trace", "debug"},
+        log_processor=None if source is None else build_otlp_log_processor(settings.otel_endpoint, ca_file, source),
     )
+    bridge_logging(*BRIDGED_LOGGERS, propagate=True)
     FastAPIInstrumentor.instrument_app(app)
-    LOGGER.setLevel(settings.log_level.upper())
-    return app
 
 
 def _mount(app: FastAPI, settings: ServerSettings) -> None:
@@ -203,24 +239,22 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
         mount_dashboards(app, settings.dashboard_dir)
 
 
-def _ingest_pipeline(settings: ServerSettings) -> IngestPipeline | None:
-    """The app-owned OTLP export for the per-service ingest leg (7.18, DD-196).
+def _ingest_source(settings: ServerSettings) -> ClientCredentialsTokenSource | None:
+    """The credential of the app-owned OTLP export on the per-service ingest leg (7.18, DD-196).
 
     None when the ingest credential is not configured (console-only telemetry).
 
     :param settings: the server settings
-    :returns: (span processor, metric reader) or None
+    :returns: the client-credentials token source, or None
     """
     if settings.otel_token_url is None or settings.otel_client_secret is None:
         return None
-    source = ClientCredentialsTokenSource(
+    return ClientCredentialsTokenSource(
         token_url=str(settings.otel_token_url),
         client_id=settings.otel_client_id,
         client_secret=settings.otel_client_secret.get_secret_value(),
         ca_file=str(settings.otel_ca_file) if settings.otel_ca_file else None,
     )
-    ca_file = str(settings.otel_ca_file) if settings.otel_ca_file else None
-    return build_otlp_pipeline(settings.otel_endpoint, ca_file, source)
 
 
 async def _close(auth: KeycloakAuth, oidc: OidcClient) -> None:
@@ -249,6 +283,12 @@ async def _load_models(store: TypedefStore, audits: AtlasAuditService, models_di
     await boot_audits.flush()
 
 
+def _start(metrics_util: AtlasMetricsUtil) -> None:
+    """``ActiveInstanceElectorService#start``: without high availability, the server is active as it starts (MET-03)."""
+    metrics_util.on_server_start()
+    metrics_util.on_server_activation()
+
+
 async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:
     """``auditServerStatus``: ``SERVER_START`` from the start to now, then ``SERVER_STATE_ACTIVE`` now (ADA-02).
 
@@ -260,3 +300,62 @@ async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:
         await audits.add(AuditOperation.SERVER_STATE_ACTIVE, None, None, 0, start_time=now, end_time=now)
     except AtlasError:
         LOGGER.exception("Exception occurred during audit")
+
+
+def _audit_aging(settings: ServerSettings, store: EntityStore) -> AuditAgingScheduler | None:
+    """The configured aging of the entity audits scheduled and started, when it is enabled (AGE-05)."""
+    if not settings.audit_aging_enabled:
+        return None
+    aging = AuditAgingScheduler(
+        AtlasAuditReductionService(store, settings.audit_aging_config()),
+        frequency_days=settings.audit_aging_scheduler_frequency_in_days,
+        initial_delay_minutes=settings.audit_aging_scheduler_initial_delay_in_min,
+    )
+    aging.start()
+    return aging
+
+
+def _metrics_schedule(app: FastAPI, settings: ServerSettings, store: EntityStore) -> MetricsScheduler | None:
+    """The metrics stored and purged on their schedule and started, unless its interval is 0 (MHS-05)."""
+    if settings.metrics_persist_interval_minutes == 0:
+        return None
+    search_store: ElasticsearchStore = app.state.store
+
+    async def connected() -> bool:
+        return (await search_store.health()).status is HealthStatus.UP
+
+    service = MetricsService(
+        store, app.state.metrics_util, namespace=settings.cluster_name, ttl_hours=settings.metrics_ttl_hours
+    )
+    scheduler = MetricsScheduler(service, connected, interval_minutes=settings.metrics_persist_interval_minutes)
+    scheduler.start()
+    return scheduler
+
+
+async def _snapshots(settings: ServerSettings, store: ElasticsearchStore) -> SnapshotWatcher | None:
+    """The snapshot policy put, and its watcher reporting and started, when snapshots are enabled (SNP-01 to SNP-03).
+
+    A store that cannot hold the repository fails the start: snapshots that were asked for are not skipped.
+    """
+    if not settings.snapshot_enabled:
+        return None
+    await prepare_snapshots(store.client, settings.snapshot_policy())
+
+    async def read() -> SnapshotStatus:
+        return await snapshot_status(store.client)
+
+    watcher = SnapshotWatcher(read, interval_minutes=settings.snapshot_check_minutes)
+    watcher.register(metrics.get_meter(NAME))
+    watcher.start()
+    return watcher
+
+
+def _task_worker(app: FastAPI, settings: ServerSettings, store: EntityStore) -> TaskWorker | None:
+    """The worker of the application's tasks, woken by the store's writes and started, when tasks are enabled."""
+    if not settings.tasks_enabled:
+        return None
+    worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
+    store.task_listeners.append(worker.wake)
+    worker.start()
+    app.state.task_worker = worker
+    return worker

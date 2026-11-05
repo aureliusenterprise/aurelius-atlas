@@ -1,6 +1,6 @@
 # 6.3b1 Import mode of the entity writer
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-305, DV-123, DV-124; relies on DD-052, DD-061, DD-302
 

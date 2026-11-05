@@ -1,0 +1,275 @@
+# The alert rules of ADR 040 (OBS-03, SNP-03): each names its condition, its severity and its owner,
+# and links its runbook section (INC-02); the destination is the notification policy (OBS-04).
+# Byte-copied into the chart (files/grafana-alerting.yaml).
+apiVersion: 1
+
+groups:
+    - orgId: 1
+      name: aurelius-atlas
+      folder: Aurelius
+      interval: 1m
+      rules:
+          - uid: aurelius-atlas-server-silent
+            title: Server silent
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'sum(count_over_time(process_memory_usage_bytes{exported_job="aurelius-atlas-server"}[5m])) or vector(0)'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: lt
+                                params: [1]
+                      refId: B
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 1m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-server-silent"
+                summary: "The Atlas server has sent no metrics for five minutes."
+                description: "The server is down, cannot reach the collector, or lost its ingest credential. Check its liveness (admin/liveness), then its logs, then the collector's per-service leg."
+            labels:
+                severity: critical
+                team: maintainers
+          - uid: aurelius-atlas-part-silent
+            title: Part silent
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'count by (exported_job) (last_over_time({job="otel-collector", exported_job!=""}[6h])) unless count by (exported_job) ({job="otel-collector", exported_job!=""})'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [0]
+                      refId: B
+            noDataState: OK
+            execErrState: Alerting
+            for: 0s
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-part-silent"
+                summary: "{{ $labels.exported_job }} sent signals in the last six hours and none in the last ten minutes."
+                description: "Every part that exports through the collector inherits this rule. A part stopped on purpose fires it until six hours have passed; one that never started is caught by its own rule, as the server's is."
+            labels:
+                severity: warning
+                team: maintainers
+          - uid: aurelius-atlas-server-errors
+            title: Server errors
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: '(sum(rate(http_server_request_duration_seconds_count{exported_job="aurelius-atlas-server", http_response_status_code=~"5.."}[5m])) or vector(0)) / sum(rate(http_server_request_duration_seconds_count{exported_job="aurelius-atlas-server"}[5m]))'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [0.05]
+                      refId: B
+            noDataState: OK
+            execErrState: Alerting
+            for: 5m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-server-errors"
+                summary: "More than 5% of the server's answers have been 5xx for five minutes."
+                description: "Find a failing request's trace by the requestId of its answer, and its log record by the trace id. A store outage shows as 503 on every route."
+            labels:
+                severity: critical
+                team: maintainers
+          - uid: aurelius-atlas-server-latency
+            title: Server slow
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'histogram_quantile(0.95, sum by (le) (rate(http_server_request_duration_seconds_bucket{exported_job="aurelius-atlas-server"}[5m])))'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [2]
+                      refId: B
+            noDataState: OK
+            execErrState: Alerting
+            for: 10m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-server-latency"
+                summary: "The slowest 5% of the server's requests have taken over two seconds for ten minutes."
+                description: "The Latency by Route panel names the route. Slow searches point at the store; slow writes at its refresh."
+            labels:
+                severity: warning
+                team: maintainers
+          - uid: aurelius-atlas-store-health
+            title: Store red or silent
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'max(elasticsearch_cluster_health{exported_job="dev-elasticsearch", status="red"})'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [0]
+                      refId: B
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 2m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-store-health"
+                summary: "Elasticsearch reports red health, or its metrics have stopped."
+                description: "A red cluster has a primary shard unassigned: the server answers 503 for the indices on it. No data means the store's metrics puller has stopped, which hides the store's state."
+            labels:
+                severity: critical
+                team: maintainers
+          - uid: aurelius-atlas-collector-down
+            title: Collector down
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'min(up{job="otel-collector"})'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: lt
+                                params: [1]
+                      refId: B
+            noDataState: Alerting
+            execErrState: Alerting
+            for: 2m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-collector-down"
+                summary: "Prometheus cannot scrape the OpenTelemetry collector."
+                description: "Every signal passes the collector (ADR 034): while it is down, every other rule is blind. Check its health endpoint and its logs."
+            labels:
+                severity: critical
+                team: maintainers
+          - uid: aurelius-atlas-collector-export-failures
+            title: Collector export failures
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: "(sum(increase(otelcol_exporter_send_failed_spans[10m])) or vector(0)) + (sum(increase(otelcol_exporter_send_failed_metric_points[10m])) or vector(0)) + (sum(increase(otelcol_exporter_send_failed_log_records[10m])) or vector(0))"
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [0]
+                      refId: B
+            noDataState: OK
+            execErrState: Alerting
+            for: 5m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-collector-export-failures"
+                summary: "The collector failed to deliver spans, metrics or logs to Tempo, Prometheus or Loki."
+                description: "A backend is down or full. The Observability Stack dashboard's exporter panels name it."
+            labels:
+                severity: warning
+                team: maintainers
+          - uid: aurelius-atlas-snapshot-overdue
+            title: Snapshot overdue
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'time() - max(aurelius_atlas_snapshot_last_success_seconds{exported_job="aurelius-atlas-server"})'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [7200]
+                      refId: B
+            noDataState: OK
+            execErrState: Alerting
+            for: 15m
+            annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-snapshot-overdue"
+                summary: "The store's last successful snapshot is more than two hours old."
+                description: "Snapshots run every hour (SNP-02), so two missed runs break the stated loss bound. The server's logs name the last failure; the Backup & Restore page lists the causes. No data means snapshots are off, as in dev."
+            labels:
+                severity: critical
+                team: maintainers

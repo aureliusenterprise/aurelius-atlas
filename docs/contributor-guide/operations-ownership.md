@@ -45,8 +45,9 @@ per project, encrypted with SOPS to the recipient set in `.sops.yaml`; per-perso
 
 The path from first signal to all-clear (ADR 041 R2); the owner is the maintainers team.
 
-1. **Noticing** — a symptom appears, or (from increment 6.4) an alert fires
-   ([ADR 040](../architecture/adr/040-the-system-raises-its-hand-when-it-is-broken.md)). The first
+1. **Noticing** — a symptom appears, or an alert fires
+   ([ADR 040](../architecture/adr/040-the-system-raises-its-hand-when-it-is-broken.md)); the alert links
+   its steps on [Incident Management](../architecture/platform/resilience/incident-management.md). The first
    person to notice is the recorder, not the decider.
 2. **Triage** — any maintainer is the decider: confirm impact, choose investigate / mitigate /
    accept. Mitigation on dev systems needs no permission; a mitigation that touches real data needs
@@ -57,8 +58,9 @@ The path from first signal to all-clear (ADR 041 R2); the owner is the maintaine
 4. **Escalate** — possible data loss pulls in the dataset's owner (below); suspected secret exposure
    switches to the rotation path above.
 5. **All-clear and record** — the decider declares the end and writes the one-page record: symptoms,
-   actions, cause, follow-ups (ADR 041 R5). Follow-ups that should become triggers become alert
-   rules at 6.4 (ADR 041 R6).
+   actions, cause, follow-ups (ADR 041 R5), in
+   [Incidents](../architecture/platform/resilience/incidents/index.md). Follow-ups that should become
+   triggers become alert rules (ADR 041 R6).
 
 ## Dataset Ownership
 
@@ -79,5 +81,7 @@ spine; it applies from the first dataset with a second reader-writer.
 
 - **First rehearsal of the secret paths** (rotation, loss, break-glass) on dev secrets in a dev
   environment — before the first deployment that keeps real data (ADR 028 R2).
-- **First game-day of the incident path** on the dev stack — same gate, and yearly after (ADR 041
-  R3); each rehearsal updates this page.
+- **Game-day of the incident path** on the dev stack — yearly, and after a change to an alert or its
+  steps (ADR 041 R3). The first walked "Server silent" on 2026-11-05
+  ([record](../architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent.md)); each
+  rehearsal leaves a record and fixes what it found.

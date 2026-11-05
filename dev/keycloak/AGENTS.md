@@ -141,6 +141,9 @@ nx serve aurelius-atlas-dev-keycloak   # decrypt + build + observability + up
   a hang.
 - Keep `import/master.json` idempotent (fixed UUIDs where needed) so re-imports
   don't churn.
+- The prod realm's event lifetimes (`eventsExpiration`, the
+  `adminEventsExpiration` attribute, RET-06) are stated on the Data Archiving
+  page; change both together. An existing realm keeps its own (import skips it).
 
 ## Helm chart
 

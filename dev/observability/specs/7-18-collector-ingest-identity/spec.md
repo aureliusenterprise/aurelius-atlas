@@ -1,6 +1,6 @@
 # 7.18 Collector ingest identity
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#119](https://github.com/aureliusenterprise/aurelius-atlas/pull/119)
 - **Records:** DD-196 (per-service ingest identity: Keycloak client-credentials
   JWTs on the service leg, azp-stamped), DD-202 (one issuer world: producers

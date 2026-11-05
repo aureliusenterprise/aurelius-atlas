@@ -17,3 +17,11 @@ storage:
             path: /var/tempo/wal
         local:
             path: /var/tempo/blocks
+
+# The traces' lifetime (RET-04, ADR 025): the backend worker deletes blocks
+# once they are 7 days old. A per-tenant override, the one key Tempo 3's
+# retention jobs read whichever component runs them.
+overrides:
+    defaults:
+        compaction:
+            block_retention: 168h

@@ -1,6 +1,6 @@
 # 2.1c Entity validation
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-042, DV-13; relies on DD-025, DD-037, DD-039, DD-040, DD-041
 

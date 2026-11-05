@@ -1,6 +1,6 @@
 # 6.3c1 Import transforms
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DV-127 to DV-129; relies on IMS-01 to IMS-06 (6.3b2)
 

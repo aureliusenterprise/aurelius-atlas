@@ -398,6 +398,8 @@ class AtlasErrorCode(Enum):
     SAVED_SEARCH_ALREADY_EXISTS = (409, "ATLAS-409-00-006", "search named {0} already exists for user {1}")
     GLOSSARY_ALREADY_EXISTS = (409, "ATLAS-409-00-007", "Glossary with name {0} already exists")
     GLOSSARY_TERM_ALREADY_EXISTS = (409, "ATLAS-409-00-009", "Glossary term with qualifiedName {0} already exists")
+    METRICSSTAT_ALREADY_EXISTS = (409, "ATLAS-409-00-012", "Metric Statistics already collected at {0}")
+    PENDING_TASKS_ALREADY_IN_PROGRESS = (409, "ATLAS-409-00-013", "There are already {0} pending tasks in queue")
     GLOSSARY_CATEGORY_ALREADY_EXISTS = (
         409,
         "ATLAS-409-00-00A",

@@ -35,3 +35,7 @@ node.store.allow_mmap: false
 
 # Development disks fill up; don't flip indices to read-only at 95%.
 cluster.routing.allocation.disk.threshold_enabled: false
+
+# The snapshot repositories' root (SNP-01): the server registers its repository
+# in a directory below it. A volume of its own, so a lost data volume keeps them.
+path.repo: [/usr/share/elasticsearch/snapshots]

@@ -1,6 +1,6 @@
 # 4.3 DSL parser
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#163](https://github.com/aureliusenterprise/aurelius-atlas/pull/163)
 - **Records:** DD-240, DD-241, DV-88; relies on DD-002, DD-023
 

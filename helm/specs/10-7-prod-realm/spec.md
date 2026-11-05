@@ -1,6 +1,6 @@
 # 10.7 Production identity realm
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** [#178](https://github.com/aureliusenterprise/aurelius-atlas/pull/178) (stacked on #176)
 - **Records:** DD-256 (relies on, unchanged), DD-273 (adds), DD-274 (adds)
 
