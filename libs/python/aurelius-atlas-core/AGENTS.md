@@ -62,6 +62,8 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   assignment and import; `glossary_category_utils.py` and `glossary_term_utils.py` write a category's and a
   term's relationships on `glossary_utils.py`, `glossary_dto.py` (`DataAccess`) keeps glossary objects as
   entities (DD-246), `file_utils.py` reads uploaded CSV and Excel files (DD-249)
+- `aurelius_atlas_core/m4i_models/` — the m4i data dictionary types as an Atlas model file, loaded after Atlas's
+  models (`M4I_MODELS_DIR`, ADR 058, DD-362); its file is held to the sample exports in `atlas_sample_data/`
 - `aurelius_atlas_core/task_management.py` — `TaskManagement`: tasks listed, removed, claimed with a lease
   and run (DD-080); `classification_tasks.py` (`ClassificationTasks`) runs one; `stored_task.py` holds the
   stored task; `task_hold.py` (`TaskHold`) holds an import's tasks from the workers until it ends (DD-361)
