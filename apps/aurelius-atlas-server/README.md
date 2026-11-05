@@ -40,27 +40,33 @@ The server also serves the Apache Atlas 2.4.0 dashboards from
 ## Authentication
 
 Every request needs a user, as Apache Atlas with its Keycloak provider does
-([6.1a](specs/6-1-authentication/spec.md)), but the status, liveness and
-readiness endpoints and the dashboards' static files. A client sends a bearer token of the identity provider
-([ADR 007](../../docs/architecture/adr/007-one-shared-identity-provider.md)); a browser on the dashboards is sent
-to `login.jsp`, signs in at the provider and keeps the `ATLASSESSIONID` session, and `logout.html` signs it out.
+([6.1a](specs/6-1-authentication/spec.md)), but the status, liveness and readiness endpoints and the
+dashboards' static files. A client sends a bearer token of the identity provider ([ADR
+007](../../docs/architecture/adr/007-one-shared-identity-provider.md)); a browser on the dashboards is sent to
+`login.jsp`, signs in at the provider and keeps the `ATLASSESSIONID` session, and `logout.html` signs it out.
 `AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL`, `_AUTH_REALM`, `_AUTH_CLIENT_ID`, `_AUTH_CLIENT_SECRET` and
 `_AUTH_AUDIENCES` name the provider, the server's client and the further clients whose tokens are accepted.
 
 ## Type definitions
 
 At start-up the server loads the type definitions stored in Elasticsearch (the `aurelius-atlas-typedefs`
-index) into its type registry, through [`aurelius-atlas-core`](../../libs/python/aurelius-atlas-core/README.md).
-It checks for another process's type change at most every `AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS`
-(default 5). Then it loads Apache Atlas's built-in models and applies their patches, as Atlas does from
-`$ATLAS_HOME/models`: by default the 2.4.0 models shipped with the server, or the directory
-`AURELIUS_ATLAS_SERVER_MODELS_DIR` names, laid out as Atlas's. Only new types, newer `typeVersion`s and patches
-not applied before change anything, so a restart writes nothing.
+index) into its type registry, through
+[`aurelius-atlas-core`](../../libs/python/aurelius-atlas-core/README.md). It checks for another process's type
+change at most every `AURELIUS_ATLAS_SERVER_TYPEDEF_REFRESH_SECONDS` (default 5). Then it loads Apache Atlas's
+built-in models and applies their patches, as Atlas does from `$ATLAS_HOME/models`: by default the 2.4.0
+models shipped with the server, or the directory `AURELIUS_ATLAS_SERVER_MODELS_DIR` names, laid out as
+Atlas's. Only new types, newer `typeVersion`s and patches not applied before change anything, so a restart
+writes nothing.
+
+After them it loads the m4i data dictionary types (ADR 058): data domains, entities, attributes, fields,
+datasets, collections, systems, people, data quality, sources, generic processes, their relationships, and the
+classifications `PII`, `key_data`, `low_risk`, `medium_risk` and `high_risk`. They load under the same rules;
+`AURELIUS_ATLAS_SERVER_M4I_MODELS_ENABLED=false` leaves them out, and keeps those already stored.
 
 The 26 endpoints of Atlas's `TypesREST` (`aurelius_atlas_server/routes/types.py`) read and change the
 definitions through that store. `GET typedefs` and `typedefs/headers` take Atlas's filter parameters (`type`,
-`name`, `servicetype`, `supertype`, their `not` forms and `excludeInternalTypesAndReferences`) and list each kind
-sorted by name (DD-034).
+`name`, `servicetype`, `supertype`, their `not` forms and `excludeInternalTypesAndReferences`) and list each
+kind sorted by name (DD-034).
 
 ## Entities
 
@@ -71,8 +77,8 @@ store as Atlas does: `guid/{guid}`, `uniqueAttribute/type/{typeName}` with `attr
 and those it names, `POST bulk`, `PUT uniqueAttribute/type/{typeName}` and `PUT guid/{guid}?name=<attribute>`,
 each answering Atlas's `EntityMutationResponse`. Classifications and business attributes given with an entity
 are ignored until their increments. Relationship attribute values, legacy ends among the attributes included,
-become relationships, and reads answer them in `relationshipAttributes` (DD-064). An update that drops an owned
-entity deletes it, listed under `DELETE` in the response (DD-068).
+become relationships, and reads answer them in `relationshipAttributes` (DD-064). An update that drops an
+owned entity deletes it, listed under `DELETE` in the response (DD-068).
 
 Classifications are attached, read, changed and removed by `guid/{guid}/classifications`,
 `guid/{guid}/classification/{name}`, their `uniqueAttribute` forms and `bulk/classification`; entities read

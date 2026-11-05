@@ -34,8 +34,9 @@ SAMPLE_ZIP=sample_data.zip docker compose -f apps/aurelius-atlas-server/standalo
 docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml logs -f sample-import
 ```
 
-The log ends with the import's status and its counts by type; a failed import exits non-zero. An import
-updates the entities it finds by GUID, so running it again is safe. Other settings:
+The server creates the m4i types of the samples at start-up (ADR 058), so an import creates none. The log ends
+with the import's status and its counts by type; a failed import exits non-zero. An import updates the
+entities it finds by GUID, so running it again is safe. Other settings:
 
 | Variable                | Default              | What it sets                                                         |
 | ----------------------- | -------------------- | -------------------------------------------------------------------- |

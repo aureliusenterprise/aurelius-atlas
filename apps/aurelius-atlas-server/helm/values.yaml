@@ -161,6 +161,9 @@ config:
     # a snapshot every hour kept seven days, and watches its runs. The store
     # chart mounts the repository's root (path.repo) on its snapshots claim.
     AURELIUS_ATLAS_SERVER_SNAPSHOT_ENABLED: "true"
+    # The m4i data dictionary types (MDD-01, ADR 058), loaded at every start
+    # after Atlas's models; "false" loads none.
+    AURELIUS_ATLAS_SERVER_M4I_MODELS_ENABLED: "true"
 
 # The restore Job (SNP-07): enabled with replicaCount 0, it restores the
 # store from a snapshot, the newest successful one unless snapshot names one.
