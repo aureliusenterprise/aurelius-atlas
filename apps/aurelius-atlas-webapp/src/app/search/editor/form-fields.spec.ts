@@ -203,8 +203,10 @@ describe("buildFields (EDT-03)", () => {
         const fields = buildFields(defs.get("E")!, defs, new Map(), { name: "Name*" });
 
         // The fields ride EDT-03's order (name, then by attribute name:
-        // "plain" before "shown"), each with its own label source.
-        expect(fields.map((f) => f.label)).toEqual(["Name*", "plain", "Shown attr"]);
+        // "plain" before "shown"), each with its own label source. The
+        // catalogue's baked-in star is dropped — the template paints the
+        // red one (DD-356).
+        expect(fields.map((f) => f.label)).toEqual(["Name", "plain", "Shown attr"]);
     });
 });
 

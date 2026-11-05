@@ -124,8 +124,12 @@ describe("EntityRelationshipInput (EDT-14, DD-339)", () => {
         const request = httpMock.expectOne(
             (req) => req.url === SEARCH_URL && req.params.get("attrValuePrefix") === "load",
         );
+        expect(request.request.params.get("attrValuePrefix")).toBe("load");
         request.flush(ANSWER);
         fixture.detectChanges();
+
+        // The panel holds the answer of the last text only.
+        expect(rows(compiled).map((row) => row.textContent?.trim())).toEqual(["load_events", "load_orders", "no-guid"]);
     });
 
     it("drops the chosen entities and the edited entity from the panel (EDT-14)", () => {

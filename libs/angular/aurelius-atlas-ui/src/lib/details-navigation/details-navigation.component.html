@@ -26,9 +26,10 @@
                     <div class="dropdown-item">
                         <nav class="menu">
                             <p class="menu-label">{{ label() }}</p>
-                            <ul class="menu-list">
-                                <ng-content></ng-content>
-                            </ul>
+                            <!-- The caller projects its own ul.menu-list: the
+                                 list lives in the file that owns the items,
+                                 so every template is valid HTML by itself. -->
+                            <ng-content></ng-content>
                         </nav>
                     </div>
                 </div>

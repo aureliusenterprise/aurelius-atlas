@@ -18,19 +18,35 @@
     margin-top: 1.5rem;
 }
 
-/* The commit foot (EDT-19, DD-347): the status line sits above the pair,
-   the buttons right-aligned (Delete then Save, the reference's order).
-   The pair itself rides Bulma's `buttons is-right` container (DD-350),
-   which carries the display, the 0.75rem gap, and the alignment, so this
-   file only grows the projected div across the foot bar — the drawer's
-   bar is a flex row, and a content-sized child cannot reach the right
-   edge. */
+/* The commit foot (EDT-19, DD-347): the status line shares the pair's row,
+   centred against it — one line, the buttons right-aligned (Delete then
+   Save, the reference's order). The pair itself rides Bulma's
+   `buttons is-right` container (DD-350), which carries the display, the
+   0.75rem gap, and the alignment, so this file only grows the projected
+   div across the foot bar — the drawer's bar is a flex row, and a
+   content-sized child cannot reach the right edge. */
 .aurelius-editor-foot {
+    align-items: center;
+    display: flex;
     flex-grow: 1;
 }
 
+/* Every line in the foot's status slot (Saving/Deleting, and any line that
+   joins it) rides the row beside the pair: no stacked margin. Bulma's
+   0.75rem bottom margins on the group and its buttons would push the
+   buttons off the line's centre beside the text, so they are dropped
+   here — the row centres the pair and the line on one axis. */
 .aurelius-editor-foot .aurelius-editor-busy {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
+}
+
+.aurelius-editor-foot .aurelius-editor-actions {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+.aurelius-editor-foot .aurelius-editor-actions .button {
+    margin-bottom: 0;
 }
 
 /*
@@ -65,8 +81,12 @@
     vector-effect: non-scaling-stroke;
 }
 
+/* The label clears the way Bulma's own `is-loading` does it (the button keeps
+   its width). No `!important` is needed: the scoped copy of this selector
+   carries the component attribute too (0,3,0), which beats the 0,1,0 `.button`
+   ink rule even without order on its side. */
 .aurelius-editor-delete[data-aurelius-hold="holding"] {
-    color: transparent !important;
+    color: transparent;
 }
 
 .aurelius-editor-delete[data-aurelius-hold="holding"] .aurelius-hold-donut {

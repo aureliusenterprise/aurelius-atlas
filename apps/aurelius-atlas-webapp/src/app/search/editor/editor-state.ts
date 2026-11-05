@@ -249,7 +249,9 @@ export class EditorState {
                         // root where the drawer lives — the drawer segment
                         // survives it (live-probed in the e2e). The compound
                         // is how settings and alerts close their drawer.
-                        this.router.navigate([{ outlets: { primary: ["search", "details", realGuid], drawer: null } }]);
+                        void this.router.navigate([
+                            { outlets: { primary: ["search", "details", realGuid], drawer: null } },
+                        ]);
                     },
                     error: () => this.saveFailed(),
                 });
@@ -316,7 +318,7 @@ export class EditorState {
                 // The screen underneath is the deleted entity's details;
                 // it is not a destination any more — the browse landing
                 // is (the reference routes 'search', our landing).
-                this.router.navigate([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
+                void this.router.navigate([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
             },
             error: () => {
                 this.deleting.set(false);
@@ -366,7 +368,12 @@ export class EditorState {
      * @returns the seeded entity's temporary guid
      */
     beginCreate(typeName: string): string {
-        const temporaryGuid = String(-Math.floor(Math.random() * 1e15) - 1);
+        // The temporary guid is a client-side placeholder key the server re-keys
+        // through guidAssignments (DD-325); it only has to be negative numeric.
+        // Drawn from crypto (same source as the qualifiedName uuid below) so
+        // two tabs seeding at once cannot collide on the same placeholder.
+        const [high, low] = crypto.getRandomValues(new Uint32Array(2));
+        const temporaryGuid = String(-((high % 1e8) * 1e7 + (low % 1e7) + 1));
 
         this.selectedTypeName.set(typeName);
         this.entity.set({

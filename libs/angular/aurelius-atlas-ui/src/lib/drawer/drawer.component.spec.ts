@@ -106,7 +106,8 @@ describe("Drawer", () => {
         const close = fixture.nativeElement.querySelector(".aurelius-drawer-head .delete");
         expect(close.getAttribute("aria-label")).toBe("Settings sluiten");
         const panel = fixture.nativeElement.querySelector(".aurelius-drawer-panel");
-        expect(panel.getAttribute("role")).toBe("dialog");
+        // The native <dialog> carries the dialog role implicitly (S6819).
+        expect(panel.tagName).toBe("DIALOG");
         expect(panel.getAttribute("aria-modal")).toBe("true");
         expect(panel.getAttribute("aria-label")).toBe("Settings");
     });

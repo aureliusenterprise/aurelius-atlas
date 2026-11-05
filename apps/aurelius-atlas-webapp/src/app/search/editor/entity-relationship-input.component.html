@@ -50,10 +50,19 @@
             (keydown)="onRowKeys($event)"
         />
     }
+    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown panel, not a
+         native select — the input keeps the typed text and the rows are buttons
+         styled by Bulma. The listbox/option roles are the pattern's own
+         semantics (S6819's native <select> cannot carry them), so each site
+         carries a reason marker. This div cannot: Prettier always splits a
+         comment off a block tag, so the marker would land off-line and stop
+         working — its line stays flagged until the server's S6819 allowedRoles
+         parameter lists listbox. The option buttons keep their markers —
+         Prettier preserves the inline glue. -->
     <div class="dropdown-menu" [id]="listboxId()" role="listbox" [attr.aria-label]="label()">
         <div class="dropdown-content">
             @for (row of suggestions(); track row.entity.guid ?? row.label; let i = $index) {
-                <button
+                <!-- //NOSONAR --><button
                     type="button"
                     class="dropdown-item"
                     role="option"

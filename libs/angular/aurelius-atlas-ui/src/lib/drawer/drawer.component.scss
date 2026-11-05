@@ -66,17 +66,29 @@ $aurelius-drawer-motion-duration: 200ms;
 .aurelius-drawer-panel {
     animation: aurelius-drawer-in $aurelius-drawer-motion-duration ease-out;
     background-color: var(--bulma-scheme-main);
+    // The panel is a native <dialog>: the UA sheet gives it a border, an
+    // auto margin (centering), padding, its own ink and BOTH inline edges
+    // pinned (`left: 0; right: 0`) — all reset here, like Bulma's own
+    // generic sheet does for its elements. The edge pins matter: with the
+    // auto margin gone, a kept start edge would anchor the over-constrained
+    // box to the LEFT (in LTR the end edge is what gets dropped), so the
+    // start inset returns to auto and only the end edge below positions it.
+    border: 0;
     box-shadow: var(--bulma-shadow);
+    color: inherit;
     display: flex;
     flex-direction: column;
     height: 100%;
+    margin: 0;
     max-width: min(28rem, 100vw);
+    padding: 0;
     // The panel clips (DD-181): the body is the scroll container, so a
     // long feed scrolls under the head and subhead — the drawer's chrome
     // (title, actions, inbox bar) never slides away.
     overflow: hidden;
     position: absolute;
     inset-block: 0;
+    inset-inline-start: auto;
     inset-inline-end: 0;
     width: 28rem;
 

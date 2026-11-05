@@ -43,7 +43,7 @@ export const Primary: Story = {
         ariaLabel: "Close",
     },
     play: async ({ canvas }) => {
-        expect(canvas.queryByRole("dialog")).toBeNull();
+        await expect(canvas.queryByRole("dialog")).toBeNull();
 
         await userEvent.click(canvas.getByRole("button", { name: "Open settings" }));
         const dialog = canvas.getByRole("dialog", { name: "Settings" });
@@ -51,7 +51,20 @@ export const Primary: Story = {
         await expect(within(dialog).getByText("Appearance")).toBeInTheDocument();
         // The panel slides in from the right edge (DD-162); Angular scopes
         // the keyframe name, so match it unanchored.
-        expect(getComputedStyle(dialog).animationName).toMatch(/aurelius-drawer-in/);
+        await expect(getComputedStyle(dialog).animationName).toMatch(/aurelius-drawer-in/);
+        // ...and is anchored to it: the native <dialog>'s sheet pins both
+        // edges (`left: 0; right: 0`) for its centered card, and the
+        // over-constrained rule drops the END edge, parking a margin-0
+        // panel on the LEFT. The style resets the start inset to auto
+        // (S6819 fix, 2026-11-05). The rect is the honest pin — Chromium
+        // reports a positioned box's computed insets as used px, never
+        // `auto` — but it rides the slide-in transform while the entry
+        // animation runs, so the check waits for the panel to settle. The
+        // client width is the right edge: the scrollbar sits outside the
+        // fixed layer, so innerWidth would not match.
+        await waitFor(() =>
+            expect(Math.round(dialog.getBoundingClientRect().right)).toBe(document.documentElement.clientWidth),
+        );
 
         await userEvent.click(within(dialog).getByRole("button", { name: "Close" }));
         await waitFor(() => expect(canvas.queryByRole("dialog")).toBeNull());
@@ -138,8 +151,8 @@ export const HeadActions: Story = {
         const head = dialog.querySelector(".aurelius-drawer-head");
         const clear = canvas.getByRole("button", { name: "Clear all" });
         // In the head, before the close control — not in the scrolling body.
-        expect(head?.contains(clear)).toBe(true);
-        expect(dialog.querySelector(".aurelius-drawer-body button")).toBeNull();
+        await expect(head?.contains(clear)).toBe(true);
+        await expect(dialog.querySelector(".aurelius-drawer-body button")).toBeNull();
     },
     render: () => ({
         template: actionsTemplate,
@@ -177,11 +190,11 @@ export const FooterCommit: Story = {
         const save = canvas.getByRole("button", { name: "Save" });
         // The foot holds the actions and sits after the body, in the panel
         // — not inside it, so a long form cannot push the bar away.
-        expect(foot?.contains(save)).toBe(true);
-        expect(foot?.parentElement).toBe(dialog);
-        expect(body?.contains(save)).toBe(false);
+        await expect(foot?.contains(save)).toBe(true);
+        await expect(foot?.parentElement).toBe(dialog);
+        await expect(body?.contains(save)).toBe(false);
         const after = [...(dialog?.children ?? [])].indexOf(foot as HTMLElement);
-        expect(after).toBe([...(dialog?.children ?? [])].indexOf(body as HTMLElement) + 1);
+        await expect(after).toBe([...(dialog?.children ?? [])].indexOf(body as HTMLElement) + 1);
     },
     render: () => ({
         template: footerTemplate,

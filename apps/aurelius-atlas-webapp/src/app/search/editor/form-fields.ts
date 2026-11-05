@@ -75,9 +75,41 @@ function kindOf(def: AtlasAttributeDef, enumNames: ReadonlySet<string>): EditorF
 }
 
 /**
- * The definition and its supertype chain, first-wins by attribute name (the
- * shipped defs carry only their own attributes, so `DataSet`'s fields live on
- * `Asset`/`Referenceable` — the walk is required, EDT-03).
+ * The definition and its supertype chain, each definition yielded once in
+ * BFS order (the shipped defs carry only their own attributes, so `DataSet`'s
+ * fields live on `Asset`/`Referenceable` — the walk is required, EDT-03).
+ * Shared by the plain attributes and the relationship attributes (EDT-13).
+ * @param def the entity definition to walk
+ * @param defsByName every entity definition by name (for the supertype links)
+ * @returns the definitions of the chain, the walked definition first
+ */
+function* walkDefChain(
+    def: AtlasEntityDef,
+    defsByName: ReadonlyMap<string, AtlasEntityDef>,
+): Generator<AtlasEntityDef> {
+    const seenDefs = new Set<string>();
+    const queue: AtlasEntityDef[] = [def];
+
+    while (queue.length > 0) {
+        const current = queue.shift() as AtlasEntityDef;
+        if (current.name) {
+            if (seenDefs.has(current.name)) {
+                continue;
+            }
+            seenDefs.add(current.name);
+        }
+        yield current;
+        for (const superName of current.superTypes ?? []) {
+            const superDef = defsByName.get(superName);
+            if (superDef) {
+                queue.push(superDef);
+            }
+        }
+    }
+}
+
+/**
+ * The definition and its supertype chain, first-wins by attribute name (EDT-03).
  * @param def the entity definition to walk
  * @param defsByName every entity definition by name (for the supertype links)
  * @returns the merged attribute definitions, definition's own first
@@ -88,27 +120,12 @@ function collectAttributeDefs(
 ): AtlasAttributeDef[] {
     const merged: AtlasAttributeDef[] = [];
     const seenNames = new Set<string>();
-    const seenDefs = new Set<string>();
-    const queue: AtlasEntityDef[] = [def];
 
-    while (queue.length > 0) {
-        const current = queue.shift() as AtlasEntityDef;
-        if (current.name && seenDefs.has(current.name)) {
-            continue;
-        }
-        if (current.name) {
-            seenDefs.add(current.name);
-        }
+    for (const current of walkDefChain(def, defsByName)) {
         for (const attribute of current.attributeDefs ?? []) {
             if (attribute.name && !seenNames.has(attribute.name)) {
                 seenNames.add(attribute.name);
                 merged.push(attribute);
-            }
-        }
-        for (const superName of current.superTypes ?? []) {
-            const superDef = defsByName.get(superName);
-            if (superDef) {
-                queue.push(superDef);
             }
         }
     }
@@ -116,9 +133,24 @@ function collectAttributeDefs(
     return merged;
 }
 
-/** The catalogue string, else `displayName`, else the attribute name (EDT-03). */
+/**
+ * The catalogue string, else `displayName`, else the attribute name (EDT-03).
+ * A trailing `*` is dropped: the legacy catalogue bakes the required star
+ * into the label (`Name*`/`Naam*`) while the editor template paints its own
+ * red one, which would print the star twice (DD-356).
+ */
 function labelOf(def: AtlasAttributeDef, labels: EditorLabels): string {
-    return labels[def.name as keyof EditorLabels] ?? def.displayName ?? def.name ?? "";
+    const label = labels[def.name as keyof EditorLabels] ?? def.displayName ?? def.name ?? "";
+
+    // One backward scan drops the star run, then the space before it — no
+    // regex, so a whitespace/star-heavy label cannot backtrack (S5852).
+    const trimmed = label.trimEnd();
+    let end = trimmed.length;
+    while (end > 0 && trimmed.charAt(end - 1) === "*") {
+        end -= 1;
+    }
+
+    return trimmed.slice(0, end).trimEnd();
 }
 
 /**
@@ -166,8 +198,13 @@ export function buildFields(
         });
     }
 
-    const rank = (field: EditorField): number =>
-        field.name === "name" ? 0 : DESCRIPTION_KEYS.includes(field.name as (typeof DESCRIPTION_KEYS)[number]) ? 1 : 2;
+    const rank = (field: EditorField): number => {
+        if (field.name === "name") {
+            return 0;
+        }
+
+        return DESCRIPTION_KEYS.includes(field.name as (typeof DESCRIPTION_KEYS)[number]) ? 1 : 2;
+    };
 
     return fields.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
 }
@@ -222,26 +259,11 @@ export function buildRelationshipFields(
     defsByName: ReadonlyMap<string, AtlasEntityDef>,
 ): RelationshipField[] {
     const merged = new Map<string, AtlasRelationshipAttributeDef>();
-    const seenDefs = new Set<string>();
-    const queue: AtlasEntityDef[] = [entityDef];
 
-    while (queue.length > 0) {
-        const current = queue.shift() as AtlasEntityDef;
-        if (current.name && seenDefs.has(current.name)) {
-            continue;
-        }
-        if (current.name) {
-            seenDefs.add(current.name);
-        }
+    for (const current of walkDefChain(entityDef, defsByName)) {
         for (const def of current.relationshipAttributeDefs ?? []) {
             if (def.name && !merged.has(def.name) && !DROPPED_ATTRIBUTES.has(def.name)) {
                 merged.set(def.name, def);
-            }
-        }
-        for (const superName of current.superTypes ?? []) {
-            const superDef = defsByName.get(superName);
-            if (superDef) {
-                queue.push(superDef);
             }
         }
     }
@@ -249,21 +271,24 @@ export function buildRelationshipFields(
     const fields: RelationshipField[] = [];
     for (const def of merged.values()) {
         const typeName = def.typeName ?? "";
-        if (typeName === "") {
-            continue;
+        if (typeName !== "") {
+            fields.push(relationshipFieldOf(def, def.name as string, unwrapArrayType(typeName)));
         }
-        const target = unwrapArrayType(typeName);
-        fields.push({
-            name: def.name as string,
-            label: `${def.displayName ?? def.name} (${target})`,
-            targetType: target,
-            single: (def.cardinality ?? "SINGLE") === "SINGLE",
-            required: def.isOptional === false,
-            ...(def.relationshipTypeName ? { relationshipTypeName: def.relationshipTypeName } : {}),
-        });
     }
 
     return fields.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** The picker field one merged relationship definition becomes (EDT-13). */
+function relationshipFieldOf(def: AtlasRelationshipAttributeDef, name: string, target: string): RelationshipField {
+    return {
+        name,
+        label: `${def.displayName ?? def.name} (${target})`,
+        targetType: target,
+        single: (def.cardinality ?? "SINGLE") === "SINGLE",
+        required: def.isOptional === false,
+        ...(def.relationshipTypeName ? { relationshipTypeName: def.relationshipTypeName } : {}),
+    };
 }
 
 /** The entry a found entity or a seed row becomes, or null without a guid. */
@@ -380,7 +405,7 @@ export function mergeRelationshipsOntoEntity(
     values: ReadonlyMap<string, readonly RelationshipPick[]>,
 ): AtlasEntity {
     const relationshipAttributes: Record<string, unknown> = { ...entity.relationshipAttributes };
-    const attributes = { ...(entity.attributes ?? {}) };
+    const attributes: Record<string, unknown> = { ...entity.attributes };
 
     for (const field of fields) {
         const picks = values.get(field.name);
@@ -437,6 +462,78 @@ export function toFormValues(entity: AtlasEntity, fields: readonly EditorField[]
     return values;
 }
 
+/** One form value as the text the text/number fields store; a non-text is "". */
+function textOf(raw: unknown): string {
+    if (typeof raw === "string") {
+        return raw;
+    }
+    if (typeof raw === "number" || typeof raw === "boolean" || typeof raw === "bigint") {
+        // A number rides a date/number field (a seeded entity carries epoch ms).
+        return String(raw);
+    }
+
+    // An object/array/null (a stray relationship or struct value) is not text.
+    return "";
+}
+
+/**
+ * Write one field's form value into `attributes` in its wire shape (EDT-06):
+ * an empty value removes the key, a date becomes epoch milliseconds, a number
+ * text becomes a number when it parses, a multi keeps its non-empty rows.
+ * @param attributes the attributes map to write into
+ * @param field the field the value belongs to
+ * @param raw the form's value for it
+ */
+function writeAttributeValue(attributes: Record<string, unknown>, field: EditorField, raw: unknown): void {
+    if (field.kind === "boolean") {
+        attributes[field.name] = raw === true;
+        return;
+    }
+    if (field.kind === "multi") {
+        writeList(attributes, field, raw);
+        return;
+    }
+    if (field.kind === "date") {
+        writeDate(attributes, field, raw);
+        return;
+    }
+    const text = textOf(raw).trim();
+    if (field.kind === "number" && text !== "") {
+        const parsed = Number(text);
+
+        attributes[field.name] = Number.isNaN(parsed) ? text : parsed;
+        return;
+    }
+    writeTrimmedText(attributes, field, text);
+}
+
+/** Store a multi value as its non-empty rows, or remove the key when empty. */
+function writeList(attributes: Record<string, unknown>, field: EditorField, raw: unknown): void {
+    const list = Array.isArray(raw) ? raw.map((value) => textOf(value).trim()).filter((value) => value !== "") : [];
+
+    writeTrimmedText(attributes, field, list);
+}
+
+/** Store a date as epoch milliseconds, or remove the key when unparseable. */
+function writeDate(attributes: Record<string, unknown>, field: EditorField, raw: unknown): void {
+    const parsed = raw ? new Date(textOf(raw)).getTime() : Number.NaN;
+
+    if (Number.isNaN(parsed)) {
+        delete attributes[field.name];
+    } else {
+        attributes[field.name] = parsed;
+    }
+}
+
+/** Store a value (text or list), or remove the key when it is empty. */
+function writeTrimmedText(attributes: Record<string, unknown>, field: EditorField, value: string | unknown[]): void {
+    if (value.length === 0) {
+        delete attributes[field.name];
+    } else {
+        attributes[field.name] = value;
+    }
+}
+
 /**
  * The merged entity for a save: a clone of `entity` with each field's value
  * written back to `attributes`; everything else — `relationshipAttributes`,
@@ -454,55 +551,7 @@ export function mergeOntoEntity(
     const attributes: Record<string, unknown> = { ...entity.attributes };
 
     for (const field of fields) {
-        const raw = values[field.name];
-        switch (field.kind) {
-            case "date": {
-                const parsed = raw ? new Date(String(raw)).getTime() : NaN;
-
-                if (Number.isNaN(parsed)) {
-                    delete attributes[field.name];
-                } else {
-                    attributes[field.name] = parsed;
-                }
-                break;
-            }
-            case "multi": {
-                const list = Array.isArray(raw)
-                    ? raw.map((value) => String(value).trim()).filter((value) => value !== "")
-                    : [];
-
-                if (list.length === 0) {
-                    delete attributes[field.name];
-                } else {
-                    attributes[field.name] = list;
-                }
-                break;
-            }
-            case "number": {
-                const text = String(raw ?? "").trim();
-
-                if (text === "") {
-                    delete attributes[field.name];
-                } else {
-                    const parsed = Number(text);
-
-                    attributes[field.name] = Number.isNaN(parsed) ? text : parsed;
-                }
-                break;
-            }
-            case "boolean":
-                attributes[field.name] = raw === true;
-                break;
-            default: {
-                const text = String(raw ?? "").trim();
-
-                if (text === "") {
-                    delete attributes[field.name];
-                } else {
-                    attributes[field.name] = text;
-                }
-            }
-        }
+        writeAttributeValue(attributes, field, values[field.name]);
     }
 
     return { ...entity, attributes };

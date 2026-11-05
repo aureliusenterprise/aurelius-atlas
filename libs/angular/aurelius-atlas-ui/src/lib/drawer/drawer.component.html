@@ -13,11 +13,15 @@
         <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
         <div class="aurelius-drawer-scrim" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
         <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- NOSONAR S6851: Bulma's drawer layer (DD-162) — the native <dialog> renders in the top layer, bypassing the scrim stacking the slide-out animation needs. -->
-        <div
+        <!-- The panel is a native <dialog> (its role needs no ARIA). It is
+             never opened modally — the `open` attribute keeps it in this
+             element's stacking context beside the scrim, where the slide-out
+             animation lives (DD-162); `showModal()` would move it to the top
+             layer, above the scrim. The scss carries the UA resets. -->
+        <dialog
             #panel
             class="aurelius-drawer-panel"
-            role="dialog"
+            open
             aria-modal="true"
             [attr.aria-label]="label()"
             tabindex="-1"
@@ -55,6 +59,6 @@
             <div class="aurelius-drawer-foot">
                 <ng-content select="[drawer-footer]"></ng-content>
             </div>
-        </div>
+        </dialog>
     </div>
 }

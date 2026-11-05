@@ -1,5 +1,26 @@
-import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes } from "@angular/router";
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlMatchResult, UrlSegment } from "@angular/router";
 import { AuthGuardData, createAuthGuard } from "keycloak-angular";
+
+/**
+ * The create-mode editor route's matcher (DD-355): it takes `create` and
+ * `create/<type>` in one config. The type is optional because Angular has no
+ * optional path segments (a `?` in a path is literal, DD-330), and a second
+ * entry for `create/:type` would put the two URLs in two different configs —
+ * which is how the router decides whether to reuse a component. With two
+ * entries, the first type pick replaced the editor and the drawer replayed
+ * its slide-in. One config keeps the component, so the pick only changes the
+ * `:type` parameter.
+ * @param segments the unclaimed segments of the `drawer` outlet
+ * @returns the consumed segments, with the type as `:type` when present
+ */
+export function createEntityMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+    const [first, second] = segments;
+    if (first?.path !== "create") {
+        return null;
+    }
+
+    return second ? { consumed: [first, second], posParams: { type: second } } : { consumed: [first] };
+}
 
 /**
  * The app-root guard (APC-05, DD-141): an unauthenticated visit redirects to the
@@ -75,28 +96,27 @@ export const routes: Routes = [
             // The entity editor drawer, the third route in the one `drawer`
             // outlet (EDT-01, DD-322): the details pencil navigates to
             // `(drawer:edit:guid)` and the hero `+` to `(drawer:create)`.
-            // The mode rides the route segment (no store sentinel, DD-325); the
-            // outlet swaps it in over whatever screen is underneath. Create
-            // carries the chosen type as a route parameter (DD-330): the bare
-            // segment opens the picker, `create/<type>` opens the form
-            // for that type, and a re-pick navigates the new type in — the
-            // type is part of the path, so switching is a URL change. Two
-            // route entries, not one optional segment: the Angular router
-            // has no optional path segments (a `?` in a path is literal).
+            // The mode rides the route data (DD-355); the outlet swaps it in
+            // over whatever screen is underneath. Create carries the chosen
+            // type as a route parameter (DD-330): the bare segment opens the
+            // picker, `create/<type>` opens the form for that type, and a
+            // re-pick navigates the new type in — the type is part of the
+            // path, so switching is a URL change. One matcher route, not two
+            // entries (DD-355): the router reuses a component only across
+            // navigations that stay in the same config, and the first pick
+            // would otherwise rebuild the editor and replay the drawer's
+            // slide-in.
             {
                 path: "edit/:guid",
                 outlet: "drawer",
                 loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+                data: { editorMode: "edit" },
             },
             {
-                path: "create",
+                matcher: createEntityMatcher,
                 outlet: "drawer",
                 loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
-            },
-            {
-                path: "create/:type",
-                outlet: "drawer",
-                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+                data: { editorMode: "create" },
             },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain

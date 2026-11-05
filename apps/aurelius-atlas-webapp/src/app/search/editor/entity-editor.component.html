@@ -26,7 +26,7 @@
          smooth) draws clockwise over the hold's own seconds. -->
     <div drawer-footer class="aurelius-editor-foot">
         @if (state.saving() || state.deleting()) {
-            <p class="help aurelius-editor-busy" role="status">{{ busyLine() }}</p>
+            <output class="help aurelius-editor-busy">{{ busyLine() }}</output>
         }
         <div class="buttons is-right aurelius-editor-actions">
             @if (deleteShown()) {
@@ -64,7 +64,7 @@
     </div>
 
     @if (state.loading() && !state.entity()) {
-        <p class="help aurelius-editor-loading" role="status">{{ loadingLine }}</p>
+        <output class="help aurelius-editor-loading">{{ loadingLine }}</output>
     }
 
     <!-- Create mode: the type field over the shipped entity typedefs
@@ -134,13 +134,15 @@
                             (valueChange)="enumPicked(field, $event)"
                         ></aurelius-atlas-ui-select>
                     } @else if (field.kind === "multi") {
-                        <p class="label">{{ field.label }}</p>
+                        <label class="label" [for]="'editor-' + field.name + '-0'">{{ field.label }}</label>
                         <div class="control aurelius-editor-multi">
-                            @for (row of multiRows(field.name); track row) {
+                            @for (row of multiRows(field.name); track row; let i = $index) {
                                 <div class="aurelius-editor-multi-row">
                                     <input
                                         type="text"
                                         class="input"
+                                        [id]="'editor-' + field.name + '-' + i"
+                                        [attr.aria-label]="field.label"
                                         [class.is-danger]="showError(field)"
                                         [formField]="row"
                                     />
@@ -298,6 +300,18 @@
                         (keydown.escape)="onSuggestionEscape($event)"
                         (keydown)="onSuggestionKeys($event)"
                     />
+                    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown
+                         panel, not a native select — the input keeps the typed
+                         text and the rows are buttons styled by Bulma. The
+                         listbox/option roles are the pattern's own semantics
+                         (S6819's native <select> cannot carry them), so each
+                         site carries a reason marker. This div cannot:
+                         Prettier always splits a comment off a block tag, so
+                         the marker would land off-line and stop working — its
+                         line stays flagged until the server's S6819
+                         allowedRoles parameter lists listbox. The option
+                         buttons keep their markers — Prettier preserves the
+                         inline glue. -->
                     <div
                         class="dropdown-menu"
                         id="editor-classification-listbox"
@@ -306,7 +320,7 @@
                     >
                         <div class="dropdown-content">
                             @for (name of filteredSuggestions(); track name; let i = $index) {
-                                <button
+                                <!-- //NOSONAR --><button
                                     type="button"
                                     class="dropdown-item"
                                     role="option"

@@ -142,7 +142,11 @@
              circular drop-up at the foot of the screen, its menu items
              projected here as the legacy layout's anchors. -->
 <aurelius-atlas-ui-details-navigation class="aurelius-details-nav" [label]="navLabel">
-    <li>
-        <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
-    </li>
+    <!-- The shell projects this list as-is (UIC-18), so the caller owns the
+         ul.menu-list container — the same shape the legacy pages wrote. -->
+    <ul class="menu-list">
+        <li>
+            <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
+        </li>
+    </ul>
 </aurelius-atlas-ui-details-navigation>

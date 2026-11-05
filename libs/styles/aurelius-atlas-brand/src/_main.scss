@@ -379,10 +379,13 @@
     text-transform: uppercase;
 }
 
+/* The 0.9.4 names extend Bulma 1's own helpers instead of restating them, so
+   the `!important` lives once in Bulma (the helper's contract — it must beat
+   any component rule on the same element) and never in this file. */
 .is-marginless {
-    margin: 0 !important;
+    @extend .marginless;
 }
 
 .is-paddingless {
-    padding: 0 !important;
+    @extend .paddingless;
 }

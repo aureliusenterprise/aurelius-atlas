@@ -95,8 +95,13 @@ export class EntityEditor {
         initialValue: "",
     });
 
-    /** The mode, off the route segment — no store sentinel (EDT-01, DD-325). */
-    private readonly isCreate = this.route.routeConfig?.path?.startsWith("create") ?? false;
+    /** The mode, off the route's data — no store sentinel (EDT-01, DD-325).
+     * DD-355 moved it off the route segment: the segment read worked only
+     * while `create` and `create/:type` were two configs, and that split
+     * rebuilt this component (and replayed the drawer's slide-in) on the
+     * first type pick. One matcher route now serves both URLs, so the mode
+     * cannot come from the path anymore. */
+    private readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
 
     private readonly labels: EditorLabels = {
         name: $localize`:@@search.components.editor.attribute.name:Name*`,
@@ -375,7 +380,7 @@ export class EntityEditor {
                     continue;
                 }
                 const list = values[field.name] as string[] | undefined;
-                if (list !== undefined && list.length > 0 && String(list[list.length - 1] ?? "").trim() !== "") {
+                if (list !== undefined && list.length > 0 && String(list.at(-1) ?? "").trim() !== "") {
                     this.values.update((current) => ({
                         ...current,
                         [field.name]: [...((current[field.name] as string[]) ?? []), ""],
@@ -577,7 +582,11 @@ export class EntityEditor {
         }
         this.suggestionsOpen.set(true);
         const step = event.key === "ArrowDown" ? 1 : -1;
-        const from = this.dropdownShown() ? this.activeSuggestion() : step === 1 ? -1 : count;
+        // A shut panel starts from just before the first row (going down) or
+        // just past the last (going up), so the first keypress lands on the
+        // near end (DD-336).
+        const closedStart = step === 1 ? -1 : count;
+        const from = this.dropdownShown() ? this.activeSuggestion() : closedStart;
         const next = (from + step + count) % count;
         this.activeSuggestion.set(next);
     }
@@ -698,6 +707,6 @@ export class EntityEditor {
     /** Dismiss (EDT-01): X, backdrop, Escape — navigate the outlet away. */
     protected close(): void {
         this.active.set(false);
-        this.router.navigate([{ outlets: { drawer: null } }]);
+        void this.router.navigate([{ outlets: { drawer: null } }]);
     }
 }

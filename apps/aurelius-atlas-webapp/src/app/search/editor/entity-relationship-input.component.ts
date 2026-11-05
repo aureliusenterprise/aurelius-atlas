@@ -241,7 +241,11 @@ export class EntityRelationshipInput {
         }
         this.panelOpen.set(true);
         const step = event.key === "ArrowDown" ? 1 : -1;
-        const from = this.panelShown() ? this.activeRow() : step === 1 ? -1 : count;
+        // A shut panel starts from just before the first row (going down) or
+        // just past the last (going up), so the first keypress lands on the
+        // near end (DD-336).
+        const closedStart = step === 1 ? -1 : count;
+        const from = this.panelShown() ? this.activeRow() : closedStart;
         this.activeRow.set((from + step + count) % count);
     }
 

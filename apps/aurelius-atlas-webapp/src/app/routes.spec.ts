@@ -1,4 +1,4 @@
-import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes } from "@angular/router";
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlSegment } from "@angular/router";
 
 const createAuthGuardMock = vi.hoisted(() => vi.fn((guard: unknown) => guard));
 
@@ -6,7 +6,7 @@ vi.mock("keycloak-angular", () => ({
     createAuthGuard: createAuthGuardMock,
 }));
 
-import { routes } from "./routes";
+import { createEntityMatcher, routes } from "./routes";
 import { SEARCH_ROUTES } from "./search/search.routes";
 import { SettingsPanel } from "./settings/settings-panel.component";
 
@@ -55,6 +55,42 @@ describe("routes", () => {
         const loadComponent = alerts?.loadComponent as unknown as () => Promise<unknown>;
         const { AlertsPanel } = await import("./alerts/alerts-panel.component");
         await expect(loadComponent()).resolves.toBe(AlertsPanel);
+    });
+
+    it("matches the bare create segment and takes no type (EDT-04, DD-355)", () => {
+        const match = createEntityMatcher([new UrlSegment("create", {})]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual(["create"]);
+        expect(match?.posParams).toBeUndefined();
+    });
+
+    it("matches the create segment with a type and carries it as :type (EDT-04, DD-330, DD-355)", () => {
+        const match = createEntityMatcher([new UrlSegment("create", {}), new UrlSegment("DataSet", {})]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual(["create", "DataSet"]);
+        expect(match?.posParams?.["type"]?.path).toBe("DataSet");
+    });
+
+    it("leaves any other first segment to the rest of the table (DD-355)", () => {
+        expect(createEntityMatcher([new UrlSegment("settings", {})])).toBeNull();
+        expect(createEntityMatcher([new UrlSegment("created", {})])).toBeNull();
+        expect(createEntityMatcher([])).toBeNull();
+    });
+
+    it("serves both create URLs from one config, so the drawer is not rebuilt on the first pick (DD-355)", () => {
+        // The router reuses a component only when both navigations land on
+        // the same config, so two entries (`create`, `create/:type`) made the
+        // first type pick destroy and re-create the editor — and the drawer
+        // replayed its slide-in. One matcher config keeps it alive; only the
+        // `:type` parameter changes.
+        const drawerRoutes = routes[0].children?.filter((route) => route.outlet === "drawer") ?? [];
+        const createRoutes = drawerRoutes.filter((route) => route.matcher === createEntityMatcher);
+
+        expect(createRoutes).toHaveLength(1);
+        expect(createRoutes[0]?.data).toEqual({ editorMode: "create" });
+        expect(createRoutes[0]?.path).toBeUndefined();
+        // The matcher config must not be the edit one, whose mode differs.
+        expect(drawerRoutes.find((route) => route.path === "edit/:guid")?.data).toEqual({ editorMode: "edit" });
     });
 
     it("routes the details skeleton at search/details/:guid (DET-01)", async () => {
