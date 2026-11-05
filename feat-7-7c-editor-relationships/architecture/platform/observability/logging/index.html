@@ -5559,6 +5559,23 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Logging
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -5574,6 +5591,48 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#correlation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Correlation
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-logged" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What is logged
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -6063,6 +6122,36 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#correlation" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Correlation
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-logged" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        What is logged
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -6231,12 +6320,43 @@
 
 
 <h1 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h1>
-<div class="admonition info">
-<p class="admonition-title">Planned</p>
-<p>To be written by increment 6.4, from the increment's semantics spec. See the <a href="../">filling
-map</a> for the page scope and the <a href="../../../conversion/">conversion roadmap</a>
-for increment status.</p>
-</div>
+<p>The server writes its log records to two places: its process's output, which the container runtime
+keeps, and the collector, which passes them to Loki. The records come from its own logger, from the
+libraries it runs (<code>aurelius_atlas_core</code>, <code>aurelius_atlas_store_es</code>) and from uvicorn's errors. They
+go over the same per-service leg and credential as its traces and metrics. A server without an
+ingest credential sends nothing to the collector, and its output is the only record.</p>
+<h2 id="correlation">Correlation<a class="headerlink" href="#correlation" title="Permanent link">&para;</a></h2>
+<p>A record written while a request is answered carries that request's trace and span ids. Its 5xx
+answers carry the trace id as <code>requestId</code> (SRV-07), so one id leads from the caller's error to the
+trace in Tempo and to the records in Loki:</p>
+<div class="highlight"><pre><span></span><code>{service_name="aurelius-atlas-server"} | trace_id="&lt;requestId&gt;"
+</code></pre></div>
+<p>In Grafana, a span of the trace opens the records written under it (Tempo's link to Loki).</p>
+<h2 id="what-is-logged">What is logged<a class="headerlink" href="#what-is-logged" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Logger</th>
+<th>Records</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>aurelius-atlas-server</code></td>
+<td>start and stop; failures of the metrics, audit-aging and task schedulers; audit-write failures</td>
+</tr>
+<tr>
+<td><code>aurelius_atlas_core</code></td>
+<td>the core services' failures: the model loader's patches, the audit aging</td>
+</tr>
+<tr>
+<td><code>uvicorn.error</code></td>
+<td>the server's own failures, such as a socket or TLS error</td>
+</tr>
+</tbody>
+</table>
+<p>The level is <code>AURELIUS_ATLAS_SERVER_LOG_LEVEL</code>; <code>debug</code> also prints spans and records to the output.
+Loki deletes them after 30 days (<a href="../../../data-lifecycle-management/data-archiving/">lifetimes</a>).</p>
 
 
 

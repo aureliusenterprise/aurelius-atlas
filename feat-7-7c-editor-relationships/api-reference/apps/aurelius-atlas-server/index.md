@@ -22,7 +22,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > ## aurelius\_atlas\_server.settings.ServerSettings
 >
-> Bases: `BaseSettings`
+> Bases: `StoreAccessSettings`
 >
 > How the server runs and where its store is.
 >
@@ -44,6 +44,38 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >   },
 >   "description": "How the server runs and where its store is.",
 >   "properties": {
+>     "elasticsearch_hosts": {
+>       "items": {
+>         "format": "uri",
+>         "maxLength": 2083,
+>         "minLength": 1,
+>         "type": "string"
+>       },
+>       "minItems": 1,
+>       "title": "Elasticsearch Hosts",
+>       "type": "array"
+>     },
+>     "elasticsearch_username": {
+>       "default": "elastic",
+>       "title": "Elasticsearch Username",
+>       "type": "string"
+>     },
+>     "elasticsearch_password": {
+>       "format": "password",
+>       "title": "Elasticsearch Password",
+>       "type": "string",
+>       "writeOnly": true
+>     },
+>     "elasticsearch_ca_certs": {
+>       "format": "file-path",
+>       "title": "Elasticsearch Ca Certs",
+>       "type": "string"
+>     },
+>     "snapshot_location": {
+>       "default": "aurelius-atlas",
+>       "title": "Snapshot Location",
+>       "type": "string"
+>     },
 >     "host": {
 >       "default": "localhost",
 >       "title": "Host",
@@ -165,36 +197,165 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Lineage Max Node Count",
 >       "type": "integer"
 >     },
+>     "metrics_persist_interval_minutes": {
+>       "default": 60,
+>       "minimum": 0,
+>       "title": "Metrics Persist Interval Minutes",
+>       "type": "integer"
+>     },
+>     "metrics_ttl_hours": {
+>       "default": 336,
+>       "minimum": 1,
+>       "title": "Metrics Ttl Hours",
+>       "type": "integer"
+>     },
+>     "audit_aging_enabled": {
+>       "default": false,
+>       "title": "Audit Aging Enabled",
+>       "type": "boolean"
+>     },
+>     "audit_default_ageout_enabled": {
+>       "default": true,
+>       "title": "Audit Default Ageout Enabled",
+>       "type": "boolean"
+>     },
+>     "audit_default_ageout_ttl_in_days": {
+>       "default": 90,
+>       "title": "Audit Default Ageout Ttl In Days",
+>       "type": "integer"
+>     },
+>     "audit_default_ageout_count": {
+>       "default": 0,
+>       "title": "Audit Default Ageout Count",
+>       "type": "integer"
+>     },
+>     "audit_default_ageout_ignore_ttl": {
+>       "default": false,
+>       "title": "Audit Default Ageout Ignore Ttl",
+>       "type": "boolean"
+>     },
+>     "audit_custom_ageout_ttl_in_days": {
+>       "default": 0,
+>       "title": "Audit Custom Ageout Ttl In Days",
+>       "type": "integer"
+>     },
+>     "audit_custom_ageout_count": {
+>       "default": 0,
+>       "title": "Audit Custom Ageout Count",
+>       "type": "integer"
+>     },
+>     "audit_custom_ageout_entity_types": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Audit Custom Ageout Entity Types"
+>     },
+>     "audit_custom_ageout_action_types": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Audit Custom Ageout Action Types"
+>     },
+>     "audit_sweep_out_enabled": {
+>       "default": false,
+>       "title": "Audit Sweep Out Enabled",
+>       "type": "boolean"
+>     },
+>     "audit_sweep_out_entity_types": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Audit Sweep Out Entity Types"
+>     },
+>     "audit_sweep_out_action_types": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Audit Sweep Out Action Types"
+>     },
+>     "audit_create_events_ageout_allowed": {
+>       "default": false,
+>       "title": "Audit Create Events Ageout Allowed",
+>       "type": "boolean"
+>     },
+>     "audit_aging_subtypes_included": {
+>       "default": true,
+>       "title": "Audit Aging Subtypes Included",
+>       "type": "boolean"
+>     },
+>     "audit_min_ttl_to_maintain": {
+>       "default": 7,
+>       "title": "Audit Min Ttl To Maintain",
+>       "type": "integer"
+>     },
+>     "audit_min_count_to_maintain": {
+>       "default": 50,
+>       "title": "Audit Min Count To Maintain",
+>       "type": "integer"
+>     },
+>     "audit_reduction_max_pending_tasks": {
+>       "default": 50,
+>       "title": "Audit Reduction Max Pending Tasks",
+>       "type": "integer"
+>     },
+>     "audit_aging_scheduler_frequency_in_days": {
+>       "default": 30,
+>       "title": "Audit Aging Scheduler Frequency In Days",
+>       "type": "integer"
+>     },
+>     "audit_aging_scheduler_initial_delay_in_min": {
+>       "default": 1,
+>       "title": "Audit Aging Scheduler Initial Delay In Min",
+>       "type": "integer"
+>     },
+>     "snapshot_enabled": {
+>       "default": false,
+>       "title": "Snapshot Enabled",
+>       "type": "boolean"
+>     },
+>     "snapshot_schedule": {
+>       "default": "0 0 * * * ?",
+>       "title": "Snapshot Schedule",
+>       "type": "string"
+>     },
+>     "snapshot_retention": {
+>       "default": "7d",
+>       "title": "Snapshot Retention",
+>       "type": "string"
+>     },
+>     "snapshot_check_minutes": {
+>       "default": 15,
+>       "minimum": 1,
+>       "title": "Snapshot Check Minutes",
+>       "type": "integer"
+>     },
 >     "revision": {
 >       "default": "UNKNOWN",
 >       "title": "Revision",
->       "type": "string"
->     },
->     "elasticsearch_hosts": {
->       "items": {
->         "format": "uri",
->         "maxLength": 2083,
->         "minLength": 1,
->         "type": "string"
->       },
->       "minItems": 1,
->       "title": "Elasticsearch Hosts",
->       "type": "array"
->     },
->     "elasticsearch_username": {
->       "default": "elastic",
->       "title": "Elasticsearch Username",
->       "type": "string"
->     },
->     "elasticsearch_password": {
->       "format": "password",
->       "title": "Elasticsearch Password",
->       "type": "string",
->       "writeOnly": true
->     },
->     "elasticsearch_ca_certs": {
->       "format": "file-path",
->       "title": "Elasticsearch Ca Certs",
 >       "type": "string"
 >     },
 >     "otel_token_url": {
@@ -310,11 +471,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >     }
 >   },
 >   "required": [
->     "tls_cert_file",
->     "tls_key_file",
 >     "elasticsearch_hosts",
 >     "elasticsearch_password",
 >     "elasticsearch_ca_certs",
+>     "tls_cert_file",
+>     "tls_key_file",
 >     "auth_server_url",
 >     "auth_client_secret"
 >   ],
@@ -323,14 +484,13 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > }
 > ```
 >
-> Config:
->
-> - `env_prefix`: `ENV_PREFIX`
-> - `frozen`: `True`
-> - `extra`: `ignore`
->
 > Fields:
 >
+> - `elasticsearch_hosts` (`list[HttpUrl]`)
+> - `elasticsearch_username` (`str`)
+> - `elasticsearch_password` (`SecretStr`)
+> - `elasticsearch_ca_certs` (`FilePath`)
+> - `snapshot_location` (`str`)
 > - `host` (`str`)
 > - `port` (`int`)
 > - `log_level` (`LogLevel`)
@@ -350,11 +510,32 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `lineage_on_demand_enabled` (`bool`)
 > - `lineage_on_demand_default_node_count` (`int`)
 > - `lineage_max_node_count` (`int`)
+> - `metrics_persist_interval_minutes` (`int`)
+> - `metrics_ttl_hours` (`int`)
+> - `audit_aging_enabled` (`bool`)
+> - `audit_default_ageout_enabled` (`bool`)
+> - `audit_default_ageout_ttl_in_days` (`int`)
+> - `audit_default_ageout_count` (`int`)
+> - `audit_default_ageout_ignore_ttl` (`bool`)
+> - `audit_custom_ageout_ttl_in_days` (`int`)
+> - `audit_custom_ageout_count` (`int`)
+> - `audit_custom_ageout_entity_types` (`str | None`)
+> - `audit_custom_ageout_action_types` (`str | None`)
+> - `audit_sweep_out_enabled` (`bool`)
+> - `audit_sweep_out_entity_types` (`str | None`)
+> - `audit_sweep_out_action_types` (`str | None`)
+> - `audit_create_events_ageout_allowed` (`bool`)
+> - `audit_aging_subtypes_included` (`bool`)
+> - `audit_min_ttl_to_maintain` (`int`)
+> - `audit_min_count_to_maintain` (`int`)
+> - `audit_reduction_max_pending_tasks` (`int`)
+> - `audit_aging_scheduler_frequency_in_days` (`int`)
+> - `audit_aging_scheduler_initial_delay_in_min` (`int`)
+> - `snapshot_enabled` (`bool`)
+> - `snapshot_schedule` (`str`)
+> - `snapshot_retention` (`str`)
+> - `snapshot_check_minutes` (`int`)
 > - `revision` (`str`)
-> - `elasticsearch_hosts` (`list[HttpUrl]`)
-> - `elasticsearch_username` (`str`)
-> - `elasticsearch_password` (`SecretStr`)
-> - `elasticsearch_ca_certs` (`FilePath`)
 > - `otel_token_url` (`HttpUrl | None`)
 > - `otel_client_id` (`str`)
 > - `otel_client_secret` (`SecretStr | None`)
@@ -369,6 +550,158 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `auth_groups_claim` (`str`)
 > - `auth_ca_file` (`FilePath | None`)
 > - `session_timeout_seconds` (`int`)
+>
+> ### audit\_aging\_enabled
+>
+> ```
+> audit_aging_enabled: bool = False
+> ```
+>
+> Whether the entity audits age out on a schedule, and `admin/audits/ageout?useAuditConfig` ages them: `atlas.audit.aging.enabled` (AGE-02, AGE-05).
+>
+> ### audit\_aging\_scheduler\_frequency\_in\_days
+>
+> ```
+> audit_aging_scheduler_frequency_in_days: int = 30
+> ```
+>
+> `atlas.audit.aging.scheduler.frequency.in.days`: at least 1 (AGE-05).
+>
+> ### audit\_aging\_scheduler\_initial\_delay\_in\_min
+>
+> ```
+> audit_aging_scheduler_initial_delay_in_min: int = 1
+> ```
+>
+> `atlas.audit.aging.scheduler.initial.delay.in.min`: at least 1 (AGE-05).
+>
+> ### audit\_aging\_subtypes\_included
+>
+> ```
+> audit_aging_subtypes_included: bool = True
+> ```
+>
+> `atlas.audit.aging.subtypes.included`: an aging's types take their sub types (AGE-04).
+>
+> ### audit\_create\_events\_ageout\_allowed
+>
+> ```
+> audit_create_events_ageout_allowed: bool = False
+> ```
+>
+> `atlas.audit.create.events.ageout.allowed`: creations may age out too (AGE-04).
+>
+> ### audit\_custom\_ageout\_action\_types
+>
+> ```
+> audit_custom_ageout_action_types: str | None = None
+> ```
+>
+> `atlas.audit.custom.ageout.action.types`: comma-separated action names or prefixes (AGE-02).
+>
+> ### audit\_custom\_ageout\_count
+>
+> ```
+> audit_custom_ageout_count: int = 0
+> ```
+>
+> `atlas.audit.custom.ageout.count` (AGE-02).
+>
+> ### audit\_custom\_ageout\_entity\_types
+>
+> ```
+> audit_custom_ageout_entity_types: str | None = None
+> ```
+>
+> `atlas.audit.custom.ageout.entity.types`: comma-separated, `<prefix>*` for all that start so (AGE-02).
+>
+> ### audit\_custom\_ageout\_ttl\_in\_days
+>
+> ```
+> audit_custom_ageout_ttl_in_days: int = 0
+> ```
+>
+> `atlas.audit.custom.ageout.ttl.in.days` (AGE-02).
+>
+> ### audit\_default\_ageout\_count
+>
+> ```
+> audit_default_ageout_count: int = 0
+> ```
+>
+> `atlas.audit.default.ageout.count`: the newest audits each entity keeps; 0 for no count (AGE-02).
+>
+> ### audit\_default\_ageout\_enabled
+>
+> ```
+> audit_default_ageout_enabled: bool = True
+> ```
+>
+> `atlas.audit.default.ageout.enabled`: the default aging, of the types no other aging names (AGE-02).
+>
+> ### audit\_default\_ageout\_ignore\_ttl
+>
+> ```
+> audit_default_ageout_ignore_ttl: bool = False
+> ```
+>
+> `atlas.audit.default.ageout.ignore.ttl`: the default aging by count alone (AGE-02).
+>
+> ### audit\_default\_ageout\_ttl\_in\_days
+>
+> ```
+> audit_default_ageout_ttl_in_days: int = 90
+> ```
+>
+> `atlas.audit.default.ageout.ttl.in.days`: at least `audit_min_ttl_to_maintain` (AGE-02).
+>
+> ### audit\_min\_count\_to\_maintain
+>
+> ```
+> audit_min_count_to_maintain: int = 50
+> ```
+>
+> `atlas.audit.min.count.to.maintain`: the least count an aging may keep (AGE-02).
+>
+> ### audit\_min\_ttl\_to\_maintain
+>
+> ```
+> audit_min_ttl_to_maintain: int = 7
+> ```
+>
+> `atlas.audit.min.ttl.to.maintain`: the least TTL, in days, an aging may have (AGE-02).
+>
+> ### audit\_reduction\_max\_pending\_tasks
+>
+> ```
+> audit_reduction_max_pending_tasks: int = 50
+> ```
+>
+> `atlas.audit.reduction.max.pending.tasks`: past it no aging is queued (AGE-03).
+>
+> ### audit\_sweep\_out\_action\_types
+>
+> ```
+> audit_sweep_out_action_types: str | None = None
+> ```
+>
+> `atlas.audit.sweep.out.action.types` (AGE-02).
+>
+> ### audit\_sweep\_out\_enabled
+>
+> ```
+> audit_sweep_out_enabled: bool = False
+> ```
+>
+> `atlas.audit.sweep.out.enabled`: every audit of the sweep's types and actions removed (AGE-02).
+>
+> ### audit\_sweep\_out\_entity\_types
+>
+> ```
+> audit_sweep_out_entity_types: str | None = None
+> ```
+>
+> `atlas.audit.sweep.out.entity.types` (AGE-02).
 >
 > ### auth\_audiences
 >
@@ -562,6 +895,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > The lowest level of log record the server and uvicorn emit.
 >
+> ### metrics\_persist\_interval\_minutes
+>
+> ```
+> metrics_persist_interval_minutes: int = 60
+> ```
+>
+> How often the metrics are stored, in minutes on their multiples since the epoch; 0 stores none: `atlas.metrics.persist.schedule` (MHS-05, DV-137).
+>
+> ### metrics\_ttl\_hours
+>
+> ```
+> metrics_ttl_hours: int = 336
+> ```
+>
+> How long a stored metric is kept: `atlas.metrics.ttl.hours` (MHS-01, MHS-05).
+>
 > ### model\_config
 >
 > ```
@@ -640,6 +989,46 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > How long a browser session lasts unused: Atlas's `web.xml` session timeout, 60 minutes (AUT-06).
 >
+> ### snapshot\_check\_minutes
+>
+> ```
+> snapshot_check_minutes: int = 15
+> ```
+>
+> How often the server reads how the policy's last runs went (SNP-03).
+>
+> ### snapshot\_enabled
+>
+> ```
+> snapshot_enabled: bool = False
+> ```
+>
+> Whether the server puts the store's snapshot policy at start and watches its runs (SNP-01 to SNP-03). The chart turns it on; the dev store's data is disposable.
+>
+> ### snapshot\_location
+>
+> ```
+> snapshot_location: str = 'aurelius-atlas'
+> ```
+>
+> The repository's directory, below the store's `path.repo` (SNP-01).
+>
+> ### snapshot\_retention
+>
+> ```
+> snapshot_retention: str = '7d'
+> ```
+>
+> How long a snapshot is kept, as an Elasticsearch time unit (SNP-02).
+>
+> ### snapshot\_schedule
+>
+> ```
+> snapshot_schedule: str = '0 0 * * * ?'
+> ```
+>
+> When a snapshot is taken, as an Elasticsearch cron expression in UTC: every hour on the hour (SNP-02).
+>
 > ### task\_poll\_seconds
 >
 > ```
@@ -687,6 +1076,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > How long the server answers from its type registry before it checks for another process's type change (TDS-13, DD-029).
+>
+> ### audit\_aging\_config
+>
+> ```
+> audit_aging_config() -> AuditAgingConfig
+> ```
+>
+> The `atlas.audit.*` aging settings of the core's aging (AGE-02).
+>
+> ### snapshot\_policy
+>
+> ```
+> snapshot_policy() -> SnapshotPolicy
+> ```
+>
+> The snapshot policy of the server's indices, every index of `INDEX_PREFIX` (SNP-01, SNP-02).
 >
 > ### store\_settings
 >
@@ -746,11 +1151,22 @@ Functions:
 
 Attributes:
 
+- **`BRIDGED_LOGGERS`** –
+
+  The loggers whose records the collector receives (OBS-01): the server's, its libraries' and uvicorn's errors.
 - **`DASHBOARD_V3_DIR`** –
 
   Where `dashboardv3` sits in the dashboard directory, and below which path it is served.
 - **`LOGGER`** –
 - **`NAME`** –
+
+### BRIDGED\_LOGGERS
+
+```
+BRIDGED_LOGGERS = (NAME, 'aurelius_atlas_core', 'aurelius_atlas_store_es', 'uvicorn.error')
+```
+
+The loggers whose records the collector receives (OBS-01): the server's, its libraries' and uvicorn's errors.
 
 ### DASHBOARD\_V3\_DIR
 
@@ -825,7 +1241,7 @@ Parameters:
 
   The HTTP client the sign-in calls the provider with; by default one of its own (AUT-05).
 
-The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080).
+The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record (TSK-04, DD-080). With snapshots enabled, the store's snapshot policy is put and its runs watched (SNP-01 to SNP-03).
 
 ### mount\_dashboards
 
@@ -923,18 +1339,24 @@ A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the 
 
 ## aurelius\_atlas\_server.routes.admin
 
-The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, purge, tasks, export, import, servers and their audit trail.
+The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, metrics, purge, tasks, export, import, servers and their audit trail.
 
-ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05.
+ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04, MHS-01 to MHS-04.
 
 Functions:
 
+- **`ageout_audit_data`** –
+
+  `ageoutAuditData`: the agings the criteria ask for, or with `useAuditConfig` the configuration's, queued
 - **`delete_task`** –
 
   `deleteTask`: remove the tasks of the `guids` given (TSK-06).
 - **`export`** –
 
   `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
+- **`get_all_metrics`** –
+
+  `getAllMetrics`: every stored metric, the latest first; with `mininfo`, the default, without the metrics
 - **`get_atlas_audits`** –
 
   `getAtlasAudits`: the admin audits the search parameters find (ADA-04); it needs `ADMIN_AUDITS`.
@@ -950,6 +1372,18 @@ Functions:
 - **`get_liveness`** –
 
   Whether the server runs (ADM-03).
+- **`get_metrics`** –
+
+  `getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats
+- **`get_metrics_by_collection_time`** –
+
+  `getMetricsByCollectionTime`: the metric stored at that time (MHS-02).
+- **`get_metrics_for_chart_by_type_names`** –
+
+  `getMetricsForChartByTypeNames`: per type name, its counts in the range by state (MHS-04).
+- **`get_metrics_in_time_range`** –
+
+  `getMetricsInTimeRange`: the metrics stored in the range, with the type data of the type names (MHS-03).
 - **`get_patches`** –
 
   `getAtlasPatches`: the typedef patch records, sorted by id (ENS-10, DV-14).
@@ -990,7 +1424,9 @@ Attributes:
 - **`DESCRIPTION`** –
 
   What `admin/version` reports instead of Apache Atlas's name and description (DV-03).
+- **`JAVA_LONG`** –
 - **`LIVE`** –
+- **`LONG_RANGE`** –
 - **`NAME`** –
 - **`NOT_READY`** –
 - **`NO_CONTENT`** –
@@ -1024,10 +1460,22 @@ DESCRIPTION = 'Apache Atlas 2.4.0 REST API on Elasticsearch'
 
 What `admin/version` reports instead of Apache Atlas's name and description (DV-03).
 
+### JAVA\_LONG
+
+```
+JAVA_LONG = re.compile('[+-]?\\d+')
+```
+
 ### LIVE
 
 ```
 LIVE = 'Service is live'
+```
+
+### LONG\_RANGE
+
+```
+LONG_RANGE = (-2 ** 63, 2 ** 63 - 1)
 ```
 
 ### NAME
@@ -1085,6 +1533,20 @@ UI_SETTINGS: dict[str, Any] = {
 
 The session's settings at the defaults of Atlas 2.4.0 (`AdminResource`, `AtlasCSRFPreventionFilter`, `AtlasConfiguration`).
 
+### ageout\_audit\_data
+
+```
+ageout_audit_data(request: Request, store: Store, body: Body) -> Response
+```
+
+`ageoutAuditData`: the agings the criteria ask for, or with `useAuditConfig` the configuration's, queued as tasks and answered; none queued is 204 (AGE-01 to AGE-03). It needs `ADMIN_AUDITS`.
+
+Raises:
+
+- `AtlasError` –
+
+  `UNAUTHORIZED_ACCESS`; `BAD_REQUEST` for a body that is no criteria (DV-10); `INTERNAL_ERROR` for action types of which none names an action.
+
 ### delete\_task
 
 ```
@@ -1108,6 +1570,14 @@ Raises:
 - `AtlasError` –
 
   `UNAUTHORIZED_ACCESS`; `FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK` while another runs; `BAD_REQUEST` for a body that is no export request (DV-10).
+
+### get\_all\_metrics
+
+```
+get_all_metrics(request: Request, store: Store) -> list[dict[str, Any]]
+```
+
+`getAllMetrics`: every stored metric, the latest first; with `mininfo`, the default, without the metrics (MHS-02).
 
 ### get\_atlas\_audits
 
@@ -1172,6 +1642,38 @@ get_liveness() -> str
 ```
 
 Whether the server runs (ADM-03).
+
+### get\_metrics
+
+```
+get_metrics(request: Request, store: Store) -> dict[str, Any]
+```
+
+`getMetrics`: the counts of the types, entities and classifications the user may read, the server's stats and its system details; a store that is not healthy is `not-connected` (MET-01 to MET-04).
+
+### get\_metrics\_by\_collection\_time
+
+```
+get_metrics_by_collection_time(request: Request, store: Store, collection_time: str) -> dict[str, Any]
+```
+
+`getMetricsByCollectionTime`: the metric stored at that time (MHS-02).
+
+### get\_metrics\_for\_chart\_by\_type\_names
+
+```
+get_metrics_for_chart_by_type_names(request: Request, store: Store) -> dict[str, list[dict[str, Any]]]
+```
+
+`getMetricsForChartByTypeNames`: per type name, its counts in the range by state (MHS-04).
+
+### get\_metrics\_in\_time\_range
+
+```
+get_metrics_in_time_range(request: Request, store: Store) -> list[dict[str, Any]]
+```
+
+`getMetricsInTimeRange`: the metrics stored in the range, with the type data of the type names (MHS-03).
 
 ### get\_patches
 
