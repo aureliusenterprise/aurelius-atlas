@@ -1,12 +1,4 @@
-import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    input,
-    model,
-    output,
-    signal,
-} from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, input, model, output, signal } from "@angular/core";
 import { FormValueControl } from "@angular/forms/signals";
 
 import { Markdown } from "../markdown/markdown.component";
