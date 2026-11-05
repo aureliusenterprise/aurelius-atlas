@@ -1,7 +1,7 @@
 # 6.3d An import holds its propagation tasks
 
 - **Status:** in review
-- **Pull request:** to follow
+- **Pull request:** [#273](https://github.com/aureliusenterprise/aurelius-atlas/pull/273)
 - **Records:** DD-361, DV-138; relies on DD-052 (a lost race runs the request again once), DD-080 (the task
   worker) and DD-081 (tasks on or off)
 
