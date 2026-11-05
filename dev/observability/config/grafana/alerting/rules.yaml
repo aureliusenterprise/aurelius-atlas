@@ -1,4 +1,4 @@
-# The alert rules of ADR 040 (OBS-03): each names its condition, its severity and its owner; the
+# The alert rules of ADR 040 (OBS-03, SNP-03): each names its condition, its severity and its owner; the
 # destination is the notification policy (OBS-04). Byte-copied into the chart (files/grafana-alerting.yaml).
 apiVersion: 1
 
@@ -231,4 +231,36 @@ groups:
                 description: "A backend is down or full. The Observability Stack dashboard's exporter panels name it."
             labels:
                 severity: warning
+                team: maintainers
+          - uid: aurelius-atlas-snapshot-overdue
+            title: Snapshot overdue
+            condition: B
+            data:
+                - refId: A
+                  relativeTimeRange:
+                      from: 600
+                      to: 0
+                  datasourceUid: prometheus
+                  model:
+                      expr: 'time() - max(aurelius_atlas_snapshot_last_success_seconds{exported_job="aurelius-atlas-server"})'
+                      instant: true
+                      refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  model:
+                      type: threshold
+                      expression: A
+                      conditions:
+                          - evaluator:
+                                type: gt
+                                params: [7200]
+                      refId: B
+            noDataState: OK
+            execErrState: Alerting
+            for: 15m
+            annotations:
+                summary: "The store's last successful snapshot is more than two hours old."
+                description: "Snapshots run every hour (SNP-02), so two missed runs break the stated loss bound. The server's logs name the last failure; the Backup & Restore page lists the causes. No data means snapshots are off, as in dev."
+            labels:
+                severity: critical
                 team: maintainers

@@ -4,12 +4,13 @@ services:
     volume-init:
         # The image has no data directory, so Docker creates the named volume's
         # mount point owned by root, and Elasticsearch (uid 1000) cannot write
-        # to it. This one-shot step hands the volume to uid 1000 before start.
+        # to it. This one-shot step hands the volumes to uid 1000 before start.
         image: dhi.io/elasticsearch:9.5-debian13
         user: "0"
-        entrypoint: ["chown", "1000:1000", "/usr/share/elasticsearch/data"]
+        entrypoint: ["chown", "1000:1000", "/usr/share/elasticsearch/data", "/usr/share/elasticsearch/snapshots"]
         volumes:
             - data:/usr/share/elasticsearch/data
+            - snapshots:/usr/share/elasticsearch/snapshots
 
     elasticsearch:
         image: dhi.io/elasticsearch:9.5-debian13
@@ -59,6 +60,8 @@ services:
             - "127.0.0.1:${ELASTICSEARCH_PORT}:9200"
         volumes:
             - data:/usr/share/elasticsearch/data
+            # The node's path.repo (SNP-01): snapshots, apart from the data.
+            - snapshots:/usr/share/elasticsearch/snapshots
             - ../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
             - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
             # Not config/certs: see config/elasticsearch.yml.
@@ -137,3 +140,4 @@ networks:
 
 volumes:
     data:
+    snapshots:

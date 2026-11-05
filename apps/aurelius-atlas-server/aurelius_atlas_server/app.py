@@ -33,9 +33,11 @@ from aurelius_atlas_otel import (
     setup_telemetry,
 )
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
+from aurelius_atlas_store_es.snapshots import SnapshotStatus, prepare_snapshots, snapshot_status
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
+from opentelemetry import metrics
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
@@ -47,6 +49,7 @@ from aurelius_atlas_server.request_context import RequestContextMiddleware
 from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, LOGIN, RELATIONSHIP, TYPES
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.snapshot_watcher import SnapshotWatcher
 from aurelius_atlas_server.task_worker import TaskWorker
 
 NAME = "aurelius-atlas-server"
@@ -116,7 +119,8 @@ def create_app(
     The type registry is loaded from the stored type definitions when the application starts (TDS-12), then the
     models are loaded and patched (MDL-16); the entity store's indices are created and interrupted writes recovered
     (ENS-01, ENS-07), and the audit index (DD-082). With tasks enabled, a worker runs the tasks requests record
-    (TSK-04, DD-080).
+    (TSK-04, DD-080). With snapshots enabled, the store's snapshot policy is put and its runs watched (SNP-01 to
+    SNP-03).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
     registry = TypeRegistry()
@@ -129,7 +133,7 @@ def create_app(
         started = int(time.time() * 1000)
         _start(metrics_util)
         worker: TaskWorker | None = None
-        schedules: list[AuditAgingScheduler | MetricsScheduler] = []
+        schedules: list[AuditAgingScheduler | MetricsScheduler | SnapshotWatcher] = []
         await store.open()
         try:
             entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
@@ -155,7 +159,11 @@ def create_app(
             await _audit_server_status(admin_audits, started)
             schedules = [
                 scheduler
-                for scheduler in (_audit_aging(settings, entity_store), _metrics_schedule(app, settings, entity_store))
+                for scheduler in (
+                    _audit_aging(settings, entity_store),
+                    _metrics_schedule(app, settings, entity_store),
+                    await _snapshots(settings, store),
+                )
                 if scheduler is not None
             ]
             yield
@@ -322,6 +330,24 @@ def _metrics_schedule(app: FastAPI, settings: ServerSettings, store: EntityStore
     scheduler = MetricsScheduler(service, connected, interval_minutes=settings.metrics_persist_interval_minutes)
     scheduler.start()
     return scheduler
+
+
+async def _snapshots(settings: ServerSettings, store: ElasticsearchStore) -> SnapshotWatcher | None:
+    """The snapshot policy put, and its watcher reporting and started, when snapshots are enabled (SNP-01 to SNP-03).
+
+    A store that cannot hold the repository fails the start: snapshots that were asked for are not skipped.
+    """
+    if not settings.snapshot_enabled:
+        return None
+    await prepare_snapshots(store.client, settings.snapshot_policy())
+
+    async def read() -> SnapshotStatus:
+        return await snapshot_status(store.client)
+
+    watcher = SnapshotWatcher(read, interval_minutes=settings.snapshot_check_minutes)
+    watcher.register(metrics.get_meter(NAME))
+    watcher.start()
+    return watcher
 
 
 def _task_worker(app: FastAPI, settings: ServerSettings, store: EntityStore) -> TaskWorker | None:

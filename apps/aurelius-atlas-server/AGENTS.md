@@ -16,6 +16,12 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
   server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
   turns them on and runs on the module loop, where the lifespan started the worker
+- `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts the
+  store's snapshot policy and starts it; it logs failed runs and reports the gauge
+  `aurelius_atlas.snapshot.last_success` (SNP-01 to SNP-03, 6.4e)
+- `aurelius_atlas_server/snapshots.py` — the command `python -m aurelius_atlas_server.snapshots list|take|restore`,
+  reading `StoreAccessSettings` alone; the chart's restore Job runs it (SNP-04, SNP-05, SNP-07). Its e2e
+  rehearsal runs two ES containers of its own, never the dev store
 - `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type;
   a 5xx answer is opaque and carries the trace id as `requestId` (SRV-07, DD-235)
 - `aurelius_atlas_server/security_headers.py` — `SecurityHeadersMiddleware`: security headers on every
