@@ -37,15 +37,15 @@ docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml logs
 The log ends with the import's status and its counts by type; a failed import exits non-zero. An import
 updates the entities it finds by GUID, so running it again is safe. Other settings:
 
-| Variable                | Default                         | What it sets                                                         |
-| ----------------------- | ------------------------------- | -------------------------------------------------------------------- |
-| `SAMPLE_ZIP`            | empty: ignored                  | The ZIP's file name in the sample folder                             |
-| `SAMPLE_DIR`            | `atlas_sample_data/`            | The sample folder; a relative path is read from this directory       |
-| `SAMPLE_IMPORT_REQUEST` | `{}`                            | Atlas's `AtlasImportRequest` as JSON, such as its `options`          |
-| `ATLAS_TASKS_ENABLED`   | `false`: propagation in-request | Whether the task worker propagates classifications after the request |
+| Variable                | Default              | What it sets                                                         |
+| ----------------------- | -------------------- | -------------------------------------------------------------------- |
+| `SAMPLE_ZIP`            | empty: ignored       | The ZIP's file name in the sample folder                             |
+| `SAMPLE_DIR`            | `atlas_sample_data/` | The sample folder; a relative path is read from this directory       |
+| `SAMPLE_IMPORT_REQUEST` | `{}`                 | Atlas's `AtlasImportRequest` as JSON, such as its `options`          |
+| `ATLAS_TASKS_ENABLED`   | `true`: as Atlas     | Whether the task worker propagates classifications after the request |
 
-The task worker is off because a large import of propagating classifications loses its write races to it and
-fails.
+An import's propagation runs once it ends (DD-361), so an entity shows what is propagated to it a little
+later.
 
 ## Stop
 
