@@ -128,5 +128,7 @@ direction and to a depth (DD-245). Lineage on demand (`POST v2/lineage/{guid}`) 
 npx nx serve aurelius-atlas-server   # builds the dashboards, starts the dev store and observability; https://localhost:21000
 ```
 
+The image alone, optionally with a sample dataset imported, runs from [`standalone/`](standalone/README.md).
+
 The server does not start without its store. Settings are environment variables prefixed
 `AURELIUS_ATLAS_SERVER_`; see `aurelius_atlas_server/settings.py` for the full list.
