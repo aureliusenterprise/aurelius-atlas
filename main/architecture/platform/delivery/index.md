@@ -9,4 +9,4 @@ How changes reach production: configuration, change control, testing, release, a
 | [Testing](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/testing/index.md>) | Layer map, CI gate (production bar); developer-side conventions after | — |
 | [Test Suite Review](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/testing-review/index.md>) | Dated review of every suite: coverage + non-happy-flow representativeness, hardening increments (DD-214) | written (2026-10) |
 | [Release Management](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/release-management/index.md>) | One versioned whole (ADR 019): version, inventory, signing, promotion | written (0.1) |
-| [Deployment](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/deployment/index.md>) | Image-per-service, compose layouts, promote-by-declared-path (ADR 024) | 6.4 |
+| [Deployment](<https://aureliusenterprise.github.io/main/architecture/platform/delivery/deployment/index.md>) | Image-per-service, compose layouts, promote-by-declared-path (ADR 024) | written (6.4f) |

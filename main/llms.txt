@@ -154,6 +154,8 @@
 - [Disaster Recovery](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/disaster-recovery/index.md>)
 - [High Availability](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/high-availability/index.md>)
 - [Incident Management](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/incident-management/index.md>)
+- [2026-11-05 Server silent](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent/index.md>)
+- [Incidents](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/incidents/index.md>)
 - [Resilience](<https://aureliusenterprise.github.io/main/architecture/platform/resilience/index.md>)
 - [Access Management](<https://aureliusenterprise.github.io/main/architecture/platform/security/access-management/index.md>)
 - [Data Encryption](<https://aureliusenterprise.github.io/main/architecture/platform/security/data-encryption/index.md>)
