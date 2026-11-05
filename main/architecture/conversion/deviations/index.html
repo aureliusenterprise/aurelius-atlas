@@ -7200,6 +7200,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A cron parser for one schedule; the default runs at the start of every hour either way</td>
 <td>6.4b</td>
 </tr>
+<tr>
+<td>DV-138</td>
+<td>Import/export</td>
+<td>The propagation tasks an import records run while it runs, each as its entity's transaction commits</td>
+<td>They run once the import ends: held until then, released in success or failure, held at most an hour (DD-361)</td>
+<td>Conditional writes would make the import lose its races to its own tasks; Atlas's GUID locks make them wait instead</td>
+<td>6.3</td>
+</tr>
 </tbody>
 </table>
 
