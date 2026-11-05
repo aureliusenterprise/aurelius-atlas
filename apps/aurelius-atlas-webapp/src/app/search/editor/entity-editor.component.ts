@@ -62,15 +62,7 @@ type EditorValue = string | number | boolean | string[] | null;
  * entity's details screen.
  */
 @Component({
-    imports: [
-        ClassificationChip,
-        Drawer,
-        EntityRelationshipInput,
-        FontAwesomeModule,
-        FormField,
-        Holdable,
-        Select,
-    ],
+    imports: [ClassificationChip, Drawer, EntityRelationshipInput, FontAwesomeModule, FormField, Holdable, Select],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
@@ -657,7 +649,9 @@ export class EntityEditor {
 
     /** Whether the required-fields notification shows (EDT-07/EDT-17). */
     protected notificationShown(): boolean {
-        return this.saveAttempted() && (this.formInvalid() || this.relationshipsMissing()) && !this.notificationDismissed();
+        return (
+            this.saveAttempted() && (this.formInvalid() || this.relationshipsMissing()) && !this.notificationDismissed()
+        );
     }
 
     /**
