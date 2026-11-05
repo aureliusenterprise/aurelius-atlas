@@ -1,7 +1,7 @@
 # 1.5b The m4i data dictionary types
 
 - **Status:** in review
-- **Pull request:** to follow
+- **Pull request:** [#274](https://github.com/aureliusenterprise/aurelius-atlas/pull/274)
 - **Records:** ADR 058, DD-362, DV-139; relies on DD-032 (the built-in models vendored unchanged), DD-033 (one
   change per model file) and DD-316 (the start's typedef audits held to one write)
 
