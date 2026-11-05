@@ -28,7 +28,7 @@ measured at its size, plus the servers' start.
 | The cluster, its storage survives | a new install bound to the old volumes, then a restore                  | writes since the snapshot          |
 | The cluster and its storage       | a new install and a restore from a copy kept elsewhere, if there is one | the catalogue, without such a copy |
 
-The last row is the gap: the snapshots live inside the cluster (DD-326). A deployment that must survive the loss
+The last row is the gap: the snapshots live inside the cluster (DD-356). A deployment that must survive the loss
 of its cluster copies the snapshots claim elsewhere on its own schedule, or registers an object store repository
 of its own. Keycloak's users are not backed up (see [Backup & Restore](backup-and-restore.md)).
 

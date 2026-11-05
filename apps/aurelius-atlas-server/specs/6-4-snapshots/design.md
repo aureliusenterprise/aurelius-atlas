@@ -6,7 +6,7 @@ is never edited except its status line, and a changed decision is a new entry th
 
 ## Entries
 
-### DD-325. The store takes its own snapshots; the server puts the policy
+### DD-355. The store takes its own snapshots; the server puts the policy
 
 - **Status:** Proposed
 - **Increment:** 6.4e
@@ -29,7 +29,7 @@ files is not a consistent store (ADR 026's second alternative), and the storage 
 Several servers put the same policy; the last start wins, and they share their settings. A store without
 `path.repo` fails a start with snapshots on: snapshots that were asked for are not silently skipped.
 
-### DD-326. The snapshots live on a volume of their own, kept on uninstall
+### DD-356. The snapshots live on a volume of their own, kept on uninstall
 
 - **Status:** Proposed
 - **Increment:** 6.4e
@@ -52,7 +52,7 @@ deployment. The data volume itself: lost with what it protects.
 backend; a copy elsewhere is the deployment's, named on the Disaster Recovery page. Snapshots are incremental,
 so the claim holds about one copy of the indices and what changed within the retention.
 
-### DD-327. A restore replaces the server's indices, and runs while no server does
+### DD-357. A restore replaces the server's indices, and runs while no server does
 
 - **Status:** Proposed
 - **Increment:** 6.4e
@@ -77,7 +77,7 @@ them: Elasticsearch restores over a closed index, but one the snapshot does not 
 to take a snapshot of the broken store first. The chart's restore needs two upgrades: scale to 0 and restore,
 then scale back.
 
-### DD-328. The server checks that the snapshots succeed and reports the last success as a gauge
+### DD-358. The server checks that the snapshots succeed and reports the last success as a gauge
 
 - **Status:** Proposed
 - **Increment:** 6.4e
