@@ -1,6 +1,6 @@
 # 10.3b Observability chart
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** #160
 - **Records:** ADR 016, ADR 034, DD-193..196, DD-202, DD-226, DD-239, DD-287,
   DD-254, DD-256, DD-257, DD-265..268

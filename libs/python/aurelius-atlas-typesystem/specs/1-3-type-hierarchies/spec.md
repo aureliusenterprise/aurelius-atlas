@@ -1,6 +1,6 @@
 # 1.3 Type hierarchies
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-026, DD-027; relies on DD-021, DD-024, DD-025
 

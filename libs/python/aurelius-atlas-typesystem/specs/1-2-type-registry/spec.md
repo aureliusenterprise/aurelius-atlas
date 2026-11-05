@@ -1,6 +1,6 @@
 # 1.2 Type registry
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-023, DD-024, DD-025; relies on DD-002, DD-020
 

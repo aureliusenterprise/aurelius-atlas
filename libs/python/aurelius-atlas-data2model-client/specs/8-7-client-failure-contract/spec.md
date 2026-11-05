@@ -1,6 +1,6 @@
 # 8.7 Client failure contract
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** — (follows the review of 2026-10-24, DD-214)
 - **Records:** DD-214 (the review that scoped this; reserves CL-08); cites 8.4, ADR 055
 

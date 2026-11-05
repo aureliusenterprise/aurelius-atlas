@@ -1,6 +1,6 @@
 # 1.5 Built-in models and patches
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-031, DD-032, DD-033, DV-07, DV-08; relies on DD-028, DD-029, DV-06
 

@@ -1,6 +1,6 @@
 # 2.4 Entity write REST
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-052 to DD-055, DV-20 to DV-24; relies on DD-026, DD-039, DD-043 to DD-051, DV-15, DV-16,
   DV-18

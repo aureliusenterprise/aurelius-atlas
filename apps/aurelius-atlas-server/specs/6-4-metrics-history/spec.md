@@ -1,7 +1,7 @@
 # 6.4b Metrics history
 
-- **Status:** in progress
-- **Pull request:** to follow
+- **Status:** done
+- **Pull request:** #261
 - **Records:** DD-318, DV-136, DV-137; relies on the metrics (MET-01 to MET-04) and the data access (DD-307)
 
 The dashboards' statistics timeline reads the metrics of the past: every hour the server stores the metrics of

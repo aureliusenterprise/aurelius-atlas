@@ -1,6 +1,6 @@
 # 8.14 Angular admin twin — the admin write routes
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-315; cites DD-217 (the admin client lands on both sides of
   the wire), 7.3 (APC-01..APC-04, ADM-01/02/05), 8.11 (CLW-01..CLW-06, the

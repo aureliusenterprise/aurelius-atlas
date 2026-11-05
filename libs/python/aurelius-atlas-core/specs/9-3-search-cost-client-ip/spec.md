@@ -1,6 +1,6 @@
 # 9.3 Search cost and client-IP trust
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#155](https://github.com/aureliusenterprise/aurelius-atlas/pull/155)
 - **Records:** DD-237, DD-238; supersedes the read-side refresh rationale in DD-043, DD-048 and DD-057
 

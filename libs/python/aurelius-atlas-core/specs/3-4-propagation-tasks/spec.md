@@ -1,6 +1,6 @@
 # 3.4b Propagation tasks
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#125](https://github.com/aureliusenterprise/aurelius-atlas/pull/125)
 - **Records:** DD-079 to DD-081, DV-38; ends DV-37; relies on DD-071, DD-075 to DD-078
 

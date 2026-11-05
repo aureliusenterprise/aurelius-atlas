@@ -1,6 +1,6 @@
 # 6.1a Authentication
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-250, DD-251, DV-105 to DV-109; removes DV-04; relies on ADR 007, DD-141
 

@@ -1,6 +1,6 @@
 # 9.1 Targeted resilience e2e
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** — (follows the review of 2026-10-24, DD-214)
 - **Records:** RSL-01..03 (minted here; RSL-01/RSL-02 **retired by DD-281**);
   DD-214 (the review that scoped this); cites 7.7 (ALR-05), 7.3 (APC-05/10),

@@ -1,7 +1,7 @@
 # 6.4f Resilience pages and the first incident rehearsal
 
-- **Status:** in progress
-- **Pull request:** to follow
+- **Status:** done
+- **Pull request:** #269
 - **Records:** DD-359, DD-360; ADR 041 (R2, R3, R5)
 
 The alerts of 6.4c and 6.4e fire, but nothing tells a responder what to do next, and the incident path of
