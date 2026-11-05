@@ -1,5 +1,6 @@
-# The alert rules of ADR 040 (OBS-03, SNP-03): each names its condition, its severity and its owner; the
-# destination is the notification policy (OBS-04). Byte-copied into the chart (files/grafana-alerting.yaml).
+# The alert rules of ADR 040 (OBS-03, SNP-03): each names its condition, its severity and its owner,
+# and links its runbook section (INC-02); the destination is the notification policy (OBS-04).
+# Byte-copied into the chart (files/grafana-alerting.yaml).
 apiVersion: 1
 
 groups:
@@ -35,6 +36,7 @@ groups:
             execErrState: Alerting
             for: 1m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-server-silent"
                 summary: "The Atlas server has sent no metrics for five minutes."
                 description: "The server is down, cannot reach the collector, or lost its ingest credential. Check its liveness (admin/liveness), then its logs, then the collector's per-service leg."
             labels:
@@ -67,6 +69,7 @@ groups:
             execErrState: Alerting
             for: 0s
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-part-silent"
                 summary: "{{ $labels.exported_job }} sent signals in the last six hours and none in the last ten minutes."
                 description: "Every part that exports through the collector inherits this rule. A part stopped on purpose fires it until six hours have passed; one that never started is caught by its own rule, as the server's is."
             labels:
@@ -99,6 +102,7 @@ groups:
             execErrState: Alerting
             for: 5m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-server-errors"
                 summary: "More than 5% of the server's answers have been 5xx for five minutes."
                 description: "Find a failing request's trace by the requestId of its answer, and its log record by the trace id. A store outage shows as 503 on every route."
             labels:
@@ -131,6 +135,7 @@ groups:
             execErrState: Alerting
             for: 10m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-server-latency"
                 summary: "The slowest 5% of the server's requests have taken over two seconds for ten minutes."
                 description: "The Latency by Route panel names the route. Slow searches point at the store; slow writes at its refresh."
             labels:
@@ -163,6 +168,7 @@ groups:
             execErrState: Alerting
             for: 2m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-store-health"
                 summary: "Elasticsearch reports red health, or its metrics have stopped."
                 description: "A red cluster has a primary shard unassigned: the server answers 503 for the indices on it. No data means the store's metrics puller has stopped, which hides the store's state."
             labels:
@@ -195,6 +201,7 @@ groups:
             execErrState: Alerting
             for: 2m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-collector-down"
                 summary: "Prometheus cannot scrape the OpenTelemetry collector."
                 description: "Every signal passes the collector (ADR 034): while it is down, every other rule is blind. Check its health endpoint and its logs."
             labels:
@@ -227,6 +234,7 @@ groups:
             execErrState: Alerting
             for: 5m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-collector-export-failures"
                 summary: "The collector failed to deliver spans, metrics or logs to Tempo, Prometheus or Loki."
                 description: "A backend is down or full. The Observability Stack dashboard's exporter panels name it."
             labels:
@@ -259,6 +267,7 @@ groups:
             execErrState: Alerting
             for: 15m
             annotations:
+                runbook_url: "https://aureliusenterprise.github.io/aurelius-atlas/architecture/platform/resilience/incident-management/#aurelius-atlas-snapshot-overdue"
                 summary: "The store's last successful snapshot is more than two hours old."
                 description: "Snapshots run every hour (SNP-02), so two missed runs break the stated loss bound. The server's logs name the last failure; the Backup & Restore page lists the causes. No data means snapshots are off, as in dev."
             labels:

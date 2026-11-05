@@ -20,7 +20,9 @@ observability chart. Every rule is labelled `team: maintainers`, the owner of th
 
 Three of them watch silence: the server, every other part, and the collector itself. A part added
 later inherits "Part silent" as soon as it exports through the collector. Each rule's description
-in Grafana says what to check first; the [Monitoring](monitoring.md) dashboards hold the evidence.
+in Grafana says what to check first, and its runbook link opens its section of
+[Incident Management](../resilience/incident-management.md), with the steps that follow. The
+[Monitoring](monitoring.md) dashboards hold the evidence.
 
 ## The destination
 

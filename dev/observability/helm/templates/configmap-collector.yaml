@@ -126,6 +126,9 @@ data:
                 # text format would flatten them to a lone +Inf bucket. Emit
                 # Prometheus native histograms so p95 panels work.
                 send_native_histogram: true
+                # A stopped producer's series drops after 2 minutes, as in dev
+                # (INC-04).
+                metric_expiration: 2m
 
         extensions:
             health_check:

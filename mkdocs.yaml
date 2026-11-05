@@ -240,6 +240,9 @@ nav:
                       - Incident Management: architecture/platform/resilience/incident-management.md
                       - Backup & Restore: architecture/platform/resilience/backup-and-restore.md
                       - Disaster Recovery: architecture/platform/resilience/disaster-recovery.md
+                      - Incidents:
+                            - architecture/platform/resilience/incidents/index.md
+                            - 2026-11-05 Server silent: architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent.md
                 - Security:
                       - architecture/platform/security/index.md
                       - Access Management: architecture/platform/security/access-management.md
