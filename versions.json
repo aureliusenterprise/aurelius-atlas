@@ -30,11 +30,6 @@
     "aliases": []
   },
   {
-    "version": "feat-standalone-stack",
-    "title": "feat-standalone-stack",
-    "aliases": []
-  },
-  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
