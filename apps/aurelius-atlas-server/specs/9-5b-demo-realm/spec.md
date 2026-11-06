@@ -1,7 +1,7 @@
 # 9.5b The standalone stack's demo realm
 
 - **Status:** in review
-- **Pull request:** to be opened
+- **Pull request:** [#281](https://github.com/aureliusenterprise/aurelius-atlas/pull/281)
 - **Records:** DD-366; relies on DD-363 (the standalone stack behind nginx), AUZ-01 to AUZ-03 (the server's
   roles) and AUT-10 (the further audiences)
 
