@@ -6997,11 +6997,32 @@ checks a PR must pass:</p>
 <td>done</td>
 </tr>
 <tr>
-<td>7.7</td>
-<td>Entity editor</td>
-<td>Create and edit forms with validation</td>
+<td>7.7a</td>
+<td>Entity editor drawer</td>
+<td>The entityDef-driven create/edit drawer: pencil and <code>+</code> affordances gated on <code>atlas-write</code>, field forms, the tag box, save through the classification diff, the create type in the route (EDT-01..12, DD-322..337)</td>
 <td>Aurelius <code>apps/atlas/src/app/search/{create,edit}-entity</code></td>
-<td>in review</td>
+<td>done</td>
+</tr>
+<tr>
+<td>7.7b</td>
+<td>Entity editor: delete flow</td>
+<td>The delete affordance and confirm flow around the editor (joins 7.9's delete flow, if it lands separately)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/edit-entity</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>7.7c</td>
+<td>Entity editor: relationship inputs</td>
+<td>The entityDef-driven relationship-attribute pickers in the editor drawer: add/remove by the attribute search, save through the entity body (EDT-13..17, DD-338..341)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/components/editor/components/relationships-input</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.7d</td>
+<td>Entity editor: markdown fields</td>
+<td>The description fields ride Aurelius's markdown editor: Write/Preview tabs over the shared block, source kept in the save body (EDT-20, UIC-26, DD-352/353)</td>
+<td>Aurelius <code>libs/components/src/lib/markdown/editor</code></td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>7.8</td>
@@ -7085,6 +7106,13 @@ checks a PR must pass:</p>
 <td>Frontend failure UX</td>
 <td>Test-completeness of the frontend failure paths (DD-214): the data-access error matrix, observability branch holes, config-boot failure, editor failing save/delete, out-of-order search — no new rule ids</td>
 <td>— (proves APC-04, SHL-02/14, SPL-03/04)</td>
+<td>done</td>
+</tr>
+<tr>
+<td>7.20</td>
+<td>Details data spine</td>
+<td>The 2.3+7.6 wiring: the details screen fetches the entity by guid, the header/description/properties bind to it, the breadcrumb trail is app state with no source yet (DET-08..14, DD-317/318)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/details</code></td>
 <td>done</td>
 </tr>
 <tr>
