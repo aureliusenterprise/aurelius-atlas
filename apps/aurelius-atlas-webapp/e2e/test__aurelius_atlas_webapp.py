@@ -53,6 +53,7 @@ def test__config_json_is_served_at_the_origin_root(page: Page, root_url: str) ->
     assert response.status == 200
     body = response.json()
     assert body["apiBaseUrl"] == "/api"
+    assert body["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324
 
 
 def test__browse_placeholder_renders_in_every_browser(authenticated: Page) -> None:
@@ -749,3 +750,212 @@ def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_ur
     expect(authenticated.locator(".no-results")).to_have_text("No results found")
     expect(authenticated.locator(".another-query")).to_have_text("Please, try to make another query.")
     expect(authenticated.locator(".result-row")).to_have_count(0)
+
+
+def _delete_entity(page: Page, root_url: str, token: str, guid: str) -> None:
+    """Delete one entity by guid (the editor scenarios' self-cleaning, EDT-12)."""
+    deleted = page.request.delete(
+        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+        params={"guid": guid},
+        headers={"authorization": f"Bearer {token}"},
+    )
+
+    assert deleted.status == 200, deleted.text()
+
+
+def _open_editor_from_details(page: Page, root_url: str, guid: str) -> None:
+    """Open the editor drawer on a seeded entity's details through the pencil (EDT-01)."""
+    page.goto(urljoin(root_url, f"/en-US/search/details/{guid}"))
+    expect(page.locator("h1.aurelius-details-title")).to_have_text(re.compile(r"\S"))
+
+    pencil = page.locator("button.aurelius-details-edit")
+    expect(pencil).to_be_visible()  # the writer holds atlas-write (EDT-09)
+    pencil.click()
+
+    expect(page.locator(".aurelius-drawer")).to_be_visible()
+    expect(page).to_have_url(re.compile(r"\(drawer:edit"))
+
+
+def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The pencil opens the editor with the entity filled; a saved edit reads back (EDT-01, EDT-12).
+
+    The drawer's edit mode: the form holds the seeded name and description,
+    the Definition textarea is the description key (EDT-03, DET-10/DD-320),
+    Save posts the merged entity (EDT-06), the drawer goes away, and the
+    details screen underneath — never reloaded, same URL (EDT-01) — shows
+    the new text through the save tick's re-read (DD-327).
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}edit"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    updated = authenticated.request.put(
+        urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+        params={"name": "description"},
+        data=json.dumps("The first description."),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert updated.status == 200, updated.text()
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+
+        drawer = authenticated.locator(".aurelius-drawer")
+        expect(drawer).to_contain_text("Edit entity")
+        expect(authenticated.locator("#editor-name")).to_have_value(name)
+        expect(authenticated.locator("textarea#editor-description")).to_have_value("The first description.")
+
+        authenticated.locator("textarea#editor-description").fill("The edited description.")
+        drawer.locator("button.aurelius-editor-save").click()
+
+        # The drawer navigates away and the same details URL re-reads the
+        # saved entity (EDT-06's navigation + DD-327's tick): the new text
+        # shows without a page reload (URL identity proves no reload).
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
+        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-details-description")).to_have_text("The edited description.")
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
+def test__the_editor_tags_an_entity(authenticated: Page, root_url: str, user_token: str) -> None:
+    """A classification added in the drawer lands as a chip on the details header (EDT-05, EDT-12).
+
+    The tag box offers the typedefs whose ``entityTypes`` name the entity's
+    type: a run-unique classification typedef over ``DataSet`` is seeded
+    first, typed into the box, Enter attaches the tag, Save applies the
+    diff (DD-326), and the chip rides the details header's classification
+    field. The typedef and the entity are deleted at the end (namespaced
+    self-cleaning).
+    """
+    run = secrets.token_hex(4)
+    tag = f"zz{run}tag"
+    name = f"zz{run}tagged"
+
+    typedef = authenticated.request.post(
+        urljoin(root_url, "/api/atlas/v2/types/typedefs"),
+        data=json.dumps({"classificationDefs": [{"name": tag, "entityTypes": ["DataSet"]}]}),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert typedef.status == 200, typedef.text()
+
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+
+        drawer = authenticated.locator(".aurelius-drawer")
+        expect(drawer.locator(".aurelius-editor-tag")).to_have_count(0)
+
+        box = authenticated.locator("input.aurelius-editor-classification-input")
+        box.fill(tag)
+        box.press("Enter")
+        expect(drawer.locator(".aurelius-editor-tag")).to_have_text(tag)
+
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
+
+        chips = authenticated.locator(".aurelius-details-classifications .control")
+        expect(chips).to_have_count(1)
+        expect(chips.first).to_have_text(tag)
+    finally:
+        # CLS-12: the type stays in use while a classification instance of it
+        # exists in ANY state — a soft-deleted entity keeps its tag — so the
+        # instance must go through the detach (the editor's own DELETE path,
+        # DD-326) before the entity and then the typedef can. The detach and
+        # the typedef delete both race the async work the server runs after
+        # the write: the detach answers 406 "propagation is in progress ...
+        # please try again" until the attach settles, the typedef delete 409
+        # "has references" until the detach is visible. Retry both (bounded;
+        # self-cleaning only).
+        deadline = time.monotonic() + 30
+        while True:
+            detached = authenticated.request.delete(
+                urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}/classification/{tag}"),
+                headers={"authorization": f"Bearer {user_token}"},
+            )
+            if detached.status in (204, 404):  # detached, or already gone
+                break
+            assert detached.status == 406, detached.text()
+            assert time.monotonic() < deadline, detached.text()
+            time.sleep(1)
+
+        _delete_entity(authenticated, root_url, user_token, guid)
+        while True:
+            removed = authenticated.request.delete(
+                urljoin(root_url, f"/api/atlas/v2/types/typedef/name/{tag}"),
+                headers={"authorization": f"Bearer {user_token}"},
+            )
+            if removed.status in (204, 404):  # gone, or never landed
+                break
+            assert removed.status == 409, removed.text()
+            assert time.monotonic() < deadline, removed.text()
+            time.sleep(1)
+
+
+def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The hero `+` opens the picker; a chosen type and a name create an entity (EDT-04, EDT-12).
+
+    Create mode (DD-325's payload idiom, server-side): the picker lists the
+    shipped types (EDT-04), DataSet is chosen — the type rides the drawer's
+    URL segment (DD-330) — the form is empty, a switch to Process and back
+    re-seeds it (EDT-04), Save sends the negative temp guid, and the landing
+    URL carries the server's guid from ``guidAssignments`` — the new entity's
+    details, titled by the entered name.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}created"
+
+    authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
+    plus = authenticated.locator("button.aurelius-create-entity")
+    expect(plus).to_be_visible()  # the writer holds atlas-write (EDT-09)
+    plus.click()
+
+    drawer = authenticated.locator(".aurelius-drawer")
+    expect(drawer).to_contain_text("Create new entity")
+
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+
+    # The type is part of the path (DD-330), and the form for the chosen
+    # type arrived with it: an empty required name, no entity yet.
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/DataSet\)$"))
+    expect(authenticated.locator("#editor-name")).to_have_value("")
+
+    # Switching (EDT-04): a half-typed draft is dropped, the picker stays
+    # selected at the new type, and switching back re-seeds the DataSet form.
+    authenticated.locator("#editor-name").fill("half-typed")
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="Process")
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/Process\)$"))
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+    expect(authenticated.locator("#editor-name")).to_have_value("")
+
+    authenticated.locator("#editor-name").fill(name)
+    drawer.locator("button.aurelius-editor-save").click()
+
+    # The landing URL is the created entity's real guid (EDT-06, DD-325).
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/details/[0-9a-f-]{36}$"), timeout=30_000)
+    expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(name)
+
+    created = re.search(r"/details/([0-9a-f-]{36})$", authenticated.url)
+    assert created is not None
+    _delete_entity(authenticated, root_url, user_token, created.group(1))
+
+
+def test__the_reader_sees_no_editor_affordances(reader_authenticated: Page, root_url: str) -> None:
+    """The reader (atlas-read only) gets neither the pencil nor the `+` (EDT-09, EDT-12).
+
+    The gate reads the token's ``resource_access.<atlasClientId>.roles``
+    (DD-324): the dev reader holds ``atlas-read`` only, so the details
+    pencil and the hero create button stay unrendered. The deep link is not
+    route-guarded (EDT-09): the drawer still opens for a hand-typed outlet
+    URL, where the server's 403 is the real gate — the reader's form simply
+    cannot write, which is what the reader's save-path unit tests cover.
+    """
+    reader_authenticated.goto(urljoin(root_url, "/en-US/search/details/00000000-0000-0000-0000-000000000000"))
+    expect(reader_authenticated.locator("nav.navbar")).to_be_visible()
+    expect(reader_authenticated.locator("button.aurelius-details-edit")).to_have_count(0)
+
+    reader_authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
+    expect(reader_authenticated.locator("button.aurelius-create-entity")).to_have_count(0)

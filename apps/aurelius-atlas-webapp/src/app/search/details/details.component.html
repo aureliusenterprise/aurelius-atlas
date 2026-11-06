@@ -24,6 +24,19 @@
 <section class="section">
     <div class="container aurelius-details">
         <div class="box aurelius-details-header">
+            <!-- The editor affordance (EDT-09, DD-324): the pencil opens the
+                 editor drawer over this screen, shown only with the
+                 atlas-write grant — the legacy header's edit button. -->
+            @if (canWrite()) {
+                <button
+                    type="button"
+                    class="button is-small is-ghost aurelius-details-edit"
+                    [attr.aria-label]="editTitle"
+                    (click)="edit()"
+                >
+                    <fa-icon aria-hidden="true" [icon]="faPen"></fa-icon>
+                </button>
+            }
             <h1 class="title is-1 entity aurelius-details-title">{{ title() }}</h1>
             <div class="subtitle name aurelius-details-type">
                 @if (typeName()) {

@@ -72,6 +72,32 @@ export const routes: Routes = [
                 outlet: "drawer",
                 loadComponent: () => import("./alerts/alerts-panel.component").then((m) => m.AlertsPanel),
             },
+            // The entity editor drawer, the third route in the one `drawer`
+            // outlet (EDT-01, DD-322): the details pencil navigates to
+            // `(drawer:edit:guid)` and the hero `+` to `(drawer:create)`.
+            // The mode rides the route segment (no store sentinel, DD-325); the
+            // outlet swaps it in over whatever screen is underneath. Create
+            // carries the chosen type as a route parameter (DD-330): the bare
+            // segment opens the picker, `create/<type>` opens the form
+            // for that type, and a re-pick navigates the new type in — the
+            // type is part of the path, so switching is a URL change. Two
+            // route entries, not one optional segment: the Angular router
+            // has no optional path segments (a `?` in a path is literal).
+            {
+                path: "edit/:guid",
+                outlet: "drawer",
+                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
+            {
+                path: "create",
+                outlet: "drawer",
+                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
+            {
+                path: "create/:type",
+                outlet: "drawer",
+                loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
+            },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain
             // '**' -> '' -> '/search/browse' lands on the default destination.

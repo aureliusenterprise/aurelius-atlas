@@ -113,6 +113,10 @@ config:
     appName: "Aurelius Atlas Data Governance"
     appCopyright: 2026
     appVersion: ""
+    # The Keycloak client owning the Atlas privileges (DD-300, DD-324): the
+    # write affordances gate on atlas-write in this client's roles. Pairs with
+    # the server's auth_client_id (src/app/config.ts).
+    atlasClientId: aurelius-atlas-server
     keycloak:
         clientId: aurelius
         url: ""

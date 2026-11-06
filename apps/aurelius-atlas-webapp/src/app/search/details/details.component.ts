@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, computed, effect, inject } from "@a
 import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
 import type { AtlasEntity } from "aurelius-atlas-data-access";
+import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
+import { faPen } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
 import {
@@ -14,6 +16,8 @@ import {
     TypeName,
 } from "aurelius-atlas-ui";
 
+import { canWriteEntities } from "../editor/can-write-entities";
+import { EntitySaved } from "../editor/entity-saved";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
@@ -40,7 +44,16 @@ import { detailProperties } from "./property-filter";
  * components, and only this screen touches the router (DET-06).
  */
 @Component({
-    imports: [Accordion, Breadcrumbs, ClassificationChip, DetailsNavigation, Markdown, PropertiesItem, TypeName],
+    imports: [
+        Accordion,
+        Breadcrumbs,
+        ClassificationChip,
+        DetailsNavigation,
+        FontAwesomeModule,
+        Markdown,
+        PropertiesItem,
+        TypeName,
+    ],
     selector: "aurelius-atlas-webapp-details",
     providers: [DetailsState, DetailsBreadcrumbState],
     templateUrl: "./details.component.html",
@@ -58,6 +71,15 @@ export class Details {
     /** The trail's app-side seam (DET-12, DD-317): empty until an API fills it. */
     protected readonly crumbs = inject(DetailsBreadcrumbState);
 
+    /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
+    protected readonly canWrite = canWriteEntities();
+
+    /** The pencil's icon. */
+    protected readonly faPen = faPen;
+
+    /** The pencil's accessible name — the drawer's edit title (EDT-11). */
+    protected readonly editTitle = $localize`:@@search.editEntity.editEntity:Edit entity`;
+
     /** The entity address (DET-01): the route's `guid` parameter. */
     protected readonly guid = toSignal(this.route.paramMap.pipe(map((params) => params.get("guid") ?? "")), {
         initialValue: "",
@@ -70,6 +92,22 @@ export class Details {
             const guid = this.guid();
             if (guid !== "") {
                 this.state.load(guid);
+            }
+        });
+
+        // The editor's save tick (DD-327): the drawer overlay left this
+        // screen's URL untouched, so the router reuses this component — the
+        // tick for this guid re-reads the entity the editor just wrote. The
+        // seq guard keeps a screen that mounts *after* the save (the create
+        // flow) from loading twice: the URL effect above already reads it.
+        const saved = inject(EntitySaved);
+        let consumedSeq = saved.latest()?.seq ?? 0;
+
+        effect(() => {
+            const event = saved.latest();
+            if (event !== null && event.guid === this.guid() && event.seq > consumedSeq) {
+                consumedSeq = event.seq;
+                this.state.load(event.guid);
             }
         });
     }
@@ -165,5 +203,13 @@ export class Details {
      */
     protected onLinkClick(guid: string): void {
         void this.router.navigate(["/search/details", guid]);
+    }
+
+    /**
+     * The pencil was clicked (EDT-01, DD-322): open the editor drawer over
+     * this screen — the `drawer` aux outlet carries `edit/:guid`.
+     */
+    protected edit(): void {
+        void this.router.navigate([{ outlets: { drawer: ["edit", this.guid()] } }]);
     }
 }

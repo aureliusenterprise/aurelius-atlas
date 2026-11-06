@@ -23,3 +23,17 @@
     display: block;
     margin-top: 0.75rem;
 }
+
+/*
+ * The editor pencil (EDT-09): top-right of the header box, the legacy
+ * header's corner affordance. Absolute so the title keeps its line.
+ */
+.aurelius-details-header {
+    position: relative;
+}
+
+.aurelius-details-edit {
+    position: absolute;
+    right: 0.75rem;
+    top: 0.75rem;
+}

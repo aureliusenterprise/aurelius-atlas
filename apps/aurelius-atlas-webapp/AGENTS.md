@@ -25,7 +25,11 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   from the plaintext `:8080` browser listener carry an `iss` the server rejects
   (ADR 039, DD-202); it stays 8443 even though ADR 039 allows `:8080` for
   browsing, because the token store is in-memory so a listener swap costs one
-  browser sign-in
+  browser sign-in. Its `atlasClientId` names the Keycloak client whose client
+  roles gate the write affordances (the pencil, the `+`): it pairs with the
+  server's `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID` and the realm's four Atlas
+  roles (DD-300, DD-324), and `src/app/config.ts` defaults it to
+  `aurelius-atlas-server`
 - `proxy.conf.json` — dev-server proxy: `/api` → atlas-server :21000 (**no
   rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)

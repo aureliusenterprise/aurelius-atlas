@@ -3,12 +3,15 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { By } from "@angular/platform-browser";
+import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
 
 import type { AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../alerts/alerts.service";
+import { APP_CONFIG } from "../../tokens";
+import { EntitySaved } from "../editor/entity-saved";
 
 import { Details } from "./details.component";
 
@@ -47,9 +50,11 @@ const NO_CHIPS = { ...ANSWER, entity: { ...ANSWER.entity, classifications: [] } 
 /**
  * Bring the screen up at the given guid: the paramMap Subject carries the
  * address (a guid change is then observable), and the first
- * `detectChanges` lets the URL effect fire the read.
+ * `detectChanges` lets the URL effect fire the read. The fake Keycloak
+ * answers `canWrite` for the editor pencil (EDT-09): granted unless a
+ * test passes `atlasWrite: false`.
  */
-function setup(guid = "7a1b") {
+function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = {}) {
     const paramMap = new Subject<ParamMap>();
     TestBed.configureTestingModule({
         imports: [Details],
@@ -58,6 +63,11 @@ function setup(guid = "7a1b") {
             provideHttpClientTesting(),
             provideRouter([]),
             { provide: ActivatedRoute, useValue: { paramMap } },
+            { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
+            {
+                provide: Keycloak,
+                useValue: { hasResourceRole: (role: string) => atlasWrite && role === "atlas-write" },
+            },
         ],
     });
     const fixture = TestBed.createComponent(Details);
@@ -335,6 +345,61 @@ describe("Details data spine (DET-08..DET-13)", () => {
 
         const crumbs = fixture.debugElement.query(By.directive(Breadcrumbs)).componentInstance as Breadcrumbs;
         expect(crumbs.activeGuid()).toBe("guid-from-route");
+    });
+
+    it("shows the editor pencil with the atlas-write grant (EDT-09, DD-324)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const pencil = compiled.querySelector<HTMLButtonElement>("button.aurelius-details-edit");
+        expect(pencil).toBeTruthy();
+        expect(pencil?.getAttribute("aria-label")).toBe("Edit entity");
+        expect(pencil?.querySelector("fa-icon")).toBeTruthy();
+    });
+
+    it("hides the editor pencil without the grant (EDT-09)", () => {
+        const { fixture, compiled, httpMock } = setup("7a1b", { atlasWrite: false });
+        arrive(fixture, httpMock);
+
+        expect(compiled.querySelector("button.aurelius-details-edit")).toBeNull();
+    });
+
+    it("the pencil opens the editor drawer at edit/:guid (EDT-01, DD-322)", () => {
+        const { fixture, compiled, httpMock } = setup("pencil-guid");
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-details-edit")!.click();
+
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["edit", "pencil-guid"] } }]);
+    });
+
+    it("the editor's save tick re-reads this screen's entity (DD-327)", () => {
+        const { fixture, compiled, httpMock } = setup("saved-guid");
+        arrive(fixture, httpMock);
+
+        TestBed.inject(EntitySaved).notify("saved-guid");
+        fixture.detectChanges();
+
+        // The still-mounted screen re-reads the saved entity (the drawer
+        // save never changed this URL, so the router reused the component).
+        const second = httpMock.expectOne("/api/atlas/v2/entity/guid/saved-guid");
+        expect(second.request.method).toBe("GET");
+        second.flush({ ...ANSWER, entity: { ...ANSWER.entity, attributes: { name: "renamed_after_save" } } });
+        fixture.detectChanges();
+        expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("renamed_after_save");
+    });
+
+    it("a save tick for another guid reads nothing (DD-327)", () => {
+        const { fixture, httpMock } = setup("saved-guid");
+        arrive(fixture, httpMock);
+
+        TestBed.inject(EntitySaved).notify("some-other-guid");
+        fixture.detectChanges();
+
+        httpMock.expectNone("/api/atlas/v2/entity/guid/saved-guid");
+        // The screen's own read is already flushed above; nothing else fires.
+        httpMock.verify();
     });
 });
 

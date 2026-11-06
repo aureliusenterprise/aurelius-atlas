@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectionStrategy, Component, input } from "@angular/core";
+import { ChangeDetectionStrategy, Component, input, output } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faAngleDoubleRight, faHashtag } from "@fortawesome/free-solid-svg-icons";
 
@@ -21,6 +21,7 @@ import { faAngleDoubleRight, faHashtag } from "@fortawesome/free-solid-svg-icons
     selector: "aurelius-atlas-ui-classification-chip",
     imports: [CommonModule, FontAwesomeModule],
     templateUrl: "./classification-chip.component.html",
+    styleUrl: "./classification-chip.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ClassificationChip {
@@ -60,6 +61,24 @@ export class ClassificationChip {
      * `isRetrievingTypeDefinition$` state.
      */
     readonly loading = input(false);
+
+    /**
+     * Seat a delete button inside the label tag — the editor's deletable
+     * chip (UIC-24): the legacy tag's inline cross. The chip keeps nothing;
+     * clicking emits `remove` and the caller drops the tag.
+     */
+    readonly deletable = input(false);
+
+    /**
+     * The delete button's title and accessible name. The Aurelius default,
+     * 'Delete' (`search.components.editor.delete` — the caller localises).
+     */
+    readonly deleteLabel = input("Delete");
+
+    /**
+     * Emits when the delete button is clicked (UIC-24).
+     */
+    readonly remove = output<void>();
 
     /**
      * The classification is propagated from other entities: add the

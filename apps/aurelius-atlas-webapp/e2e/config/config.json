@@ -3,6 +3,7 @@
     "appCopyright": 2022,
     "appName": "Aurelius Atlas Data Governance",
     "appVersion": "0.0.0",
+    "atlasClientId": "aurelius-atlas-server",
     "keycloak": {
         "clientId": "aurelius",
         "realm": "master",

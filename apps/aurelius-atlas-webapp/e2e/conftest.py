@@ -72,6 +72,12 @@ class Settings(BaseSettings):
     username: str
     """The dev user the browser signs in as."""
 
+    reader_username: str = "aurelius-reader"
+    """The reader user (atlas-read only) the editor-affordance tests sign in as (EDT-09)."""
+
+    reader_password: SecretStr = SecretStr("bzMCZRmdyOBOA3xHvaOu7Q")  # the public dev default, not a secret
+    """The reader user's password; never shown in logs (EDT-09)."""
+
     model_config = SettingsConfigDict(
         # Namespace this project's e2e config: the Nx-injected .env uses
         # AURELIUS_ATLAS_WEBAPP_-prefixed names (the sign-in user, APC-10).
@@ -218,18 +224,22 @@ def _clear_cookies(retry_state: RetryCallState) -> None:
     page.context.clear_cookies()
 
 
-def _sign_in(page: Page, base_url: str, settings: Settings) -> None:
+def _sign_in(page: Page, base_url: str, settings: Settings, *, reader: bool = False) -> None:
     """Run the Keycloak form login, and wait for the authenticated app.
 
     The page sits on the login form (the auth guard's redirect landed there);
     fill it, sign in, and settle: the navbar renders once the SPA's check-sso
     handshake has traded the SSO session for tokens, so a caller can trust
     the page — and the context's cookies — as signed in (APC-05, APC-10).
+    The reader identity (atlas-read only) rides `reader` (EDT-09).
     """
+    username = settings.reader_username if reader else settings.username
+    password = (settings.reader_password if reader else settings.password).get_secret_value()
+
     page.wait_for_url(re.compile(f"/realms/{settings.auth_realm_name}/protocol/openid-connect/auth"))
 
-    page.locator("#username").fill(settings.username)
-    page.locator("#password").fill(settings.password.get_secret_value())
+    page.locator("#username").fill(username)
+    page.locator("#password").fill(password)
     page.get_by_role("button", name="Sign in").click()
 
     page.wait_for_url(re.compile(base_url))
@@ -334,6 +344,71 @@ def authenticated(
         if not _wait_signed_in(page):
             _sign_in(page, base_url, settings)
             context.storage_state(path=_storage_state)
+
+        yield page
+    finally:
+        context.close()
+
+
+@pytest.fixture(scope="session")
+def _reader_storage_state(
+    tmp_path_factory: pytest.TempPathFactory,
+    browser: Browser,
+    base_url: str,
+    settings: Settings,
+) -> str:
+    """Sign in as the reader once per browser and save its state (EDT-09, DD-224).
+
+    The reader (`aurelius-reader`) holds atlas-read only, so the editor
+    affordances stay hidden for it — the pair the writer state cannot show.
+    Same replay shape as {@link _storage_state}, a second realm session.
+    """
+    state_path = str(tmp_path_factory.mktemp("auth-reader") / "state.json")
+
+    @retry(
+        retry=retry_if_exception_type(PlaywrightError),
+        stop=stop_after_attempt(2),
+        wait=wait_fixed(1),
+        reraise=True,
+        before_sleep=_clear_cookies,
+    )
+    def sign_in(page: Page) -> None:
+        page.goto(base_url)
+
+        _sign_in(page, base_url, settings, reader=True)
+
+    context = browser.new_context(ignore_https_errors=True)
+    try:
+        sign_in(page=context.new_page())
+
+        context.storage_state(path=state_path)
+    finally:
+        context.close()
+
+    return state_path
+
+
+@pytest.fixture
+def reader_authenticated(
+    browser: Browser,
+    browser_context_args: dict,
+    _reader_storage_state: str,
+    base_url: str,
+    settings: Settings,
+) -> Generator[Page]:
+    """Return a page signed in as the reader (atlas-read only, EDT-09).
+
+    The self-healing replay of {@link authenticated} for the second identity:
+    a dead shared session re-runs the reader's form login.
+    """
+    context = browser.new_context(storage_state=_reader_storage_state, **browser_context_args)
+    try:
+        page = context.new_page()
+        page.goto(base_url)
+
+        if not _wait_signed_in(page):
+            _sign_in(page, base_url, settings, reader=True)
+            context.storage_state(path=_reader_storage_state)
 
         yield page
     finally:
