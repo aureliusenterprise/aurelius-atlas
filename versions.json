@@ -40,6 +40,11 @@
     "aliases": []
   },
   {
+    "version": "docs-standalone-page",
+    "title": "docs-standalone-page",
+    "aliases": []
+  },
+  {
     "version": "dependabot-uv-all-3bea348331",
     "title": "dependabot-uv-all-3bea348331",
     "aliases": []
