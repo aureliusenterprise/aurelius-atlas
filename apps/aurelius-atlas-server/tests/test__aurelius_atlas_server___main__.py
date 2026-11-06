@@ -21,6 +21,7 @@ def test__uvicorn_options_always_serve_https(settings: ServerSettings, tls_pair:
         "ssl_certfile": str(certificate),
         "ssl_keyfile": str(key),
         "forwarded_allow_ips": "127.0.0.1",
+        "root_path": "",
     }
 
 

@@ -16,14 +16,14 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
   server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
   turns them on and runs on the module loop, where the lifespan started the worker
-- `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts the
-  store's snapshot policy and starts it; it logs failed runs and reports the gauge
+- `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts
+  the store's snapshot policy and starts it; it logs failed runs and reports the gauge
   `aurelius_atlas.snapshot.last_success` (SNP-01 to SNP-03, 6.4e)
-- `aurelius_atlas_server/snapshots.py` — the command `python -m aurelius_atlas_server.snapshots list|take|restore`,
-  reading `StoreAccessSettings` alone; the chart's restore Job runs it (SNP-04, SNP-05, SNP-07). Its e2e
-  rehearsal runs two ES containers of its own, never the dev store
-- `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media type;
-  a 5xx answer is opaque and carries the trace id as `requestId` (SRV-07, DD-235)
+- `aurelius_atlas_server/snapshots.py` — the command `python -m aurelius_atlas_server.snapshots
+list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job runs it (SNP-04, SNP-05,
+  SNP-07). Its e2e rehearsal runs two ES containers of its own, never the dev store
+- `aurelius_atlas_server/errors.py` — `AtlasError`, `AtlasErrorCode`, the Atlas error body and JSON media
+  type; a 5xx answer is opaque and carries the trace id as `requestId` (SRV-07, DD-235)
 - `aurelius_atlas_server/security_headers.py` — `SecurityHeadersMiddleware`: security headers on every
   answer, split `/api` path vs dashboard; HSTS gated on `hsts_enabled` (SRV-08, DD-236). TLS material
   is a required setting — the server never serves plaintext (SRV-06, DD-234)
@@ -39,8 +39,11 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   request's user from its bearer token or browser session, the 401 or sign-in redirect, the CSRF check (6.1a,
   DD-250); `oidc_client.py` — `OidcClient`: the confidential client's code flow, refresh and sign-out;
   `routes/login.py` — `login.jsp` and `logout.html`. Tokens are verified by `aurelius-atlas-auth`
-- `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's privileges,
-  `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
+- `aurelius_atlas_server/root_path.py` — `site_path`, `under_root`: the server under a proxy's path prefix,
+  uvicorn's `root_path` from `AURELIUS_ATLAS_SERVER_ROOT_PATH` (9.5, DD-363); the path checks read within it,
+  the redirects lead under it
+- `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
+  privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
@@ -84,10 +87,10 @@ keycloak.localhost:host-gateway` and the `otel-atlas-server` client imported
   dev/keycloak/AGENTS.md).
 - Authentication (6.1a, DD-250): `AURELIUS_ATLAS_SERVER_AUTH_*` name the dev Keycloak's master realm and the
   server's confidential client `aurelius-atlas-server` (`dev/keycloak/import/master.json`); its secret is
-  `ATLAS_SERVER_CLIENT_SECRET` in `dev/keycloak/.env.enc`, mirrored as `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET`
-  here and in the webapp's `.env.enc`. The e2e suite mints the writer's tokens with `DEV_USER_WRITER_PASSWORD`
-  and publishes the server on `127.0.0.1:21001`, the client's registered e2e return. Unit tests use the fake
-  provider in `tests/fake_issuer.py`.
+  `ATLAS_SERVER_CLIENT_SECRET` in `dev/keycloak/.env.enc`, mirrored as
+  `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET` here and in the webapp's `.env.enc`. The e2e suite mints the
+  writer's tokens with `DEV_USER_WRITER_PASSWORD` and publishes the server on `127.0.0.1:21001`, the client's
+  registered e2e return. Unit tests use the fake provider in `tests/fake_issuer.py`.
 
 ## Commands
 

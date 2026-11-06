@@ -78,6 +78,10 @@ class ServerSettings(StoreAccessSettings):
     arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the
     plaintext dev surfaces (ADR 039's named relaxations)."""
 
+    root_path: str = Field(default="", pattern=r"^(/[^/\s]+)*$")
+    """The path a proxy serves the server under, such as ``/atlas2``, passed to uvicorn: the server's redirects
+    and its sign-in's return lead there; empty serves it at the root (PFX-01, DD-363)."""
+
     forwarded_allow_ips: str = "127.0.0.1"
     """Which peers may rewrite the client address through ``X-Forwarded-For`` (SRV-10, DD-238), passed to
     uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network,

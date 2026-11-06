@@ -29,6 +29,8 @@ store, and pinning HTTPS on ``localhost`` would bite the plaintext dev surfaces 
 from starlette.datastructures import MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from aurelius_atlas_server.root_path import site_path
+
 Header = tuple[str, str]
 
 API_SECURITY_HEADERS: tuple[Header, ...] = (
@@ -89,7 +91,7 @@ class SecurityHeadersMiddleware:
             await self._app(scope, receive, send)
             return
 
-        path: str = scope.get("path", "")
+        path = site_path(scope)
         if _is_api_path(path):
             stamped: tuple[Header, ...] = API_SECURITY_HEADERS + self._hsts
             cache_assets = False

@@ -14,6 +14,7 @@ from aurelius_atlas_server.authentication import (
     set_session_cookie,
 )
 from aurelius_atlas_server.oidc_client import OidcClient, SignInError
+from aurelius_atlas_server.root_path import under_root
 
 LOGIN = APIRouter(tags=["Login"])
 
@@ -37,7 +38,7 @@ async def login(request: Request) -> Response:
         except SignInError:
             return PlainTextResponse(SIGN_IN_FAILED, status_code=401)
         session = sessions.renew(session)
-        target, session.return_to = _local(session.return_to), None
+        target, session.return_to = _local(session.return_to, under_root(request.scope, "/")), None
         response = RedirectResponse(target, status_code=302)
         set_session_cookie(response, session)
         return response
@@ -62,8 +63,8 @@ async def logout(request: Request) -> Response:
     return response
 
 
-def _local(path: str | None) -> str:
-    """A page of this server to return to: its own path, else ``/``; never another site."""
+def _local(path: str | None, home: str) -> str:
+    """A page of this server to return to: its own path, else ``home``; never another site (PFX-03)."""
     if path is None or not path.startswith("/") or path.startswith("//") or "\\" in path:
-        return "/"
+        return home
     return path

@@ -18,6 +18,8 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
+from aurelius_atlas_server.root_path import site_path, under_root
+
 SESSION_COOKIE = "ATLASSESSIONID"
 """The session cookie's name, as Atlas's ``web.xml`` names it."""
 
@@ -188,7 +190,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         """Authenticate the request, then pass it on with ``request.state.user`` and ``request.state.session``."""
         request.state.user = None
         request.state.session = None
-        if is_open(request.url.path):
+        if is_open(site_path(request.scope)):
             return await call_next(request)
         authorization = request.headers.get("authorization")
         if authorization is not None:
@@ -232,13 +234,13 @@ def _csrf_refused(request: Request, session: Session) -> bool:
 
 def _unauthenticated(request: Request, session: Session | None) -> Response:
     """``KeycloakAuthenticationEntryPoint``: 401 for an API or script, else to sign in, the page remembered (AUT-04)."""
-    if request.url.path.startswith("/api/") or request.headers.get("x-requested-with") == "XMLHttpRequest":
+    if site_path(request.scope).startswith("/api/") or request.headers.get("x-requested-with") == "XMLHttpRequest":
         return _unauthorized()
     sessions: SessionStore = request.app.state.sessions
     session = session if session is not None else sessions.create()
     query = f"?{request.url.query}" if request.url.query else ""
     session.return_to = f"{request.url.path}{query}"
-    response = RedirectResponse(LOGIN_PATH, status_code=302)
+    response = RedirectResponse(under_root(request.scope, LOGIN_PATH), status_code=302)
     set_session_cookie(response, session)
     return response
 
