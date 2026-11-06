@@ -1,6 +1,6 @@
 # 5.3a Labels
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DV-116; relies on DD-021, DD-052, DD-084, DD-300, DD-301
 

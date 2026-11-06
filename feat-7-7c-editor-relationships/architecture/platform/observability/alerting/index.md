@@ -15,7 +15,7 @@ The conditions worth announcing, where they are sent, and how to see one fire (A
 | Collector export failures | warning | the collector failed to deliver to Tempo, Prometheus or Loki | 5m |
 | Snapshot overdue | critical | the store's last successful snapshot is more than two hours old | 15m |
 
-Three of them watch silence: the server, every other part, and the collector itself. A part added later inherits "Part silent" as soon as it exports through the collector. Each rule's description in Grafana says what to check first; the [Monitoring](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/observability/monitoring/index.md>) dashboards hold the evidence.
+Three of them watch silence: the server, every other part, and the collector itself. A part added later inherits "Part silent" as soon as it exports through the collector. Each rule's description in Grafana says what to check first, and its runbook link opens its section of [Incident Management](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incident-management/index.md>), with the steps that follow. The [Monitoring](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/observability/monitoring/index.md>) dashboards hold the evidence.
 
 ## The destination
 

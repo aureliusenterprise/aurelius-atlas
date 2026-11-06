@@ -253,6 +253,9 @@
         <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/template/</loc>
       </url>
       <url>
@@ -400,6 +403,12 @@
         <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incident-management/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incidents/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/security/</loc>
       </url>
       <url>
@@ -473,5 +482,8 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/user-guide/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/user-guide/standalone-server/</loc>
       </url>
 </urlset>

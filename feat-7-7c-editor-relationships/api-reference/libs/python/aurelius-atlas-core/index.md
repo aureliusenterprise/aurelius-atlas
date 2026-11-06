@@ -2915,6 +2915,9 @@ Attributes:
 
   `addons/models` of Apache Atlas 2.4.0, unchanged (DD-032).
 - **`LOGGER`** –
+- **`M4I_MODELS_DIR`** –
+
+  The m4i data dictionary types of `m4i_atlas_core`, laid out as Atlas's models, loaded after them (DD-362).
 - **`PATCHES_FOLDER_NAME`** –
 
   The sub-directory of a models directory that holds its patches.
@@ -2941,6 +2944,14 @@ BUILTIN_MODELS_DIR = Path(__file__).parent / 'models'
 ```
 LOGGER = logging.getLogger(__name__)
 ```
+
+### M4I\_MODELS\_DIR
+
+```
+M4I_MODELS_DIR = Path(__file__).parent / 'm4i_models'
+```
+
+The m4i data dictionary types of `m4i_atlas_core`, laid out as Atlas's models, loaded after them (DD-362).
 
 ### PATCHES\_FOLDER\_NAME
 

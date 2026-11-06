@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/">
+        <link rel="prev" href="../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/">
       
       
         <link rel="next" href="./design-log/">
@@ -221,6 +221,8 @@
       
         
           
+        
+      
         
       
     
@@ -438,6 +440,8 @@
           
         
       
+        
+      
     
     
     
@@ -471,8 +475,55 @@
 
             </a>
             
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
           </div>
         
+        
+          <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_1">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  User Guide
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/standalone-server/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
         
       
     </li>
@@ -1920,6 +1971,8 @@
       
         
           
+        
+      
         
       
         
@@ -3648,6 +3701,33 @@
     
   
   057. The system ships as Helm charts
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  058. A new catalogue starts with the m4i types
 
     
   </span>
@@ -5623,6 +5703,8 @@
       
         
       
+        
+      
     
     
     
@@ -5779,6 +5861,110 @@
   
 
       </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_8_7_6" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../platform/resilience/incidents/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Incidents
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4_8_7_6" id="__nav_4_8_7_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        
+          <nav class="md-nav" data-md-level="4" aria-labelledby="__nav_4_8_7_6_label" aria-expanded="false">
+            <label class="md-nav__title" for="__nav_4_8_7_6">
+              <span class="md-nav__icon md-icon"></span>
+              
+  
+  Incidents
+
+            </label>
+            <ul class="md-nav__list" data-md-scrollfix>
+              
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../platform/resilience/incidents/2026-11-05-rehearsal-server-silent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  2026-11-05 Server silent
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+            </ul>
+          </nav>
+        
+      
     </li>
   
 
@@ -6325,413 +6511,434 @@ checks a PR must pass:</p>
 <td>Parity harness</td>
 <td>Scenario format, runner, comparison, deviations, report section</td>
 <td>–</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>0.5</td>
 <td>Server skeleton</td>
 <td><code>apps/aurelius-atlas-server</code>; admin version, status, session, liveness and readiness</td>
 <td><code>AdminResource</code> (part)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>0.6</td>
 <td>Dashboards served</td>
 <td><code>dashboardv2</code> at <code>/</code> and <code>dashboardv3</code> at <code>/n/</code>, built from the vendored 2.4.0 source</td>
 <td><code>dashboardv2</code>, <code>dashboardv3</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>1.1</td>
 <td>Typedef models</td>
 <td>Enum, struct, classification, entity, relationship, business-metadata definitions</td>
 <td><code>intg/.../model/typedef</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>1.2</td>
 <td>Type registry</td>
 <td>Registry and its updates, built-in, array, map, enum and struct types, attribute types, constraints, errors</td>
 <td><code>AtlasTypeRegistry</code>, <code>AtlasStructType</code>, …</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>1.3</td>
 <td>Type hierarchies</td>
 <td>Entity and classification super and sub types, inherited attributes, relationship and business metadata types</td>
 <td><code>AtlasEntityType</code>, <code>AtlasRelationshipType</code>, …</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>1.4</td>
 <td>Typedef store</td>
 <td>Typedefs in Elasticsearch: create, update, delete with the store's checks; loaded at start-up</td>
 <td><code>AtlasTypeDefGraphStore</code>, def stores</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>1.5</td>
 <td>Built-in models and patches</td>
 <td><code>addons/models</code> loaded at start-up, model patches</td>
 <td><code>AtlasTypeDefStoreInitializer</code>, model patches</td>
-<td>in progress</td>
+<td>done</td>
+</tr>
+<tr>
+<td>1.5b</td>
+<td>The m4i data dictionary types</td>
+<td>The m4i data dictionary types loaded at start-up after Atlas's models, on by default (MDD-01..04, ADR 058, DD-362)</td>
+<td>— (<code>m4i_atlas_core</code>)</td>
+<td>in review</td>
 </tr>
 <tr>
 <td>1.6</td>
 <td>Types REST</td>
 <td><code>/v2/types/...</code> read and write</td>
 <td><code>TypesREST</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.1a</td>
 <td>Entity models</td>
 <td><code>AtlasEntity</code>, extended info, headers, object ids, classifications, mutation responses</td>
 <td><code>intg/.../model/instance</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.1b</td>
 <td>Value types</td>
 <td>Value side of the built-in, enum, array and map types; the Atlas JSON codec (DD-025, DD-038)</td>
 <td><code>AtlasBuiltInTypes</code>, <code>AtlasArrayType</code>, <code>AtlasMapType</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.1c</td>
 <td>Entity validation</td>
 <td>Value side of the struct, classification, entity, relationship and business metadata types</td>
 <td><code>AtlasStructType</code>, <code>AtlasEntityType</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.2</td>
 <td>Entity store</td>
 <td>Index layout, GUIDs, unique attributes, optimistic versioning</td>
 <td><code>AtlasEntityStoreV2</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.3</td>
 <td>Entity read REST</td>
 <td>By GUID, by unique attributes, bulk, headers</td>
 <td><code>EntityREST</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.4</td>
 <td>Entity write REST</td>
 <td>Create/update, partial update, bulk</td>
 <td><code>EntityREST</code>, <code>EntityGraphMapper</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>2.5</td>
 <td>Delete semantics</td>
 <td>Soft and hard delete, purge, owned-reference cascades (DD-060)</td>
 <td><code>DeleteHandlerV1</code>, <code>SoftDeleteHandlerV1</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.1a</td>
 <td>Relationship instances</td>
 <td>Relationship CRUD, relationship storage, entity deletes removing relationships</td>
 <td><code>RelationshipREST</code>, <code>AtlasRelationshipStoreV2</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.1b</td>
 <td>Relationship attributes</td>
 <td><code>relationshipAttributes</code> in entity reads and writes, legacy ends and inverse references through relationships</td>
 <td><code>EntityGraphMapper</code>, <code>EntityGraphRetriever</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.2</td>
 <td>Ownership cascades</td>
 <td>Owned entities an update replaces or drops, and their revival (composition through relationships in deletes: 3.1b, DD-067)</td>
 <td><code>DeleteHandlerV1</code>, <code>EntityGraphMapper</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.3a</td>
 <td>Direct classifications</td>
 <td>Add, update, remove, validity periods; classifications read with entities</td>
 <td><code>EntityREST</code>, <code>AtlasEntityStoreV2</code>, <code>EntityGraphMapper</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.3b</td>
 <td>Bulk classifications</td>
 <td><code>bulk/setClassifications</code></td>
 <td><code>ClassificationAssociator</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.4a</td>
 <td>Classification propagation</td>
 <td>Propagation within the request, blocked propagation, removal</td>
 <td><code>DeleteHandlerV1</code>, <code>EntityGraphRetriever</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.4b</td>
 <td>Propagation tasks</td>
 <td>Deferred propagation tasks, <code>pendingTasks</code>, <code>admin/tasks</code></td>
 <td><code>ClassificationPropagateTaskFactory</code>, <code>TaskManagement</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.5a</td>
 <td>Entity audit</td>
 <td>Entity audit events and audit REST</td>
 <td><code>EntityAuditListenerV2</code>, <code>HBaseBasedAuditRepository</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>3.5b</td>
 <td>Classification audit</td>
 <td>Classification audit events, <code>bulk/headers</code> (DD-074)</td>
 <td><code>EntityAuditListenerV2</code>, <code>ClassificationAssociator</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.1a</td>
 <td>Entity search</td>
 <td><code>SearchParameters</code>, entity filters, operators, sort, paging, search fields</td>
 <td><code>EntitySearchProcessor</code>, <code>SearchContext</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.1b</td>
 <td>Classification search</td>
 <td>Classification filters, wildcards, sub classifications</td>
 <td><code>ClassificationSearchProcessor</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.2a</td>
 <td>Free text</td>
 <td>Free-text index, basic search <code>query</code>, <code>search/fulltext</code></td>
 <td><code>FreeTextSearchProcessor</code>, <code>SolrIndexHelper</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.2b</td>
 <td>Quick search and suggestions</td>
 <td><code>search/quick</code> with facets, <code>search/suggestions</code></td>
 <td><code>AtlasDiscoveryService</code>, <code>SearchAggregatorImpl</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.3</td>
 <td>DSL parser</td>
 <td>Atlas DSL grammar to AST</td>
 <td><code>AtlasDSLParser.g4</code>, <code>query/</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.4a</td>
 <td>DSL search of entities</td>
 <td><code>search/dsl</code> answering entities: sources, conditions, order, paging; declared unsupported forms</td>
 <td><code>GremlinQueryComposer</code> (replaced), <code>TraversalBasedExecutor</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.4b</td>
 <td>DSL projections and traversals</td>
 <td><code>select</code>, <code>groupby</code>, aggregates; referred entities and classification attributes</td>
 <td><code>SelectClauseComposer</code>, <code>SelectClauseProjections</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.1</td>
 <td>Lineage</td>
 <td>Process inputs/outputs, depth, direction, on-demand lineage</td>
 <td><code>EntityLineageService</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.2a</td>
 <td>Glossaries and categories</td>
 <td>Glossary and category CRUD, category hierarchy and qualified names</td>
 <td><code>GlossaryService</code>, <code>GlossaryCategoryUtils</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.2b</td>
 <td>Glossary terms</td>
 <td>Term CRUD, related terms, term categorization</td>
 <td><code>GlossaryService</code>, <code>GlossaryTermUtils</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.2c</td>
 <td>Term assignment</td>
 <td>Terms assigned to entities, meanings on headers, DSL <code>hasTerm</code></td>
 <td><code>GlossaryService</code>, <code>GlossaryTermUtils</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.2d</td>
 <td>Glossary import</td>
 <td>Glossary terms imported from CSV or Excel, and the import template</td>
 <td><code>GlossaryService#importGlossaryData</code>, <code>GlossaryTermUtils</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.3a</td>
 <td>Labels</td>
 <td>Set, add and remove labels, by GUID and unique attributes; their audit events and checks</td>
 <td><code>EntityREST</code>, <code>AtlasEntityStoreV2</code> (labels)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.3b</td>
 <td>Business metadata</td>
 <td>Business attributes stored, read and written with the entity and by their own endpoints; validation, audit and checks</td>
 <td><code>EntityREST</code>, <code>AtlasEntityStoreV2</code> (business attributes)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.3c</td>
 <td>Business metadata import</td>
 <td>The CSV template and import of business attribute values</td>
 <td><code>EntityREST#importBMAttributes</code>, <code>BulkImportResponse</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>5.3d</td>
 <td>Business metadata in search</td>
 <td>Business attribute values indexed; basic search filters, sorts and answers <code>&lt;bm&gt;.&lt;attr&gt;</code></td>
 <td><code>AtlasEntityType#getBusinesAAttribute</code>, <code>GraphBackedSearchIndexer</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.1a</td>
 <td>Authentication</td>
 <td>Bearer tokens and the dashboards' sign-in (Keycloak OIDC), the session's user</td>
 <td><code>AtlasKeycloakAuthenticationProvider</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.1b</td>
 <td>The acting user on writes</td>
 <td><code>createdBy</code>, <code>updatedBy</code> and audit users of every write</td>
 <td><code>RequestContext#getUser</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>4.5</td>
 <td>Saved searches and user profile</td>
 <td>Saved search CRUD; after 6.1, its owners being users (DD-244)</td>
 <td><code>UserProfileService</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.2a</td>
 <td>Authorization: authorizer, types, admin</td>
 <td>The roles that grant Atlas's privileges, the session's permissions, type definition and purge checks</td>
 <td><code>AtlasAuthorizationUtils</code>, <code>AtlasSimpleAuthorizer</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.2b</td>
 <td>Authorization: entities</td>
 <td>Entity, classification, relationship and glossary checks</td>
 <td><code>AtlasEntityStoreV2</code>, <code>AtlasRelationshipStoreV2</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.2c</td>
 <td>Authorization: search and lineage</td>
 <td>Search results scrubbed, lineage checked, type listings filtered, the cluster realm's roles; ADR 038 accepted</td>
 <td><code>AtlasAuthorizationUtils#scrubSearchResults</code>, <code>#filterTypesDef</code>, <code>EntityLineageService</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3a</td>
 <td>Export</td>
 <td><code>POST admin/export</code>: the ZIP of the entities an export reaches, their types and its result; full, connected and incremental fetch</td>
 <td><code>ExportService</code>, <code>ZipSink</code>, the extractors</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3b1</td>
 <td>Import mode</td>
 <td>The entity write as an import: GUIDs, system attributes and status kept, classifications and business metadata replaced, missing references left out, no privilege checks, <code>ENTITY_IMPORT_*</code> audits</td>
 <td><code>AtlasEntityStoreV2#createOrUpdateForImport</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3b2</td>
 <td>Import and migration</td>
 <td><code>POST admin/import</code>, <code>admin/importfile</code> (a configured folder only): the ZIP read, type definitions merged, entities imported with retries and GUID clashes resolved; importing a Java Atlas 2.4 export migrates it</td>
 <td><code>ImportService</code>, <code>ZipSource</code>, <code>ImportTypeDefProcessor</code>, <code>RegularImport</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3c1</td>
 <td>Import transforms</td>
 <td>The <code>transforms</code> option of an import: text, attribute, classification and status rewrites per type and its sub types</td>
 <td><code>ImportTransforms</code>, <code>ImportTransformer</code>, <code>ImportTransformsShaper</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3c2</td>
 <td>Replication and audits</td>
 <td><code>replicatedTo</code> and <code>replicatedFrom</code>, server records, the export and import audit trail, <code>admin/expimp/audit</code>, <code>admin/server/{name}</code></td>
 <td><code>AuditsWriter</code>, <code>ExportImportAuditService</code>, <code>AtlasServerService</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3c3</td>
 <td>Admin audits</td>
 <td><code>admin/audits</code>, <code>admin/audit/{guid}/details</code>: the audit of purges, exports, imports, type changes and server starts</td>
 <td><code>AtlasAuditService</code>, <code>TypeDefAuditListener</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.3c4</td>
 <td>Entity audit aging</td>
 <td><code>admin/audits/ageout</code>: the entity audits aged out by age, count and action, on demand and on a schedule</td>
 <td><code>AtlasAuditReductionService</code>, <code>AuditReductionTask</code></td>
-<td>in progress</td>
+<td>done</td>
+</tr>
+<tr>
+<td>6.3d</td>
+<td>Import holds its tasks</td>
+<td>The propagation tasks an import records held until it ends, so its writes no longer lose races to them (IMT-01..04, DD-361)</td>
+<td><code>ImportService</code>, <code>TaskManagement</code></td>
+<td>in review</td>
 </tr>
 <tr>
 <td>6.4a</td>
 <td>Metrics</td>
 <td><code>admin/metrics</code>: the counts of types, entities and classifications, the server's stats and system details</td>
 <td><code>MetricsService</code>, <code>AtlasMetricsUtil</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.4b</td>
 <td>Metrics history</td>
 <td><code>admin/metricsstats</code>, <code>metricsstat/{time}</code>, its range and charts: the metrics stored on a schedule and purged after their TTL</td>
 <td><code>MetricsService</code> (stats), <code>AdminResource</code> scheduling</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.4c</td>
 <td>Observability, alerting, load test</td>
 <td>The server's logs over OTLP, its dashboard, the alert rules of ADR 040 and their webhook, a load test of concurrent users</td>
 <td>—</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.4d</td>
 <td>Retention, index tuning</td>
 <td>The lifetimes of ADR 025 for every store, writes that refresh what they wrote, replicas that expand to the cluster (RET-01..07, IDX-01/02)</td>
 <td>—</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>6.4e</td>
 <td>Snapshots and restore</td>
 <td>Elasticsearch snapshots on a schedule, their check and alert, a restore command and Job, and a rehearsed restore (SNP-01..07)</td>
 <td>—</td>
-<td>in progress</td>
+<td>done</td>
+</tr>
+<tr>
+<td>6.4f</td>
+<td>Resilience pages, incident rehearsal</td>
+<td>The steps for each alert linked from it, the incident record, the first rehearsal (ADR 041); High Availability and Deployment (INC-01..03)</td>
+<td>—</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.0</td>
@@ -6745,21 +6952,21 @@ checks a PR must pass:</p>
 <td>Webapp shell and localisation</td>
 <td><code>apps/aurelius-atlas-webapp</code>: bootstrap, router, runtime config, XLIFF locale bridge, OTel telemetry</td>
 <td>Aurelius <code>apps/atlas/src/app</code>, <code>libs/i18n</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.2</td>
 <td>Shared UI components</td>
 <td>Legacy shared components as dumb <code>aurelius-atlas-ui</code> components, each with a story</td>
 <td>Aurelius <code>libs/components</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.3</td>
 <td>API client and auth wiring</td>
 <td>The Atlas REST client in <code>aurelius-atlas-data-access</code>; Keycloak providers and bearer-token interceptor</td>
 <td>Aurelius <code>libs/atlas/api</code>, <code>libs/http</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.4a</td>
@@ -6780,14 +6987,14 @@ checks a PR must pass:</p>
 <td>Landing page (browse)</td>
 <td>Hero, context cards, info modals; search affordances join 7.4 (DD-143); Shell chrome ported by 7.11 (DD-145)</td>
 <td>Aurelius <code>apps/atlas/src/app/search/browse</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.6</td>
 <td>Entity details</td>
 <td>Routed details skeleton (route, header, breadcrumbs, properties shell — DET-01..07); the data spine joins server 2.3 (DD-096, DD-097)</td>
 <td>Aurelius <code>apps/atlas/src/app/search/details</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.7a</td>
@@ -6836,63 +7043,63 @@ checks a PR must pass:</p>
 <td>Shell chrome</td>
 <td>Header and footer around every screen: brand, docs, language switch, account menu; search bar joins 7.4 (DD-145)</td>
 <td>Aurelius <code>libs/shell</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.12</td>
 <td>Theme, branding and layout</td>
 <td>Aurelius palette, legacy type ramp, forced light mode, logo, pinned navbar, footer below the fold (SHM-01..07)</td>
 <td>Aurelius <code>@models4insight/styles</code>, <code>libs/shell</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.13</td>
 <td>UI components: details set</td>
 <td>Breadcrumbs, entity-card, properties-item, select as dumb components (UIC-11..15, DD-154..155)</td>
 <td>Aurelius <code>search/components/{bread-crumbs,cards}</code>, <code>properties-item</code>, <code>components/select</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.14</td>
 <td>Settings panel</td>
 <td>Drawer with theme, language, time zone, page size, telemetry; header gear (SPL-01..13, DD-157..161)</td>
 <td>– (new feature, DV-65)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.15</td>
 <td>Alerts drawer</td>
 <td>Bell with severity badge, routed drawer, grouped alert feed, inbox bar with read tracking, runtime/HTTP error capture (ALR-01..12, DD-171..176, DD-180..185)</td>
 <td>– (new feature, DV-66)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.16</td>
 <td>UI components: details chrome</td>
 <td>classification-chip, type-name, details-navigation, section-stats as dumb components (UIC-16..20, DD-189..192)</td>
 <td>Aurelius <code>search/components/classification</code>, <code>type-name</code>, <code>details/components/navigation</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.17</td>
 <td>Collector ingest auth</td>
 <td>Two-leg OTLP ingest: user JWTs on the browser leg (OIDC), shared token on the service leg, loopback-pinned publishes (CIA-01..05, DD-193)</td>
 <td>– (platform-side, extends ADR 039)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.18</td>
 <td>Collector ingest identity</td>
 <td>Per-service ingest identity: client-credentials JWTs on the per-service leg (OIDC), azp-stamped writes, shared-token legacy leg (CIA-06..10, DD-196)</td>
 <td>– (platform-side, extends ADR 039)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.19</td>
 <td>Frontend failure UX</td>
 <td>Test-completeness of the frontend failure paths (DD-214): the data-access error matrix, observability branch holes, config-boot failure, editor failing save/delete, out-of-order search — no new rule ids</td>
 <td>— (proves APC-04, SHL-02/14, SPL-03/04)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.20</td>
@@ -6906,203 +7113,210 @@ checks a PR must pass:</p>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
 <td>Aurelius server <code>otel_ingest</code>, FastAPI example app</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.1</td>
 <td>data2model API</td>
 <td>Legacy <code>/extract</code> as a FastAPI app: archimate rows in, ar3 model string out, native layout (ADR 055, DV-68)</td>
 <td>Aurelius <code>m4i-data2model</code>, <code>m4i-analytics</code></td>
-<td>planned</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.2</td>
 <td>lineage-model API</td>
 <td>Legacy lineage flattening as a FastAPI app: Atlas lineage in, archimate rows out; source stubbed until 5.1 (ADR 055, DV-69)</td>
 <td>Aurelius <code>m4i-lineage-model</code></td>
-<td>planned</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.3</td>
 <td>validate-entity API</td>
 <td>Legacy validation endpoint as a FastAPI app, shipped as the legacy mock (ADR 055, DV-67)</td>
 <td>Aurelius <code>m4i-validate-entity</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.4</td>
 <td>API client libraries</td>
 <td>Contract + async client library per Python API (CL-01..50, DD-114/115): models move to the lib, the app imports its own contract</td>
 <td>Aurelius <code>libs/atlas/api</code> (the Angular twin), 8.1-8.3 apps</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.5</td>
 <td>lineage-model circuit breakers</td>
 <td>Per-upstream circuit breakers on the 8.2 chain: outages open the circuit, the open circuit fast-fails 502 (LM-11..15, DD-117, DV-60)</td>
 <td>Aurelius <code>m4i-lineage-model</code> (bare <code>requests.post</code>, no breaker)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.6</td>
 <td>Aux API failure hardening</td>
 <td>Test-completeness of the 8.1–8.3 failure paths (DD-125): engine view/dynamic-view paths, transport-failure 502, d2m fast-fail, timeout, negative parity scenarios — no new rule ids</td>
 <td>— (proves DTM-04/06/07, LM-07/12/13, VE-01)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.7</td>
 <td>Client failure contract</td>
 <td>Test-completeness of the four client libraries (DD-125): 2xx-with-garbage-body, timeout vs connect error, raising token source, concurrent <code>with_token</code> (adds CL-08; proves CL-03/04/05)</td>
 <td>— (the 8.4 clients, unproven failure paths)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.8</td>
 <td>Client route coverage: foundation and lineage</td>
 <td><code>AtlasClient.lineage</code> (CL-60..65, DD-307..310): the <code>LINEAGE_ROOT</code> fix to <code>api/atlas/v2/lineage</code> (DV-69's repoint), the three <code>LineageREST</code> client routes, the per-module live-check coverage matrix</td>
 <td>Aurelius <code>libs/atlas/api</code>, <code>LineageREST</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.9</td>
 <td>Client route coverage: entity</td>
 <td><code>AtlasClient.entity</code> (CLE-01..12, DD-311): the 37 routes of <code>routes/entity.py</code> — reads, writes, deletes, classifications, business metadata, labels, audits</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.10</td>
 <td>Client route coverage: glossary</td>
 <td><code>AtlasClient.glossary</code> (CLG-01..09, DD-312): the 32 routes of <code>routes/glossary.py</code> — glossaries, categories, terms, assignments, the CSV import</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.11</td>
 <td>Client route coverage: relationship and admin writes</td>
 <td><code>AtlasClient.relationship</code> (CLR-01..04) and <code>AtlasClient.admin</code> completed (CLW-01..07, DD-313): patches, purge, the export/import ZIP pair, tasks</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>RelationshipClient</code>/<code>AdminClient</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.12</td>
 <td>Client route coverage: saved searches and DSL</td>
 <td><code>AtlasClient.search</code> completed (CSD-01..06): the seven saved-search routes and <code>GET /dsl</code></td>
 <td>Aurelius <code>libs/atlas/api</code> <code>DiscoveryClient</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.13</td>
 <td>Angular search twin: saved searches and DSL</td>
 <td><code>SearchService</code> completed (ACS-01..06, DD-314): the same eight routes of <code>routes/discovery.py</code> land on the Angular side, closing the pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>DiscoveryClient</code> (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.14</td>
 <td>Angular admin twin: the admin write routes</td>
 <td><code>AdminService</code> completed (AAC-01..07, DD-315): the nine write and health routes of <code>routes/admin.py</code> — health texts, patches, purge, the export/import ZIP pair, tasks — land on the Angular side, closing the CL-11 pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>AdminClient</code> (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.15</td>
 <td>Angular lineage twin: the three LineageREST routes</td>
 <td><code>LineageService</code> (ALN-01..04): the three routes of <code>routes/lineage.py</code> — the graph, its on-demand form, the unique-attribute lookup — land on the Angular side, closing the CL-61..63 pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>LineageREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.16</td>
 <td>Angular relationship twin: the four RelationshipREST routes</td>
 <td><code>RelationshipService</code> (AREL-01..04): the four routes of <code>routes/relationship.py</code> — create, update, the always-wrapped read, the soft/hard delete — land on the Angular side, closing the CLR pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>RelationshipClient</code> (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.17</td>
 <td>Angular entity twin (1/3): the reads and audits</td>
 <td><code>AtlasEntitiesService</code> grows (AEN-01..07): the eight read/audit routes of <code>routes/entity.py</code> — guid/unique-attribute/bulk reads, audit events, changed-classification headers — first third of the CLE pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.18</td>
 <td>Angular entity twin (2/3): the writes and deletes</td>
 <td><code>AtlasEntitiesService</code> grows (AEW-01..06): the seven write/delete routes of <code>routes/entity.py</code> — create/update, the two partial updates, the soft/hard deletes — second third of the CLE pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.19</td>
 <td>Angular entity twin (3/3): classifications, BM, labels</td>
 <td><code>AtlasEntitiesService</code> grows (ACL-01..09): the twenty-two classification/business-metadata/label routes of <code>routes/entity.py</code> — closing all thirty-seven routes of the CLE pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>EntityREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.20</td>
 <td>Angular glossary twin (1/3): the glossaries</td>
 <td><code>GlossaryService</code> (AGL-01..07): the thirteen glossary routes of <code>routes/glossary.py</code> — the paged list, the detailed read, the paged category/term reads, create/update/partial/delete, the template and file import — first third of the CLG pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.21</td>
 <td>Angular glossary twin (2/3): the terms</td>
 <td><code>GlossaryService</code> grows (AGT-01..06): the eleven term routes of <code>routes/glossary.py</code> — reads/creates/updates, the partial update, the delete, the related-terms map, the paged assigned-entities read and its assignment trio — second third of the CLG pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.22</td>
 <td>Angular glossary twin (3/3): the categories</td>
 <td><code>GlossaryService</code> grows (AGC-01..04): the eight category routes of <code>routes/glossary.py</code> — the category read, its paged terms and related map, create/update/partial/delete — closing all thirty-two routes of the CLG pair DD-217 opened</td>
 <td>Aurelius <code>libs/atlas/api</code> <code>GlossaryREST</code> twin (Angular)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>9.1</td>
 <td>Targeted resilience e2e</td>
 <td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
 <td>— (no Java twin; Atlas ships no resilience e2e)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>9.2</td>
 <td>Server hardening</td>
 <td>TLS as a start-up requirement, opaque 5xx with trace-id requestId, security response headers (SRV-06..08, DD-234..236, DV-85/86)</td>
 <td><code>AtlasBaseExceptionMapper</code> (cause echo, superseded for 5xx); no header filter to port</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>9.3</td>
 <td>Search cost and client IP</td>
 <td>Refresh moves from reads to writes, nginx-edge browser rate limit, uvicorn client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87)</td>
 <td>— (Atlas refreshes nothing on reads, JanusGraph; no limiter to port)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>9.4</td>
 <td>Edge tracing</td>
 <td>The webapp's nginx exports <code>/api/</code> spans to the collector's legacy leg; the OTel module builds in the image's dev-stage (ETR-01..03, DD-239)</td>
 <td>— (no Java twin; nginx/OTLP are Aurelius infrastructure)</td>
-<td>in progress</td>
+<td>done</td>
+</tr>
+<tr>
+<td>9.5</td>
+<td>The server under a path prefix</td>
+<td><code>root_path</code>: the server's redirects and sign-in under a proxy's path; the standalone stack behind nginx on port 9000, <code>/atlas2/</code> and <code>/auth/</code> (PFX-01..04, DD-363)</td>
+<td><code>EmbeddedServer</code></td>
+<td>in review</td>
 </tr>
 <tr>
 <td>10.1</td>
 <td>Deployment chart foundation</td>
 <td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-298, DD-283..294)</td>
 <td>— (Atlas ships compose/k8s examples for a topology this is not)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.2</td>
 <td>Stateful platform charts</td>
 <td>Elasticsearch, Keycloak and its Postgres as self-managed workloads: storage, trust, health, the GKE coredump agent, deploy-time credentials, the root chart-contract suite (CHT-10..19, DD-253..260)</td>
 <td>–</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.5</td>
@@ -7116,70 +7330,70 @@ checks a PR must pass:</p>
 <td>App and edge charts</td>
 <td>Server, webapp (boot-resolved nginx config + <code>/config.json</code>), the three auxiliary APIs (DD-294 closure: the CA mounts, lineage-model upstream URLs); the Gateway API edge at the umbrella (routes, browser certs, BackendTLSPolicy, DD-261 client-IP trust) (CHT-20..32, DD-261..264)</td>
 <td>–</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.3b</td>
 <td>Observability chart</td>
 <td>Collector (three ingest legs, OIDC, one egress), Prometheus, Loki, Tempo, Grafana as workloads; the cluster-native scraping decision 10.2 deferred; the apps' and Keycloak's telemetry wiring turned on (10.2 CHT-16's dormant refs go live) (CHT-33..44)</td>
 <td>#160</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.3c</td>
 <td>Webapp backend TLS</td>
 <td>The webapp's listener serves TLS behind the gateway (DD-270): chart Certificate + leaf mount, <code>listen 8080 ssl</code>, the webapp BackendTLSPolicy, HTTPS probes; supersedes DD-285's plaintext-backend clause (CHT-23/25/30 amended)</td>
 <td>#161</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.6</td>
 <td>Network segmentation</td>
 <td>Namespace default-deny at the umbrella plus per-chart additive ingress allows along the call graph: the gateway browser edges, the server/aux/store/Keycloak-postgres joins, the collector's per-leg and backend peers; the gateway-source knob; probe ports rule-free (CHT-60..73, DD-271/272; pentest finding H2)</td>
 <td>#176</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.7</td>
 <td>Production identity realm</td>
 <td>The hardened <code>aurelius-atlas</code> realm replaces <code>master</code> on clusters: <code>global.realm</code> joins the values contract, a minimally-authored prod asset (ROPC off, PKCE, sslRequired all, no seeded users, chart-substituted browser hosts), <code>master</code> stays the dev/e2e shape and a supported escape hatch (CHT-74..80, DD-273/274; pentest finding H3)</td>
 <td>#178</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.8</td>
 <td>Grafana realm login</td>
 <td>Grafana becomes a confidential OIDC relying party of the prod realm (its client lands in that asset only): anonymous off, Viewer default with <code>editor</code>/<code>admin</code> client-role escalation, request-derived root URL so port-forward logins work, Grafana joins the Keycloak 8443 dialers (CHT-81..86, DD-275/276; pentest finding H4)</td>
 <td>#182</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.9</td>
 <td>Per-producer ingest credentials</td>
 <td>Each <code>otel-*</code> client gets its own secret: seven placeholders in the prod asset, realm-shaped <code>&lt;release&gt;-otel-clients</code> keys and producer joins (per-client on the prod realm, the shared key on <code>master</code>), dev compose stays shared (CHT-87..91, DD-277; pentest finding M5)</td>
 <td>#183</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.10</td>
 <td>Digest-pinned images, signed charts</td>
 <td>The nine dhi.io pins carry committed digests (weekly drift guard + refresh PR); every image helper gains a digest-wins branch; own images stay tag-referenced by choice; <code>helm-sign</code>/<code>helm-verify</code> keyless-sign the published charts with the image chain's identity contract (CHT-92..97, DD-278; pentest finding M9)</td>
 <td>#184</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.11</td>
 <td>Low-findings hardening</td>
 <td>Webapp edge: tmpfs for the secret-bearing config volume, HSTS via whole-directive placeholder, a browser-sized <code>/otel/</code> limiter; observability + store dev stacks pin loopback with a guard (KC issuer/template Postgres deferred); same-repo PR guards, scope-split docs concurrency, ARC digest pins (CHT-98..102, DD-279; pentest lows)</td>
 <td>#186</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 <tr>
 <td>10.12</td>
 <td>Server authentication, chart wiring</td>
 <td>6.1a's required <code>AUTH_*</code> settings land as chart joins: the prod realm gains the <code>aurelius-atlas-server</code> confidential client (host-tokenised <code>login.jsp</code> redirects), <code>&lt;release&gt;-server-client</code> mints once for both the realm-import placeholder and the server's <code>AUTH_CLIENT_SECRET</code>, and the aux APIs' <code>AUTH_REALM</code> joins <code>global.realm</code> (CHT-108..111, DD-296/297)</td>
 <td>#195</td>
-<td>in review</td>
+<td>done</td>
 </tr>
 </tbody>
 </table>

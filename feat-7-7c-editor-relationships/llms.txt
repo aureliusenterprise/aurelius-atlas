@@ -3,6 +3,7 @@
 ## User Guide
 
 - [User Guide](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/user-guide/index.md>)
+- [Standalone Server](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/user-guide/standalone-server/index.md>)
 
 ## Contributor Guide
 
@@ -104,6 +105,7 @@
 - [055\. The lineage chain is a named data surface](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/055-the-lineage-chain-is-a-named-data-surface/index.md>)
 - [056\. Behaviour is proven by executed tests](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)
 - [057\. The system ships as Helm charts](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>)
+- [058\. A new catalogue starts with the m4i types](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/conversion/design-log/index.md>)
@@ -154,6 +156,8 @@
 - [Disaster Recovery](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/disaster-recovery/index.md>)
 - [High Availability](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/high-availability/index.md>)
 - [Incident Management](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incident-management/index.md>)
+- [2026-11-05 Server silent](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent/index.md>)
+- [Incidents](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/incidents/index.md>)
 - [Resilience](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/resilience/index.md>)
 - [Access Management](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/security/access-management/index.md>)
 - [Data Encryption](<https://aureliusenterprise.github.io/feat-7-7c-editor-relationships/architecture/platform/security/data-encryption/index.md>)
