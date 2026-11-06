@@ -61,7 +61,7 @@ services:
         volumes:
             - *certs
             - ./import_sample.py:/standalone/import_sample.py:ro
-            - ${SAMPLE_DIR:-../../../atlas_sample_data}:/sample:ro
+            - ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
 
 networks:
     aurelius-atlas-dev-elasticsearch-network:
