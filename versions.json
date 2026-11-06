@@ -50,6 +50,11 @@
     "aliases": []
   },
   {
+    "version": "dependabot-npm_and_yarn-typescript-7.0.2",
+    "title": "dependabot-npm_and_yarn-typescript-7.0.2",
+    "aliases": []
+  },
+  {
     "version": "dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0",
     "title": "dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0",
     "aliases": []
