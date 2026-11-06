@@ -19,7 +19,13 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 - `tests/fixtures/` — the vendored legacy dictionaries (parity reference, SHL-08)
 - `scripts/check-webapp-purity.sh` — the legacy-construct gate (WBP-02); runs as a
   `dependsOn` of `test`, so CI enforces it
-- `dev/config.json` — runtime config, bundled **only** in the development build
+- `dev/config.json` — runtime config, bundled **only** in the development build.
+  Its `keycloak.url` must name the **same issuer the server verifies**
+  (`AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL`, the TLS `:8443` listener) — tokens
+  from the plaintext `:8080` browser listener carry an `iss` the server rejects
+  (ADR 039, DD-202); it stays 8443 even though ADR 039 allows `:8080` for
+  browsing, because the token store is in-memory so a listener swap costs one
+  browser sign-in
 - `proxy.conf.json` — dev-server proxy: `/api` → atlas-server :21000 (**no
   rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)
@@ -42,7 +48,11 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   strings to components that aren't in the catalogue — extend the fixtures and
   regenerate when the legacy app gains keys.
 - The legacy source for parity comparison is the clone at
-  `.scratch/aurelius` (commit-pinned; see 7-0 spec).
+  `.scratch/aurelius` — a developer's own clone (git-ignored, never
+  committed), pinned to commit `b057389828c10497dd52d9efd4c16547c282c005`
+  of `aureliusenterprise/aurelius` (clone it with
+  `git clone --filter=blob:none <github-url> .scratch/aurelius`); the 7-0
+  spec's porting rules cite it.
 
 ## Commands
 

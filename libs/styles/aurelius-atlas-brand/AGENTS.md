@@ -11,7 +11,10 @@ specific to this lib; workspace-wide rules live in the root `AGENTS.md`.
 
 - `src/_variables.scss` — colour palette and `$theme-colors` map
 - `src/_theme.scss` — light/dark theme overrides
-- `src/_main.scss` — entry point (pulls in Bulma + tokens); what consumers `@use`
+- `src/_main.scss` — entry point (pulls in Bulma + tokens); what consumers
+  `@use`. Its tail re-emits the Bulma 0.9.4 elements Bulma 1 dropped or
+  renamed (`.heading`, `.is-paddingless`, `.is-marginless`, DD-319) — add
+  legacy-visual gaps here, not in app styles
 
 ## Wiring Checklist
 
