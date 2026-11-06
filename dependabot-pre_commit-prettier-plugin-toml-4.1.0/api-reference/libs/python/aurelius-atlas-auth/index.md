@@ -18,7 +18,7 @@ workspace = true
 
 Keycloak bearer-token authentication for Aurelius Atlas services (8.0, DD-197).
 
-Ported from the template's FastAPI example (the workspace's reference for the pattern: `apps/aurelius-atlas-fastapi-example/.../providers/auth.py`), reshaped as a per-service object so each application owns one :class:`KeycloakAuth` built from its own settings — no module-level caches shared across applications.
+Ported from the template's FastAPI example (since removed, ADR 050), reshaped as a per-service object so each application owns one :class:`KeycloakAuth` built from its own settings — no module-level caches shared across applications.
 
 The verification story (AUX-02..AUX-05):
 
@@ -34,6 +34,12 @@ Classes:
 - **`KeycloakAuth`** –
 
   One service's Keycloak verifier: dependencies for FastAPI routers.
+
+Functions:
+
+- **`client_roles`** –
+
+  The roles a token carries of one client, `resource_access.<client_id>.roles` (AUZ-01).
 
 Attributes:
 
@@ -66,7 +72,7 @@ LOGGER = logging.getLogger('aurelius-atlas-auth')
 ### \_\_all\_\_
 
 ```
-__all__ = ['AuthConfig', 'KeycloakAuth', 'bearer_scheme']
+__all__ = ['AuthConfig', 'KeycloakAuth', 'bearer_scheme', 'client_roles']
 ```
 
 ### bearer\_scheme
@@ -88,6 +94,7 @@ AuthConfig(
     fail_max: int = 5,
     reset_timeout: float = 60.0,
     ca_file: str | None = None,
+    extra_audiences: tuple[str, ...] = (),
 )
 ```
 
@@ -98,7 +105,13 @@ What a service needs to verify its tokens. Apps map their settings in.
 Attributes:
 
 - **`audience`** (`str`) –
+- **`audiences`** (`frozenset[str]`) –
+
+  Every accepted `azp`/`aud` value: the audience and the extra ones (AUT-10).
 - **`ca_file`** (`str | None`) –
+- **`extra_audiences`** (`tuple[str, ...]`) –
+
+  Further accepted `azp`/`aud` values: the clients whose tokens the service also takes (AUT-10).
 - **`fail_max`** (`int`) –
 - **`realm`** (`str`) –
 - **`reset_timeout`** (`float`) –
@@ -111,11 +124,27 @@ Attributes:
 audience: str
 ```
 
+#### audiences
+
+```
+audiences: frozenset[str]
+```
+
+Every accepted `azp`/`aud` value: the audience and the extra ones (AUT-10).
+
 #### ca\_file
 
 ```
 ca_file: str | None = None
 ```
+
+#### extra\_audiences
+
+```
+extra_audiences: tuple[str, ...] = ()
+```
+
+Further accepted `azp`/`aud` values: the clients whose tokens the service also takes (AUT-10).
 
 #### fail\_max
 
@@ -172,12 +201,18 @@ Methods:
 - **`close`** –
 
   Close the issuer HTTP client (the app calls it on shutdown).
+- **`discovery`** –
+
+  The issuer's OpenID configuration: its endpoints, fetched once, cached an hour (AUT-10).
 - **`require_write_access`** –
 
   Require the write role for mutating routes (AUX-04).
 - **`user_info`** –
 
   Verify the bearer token and return its claims (AUX-02, AUX-03).
+- **`verify`** –
+
+  Verify a token and return its claims, for callers outside a route dependency (AUX-02, AUT-10).
 
 Attributes:
 
@@ -247,6 +282,14 @@ close() -> None
 
 Close the issuer HTTP client (the app calls it on shutdown).
 
+#### discovery
+
+```
+discovery() -> dict
+```
+
+The issuer's OpenID configuration: its endpoints, fetched once, cached an hour (AUT-10).
+
 #### require\_write\_access
 
 ```
@@ -264,3 +307,23 @@ user_info(auth: HTTPAuthorizationCredentials) -> dict
 ```
 
 Verify the bearer token and return its claims (AUX-02, AUX-03).
+
+#### verify
+
+```
+verify(token: str) -> dict
+```
+
+Verify a token and return its claims, for callers outside a route dependency (AUX-02, AUT-10).
+
+:raises HTTPException: 401 for a token that does not verify, 503 when the issuer cannot be reached
+
+### client\_roles
+
+```
+client_roles(claims: dict, client_id: str) -> frozenset[str]
+```
+
+The roles a token carries of one client, `resource_access.<client_id>.roles` (AUZ-01).
+
+Keycloak namespaces client roles per client, so another client's same-named role is not among them.

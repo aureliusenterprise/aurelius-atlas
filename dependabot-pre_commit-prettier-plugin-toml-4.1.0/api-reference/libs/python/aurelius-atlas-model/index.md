@@ -1,6 +1,6 @@
 # aurelius-atlas-model
 
-Atlas data shapes for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.1](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/conversion/increments/1-1-typedef-models/index.md>): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since [1.5](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/conversion/increments/1-5-builtin-models/index.md>): the patch record `AtlasPatch`. Since [2.1a](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/conversion/increments/2-1-entity-models/index.md>): the entity models of `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`, `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON conventions all models share in `aurelius_atlas_model.base`. Since [2.1b](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/conversion/increments/2-1-value-types/index.md>): Atlas's JSON codec, `aurelius_atlas_model.codec`, which keeps the digits of decimals.
+Atlas data shapes for Aurelius Atlas, without I/O (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)). Since increment `1.1` (the spec: `libs/python/aurelius-atlas-model/specs/1-1-typedef-models/spec.md`): the Apache Atlas 2.4.0 type definitions (enum, struct, classification, entity, relationship and business metadata), their header and `AtlasTypesDef`, as Pydantic models that read and write Atlas's REST JSON. Since `1.5` (the spec: `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/spec.md`): the patch record `AtlasPatch`. Since `2.1a` (the spec: `libs/python/aurelius-atlas-model/specs/2-1-entity-models/spec.md`): the entity models of `aurelius_atlas_model.instance`, one module per Atlas class (`AtlasEntity`, `AtlasEntityWithExtInfo`, `AtlasEntityHeader`, `AtlasClassification`, `AtlasObjectId`, `EntityMutationResponse`, …), and the JSON conventions all models share in `aurelius_atlas_model.base`. Since `2.1b` (the spec: `libs/python/aurelius-atlas-model/specs/2-1-value-types/spec.md`): Atlas's JSON codec, `aurelius_atlas_model.codec`, which keeps the digits of decimals.
 
 ```
 from aurelius_atlas_model.typedef import AtlasTypesDef
@@ -2488,15 +2488,6 @@ A constraint on an attribute, such as `ownedRef` or `inverseRef`.
   "type": "object"
 }
 ```
-
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
 
 Fields:
 
@@ -8648,6 +8639,9 @@ Functions:
 - **`empty_when_null`** –
 
   Read a null list as empty: a field Java never leaves null (TDM-06).
+- **`new_model_guid`** –
+
+  `AtlasBaseModelObject.init`: a new object's GUID, `-` and the next internal id (GLS-01, SVS-01).
 - **`null_when_empty`** –
 
   Read an empty list as null: a field Java leaves null when empty (TDM-11).
@@ -8711,6 +8705,15 @@ Java camelCase aliases, lenient input (extra keys ignored, numbers coerce to str
 }
 ```
 
+Config:
+
+- `alias_generator`: `to_camel`
+- `validate_by_alias`: `True`
+- `validate_by_name`: `True`
+- `validate_assignment`: `True`
+- `extra`: `ignore`
+- `coerce_numbers_to_str`: `True`
+
 #### model\_config
 
 ```
@@ -8741,6 +8744,14 @@ empty_when_null(value: object) -> object
 ```
 
 Read a null list as empty: a field Java never leaves null (TDM-06).
+
+### new\_model\_guid
+
+```
+new_model_guid() -> str
+```
+
+`AtlasBaseModelObject.init`: a new object's GUID, `-` and the next internal id (GLS-01, SVS-01).
 
 ### null\_when\_empty
 

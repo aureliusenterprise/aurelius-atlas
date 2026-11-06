@@ -26,11 +26,11 @@ Storage is decided by [ADR 008](<https://aureliusenterprise.github.io/dependabot
 
 The path from first signal to all-clear (ADR 041 R2); the owner is the maintainers team.
 
-1. **Noticing** — a symptom appears, or (from increment 6.4) an alert fires ([ADR 040](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/adr/040-the-system-raises-its-hand-when-it-is-broken/index.md>)). The first person to notice is the recorder, not the decider.
+1. **Noticing** — a symptom appears, or an alert fires ([ADR 040](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/adr/040-the-system-raises-its-hand-when-it-is-broken/index.md>)); the alert links its steps on [Incident Management](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/platform/resilience/incident-management/index.md>). The first person to notice is the recorder, not the decider.
 2. **Triage** — any maintainer is the decider: confirm impact, choose investigate / mitigate / accept. Mitigation on dev systems needs no permission; a mitigation that touches real data needs a second maintainer.
 3. **Act** — the decider acts or delegates. The evidence is inside the system (ADR 016): the observability stack (Grafana, Prometheus, Loki, Tempo), the server's logs, the store's health endpoint — reachable without provisioning anything external (ADR 041 R4).
 4. **Escalate** — possible data loss pulls in the dataset's owner (below); suspected secret exposure switches to the rotation path above.
-5. **All-clear and record** — the decider declares the end and writes the one-page record: symptoms, actions, cause, follow-ups (ADR 041 R5). Follow-ups that should become triggers become alert rules at 6.4 (ADR 041 R6).
+5. **All-clear and record** — the decider declares the end and writes the one-page record: symptoms, actions, cause, follow-ups (ADR 041 R5), in [Incidents](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/platform/resilience/incidents/index.md>). Follow-ups that should become triggers become alert rules (ADR 041 R6).
 
 ## Dataset Ownership
 
@@ -40,7 +40,6 @@ The path from first signal to all-clear (ADR 041 R2); the owner is the maintaine
 | --- | --- |
 | Elasticsearch: `aurelius-atlas-typedefs` (entity indices from 2.2, audit from 3.5) | `aurelius-atlas-server` |
 | Keycloak realm and its Postgres database | `dev/keycloak` |
-| Example Postgres database (template slice) | `aurelius-atlas-fastapi-example`, removed with it (DD-019) |
 | Operational signals (metrics, logs, traces) | `dev/observability`, custodian of a shared store (ADR 042 R2) |
 
 The catalogue's store has one writer — the server — so shape arbitration has no live subject in the spine; it applies from the first dataset with a second reader-writer.
@@ -48,4 +47,4 @@ The catalogue's store has one writer — the server — so shape arbitration has
 ## Rehearsals (scheduled)
 
 - **First rehearsal of the secret paths** (rotation, loss, break-glass) on dev secrets in a dev environment — before the first deployment that keeps real data (ADR 028 R2).
-- **First game-day of the incident path** on the dev stack — same gate, and yearly after (ADR 041 R3); each rehearsal updates this page.
+- **Game-day of the incident path** on the dev stack — yearly, and after a change to an alert or its steps (ADR 041 R3). The first walked "Server silent" on 2026-11-05 ([record](<https://aureliusenterprise.github.io/dependabot-pre_commit-prettier-plugin-toml-4.1.0/architecture/platform/resilience/incidents/2026-11-05-rehearsal-server-silent/index.md>)); each rehearsal leaves a record and fixes what it found.
