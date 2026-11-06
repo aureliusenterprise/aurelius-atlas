@@ -6455,12 +6455,41 @@ way to try the server by hand. <code>nx serve</code> and the e2e stacks are unch
 </tr>
 <tr>
 <td><code>https://localhost:9000/auth/</code></td>
-<td>The stack's own Keycloak with the dev realm, and its admin</td>
+<td>The stack's own Keycloak with the demo realm, and its admin</td>
 </tr>
 </tbody>
 </table>
 <p>The store is the dev Elasticsearch. Keycloak is the stack's own, because the dev Keycloak's address is the
-issuer the other dev services trust (DD-363); it imports the dev realm at every start.</p>
+issuer the other dev services trust (DD-363). At every start it imports the realm <code>demo</code> from
+<code>keycloak/demo.json</code>, with three users (DD-366):</p>
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Roles</th>
+<th>May</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atlas</code></td>
+<td><code>atlas-read</code>, <code>atlas-write</code>, <code>atlas-types</code>, <code>atlas-admin</code></td>
+<td>Everything: the catalogue, the types, import, export and purge</td>
+</tr>
+<tr>
+<td><code>steward</code></td>
+<td><code>atlas-read</code>, <code>atlas-write</code></td>
+<td>Read and change the entities, their relationships and classifications</td>
+</tr>
+<tr>
+<td><code>scientist</code></td>
+<td><code>atlas-read</code></td>
+<td>Read the types and the entities</td>
+</tr>
+</tbody>
+</table>
+<p>Their passwords are <code>DEMO_USER_ATLAS_PASSWORD</code>, <code>DEMO_USER_STEWARD_PASSWORD</code> and <code>DEMO_USER_SCIENTIST_PASSWORD</code>
+in the dev Keycloak's <code>.env</code>, decrypted from its <code>.env.enc</code>.</p>
 <h2 id="start">Start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h2>
 <p>The dev store runs first. The secrets come from the server's <code>.env</code> and the dev Keycloak's <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>dev/elasticsearch/docker-compose.yaml<span class="w"> </span>up<span class="w"> </span>-d
@@ -6468,15 +6497,14 @@ docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> 
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The dashboards answer at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a> once Keycloak is ready, about a minute after the
-start. Sign in as <code>aurelius-writer</code> or <code>aurelius-reader</code>, with <code>DEV_USER_WRITER_PASSWORD</code> or
-<code>DEV_USER_READER_PASSWORD</code> from the dev Keycloak's <code>.env</code>. Keycloak's admin console is
-<a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a>, as <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>. The certificate is the dev CA's, so
-the browser asks once, for <code>localhost:9000</code>.</p>
+start. Sign in as one of the demo users. Keycloak's admin console is <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a>, as
+<code>KC_BOOTSTRAP_ADMIN_USERNAME</code>, in the realm <code>master</code>; its session doesn't sign you in to the dashboards. The
+certificate is the dev CA's, so the browser asks once, for <code>localhost:9000</code>.</p>
 <p>The image is <code>aurelius-atlas-server:local</code>; <code>npx nx docker-build aurelius-atlas-server</code> builds it from the
 checkout.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
 <p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
-is ready, the <code>sample-import</code> service signs in as <code>aurelius-writer</code> and posts it to <code>admin/import</code>, through
+is ready, the <code>sample-import</code> service signs in as <code>atlas</code> and posts it to <code>admin/import</code>, through
 the proxy. Without <code>SAMPLE_ZIP</code>, or when no file has that name, the option is ignored: the service logs why
 and exits, and the server runs as without it.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">SAMPLE_ZIP</span><span class="o">=</span>sample_data.zip<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
