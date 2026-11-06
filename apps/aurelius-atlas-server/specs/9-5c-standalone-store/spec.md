@@ -1,7 +1,7 @@
 # 9.5c The standalone stack's own store
 
 - **Status:** in review
-- **Pull request:** to be opened
+- **Pull request:** [#282](https://github.com/aureliusenterprise/aurelius-atlas/pull/282)
 - **Records:** DD-367; relies on DD-363 (the standalone stack behind nginx), DD-366 (its demo realm) and
   DD-223 (the e2e suites share the dev stores)
 
