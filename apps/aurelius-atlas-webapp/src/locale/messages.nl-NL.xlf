@@ -157,6 +157,21 @@
         <target>Zoeken...</target>
         <note priority="1" from="description">Aurelius dictionary key: components.fuzzySearchInput.searchPlaceholder</note>
       </trans-unit>
+      <trans-unit id="components.markdownEditor.placeholder" datatype="html">
+        <source>Please type some markdown to get started...</source>
+        <target>Begin met het typen van markdown...</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.markdownEditor.placeholder</note>
+      </trans-unit>
+      <trans-unit id="components.markdownEditor.previewLabel" datatype="html">
+        <source>Preview</source>
+        <target>Voorvertoning</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.markdownEditor.previewLabel</note>
+      </trans-unit>
+      <trans-unit id="components.markdownEditor.writeLabel" datatype="html">
+        <source>Write</source>
+        <target>Schrijven</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.markdownEditor.writeLabel</note>
+      </trans-unit>
       <trans-unit id="components.modal.close" datatype="html">
         <source>Close</source>
         <target>Sluiten</target>
@@ -346,6 +361,16 @@
         <source>Has Parent</source>
         <target>Heeft Bovenliggend Object</target>
         <note priority="1" from="description">Aurelius dictionary key: hasParent</note>
+      </trans-unit>
+      <trans-unit id="holdable.tooltip.plural" datatype="html">
+        <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> seconds</source>
+        <target>Houd <x id="seconds"/> seconden ingedrukt</target>
+        <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.plural</note>
+      </trans-unit>
+      <trans-unit id="holdable.tooltip.single" datatype="html">
+        <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> second</source>
+        <target>Houd <x id="seconds"/> seconde ingedrukt</target>
+        <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.single</note>
       </trans-unit>
       <trans-unit id="high_risk" datatype="html">
         <source>High risk</source>

@@ -21,7 +21,9 @@ type Story = StoryObj<DetailsNavigation>;
 const template = `
 <div class="story-tall-host">
     <aurelius-atlas-ui-details-navigation [label]="label" [toggleLabel]="toggleLabel">
-        <li><a href="#properties-details">Properties</a></li>
+        <ul class="menu-list">
+            <li><a href="#properties-details">Properties</a></li>
+        </ul>
     </aurelius-atlas-ui-details-navigation>
 </div>
 `;
@@ -74,10 +76,12 @@ export const WithSections: Story = {
         template: `
 <div class="story-tall-host">
     <aurelius-atlas-ui-details-navigation [label]="label">
-        <li><a href="#description-details">Description</a></li>
-        <li><a href="#properties-details">Properties</a></li>
-        <li><a href="#classifications-details">Classifications</a></li>
-        <li><a href="#terms-details">Terms</a></li>
+        <ul class="menu-list">
+            <li><a href="#description-details">Description</a></li>
+            <li><a href="#properties-details">Properties</a></li>
+            <li><a href="#classifications-details">Classifications</a></li>
+            <li><a href="#terms-details">Terms</a></li>
+        </ul>
     </aurelius-atlas-ui-details-navigation>
 </div>`,
     }),

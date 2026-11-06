@@ -22,7 +22,21 @@
             <span class="loader"></span>
         </span>
     } @else {
-        <span class="tag" [attr.title]="tooltip()">{{ label() }}</span>
+        <span class="tag" [attr.title]="tooltip()">
+            {{ label() }}
+            @if (deletable()) {
+                <!-- The editor's deletable chip (UIC-24): Bulma seats a
+                     `button.delete` inside a `tag`; the chip emits and the
+                     caller drops the tag. -->
+                <button
+                    type="button"
+                    class="delete is-small aurelius-classification-chip-delete"
+                    [attr.aria-label]="deleteLabel()"
+                    [attr.title]="deleteLabel()"
+                    (click)="remove.emit()"
+                ></button>
+            }
+        </span>
         @if (propagated()) {
             <div
                 class="tag is-primary dropdown is-hoverable"

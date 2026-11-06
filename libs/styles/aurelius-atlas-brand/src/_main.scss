@@ -357,3 +357,35 @@
         --bulma-#{$token}: #{$value};
     }
 }
+
+/*
+ * The Bulma 0.9.4 helpers the legacy pages use and Bulma 1.0.4 dropped or
+ * renamed (DD-319), re-emitted beside the 0.9.4 ramp above (DD-151):
+ * `.heading` — the small-caps label above a stat; Bulma 1 deleted the
+ * element, so without this the details count bar renders in body text
+ * (16px plain against the demo's 11px uppercase). The values are 0.9.4's
+ * `elements/other.sass`, confirmed against the demo's compiled rule
+ * (measured 2026-11-03: 11px, 1px tracking, uppercase, 5px below, ink
+ * inherited — no weight). `.is-paddingless`/`.is-marginless` — Bulma 1
+ * renamed them without the `is-` prefix; the details drop-up's circular
+ * toggle (a `box is-paddingless`) keeps its 1.25rem padding without the
+ * alias and inflates from the demo's 60px circle to 100px.
+ */
+.heading {
+    color: var(--bulma-text);
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+/* The 0.9.4 names extend Bulma 1's own helpers instead of restating them, so
+   the `!important` lives once in Bulma (the helper's contract — it must beat
+   any component rule on the same element) and never in this file. */
+.is-marginless {
+    @extend .marginless;
+}
+
+.is-paddingless {
+    @extend .paddingless;
+}

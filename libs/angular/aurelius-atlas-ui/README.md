@@ -13,7 +13,8 @@ Part of the template **spine**.
 - `Breadcrumbs` — entity trail with per-item icons, warning chip, active item (Aurelius bread-crumbs)
 - `Card` — content card
 - `ClassificationChip` — Bulma addons chip for a classification/term: icon lead, tooltip
-  label, loading, propagated dropdown with projected sources (Aurelius classification/term)
+  label, loading, propagated dropdown with projected sources, optional delete button
+  (Aurelius classification/term)
 - `DarkMode` + `DarkModeService` — theme toggle with persisted preference
 - `DetailsNavigation` — sticky up-dropdown section menu, projected items (Aurelius details-navigation)
 - `EntityCard` — details-screen card: title link, type-name badge, content/quality

@@ -16,8 +16,10 @@
     unread (ALR-12), with an sr-only label so the information is not
     colour-only.
 -->
-<!-- NOSONAR S6851: the chip bar is a styled button group (ALR-11); fieldset/address/details are content elements, not a Bulma `buttons has-addons` bar. -->
-<div class="aurelius-alert-inbox" role="group" [attr.aria-label]="ariaLabel()">
+<!-- The chip bar is a set of toggle buttons (ALR-11): a native <fieldset>
+     is HTML's grouped-controls element (S6819-clean); the scss resets its UA
+     border/min-width so the Bulma bar looks unchanged. -->
+<fieldset class="aurelius-alert-inbox" [attr.aria-label]="ariaLabel()">
     <div class="buttons has-addons aurelius-alert-inbox-group">
         @for (count of counts(); track count.severity) {
             <button
@@ -41,4 +43,4 @@
         }
         <ng-content></ng-content>
     </div>
-</div>
+</fieldset>

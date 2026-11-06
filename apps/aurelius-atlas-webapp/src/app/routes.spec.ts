@@ -1,23 +1,20 @@
-import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes } from "@angular/router";
+import { Injector, runInInjectionContext } from "@angular/core";
+import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlSegment } from "@angular/router";
+import Keycloak from "keycloak-js";
 
-const createAuthGuardMock = vi.hoisted(() => vi.fn((guard: unknown) => guard));
-
-vi.mock("keycloak-angular", () => ({
-    createAuthGuard: createAuthGuardMock,
-}));
-
-import { routes } from "./routes";
+import { createEntityMatcher, routes } from "./routes";
 import { SEARCH_ROUTES } from "./search/search.routes";
 import { SettingsPanel } from "./settings/settings-panel.component";
 
-// The guard is registered once, at import time. Copy the calls now: Vitest clears mock history before each test.
-const createAuthGuardCalls = [...createAuthGuardMock.mock.calls];
+type GuardFn = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => Promise<boolean>;
 
-type GuardFn = (
-    route: ActivatedRouteSnapshot,
-    state: RouterStateSnapshot,
-    authData: { authenticated: boolean; keycloak: { login: (options: { redirectUri: string }) => Promise<void> } },
-) => Promise<boolean>;
+function runGuard(guard: GuardFn, state: RouterStateSnapshot, authenticated: boolean, login: ReturnType<typeof vi.fn>) {
+    const injector = Injector.create({
+        providers: [{ provide: Keycloak, useValue: { authenticated, login } }],
+    });
+
+    return runInInjectionContext(injector, () => guard({} as ActivatedRouteSnapshot, state));
+}
 
 describe("routes", () => {
     it("guards every route from the app root (APC-05, DD-141)", () => {
@@ -55,6 +52,42 @@ describe("routes", () => {
         const loadComponent = alerts?.loadComponent as unknown as () => Promise<unknown>;
         const { AlertsPanel } = await import("./alerts/alerts-panel.component");
         await expect(loadComponent()).resolves.toBe(AlertsPanel);
+    });
+
+    it("matches the bare create segment and takes no type (EDT-04, DD-355)", () => {
+        const match = createEntityMatcher([new UrlSegment("create", {})]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual(["create"]);
+        expect(match?.posParams).toBeUndefined();
+    });
+
+    it("matches the create segment with a type and carries it as :type (EDT-04, DD-330, DD-355)", () => {
+        const match = createEntityMatcher([new UrlSegment("create", {}), new UrlSegment("DataSet", {})]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual(["create", "DataSet"]);
+        expect(match?.posParams?.["type"]?.path).toBe("DataSet");
+    });
+
+    it("leaves any other first segment to the rest of the table (DD-355)", () => {
+        expect(createEntityMatcher([new UrlSegment("settings", {})])).toBeNull();
+        expect(createEntityMatcher([new UrlSegment("created", {})])).toBeNull();
+        expect(createEntityMatcher([])).toBeNull();
+    });
+
+    it("serves both create URLs from one config, so the drawer is not rebuilt on the first pick (DD-355)", () => {
+        // The router reuses a component only when both navigations land on
+        // the same config, so two entries (`create`, `create/:type`) made the
+        // first type pick destroy and re-create the editor — and the drawer
+        // replayed its slide-in. One matcher config keeps it alive; only the
+        // `:type` parameter changes.
+        const drawerRoutes = routes[0].children?.filter((route) => route.outlet === "drawer") ?? [];
+        const createRoutes = drawerRoutes.filter((route) => route.matcher === createEntityMatcher);
+
+        expect(createRoutes).toHaveLength(1);
+        expect(createRoutes[0]?.data).toEqual({ editorMode: "create" });
+        expect(createRoutes[0]?.path).toBeUndefined();
+        // The matcher config must not be the edit one, whose mode differs.
+        expect(drawerRoutes.find((route) => route.path === "edit/:guid")?.data).toEqual({ editorMode: "edit" });
     });
 
     it("routes the details skeleton at search/details/:guid (DET-01)", async () => {
@@ -105,10 +138,7 @@ describe("routes", () => {
             const login = vi.fn().mockResolvedValue(undefined);
             const state = { url: "/search/browse" } as RouterStateSnapshot;
 
-            const result = await guard({} as ActivatedRouteSnapshot, state, {
-                authenticated: false,
-                keycloak: { login },
-            });
+            const result = await runGuard(guard, state, false, login);
 
             expect(result).toBe(false);
             expect(login).toHaveBeenCalledWith({
@@ -124,7 +154,7 @@ describe("routes", () => {
         const login = vi.fn().mockResolvedValue(undefined);
         const state = { url: "/search/browse" } as RouterStateSnapshot;
 
-        const result = await guard({} as ActivatedRouteSnapshot, state, { authenticated: true, keycloak: { login } });
+        const result = await runGuard(guard, state, true, login);
 
         expect(result).toBe(true);
         expect(login).not.toHaveBeenCalled();
@@ -140,10 +170,7 @@ describe("routes", () => {
         const login = vi.fn().mockResolvedValue(undefined);
         const state = { url: "/search/browse#state=abc&session_state=xyz&code=123" } as RouterStateSnapshot;
 
-        const result = await guard({} as ActivatedRouteSnapshot, state, {
-            authenticated: false,
-            keycloak: { login },
-        });
+        const result = await runGuard(guard, state, false, login);
 
         expect(result).toBe(false);
         expect(login).toHaveBeenCalledWith({
@@ -157,16 +184,16 @@ describe("routes", () => {
         const login = vi.fn().mockResolvedValue(undefined);
         const state = { url: "/search/browse?q=gene%20expression" } as RouterStateSnapshot;
 
-        await guard({} as ActivatedRouteSnapshot, state, { authenticated: false, keycloak: { login } });
+        await runGuard(guard, state, false, login);
 
         expect(login).toHaveBeenCalledWith({
             redirectUri: `${globalThis.location.origin}/search/browse?q=gene%20expression`,
         });
     });
 
-    it("registers the root guard with createAuthGuard, once (DD-141)", () => {
-        expect(createAuthGuardCalls).toHaveLength(1);
-        expect(typeof createAuthGuardCalls[0][0]).toBe("function");
+    it("registers one root authentication guard (DD-141)", () => {
+        expect(routes[0].canActivate).toHaveLength(1);
+        expect(typeof routes[0].canActivate?.[0]).toBe("function");
     });
 });
 

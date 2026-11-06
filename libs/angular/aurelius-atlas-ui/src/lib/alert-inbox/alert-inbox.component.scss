@@ -24,7 +24,12 @@
  * white-on-white in dark mode.
  */
 .aurelius-alert-inbox {
+    // The bar is a native <fieldset> (ALR-11): the UA sheet gives it a
+    // border, inset padding and a min-width sized to its content — reset
+    // here so the Bulma bar is pixel-identical to the old div.
+    border: 0;
     border-bottom: 1px solid var(--bulma-scheme-main-bis);
+    min-width: 0;
     padding: 0.75rem 2rem;
 }
 

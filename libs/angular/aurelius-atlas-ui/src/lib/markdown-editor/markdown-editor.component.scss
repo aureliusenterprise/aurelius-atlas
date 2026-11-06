@@ -1,0 +1,13 @@
+/*
+ * The markdown-writing field (UIC-26, DD-352): Bulma carries the tabs, the
+ * textarea, and the content block, so this file only fixes the rhythm — the
+ * host is a block, and the tab strip sits tight above its pane. No colour
+ * here (UIC-03): the active tab and the danger state are Bulma's own tokens.
+ */
+:host {
+    display: block;
+}
+
+.aurelius-markdown-editor-tabs {
+    margin-bottom: 0.75rem;
+}

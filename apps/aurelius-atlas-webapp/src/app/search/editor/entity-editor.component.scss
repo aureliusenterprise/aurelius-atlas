@@ -1,0 +1,237 @@
+/*
+ * The entity editor drawer body (EDT-01..EDT-08, DD-322): the drawer
+ * (DD-157) carries the panel chrome and Bulma carries the controls, so
+ * this file is only the rhythm between the fields, the tag row, and the
+ * classification box — the settings panel's shape (DD-167).
+ */
+.aurelius-editor-field + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+/* The create-mode type field (EDT-04, DD-330): it stays above the form, so
+   it keeps the between-field rhythm below it. */
+.aurelius-editor-picker {
+    margin-bottom: 1.25rem;
+}
+
+.aurelius-editor-classifications {
+    margin-top: 1.5rem;
+}
+
+/* The commit foot (EDT-19, DD-347): the status line shares the pair's row,
+   centred against it — one line, the buttons right-aligned (Delete then
+   Save, the reference's order). The pair itself rides Bulma's
+   `buttons is-right` container (DD-350), which carries the display, the
+   0.75rem gap, and the alignment, so this file only grows the projected
+   div across the foot bar — the drawer's bar is a flex row, and a
+   content-sized child cannot reach the right edge. */
+.aurelius-editor-foot {
+    align-items: center;
+    display: flex;
+    flex-grow: 1;
+}
+
+/* Every line in the foot's status slot (Saving/Deleting, and any line that
+   joins it) rides the row beside the pair: no stacked margin. Bulma's
+   0.75rem bottom margins on the group and its buttons would push the
+   buttons off the line's centre beside the text, so they are dropped
+   here — the row centres the pair and the line on one axis. */
+.aurelius-editor-foot .aurelius-editor-busy {
+    margin-bottom: 0;
+}
+
+.aurelius-editor-foot .aurelius-editor-actions {
+    flex-grow: 1;
+    margin-bottom: 0;
+}
+
+.aurelius-editor-foot .aurelius-editor-actions .button {
+    margin-bottom: 0;
+}
+
+/*
+ * The Delete's hold donut (EDT-19, DD-349): the button is solid danger, and
+ * while the hold runs it behaves like `is-loading` — the label
+ * clears (Bulma's own trick, so the button keeps its width) and a donut
+ * appears in the spinner's place: a 1em circle stroked 2px in the spinner's
+ * colour token (UIC-03 — no literal colour). The ring is an SVG circle
+ * stroke, not a CSS mask over a border, so its edges are anti-aliased like
+ * the spinner's own. `pathLength="1"` on the circle lets one CSS animation
+ * of `stroke-dashoffset` (1→0) draw it clockwise from the top (the SVG rides
+ * a quarter turn); the animation's duration is the hold's own seconds, via
+ * `--aurelius-hold-duration` the template binds from `deleteHoldSeconds`.
+ * An early release drops `holding`, which removes the animation, so the next
+ * press draws afresh.
+ */
+.aurelius-editor-delete .aurelius-hold-donut {
+    display: none;
+    height: 1em;
+    left: calc(50% - 0.5em);
+    position: absolute;
+    top: calc(50% - 0.5em);
+    transform: rotate(-90deg);
+    width: 1em;
+}
+
+.aurelius-editor-delete .aurelius-hold-donut circle {
+    fill: none;
+    stroke: var(--bulma-loading-color);
+    stroke-dasharray: 1;
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+}
+
+/* The label clears the way Bulma's own `is-loading` does it (the button keeps
+   its width). No `!important` is needed: the scoped copy of this selector
+   carries the component attribute too (0,3,0), which beats the 0,1,0 `.button`
+   ink rule even without order on its side. */
+.aurelius-editor-delete[data-aurelius-hold="holding"] {
+    color: transparent;
+}
+
+.aurelius-editor-delete[data-aurelius-hold="holding"] .aurelius-hold-donut {
+    display: block;
+}
+
+@keyframes aurelius-editor-hold-draw {
+    from {
+        stroke-dashoffset: 1;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.aurelius-editor-delete[data-aurelius-hold="holding"] .aurelius-hold-donut circle {
+    animation: aurelius-editor-hold-draw var(--aurelius-hold-duration, 3s) linear forwards;
+}
+
+/* The classification box (EDT-05, DD-335): one bordered box — the Bulma
+   input's own look, built from the root control vars Bulma exposes —
+   holding the chips and the text input inline. The box grows as tags are
+   added; a focused box carries the input's focus border and ring. The
+   `dropdown` class (on the element) carries the position and the panel;
+   Bulma's `.dropdown-menu` is hidden unless the box carries `is-active`
+   (the component sets it while focused with matches). */
+.aurelius-editor-classification-box {
+    align-items: center;
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-l));
+    border: var(--bulma-control-border-width) solid var(--bulma-border);
+    border-radius: var(--bulma-control-radius);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--bulma-control-size);
+    gap: 0.375rem;
+    min-height: var(--bulma-control-height);
+    padding: calc(0.5em - 1px) calc(0.75em - 1px);
+}
+
+.aurelius-editor-classification-box:focus-within {
+    border-color: hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    box-shadow: 0 0 0 0.125em
+        hsla(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l), var(--bulma-focus-shadow-alpha));
+}
+
+/* The text input inside the box (EDT-05, DD-335): the box owns the border
+   and the padding, so the input is borderless, transparent and flush. It
+   keeps the input's line so a lone caret sits at the input's height. */
+.aurelius-editor-classification-box .aurelius-editor-classification-input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: hsl(var(--bulma-text-h), var(--bulma-text-s), var(--bulma-text-strong-l));
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    outline: none;
+    padding: 0;
+}
+
+/* The chip inside the box (EDT-05, DD-335): the chips row's old rhythm is
+   gone — the box's flex gap spaces them, and the tag drops its own margin
+   so the box hugs its contents. */
+.aurelius-editor-classification-box .aurelius-editor-tag {
+    flex: 0 0 auto;
+}
+
+/* The suggestion panel (EDT-05, DD-335): Bulma's dropdown menu carries the
+   panel (position, offset, z-index) and the `is-up` modifier opens it
+   above the box — the box is the form's last field. Bulma's dropdown has
+   no full-width modifier, so the menu stretches to the box's own width
+   here (the box is the relative containing block, and the menu is
+   absolute with left: 0; pinning right: 0 pulls the other edge). The list
+   scrolls when the matches outgrow the panel. */
+.aurelius-editor-classification-box .dropdown-menu {
+    right: 0;
+}
+
+.aurelius-editor-classification-box .dropdown-content {
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+/* The rows clear the 24px WCAG target-size floor (DD-336). */
+.aurelius-editor-classification-box .dropdown-item {
+    min-height: 2.5rem;
+    white-space: nowrap;
+}
+
+/* The active (keyboard) option (DD-336): the input keeps focus and points
+   here through aria-activedescendant, so Down/Up have a visible row —
+   Bulma's own `.dropdown-item.is-active` carries the fill. */
+
+/* The disabled box (DD-336): the field has nothing left to offer, so the
+   box takes the input's disabled look — the muted fill and text — while
+   any chosen chips stay live (their delete is the chip's, UIC-24, so the
+   box can still hand a tag back). The caret input carries the disabled
+   attr, so this only paints the field and drops its focus ring. */
+.aurelius-editor-classification-box.is-disabled {
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-bis-l));
+    border-color: var(--bulma-border-weak);
+    color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-text-weak-l));
+}
+
+.aurelius-editor-classification-box.is-disabled:focus-within {
+    box-shadow: none;
+}
+
+/* Touch pointers (DD-336): the panel rows grow to a thumb-tappable 3rem. */
+@media screen and (pointer: coarse) {
+    .aurelius-editor-classification-box .dropdown-item {
+        min-height: 3rem;
+    }
+}
+
+/* Narrow viewports (DD-336): the box lets the input claim a full line so
+   the caret is not crushed between long chips on a small drawer. (The
+   chip delete's own touch target is the ClassificationChip's concern —
+   UIC-24 — not styled here.) */
+@media screen and (width <= 768px) {
+    .aurelius-editor-classification-box .aurelius-editor-classification-input {
+        flex-basis: 100%;
+    }
+}
+
+/* The repeating text list (EDT-03): one input per row, its delete beside
+   it; rows stack tightly so the list reads as one field. */
+.aurelius-editor-multi-row {
+    align-items: center;
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.25rem;
+}
+
+.aurelius-editor-multi-row .input {
+    flex: 1;
+}
+
+/* The required-fields notification (EDT-07, DD-331): the top of the form,
+   so a long form cannot push it below the fold. Bulma carries the box and
+   its delete. */
+.aurelius-editor-notification {
+    margin-bottom: 1.5rem;
+}
+
+.aurelius-editor-busy,
+.aurelius-editor-loading {
+    margin-bottom: 0.75rem;
+}
