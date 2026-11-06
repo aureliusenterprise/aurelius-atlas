@@ -7304,6 +7304,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A deployment can put the server beside other services on one entry</td>
 <td>9.5</td>
 </tr>
+<tr>
+<td>DV-141</td>
+<td>Metrics</td>
+<td><code>metricsstats/charts</code> counts <code>_ALL_ENTITY_TYPES</code> as a type with no entities, and the dashboards' Statistics chart starts with <code>hive_table</code></td>
+<td>It sums every entity type's counts for that name, and the chart starts with it (MHS-06, DD-365)</td>
+<td>A catalogue without Hive opened the chart on nothing</td>
+<td>6.4</td>
+</tr>
 </tbody>
 </table>
 

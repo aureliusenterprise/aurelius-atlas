@@ -1891,6 +1891,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_store.root_def" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;root_def
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_store.types_def_of" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -10601,6 +10612,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_store.root_def" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;root_def
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_store.types_def_of" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -14472,6 +14494,13 @@ patch, written with the patch's change (DD-031).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            root_def (aurelius_atlas_core.typedef_store.root_def)" href="./#aurelius_atlas_core.typedef_store.root_def">root_def</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The root definition a search's pseudo type names: <code>_ALL_ENTITY_TYPES</code> the entity root's, and</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            types_def_of (aurelius_atlas_core.typedef_store.types_def_of)" href="./#aurelius_atlas_core.typedef_store.types_def_of">types_def_of</a></code></b>
             –
             <div class="doc-md-description">
@@ -14960,7 +14989,7 @@ attributes may then be removed, a relationship's category may change and its end
             <b><code><a class="autorefs autorefs-internal" title="            get_def_by_name (aurelius_atlas_core.typedef_store.TypedefStore.get_def_by_name)" href="./#aurelius_atlas_core.typedef_store.TypedefStore.get_def_by_name">get_def_by_name</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The registered definition of <code>kind</code> named <code>name</code> (<code>get{Kind}DefByName</code>, TYR-03).</p>
+              <p>The registered definition of <code>kind</code> named <code>name</code> (<code>get{Kind}DefByName</code>, TYR-03), or for a name not</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -15488,7 +15517,8 @@ after a conflict (DD-033). With <code>check_type_version</code>, as at start-up,
 
     <div class="doc doc-contents ">
 
-        <p>The registered definition of <code>kind</code> named <code>name</code> (<code>get{Kind}DefByName</code>, TYR-03).</p>
+        <p>The registered definition of <code>kind</code> named <code>name</code> (<code>get{Kind}DefByName</code>, TYR-03), or for a name not
+registered, the root definition that <code>_ALL_ENTITY_TYPES</code> or <code>_ALL_CLASSIFICATION_TYPES</code> names (TYR-13).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -15794,6 +15824,32 @@ constraint on an attribute that refers to no entity type is removed.</p>
     <div class="doc doc-contents ">
 
         <p>The type names inside <code>array&lt;…&gt;</code> and <code>map&lt;…,…&gt;</code> (<code>AtlasTypeUtil.getReferencedTypeNames</code>, TDS-04).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_core.typedef_store.root_def" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">root_def</span>
+
+
+<a href="#aurelius_atlas_core.typedef_store.root_def" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">root_def</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.typedef_store.root_def(kind)">kind</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            TypeCategory (aurelius_atlas_model.typedef.TypeCategory)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.TypeCategory">TypeCategory</a></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.typedef_store.root_def(name)">name</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            AtlasBaseTypeDef
+
+
+  
+      pydantic-model
+   (aurelius_atlas_model.typedef.AtlasBaseTypeDef)" href="../aurelius-atlas-model/#aurelius_atlas_model.typedef.AtlasBaseTypeDef">AtlasBaseTypeDef</a></span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The root definition a search's pseudo type names: <code>_ALL_ENTITY_TYPES</code> the entity root's, and
+<code>_ALL_CLASSIFICATION_TYPES</code>, in any case, the classification root's (TYR-13).</p>
 
 
     </div>

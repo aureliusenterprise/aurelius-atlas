@@ -73,6 +73,9 @@ Functions:
 - **`referenced_type_names`** –
 
   The type names inside `array<…>` and `map<…,…>` (`AtlasTypeUtil.getReferencedTypeNames`, TDS-04).
+- **`root_def`** –
+
+  The root definition a search's pseudo type names: `_ALL_ENTITY_TYPES` the entity root's, and
 - **`types_def_of`** –
 
   An `AtlasTypesDef` holding `typedefs`, each in the list of its kind.
@@ -201,7 +204,7 @@ Methods:
   The registered definition of `kind` with `guid` (`get{Kind}DefByGuid`, TYR-03).
 - **`get_def_by_name`** –
 
-  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03), or for a name not
 - **`load`** –
 
   Prepare the document and load every stored definition into the registry (`init`, TDS-12).
@@ -372,7 +375,7 @@ Raises:
 get_def_by_name(kind: TypeCategory, name: str) -> AtlasBaseTypeDef
 ```
 
-The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03), or for a name not registered, the root definition that `_ALL_ENTITY_TYPES` or `_ALL_CLASSIFICATION_TYPES` names (TYR-13).
 
 Raises:
 
@@ -479,6 +482,14 @@ referenced_type_names(type_name: str | None) -> list[str]
 ```
 
 The type names inside `array<…>` and `map<…,…>` (`AtlasTypeUtil.getReferencedTypeNames`, TDS-04).
+
+### root\_def
+
+```
+root_def(kind: TypeCategory, name: str) -> AtlasBaseTypeDef | None
+```
+
+The root definition a search's pseudo type names: `_ALL_ENTITY_TYPES` the entity root's, and `_ALL_CLASSIFICATION_TYPES`, in any case, the classification root's (TYR-13).
 
 ### types\_def\_of
 
