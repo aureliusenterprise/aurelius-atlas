@@ -574,7 +574,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const card = compiled.querySelector("#related-attributes aurelius-atlas-ui-entity-card")!;
         expect(normalize(card.querySelector(".field.is-grouped .control")?.textContent)).toBe("PII");
         expect(card.querySelector(".aurelius-card-description strong")?.textContent).toBe("symbol"); // markdown (DET-10 sibling)
-        expect(normalize(card.querySelector(".aurelius-people-row")?.textContent)).toBe("Data Steward(s): Lin");
+        expect(normalize(card.querySelector(".aurelius-people-row")?.textContent)).toBe("Data Steward(s) : Lin");
         // No quality column (DET-19: the DQ column has no source).
         expect(card.querySelector(".quality")).toBeNull();
         httpMock.verify();
@@ -601,8 +601,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             normalize(row.textContent),
         );
         // Legacy order; the steward's duplicate guid is deduped (DET-23).
-        // The part renders "Label" + ": " (a nbsp) + the links.
-        expect(rows).toEqual(["Domain Lead(s): Ada Lead", "Data Owner(s): Ada", "Data Steward(s): Lin"]);
+        // The part renders "Label" + " : " (DD-374, the demo's "Owner(s) :")
+        // + the links.
+        expect(rows).toEqual(["Domain Lead(s) : Ada Lead", "Data Owner(s) : Ada", "Data Steward(s) : Lin"]);
 
         compiled.querySelector<HTMLAnchorElement>("#people-details .aurelius-people-row a")!.click();
         expect(navigate).toHaveBeenCalledWith(["/search/details", "p3"]);
@@ -756,7 +757,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         ]);
     });
 
-    it("the header badge and the cards show the typeAlias with the base type (DET-26)", () => {
+    it("the header badge shows the alias with the base type, the cards the alias alone (DET-26)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(
             fixture,
@@ -776,11 +777,13 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(normalize(compiled.querySelector(".aurelius-details-type")?.textContent)).toBe(
             "Data Entity (m4i_data_entity)",
         );
-        // The card badges: only the resolved card carrying an alias shows one.
+        // The card badges: only the resolved card carrying an alias shows
+        // one, and it shows the alias alone (DD-374, demo-measured — the
+        // legacy card never passes showBaseTypeName).
         const badges = [
             ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
         ].map((badge) => normalize(badge.textContent));
-        expect(badges).toEqual(["Data Attribute (m4i_data_attribute)", "m4i_data_attribute"]);
+        expect(badges).toEqual(["Data Attribute", "m4i_data_attribute"]);
     });
 
     it("an m4i attribute shows its People box and its Fields section (DET-16, DET-23)", () => {

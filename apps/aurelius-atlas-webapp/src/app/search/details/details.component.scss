@@ -17,6 +17,16 @@
 }
 
 /*
+ * The demo's header gap under the title is 4px: the h1 carries 24px and
+ * the badge pulls up 20px (demo-measured). Bulma 1 zeroes a `.title` that
+ * is followed by a `.subtitle`, so the badge carries the gap itself
+ * (DD-374).
+ */
+.aurelius-details-type {
+    margin-top: 4px;
+}
+
+/*
  * The trail sits below the title with the legacy header's block rhythm
  * (details.component.html spaced each header block with `.block`).
  */

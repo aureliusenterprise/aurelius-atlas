@@ -15,7 +15,9 @@
                     <fa-icon class="business" aria-hidden="true" [icon]="personIcon"></fa-icon>
                 </span>
                 <span>{{ row.label }}</span>
-                <span>:&nbsp;</span>
+                <!-- The legacy separator carries the gap before the colon too
+                     (the demo reads "Data Owner(s) :", DD-374). -->
+                <span>&nbsp;:&nbsp;</span>
                 @for (person of row.people; track person.guid; let last = $last) {
                     <span class="is-clickable">
                         <a href="#" (click)="onPersonClick($event, person)">{{ person.displayText }}</a>

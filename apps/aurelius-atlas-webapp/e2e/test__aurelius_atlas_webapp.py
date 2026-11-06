@@ -857,8 +857,8 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         # Domain Lead end renders no row).
         people = authenticated.locator("#people-details")
         expect(people.locator(".aurelius-people-row")).to_have_count(2)
-        expect(people).to_contain_text(f"Data Owner(s): zz{run}owner")
-        expect(people).to_contain_text(f"Data Steward(s): zz{run}steward")
+        expect(people).to_contain_text(f"Data Owner(s) : zz{run}owner")
+        expect(people).to_contain_text(f"Data Steward(s) : zz{run}steward")
 
         # DET-17/DET-19: the Data Attributes section at its seeded count,
         # two cards whose bodies carry the seeded definition text.

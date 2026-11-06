@@ -106,6 +106,62 @@
     // The legacy strong is 0.9.4's bold 700 — the demo's navbar locale
     // <strong> measures 700; Bulma 1 dropped it to semibold (SHM-03, DD-151).
     --bulma-strong-weight: 700;
+
+    /*
+     * The legacy text-link ink (DD-374, demo-measured): Bulma 1 sets a plain
+     * `a` to --bulma-link-text, which reads --bulma-link-on-scheme-l — a
+     * separate lightness (58%) from the accent itself. Pinning --bulma-link
+     * alone (SHM-04) therefore left every text link at hsl(209, 100%, 58%)
+     * = #2998ff while the demo inks links at #0073dd, the accent's own
+     * lightness. The on-scheme lightness joins the pin.
+     */
+    --bulma-link-on-scheme-l: 43.3333333333%;
+
+    /*
+     * The legacy (Bulma 0.9.4) corner ramp and neutral greys (DD-374,
+     * demo-measured): 0.9.4's $radius is 3px and $radius-large 6px — the
+     * demo's buttons, inputs, tags and cards measure 4px (a later theme
+     * bump) and its boxes 6px. Bulma 1 raised the ramp (6px / 12px), so the
+     * boxes and cards rounded visibly heavier than the demo. $radius→0.25rem,
+     * $radius-large→0.375rem (the box's token) restores the demo's corners
+     * across every component that reads them. The greys go neutral: Bulma 1
+     * derives every border (and the inputs' and table cells', through
+     * --bulma-input-h) from --bulma-scheme-h/-s, which it tinted
+     * hsl(221, 14%) — the demo's #dbdbdb is a pure grey at the same
+     * lightness — and its card/box shadow reads --bulma-shadow-h/-s/-l,
+     * which lands at rgba(9, 10, 12, .1) where the demo's is a neutral
+     * black. The scheme channels join the neutral pin (the DD-151 text
+     * pattern); :root is the only place Bulma sets them, so this reaches
+     * both schemes.
+     */
+    --bulma-radius: 0.25rem;
+    --bulma-radius-large: 0.375rem;
+    --bulma-scheme-h: 0deg;
+    --bulma-scheme-s: 0%;
+    --bulma-shadow-h: 0deg;
+    --bulma-shadow-s: 0%;
+    --bulma-shadow-l: 0%;
+}
+
+/*
+ * The legacy hero band (DD-374, demo-measured): Bulma 0.9.4's is-bold
+ * gradient darkens/saturates toward the start and lightens toward the end
+ * (#009e6c → primary → #00e7eb). Bulma 1 rebuilt it as fixed HSL offsets
+ * (+5deg/+10%/+5%), which flips the ramp — the demo starts dark green and
+ * ends bright cyan, Bulma 1 starts light and ends dark. The primary token
+ * is pinned (SHM-04), so the three demo stops go in literally.
+ */
+.hero.is-primary.is-bold {
+    background-image: linear-gradient(141deg, #009e6c, #00d1b2 71%, #00e7eb);
+}
+
+/*
+ * The legacy card corner (DD-374): Bulma 1 hard-codes --bulma-card-radius
+ * on .card (0.75rem) instead of reading the ramp, so the radius pin above
+ * never reached the cards; the demo's cards are $radius (4px).
+ */
+.card {
+    --bulma-card-radius: var(--bulma-radius);
 }
 
 /*
@@ -137,8 +193,10 @@
 
     // The link lightness: #0073dd inks ~3.9:1 on the 9% surface; Bulma's
     // own dark adaptation (link-on-scheme-l, 73%) lands ~7:1 on the same
-    // hue (DD-156).
+    // hue (DD-156). The light pin (DD-374) out-cascades Bulma's dark block,
+    // so the adaptation re-pins both lights here.
     --bulma-link-l: 73%;
+    --bulma-link-on-scheme-l: 73%;
 }
 
 // The `.content` ink the brand hard-pins for the legacy ramp (DD-151)

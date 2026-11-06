@@ -231,3 +231,61 @@ in scope for the badge the 7.13/7.16 components already take.
 branding slice wants type icons, it owns the map, the palette classes, and the
 fallback — a DD supersedes this row then). Drop the alias too (refused: it is
 the demo's clearest type signal and free).
+
+### DD-374. The visual parity pass: five demo-measured corrections
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** A side-by-side inspection of the details screen against the
+legacy demo (desktop and a 390px viewport) produced five corrections, each
+measured on the demo page. One, the card badge, is a behaviour change; the
+other four are styling.
+
+1. The link ink. The brand sheet pins `--bulma-link`, but Bulma 1 inks
+   text links from `--bulma-link-on-scheme-l`, which our pin never touched.
+   The app rendered links at Bulma's default blue while the demo inks them
+   at #0073dd. The brand sheet now pins `--bulma-link-on-scheme-l` to the
+   same lightness the `--bulma-link` pin uses, and the dark-ink mixin
+   re-pins it to the dark value (the DD-156 pattern: a `:root` pin
+   out-cascades the dark scheme block).
+2. The corner ramp and the border channels. Bulma 1 raised the radius ramp
+   (.375rem/.75rem) and tinted its border channels, so our boxes read
+   12px-round with warm-grey borders against the demo's 6px/4px neutral
+   #dbdbdb. The brand sheet pins `--bulma-radius` to 0.25rem (controls,
+   tags, and via `.card { --bulma-card-radius: var(--bulma-radius) }` the
+   cards all read 4px), `--bulma-radius-large` to 0.375rem (the `.box`
+   reads 6px), and zeroes the border hue/saturation channels.
+3. The hero gradient. Bulma 1 rebuilt `is-bold` as HSL offsets from the
+   primary; the demo ships Bulma 0.9.4's literal
+   `linear-gradient(141deg, #009e6c, #00d1b2 71%, #00e7eb)`. The brand
+   sheet overrides the rule with the literal.
+4. The People separator. The legacy row renders `Label` + `" : "` with a
+   thin gap before the colon; ours glued the colon to the label. The
+   `people-box` part now emits the legacy spacing. The header gap under
+   the title is the same family: the demo nets 4px (h1 24px, badge
+   -20px), Bulma 1's `.title:has(+ .subtitle)` zeroes ours, and the
+   details sheet gives the badge a 4px margin instead.
+5. The card badge (behaviour). The details screen passed
+   `showBaseTypeName` to the cards, so each badge read
+   "Data Attribute (m4i_data_attribute)". The legacy card template never
+   passes it; only the header's `entity-type-name` does. On the demo the
+   card badge shows the alias alone, and on a phone the long suffixed
+   badge is what squeezes the card title out of its flex line. DET-26
+   narrows to header-only.
+
+**Reason.** Each value came off the live demo through computed-style
+probes, not from reading Bulma's source and guessing. The two structural
+ones (the link token, the radius ramp) explain why the app "looked
+slightly off" everywhere at once: a component-level fix would have chased
+one symptom per screen. The card badge is the one visible bug a user hits
+without a stylesheet open: on a phone, an attribute card's title simply
+disappeared.
+
+**Alternatives.** Restyle each component (refused: the deltas are
+theme-level, and every screen pays for them). Keep the card suffix (used
+to: DET-26 as written; refused once the legacy template and the phone
+collapse were measured). Pin `--bulma-control-radius` directly (refused:
+Bulma's `:root` already maps it to `--bulma-radius`, so the second pin
+would drift).

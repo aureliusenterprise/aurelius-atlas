@@ -2,23 +2,20 @@
     The Aurelius card section (UIC-27, DET-17..DET-22): the level of
     title + count line and sort control + keyword input, then the paged
     grid of projected cards. The legacy chrome, rebuilt dumb — the count
-    line is plain text until a search filters it, when it becomes the
-    reset link (DET-20); the sort select and its direction button are the
-    legacy sorting component's native controls (their DQ options drop,
-    DD-369).
+    line is the legacy reset link: always underlined, always clickable
+    (an unfiltered reset is a no-op), and while a search filters it the
+    count it shows is the filtered one (DET-20); the sort select and its
+    direction button are the legacy sorting component's native controls
+    (their DQ options drop, DD-369).
 -->
 <div class="level is-widescreen aurelius-card-section-level">
     <div class="level-left">
         <div>
             <h3 class="title is-3">{{ title() }}</h3>
             <h6 class="subtitle is-6 aurelius-card-section-count">
-                @if (filtered()) {
-                    <a href="#" class="aurelius-card-section-reset" (click)="onCountClick($event)"
-                        >{{ filteredCount() }} {{ resultWord() }}</a
-                    >
-                } @else {
-                    <span>{{ count() }} {{ resultWord() }}</span>
-                }
+                <a href="#" class="aurelius-card-section-reset" (click)="onCountClick($event)"
+                    >{{ filtered() ? filteredCount() : count() }} {{ resultWord() }}</a
+                >
             </h6>
         </div>
     </div>

@@ -93,7 +93,7 @@ describe("Card content (DET-19)", () => {
         const { fixture } = mount(cardEntity());
         const rows = fixture.nativeElement.querySelectorAll(".aurelius-people-row");
         expect(rows).toHaveLength(1);
-        expect(normalize(rows[0].textContent)).toBe("Data Steward(s): Lin");
+        expect(normalize(rows[0].textContent)).toBe("Data Steward(s) : Lin");
         // The DET-19 silent shape: an entity with no people renders no box
         // and no placeholder line.
         const empty = mount(cardEntity({ relationshipAttributes: {} }));

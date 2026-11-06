@@ -16,8 +16,9 @@ export interface CardSortOption {
 
 /**
  * The Aurelius card section (`models4insight-details-cards-list`, UIC-27,
- * DET-17..DET-22): the box title, the `N result(s)` count line (a reset
- * link while a search filters), the sort select with its direction button,
+ * DET-17..DET-22): the box title, the `N result(s)` count line — the
+ * legacy's always-underlined reset link (DD-374), while filtered it shows
+ * the filtered count — the sort select with its direction button,
  * the keyword input, and the paged card grid. Ported dumb (WBP-04): the
  * legacy read its App Search store and re-queried per interaction; here
  * every state is an input, every interaction an emit or a model, and the
@@ -71,7 +72,7 @@ export class DetailsCardSection {
      * localises it. */
     readonly resultWord = input("result(s)");
 
-    /** Whether a keyword filter is applied: the count line becomes a reset link. */
+    /** Whether a keyword filter is applied: the count line shows the filtered count. */
     readonly filtered = input(false);
 
     /** The count shown while filtered — the matched cards (DET-20). */
@@ -86,7 +87,7 @@ export class DetailsCardSection {
     /** The scroll container's load label. The caller localises it. */
     readonly loadLabel = input("Load next page...");
 
-    /** Emits on a count-line click while filtered: reset filter and sort (DET-20). */
+    /** Emits on a count-line click: reset filter and sort (DET-20, the legacy's unconditional reset). */
     readonly resetRequested = output<void>();
 
     /** Emits when the direction button toggles (DET-21). */
@@ -114,9 +115,10 @@ export class DetailsCardSection {
     }
 
     /**
-     * Handle a count-line activation while filtered — the legacy reset
-     * link (`reset-search`). The href="#" is the keyboard path; the click
-     * cancels it and emits.
+     * Handle a count-line activation — the legacy reset link
+     * (`reset-search`), clickable in every state; an unfiltered reset is a
+     * no-op. The href="#" is the keyboard path; the click cancels it and
+     * emits.
      * @param event The click event.
      */
     protected onCountClick(event: Event): void {

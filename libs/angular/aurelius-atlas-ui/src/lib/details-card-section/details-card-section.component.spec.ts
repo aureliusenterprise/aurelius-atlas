@@ -51,12 +51,21 @@ describe("DetailsCardSection", () => {
         );
     });
 
-    it("keeps the count line plain text while unfiltered (UIC-27, DET-20)", () => {
+    it("keeps the count line a reset link while unfiltered (UIC-27, DET-20, DD-374)", () => {
         fixture.componentRef.setInput("count", 3);
         fixture.componentRef.setInput("filtered", false);
         fixture.detectChanges();
 
-        expect(fixture.nativeElement.querySelector("h6.aurelius-card-section-count a")).toBeNull();
+        // The legacy reset link is always there, underlined; an
+        // unfiltered reset is a no-op the parent can ignore.
+        const link: HTMLAnchorElement = fixture.nativeElement.querySelector("h6.aurelius-card-section-count a");
+        expect(link).toBeTruthy();
+        expect(link.textContent).toContain("3");
+
+        let resets = 0;
+        component.resetRequested.subscribe(() => resets++);
+        link.click();
+        expect(resets).toBe(1);
     });
 
     it("shows the filtered count as a reset link while filtered (UIC-27, DET-20)", () => {
