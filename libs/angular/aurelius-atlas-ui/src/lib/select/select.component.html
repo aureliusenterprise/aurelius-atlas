@@ -22,7 +22,13 @@
                 [attr.aria-labelledby]="inputId + '-label'"
                 aria-required="true"
             >
-                <option hidden [value]="">--&nbsp;{{ placeholderMessage() }}&nbsp;--</option>
+                <!-- The placeholder's empty value is a static attribute, not a
+                     [value] binding: the binding leaves no content attribute,
+                     option.value then reads back the label text (the DOM's
+                     reflection rule), the ngModel's "" matches no option, and
+                     the control renders blank instead of the placeholder
+                     (UIC-14, live-probed in the editor's create drawer). -->
+                <option hidden value="">--&nbsp;{{ placeholderMessage() }}&nbsp;--</option>
                 <!-- Caller options before the data rows, as the shell's options-before did. -->
                 <ng-content select="[options-before]"></ng-content>
                 @for (row of options(); track $index) {

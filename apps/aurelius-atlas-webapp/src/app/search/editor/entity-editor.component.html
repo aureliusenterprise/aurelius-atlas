@@ -2,7 +2,7 @@
   The entity editor drawer body (EDT-01..EDT-08, DD-322): the routed panel
   in the `drawer` aux outlet, carried by the ui-lib drawer (the settings /
   alerts shape). The drawer's own X, backdrop, and Escape close it (EDT-01)
-  — the footer carries Save only (EDT-10), no Cancel.
+  — the foot bar carries Save and Delete (EDT-10, EDT-19), no Cancel.
 
   i18n ids are the catalogue bridge keys (EDT-11, DD-128 bridge). Strings
   bound into component inputs live in TypeScript as $localize (BRW-02), so
@@ -15,26 +15,56 @@
     [ariaLabel]="closeLabel"
     (cancelRequested)="close()"
 >
-    <!-- The footer (EDT-10): Save only, in the head's action slot so it never
-         scrolls away. Busy while the save is in flight. -->
-    <button
-        type="button"
-        drawer-actions
-        class="button is-small is-primary aurelius-editor-save"
-        [disabled]="state.saving()"
-        [attr.aria-busy]="state.saving() ? 'true' : null"
-        (click)="save()"
-    >
-        <!-- Save. -->
-        <span i18n="@@search.components.editor.save">Save</span>
-    </button>
-
-    @if (state.saving()) {
-        <p class="help aurelius-editor-busy" role="status">{{ savingLine }}</p>
-    }
+    <!-- The foot (EDT-19, DD-347): the commit pair in the drawer's fixed
+         foot bar — Delete (edit mode, write grant) holds three seconds to
+         confirm (EDT-19, the demo's holdable), Save commits. Neither sits
+         in the head anymore: the head carries the title and the X only.
+         Busy rides the pair: Bulma's spinner on the acting button (EDT-18,
+         DD-342) plus the status line above it. While the hold runs, the
+         Delete behaves like `is-loading` itself: the label clears and a
+         donut (the spinner's look, an SVG ring stroke so its edges are
+         smooth) draws clockwise over the hold's own seconds. -->
+    <div drawer-footer class="aurelius-editor-foot">
+        @if (state.saving() || state.deleting()) {
+            <output class="help aurelius-editor-busy">{{ busyLine() }}</output>
+        }
+        <div class="buttons is-right aurelius-editor-actions">
+            @if (deleteShown()) {
+                <button
+                    type="button"
+                    class="button is-danger aurelius-editor-delete"
+                    aurelius-atlas-ui-hold
+                    [holdFor]="deleteHoldSeconds"
+                    [style.--aurelius-hold-duration]="deleteHoldSeconds + 's'"
+                    [attr.title]="deleteTooltip"
+                    [class.is-loading]="state.deleting()"
+                    [disabled]="state.deleting() || state.saving()"
+                    [attr.aria-busy]="state.deleting() ? 'true' : null"
+                    (held)="deleteHeld($event)"
+                >
+                    <!-- Delete. -->
+                    <span i18n="@@search.components.editor.delete">Delete</span>
+                    <svg class="aurelius-hold-donut" viewBox="0 0 16 16" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6.5" pathLength="1"></circle>
+                    </svg>
+                </button>
+            }
+            <button
+                type="button"
+                class="button is-primary aurelius-editor-save"
+                [class.is-loading]="state.saving()"
+                [disabled]="state.saving() || state.deleting()"
+                [attr.aria-busy]="state.saving() ? 'true' : null"
+                (click)="save()"
+            >
+                <!-- Save. -->
+                <span i18n="@@search.components.editor.save">Save</span>
+            </button>
+        </div>
+    </div>
 
     @if (state.loading() && !state.entity()) {
-        <p class="help aurelius-editor-loading" role="status">{{ loadingLine }}</p>
+        <output class="help aurelius-editor-loading">{{ loadingLine }}</output>
     }
 
     <!-- Create mode: the type field over the shipped entity typedefs
@@ -71,7 +101,7 @@
                  the form when a Save was attempted and the form is invalid —
                  never below the fold of a long form. Its delete (Bulma's
                  notification anatomy) dismisses it until the next Save (DD-331). -->
-            @if (saveAttempted() && formInvalid() && !notificationDismissed()) {
+            @if (notificationShown()) {
                 <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
                     <button
                         type="button"
@@ -104,13 +134,15 @@
                             (valueChange)="enumPicked(field, $event)"
                         ></aurelius-atlas-ui-select>
                     } @else if (field.kind === "multi") {
-                        <p class="label">{{ field.label }}</p>
+                        <label class="label" [for]="'editor-' + field.name + '-0'">{{ field.label }}</label>
                         <div class="control aurelius-editor-multi">
-                            @for (row of multiRows(field.name); track row) {
+                            @for (row of multiRows(field.name); track row; let i = $index) {
                                 <div class="aurelius-editor-multi-row">
                                     <input
                                         type="text"
                                         class="input"
+                                        [id]="'editor-' + field.name + '-' + i"
+                                        [attr.aria-label]="field.label"
                                         [class.is-danger]="showError(field)"
                                         [formField]="row"
                                     />
@@ -181,6 +213,37 @@
                 </div>
             }
 
+            <!-- The relationship pickers (EDT-13..EDT-17, DD-338/DD-339/DD-341):
+                 one per relationship attribute of the definition and its
+                 supertypes, after the plain attributes and before the
+                 classification box. Each is the classification box's anatomy
+                 around the attribute search; the chips carry the target
+                 entity's type as their lead (the term chip's pattern, DD-341). -->
+            @for (field of relationshipFields(); track field.name) {
+                <div class="field aurelius-editor-field aurelius-editor-relationship" [attr.data-field]="field.name">
+                    <p class="label" [id]="'editor-relationship-' + field.name + '-label'">
+                        {{ field.label }}
+                        @if (field.required) {
+                            <span class="has-text-danger">*</span>
+                        }
+                    </p>
+                    <div class="control">
+                        <aurelius-atlas-webapp-entity-relationship-input
+                            [field]="field"
+                            [editedGuid]="state.entity()?.guid ?? ''"
+                            [invalid]="relationshipErrorShown(field)"
+                            [label]="field.label"
+                            [deleteLabel]="deleteLabel"
+                            [selected]="picksOf(field)"
+                            (changed)="pickRelationship(field, $event)"
+                        ></aurelius-atlas-webapp-entity-relationship-input>
+                    </div>
+                    @if (relationshipErrorShown(field)) {
+                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                    }
+                </div>
+            }
+
             <!-- The classification box (EDT-05, DD-335, DD-336): one bordered
                  box — the control's own look — holding the chosen chips (the
                  details page's chips, UIC-24 delete) inline before the
@@ -237,6 +300,18 @@
                         (keydown.escape)="onSuggestionEscape($event)"
                         (keydown)="onSuggestionKeys($event)"
                     />
+                    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown
+                         panel, not a native select — the input keeps the typed
+                         text and the rows are buttons styled by Bulma. The
+                         listbox/option roles are the pattern's own semantics
+                         (S6819's native <select> cannot carry them), so each
+                         site carries a reason marker. This div cannot:
+                         Prettier always splits a comment off a block tag, so
+                         the marker would land off-line and stop working — its
+                         line stays flagged until the server's S6819
+                         allowedRoles parameter lists listbox. The option
+                         buttons keep their markers — Prettier preserves the
+                         inline glue. -->
                     <div
                         class="dropdown-menu"
                         id="editor-classification-listbox"
@@ -245,7 +320,7 @@
                     >
                         <div class="dropdown-content">
                             @for (name of filteredSuggestions(); track name; let i = $index) {
-                                <button
+                                <!-- //NOSONAR --><button
                                     type="button"
                                     class="dropdown-item"
                                     role="option"

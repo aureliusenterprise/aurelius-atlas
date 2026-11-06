@@ -1,0 +1,86 @@
+/*
+ * One relationship-attribute picker (EDT-14, DD-339/DD-341): the
+ * classification box's anatomy (DD-335/DD-336) — the same bordered box,
+ * borderless input and suggestion panel, built from the same Bulma control
+ * vars. It lives here because the box's SCSS belongs to the editor and the
+ * picker is a component of its own (DD-341); the rules mirror that file on
+ * purpose — if the box's anatomy changes, this one follows.
+ */
+.aurelius-relationship-box {
+    align-items: center;
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-l));
+    border: var(--bulma-control-border-width) solid var(--bulma-border);
+    border-radius: var(--bulma-control-radius);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--bulma-control-size);
+    gap: 0.375rem;
+    min-height: var(--bulma-control-height);
+    padding: calc(0.5em - 1px) calc(0.75em - 1px);
+    width: 100%;
+}
+
+.aurelius-relationship-box:focus-within {
+    border-color: hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    box-shadow: 0 0 0 0.125em
+        hsla(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l), var(--bulma-focus-shadow-alpha));
+}
+
+/* The required field with nothing chosen (EDT-17): Bulma's danger border,
+   the same state the text inputs take. */
+.aurelius-relationship-box.is-danger {
+    border-color: var(--bulma-danger);
+}
+
+/* The text input inside the box: the box owns the border and padding, so
+   the input is borderless, transparent and flush (DD-335). */
+.aurelius-relationship-box .aurelius-relationship-input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: hsl(var(--bulma-text-h), var(--bulma-text-s), var(--bulma-text-strong-l));
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    outline: none;
+    padding: 0;
+}
+
+/* The chip inside the box (DD-335's rule): the box's flex gap spaces them,
+   so the chip drops its own margin. */
+.aurelius-relationship-box .aurelius-relationship-chip {
+    flex: 0 0 auto;
+}
+
+/* The suggestion panel (DD-335's rule, the classification box's own geometry
+   per DD-343): Bulma's dropdown menu carries the position and its offset,
+   and the menu stretches to the box's own width — Bulma has no full-width
+   modifier. The list scrolls when the answers outgrow it. */
+.aurelius-relationship-box .dropdown-menu {
+    left: 0;
+    right: 0;
+}
+
+.aurelius-relationship-box .dropdown-content {
+    max-height: 15rem;
+    overflow-y: auto;
+}
+
+/* The rows clear the 24px WCAG target-size floor (DD-336). */
+.aurelius-relationship-box .dropdown-item {
+    min-height: 2.5rem;
+    white-space: nowrap;
+}
+
+/* Touch pointers (DD-336): the panel rows grow to a thumb-tappable 3rem. */
+@media screen and (pointer: coarse) {
+    .aurelius-relationship-box .dropdown-item {
+        min-height: 3rem;
+    }
+}
+
+/* Narrow viewports (DD-336): the box lets the input claim a full line. */
+@media screen and (width <= 768px) {
+    .aurelius-relationship-box .aurelius-relationship-input {
+        flex-basis: 100%;
+    }
+}

@@ -8,7 +8,9 @@ import { DetailsNavigation } from "./details-navigation.component";
     imports: [DetailsNavigation],
     template: `
         <aurelius-atlas-ui-details-navigation [label]="label()" [toggleLabel]="toggleLabel()">
-            <li><a href="#properties-details">Properties</a></li>
+            <ul class="menu-list">
+                <li><a href="#properties-details">Properties</a></li>
+            </ul>
         </aurelius-atlas-ui-details-navigation>
     `,
 })

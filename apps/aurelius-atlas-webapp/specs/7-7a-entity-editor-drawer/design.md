@@ -708,3 +708,129 @@ added or removed. The picker values of 7.7c stay on their own signal, not in
 this model: a picker holds a chip list the save merges separately (EDT-16),
 not an attribute the form writes. The legacy form family's port (DD-323) does
 not name a form library, so no ledger row changes.
+
+### DD-355. The two create route entries become one matcher route
+
+- **Status:** Proposed
+- **Increment:** 7.7a
+- **Date:** 2026-11-04
+
+**Decision.** The drawer's `create` and `create/:type` entries (DD-330,
+DD-334) merge into one route with a custom `matcher` function. The matcher
+consumes the bare `create` segment, or `create` plus a type segment it hands
+back as `:type`. The create/edit mode moves off the route path and onto the
+route `data` key `editorMode`, which both drawer editor routes now carry.
+The URLs stay as they are: `(drawer:create)`, `(drawer:create/<type>)`,
+`(drawer:edit/<guid>)`.
+
+**Reason.** The user reported that the drawer replays its slide-in when the
+first type is picked (2026-11-04). The Angular router reuses a component only
+when both navigations land on the same route config. Two entries put the two
+create URLs in two configs, so the first pick destroyed and rebuilt the
+editor, and the drawer's fresh panel element replayed its CSS entry
+animation. A re-pick between two types stayed inside the `create/:type`
+config, which is why only the first pick re-triggered the animation. One
+config keeps the component alive, and the pick changes only the `:type`
+parameter.
+
+**Alternatives.** (a) A custom `RouteReuseStrategy` that reuses the drawer
+outlet's component (refused — it changes reuse for every route, or needs
+outlet plumbing to scope it. The matcher is the smaller change and keeps the
+router's default rule). (b) The type as a query parameter on the one
+`create` route (refused — it changes the published URL shape and supersedes
+DD-330's "type in the path" rule for no extra gain). (c) Keep two entries and
+suppress the animation on rebuild (refused — the rebuild also drops the
+typed tag-box text and moves focus, and a stable drawer is the point).
+
+**Consequences.** The component's mode test reads `snapshot.data` and no
+longer reads `routeConfig.path` (DD-334's note that the path test is
+unaffected no longer applies). The fake `ActivatedRoute` in the editor's
+specs carries the mode through the same data key. The new tests: the
+matcher's three match results and the one-config shape are specced at
+`routes.spec.ts`, and one real-router test keeps the same panel node across
+the first pick. `edit/:guid` gains the data key too, so one mechanism names
+the mode for both modes. The e2e URL patterns are unchanged.
+
+### DD-356. The label helper drops the star the catalogue bakes in
+
+- **Status:** Proposed
+- **Increment:** 7.7a
+- **Date:** 2026-11-04
+
+**Decision.** `labelOf` in `form-fields.ts` strips a trailing `*` (and any
+space before it) from the label it returns. The template's red required
+marker (EDT-03's `span.has-text-danger`) stays the only star in the editor.
+
+**Reason.** The user reported the Name label rendered two asterisks
+(2026-11-04). The legacy catalogue string for the key
+`search.components.editor.attribute.name` is literally `Name*` (`Naam*` in
+Dutch), because the legacy form painted no required marker of its own. The
+ported editor does paint one, in red, like every other required field, so
+the baked-in star and the painted star printed side by side.
+
+**Alternatives.** (a) Drop the star in the template by stripping the label
+there (refused, the label text is built once in the helper and the template
+would repeat the trim for each of the three seats). (b) Change the fixture
+and regenerate the catalogues (refused, the catalogues vendor the legacy
+dictionary as the parity reference, SHL-08, and the key's other consumer
+in the legacy app expects the star). (c) Drop the red marker for `name`
+(refused, the user asked to keep the red one for consistency with the other
+required fields).
+
+**Consequences.** Only the `name` key carries a baked-in star today, so
+only that label changes. The catalogue files and the vendored fixtures
+stay untouched. The `form-fields.spec.ts` label test now expects `Name`
+from the input `Name*`, which pins the trim.
+
+### DD-357. ARIA roles become native elements, not suppressions
+
+- **Status:** Proposed
+- **Increment:** 7.7a
+- **Date:** 2026-11-05
+
+**Decision.** Where a SonarQube accessibility rule (S6819) flags an ARIA
+role that a native HTML element carries for free, the markup changes to
+the native element. The drawer panel becomes a `<dialog open>`, the alert
+inbox group becomes a `<fieldset aria-label>`, the editor's status lines
+become `<output>`, and a projected bare `<li>` moves inside its caller's
+`<ul class="menu-list">`. Each native element brings the user-agent
+stylesheet, so its style carries the matching resets. A role with no
+native equivalent, the combobox listbox and its option rows (DD-336),
+stays as written. The suppression marker (`//NOSONAR`) stays only on the
+option buttons, where it survives Prettier, and never as a way to hide a
+fixable role.
+
+**Reason.** The Problems view listed six S6819 hits across the drawer,
+the inbox, the editor, and the details navigation. The user asked to fix
+the issues rather than ignore them (2026-11-05). A native element needs
+no role attribute, so it satisfies the rule and keeps the same
+accessibility tree. Testing Library still finds the drawer by
+`getByRole("dialog")`, because a native dialog has that role already. The
+raw `[role="dialog"]` selectors in the editor and alerts specs switch to
+`dialog.aurelius-drawer-panel`, because an attribute selector cannot see
+an implicit role.
+
+**Alternatives.** (a) Suppress each hit with `//NOSONAR` (refused, the
+user rejected it, and Prettier splits a comment off a block tag, so the
+marker stops working on a `<div>` or `<li>`). (b) Set the SonarCloud
+S6819 `allowedRoles` parameter for all six roles (refused as the primary
+fix, it hides the fixable ones; kept as the plan for the two listbox
+divs, which have no native form). (c) `showModal()` on the dialog
+(refused, it moves the panel to the top layer, above the scrim the
+slide-out animation needs, DD-162).
+
+**Consequences.** The `<dialog open>` opens non-modally on purpose, so it
+stays in the element's own stacking context beside the scrim. Its
+user-agent sheet sets a border, padding, ink, and BOTH inline edges, so
+the drawer style resets all of them and pins `inset-inline-start: auto`
+so only the end edge anchors the panel on the right (a kept start edge
+wins the over-constrained fight and parks the panel on the left, caught
+on 2026-11-05). The drawer story now measures the panel's right edge
+against the viewport to pin that anchor. The inbox `<fieldset>` resets
+its border and `min-width`. The brand's `.is-marginless`/`.is-paddingless`
+aliases (DD-319) now `@extend` Bulma 1's own `.marginless`/`.paddingless`
+instead of restating the `!important`, so that rule lives once in Bulma.
+The editor hold state drops its `color: transparent !important`, because
+the scoped component selector outranks Bulma's `.button` on specificity
+alone. Two listbox `<div>`s stay flagged until the SonarCloud S6819
+`allowedRoles` parameter lists `listbox`; their comments say so.

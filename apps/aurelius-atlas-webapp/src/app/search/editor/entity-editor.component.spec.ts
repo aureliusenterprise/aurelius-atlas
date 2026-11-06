@@ -1,27 +1,42 @@
 /**
  * The entity editor drawer (EDT-01..EDT-08, EDT-10, DD-322, DD-325, DD-326):
  * the routed panel's own wiring. The specs ride the details screen's idiom:
- * a fake `ActivatedRoute` (paramMap + routeConfig carry the mode), the real
+ * a fake `ActivatedRoute` (paramMap + snapshot data carry the mode, DD-355), the real
  * http client through HttpTestingController, and a spy on the Router. The
  * field builder and the merge are specced at their owner (form-fields);
  * here: the read (EDT-02), the picker (EDT-04), the tag box (EDT-05), the
  * save's two requests and navigation (EDT-06, DD-326), the invalid save
- * (EDT-07), the failed save (EDT-08), dismissal (EDT-01), and the footer's
- * shape (EDT-10).
+ * (EDT-07), the failed save (EDT-08), dismissal (EDT-01), and the commit
+ * foot (EDT-10 amended by EDT-19, DD-347 — Delete + Save in the foot, the
+ * hold mechanic specced at the directive).
  */
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { TestBed } from "@angular/core/testing";
-import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { Component } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ActivatedRoute, ParamMap, Router, RouterOutlet, convertToParamMap, provideRouter } from "@angular/router";
+import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
+
+import { Holdable } from "aurelius-atlas-ui";
 
 import type { AtlasEntityWithExtInfo, AtlasTypesDef } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { APP_CONFIG } from "../../tokens";
+import { createEntityMatcher } from "../../routes";
 
 import { EntityEditor } from "./entity-editor.component";
+
+/** The test host for the routed-drawer specs that need a real router: the
+ * `drawer` aux outlet, the way `app.component.html` carries it (DD-355). */
+@Component({
+    selector: "aurelius-atlas-webapp-drawer-test-host",
+    imports: [RouterOutlet],
+    template: `<router-outlet name="drawer" />`,
+})
+class DrawerTestHost {}
 
 const ENTITY_URL = "/api/atlas/v2/entity/guid/";
 const TYPEDEFS_URL = "/api/atlas/v2/types/typedefs";
@@ -77,6 +92,56 @@ const TYPEDEFS: AtlasTypesDef = {
     relationshipDefs: [],
 };
 
+/** The edit-mode entity for the relationship pickers (EDT-13..EDT-17): one
+ * ACTIVE edge, one DELETED tombstone, a stale `attributes` mirror of the
+ * relationship key (the server's compactAttributes copy, DD-340), and an
+ * empty SINGLE slot. */
+const RA_ANSWER: AtlasEntityWithExtInfo = {
+    entity: {
+        guid: "7a1b",
+        typeName: "DataSet",
+        attributes: {
+            name: "genomic_variants",
+            qualifiedName: "genomic_variants@cluster",
+            owner: "analyst-3",
+            inputToProcesses: [{ guid: "p1", typeName: "Process" }],
+        },
+        relationshipAttributes: {
+            inputToProcesses: [
+                { guid: "p1", typeName: "Process", displayText: "load_events", relationshipStatus: "ACTIVE" },
+                { guid: "p9", typeName: "Process", relationshipStatus: "DELETED" },
+            ],
+            model: null,
+        },
+        classifications: [],
+    },
+    referredEntities: {},
+};
+
+/** The typedefs with the derived relationship attributes (EDT-13): the
+ * server mounts these on the defs from the shipped relationship types. */
+function raTypeDefs(modelRequired = false): AtlasTypesDef {
+    return {
+        ...TYPEDEFS,
+        entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+            def.name === "DataSet"
+                ? {
+                      ...def,
+                      relationshipAttributeDefs: [
+                          {
+                              name: "inputToProcesses",
+                              typeName: "array<Process>",
+                              cardinality: "SET",
+                              relationshipTypeName: "dataset_process_inputs",
+                          },
+                          { name: "model", typeName: "Process", isOptional: !modelRequired },
+                      ],
+                  }
+                : def,
+        ),
+    };
+}
+
 /**
  * Bring the drawer up in edit mode at the given guid (or create mode with
  * `create: true`): the route parts arrive through the fake ActivatedRoute,
@@ -88,7 +153,8 @@ function setup({
     guid = "7a1b",
     create = false,
     createType = "",
-}: { guid?: string; create?: boolean; createType?: string } = {}) {
+    atlasWrite = true,
+}: { guid?: string; create?: boolean; createType?: string; atlasWrite?: boolean } = {}) {
     const paramMap = new Subject<ParamMap>();
     TestBed.configureTestingModule({
         imports: [EntityEditor],
@@ -100,11 +166,11 @@ function setup({
                 provide: ActivatedRoute,
                 useValue: {
                     paramMap,
-                    routeConfig: { path: create ? "create/:type" : "edit/:guid" },
+                    snapshot: { data: { editorMode: create ? "create" : "edit" } },
                 },
             },
             { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
-            { provide: Keycloak, useValue: { hasResourceRole: () => true } },
+            { provide: Keycloak, useValue: { hasResourceRole: () => atlasWrite } },
         ],
     });
     const fixture = TestBed.createComponent(EntityEditor);
@@ -125,15 +191,29 @@ function arriveTypeDefs(fixture: { detectChanges: () => void }, httpMock: HttpTe
 }
 
 /** Flush both reads (edit mode) and settle the drawer. */
-function arrive(fixture: { detectChanges: () => void }, httpMock: HttpTestingController, body = ANSWER) {
-    arriveTypeDefs(fixture, httpMock);
+function arrive(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    body = ANSWER,
+    typedefs = TYPEDEFS,
+) {
+    arriveTypeDefs(fixture, httpMock, typedefs);
     httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(body);
     fixture.detectChanges();
 }
 
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
-describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
+/**
+ * The Delete button's hold directive instance, so a spec can fire `held`
+ * the way the pointer sweep would (the hold timing itself is specced at the
+ * directive, not re-tested here).
+ */
+function holdDirective(fixture: ComponentFixture<EntityEditor>): Holdable {
+    return fixture.debugElement.query(By.directive(Holdable)).injector.get(Holdable);
+}
+
+describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
     it("fetches its own entity and the typedefs on arrival (EDT-02, EDT-04)", () => {
         const { httpMock } = setup();
 
@@ -154,7 +234,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
 
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
         // The drawer stays open (EDT-02): the panel is still rendered.
-        expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
+        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
     });
 
     it("renders the edit form from the supertype walk (EDT-03)", () => {
@@ -185,6 +265,70 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
 
         const tags = [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
         expect(tags).toEqual(["PII"]);
+    });
+
+    it("renders a picker per relationship attribute, in order, seeded ACTIVE-only (EDT-13, EDT-15)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs());
+
+        const blocks = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
+        expect(blocks.map((block) => block.dataset["field"])).toEqual(["inputToProcesses", "model"]);
+        expect(normalize(blocks[0].querySelector("p.label")?.textContent)).toBe("inputToProcesses (Process)");
+        // The mandatory flag marks the label (EDT-13); the optional one does not.
+        expect(blocks[1].querySelector("p.label .has-text-danger")).toBeNull();
+
+        // The chips: the ACTIVE edge only — the DELETED tombstone never seeds
+        // (EDT-15) — and the lead is the entity's own typeName (DD-341).
+        const chips = [...blocks[0].querySelectorAll("aurelius-atlas-ui-classification-chip")];
+        expect(chips).toHaveLength(1);
+        expect(normalize(chips[0].querySelector(".tag")?.textContent)).toBe("Process");
+        expect(normalize(chips[0].querySelectorAll(".tag").item(1)?.textContent)).toBe("load_events");
+        expect(blocks[1].querySelector("aurelius-atlas-ui-classification-chip")).toBeNull();
+
+        // The pickers sit after the plain fields and before the box (EDT-13).
+        const owner = compiled.querySelector("#editor-owner")!;
+        const box = compiled.querySelector(".aurelius-editor-classification-box")!;
+        expect(owner.compareDocumentPosition(blocks[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        expect(blocks[0].compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("a typed search and a mousedown pick add a chip (EDT-14)", () => {
+        vi.useFakeTimers();
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs());
+
+        const input = compiled.querySelector<HTMLInputElement>(
+            '[data-field="inputToProcesses"] .aurelius-relationship-input',
+        )!;
+        input.dispatchEvent(new Event("focusin", { bubbles: true }));
+        input.value = "load";
+        input.dispatchEvent(new Event("input"));
+        vi.advanceTimersByTime(250);
+        httpMock
+            .expectOne((request) => request.url === "/api/atlas/v2/search/attribute")
+            .flush({ entities: [{ guid: "p2", typeName: "Process", displayText: "load_orders" }] });
+        fixture.detectChanges();
+
+        compiled
+            .querySelector<HTMLButtonElement>('[data-field="inputToProcesses"] [role="option"]')!
+            .dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
+        fixture.detectChanges();
+
+        const chips = [
+            ...compiled.querySelectorAll('[data-field="inputToProcesses"] aurelius-atlas-ui-classification-chip'),
+        ];
+        expect(chips.map((chip) => normalize(chip.querySelectorAll(".tag").item(1)?.textContent))).toEqual([
+            "load_events",
+            "load_orders",
+        ]);
+
+        // The chip's delete drops it back (EDT-14/UIC-24).
+        chips[1].querySelector<HTMLButtonElement>(".aurelius-classification-chip-delete")!.click();
+        fixture.detectChanges();
+        expect(
+            compiled.querySelectorAll('[data-field="inputToProcesses"] aurelius-atlas-ui-classification-chip'),
+        ).toHaveLength(1);
+        vi.useRealTimers();
     });
 
     it("edit mode renders the entity's type as static text, not a picker (EDT-04, DD-330)", () => {
@@ -312,6 +456,63 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         httpMock.verify();
     });
 
+    it("keeps the same drawer across the first type pick (EDT-04, DD-330, DD-355)", async () => {
+        // The symptom this pins: the drawer replayed its slide-in when the
+        // first type arrived, because `create` and `create/:type` were two
+        // configs and the router rebuilt the component across them. This
+        // drives a real navigation (the fake-ActivatedRoute specs above
+        // cannot see the router's own reuse decision). The route table
+        // here is the shape DD-355 settled on: one matcher config, the
+        // mode in its data. routes.spec pins that the production table
+        // matches this shape.
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            imports: [DrawerTestHost, EntityEditor],
+            providers: [
+                provideHttpClient(),
+                provideHttpClientTesting(),
+                provideRouter([
+                    {
+                        matcher: createEntityMatcher,
+                        outlet: "drawer",
+                        data: { editorMode: "create" },
+                        loadComponent: () => Promise.resolve(EntityEditor),
+                    },
+                ]),
+                { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
+                { provide: Keycloak, useValue: { hasResourceRole: () => true } },
+            ],
+        });
+
+        const fixture = TestBed.createComponent(DrawerTestHost);
+        const compiled = fixture.nativeElement as HTMLElement;
+        const router = TestBed.inject(Router);
+        const http = TestBed.inject(HttpTestingController);
+
+        fixture.detectChanges();
+        await router.navigate([{ outlets: { drawer: ["create"] } }]);
+        await fixture.whenStable(); // the loadComponent promise and the route activation
+        fixture.detectChanges();
+        http.expectOne(TYPEDEFS_URL).flush(TYPEDEFS);
+        fixture.detectChanges();
+
+        // The bare create route: the picker alone, no form (DD-330).
+        expect(compiled.querySelector("form")).toBeNull();
+        const panel = compiled.querySelector(".aurelius-drawer-panel");
+        expect(panel).toBeTruthy();
+
+        // The first pick, through the router — the typed segment arrives.
+        await router.navigate([{ outlets: { drawer: ["create", "DataSet"] } }]);
+        await fixture.whenStable();
+        fixture.detectChanges();
+
+        // The same panel element survived (a rebuild would be a new node,
+        // and the drawer would replay its slide-in), now showing the form.
+        expect(compiled.querySelector(".aurelius-drawer-panel")).toBe(panel);
+        expect(compiled.querySelector("form")).toBeTruthy();
+        http.verify();
+    });
+
     it("the tag box adds an applicable type on Enter and removes it (EDT-05)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
@@ -376,7 +577,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         input.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
         fixture.detectChanges();
         expect(compiled.querySelector(".aurelius-editor-classification-box .dropdown-item")).toBeNull();
-        expect(compiled.querySelector('[role="dialog"]')).toBeTruthy();
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
     });
 
     it("the panel filters to the typed text (EDT-05, DD-335)", () => {
@@ -512,6 +713,61 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
     });
 
+    it("save posts the pickers' full value and drops the attributes mirror (EDT-16, DD-340)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs());
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const posted = post.request.body as {
+            entity: {
+                attributes: Record<string, unknown>;
+                relationshipAttributes: Record<string, unknown>;
+            };
+        };
+        // The rendered keys carry their full value: the ACTIVE entry list (the
+        // DELETED tombstone never echoes) and null for the empty SINGLE slot.
+        expect(posted.entity.relationshipAttributes["inputToProcesses"]).toEqual([
+            {
+                guid: "p1",
+                typeName: "Process",
+                displayText: "load_events",
+                relationshipType: "dataset_process_inputs",
+                relationshipStatus: "ACTIVE",
+            },
+        ]);
+        expect(posted.entity.relationshipAttributes["model"]).toBeNull();
+        // The picker owns its key: the stale `attributes` mirror is gone and
+        // the untouched attributes pass through (DD-340's re-attach rule).
+        expect(posted.entity.attributes["inputToProcesses"]).toBeUndefined();
+        expect(posted.entity.attributes["qualifiedName"]).toBe("genomic_variants@cluster");
+        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        fixture.detectChanges();
+
+        httpMock.verify();
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
+    });
+
+    it("an empty mandatory relationship picker blocks the save (EDT-17)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs(true));
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        expect(httpMock.match((request) => request.method === "POST" || request.method === "PUT")).toHaveLength(0);
+        const block = compiled.querySelector<HTMLElement>('[data-field="model"]')!;
+        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model (Process) *");
+        expect(normalize(block.querySelector(".aurelius-editor-error")?.textContent)).toBe("Name is required.");
+        expect(block.querySelector(".aurelius-relationship-box")?.classList.contains("is-danger")).toBe(true);
+        expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
+            "This entity can't be saved because one or more required fields are missing.",
+        );
+    });
+
     it("an invalid save fires nothing and shows the errors (EDT-07)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
@@ -569,22 +825,163 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10)", () => {
             message: "Saving the entity",
         });
         expect(navigate).not.toHaveBeenCalled();
-        expect(fixture.nativeElement.querySelector('[role="dialog"]')).toBeTruthy();
+        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
         // The edits survive the refusal (EDT-08): the form still holds the entity.
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("genomic_variants");
     });
 
-    it("the footer holds Save only (EDT-10)", () => {
+    it("an in-flight save spins the button and the status line ends with the answer (EDT-18, DD-342)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const saveButton = () => compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!;
+        expect(saveButton().disabled).toBe(false);
+        expect(saveButton().classList.contains("is-loading")).toBe(false);
+        expect(compiled.querySelector(".aurelius-editor-busy")).toBeNull();
+
+        // In flight: the button is busy and the status line is live (EDT-18).
+        saveButton().click();
+        fixture.detectChanges();
+        expect(saveButton().disabled).toBe(true);
+        expect(saveButton().classList.contains("is-loading")).toBe(true);
+        expect(saveButton().getAttribute("aria-busy")).toBe("true");
+        const busy = compiled.querySelector<HTMLElement>(".aurelius-editor-busy");
+        // The native <output> carries the status role implicitly (S6819).
+        expect(busy?.tagName).toBe("OUTPUT");
+        expect(normalize(busy?.textContent)).toBe("Saving the entity");
+
+        // A refusal ends the state with the drawer open (EDT-08's path).
+        httpMock
+            .expectOne(ENTITY_POST_URL)
+            .flush(
+                { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
+                { status: 403, statusText: "Forbidden" },
+            );
+        fixture.detectChanges();
+        expect(saveButton().disabled).toBe(false);
+        expect(saveButton().classList.contains("is-loading")).toBe(false);
+        expect(saveButton().hasAttribute("aria-busy")).toBe(false);
+        expect(compiled.querySelector(".aurelius-editor-busy")).toBeNull();
+
+        // A success ends it too, through the navigation (EDT-06's path).
+        saveButton().click();
+        fixture.detectChanges();
+        expect(saveButton().disabled).toBe(true);
+        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-editor-busy")).toBeNull();
+    });
+
+    it("the head carries only the X; the foot holds Delete and Save (EDT-10, EDT-19, DD-347)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
-        const buttons = [
-            ...compiled.querySelectorAll<HTMLButtonElement>('[role="dialog"] .aurelius-drawer-head button'),
+        const head = [
+            ...compiled.querySelectorAll<HTMLButtonElement>(
+                "dialog.aurelius-drawer-panel .aurelius-drawer-head button",
+            ),
+        ].map((button) => normalize(button.textContent) || button.getAttribute("aria-label"));
+        expect(head).toEqual(["Close"]); // the drawer's own X — Save left the head
+
+        const foot = [
+            ...compiled.querySelectorAll<HTMLButtonElement>(
+                "dialog.aurelius-drawer-panel .aurelius-drawer-foot button",
+            ),
         ];
-        const labels = buttons.map((button) => normalize(button.textContent) || button.getAttribute("aria-label"));
-        expect(labels).toEqual(["Save", "Close"]); // Save + the drawer's own X
-        expect([...compiled.querySelectorAll("button")].some((b) => normalize(b.textContent) === "Delete")).toBe(false);
+        expect(foot.map((button) => normalize(button.textContent))).toEqual(["Delete", "Save"]);
+        expect(compiled.querySelector(".aurelius-editor-foot")).toBeTruthy();
+        // The pair rides Bulma's own group container (DD-350): it carries
+        // the spacing between the buttons and their right alignment.
+        const actions = compiled.querySelector(".aurelius-editor-actions");
+        expect(actions?.classList.contains("buttons")).toBe(true);
+        expect(actions?.classList.contains("is-right")).toBe(true);
+        // Normally sized: Bulma's normal size is the absence of a class.
+        expect(foot.every((button) => !button.classList.contains("is-small"))).toBe(true);
         expect([...compiled.querySelectorAll("button")].some((b) => normalize(b.textContent) === "Cancel")).toBe(false);
+    });
+
+    it("the foot hides Delete in create mode (EDT-19: nothing to delete yet)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true });
+        arriveTypeDefs(fixture, httpMock);
+
+        expect(compiled.querySelector("button.aurelius-editor-delete")).toBeNull();
+        expect(normalize(compiled.querySelector("button.aurelius-editor-save")?.textContent)).toBe("Save");
+    });
+
+    it("Delete carries the hold donut sized to the hold (EDT-19)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const del = compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete");
+        // Destructive, and it reads that way (EDT-19).
+        expect(del?.classList.contains("is-danger")).toBe(true);
+        // The donut is the SVG ring stroke with a unit path, so the CSS
+        // animation can draw it with one dashoffset sweep.
+        const circle = del?.querySelector("svg.aurelius-hold-donut circle");
+        expect(circle?.getAttribute("pathLength")).toBe("1");
+        // The ring's animation and the directive's clock share one number.
+        expect(del?.style.getPropertyValue("--aurelius-hold-duration")).toBe("3s");
+        // The tooltip is the vendored Aurelius string, plural for three.
+        expect(del?.getAttribute("title")).toBe("Hold for 3 seconds");
+    });
+
+    it("a completed hold deletes the entity and lands on browse (EDT-19)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete")!.click();
+        // The directive's (held) fires true only after the hold; drive it as
+        // the directive would (the hold mechanic is specced at the directive).
+        const directive = holdDirective(fixture);
+        directive.held.emit(true);
+        fixture.detectChanges();
+
+        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        expect(request.request.method).toBe("DELETE");
+        // In flight the Delete is the acting button: spinner, busy, disabled,
+        // and the status line names the delete (EDT-18, DD-342).
+        const del = compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-delete");
+        expect(del?.classList.contains("is-loading")).toBe(true);
+        expect(del?.getAttribute("aria-busy")).toBe("true");
+        expect(del?.disabled).toBe(true);
+        expect(normalize(compiled.querySelector(".aurelius-editor-busy")?.textContent)).toBe("Deleting the entity");
+        request.flush({ guidAssignments: {} });
+        fixture.detectChanges();
+
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "browse"], drawer: null } }]);
+    });
+
+    it("a premature release does nothing (EDT-19: the hold is the confirm)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        holdDirective(fixture).held.emit(false);
+        fixture.detectChanges();
+
+        httpMock.expectNone((req) => req.url.startsWith("/api/atlas/v2/entity/guid/7a1b") && req.method === "DELETE");
+        expect(navigate).not.toHaveBeenCalled();
+        expect(compiled.querySelector(".aurelius-drawer-panel")).toBeTruthy();
+    });
+
+    it("a refused delete alerts and keeps the drawer (EDT-19, EDT-08's shape)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        holdDirective(fixture).held.emit(true);
+        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        request.flush(
+            { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
+            { status: 403, statusText: "Forbidden" },
+        );
+        fixture.detectChanges();
+
+        expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
+        expect(navigate).not.toHaveBeenCalled();
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
     });
 
     it("dismissal navigates the drawer outlet away (EDT-01)", () => {

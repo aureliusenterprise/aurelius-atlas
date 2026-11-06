@@ -12,6 +12,9 @@ repos:
             name: Check for merge conflicts
           - id: check-json
             name: Check for JSON syntax errors
+            # VS Code reads .vscode files as JSONC (comments and trailing commas
+            # allowed), so the strict JSON parse is a false error there.
+            exclude: (^|/)\.vscode/
           - id: check-toml
             name: Check for TOML syntax errors
           - id: check-yaml

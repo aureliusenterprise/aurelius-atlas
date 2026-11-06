@@ -1,8 +1,9 @@
 /*
- * The details screen (DET-01): the page insets its content in
- * `section > container`, the landing's grid (SHM-07, DD-150) — Bulma
- * carries the boxes, the level, the accordion, the menu, and the chip
- * field, so this sheet is nearly empty.
+ * The details screen (DET-01): the layout insets the routed pages in
+ * `section > container` (DD-150, owned by the search layout per DD-218),
+ * so this screen renders its boxes bare (DD-345) — Bulma carries the
+ * boxes, the level, the accordion, the menu, and the chip field, so this
+ * sheet is nearly empty.
  */
 
 /*
@@ -25,8 +26,12 @@
 }
 
 /*
- * The editor pencil (EDT-09): top-right of the header box, the legacy
- * header's corner affordance. Absolute so the title keeps its line.
+ * The editor pencil (EDT-09): top-right of the header box, the demo
+ * header's corner affordance (DD-346) — a bare `icon is-large
+ * has-text-link` glyph in a chromeless button: the link-blue
+ * pen-to-square, no border, no fill. The button carries no Bulma
+ * classes, so the UA's button chrome is reset here; the corner placement
+ * is absolute so the title keeps its line.
  */
 .aurelius-details-header {
     position: relative;
@@ -36,4 +41,15 @@
     position: absolute;
     right: 0.75rem;
     top: 0.75rem;
+    appearance: none;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+    line-height: 0; // the icon box is the button's whole box
+
+    &:focus-visible {
+        outline: 2px solid hsl(var(--bulma-link-h), var(--bulma-link-s), var(--bulma-link-l));
+        outline-offset: 2px;
+    }
 }

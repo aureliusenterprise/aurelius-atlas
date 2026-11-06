@@ -3,6 +3,7 @@ import json
 import re
 import secrets
 import time
+from collections.abc import Callable
 from urllib.parse import quote, urljoin
 
 import pytest
@@ -776,6 +777,30 @@ def _open_editor_from_details(page: Page, root_url: str, guid: str) -> None:
     expect(page).to_have_url(re.compile(r"\(drawer:edit"))
 
 
+def _wait_entity_read(
+    page: Page, root_url: str, token: str, guid: str, *, predicate: Callable[[dict], bool], timeout: float = 30
+) -> dict:
+    """Read one entity by guid until the predicate holds (bounded).
+
+    The store assembles relationship attributes by SEARCHING the edge records,
+    which are separate near-real-time documents: a read landing right after a
+    write can still answer the pre-write state. An editor that reads early
+    keeps that state for its whole life (it reads once), so every scenario
+    opening the editor on a just-written relationship waits the read first —
+    the propagation-retry idiom the classification self-cleaning uses (CLS-12).
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        entity = page.request.get(
+            urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+            headers={"authorization": f"Bearer {token}"},
+        ).json()["entity"]
+        if predicate(entity):
+            return entity
+        assert time.monotonic() < deadline, f"entity {guid} never matched the predicate: {entity}"
+        time.sleep(1)
+
+
 def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, user_token: str) -> None:
     """The pencil opens the editor with the entity filled; a saved edit reads back (EDT-01, EDT-12).
 
@@ -941,6 +966,235 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
     created = re.search(r"/details/([0-9a-f-]{36})$", authenticated.url)
     assert created is not None
     _delete_entity(authenticated, root_url, user_token, created.group(1))
+
+
+def test__the_editor_links_a_relationship(authenticated: Page, root_url: str, user_token: str) -> None:
+    """A pick in the editor's picker lands a real edge, read back at both ends (EDT-14, EDT-16).
+
+    The DataSet editor's ``inputToProcesses`` picker searches processes by
+    name prefix (EDT-14's contract): the seeded process is picked, Save posts
+    the merged entity (EDT-16), and reopening the editor shows the chip — the
+    body the save wrote, read back through EDT-15's ACTIVE-only seed. The
+    Process reads the data set on its ``inputs`` end through the API; the
+    details table shows neither end because DET-11's verbatim legacy blacklist
+    lists the relationship keys (inputs, outputs, inputToProcesses).
+    """
+    run = secrets.token_hex(4)
+    dataset_name = f"zz{run}dataset"
+    process_name = f"zz{run}process"
+    ds_guid = _seed_entities(authenticated, root_url, user_token, "DataSet", [dataset_name])["-0"]
+    proc_guid = _seed_entities(authenticated, root_url, user_token, "Process", [process_name])["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, ds_guid)
+        drawer = authenticated.locator(".aurelius-drawer")
+        block = drawer.locator('.aurelius-editor-relationship[data-field="inputToProcesses"]')
+
+        # Type the process's name; the picker's debounced prefix-search finds
+        # the row, and the click attaches it as a chip (EDT-14).
+        box = block.locator(".aurelius-relationship-input")
+        box.fill(process_name)
+        row = block.locator('[role="option"]').filter(has_text=process_name)
+        expect(row).to_be_visible(timeout=10_000)
+        row.click()
+        expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{ds_guid}$"))
+
+        # The edge's read visibility before the editor's own read: the reopened
+        # editor reads once and keeps its answer for its whole life, and the
+        # edge records are searched, not joined (near-real-time, CLS-12's race)
+        # — racing it is a flake, not a product bug.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            ds_guid,
+            predicate=lambda entity: any(
+                entry["guid"] == proc_guid and entry.get("relationshipStatus") == "ACTIVE"
+                for entry in entity.get("relationshipAttributes", {}).get("inputToProcesses", [])
+            ),
+        )
+
+        # The reopened picker holds the chip: the saved relationshipAttributes
+        # survived the round trip (EDT-16 -> EDT-15).
+        _open_editor_from_details(authenticated, root_url, ds_guid)
+        chip = drawer.locator('[data-field="inputToProcesses"] .aurelius-relationship-chip')
+        expect(chip).to_have_count(1)
+        expect(chip).to_contain_text(process_name)
+
+        # The other end, through the API: the Process's `inputs` edge is
+        # ACTIVE to the data set (the read 7.6 answers, probed shape) — the
+        # same visibility wait, since the edge was just written.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            proc_guid,
+            predicate=lambda entity: any(
+                entry["guid"] == ds_guid and entry.get("relationshipStatus") == "ACTIVE"
+                for entry in entity.get("relationshipAttributes", {}).get("inputs", [])
+            ),
+        )
+    finally:
+        _delete_entity(authenticated, root_url, user_token, proc_guid)
+        _delete_entity(authenticated, root_url, user_token, ds_guid)
+
+
+def test__the_editor_unlinks_a_relationship(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The chip's delete removes the edge and the tombstone never returns (EDT-15, EDT-16).
+
+    The edge is seeded through the API (the update POST's full-replace
+    contract, probed), so the scenario starts from a chip it did not create:
+    the delete empties the picker, Save sends the empty list (EDT-16), and
+    the reopened editor shows no chip — the server's DELETED tombstone stays
+    out of the seed forever (EDT-15; the edge itself stays DELETED under the
+    Java-parity rule DD-340 records).
+    """
+    run = secrets.token_hex(4)
+    dataset_name = f"zz{run}dataset"
+    process_name = f"zz{run}process"
+    ds_guid = _seed_entities(authenticated, root_url, user_token, "DataSet", [dataset_name])["-0"]
+    proc_guid = _seed_entities(authenticated, root_url, user_token, "Process", [process_name])["-0"]
+
+    # The update body repeats the mandatory plain attributes: the server
+    # validates the whole entity on an update, not only what changed (probed —
+    # a body without them answers the create/update parameters error).
+    seeded = authenticated.request.post(
+        urljoin(root_url, "/api/atlas/v2/entity"),
+        data=json.dumps(
+            {
+                "entity": {
+                    "guid": ds_guid,
+                    "typeName": "DataSet",
+                    "attributes": {"name": dataset_name, "qualifiedName": dataset_name},
+                    "relationshipAttributes": {"inputToProcesses": [{"guid": proc_guid, "typeName": "Process"}]},
+                }
+            }
+        ),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert seeded.status == 200, seeded.text()
+
+    # The seeded edge must be visible before the editor opens on it (the
+    # one-read-caches-forever rule the links scenario documents).
+    _wait_entity_read(
+        authenticated,
+        root_url,
+        user_token,
+        ds_guid,
+        predicate=lambda entity: any(
+            entry["guid"] == proc_guid and entry.get("relationshipStatus") == "ACTIVE"
+            for entry in entity.get("relationshipAttributes", {}).get("inputToProcesses", [])
+        ),
+    )
+
+    try:
+        _open_editor_from_details(authenticated, root_url, ds_guid)
+        drawer = authenticated.locator(".aurelius-drawer")
+        block = drawer.locator('.aurelius-editor-relationship[data-field="inputToProcesses"]')
+        expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+
+        block.locator(".aurelius-classification-chip-delete").first.click()
+        expect(block.locator(".aurelius-relationship-chip")).to_have_count(0)
+
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{ds_guid}$"))
+
+        # The removal must show on the read before the editor reopens (the
+        # visibility wait, again): the reopened read must be the post-removal
+        # state, or the editor would cache the stale ACTIVE edge.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            ds_guid,
+            predicate=lambda entity: (
+                not any(
+                    entry.get("relationshipStatus") == "ACTIVE"
+                    for entry in entity.get("relationshipAttributes", {}).get("inputToProcesses", [])
+                )
+            ),
+        )
+
+        # Reopened: the DELETED tombstone earns no chip (EDT-15).
+        _open_editor_from_details(authenticated, root_url, ds_guid)
+        expect(drawer.locator('[data-field="inputToProcesses"] .aurelius-relationship-chip')).to_have_count(0)
+    finally:
+        _delete_entity(authenticated, root_url, user_token, proc_guid)
+        _delete_entity(authenticated, root_url, user_token, ds_guid)
+
+
+def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root_url: str, user_token: str) -> None:
+    """Create refuses until the mandatory relationship picker holds a chip (EDT-13, EDT-17).
+
+    ``ozone_bucket.volume`` is a non-optional ``SINGLE`` relationship attribute
+    (probed self-contained: neither type demands a plain attribute). The
+    create form marks the picker ``*`` (EDT-13) and the save bails while the
+    picker is empty — no POST, the notification stands (EDT-17, where the
+    server itself would answer the create with the mandatory-attribute error).
+    Picking the API-seeded volume through the picker's own search lands the
+    create, and reopening shows its chip.
+    """
+    run = secrets.token_hex(4)
+    volume_name = f"zz{run}volume"
+    bucket_name = f"zz{run}bucket"
+    volume_guid = _seed_entities(authenticated, root_url, user_token, "ozone_volume", [volume_name])["-0"]
+
+    created: str | None = None
+    try:
+        authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
+        authenticated.locator("button.aurelius-create-entity").click()
+        authenticated.locator(".aurelius-editor-picker select").select_option(label="ozone_bucket")
+
+        drawer = authenticated.locator(".aurelius-drawer")
+        block = drawer.locator('.aurelius-editor-relationship[data-field="volume"]')
+        expect(block.locator("p.label")).to_contain_text("volume (ozone_volume)")
+        expect(block.locator("p.label .has-text-danger")).to_have_text("*")  # the EDT-13 marker
+
+        authenticated.locator("#editor-name").fill(bucket_name)
+        drawer.locator("button.aurelius-editor-save").click()
+
+        # EDT-17: the save fires nothing — the notification appears and the
+        # drawer stays open on the create route.
+        expect(drawer.locator(".aurelius-editor-notification")).to_be_visible()
+        expect(authenticated).to_have_url(re.compile(r"drawer:create/ozone_bucket"))
+
+        # The pick (EDT-14): the volume arrives through the picker's search.
+        box = block.locator(".aurelius-relationship-input")
+        box.fill(volume_name)
+        row = block.locator('[role="option"]').filter(has_text=volume_name)
+        expect(row).to_be_visible(timeout=10_000)
+        row.click()
+        expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(r"/en-US/search/details/[0-9a-f-]{36}$"), timeout=30_000)
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(bucket_name)
+
+        landed = re.search(r"/details/([0-9a-f-]{36})$", authenticated.url)
+        assert landed is not None
+        created = bucket_guid = landed.group(1)
+
+        # The volume edge visible before the reopened editor reads (the rule
+        # the links scenario documents).
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            bucket_guid,
+            predicate=lambda entity: (
+                (entity.get("relationshipAttributes", {}).get("volume") or {}).get("guid") == volume_guid
+            ),
+        )
+
+        _open_editor_from_details(authenticated, root_url, bucket_guid)
+        expect(drawer.locator('[data-field="volume"] .aurelius-relationship-chip')).to_contain_text(volume_name)
+    finally:
+        if created is not None:
+            _delete_entity(authenticated, root_url, user_token, created)
+        _delete_entity(authenticated, root_url, user_token, volume_guid)
 
 
 def test__the_reader_sees_no_editor_affordances(reader_authenticated: Page, root_url: str) -> None:

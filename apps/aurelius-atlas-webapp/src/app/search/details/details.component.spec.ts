@@ -5,6 +5,7 @@ import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } fr
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
 import type { AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
@@ -355,6 +356,13 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(pencil).toBeTruthy();
         expect(pencil?.getAttribute("aria-label")).toBe("Edit entity");
         expect(pencil?.querySelector("fa-icon")).toBeTruthy();
+
+        // The glyph is the demo header's edit icon — FA's `fa-edit`, i.e.
+        // FA6 `faPenToSquare` (DD-346): the rendered icon input, pinned by
+        // identity — earlier glyphs rendered here unnoticed until a user
+        // compared the button against the demo.
+        const icon = fixture.debugElement.query(By.css("button.aurelius-details-edit fa-icon"));
+        expect(icon.componentInstance.icon()).toBe(faPenToSquare);
     });
 
     it("hides the editor pencil without the grant (EDT-09)", () => {
@@ -391,15 +399,17 @@ describe("Details data spine (DET-08..DET-13)", () => {
     });
 
     it("a save tick for another guid reads nothing (DD-327)", () => {
-        const { fixture, httpMock } = setup("saved-guid");
+        const { fixture, compiled, httpMock } = setup("saved-guid");
         arrive(fixture, httpMock);
 
         TestBed.inject(EntitySaved).notify("some-other-guid");
         fixture.detectChanges();
 
         httpMock.expectNone("/api/atlas/v2/entity/guid/saved-guid");
-        // The screen's own read is already flushed above; nothing else fires.
+        // The screen's own read is already flushed above; nothing else fires
+        // and the rendered entity stays as it arrived.
         httpMock.verify();
+        expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("genomic_variants");
     });
 });
 

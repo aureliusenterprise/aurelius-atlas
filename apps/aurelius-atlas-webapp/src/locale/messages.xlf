@@ -278,6 +278,14 @@
         <source>Has Parent</source>
         <note priority="1" from="description">Aurelius dictionary key: hasParent</note>
       </trans-unit>
+      <trans-unit id="holdable.tooltip.plural" datatype="html">
+        <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> seconds</source>
+        <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.plural</note>
+      </trans-unit>
+      <trans-unit id="holdable.tooltip.single" datatype="html">
+        <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> second</source>
+        <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.single</note>
+      </trans-unit>
       <trans-unit id="high_risk" datatype="html">
         <source>High risk</source>
         <note priority="1" from="description">Aurelius dictionary key: high_risk</note>

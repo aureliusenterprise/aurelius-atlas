@@ -1,6 +1,6 @@
 # 7.16 UI components: details chrome set
 
-- **Status:** done
+- **Status:** in progress
 - **Pull request:** [#110](https://github.com/aureliusenterprise/aurelius-atlas/pull/110)
 - **Records:** DD-189 (the chip atom is the classification chip), DD-190 (the
   type-name badge is its own component), DD-191 (details navigation is a shell;
@@ -15,6 +15,7 @@ Part of the [7.0 umbrella](../../../../../apps/aurelius-atlas-webapp/specs/7-0-w
 whose rules WBP-01 to WBP-07 this slice inherits, and of the design-system track opened by
 [7.2](../7-2-design-system/spec.md) , whose UIC rule ids (UIC-01..10) 7.13 continued (UIC-11..15); this
 increment carries the series on (UIC-16..20, plus UIC-24 from the 7.7a
+editor's review and UIC-25 from the 7.7c editor's footer)
 editor's review).
 
 ## Scope
@@ -76,6 +77,7 @@ in the test title (the TS pattern, UIC-11..15's precedent).
 | UIC-19 | `section-stats` renders `nav.level` with one `level-item.has-text-centered` per item: `p.heading > a` (href `#target`, emits `itemClicked(target)` on activation) + `p.title` with the count. `items()` is the whole input; counts arrive rendered-as-text from the caller. The default-details bar is one item, the gov-quality bar three — one component, both shapes.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | UIC-20 | Every component: chrome strings are caller-supplied inputs with the legacy English defaults (DD-136); icons arrive as `IconDefinition` inputs (UIC-15); each ships a story, interactive ones a `play()` test (UIC-10's pattern); the purity gate stays green (DD-131/DD-137). The legacy defaults chosen here are the catalogue's English values of the existing bridge keys (`search.components.classification.isPropagated`/`.originates`, `search.components.term.term`, `search.details.components.navigation.details`).                                                                                                                                                                                                                                                                                                                            |
 | UIC-24 | `classification-chip`'s `deletable()` input seats a `button.delete.is-small` inside the label tag (Bulma's `tag > delete` anatomy); the button's `aria-label` and `title` are the `deleteLabel()` input (default "Delete") and a click emits `remove` — the chip never removes itself, the caller drops the tag. Off by default, so every existing call site is unchanged (DD-329, added for the 7.7a editor's tag box). On coarse pointers the target grows to 2.25rem through the `--bulma-delete-dimensions` variable while the dot stays `is-small`: a transparent border absorbs the difference and `background-clip: content-box` keeps the painted circle (and Bulma's padding-box-sized X) at 1rem — the touch-target floor is cleared without a mark out of proportion to the tag (DD-336 sizing, DD-337 shape, the 7.7a small-screen review). |
+| UIC-25 | The drawer gains a foot slot: content carrying the `drawer-footer` attribute projects into a fixed bar below the scrolling body, after the body in the panel. A drawer that projects none keeps the bar empty and CSS-hidden (`:empty`), so the settings and alerts drawers are unchanged (DD-347, added for the 7.7c editor's Save / Delete pair).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 
 ## Aurelius origin
 
@@ -124,9 +126,13 @@ bar is one component for both call sites). Sequencing inside the webapp track, a
       (UIC-18, UIC-20)
     - `libs/angular/aurelius-atlas-ui/src/lib/section-stats/section-stats.component.spec.ts`
       (UIC-19, UIC-20)
+    - `libs/angular/aurelius-atlas-ui/src/lib/drawer/drawer.component.spec.ts` —
+      the `drawer-footer` slot lands in the foot bar after the body, and the
+      bar stays empty when nothing projects (UIC-25)
 - Storybook: a story per component; `nx test-storybook aurelius-atlas-ui` —
   the toggle and `itemClicked` `play()` interactions pass (UIC-20, the
-  UIC-10 pattern).
+  UIC-10 pattern). The drawer's foot story checks the bar's place in the
+  panel (UIC-25).
 - Purity gate green; consumer regression: `nx test aurelius-atlas-webapp -c ci`
   (185) and `nx test aurelius-atlas-frontend-example -c ci` (75) unchanged —
   no app consumes a new component yet; `nx build aurelius-atlas-ui` compiles
