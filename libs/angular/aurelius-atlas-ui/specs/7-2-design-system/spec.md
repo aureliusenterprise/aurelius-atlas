@@ -1,6 +1,6 @@
 # 7.2 Design system
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** #99
 - **Records:** ADR 053; DD-134, DD-135, DD-136, DD-137, DD-138; relies on ADR 007, DD-131
 

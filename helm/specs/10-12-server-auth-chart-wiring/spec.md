@@ -1,6 +1,6 @@
 # 10.12 Server authentication, chart wiring
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** #195
 - **Records:** DD-296, DD-297 (relies on: DD-250/251 on main — 6.1a's auth
   settings and session; DD-256's placeholder resolver; CHT-74's realm contract,

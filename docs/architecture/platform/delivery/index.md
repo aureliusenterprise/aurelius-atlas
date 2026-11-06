@@ -11,4 +11,4 @@ Parts of this tree are already written ([Change Management](change-management.md
 | [Testing](testing.md)                                   | Layer map, CI gate (production bar); developer-side conventions after                                    | —                 |
 | [Test Suite Review](testing-review.md)                  | Dated review of every suite: coverage + non-happy-flow representativeness, hardening increments (DD-214) | written (2026-10) |
 | [Release Management](release-management.md)             | One versioned whole (ADR 019): version, inventory, signing, promotion                                    | written (0.1)     |
-| [Deployment](deployment.md)                             | Image-per-service, compose layouts, promote-by-declared-path (ADR 024)                                   | 6.4               |
+| [Deployment](deployment.md)                             | Image-per-service, compose layouts, promote-by-declared-path (ADR 024)                                   | written (6.4f)    |

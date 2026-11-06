@@ -45,6 +45,7 @@ from opentelemetry.sdk.trace import SynchronousMultiSpanProcessor, TracerProvide
 from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
 
 if TYPE_CHECKING:
+    from opentelemetry.sdk._logs import LogRecordProcessor
     from opentelemetry.sdk.metrics.export import MetricReader
     from opentelemetry.sdk.trace import SpanProcessor
 
@@ -82,13 +83,14 @@ def _env_leg_on() -> bool:
     return bool(os.environ.get(OTEL_EXPORTER_OTLP_ENDPOINT, "").strip())
 
 
-def build_providers(
+def build_providers(  # noqa: PLR0913 - the service's identity and its keyword-only legs
     service_name: str,
     service_version: str,
     *,
     pipeline: IngestPipeline | None = None,
     logs: bool = False,
     console: bool = False,
+    log_processor: LogRecordProcessor | None = None,
 ) -> Providers:
     """Build the SDK providers for one service, without installing them.
 
@@ -101,6 +103,8 @@ def build_providers(
     :param console: also print spans and log records to stdout (the dev
         console for debug-level runs — the cheap replacement for logfire's,
         DD-210)
+    :param log_processor: the app-built log export (OBS-01); it builds the
+        logger provider, as ``logs`` does
     """
     resource = Resource.create({"service.name": service_name, "service.version": service_version})
     env_leg = _env_leg_on()
@@ -125,24 +129,35 @@ def build_providers(
     meter_provider = MeterProvider(resource=resource, metric_readers=readers)
     SystemMetricsInstrumentor(config=_process_metrics_config()).instrument(meter_provider=meter_provider)
 
-    logger_provider: LoggerProvider | None = None
-    if logs:
-        logger_provider = LoggerProvider(resource=resource)
-        if env_leg:
-            logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
-        if console:
-            logger_provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogRecordExporter()))
+    logger_provider = _logger_provider(resource, logs=logs, console=console, log_processor=log_processor)
 
     return tracer_provider, meter_provider, logger_provider
 
 
-def setup_telemetry(
+def _logger_provider(
+    resource: Resource, *, logs: bool, console: bool, log_processor: LogRecordProcessor | None
+) -> LoggerProvider | None:
+    """The logger provider ``build_providers`` builds: none unless logs are asked for or a log export is given."""
+    if not logs and log_processor is None:
+        return None
+    provider = LoggerProvider(resource=resource)
+    if log_processor is not None:
+        provider.add_log_record_processor(log_processor)
+    if _env_leg_on():
+        provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    if console:
+        provider.add_log_record_processor(BatchLogRecordProcessor(ConsoleLogRecordExporter()))
+    return provider
+
+
+def setup_telemetry(  # noqa: PLR0913 - the service's identity and its keyword-only legs
     service_name: str,
     service_version: str,
     *,
     pipeline: IngestPipeline | None = None,
     logs: bool = False,
     console: bool = False,
+    log_processor: LogRecordProcessor | None = None,
 ) -> None:
     """Install the process's global OTel providers (DD-210, supersedes the logfire shell).
 
@@ -157,6 +172,7 @@ def setup_telemetry(
     :param logs: install a logger provider too, exporting log records over
         OTLP on the env leg (DD-210)
     :param console: also print spans to stdout (the dev console, debug runs)
+    :param log_processor: the app-built log export (OBS-01)
     """
     global _installed  # noqa: PLW0603  # the set-once provider guard
     if _installed:
@@ -168,6 +184,7 @@ def setup_telemetry(
         pipeline=pipeline,
         logs=logs,
         console=console,
+        log_processor=log_processor,
     )
     trace.set_tracer_provider(tracer_provider)
     metrics.set_meter_provider(meter_provider)
@@ -177,18 +194,20 @@ def setup_telemetry(
     _installed = True
 
 
-def bridge_logging(*logger_names: str) -> None:
+def bridge_logging(*logger_names: str, propagate: bool = False) -> None:
     """Route the named loggers' stdlib records into the OTel log pipeline (DD-210).
 
     Each logger carries exactly one ``LoggingHandler`` on the installed
     logger provider, with propagation off — the FastAPI services' log tail,
-    replacing the handler wiring the logfire shell needed.
+    replacing the handler wiring the logfire shell needed. With ``propagate``,
+    the records also reach the root's handlers, the process's own output (OBS-01).
 
     :param logger_names: the loggers to bridge (the app's and uvicorn's)
+    :param propagate: keep the loggers propagating to their parents
     """
     provider: LoggerProviderABC = get_logger_provider()
     for name in logger_names:
         logger = logging.getLogger(name)
         logger.handlers = [handler for handler in logger.handlers if not isinstance(handler, LoggingHandler)]
         logger.addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=provider))
-        logger.propagate = False
+        logger.propagate = propagate

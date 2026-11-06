@@ -1,6 +1,6 @@
 # 6.2c Authorization: search, lineage and type listings
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** accepts ADR 038; amends AUZ-04 (6.2a); relies on DD-300, DD-301
 

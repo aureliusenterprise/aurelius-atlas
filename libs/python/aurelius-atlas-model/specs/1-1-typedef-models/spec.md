@@ -1,6 +1,6 @@
 # 1.1 Typedef models
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-020, DD-021, DD-022; relies on DD-002, DD-013, ADR 046
 

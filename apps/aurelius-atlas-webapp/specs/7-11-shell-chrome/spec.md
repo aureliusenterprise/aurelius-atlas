@@ -1,6 +1,6 @@
 # 7.11 Shell chrome
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#102](https://github.com/aureliusenterprise/aurelius-atlas/pull/102)
 - **Records:** ADR 053; DD-145 (supersedes the Shell half of DD-143); relies on ADR 007,
   ADR 018, DD-128, DD-130, DD-135, DD-136, DD-141, SHL rules (7.1), UIC rules (7.2)

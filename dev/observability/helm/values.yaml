@@ -101,6 +101,7 @@ prometheus:
         repository: dhi.io/prometheus
         tag: "3.13-debian13"
         digest: sha256:585a54e52b97d4400aaa4c7ef9470add072362b236cd7fb4e8aacdd371121109
+    # How long Prometheus keeps the metrics (RET-02); the compose states the same.
     retention: 15d
     resources:
         requests:
@@ -183,6 +184,15 @@ grafana:
     # <release>-grafana-oauth (key client-secret), the umbrella's generated
     # Secret the realm import reads too; set to bring your own.
     oauthSecretName: ""
+    # Alerting (OBS-03/04, ADR 040): the rules always ride; the destination is
+    # a webhook (Slack, Teams, an incident tool) whose URL is the key `url` of
+    # the Secret named here. "" provisions no contact point: the rules fire in
+    # Grafana's alert list only.
+    alerting:
+        webhookSecret: ""
+        repeatInterval: 4h
+        # How long Grafana keeps the alerts' state history (RET-05).
+        historyMaxAge: 30d
     # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
     # the default posture is kubectl port-forward (runbook).
     probes:

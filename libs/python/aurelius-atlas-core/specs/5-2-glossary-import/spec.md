@@ -1,6 +1,6 @@
 # 5.2d Glossary import
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-249, DV-104; relies on DD-246
 

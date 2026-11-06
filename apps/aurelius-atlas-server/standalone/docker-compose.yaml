@@ -1,0 +1,112 @@
+# The server alone, with the Atlas dashboards, behind one nginx entry (see README.md):
+#   https://localhost:9000/atlas2/  the server and its dashboards
+#   https://localhost:9000/auth/    the stack's own Keycloak, with the dev realm
+# The store is the dev Elasticsearch; secrets come from the server's and the dev Keycloak's .env.
+# SAMPLE_ZIP names an Atlas export ZIP in data/atlas-sample/ to import once the server is up;
+# empty, or a name no file has, imports nothing.
+name: aurelius-atlas-standalone
+
+x-certs: &certs ../certs:/certs:ro
+
+services:
+    proxy:
+        image: dhi.io/nginx:1.30-alpine3.24
+        ports:
+            - 127.0.0.1:9000:9000
+        volumes:
+            - *certs
+            - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+        networks:
+            default: {}
+            # The server, in this container's network, reaches the store as `elasticsearch` on it.
+            aurelius-atlas-dev-elasticsearch-network: {}
+        depends_on:
+            - keycloak
+
+    # Keycloak at /auth, its public address https://localhost:9000/auth: the browser, the server and the
+    # sample import all reach it there, so the tokens' issuer is the one the server checks.
+    keycloak:
+        image: dhi.io/keycloak:26.7-debian13
+        mem_limit: 1g
+        command: ["start-dev", "--import-realm"]
+        environment:
+            KC_HTTP_ENABLED: "true"
+            KC_HTTP_PORT: "8080"
+            KC_HTTP_RELATIVE_PATH: /auth
+            KC_HOSTNAME: https://localhost:9000/auth
+            KC_PROXY_HEADERS: xforwarded
+            KC_HEALTH_ENABLED: "true"
+            KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
+            KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
+            # The dev realm's placeholders.
+            DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
+            DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            JAVA_OPTS: -Xms256m -Xmx512m -Dkeycloak.migration.replace-placeholders=true
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | sed -n '/\"status\":\"UP\"/q' || exit 1",
+                ]
+            interval: 10s
+            timeout: 10s
+            retries: 30
+            start_period: 120s
+        volumes:
+            - ../../../dev/keycloak/import:/opt/keycloak/data/import:ro
+
+    aurelius-atlas-server:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        # In the proxy's network: nginx reaches it on 127.0.0.1:21000, and its localhost:9000 is the proxy.
+        network_mode: service:proxy
+        depends_on:
+            keycloak:
+                condition: service_healthy
+        environment:
+            AURELIUS_ATLAS_SERVER_ROOT_PATH: /atlas2
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # HSTS off: includeSubDomains on localhost would pin other local services to HTTPS in the browser.
+            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
+            # Propagation by the task worker after the request, as Atlas's default; false propagates in it (DD-081).
+            AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
+            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
+        volumes:
+            - *certs
+
+    # One shot: waits for the server, signs in as the dev writer and posts SAMPLE_ZIP to admin/import, all
+    # through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
+    sample-import:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        entrypoint: [python, /standalone/import_sample.py]
+        network_mode: service:proxy
+        depends_on:
+            - aurelius-atlas-server
+        restart: "no"
+        environment:
+            ATLAS_URL: https://localhost:9000/atlas2
+            TOKEN_URL: https://localhost:9000/auth/realms/master/protocol/openid-connect/token
+            ATLAS_USERNAME: aurelius-writer
+            ATLAS_PASSWORD: ${DEV_USER_WRITER_PASSWORD:-}
+            CA_FILE: /certs/ca.pem
+            SAMPLE_DIR: /sample
+            SAMPLE_ZIP: ${SAMPLE_ZIP:-}
+            # Atlas's AtlasImportRequest, as JSON: options such as transforms or replicatedFrom.
+            IMPORT_REQUEST: ${SAMPLE_IMPORT_REQUEST:-{}}
+        volumes:
+            - *certs
+            - ./import_sample.py:/standalone/import_sample.py:ro
+            - ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
+
+networks:
+    aurelius-atlas-dev-elasticsearch-network:
+        external: true

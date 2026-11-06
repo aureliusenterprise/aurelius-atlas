@@ -1,6 +1,6 @@
 # 0.4 Parity harness
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** ADR 052 (supersedes ADR 048, becomes Accepted), DD-012, DD-013, DD-014
 

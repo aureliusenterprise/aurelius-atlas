@@ -1,6 +1,6 @@
 # 7.3 API client and auth wiring
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** #100
 - **Records:** ADR 053; DD-139, DD-140, DD-141, DD-142; relies on ADR 007, ADR 018, ADR 038, DD-004, DD-130, DD-133
 

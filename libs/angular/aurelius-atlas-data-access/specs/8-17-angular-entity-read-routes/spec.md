@@ -1,6 +1,6 @@
 # 8.17 Angular entity twin (1/3) — the reads and the audits
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** none new; cites DD-217 (the client lands on both sides of the
   wire), 7.3 (APC-01..APC-04), DET-03 (the existing by-guid read), 8.9

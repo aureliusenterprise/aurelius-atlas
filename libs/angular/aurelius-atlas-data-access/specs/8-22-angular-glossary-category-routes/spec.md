@@ -1,6 +1,6 @@
 # 8.22 Angular glossary twin (3/3) — the categories
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** none new; cites DD-217 (the client lands on both sides of the
   wire), 7.3 (APC-01..APC-04), 8.20 (AGL, the service and `GlossaryPage`),

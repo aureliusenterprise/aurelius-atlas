@@ -34,6 +34,9 @@ STARTUP_TIMEOUT_SECONDS = 180.0
 
 _CONFIG_DIR = "/usr/share/elasticsearch/config"
 
+SNAPSHOTS_DIR = "/usr/share/elasticsearch/snapshots"
+"""The node's ``path.repo``, as in ``dev/elasticsearch``: a snapshot repository's location is below it."""
+
 _REPO_ROOT = next(
     p for p in Path(__file__).resolve().parents if (p / "tools/es-coredump-agent/coredump-noop.jar").is_file()
 )
@@ -58,6 +61,7 @@ xpack.security.transport.ssl.enabled: false
 xpack.ml.enabled: false
 node.store.allow_mmap: false
 cluster.routing.allocation.disk.threshold_enabled: false
+path.repo: [/usr/share/elasticsearch/snapshots]
 """
 """The settings of ``dev/elasticsearch/config/elasticsearch.yml`` that matter for tests."""
 
@@ -119,6 +123,7 @@ def elasticsearch_container(
     image: str = ELASTICSEARCH_IMAGE,
     heap: str = "512m",
     timeout: float = STARTUP_TIMEOUT_SECONDS,
+    snapshot_dir: Path | None = None,
 ) -> Generator[StoreSettings]:
     """Start a single-node Elasticsearch with TLS and authentication on, and yield settings for it.
 
@@ -130,6 +135,8 @@ def elasticsearch_container(
         image: The Elasticsearch image.
         heap: JVM heap size, used for both ``-Xms`` and ``-Xmx``.
         timeout: Seconds to wait for the cluster to become green or yellow.
+        snapshot_dir: A host directory mounted as the node's ``path.repo``, so that snapshots one container
+            takes another can restore (SNP-06); it must be writable by the node's user.
 
     Yields:
         Settings that connect to the container through its published port on localhost.
@@ -148,6 +155,8 @@ def elasticsearch_container(
             .with_volume_mapping(str(work_dir / "tls"), f"{_CONFIG_DIR}/tls", "ro")
             .with_exposed_ports(9200)
         )
+        if snapshot_dir is not None:
+            container = container.with_volume_mapping(str(snapshot_dir), SNAPSHOTS_DIR, "rw")
 
         with container:
             settings = StoreSettings.model_validate(

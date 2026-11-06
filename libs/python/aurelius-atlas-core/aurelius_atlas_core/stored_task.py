@@ -7,7 +7,10 @@ from aurelius_atlas_model.tasks import AtlasTask, TaskStatus
 
 
 class StoredTask(AtlasModel):
-    """One document of the task index; times in epoch milliseconds; ``claimed_until`` the lease of its runner."""
+    """One document of the task index; times in epoch milliseconds; ``claimed_until`` the lease of its runner.
+
+    ``held_by`` names the import that holds the task from the workers, until ``held_until`` at the latest (IMT-01).
+    """
 
     guid: str
     type: str
@@ -21,6 +24,8 @@ class StoredTask(AtlasModel):
     error_message: str | None = None
     status: TaskStatus = TaskStatus.PENDING
     claimed_until: int | None = None
+    held_by: str | None = None
+    held_until: int | None = None
     write_id: str | None = None
 
     def to_task(self) -> AtlasTask:

@@ -27,7 +27,7 @@ def event(entity_id: str, n: int, action: EntityAuditActionV2) -> EntityAuditEve
 
 
 @pytest.mark.covers(
-    f"{E}.prepare", f"{E}.put_events", f"{E}.list_events", rules=["AUD-01", "AUD-05", "AUD-08", "ENS-11"]
+    f"{E}.prepare", f"{E}.put_events", f"{E}.list_events", rules=["AUD-01", "AUD-05", "AUD-08", "ENS-11", "IDX-01"]
 )
 async def test__events_are_written_in_one_bulk_request_and_listed_by_entity(
     fake: FakeClient, monkeypatch: pytest.MonkeyPatch
@@ -56,7 +56,7 @@ async def test__events_are_written_in_one_bulk_request_and_listed_by_entity(
     assert [e.timestamp for e in bounded] == [1]
     assert len(await repository.list_events("a", None, None, 1)) == 1
     assert await repository.list_events("a", None, None, 0) == []
-    assert set(fake.write_refreshes) == {("t-entity-audits", "wait_for")}
+    assert set(fake.write_refreshes) == {("t-entity-audits", "true")}
     assert fake.refreshes == []
 
 
@@ -92,13 +92,27 @@ async def test__both_implementations_are_audit_repositories(fake: FakeClient) ->
     assert isinstance(memory, EntityAuditRepository)
 
 
+@pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])
+async def test__the_audit_index_expands_its_replicas_to_the_cluster() -> None:
+    """At most one replica, none on a single node; an index made before gets the setting at the next start."""
+    fake = FakeClient()
+    await ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t").prepare()
+    await fake.indices.create(index="o-entity-audits-000001", aliases={"o-entity-audits": {}})
+    await ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="o").prepare()
+
+    assert fake.index_settings == {
+        "t-entity-audits-000001": {"index.auto_expand_replicas": "0-1"},
+        "o-entity-audits-000001": {"index.auto_expand_replicas": "0-1"},
+    }
+
+
 @pytest.fixture
 def fake() -> FakeClient:
     """An empty fake client."""
     return FakeClient()
 
 
-@pytest.mark.covers(f"{E}.entities_with_tag_changes", rules=["CAU-07", "ENS-11"])
+@pytest.mark.covers(f"{E}.entities_with_tag_changes", rules=["CAU-07", "ENS-11", "IDX-01"])
 async def test__entities_with_classification_events_in_a_range_are_found(
     fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -122,5 +136,5 @@ async def test__entities_with_classification_events_in_a_range_are_found(
 
     assert sorted(await repository.entities_with_tag_changes(1, 6)) == ["a", "d"]
     assert await repository.entities_with_tag_changes(2, 5) == ["a"]
-    assert set(fake.write_refreshes) == {("t-entity-audits", "wait_for")}
+    assert set(fake.write_refreshes) == {("t-entity-audits", "true")}
     assert fake.refreshes == []

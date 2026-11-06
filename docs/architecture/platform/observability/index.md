@@ -1,16 +1,17 @@
 # Observability
 
 How Aurelius Atlas raises its hand when it is broken (ADR 040): metrics, logs, traces, and alerts.
-The system's own signals arrive with increment 6.4. A signal collection stack runs in the
-development arrangement today (`dev/observability`); which products, and their ports, are in
-[Dev Topology](../../../contributor-guide/development-environment.md#dev-topology).
+Every part sends its signals to one collection point, the OpenTelemetry collector, which passes
+them to Prometheus, Loki and Tempo; Grafana shows them and evaluates the alert rules. The
+development arrangement runs that stack in `dev/observability`; which products, and their ports,
+are in [Dev Topology](../../../contributor-guide/development-environment.md#dev-topology). The
+observability chart runs the same stack on a cluster.
 
-!!! INFO "Planned"
+| Page                        | Scope                                                   | Written by |
+| --------------------------- | ------------------------------------------------------- | ---------- |
+| [Monitoring](monitoring.md) | The signals each part sends, the dashboards             | 6.4c       |
+| [Logging](logging.md)       | The server's log records, their correlation to traces   | 6.4c       |
+| [Alerting](alerting.md)     | The alert rules, their destination, how to see one fire | 6.4c       |
 
-    To be written by increment 6.4 (hardening); see [Architecture](../../index.md).
-
-| Page                        | Scope                                            | Written by |
-| --------------------------- | ------------------------------------------------ | ---------- |
-| [Monitoring](monitoring.md) | Metrics endpoints, scraped signals, dashboards   | 6.4        |
-| [Logging](logging.md)       | Structured logs, correlation, retention          | 6.4        |
-| [Alerting](alerting.md)     | Alert rules on liveness, readiness, store health | 6.4        |
+Metrics are kept 15 days, logs 30 days, traces 7 days and the alerts' history 30 days; the
+[lifetimes](../../data-lifecycle-management/data-archiving.md) page says why and where each is set (ADR 025).

@@ -1,6 +1,6 @@
 # 4.2b Quick search and suggestions
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#146](https://github.com/aureliusenterprise/aurelius-atlas/pull/146)
 - **Records:** DD-093, DD-094, DV-81, DV-82; relies on DD-087 to DD-092
 

@@ -1,6 +1,6 @@
 # 8.6 Aux API failure hardening
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** — (follows the review of 2026-10-24, DD-214)
 - **Records:** DD-214 (the review that scoped this); cites 8.1, 8.2, 8.3, 8.5, ADR 052
 

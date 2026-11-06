@@ -1,6 +1,6 @@
 # 4.1b Classification search
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#142](https://github.com/aureliusenterprise/aurelius-atlas/pull/142)
 - **Records:** DD-090, DV-47; ends the classification part of DV-46; relies on DD-070, DD-087 to DD-089
 

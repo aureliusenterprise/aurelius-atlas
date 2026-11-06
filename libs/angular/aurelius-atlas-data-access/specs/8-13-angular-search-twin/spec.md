@@ -1,6 +1,6 @@
 # 8.13 Angular search twin — saved searches and the DSL search
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-314; cites DD-217 (the search client lands on both sides of
   the wire), 7.3 (APC-01..APC-11), 8.12 (CSD-01..CSD-06, the Python twin), and

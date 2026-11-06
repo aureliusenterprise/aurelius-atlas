@@ -9,7 +9,7 @@ from aurelius_atlas_server.settings import ServerSettings
 
 
 def uvicorn_options(settings: ServerSettings) -> dict[str, Any]:
-    """The uvicorn options: address, port, TLS and proxy trust (SRV-03, SRV-06, SRV-10, DD-234, DD-238).
+    """The uvicorn options: address, port, TLS, proxy trust and path (SRV-03, SRV-06, SRV-10, PFX-01, DD-234, DD-238).
 
     The TLS pair is part of the options unconditionally: the settings refuse to construct without it,
     so a server that starts is an HTTPS server. ``forwarded_allow_ips`` declares which peers may rewrite
@@ -24,6 +24,7 @@ def uvicorn_options(settings: ServerSettings) -> dict[str, Any]:
         "ssl_certfile": str(certificate),
         "ssl_keyfile": str(key),
         "forwarded_allow_ips": settings.forwarded_allow_ips,
+        "root_path": settings.root_path,
     }
 
 

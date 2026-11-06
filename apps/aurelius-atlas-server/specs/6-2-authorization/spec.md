@@ -1,6 +1,6 @@
 # 6.2a Authorization: the authorizer, types and admin
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-300, DV-114, DV-115; removes DV-105; relies on ADR 038 (accepted with 6.2c), DD-250
 

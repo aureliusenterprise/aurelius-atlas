@@ -1,0 +1,465 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "The Aurelius Atlas server: its requests by route and status, its process, its logs and traces — the signals its alert rules read (OBS-02, OBS-03).",
+    "id": null,
+    "panels": [
+        {
+            "collapsed": false,
+            "description": "The Atlas REST API and the dashboards as the server answers them: the FastAPI instrumentation's stable HTTP metrics, keyed by route template (http_route), never by the raw path.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "id": 100,
+            "panels": [],
+            "title": "Requests",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Requests the server answered per time bucket (increase()), grouped by status class: 2xx, 3xx (sign-in redirects), 4xx (the caller's mistakes, 401 before sign-in) and 5xx (the server's failures, which the alert rule aurelius-atlas-server-errors watches). Whole counts, not a per-second rate.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 1
+            },
+            "id": 1,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum by (class) (label_replace(increase(http_server_request_duration_seconds_count{exported_job=\"aurelius-atlas-server\"}[$__interval]), \"class\", \"${1}xx\", \"http_response_status_code\", \"([0-9])..\"))",
+                    "interval": "1m",
+                    "legendFormat": "{{class}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Requests by Status Class (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "The slowest 5% of requests per route over the last 5 minutes. A route above two seconds for ten minutes fires aurelius-atlas-server-latency. Gaps mean the route was not called, not zero latency.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "s"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 1
+            },
+            "id": 2,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "histogram_quantile(0.95, sum by (le, http_route) (rate(http_server_request_duration_seconds_bucket{exported_job=\"aurelius-atlas-server\"}[5m])))",
+                    "legendFormat": "{{http_route}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Latency by Route (95th percentile)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "5xx answers per route and time bucket. Every 5xx is opaque to the caller and carries the trace id as requestId (SRV-07): find its trace in Tempo by that id, its log line below.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 1
+            },
+            "id": 3,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum by (http_route) (increase(http_server_request_duration_seconds_count{exported_job=\"aurelius-atlas-server\", http_response_status_code=~\"5..\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "{{http_route}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Server Errors by Route (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "The ten routes with the most requests over the last 5 minutes. Search and entity reads lead under normal use; a write route on top means a bulk load is running.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "reqps"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 9
+            },
+            "id": 4,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "topk(10, sum by (http_route) (rate(http_server_request_duration_seconds_count{exported_job=\"aurelius-atlas-server\"}[5m])))",
+                    "legendFormat": "{{http_route}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Busiest Routes (requests per second)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "Requests the server is answering right now. It rises with load and falls back; a level that only climbs means requests are stuck, most often waiting on Elasticsearch.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 9
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum(http_server_active_requests{exported_job=\"aurelius-atlas-server\"})",
+                    "legendFormat": "in flight",
+                    "refId": "A"
+                }
+            ],
+            "title": "Requests in Flight",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "The server process itself: the OpenTelemetry system-metrics instrumentation's process and CPython groups. One line per process (exported_instance): a new line is a restart.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 17
+            },
+            "id": 101,
+            "panels": [],
+            "title": "Process",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "The process's resident memory. It grows while the type registry and caches fill and then levels off; steady growth under steady load is a leak.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "bytes"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 0,
+                "y": 18
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "process_memory_usage_bytes{exported_job=\"aurelius-atlas-server\"}",
+                    "legendFormat": "{{exported_instance}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Memory (resident)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "CPU time per second, user and system together: 1 is one core fully busy. The server runs one event loop, so a level near 1 means it is saturated.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 8,
+                "y": 18
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum by (exported_instance) (rate(process_cpu_time_seconds_total{exported_job=\"aurelius-atlas-server\"}[5m]))",
+                    "legendFormat": "{{exported_instance}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "CPU (cores)",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus"
+            },
+            "description": "CPython collections per generation and time bucket. Generation 2 collections are the expensive ones; many of them track large imports or exports.",
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short"
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 8,
+                "x": 16,
+                "y": 18
+            },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "multi"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus"
+                    },
+                    "expr": "sum by (generation) (increase(cpython_gc_collections_total{exported_job=\"aurelius-atlas-server\"}[$__interval]))",
+                    "interval": "1m",
+                    "legendFormat": "generation {{generation}}",
+                    "refId": "A"
+                }
+            ],
+            "title": "Garbage Collections (per bucket)",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "description": "The server's own logs (OBS-01) and request traces, both over the per-service ingest leg.",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 26
+            },
+            "id": 102,
+            "panels": [],
+            "title": "Logs and traces",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "loki",
+                "uid": "loki"
+            },
+            "description": "Log records of the server, its libraries and uvicorn's errors (Loki, service_name=aurelius-atlas-server): start-up, the schedulers' failures (metrics, audit aging, tasks), and the exceptions behind 5xx answers. Click a line for its trace id.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 27
+            },
+            "id": 9,
+            "options": {
+                "dedupStrategy": "none",
+                "enableLogDetails": true,
+                "prettifyLogMessage": false,
+                "showCommonLabels": false,
+                "showLabels": true,
+                "showTime": true,
+                "wrapLogMessage": true
+            },
+            "targets": [
+                {
+                    "direction": "backward",
+                    "expr": "{service_name=\"aurelius-atlas-server\"}",
+                    "queryType": "range",
+                    "refId": "A"
+                }
+            ],
+            "title": "Server Logs",
+            "type": "logs"
+        },
+        {
+            "datasource": {
+                "type": "tempo",
+                "uid": "tempo"
+            },
+            "description": "Recent traces of the server: each request's span with the Elasticsearch calls it made (the client's own spans). Open a row for the waterfall.",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 37
+            },
+            "id": 10,
+            "options": {
+                "showHeader": true
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "tempo",
+                        "uid": "tempo"
+                    },
+                    "limit": 20,
+                    "query": "{resource.service.name = \"aurelius-atlas-server\"}",
+                    "queryType": "traceql",
+                    "refId": "A"
+                }
+            ],
+            "title": "Server Traces",
+            "type": "table"
+        }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 40,
+    "tags": ["aurelius", "atlas-server", "observability"],
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Aurelius Atlas Server",
+    "uid": "aurelius-atlas-server-obsv",
+    "version": 1
+}

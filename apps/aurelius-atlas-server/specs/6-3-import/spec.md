@@ -1,6 +1,6 @@
 # 6.3b2 Import and migration
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-306, DV-125, DV-126; relies on DD-304, the import mode of 6.3b1 (IMP-01 to IMP-08)
 

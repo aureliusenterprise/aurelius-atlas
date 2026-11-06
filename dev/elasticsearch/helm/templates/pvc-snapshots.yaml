@@ -1,0 +1,27 @@
+{{/*
+The snapshots' claim (SNP-01, ADR 026): the node's path.repo, a volume apart
+from the data, so a lost or corrupted data volume leaves the snapshots. A claim
+of its own rather than a second volumeClaimTemplate: a StatefulSet's templates
+cannot change, and an installed store must take the claim on upgrade. Kept on
+uninstall (resource-policy keep): removing the release removes the store, not
+its backups.
+*/}}
+{{- $fullname := include "atlas-elasticsearch.fullname" . -}}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+    name: {{ printf "%s-snapshots" $fullname }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-elasticsearch.labels" . | nindent 8 }}
+    annotations:
+        helm.sh/resource-policy: keep
+spec:
+    accessModes:
+        {{- toYaml .Values.snapshots.accessModes | nindent 8 }}
+    {{- with .Values.global.storageClass }}
+    storageClassName: {{ . | quote }}
+    {{- end }}
+    resources:
+        requests:
+            storage: {{ .Values.snapshots.size | quote }}

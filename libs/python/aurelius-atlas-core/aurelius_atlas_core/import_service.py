@@ -24,6 +24,7 @@ from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_transforms import ImportTransforms, shape
 from aurelius_atlas_core.import_type_def_processor import ImportTypeDefProcessor
 from aurelius_atlas_core.regular_import import RegularImport
+from aurelius_atlas_core.task_hold import TaskHold
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_core.zip_source import ZipSource
 
@@ -83,13 +84,26 @@ class ImportService:
         elif start_position is not None:
             source.set_position(_position(start_position))
         result.export_result = source.export_result()
-        await RegularImport(self._store, self._writer).run(source, result)
+        await self._import_entities(source, result)
         end = self._store.now()
         result.increment_metrics_counter("duration", end - start)
         result.operation_status = OperationStatus.SUCCESS
         if self._audits is not None and OPTION_KEY_MIGRATION not in request.options:
             await self._audits.write_import(user_name, result, start, end, source.creation_order)
         return result
+
+    async def _import_entities(self, source: ZipSource, result: AtlasImportResult) -> None:
+        """The entities written, the tasks they record held until the last is written or the import fails (IMT-01,
+        IMT-02).
+        """  # noqa: D205 - one sentence
+        hold = TaskHold.start(self._store) if self._writer.defers_tasks else None
+        self._writer.hold_tasks(hold)
+        try:
+            await RegularImport(self._store, self._writer).run(source, result)
+        finally:
+            self._writer.hold_tasks(None)
+            if hold is not None:
+                await hold.release(self._store)
 
     async def run_file(
         self, request: AtlasImportRequest, folder: Path | None, user_name: str | None, host_name: str, ip: str

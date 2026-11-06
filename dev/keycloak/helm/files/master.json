@@ -1515,7 +1515,7 @@
                 "display.on.consent.screen": "false",
                 "frontchannel.logout.session.required": "true",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://localhost:21000/##https://localhost:21001/"
+                "post.logout.redirect.uris": "https://localhost:21000/##https://localhost:21001/##https://localhost:9000/atlas2/"
             },
             "authorizationServicesEnabled": false,
             "bearerOnly": false,
@@ -1535,7 +1535,11 @@
             "optionalClientScopes": [],
             "protocol": "openid-connect",
             "publicClient": false,
-            "redirectUris": ["https://localhost:21000/login.jsp", "https://localhost:21001/login.jsp"],
+            "redirectUris": [
+                "https://localhost:21000/login.jsp",
+                "https://localhost:21001/login.jsp",
+                "https://localhost:9000/atlas2/login.jsp"
+            ],
             "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,

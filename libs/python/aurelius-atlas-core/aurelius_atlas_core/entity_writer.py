@@ -57,6 +57,7 @@ from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
+from aurelius_atlas_core.task_hold import TaskHold
 from aurelius_atlas_core.transaction_view import TransactionView
 
 NO_ENTITY_TO_UPDATE = "no entity to update."
@@ -138,6 +139,7 @@ class EntityWriter:
         self._notifier = notifier
         self._record = RequestRecord()
         self._importing = False
+        self._hold: TaskHold | None = None
         self._import_deletions: list[str] = []
         self._import_guids: dict[str, str] = {}
 
@@ -335,7 +337,7 @@ class EntityWriter:
         updated = {str(header.guid) for header in response.get_entities_by_operation(EntityOperation.UPDATE) or []}
         entities = [found.entity, *(found.referred_entities or {}).values()]
         classifications = EntityClassifications(
-            self._store, user=self._user, tasks=self._tasks, notifier=self._notifier
+            self._store, user=self._user, tasks=self._tasks, notifier=self._notifier, hold=self._hold
         )
         for entity in entities:
             guid = None if entity is None else self._import_guids.get(str(entity.guid), str(entity.guid))
@@ -541,9 +543,18 @@ class EntityWriter:
         self._record.merge(propagation.added, propagation.removed)
         return [TaskChange(task) for task in propagation.tasks()]
 
+    @property
+    def defers_tasks(self) -> bool:
+        """Whether propagation is deferred to tasks (TSK-02, TSK-08)."""
+        return self._tasks
+
+    def hold_tasks(self, hold: TaskHold | None) -> None:
+        """Record the tasks of the writes that follow with ``hold``, an import's; None stops holding (IMT-01)."""
+        self._hold = hold
+
     def _deferral(self) -> Deferral | None:
         """Tasks for propagation, recorded by the writer's user now, when they are enabled (TSK-02, TSK-08)."""
-        return Deferral(self._user, self._store.now(), self._store.new_guid) if self._tasks else None
+        return Deferral(self._user, self._store.now(), self._store.new_guid, self._hold) if self._tasks else None
 
     def _classified(
         self, entity: StoredEntity, classifications: list[AtlasClassification]

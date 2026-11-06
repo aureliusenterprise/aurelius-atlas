@@ -1,6 +1,6 @@
 # 7.12 Theme, branding and layout
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** #103
 - **Records:** ADR 053; DD-148 (the brand theme on Bulma 1), DD-149
   (critical-CSS inlining off), DD-151 (the legacy text ramp on Bulma 1's

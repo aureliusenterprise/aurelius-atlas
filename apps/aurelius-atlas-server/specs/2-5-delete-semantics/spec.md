@@ -1,6 +1,6 @@
 # 2.5 Delete semantics
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-056 to DD-060, DV-25 to DV-27; relies on DD-043 to DD-049, DD-052, DD-053, DV-16
 

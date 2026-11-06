@@ -1,6 +1,6 @@
 # 6.3c3 Admin audits
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-308, DV-131; relies on DD-307 and the entity audits of 3.x
 

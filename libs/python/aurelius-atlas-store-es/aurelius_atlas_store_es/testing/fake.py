@@ -1,5 +1,7 @@
 """A stand-in for ``AsyncElasticsearch`` for unit tests that need no server."""
 
+import copy
+import fnmatch
 import json
 import re
 from decimal import Decimal
@@ -48,9 +50,17 @@ class FakeIndices:
         """Whether ``name`` is an alias of a created index."""
         return name in self._client.aliases
 
-    async def create(self, *, index: str, aliases: dict[str, Any] | None = None, **_settings: object) -> dict[str, Any]:
-        """Create ``index`` with ``aliases``; settings and mappings are accepted and ignored."""
+    async def create(
+        self,
+        *,
+        index: str,
+        aliases: dict[str, Any] | None = None,
+        settings: dict[str, Any] | None = None,
+        **_mappings: object,
+    ) -> dict[str, Any]:
+        """Create ``index`` with ``aliases``; its settings are kept, its mappings accepted and ignored."""
         self._client.documents.setdefault(index, {})
+        self._client.index_settings[index] = dict(settings or {})
         for alias in aliases or {}:
             self._client.aliases[alias] = index
         return {"acknowledged": True, "index": index}
@@ -60,15 +70,126 @@ class FakeIndices:
         self._client.mapping_updates.append(index)
         return {"acknowledged": True}
 
-    async def put_settings(self, *, index: str, **_settings: object) -> dict[str, Any]:
-        """Count the call; the fake keeps no settings."""
+    async def put_settings(self, *, index: str, settings: dict[str, Any]) -> dict[str, Any]:
+        """Count the call and merge the settings into the index behind ``index``."""
         self._client.settings_updates.append(index)
+        self._client.index_settings.setdefault(self._client.aliases.get(index, index), {}).update(settings)
         return {"acknowledged": True}
 
     async def refresh(self, *, index: str) -> dict[str, Any]:
         """Count the call; the fake's documents are always visible."""
         self._client.refreshes.append(index)
         return {"_shards": {"failed": 0}}
+
+    async def get(self, *, index: str, **_options: object) -> dict[str, Any]:
+        """The created indices matching ``index`` (comma-separated, wildcards), by name, with their aliases."""
+        return {
+            name: {"aliases": {alias: {} for alias, target in self._client.aliases.items() if target == name}}
+            for name in self._client.matching(index)
+        }
+
+    async def delete(self, *, index: str) -> dict[str, Any]:
+        """Delete the named indices, their documents, settings and aliases; Elasticsearch refuses wildcards here."""
+        for name in index.split(","):
+            if "*" in name or name not in self._client.documents:
+                raise _not_found()
+            self._client.drop_index(name)
+        return {"acknowledged": True}
+
+
+class FakeSnapshot:
+    """The ``snapshot`` namespace: repositories, and snapshots that copy the indices they hold (SNP-01, SNP-05)."""
+
+    def __init__(self, client: FakeClient) -> None:
+        self._client = client
+
+    async def create_repository(self, *, name: str, repository: dict[str, Any]) -> dict[str, Any]:
+        """Register ``name``; it keeps the snapshots it already holds."""
+        self._client.repositories[name] = repository
+        self._client.snapshots.setdefault(name, {})
+        return {"acknowledged": True}
+
+    def _held(self, repository: str) -> dict[str, dict[str, Any]]:
+        if repository not in self._client.repositories:
+            raise _not_found()
+        return self._client.snapshots[repository]
+
+    async def get(self, *, repository: str, snapshot: str, **_options: object) -> dict[str, Any]:
+        """Answer like ``GET _snapshot/repository/snapshot``, ``_all`` in the order they were taken."""
+        held = self._held(repository)
+        if snapshot != "_all" and snapshot not in held:
+            raise _not_found()
+        names = list(held) if snapshot == "_all" else [snapshot]
+        return {"snapshots": [held[name]["info"] for name in names]}
+
+    async def restore(
+        self,
+        *,
+        repository: str,
+        snapshot: str,
+        indices: str,
+        include_aliases: bool = True,
+        **_options: object,
+    ) -> dict[str, Any]:
+        """Bring back the snapshot's indices matching ``indices``; an index that exists fails the restore."""
+        taken = self._held(repository).get(snapshot)
+        if taken is None:
+            raise _not_found()
+        patterns = indices.split(",")
+        names = [name for name in taken["indices"] if any(fnmatch.fnmatchcase(name, p) for p in patterns)]
+        if any(name in self._client.documents for name in names):
+            raise _conflict()
+        for name in names:
+            documents, settings, aliases = copy.deepcopy(taken["indices"][name])
+            self._client.documents[name], self._client.index_settings[name] = documents, settings
+            if include_aliases:
+                self._client.aliases.update(dict.fromkeys(aliases, name))
+        total = len(names)
+        return {"snapshot": {"snapshot": snapshot, "indices": names, "shards": {"total": total, "failed": 0}}}
+
+
+class FakeSlm:
+    """The ``slm`` namespace: one lifecycle policy per id, run on request; the fake has no clock to schedule on."""
+
+    def __init__(self, client: FakeClient) -> None:
+        self._client = client
+
+    async def put_lifecycle(self, *, policy_id: str, **policy: Any) -> dict[str, Any]:  # noqa: ANN401 - the policy's body
+        """Store the policy; its run history stays."""
+        self._client.policies[policy_id] = {**self._client.policies.get(policy_id, {}), "policy": policy}
+        return {"acknowledged": True}
+
+    async def get_lifecycle(self, *, policy_id: str) -> dict[str, Any]:
+        """Answer like ``GET _slm/policy/policy_id``."""
+        if policy_id not in self._client.policies:
+            raise _not_found()
+        return {policy_id: self._client.policies[policy_id]}
+
+    async def execute_lifecycle(self, *, policy_id: str) -> dict[str, Any]:
+        """Take a snapshot of the policy's indices now, or record the configured failure."""
+        policy = self._client.policies[policy_id]
+        repository = policy["policy"]["repository"]
+        name = f"snapshot-{len(self._client.snapshots[repository]) + 1}"
+        now = self._client.now_millis
+        if self._client.snapshot_error is not None:
+            policy["last_failure"] = {"snapshot_name": name, "time": now, "details": self._client.snapshot_error}
+            return {"snapshot_name": name}
+        names = self._client.matching(",".join(policy["policy"]["config"]["indices"]))
+        self._client.snapshots[repository][name] = {
+            "info": {"snapshot": name, "state": "SUCCESS", "start_time_in_millis": now, "indices": names},
+            "indices": {
+                index: copy.deepcopy(
+                    (
+                        self._client.documents[index],
+                        self._client.index_settings.get(index, {}),
+                        [alias for alias, target in self._client.aliases.items() if target == index],
+                    )
+                )
+                for index in names
+            },
+        }
+        policy["last_success"] = {"snapshot_name": name, "time": now}
+        return {"snapshot_name": name}
 
 
 class FakeClient:
@@ -87,15 +208,40 @@ class FakeClient:
         self.close_calls = 0
         self.cluster = FakeCluster(self)
         self.indices = FakeIndices(self)
+        self.snapshot = FakeSnapshot(self)
+        self.slm = FakeSlm(self)
+        self.repositories: dict[str, dict[str, Any]] = {}
+        self.snapshots: dict[str, dict[str, dict[str, Any]]] = {}
+        """Each repository's snapshots by name, in the order taken: their info, and a copy of each index."""
+        self.policies: dict[str, dict[str, Any]] = {}
+        """Each lifecycle policy by id: ``policy`` as put, and its ``last_success`` and ``last_failure``."""
+        self.now_millis = 1_700_000_000_000
+        """The time the fake's snapshots are taken at, in epoch milliseconds."""
+        self.snapshot_error: str | None = None
+        """When set, each policy run fails with these details instead of taking a snapshot."""
         self.aliases: dict[str, str] = {}
         self.documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
         self.primary_term = 1
         self.mapping_updates: list[str] = []
         self.settings_updates: list[str] = []
+        self.index_settings: dict[str, dict[str, Any]] = {}
+        """The settings of each created index, by its name: those it was created with, then each update's."""
         self.seq_no = -1
         self.refreshes: list[str] = []
         self.write_refreshes: list[tuple[str, str]] = []
         """The ``refresh`` parameter of every write, as ``(index, refresh)`` in call order (ENS-11)."""
+
+    def matching(self, pattern: str) -> list[str]:
+        """The created indices matching ``pattern``: comma-separated names or wildcards, sorted."""
+        patterns = pattern.split(",")
+        return sorted(name for name in self.documents if any(fnmatch.fnmatchcase(name, p) for p in patterns))
+
+    def drop_index(self, name: str) -> None:
+        """Remove an index with its documents, settings and aliases."""
+        del self.documents[name]
+        self.index_settings.pop(name, None)
+        for alias in [alias for alias, target in self.aliases.items() if target == name]:
+            del self.aliases[alias]
 
     def _index_of(self, name: str) -> dict[str, tuple[dict[str, Any], int]]:
         return self.documents.setdefault(self.aliases.get(name, name), {})
@@ -231,7 +377,7 @@ class FakeClient:
         With ``sort``, hits are ordered by the sort fields (``_score`` among them) and carry their sort values; a
         plain direction stands a document without the field in with its id, an options object puts it last. Only
         hits after ``search_after`` are answered. The total counts every match; each hit has its ``_score``.
-        ``terms`` aggregations count the values of every match.
+        ``terms`` and ``composite`` aggregations count the values of every match.
         """
         _ = track_total_hits, track_scores
         order = [_sort_clause(clause) for clause in sort or []]
@@ -255,7 +401,10 @@ class FakeClient:
         response: dict[str, Any] = {"hits": {"total": {"value": len(hits)}, "hits": hits[from_ : from_ + size]}}
         if aggs:
             sources = [hit["_source"] for hit in hits]
-            response["aggregations"] = {name: _terms(sources, spec["terms"]) for name, spec in aggs.items()}
+            response["aggregations"] = {
+                name: _composite(sources, spec["composite"]) if "composite" in spec else _terms(sources, spec["terms"])
+                for name, spec in aggs.items()
+            }
         return response
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -375,6 +524,29 @@ def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, 
                 counts[term] = counts.get(term, 0) + 1
     ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[: options.get("size", 10)]
     return {"buckets": [{"key": key, "doc_count": count} for key, count in ordered]}
+
+
+def _composite(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, Any]:
+    """A ``composite`` aggregation of ``terms`` sources, by key with a missing value first, ``size`` buckets after
+    ``after``; a document without a value of a source is left out unless it has ``missing_bucket``.
+    """  # noqa: D205 - one sentence
+    names = [next(iter(source)) for source in options["sources"]]
+    fields = [next(iter(source.values()))["terms"] for source in options["sources"]]
+    counts: dict[tuple[Any, ...], int] = {}
+    for source in sources:
+        held = [_held(source, terms["field"]) for terms in fields]
+        if any(not values and not terms.get("missing_bucket") for values, terms in zip(held, fields, strict=True)):
+            continue
+        key = tuple(values[0] if values else None for values in held)
+        counts[key] = counts.get(key, 0) + 1
+    ordered = sorted(counts.items(), key=lambda item: [(value is not None, value) for value in item[0]])
+    if "after" in options:
+        after = [(options["after"][name] is not None, options["after"][name]) for name in names]
+        ordered = [item for item in ordered if [(value is not None, value) for value in item[0]] > after]
+    buckets = [
+        {"key": dict(zip(names, key, strict=True)), "doc_count": count} for key, count in ordered[: options["size"]]
+    ]
+    return {"buckets": buckets, **({"after_key": buckets[-1]["key"]} if buckets else {})}
 
 
 def _term_in(term: str, words: set[str]) -> bool:

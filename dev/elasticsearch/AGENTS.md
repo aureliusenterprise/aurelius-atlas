@@ -46,6 +46,10 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
   directory and fails to start when it is a mount. Auto-configuration is also switched off.
 - **`node.store.allow_mmap: false`** removes the `vm.max_map_count >= 262144` bootstrap check, which
   dev machines and CI runners (65530 by default) do not meet.
+- **Snapshots live on their own volume** (SNP-01, 6.4e): `path.repo` is `/usr/share/elasticsearch/snapshots`,
+  the `snapshots` volume, chowned by `volume-init` with the data. In the chart it is the standalone claim
+  `<fullname>-snapshots` (`snapshots.size`), kept on uninstall — not a second `volumeClaimTemplate`, which an
+  installed StatefulSet cannot take. The server registers the repository and policy; the cluster stays empty.
 
 ## Commands
 

@@ -1,6 +1,6 @@
 # 10.1 Deployment chart foundation
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#157](https://github.com/aureliusenterprise/aurelius-atlas/pull/157)
 - **Records:** [ADR 057](../../../docs/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md),
   DD-298, DD-283..294
