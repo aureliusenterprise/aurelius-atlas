@@ -1,6 +1,6 @@
 # 8.12 Client route coverage — saved searches and the DSL search
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-307 (the per-module live-check spec), DD-309 (bodies reused from
   `aurelius-atlas-model`); cites 8.4 (CL-13, the seven shipped search routes), 8.8

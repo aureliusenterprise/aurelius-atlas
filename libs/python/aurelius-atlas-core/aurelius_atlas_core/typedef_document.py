@@ -13,6 +13,10 @@ TYPEDEF_INDEX = "aurelius-atlas-typedefs"
 TYPEDEF_DOCUMENT_ID = "typedefs"
 """The id of the one document that holds every type definition."""
 
+INDEX_SETTINGS: dict[str, Any] = {"index.auto_expand_replicas": "0-1"}
+"""The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
+it, none on a single node, whose indices are then green, not yellow."""
+
 
 @dataclass(frozen=True)
 class DocumentVersion:
@@ -79,14 +83,19 @@ class ElasticsearchTypedefDocument:
         self._index = index
 
     async def prepare(self) -> None:
-        """Create the index behind the alias unless it exists; the document itself is not searched."""
+        """Create the index behind the alias unless it exists; the document itself is not searched.
+
+        An existing index gets the settings of a new one, as its replicas (IDX-02).
+        """
         if not await self._client.indices.exists_alias(name=self._index):
             await self._client.indices.create(
                 index=f"{self._index}-000001",
                 aliases={self._index: {"is_write_index": True}},
                 mappings={"dynamic": False, "properties": {}},
-                settings={"number_of_shards": 1},
+                settings={"number_of_shards": 1} | INDEX_SETTINGS,
             )
+        else:
+            await self._client.indices.put_settings(index=self._index, settings=INDEX_SETTINGS)
 
     async def read(self) -> tuple[StoredTypedefs | None, DocumentVersion | None]:
         """The stored definitions and their version; ``(None, None)`` when nothing is stored (TDS-12)."""

@@ -12,7 +12,7 @@ the lifecycle view.
 | [Data Storage](data-storage.md)       | One search store as system of record: layout, identities, versioning | written (0.2/1.4/2.2)   |
 | [Data Processing](data-processing.md) | Classification propagation, audits, cascades                         | 3.2–3.5                 |
 | [Data Sharing](data-sharing.md)       | Export ZIP, import, migration of an existing Atlas                   | 6.3                     |
-| [Data Archiving](data-archiving.md)   | Soft delete, purge, retention of the store; snapshots                | 2.5, 6.4                |
+| [Data Archiving](data-archiving.md)   | The lifetime of every kind of data; delete and purge; snapshots      | written (6.4d)          |
 
 ??? QUESTION "Most of these pages are Planned — where are the rules today?"
 

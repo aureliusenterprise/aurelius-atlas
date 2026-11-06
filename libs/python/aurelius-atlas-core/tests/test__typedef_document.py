@@ -42,6 +42,19 @@ async def test__prepare_creates_the_index_behind_its_alias_once(
     assert client.aliases == {TYPEDEF_INDEX: f"{TYPEDEF_INDEX}-000001"}
 
 
+@pytest.mark.covers("aurelius_atlas_core.typedef_document.ElasticsearchTypedefDocument.prepare", rules=["IDX-02"])
+async def test__the_index_expands_its_replicas_to_the_cluster(client: FakeClient) -> None:
+    """One shard and at most one replica, none on a single node; an index made before gets the setting too."""
+    await client.indices.create(index="old-000001", aliases={"old": {}}, settings={"number_of_shards": 1})
+    await ElasticsearchTypedefDocument(cast("AsyncElasticsearch", client)).prepare()
+    await ElasticsearchTypedefDocument(cast("AsyncElasticsearch", client), index="old").prepare()
+
+    assert client.index_settings == {
+        f"{TYPEDEF_INDEX}-000001": {"number_of_shards": 1, "index.auto_expand_replicas": "0-1"},
+        "old-000001": {"number_of_shards": 1, "index.auto_expand_replicas": "0-1"},
+    }
+
+
 @pytest.mark.covers(
     "aurelius_atlas_core.typedef_document.ElasticsearchTypedefDocument.read",
     "aurelius_atlas_core.typedef_document.ElasticsearchTypedefDocument.version",

@@ -1,6 +1,6 @@
 # 10.2 Stateful platform charts
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** [#158](https://github.com/aureliusenterprise/aurelius-atlas/pull/158)
 - **Records:** ADR 057, DD-286, DD-287, DD-290, DD-253..260
 

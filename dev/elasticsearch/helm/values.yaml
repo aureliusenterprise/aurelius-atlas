@@ -102,6 +102,14 @@ persistence:
     accessModes:
         - ReadWriteOnce
 
+# The snapshots' claim (SNP-01): path.repo. Snapshots are incremental, so the
+# claim holds about one copy of the indices plus what changed within the
+# retention (SNP-02); size it like the data claim. Kept on uninstall.
+snapshots:
+    size: 30Gi
+    accessModes:
+        - ReadWriteOnce
+
 service:
     # The server reaches https://<service>.<ns>.svc:9200 with
     # ELASTICSEARCH_CA_CERTS pinned; a headless companion governs the

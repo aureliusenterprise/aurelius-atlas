@@ -1,0 +1,23 @@
+name: An ageout that asks for no aging, or for one that is off, queues nothing and answers no content
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#ageoutAuditData
+    - repository/src/main/java/org/apache/atlas/repository/audit/AtlasAuditReductionService.java#buildAgeoutCriteriaForAllAgingTypes
+    - repository/src/main/java/org/apache/atlas/repository/audit/AtlasAuditReductionService.java#startAuditAgingByCriteria
+    - intg/src/main/java/org/apache/atlas/model/audit/AuditReductionCriteria.java
+rules: [AGE-01, AGE-02]
+covers: [aurelius_atlas_server.routes.admin.ageout_audit_data]
+stages:
+    - name: criteria with aging off answer nothing
+      request:
+          method: POST
+          url: /api/atlas/admin/audits/ageout
+          json: { defaultAgeoutEnabled: true }
+      response:
+          status: 204
+    - name: aging on without a default, custom or sweep aging queues none
+      request:
+          method: POST
+          url: /api/atlas/admin/audits/ageout
+          json: { auditAgingEnabled: true, defaultAgeoutEnabled: false }
+      response:
+          status: 204

@@ -142,6 +142,11 @@ exporters:
         # (histogram_quantile then always NaN). Emit them as Prometheus
         # native histograms so p95 panels work for every producer.
         send_native_histogram: true
+        # A series whose producer stopped is dropped 2 minutes after its last
+        # point (the default is 5): the SDKs export every 60 s, and the silence
+        # rules see a stopped producer 3 minutes sooner (INC-04, the
+        # 2026-11-05 rehearsal).
+        metric_expiration: 2m
 
 extensions:
     health_check:

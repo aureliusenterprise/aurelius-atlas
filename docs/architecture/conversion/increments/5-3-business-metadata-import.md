@@ -1,6 +1,6 @@
 # 5.3c Business metadata import
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DV-119; relies on DD-302, DV-104 (the file reading of 5.2d), DV-117
 

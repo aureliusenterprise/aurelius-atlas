@@ -1,6 +1,6 @@
 # 3.1a Relationship instances
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-061 to DD-063, DV-28 to DV-30; relies on DD-043 to DD-048, DD-056 to DD-059
 

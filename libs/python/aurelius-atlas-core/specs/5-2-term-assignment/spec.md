@@ -1,6 +1,6 @@
 # 5.2c Term assignment
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-248, DV-101 to DV-103; relies on DD-246, DV-95, DV-99
 

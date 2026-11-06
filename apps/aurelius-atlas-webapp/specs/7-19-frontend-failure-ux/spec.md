@@ -1,6 +1,6 @@
 # 7.19 Frontend failure UX
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** — (follows the review of 2026-10-24, DD-214)
 - **Records:** DD-214 (the review that scoped this); cites 7.1, 7.3, 7.7, 7.14, 7.16, 7.17
 

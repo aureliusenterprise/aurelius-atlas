@@ -1,6 +1,6 @@
 # 5.1 Lineage
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#167](https://github.com/aureliusenterprise/aurelius-atlas/pull/167)
 - **Records:** DD-244, DD-245; relies on DD-061, DD-065, DV-39
 

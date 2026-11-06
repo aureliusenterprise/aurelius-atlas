@@ -1,0 +1,81 @@
+name: The metrics answer the catalogue's counts, the server's stats and its system details
+source:
+    - webapp/src/main/java/org/apache/atlas/web/resources/AdminResource.java#getMetrics
+    - repository/src/main/java/org/apache/atlas/services/MetricsService.java#getMetrics
+    - repository/src/main/java/org/apache/atlas/util/AtlasMetricsUtil.java#getStats
+    - repository/src/main/java/org/apache/atlas/util/AtlasMetricsCounter.java (counters never counted)
+    - intg/src/main/java/org/apache/atlas/model/metrics/AtlasMetrics.java
+rules: [MET-01, MET-03]
+covers: [aurelius_atlas_server.routes.admin.get_metrics]
+stages:
+    - request: { method: GET, url: /api/atlas/admin/metrics }
+      response:
+          status: 200
+          json:
+              data:
+                  general:
+                      collectionTime: a time
+                      typeCount: the registry's types
+                      tagCount: the classification types
+                      typeUnusedCount: the entity types without entities
+                      entityCount: the entities
+                      stats:
+                          "Server:startTimeStamp": a time
+                          "Server:activeTimeStamp": a time
+                          "Server:upTime": the time since the start
+                          "Server:statusBackendStore": connected
+                          "Server:statusIndexStore": connected
+                          "Notification:topicDetails": {}
+                          "Notification:lastMessageProcessedTime": 0
+                          "Notification:currentDayStartTime": the day's start
+                          "Notification:currentHourStartTime": the hour's start
+                          "Notification:total": 0
+                          "Notification:totalAvgTime": 0
+                          "Notification:totalFailed": 0
+                          "Notification:totalCreates": 0
+                          "Notification:totalUpdates": 0
+                          "Notification:totalDeletes": 0
+                          "Notification:currentDay": 0
+                          "Notification:currentDayAvgTime": 0
+                          "Notification:currentDayFailed": 0
+                          "Notification:currentDayEntityCreates": 0
+                          "Notification:currentDayEntityUpdates": 0
+                          "Notification:currentDayEntityDeletes": 0
+                          "Notification:currentHour": 0
+                          "Notification:currentHourAvgTime": 0
+                          "Notification:currentHourFailed": 0
+                          "Notification:currentHourEntityCreates": 0
+                          "Notification:currentHourEntityUpdates": 0
+                          "Notification:currentHourEntityDeletes": 0
+                          "Notification:previousHour": 0
+                          "Notification:previousHourAvgTime": 0
+                          "Notification:previousHourFailed": 0
+                          "Notification:previousHourEntityCreates": 0
+                          "Notification:previousHourEntityUpdates": 0
+                          "Notification:previousHourEntityDeletes": 0
+                          "Notification:previousDay": 0
+                          "Notification:previousDayAvgTime": 0
+                          "Notification:previousDayFailed": 0
+                          "Notification:previousDayEntityCreates": 0
+                          "Notification:previousDayEntityUpdates": 0
+                          "Notification:previousDayEntityDeletes": 0
+                  # the counts depend on the catalogue, checked by the unit and e2e tests
+                  entity: the counts by type
+                  tag:
+                      tagEntities: the counts by type
+                  # the Python process's details for the JVM's (DV-135), checked by the unit tests
+                  system: the system details
+          volatile:
+              - $.data.general.collectionTime
+              - $.data.general.typeCount
+              - $.data.general.tagCount
+              - $.data.general.typeUnusedCount
+              - $.data.general.entityCount
+              - $.data.general.stats['Server:startTimeStamp']
+              - $.data.general.stats['Server:activeTimeStamp']
+              - $.data.general.stats['Server:upTime']
+              - $.data.general.stats['Notification:currentDayStartTime']
+              - $.data.general.stats['Notification:currentHourStartTime']
+              - $.data.entity
+              - $.data.tag.tagEntities
+              - $.data.system

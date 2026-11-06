@@ -1,6 +1,6 @@
 # 6.3c2 Replication and the export/import audit trail
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-307, DV-130; relies on DD-304, the export of 6.3a and the import of 6.3b2
 

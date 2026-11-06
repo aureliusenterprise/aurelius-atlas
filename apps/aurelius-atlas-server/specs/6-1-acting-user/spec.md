@@ -1,6 +1,6 @@
 # 6.1b The acting user on writes
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** removes DV-06, DV-15 and DV-109; relies on DD-250
 

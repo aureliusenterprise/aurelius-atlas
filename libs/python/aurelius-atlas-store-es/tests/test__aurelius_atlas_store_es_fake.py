@@ -332,3 +332,36 @@ async def test__terms_aggregations_count_values_or_words_of_the_matches() -> Non
     assert buckets["words"] == [{"key": "x", "doc_count": 2}]
     assert buckets["some"] == [{"key": "y", "doc_count": 1}]
     assert "aggregations" not in plain
+
+
+async def test__composite_aggregations_page_through_the_key_combinations() -> None:
+    """By key, a missing value first when it has a bucket, else left out; ``size`` buckets after ``after``."""
+    fake = FakeClient()
+    documents = {"a": {"t": "x", "s": "A"}, "b": {"t": "x", "s": "A", "f": True}, "c": {"t": "y", "s": "D"}, "d": {}}
+    for document_id, document in documents.items():
+        await fake.index(index="docs", id=document_id, document=document)
+    sources = [
+        {"type": {"terms": {"field": "t"}}},
+        {"flag": {"terms": {"field": "f", "missing_bucket": True}}},
+    ]
+
+    first = await fake.search(index="docs", size=0, aggs={"c": {"composite": {"size": 2, "sources": sources}}})
+    after = first["aggregations"]["c"]["after_key"]
+    rest = await fake.search(
+        index="docs", size=0, aggs={"c": {"composite": {"size": 2, "sources": sources, "after": after}}}
+    )
+    last = await fake.search(
+        index="docs",
+        size=0,
+        aggs={"c": {"composite": {"size": 2, "sources": sources, "after": {"type": "y", "flag": None}}}},
+    )
+
+    assert first["aggregations"]["c"]["buckets"] == [
+        {"key": {"type": "x", "flag": None}, "doc_count": 1},
+        {"key": {"type": "x", "flag": True}, "doc_count": 1},
+    ]
+    assert rest["aggregations"]["c"] == {
+        "buckets": [{"key": {"type": "y", "flag": None}, "doc_count": 1}],
+        "after_key": {"type": "y", "flag": None},
+    }
+    assert last["aggregations"]["c"] == {"buckets": []}

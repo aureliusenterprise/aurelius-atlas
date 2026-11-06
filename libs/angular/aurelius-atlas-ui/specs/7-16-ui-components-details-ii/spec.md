@@ -1,6 +1,6 @@
 # 7.16 UI components: details chrome set
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#110](https://github.com/aureliusenterprise/aurelius-atlas/pull/110)
 - **Records:** DD-189 (the chip atom is the classification chip), DD-190 (the
   type-name badge is its own component), DD-191 (details navigation is a shell;

@@ -1,6 +1,6 @@
 # 2.3 Entity read REST
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-049 to DD-051, DV-17 to DV-19; relies on DD-039, DD-040, DD-043 to DD-047, DV-15
 

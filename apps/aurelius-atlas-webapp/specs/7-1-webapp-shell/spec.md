@@ -1,6 +1,6 @@
 # 7.1 Webapp shell and localisation
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** #98
 - **Records:** ADR 053; DD-126, DD-127, DD-128, DD-129, DD-133; relies on ADR 007, ADR 018, DD-019
 

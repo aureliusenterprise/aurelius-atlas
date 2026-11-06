@@ -1,0 +1,8 @@
+# Incidents
+
+The record of every incident and every rehearsal of the incident path, newest first (INC-03). The format and
+the rehearsals' schedule are on [Incident Management](../incident-management.md#the-record).
+
+| Date       | Record                                                                      | Kind      |
+| ---------- | --------------------------------------------------------------------------- | --------- |
+| 2026-11-05 | [Server silent, the first rehearsal](2026-11-05-rehearsal-server-silent.md) | rehearsal |

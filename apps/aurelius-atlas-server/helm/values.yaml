@@ -151,6 +151,23 @@ config:
     AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
     AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     OTEL_SEMCONV_STABILITY_OPT_IN: http
+    # The entity audits' lifetime (RET-07, ADR 025): Atlas's aging, off by its
+    # default, swept daily. An event other than an entity's creation ages out
+    # after 90 days; the creation stays with its entity.
+    AURELIUS_ATLAS_SERVER_AUDIT_AGING_ENABLED: "true"
+    AURELIUS_ATLAS_SERVER_AUDIT_DEFAULT_AGEOUT_TTL_IN_DAYS: "90"
+    AURELIUS_ATLAS_SERVER_AUDIT_AGING_SCHEDULER_FREQUENCY_IN_DAYS: "1"
+    # Snapshots (SNP-01 to SNP-03, ADR 026): the server puts the store's policy,
+    # a snapshot every hour kept seven days, and watches its runs. The store
+    # chart mounts the repository's root (path.repo) on its snapshots claim.
+    AURELIUS_ATLAS_SERVER_SNAPSHOT_ENABLED: "true"
+
+# The restore Job (SNP-07): enabled with replicaCount 0, it restores the
+# store from a snapshot, the newest successful one unless snapshot names one.
+# The procedure: docs/architecture/platform/resilience/backup-and-restore.md.
+restore:
+    enabled: false
+    snapshot: ""
 
 # Settings that arrive from Secrets (DD-287) — the chart renders the joins
 # (CHT-21): ELASTICSEARCH_PASSWORD <- <release>-elasticsearch/elastic-password,

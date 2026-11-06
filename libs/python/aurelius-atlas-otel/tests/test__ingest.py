@@ -18,10 +18,13 @@ from aurelius_atlas_otel.ingest import (
     REFRESH_AHEAD_SECONDS,
     ClientCredentialsTokenSource,
     _IngestSession,
+    build_otlp_log_processor,
     build_otlp_pipeline,
 )
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
 from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
@@ -197,3 +200,16 @@ def test__build_otlp_pipeline_wires_the_ingest_session_into_both_exporters(monke
     metric_session = cast("RequestsHTTPTransport", metric_exporter._client._transport)._session  # noqa: SLF001
     assert isinstance(span_session, _IngestSession)
     assert metric_session is span_session  # one session, one token source
+
+
+@pytest.mark.covers("aurelius_atlas_otel.ingest.build_otlp_log_processor", rules=["OBS-01"])
+def test__the_log_processor_rides_an_ingest_session_to_the_logs_endpoint(monkeypatch: MonkeyPatch) -> None:
+    """The log exporter posts to ``/v1/logs`` through a session that stamps the bearer (OBS-01)."""
+    _install_mint(monkeypatch, {"access_token": "tok-1", "expires_in": 60})
+    processor = build_otlp_log_processor("https://otel-collector:4319", None, _source())
+
+    assert isinstance(processor, BatchLogRecordProcessor)
+    exporter = cast("OTLPLogExporter", processor._batch_processor._exporter)  # noqa: SLF001  # the wiring seam under test
+    assert exporter._endpoint == "https://otel-collector:4319/v1/logs"  # noqa: SLF001
+    session = cast("RequestsHTTPTransport", exporter._client._transport)._session  # noqa: SLF001
+    assert isinstance(session, _IngestSession)

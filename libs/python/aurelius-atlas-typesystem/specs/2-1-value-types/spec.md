@@ -1,6 +1,6 @@
 # 2.1b Value types
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-039, DD-040, DD-041, DV-11, DV-12; relies on DD-024, DD-025, DD-037, DD-038
 

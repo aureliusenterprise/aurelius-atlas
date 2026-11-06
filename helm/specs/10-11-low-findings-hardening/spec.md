@@ -1,6 +1,6 @@
 # 10.11 Low-findings hardening: webapp edge, dev loopbacks, CI hygiene
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** #186 (stacked on #184)
 - **Records:** DD-279 (adds), DD-238 (relies on: the edge limiter's address key),
   DD-262 (relies on: the placeholder-resolved nginx config), DD-270 (relies on:

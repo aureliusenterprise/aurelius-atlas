@@ -1,6 +1,6 @@
 # 2.1a Entity models
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** –
 - **Records:** DD-037, DD-038; relies on DD-002, DD-020, DD-021, DD-022, DD-025
 
