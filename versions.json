@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "fix-all-types-roots",
+    "title": "fix-all-types-roots",
+    "aliases": []
+  },
+  {
     "version": "feat-7-20-details-data-spine",
     "title": "feat-7-20-details-data-spine",
     "aliases": []
