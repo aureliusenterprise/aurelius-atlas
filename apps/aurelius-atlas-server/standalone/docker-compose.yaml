@@ -1,7 +1,8 @@
 # The server alone, with the Atlas dashboards, behind one nginx entry (see README.md):
 #   https://localhost:9000/atlas2/  the server and its dashboards
-#   https://localhost:9000/auth/    the stack's own Keycloak, with the dev realm
-# The store is the dev Elasticsearch; secrets come from the server's and the dev Keycloak's .env.
+#   https://localhost:9000/auth/    the stack's own Keycloak, with the demo realm and its users
+# The store is the dev Elasticsearch; secrets, the demo users' passwords among them, come from the server's
+# and the dev Keycloak's .env.
 # SAMPLE_ZIP names an Atlas export ZIP in data/atlas-sample/ to import once the server is up;
 # empty, or a name no file has, imports nothing.
 name: aurelius-atlas-standalone
@@ -38,10 +39,10 @@ services:
             KC_HEALTH_ENABLED: "true"
             KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
             KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
-            # The dev realm's placeholders.
-            DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
-            DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
-            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The demo realm's placeholders (keycloak/demo.json).
+            DEMO_USER_ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:?}
+            DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:?}
+            DEMO_USER_SCIENTIST_PASSWORD: ${DEMO_USER_SCIENTIST_PASSWORD:?}
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             JAVA_OPTS: -Xms256m -Xmx512m -Dkeycloak.migration.replace-placeholders=true
         healthcheck:
@@ -55,7 +56,7 @@ services:
             retries: 30
             start_period: 120s
         volumes:
-            - ../../../dev/keycloak/import:/opt/keycloak/data/import:ro
+            - ./keycloak:/opt/keycloak/data/import:ro
 
     aurelius-atlas-server:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
@@ -77,13 +78,14 @@ services:
             # Propagation by the task worker after the request, as Atlas's default; false propagates in it (DD-081).
             AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_SERVER_AUTH_REALM: demo
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
             AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
         volumes:
             - *certs
 
-    # One shot: waits for the server, signs in as the dev writer and posts SAMPLE_ZIP to admin/import, all
+    # One shot: waits for the server, signs in as the demo user atlas and posts SAMPLE_ZIP to admin/import, all
     # through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
     sample-import:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
@@ -94,9 +96,9 @@ services:
         restart: "no"
         environment:
             ATLAS_URL: https://localhost:9000/atlas2
-            TOKEN_URL: https://localhost:9000/auth/realms/master/protocol/openid-connect/token
-            ATLAS_USERNAME: aurelius-writer
-            ATLAS_PASSWORD: ${DEV_USER_WRITER_PASSWORD:-}
+            TOKEN_URL: https://localhost:9000/auth/realms/demo/protocol/openid-connect/token
+            ATLAS_USERNAME: atlas
+            ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:-}
             CA_FILE: /certs/ca.pem
             SAMPLE_DIR: /sample
             SAMPLE_ZIP: ${SAMPLE_ZIP:-}

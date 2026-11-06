@@ -1,0 +1,98 @@
+{
+    "clientScopeMappings": {
+        "aurelius-atlas-server": [
+            { "client": "aurelius", "roles": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"] }
+        ]
+    },
+    "clients": [
+        {
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:9000/atlas2/"
+            },
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-server",
+            "description": "The Atlas server's confidential client: the dashboards sign in through it (authorization code with PKCE), and its tokens are accepted by the server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "name": "aurelius-atlas-server",
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": ["https://localhost:9000/atlas2/login.jsp"],
+            "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "webOrigins": []
+        },
+        {
+            "clientId": "aurelius",
+            "description": "The public client the sample import signs in through, with a password; its tokens carry the server's roles.",
+            "directAccessGrantsEnabled": true,
+            "enabled": true,
+            "fullScopeAllowed": false,
+            "name": "aurelius",
+            "protocol": "openid-connect",
+            "publicClient": true,
+            "redirectUris": [],
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": false,
+            "webOrigins": []
+        }
+    ],
+    "displayName": "Aurelius Atlas demo",
+    "enabled": true,
+    "loginWithEmailAllowed": false,
+    "realm": "demo",
+    "registrationAllowed": false,
+    "roles": {
+        "client": {
+            "aurelius-atlas-server": [
+                { "description": "Read the types, the entities and their classifications", "name": "atlas-read" },
+                {
+                    "description": "Create, change and delete entities, relationships and their classifications",
+                    "name": "atlas-write"
+                },
+                { "description": "Create, change and delete types", "name": "atlas-types" },
+                { "description": "Import, export, purge and the admin audits", "name": "atlas-admin" }
+            ]
+        }
+    },
+    "sslRequired": "external",
+    "users": [
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            },
+            "credentials": [{ "type": "password", "value": "${DEMO_USER_ATLAS_PASSWORD}" }],
+            "email": "atlas@aureliusenterprise.com",
+            "enabled": true,
+            "firstName": "Atlas",
+            "lastName": "Administrator",
+            "username": "atlas"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write"]
+            },
+            "credentials": [{ "type": "password", "value": "${DEMO_USER_STEWARD_PASSWORD}" }],
+            "email": "steward@aureliusenterprise.com",
+            "enabled": true,
+            "firstName": "Data",
+            "lastName": "Steward",
+            "username": "steward"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read"]
+            },
+            "credentials": [{ "type": "password", "value": "${DEMO_USER_SCIENTIST_PASSWORD}" }],
+            "email": "scientist@aureliusenterprise.com",
+            "enabled": true,
+            "firstName": "Data",
+            "lastName": "Scientist",
+            "username": "scientist"
+        }
+    ]
+}
