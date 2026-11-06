@@ -6459,8 +6459,9 @@ way to try the server by hand. <code>nx serve</code> and the e2e stacks are unch
 </tr>
 </tbody>
 </table>
-<p>The store is the dev Elasticsearch. Keycloak is the stack's own, because the dev Keycloak's address is the
-issuer the other dev services trust (DD-363). At every start it imports the realm <code>demo</code> from
+<p>The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or
+<code>nx serve</code> write to the dev store (DD-367). Keycloak is the stack's own too, because the dev Keycloak's
+address is the issuer the other dev services trust (DD-363). At every start it imports the realm <code>demo</code> from
 <code>keycloak/demo.json</code>, with three users (DD-366):</p>
 <table>
 <thead>
@@ -6491,9 +6492,10 @@ issuer the other dev services trust (DD-363). At every start it imports the real
 <p>Their passwords are <code>DEMO_USER_ATLAS_PASSWORD</code>, <code>DEMO_USER_STEWARD_PASSWORD</code> and <code>DEMO_USER_SCIENTIST_PASSWORD</code>
 in the dev Keycloak's <code>.env</code>, decrypted from its <code>.env.enc</code>.</p>
 <h2 id="start">Start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h2>
-<p>The dev store runs first. The secrets come from the server's <code>.env</code> and the dev Keycloak's <code>.env</code>:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>dev/elasticsearch/docker-compose.yaml<span class="w"> </span>up<span class="w"> </span>-d
-docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
+<p>The secrets come from the server's <code>.env</code> and the dev Keycloak's <code>.env</code>. The store uses the dev store's
+configuration and certificate, <code>dev/elasticsearch/certs/</code>; <code>npx nx certgen aurelius-atlas-dev-elasticsearch</code>
+makes it on a new clone.</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The dashboards answer at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a> once Keycloak is ready, about a minute after the
@@ -6552,6 +6554,9 @@ later.</p>
 <li><code>nginx.conf</code>: TLS on port 9000 with the server's certificate. <code>/atlas2/</code> goes to the server without the
   prefix; the server knows it as <code>AURELIUS_ATLAS_SERVER_ROOT_PATH</code>, so its redirects and its sign-in's return
   lead back under it (9.5). <code>/auth/</code> goes to Keycloak unchanged, which serves under <code>/auth</code> itself.</li>
+<li><code>elasticsearch</code>: one node with <code>dev/elasticsearch/config/elasticsearch.yml</code>, the volumes
+  <code>elasticsearch-data</code> and <code>elasticsearch-snapshots</code>, and no published port. The server reaches it as
+  <code>https://elasticsearch:9200</code> with its own password, which is the <code>elastic</code> user's here.</li>
 <li>The server and the sample import run in the proxy's network (<code>network_mode: service:proxy</code>). nginx reaches
   the server on <code>127.0.0.1:21000</code>, and the server reaches Keycloak at <code>https://localhost:9000/auth</code>, the
   address the browser uses, so the tokens' issuer is the one the server checks.</li>
@@ -6560,7 +6565,10 @@ later.</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>down
 </code></pre></div>
-<p>The data stays in the dev store, as everything <code>nx serve</code> writes there does.</p>
+<p>The data stays in the stack's volumes for the next start. <code>down -v</code> deletes them, so the next start begins
+with an empty store: the server creates Atlas's and the m4i types again, and <code>SAMPLE_ZIP</code> imports the sample.
+The Statistics chart fills from the hourly snapshots, so a new store's chart is empty until the first full
+hour.</p>
 
 
 

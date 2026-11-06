@@ -7319,6 +7319,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>9.5c</td>
+<td>The standalone stack's own store</td>
+<td>The standalone stack's own Elasticsearch, apart from the dev store the e2e suites write to; <code>down -v</code> empties it (SST-01..03, DD-367)</td>
+<td>none</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>10.1</td>
 <td>Deployment chart foundation</td>
 <td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-298, DD-283..294)</td>
