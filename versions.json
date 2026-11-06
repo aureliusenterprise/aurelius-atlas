@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "fix-statistics-chart-open",
+    "title": "fix-statistics-chart-open",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
