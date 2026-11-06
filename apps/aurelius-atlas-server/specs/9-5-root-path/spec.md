@@ -1,7 +1,7 @@
 # 9.5 The server under a path prefix
 
 - **Status:** in review
-- **Pull request:** to follow
+- **Pull request:** [#276](https://github.com/aureliusenterprise/aurelius-atlas/pull/276)
 - **Records:** DD-363, DV-140; relies on AUT-01 to AUT-07 (the sign-in), SRV-08 (the security headers)
   and SRV-10 (the proxy's trust)
 
