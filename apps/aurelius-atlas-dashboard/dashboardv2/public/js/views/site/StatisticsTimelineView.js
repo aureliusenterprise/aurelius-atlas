@@ -147,7 +147,7 @@ define(['require',
                 this.metricCollectctionTime.url = UrlLinks.metricsAllCollectionTimeApiUrl();
                 this.entityTypeChartCollection = new VTagList();
                 this.entityTypeChartCollection.url = UrlLinks.metricsGraphUrl();
-                this.entityType = "hive_table"; //default entity type for metrics chart
+                this.entityType = "_ALL_ENTITY_TYPES"; //default entity type for metrics chart: every entity type summed (Aurelius patch 02)
                 this.metricsChartDateRange = "7d"; //default range for metrics  chart 
                 this.freshLoad = true;
                 this.dateRangesMap = {

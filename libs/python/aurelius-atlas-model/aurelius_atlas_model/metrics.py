@@ -80,6 +80,9 @@ class AtlasMetrics(AtlasModel):
 
 
 STATUS_CATEGORY = ("Active", "Deleted", "Shell")
+
+ALL_ENTITY_TYPES = "_ALL_ENTITY_TYPES"
+"""``SearchParameters.ALL_ENTITY_TYPES``: as a chart's type name, every entity type's count summed (MHS-06)."""
 """The states a stored metric's type data counts, as ``AtlasEntityUtil`` names them."""
 
 METRICS_ID_PREFIX = "atlas_metrics_"
@@ -116,7 +119,12 @@ class AtlasMetricsStat(AtlasModel):
         if type_names:
             entity = (metrics.data or {}).get("entity", {})
             type_data = {
-                name: {status: (entity.get(f"entity{status}") or {}).get(name, 0) for status in STATUS_CATEGORY}
+                name: {
+                    status: _all_types(entity.get(f"entity{status}"))
+                    if name == ALL_ENTITY_TYPES
+                    else (entity.get(f"entity{status}") or {}).get(name, 0)
+                    for status in STATUS_CATEGORY
+                }
                 for name in type_names
             }
         return cls(
@@ -133,3 +141,8 @@ class AtlasMetricsMapToChart(AtlasModel):
 
     key: str
     values: list[list[int]]
+
+
+def _all_types(counts: dict[str, Any] | None) -> int:
+    """The counts of every entity type, each counted by its own type alone, summed: every entity once (MHS-06)."""
+    return sum(int(count) for count in (counts or {}).values())

@@ -318,6 +318,32 @@ async def test__a_chart_pairs_each_states_counts_with_their_times_earliest_first
     assert await service.get_metrics_for_chart_by_type_names(HOUR, 2 * HOUR, []) == {}
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_core.metrics_service.MetricsService.get_metrics_for_chart_by_type_names",
+    "aurelius_atlas_core.metrics_service.MetricsService.get_metrics_in_range_by_type_names",
+    rules=["MHS-06"],
+)
+async def test__all_entity_types_chart_every_entity_once() -> None:
+    """_ALL_ENTITY_TYPES sums every type's own counts per state at each time; a type of that name is not asked."""
+    service, _, _ = await stored_metrics()
+    [latest, *_] = await service.get_all_metrics_stats(min_info=False)
+    assert latest.metrics is not None
+    own = {
+        status: latest.metrics.metric("entity", f"entity{status}") or {} for status in ("Active", "Deleted", "Shell")
+    }
+
+    charts = await service.get_metrics_for_chart_by_type_names(HOUR, 3 * HOUR, ["_ALL_ENTITY_TYPES", "met_view"])
+    ranged = await service.get_metrics_in_range_by_type_names(HOUR, 3 * HOUR, ["_ALL_ENTITY_TYPES"])
+
+    assert {chart.key: chart.values[-1] for chart in charts["_ALL_ENTITY_TYPES"]} == {
+        status: [3 * HOUR, sum(counts.values())] for status, counts in own.items()
+    }
+    assert sum(own["Active"].values()) + sum(own["Deleted"].values()) == latest.metrics.metric("general", "entityCount")
+    assert [len(chart.values) for chart in charts["_ALL_ENTITY_TYPES"]] == [3, 3, 3]
+    assert charts["met_view"][0].values[-1] == [3 * HOUR, 1]
+    assert ranged[0].type_data == {"_ALL_ENTITY_TYPES": {s: sum(c.values()) for s, c in own.items()}}
+
+
 @pytest.mark.covers("aurelius_atlas_core.metrics_service.MetricsService.purge_metrics_stats", rules=["MHS-05"])
 async def test__the_metrics_past_their_time_to_live_are_purged() -> None:
     """Those collected more than the TTL ago are deleted, and so no longer listed; one of exactly the TTL stays."""
