@@ -125,3 +125,24 @@ middleware, not a framework feature.
 HSTS-off answers. The parity runner compares expected response headers only, so
 additive headers keep every scenario green. The dev compose stacks carry
 `HSTS_ENABLED=false` explicitly (e2e images do not read `.env`). Next free DD: 237.
+
+### DD-364. The dashboards' CSP allows blob workers, images and data fonts, as Atlas's does
+
+- **Status:** Proposed
+- **Increment:** 9.2 (a fix found on the dashboards)
+- **Date:** 2026-11-06
+
+**Decision.** The dashboard documents' CSP of DD-236 also names `worker-src 'self' blob:`, `img-src 'self'
+blob: data:` and `font-src 'self' data:`. The API's CSP stays as DD-236 has it.
+
+**Reason.** The dashboards' tree component (jstree) parses its trees in a worker made from a `blob:` URL, and
+falls back only when creating the worker throws. A browser that refuses the worker without throwing, as
+current Chrome does, leaves the trees and the views that wait for them spinning. Atlas's own policy
+(`HeadersUtil`) allows `blob:` and `data:` in `script-src`, which covers workers, and `blob:` images and
+`data:` fonts. Naming the worker source alone keeps `script-src` as strict as DD-236 made it.
+
+**Alternatives.** `blob:` in `script-src`, as Atlas has it: it would also allow `blob:` scripts in the page.
+Turning jstree's worker off in the vendored dashboards: a patch to the legacy code, which DD-236 keeps as it
+is.
+
+**Consequences.** A same-origin script can start a worker from a `blob:` URL it made, as it can under Atlas.

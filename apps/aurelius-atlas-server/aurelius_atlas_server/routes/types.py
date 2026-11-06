@@ -5,7 +5,7 @@ from typing import Annotated, Any
 
 from aurelius_atlas_core.authorization import filter_types_def
 from aurelius_atlas_core.type_search import TypeSearchFilter, search_types_def, type_def_headers
-from aurelius_atlas_core.typedef_store import TypedefStore
+from aurelius_atlas_core.typedef_store import TypedefStore, root_def
 from aurelius_atlas_model.typedef import AtlasTypesDef, TypeCategory
 from fastapi import APIRouter, Depends, Request, Response
 from pydantic import ValidationError
@@ -152,7 +152,8 @@ def kind_by_name(kind: TypeCategory) -> Lookup:
     async def lookup(name: str, request: Request, store: Store) -> AtlasJSONResponse:
         validate_param_length("name", name)
         found = store.get_def_by_name(kind, name)
-        verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, name)
+        if found is not root_def(kind, name):  # Atlas answers a root without the access check (TYR-13)
+            verify_access(request, AtlasPrivilege.TYPE_READ, READ_TYPE, name)
         return _json(found.to_json())
 
     return lookup

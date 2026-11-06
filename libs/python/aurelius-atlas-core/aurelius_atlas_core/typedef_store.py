@@ -35,8 +35,9 @@ from aurelius_atlas_model.typedef import (
     TypeCategory,
 )
 from aurelius_atlas_typesystem.registry import TransientTypeRegistry, TypeRegistry
-from aurelius_atlas_typesystem.types import RelationshipType, StructType
+from aurelius_atlas_typesystem.types import CLASSIFICATION_ROOT, ENTITY_ROOT, RelationshipType, StructType
 
+from aurelius_atlas_core.search_context import ALL_CLASSIFICATION_TYPES, ALL_ENTITY_TYPES
 from aurelius_atlas_core.stored_form import (
     LEGACY_KIND,
     java_end_string,
@@ -581,14 +582,18 @@ class TypedefStore:
         return typedef
 
     def get_def_by_name(self, kind: TypeCategory, name: str) -> AtlasBaseTypeDef:
-        """The registered definition of ``kind`` named ``name`` (``get{Kind}DefByName``, TYR-03).
+        """The registered definition of ``kind`` named ``name`` (``get{Kind}DefByName``, TYR-03), or for a name not
+        registered, the root definition that ``_ALL_ENTITY_TYPES`` or ``_ALL_CLASSIFICATION_TYPES`` names (TYR-13).
 
         Raises:
             AtlasError: ``TYPE_NAME_NOT_FOUND`` when no definition of ``kind`` has the name.
-        """
+        """  # noqa: D205 - one sentence
         typedef = self.registry.typedef_by_name(name)
         if typedef is None or typedef.category is not kind:
-            raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name)
+            root = root_def(kind, name) if typedef is None else None
+            if root is None:
+                raise AtlasError(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name)
+            return root
         return typedef
 
     def get_def_by_guid(self, kind: TypeCategory, guid: str) -> AtlasBaseTypeDef:
@@ -966,3 +971,14 @@ def _edges(typedef: AtlasBaseTypeDef, *, relationships: bool) -> set[str]:
 
 def _compare_patch_ids(left: AtlasPatch, right: AtlasPatch) -> int:
     return java_compare(str(left.id), str(right.id))
+
+
+def root_def(kind: TypeCategory, name: str) -> AtlasBaseTypeDef | None:
+    """The root definition a search's pseudo type names: ``_ALL_ENTITY_TYPES`` the entity root's, and
+    ``_ALL_CLASSIFICATION_TYPES``, in any case, the classification root's (TYR-13).
+    """  # noqa: D205 - one sentence
+    if kind is TypeCategory.ENTITY and name == ALL_ENTITY_TYPES:
+        return ENTITY_ROOT.entity_def
+    if kind is TypeCategory.CLASSIFICATION and name.lower() == ALL_CLASSIFICATION_TYPES.lower():
+        return CLASSIFICATION_ROOT.classification_def
+    return None
