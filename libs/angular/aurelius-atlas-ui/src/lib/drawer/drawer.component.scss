@@ -66,17 +66,29 @@ $aurelius-drawer-motion-duration: 200ms;
 .aurelius-drawer-panel {
     animation: aurelius-drawer-in $aurelius-drawer-motion-duration ease-out;
     background-color: var(--bulma-scheme-main);
+    // The panel is a native <dialog>: the UA sheet gives it a border, an
+    // auto margin (centering), padding, its own ink and BOTH inline edges
+    // pinned (`left: 0; right: 0`) — all reset here, like Bulma's own
+    // generic sheet does for its elements. The edge pins matter: with the
+    // auto margin gone, a kept start edge would anchor the over-constrained
+    // box to the LEFT (in LTR the end edge is what gets dropped), so the
+    // start inset returns to auto and only the end edge below positions it.
+    border: 0;
     box-shadow: var(--bulma-shadow);
+    color: inherit;
     display: flex;
     flex-direction: column;
     height: 100%;
+    margin: 0;
     max-width: min(28rem, 100vw);
+    padding: 0;
     // The panel clips (DD-181): the body is the scroll container, so a
     // long feed scrolls under the head and subhead — the drawer's chrome
     // (title, actions, inbox bar) never slides away.
     overflow: hidden;
     position: absolute;
     inset-block: 0;
+    inset-inline-start: auto;
     inset-inline-end: 0;
     width: 28rem;
 
@@ -116,6 +128,26 @@ $aurelius-drawer-motion-duration: 200ms;
     overflow-y: auto;
     // The same 2rem inset below the head's border (DD-163).
     padding: var(--bulma-modal-card-head-padding, 2rem);
+}
+
+/*
+ * The fixed foot bar (UIC-25): outside the scrolling body, so a drawer's
+ * commit actions stay put. It copies the head's chrome — the same border
+ * and inset — on the opposite edge, and is `flex-shrink: 0` so a long
+ * body cannot squeeze it (the modal-card's body/foot padding pair, Bulma's
+ * own anatomy). With no projected content (settings, alerts) `:empty`
+ * hides it, so the bar costs those drawers nothing.
+ */
+.aurelius-drawer-foot {
+    border-top: 1px solid var(--bulma-scheme-main-bis);
+    display: flex;
+    flex-shrink: 0;
+    gap: var(--bulma-block-spacing);
+    padding: var(--bulma-modal-card-head-padding, 2rem);
+}
+
+.aurelius-drawer-foot:empty {
+    display: none;
 }
 
 // The exit pass (DD-162): `closing()` adds the class, the panel's

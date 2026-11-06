@@ -12,6 +12,7 @@ config nor a way to write it (SHL-02).
     "appCopyright" $cfg.appCopyright
     "appName" $cfg.appName
     "appVersion" (default .Chart.AppVersion $cfg.appVersion)
+    "atlasClientId" $cfg.atlasClientId
     "keycloak" (dict
         "clientId" $cfg.keycloak.clientId
         "realm" (include "atlas-webapp.realm" .)

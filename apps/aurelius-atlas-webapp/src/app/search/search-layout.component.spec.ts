@@ -2,6 +2,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
+import Keycloak from "keycloak-js";
 import { vi } from "vitest";
 
 import { AppConfig } from "../config";
@@ -16,9 +17,15 @@ const config: AppConfig = {
     appName: "Aurelius Atlas Data Governance",
     appCopyright: 2022,
     appVersion: "7.11.0#abc1234",
+    atlasClientId: "aurelius-atlas-server",
 };
 
-function setup() {
+/**
+ * Bring the layout up with a token (EDT-09): the fake Keycloak's
+ * `hasResourceRole` answers `canWrite` for the hero's `+` — granted unless
+ * a test passes `atlasWrite: false`.
+ */
+function setup({ atlasWrite = true }: { atlasWrite?: boolean } = {}) {
     const navigate = vi.fn().mockResolvedValue(true);
     TestBed.configureTestingModule({
         imports: [SearchLayout],
@@ -29,6 +36,13 @@ function setup() {
             { provide: APP_CONFIG, useValue: config },
             SearchState,
             { provide: Router, useValue: { navigate } },
+            {
+                provide: Keycloak,
+                useValue: {
+                    hasResourceRole: (role: string, resource?: string) =>
+                        atlasWrite && role === "atlas-write" && resource === config.atlasClientId,
+                },
+            },
         ],
     });
     return { navigate, httpMock: TestBed.inject(HttpTestingController) };
@@ -97,5 +111,36 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         request.flush({ entities: [], approximateCount: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: null } });
         expect(fixture.debugElement.injector.get(SearchState).queryText()).toBe("");
+    });
+
+    it("the hero shows the create `+` with the atlas-write grant (EDT-09, DD-324)", () => {
+        setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        const plus = compiled.querySelector<HTMLButtonElement>("button.aurelius-create-entity");
+        expect(plus).toBeTruthy();
+        expect(plus?.getAttribute("aria-label")).toBe("Create new entity");
+        expect(plus?.querySelector("fa-icon")).toBeTruthy();
+    });
+
+    it("the hero hides the create `+` without the grant (EDT-09)", () => {
+        setup({ atlasWrite: false });
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+
+        expect((fixture.nativeElement as HTMLElement).querySelector("button.aurelius-create-entity")).toBeNull();
+    });
+
+    it("the `+` opens the create-mode editor drawer (EDT-01, DD-322)", () => {
+        const { navigate } = setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-create-entity")!.click();
+
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create"] } }]);
     });
 });

@@ -1,0 +1,15 @@
+/*
+ * The host block and the text flow of the Aurelius `MarkdownComponent`.
+ * The legacy `MarkdownComponent` needed `::ng-deep` here because the
+ * third-party `markdown` directive put the `.content` div outside this
+ * component's view; ours is our own template, so plain rules reach it.
+ */
+:host {
+    display: block;
+}
+
+.content {
+    margin-bottom: 0;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}

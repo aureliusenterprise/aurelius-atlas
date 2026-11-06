@@ -6,6 +6,11 @@
         "fuzzySearchInput": {
             "searchPlaceholder": "Search..."
         },
+        "markdownEditor": {
+            "writeLabel": "Write",
+            "previewLabel": "Preview",
+            "placeholder": "Please type some markdown to get started..."
+        },
         "modal": {
             "close": "Close"
         },

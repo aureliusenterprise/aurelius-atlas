@@ -60,6 +60,12 @@
     "fields": "Fields",
     "hasContent": "Has Content",
     "hasParent": "Has Parent",
+    "holdable": {
+        "tooltip": {
+            "single": "Hold for {{seconds}} second",
+            "plural": "Hold for {{seconds}} seconds"
+        }
+    },
     "high_risk": "High risk",
     "input": "Input",
     "inputToProcesses": "Input to Processes",

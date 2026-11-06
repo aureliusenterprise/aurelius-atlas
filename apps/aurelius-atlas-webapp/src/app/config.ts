@@ -7,6 +7,12 @@
  * environment. The Aurelius `environments/environment.ts` is not ported — this
  * is the settings channel (ADR 018, DD-130, SHL-10).
  */
+/**
+ * The default {@link AppConfig.atlasClientId}: the Keycloak client the
+ * server's settings call `auth_client_id` (DD-300, DD-324).
+ */
+export const DEFAULT_ATLAS_CLIENT_ID = "aurelius-atlas-server";
+
 export interface AppConfig {
     /**
      * Keycloak connection settings for the `keycloak-angular` client.
@@ -50,6 +56,14 @@ export interface AppConfig {
      * label carries the same value; the deployment serves it here.
      */
     readonly appVersion: string;
+
+    /**
+     * The Keycloak client that owns the Atlas privileges (DD-300): the write
+     * affordances render only for a token holding `atlas-write` in this
+     * client's roles (EDT-09, DD-324). It pairs with the server's
+     * `auth_client_id` and defaults to its value, `aurelius-atlas-server`.
+     */
+    readonly atlasClientId?: string;
 }
 
 /**
@@ -87,8 +101,16 @@ export function parseAppConfig(value: unknown): AppConfig {
         throw new Error("Invalid app config: expected a JSON object.");
     }
 
-    const { keycloak, apiBaseUrl, otelExporterUrl, otelMetricsExporterUrl, appName, appCopyright, appVersion } =
-        value as Partial<AppConfig>;
+    const {
+        keycloak,
+        apiBaseUrl,
+        otelExporterUrl,
+        otelMetricsExporterUrl,
+        appName,
+        appCopyright,
+        appVersion,
+        atlasClientId,
+    } = value as Partial<AppConfig>;
 
     if (typeof keycloak !== "object" || keycloak === null) {
         throw new Error('Invalid app config: missing "keycloak" object.');
@@ -105,6 +127,10 @@ export function parseAppConfig(value: unknown): AppConfig {
 
     if (otelMetricsExporterUrl !== undefined) {
         requireString("otelMetricsExporterUrl", otelMetricsExporterUrl);
+    }
+
+    if (atlasClientId !== undefined) {
+        requireString("atlasClientId", atlasClientId);
     }
 
     const requireYear = (name: string, field: unknown): number => {
@@ -126,5 +152,6 @@ export function parseAppConfig(value: unknown): AppConfig {
         appCopyright: requireYear("appCopyright", appCopyright),
         appVersion: requireString("appVersion", appVersion),
         ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
+        atlasClientId: atlasClientId ?? DEFAULT_ATLAS_CLIENT_ID,
     };
 }

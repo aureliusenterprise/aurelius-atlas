@@ -1,8 +1,10 @@
 import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
 import { Router, RouterOutlet } from "@angular/router";
+import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Hero, SearchField } from "aurelius-atlas-ui";
 
-import { APP_CONFIG } from "../tokens";
+import { canWriteEntities } from "./editor/can-write-entities";
 import { SearchState } from "./search-state";
 
 /**
@@ -22,7 +24,7 @@ import { SearchState } from "./search-state";
  * search — the legacy `NavigationEnd` store reset, by construction.
  */
 @Component({
-    imports: [Hero, RouterOutlet, SearchField],
+    imports: [FontAwesomeModule, Hero, RouterOutlet, SearchField],
     selector: "aurelius-atlas-webapp-search",
     templateUrl: "./search-layout.component.html",
     styleUrl: "./search-layout.component.scss",
@@ -41,6 +43,16 @@ export class SearchLayout {
     /** The field's placeholder (SRH-01, the legacy `search.browse.searchPlaceholder`). */
     protected readonly searchPlaceholder = $localize`:@@search.browse.searchPlaceholder:Type your search`;
 
+    /** Whether the hero's `+` shows (EDT-09, DD-324): the atlas-write grant —
+     * the legacy DATA_STEWARD editor `+` (7.7's affordance, this gate). */
+    protected readonly canWrite = canWriteEntities();
+
+    /** The `+` icon. */
+    protected readonly faPlus = faPlus;
+
+    /** The `+`'s accessible name — the catalogue's create label (EDT-11). */
+    protected readonly createLabel = $localize`:@@search.createEntity.newEntity:Create new entity`;
+
     /**
      * The hero field's submit (SRH-01, SRH-08): run the search, carry the
      * text in the URL (DD-219). The results screen's URL effect sees the
@@ -52,5 +64,13 @@ export class SearchLayout {
         void this.router.navigate(["/search/results"], {
             queryParams: { query: query || null },
         });
+    }
+
+    /**
+     * The hero's `+` was clicked (EDT-01, DD-322): open the create-mode
+     * editor drawer — the `drawer` aux outlet carries `create`.
+     */
+    protected openCreate(): void {
+        void this.router.navigate([{ outlets: { drawer: ["create"] } }]);
     }
 }

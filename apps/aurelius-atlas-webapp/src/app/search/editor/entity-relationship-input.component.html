@@ -1,0 +1,80 @@
+<!--
+  One relationship-attribute picker (EDT-14, DD-339): the classification
+  box's anatomy (DD-335/DD-336, mirrored in this component's SCSS) around the
+  searchUsingAttribute round trip. The chips ride inside the bordered box,
+  the text input sits borderless beside them, and the suggestions open as a
+  full-width panel over the fields above the box — the classification box's
+  own Bulma is-up pattern with its offset (DD-343): the pickers sit low in
+  the form, and this is the anatomy the box ships.
+
+  i18n ids are the catalogue bridge keys (EDT-17, DD-128 bridge): the
+  placeholders ride $localize in TypeScript (BRW-02), so only plain text
+  carries markers here.
+-->
+<div
+    class="dropdown is-up aurelius-relationship-box"
+    [class.is-active]="panelShown()"
+    [class.is-danger]="invalid()"
+    (focusin)="onBoxFocusIn()"
+    (focusout)="onBoxFocusOut($event)"
+>
+    @for (chip of chips(); track chip.key; let i = $index) {
+        <aurelius-atlas-ui-classification-chip
+            class="aurelius-relationship-chip"
+            [label]="chip.label"
+            [leadLabel]="chip.lead"
+            [leadColor]="'is-info'"
+            [deletable]="true"
+            [deleteLabel]="deleteLabel()"
+            (remove)="removeAt(i)"
+        ></aurelius-atlas-ui-classification-chip>
+    }
+    @if (!singleFull()) {
+        <input
+            type="text"
+            [id]="inputId()"
+            class="aurelius-relationship-input"
+            [value]="typedText()"
+            [attr.placeholder]="field().single ? singlePlaceholder : placeholder"
+            [attr.aria-labelledby]="labelId()"
+            [attr.aria-invalid]="invalid() ? 'true' : null"
+            [attr.aria-expanded]="panelShown()"
+            [attr.aria-autocomplete]="'list'"
+            [attr.aria-controls]="panelShown() ? listboxId() : null"
+            [attr.aria-activedescendant]="activeRowId()"
+            role="combobox"
+            autocomplete="off"
+            (input)="onTypedEvent($event)"
+            (keyup.enter)="onEnter()"
+            (keydown.escape)="onEscape($event)"
+            (keydown)="onRowKeys($event)"
+        />
+    }
+    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown panel, not a
+         native select — the input keeps the typed text and the rows are buttons
+         styled by Bulma. The listbox/option roles are the pattern's own
+         semantics (S6819's native <select> cannot carry them), so each site
+         carries a reason marker. This div cannot: Prettier always splits a
+         comment off a block tag, so the marker would land off-line and stop
+         working — its line stays flagged until the server's S6819 allowedRoles
+         parameter lists listbox. The option buttons keep their markers —
+         Prettier preserves the inline glue. -->
+    <div class="dropdown-menu" [id]="listboxId()" role="listbox" [attr.aria-label]="label()">
+        <div class="dropdown-content">
+            @for (row of suggestions(); track row.entity.guid ?? row.label; let i = $index) {
+                <!-- //NOSONAR --><button
+                    type="button"
+                    class="dropdown-item"
+                    role="option"
+                    [id]="listboxId() + '-option-' + i"
+                    [disabled]="row.disabled"
+                    [attr.aria-selected]="isActive(i)"
+                    [class.is-active]="isActive(i)"
+                    (mousedown)="onRowMousedown($event, row)"
+                >
+                    {{ row.label }}
+                </button>
+            }
+        </div>
+    </div>
+</div>

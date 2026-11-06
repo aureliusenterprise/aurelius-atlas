@@ -39,7 +39,9 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         const alerts = setup();
         const { compiled } = await renderOpen(alerts);
 
-        const dialog = compiled.querySelector('[role="dialog"]');
+        // The drawer panel is a native <dialog> (S6819): its role is implicit,
+        // so the query targets the element, not a role attribute.
+        const dialog = compiled.querySelector("dialog.aurelius-drawer-panel");
         expect(dialog?.textContent).toContain("Alerts");
         // Newest first, as the store orders them (ALR-03).
         const rows = compiled.querySelectorAll(".notification");

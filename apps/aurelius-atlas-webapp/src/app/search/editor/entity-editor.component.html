@@ -1,0 +1,357 @@
+<!--
+  The entity editor drawer body (EDT-01..EDT-08, DD-322): the routed panel
+  in the `drawer` aux outlet, carried by the ui-lib drawer (the settings /
+  alerts shape). The drawer's own X, backdrop, and Escape close it (EDT-01)
+  — the foot bar carries Save and Delete (EDT-10, EDT-19), no Cancel.
+
+  i18n ids are the catalogue bridge keys (EDT-11, DD-128 bridge). Strings
+  bound into component inputs live in TypeScript as $localize (BRW-02), so
+  only plain text carries markers here — descriptions are comments, never
+  `id|description` suffixes (DD-144).
+-->
+<aurelius-atlas-ui-drawer
+    [(active)]="active"
+    [title]="drawerTitle()"
+    [ariaLabel]="closeLabel"
+    (cancelRequested)="close()"
+>
+    <!-- The foot (EDT-19, DD-347): the commit pair in the drawer's fixed
+         foot bar — Delete (edit mode, write grant) holds three seconds to
+         confirm (EDT-19, the demo's holdable), Save commits. Neither sits
+         in the head anymore: the head carries the title and the X only.
+         Busy rides the pair: Bulma's spinner on the acting button (EDT-18,
+         DD-342) plus the status line above it. While the hold runs, the
+         Delete behaves like `is-loading` itself: the label clears and a
+         donut (the spinner's look, an SVG ring stroke so its edges are
+         smooth) draws clockwise over the hold's own seconds. -->
+    <div drawer-footer class="aurelius-editor-foot">
+        @if (state.saving() || state.deleting()) {
+            <output class="help aurelius-editor-busy">{{ busyLine() }}</output>
+        }
+        <div class="buttons is-right aurelius-editor-actions">
+            @if (deleteShown()) {
+                <button
+                    type="button"
+                    class="button is-danger aurelius-editor-delete"
+                    aurelius-atlas-ui-hold
+                    [holdFor]="deleteHoldSeconds"
+                    [style.--aurelius-hold-duration]="deleteHoldSeconds + 's'"
+                    [attr.title]="deleteTooltip"
+                    [class.is-loading]="state.deleting()"
+                    [disabled]="state.deleting() || state.saving()"
+                    [attr.aria-busy]="state.deleting() ? 'true' : null"
+                    (held)="deleteHeld($event)"
+                >
+                    <!-- Delete. -->
+                    <span i18n="@@search.components.editor.delete">Delete</span>
+                    <svg class="aurelius-hold-donut" viewBox="0 0 16 16" aria-hidden="true">
+                        <circle cx="8" cy="8" r="6.5" pathLength="1"></circle>
+                    </svg>
+                </button>
+            }
+            <button
+                type="button"
+                class="button is-primary aurelius-editor-save"
+                [class.is-loading]="state.saving()"
+                [disabled]="state.saving() || state.deleting()"
+                [attr.aria-busy]="state.saving() ? 'true' : null"
+                (click)="save()"
+            >
+                <!-- Save. -->
+                <span i18n="@@search.components.editor.save">Save</span>
+            </button>
+        </div>
+    </div>
+
+    @if (state.loading() && !state.entity()) {
+        <output class="help aurelius-editor-loading">{{ loadingLine }}</output>
+    }
+
+    <!-- Create mode: the type field over the shipped entity typedefs
+         (EDT-04, DD-330). It stays above the form after the pick — the
+         chosen type rides the route, so re-picking switches the type and
+         re-seeds the form. The ui-lib Select as a plain dropdown. -->
+    @if (pickerVisible()) {
+        <div class="aurelius-editor-picker">
+            <aurelius-atlas-ui-select
+                [options]="pickerRows()"
+                displayField="label"
+                [label]="pickerLabel"
+                [value]="pickerSelected()"
+                [searchVisible]="false"
+                (valueChange)="pickType($event)"
+            ></aurelius-atlas-ui-select>
+        </div>
+    }
+    @if (formVisible()) {
+        <!-- Editing renders the type as static text (EDT-04, DD-330): the
+             type never changes there, so no control — unlike create, where
+             the picker above is how the type is chosen and switched. -->
+        @if (staticType()) {
+            <div class="field aurelius-editor-static-type">
+                <p class="label">{{ pickerLabel }}</p>
+                <p class="is-size-7 aurelius-editor-type">{{ staticType() }}</p>
+            </div>
+        }
+        <!-- The field set (EDT-03): one control per editable attribute, in the
+             resolved order. Each control binds through [formField] (DD-354);
+             the signal form owns validity and is not itself bound. -->
+        <form class="aurelius-editor-form" novalidate>
+            <!-- The required-fields notification (EDT-07): shown at the top of
+                 the form when a Save was attempted and the form is invalid —
+                 never below the fold of a long form. Its delete (Bulma's
+                 notification anatomy) dismisses it until the next Save (DD-331). -->
+            @if (notificationShown()) {
+                <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
+                    <button
+                        type="button"
+                        class="delete"
+                        [attr.aria-label]="closeLabel"
+                        (click)="dismissNotification()"
+                    ></button>
+                    {{ notificationLine }}
+                </div>
+            }
+            @for (field of fields(); track field.name) {
+                <div class="field aurelius-editor-field" [attr.data-field]="field.name">
+                    @if (field.kind === "boolean") {
+                        <!-- Bulma's checkbox anatomy (EDT-03): the label wraps
+                             the input and a bare text node — no wrapper span,
+                             which would drop the gap Bulma gives the text. -->
+                        <label class="checkbox aurelius-editor-checkbox">
+                            <input type="checkbox" [formField]="booleanField(field.name)" />
+                            {{ field.label }}
+                        </label>
+                    } @else if (field.kind === "enum") {
+                        <aurelius-atlas-ui-select
+                            [options]="enumRows(field)"
+                            displayField="value"
+                            [label]="field.label"
+                            [value]="enumSelected(field)"
+                            [invalid]="showError(field)"
+                            [requiredErrorMessage]="nameRequired"
+                            [searchVisible]="false"
+                            (valueChange)="enumPicked(field, $event)"
+                        ></aurelius-atlas-ui-select>
+                    } @else if (field.kind === "multi") {
+                        <label class="label" [for]="'editor-' + field.name + '-0'">{{ field.label }}</label>
+                        <div class="control aurelius-editor-multi">
+                            @for (row of multiRows(field.name); track row; let i = $index) {
+                                <div class="aurelius-editor-multi-row">
+                                    <input
+                                        type="text"
+                                        class="input"
+                                        [id]="'editor-' + field.name + '-' + i"
+                                        [attr.aria-label]="field.label"
+                                        [class.is-danger]="showError(field)"
+                                        [formField]="row"
+                                    />
+                                    <button
+                                        type="button"
+                                        class="button is-small is-ghost aurelius-editor-multi-delete"
+                                        [attr.aria-label]="deleteLabel"
+                                        (click)="removeMultiRow(field, $index)"
+                                    >
+                                        <fa-icon [icon]="faXmark"></fa-icon>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    } @else {
+                        <label class="label" [for]="'editor-' + field.name">
+                            {{ field.label }}
+                            @if (field.required) {
+                                <span class="has-text-danger">*</span>
+                            }
+                        </label>
+                        <div class="control">
+                            @switch (field.kind) {
+                                @case ("markdown") {
+                                    <!-- The description keys (EDT-20, DD-352):
+                                         the ui library's markdown field. The
+                                         control keeps the markdown source
+                                         exactly as the textarea did, so the
+                                         save body (EDT-06) is untouched. The
+                                         component seats the EDT-11 label's
+                                         `for` target through `textareaId`;
+                                         its danger state reads this form's
+                                         field state (UIC-26, DD-354). -->
+                                    <aurelius-atlas-ui-markdown-editor
+                                        [formField]="textField(field.name)"
+                                        [textareaId]="'editor-' + field.name"
+                                        [writeLabel]="markdownWriteLabel"
+                                        [previewLabel]="markdownPreviewLabel"
+                                        [placeholder]="markdownPlaceholder"
+                                    ></aurelius-atlas-ui-markdown-editor>
+                                }
+                                @case ("number") {
+                                    <input
+                                        type="number"
+                                        class="input"
+                                        [class.is-danger]="showError(field)"
+                                        [id]="'editor-' + field.name"
+                                        [formField]="numberField(field.name)"
+                                    />
+                                }
+                                @case ("date") {
+                                    <input
+                                        type="datetime-local"
+                                        class="input"
+                                        [class.is-danger]="showError(field)"
+                                        [id]="'editor-' + field.name"
+                                        [formField]="textField(field.name)"
+                                    />
+                                }
+                                @default {
+                                    <input
+                                        type="text"
+                                        class="input aurelius-editor-text"
+                                        [class.is-danger]="showError(field)"
+                                        [id]="'editor-' + field.name"
+                                        [formField]="textField(field.name)"
+                                    />
+                                }
+                            }
+                        </div>
+                    }
+                    <!-- The error line under the control (EDT-07). The enum
+                         rides the Select's own help line (its `invalid`
+                         input, DD-332), so it is not duplicated here. -->
+                    @if (showError(field) && field.kind !== "enum") {
+                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                    }
+                </div>
+            }
+
+            <!-- The relationship pickers (EDT-13..EDT-17, DD-338/DD-339/DD-341):
+                 one per relationship attribute of the definition and its
+                 supertypes, after the plain attributes and before the
+                 classification box. Each is the classification box's anatomy
+                 around the attribute search; the chips carry the target
+                 entity's type as their lead (the term chip's pattern, DD-341). -->
+            @for (field of relationshipFields(); track field.name) {
+                <div class="field aurelius-editor-field aurelius-editor-relationship" [attr.data-field]="field.name">
+                    <p class="label" [id]="'editor-relationship-' + field.name + '-label'">
+                        {{ field.label }}
+                        @if (field.required) {
+                            <span class="has-text-danger">*</span>
+                        }
+                    </p>
+                    <div class="control">
+                        <aurelius-atlas-webapp-entity-relationship-input
+                            [field]="field"
+                            [editedGuid]="state.entity()?.guid ?? ''"
+                            [invalid]="relationshipErrorShown(field)"
+                            [label]="field.label"
+                            [deleteLabel]="deleteLabel"
+                            [selected]="picksOf(field)"
+                            (changed)="pickRelationship(field, $event)"
+                        ></aurelius-atlas-webapp-entity-relationship-input>
+                    </div>
+                    @if (relationshipErrorShown(field)) {
+                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                    }
+                </div>
+            }
+
+            <!-- The classification box (EDT-05, DD-335, DD-336): one bordered
+                 box — the control's own look — holding the chosen chips (the
+                 details page's chips, UIC-24 delete) inline before the
+                 caret, and the text input. The box is a Bulma dropdown:
+                 while it holds focus, the applicable types that match the
+                 text ride a full-width panel above the box — the box is
+                 the form's last field, so the panel opens upward over the
+                 fields instead of down past the fold (Bulma's is-up;
+                 the menu's stretch to the box's width is the component's
+                 own rule — Bulma has no dropdown full-width modifier).
+                 Typed-or-clicked in. Clicks commit through mousedown (the
+                 panel's click never lands — focus moves first, DD-335).
+                 The input is the combobox (DD-336): the label names it,
+                 Down/Up move the active option (aria-activedescendant),
+                 Enter commits it; with nothing applicable left the input
+                 disables and says so through the help line, so the box
+                 cannot invite typing that matches nothing. -->
+            <div class="field aurelius-editor-classifications">
+                <p class="label" id="editor-classifications-label">{{ classificationsLabel }}</p>
+                <div
+                    class="dropdown is-up control aurelius-editor-classification-box"
+                    [class.is-disabled]="classificationDisabled()"
+                    [class.is-active]="dropdownShown()"
+                    (focusin)="onBoxFocusIn()"
+                    (focusout)="onBoxFocusOut($event)"
+                >
+                    @for (tag of chosenTags(); track tag.typeName) {
+                        <aurelius-atlas-ui-classification-chip
+                            class="aurelius-editor-tag"
+                            [label]="tag.typeName"
+                            [tooltip]="chipTooltip(tag.typeName)"
+                            [deletable]="true"
+                            [deleteLabel]="deleteLabel"
+                            (remove)="removeClassification(tag.typeName)"
+                        ></aurelius-atlas-ui-classification-chip>
+                    }
+                    <input
+                        type="text"
+                        id="editor-classification-input"
+                        class="aurelius-editor-classification-input"
+                        [value]="classificationText()"
+                        [disabled]="classificationDisabled()"
+                        (input)="classificationText.set($any($event.target).value)"
+                        [attr.placeholder]="classificationsPlaceholder"
+                        [attr.aria-labelledby]="'editor-classifications-label'"
+                        [attr.aria-describedby]="helpLineShown() ? 'editor-classifications-help' : null"
+                        [attr.aria-expanded]="dropdownShown()"
+                        [attr.aria-autocomplete]="'list'"
+                        [attr.aria-controls]="dropdownShown() ? 'editor-classification-listbox' : null"
+                        [attr.aria-activedescendant]="activeSuggestionId()"
+                        role="combobox"
+                        autocomplete="off"
+                        (keyup.enter)="addClassification()"
+                        (keydown.escape)="onSuggestionEscape($event)"
+                        (keydown)="onSuggestionKeys($event)"
+                    />
+                    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown
+                         panel, not a native select — the input keeps the typed
+                         text and the rows are buttons styled by Bulma. The
+                         listbox/option roles are the pattern's own semantics
+                         (S6819's native <select> cannot carry them), so each
+                         site carries a reason marker. This div cannot:
+                         Prettier always splits a comment off a block tag, so
+                         the marker would land off-line and stop working — its
+                         line stays flagged until the server's S6819
+                         allowedRoles parameter lists listbox. The option
+                         buttons keep their markers — Prettier preserves the
+                         inline glue. -->
+                    <div
+                        class="dropdown-menu"
+                        id="editor-classification-listbox"
+                        role="listbox"
+                        [attr.aria-label]="classificationsLabel"
+                    >
+                        <div class="dropdown-content">
+                            @for (name of filteredSuggestions(); track name; let i = $index) {
+                                <!-- //NOSONAR --><button
+                                    type="button"
+                                    class="dropdown-item"
+                                    role="option"
+                                    [id]="'editor-classification-option-' + i"
+                                    [attr.aria-selected]="i === activeSuggestion()"
+                                    [class.is-active]="i === activeSuggestion()"
+                                    (mousedown)="pickSuggestion($event, name)"
+                                    (click)="pickSuggestion($event, name)"
+                                >
+                                    {{ name }}
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+                @if (helpLineShown()) {
+                    <p class="help aurelius-editor-no-classifications" id="editor-classifications-help">
+                        {{ noClassifications }}
+                    </p>
+                }
+            </div>
+        </form>
+    }
+</aurelius-atlas-ui-drawer>

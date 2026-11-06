@@ -126,6 +126,18 @@ describe("Select", () => {
         expect(component.value()).toBeNull();
     });
 
+    it("shows the placeholder in the control while nothing is chosen (UIC-14, DD-344)", async () => {
+        fixture.componentRef.setInput("options", rows);
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // A null model must land the control on the placeholder option, not on
+        // nothing: the option's empty value has to be a real attribute, or the
+        // control renders an empty box (live-probed in the editor's drawer).
+        expect(control().selectedIndex).toBe(0);
+        expect(optionLabels()[0]).toBe("-- Please select a value --");
+    });
+
     it("shows the model's row as selected, so two-way binding round-trips (UIC-14)", async () => {
         fixture.componentRef.setInput("options", rows);
         fixture.componentRef.setInput("value", rows[1]);

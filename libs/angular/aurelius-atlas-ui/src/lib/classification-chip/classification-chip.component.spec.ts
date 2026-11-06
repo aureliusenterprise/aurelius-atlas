@@ -15,6 +15,9 @@ import { ClassificationChip } from "./classification-chip.component";
             [loading]="loading()"
             [propagated]="propagated()"
             [originLabel]="originLabel()"
+            [deletable]="deletable()"
+            [deleteLabel]="deleteLabel()"
+            (remove)="remove()"
         >
             <div class="dropdown-divider" chip-sources></div>
             <div class="dropdown-item source-row" chip-sources>Source entity</div>
@@ -31,6 +34,12 @@ class HostComponent {
     readonly loading = signal(false);
     readonly propagated = signal(false);
     readonly originLabel = signal<string | undefined>(undefined);
+    readonly deletable = signal(false);
+    readonly deleteLabel = signal("Delete");
+    removed = 0;
+    remove(): void {
+        this.removed++;
+    }
 }
 
 describe("ClassificationChip", () => {
@@ -106,6 +115,23 @@ describe("ClassificationChip", () => {
         const rows = fixture.nativeElement.querySelectorAll(".dropdown-item.source-row");
         expect(rows).toHaveLength(1);
         expect(rows[0].textContent).toBe("Source entity");
+    });
+
+    it("omits the delete control by default (UIC-24)", () => {
+        expect(fixture.nativeElement.querySelector(".aurelius-classification-chip-delete")).toBeNull();
+    });
+
+    it("seats a Bulma delete in the label tag and emits remove (UIC-24)", () => {
+        host.deletable.set(true);
+        fixture.detectChanges();
+
+        const button = fixture.nativeElement.querySelector(".aurelius-classification-chip-delete");
+        expect(button).toBeTruthy();
+        expect(button.classList.contains("delete")).toBe(true);
+        expect(button.getAttribute("aria-label")).toBe("Delete"); // the default label
+        expect([...tags()].at(-1)!.contains(button)).toBe(true); // inside the label tag
+        button.click();
+        expect(host.removed).toBe(1);
     });
 
     it("localises the origin line from the caller (UIC-20, DD-136)", () => {

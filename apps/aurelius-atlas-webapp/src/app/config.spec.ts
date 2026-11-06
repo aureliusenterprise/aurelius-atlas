@@ -8,6 +8,7 @@ const valid = {
     appName: "Aurelius Atlas Data Governance",
     appCopyright: 2022,
     appVersion: "0.0.0",
+    atlasClientId: "aurelius-atlas-server",
 };
 
 describe("parseAppConfig", () => {
@@ -59,6 +60,20 @@ describe("parseAppConfig", () => {
 
     it("throws when otelMetricsExporterUrl is present but empty", () => {
         expect(() => parseAppConfig({ ...valid, otelMetricsExporterUrl: "" })).toThrow(/"otelMetricsExporterUrl"/);
+    });
+
+    it("defaults atlasClientId to the server's client (EDT-09, DD-324)", () => {
+        const { atlasClientId, ...without } = valid;
+
+        expect(parseAppConfig(without).atlasClientId).toBe("aurelius-atlas-server");
+    });
+
+    it("keeps an explicit atlasClientId (DD-324)", () => {
+        expect(parseAppConfig({ ...valid, atlasClientId: "other-client" }).atlasClientId).toBe("other-client");
+    });
+
+    it("throws when atlasClientId is present but empty (DD-324)", () => {
+        expect(() => parseAppConfig({ ...valid, atlasClientId: "" })).toThrow(/"atlasClientId"/);
     });
 });
 

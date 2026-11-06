@@ -1,0 +1,26 @@
+{
+    // `.scratch/` holds a vendored, gitignored checkout of the legacy Apache
+    // Atlas web app used as the port's reference source (it is not part of
+    // any Nx/TypeScript project here). Without the exclusion the Angular and
+    // TypeScript language services load its own tsconfigs and raise template
+    // errors (missing pipes, unknown elements) that are not this workspace's
+    // problems. The files stay on disk and greppable.
+    "files.exclude": {
+        "**/.scratch": true
+    },
+    // The dashboard poms are vendored Apache Atlas source, byte for byte
+    // (DD-017), and are never built by Maven locally — the build runs grunt
+    // in Docker (build.Dockerfile). The Java/Maven importer (m2e) imported
+    // them anyway and raised a maven-resources-plugin basedir error per pom;
+    // the poms themselves must not be edited (PATCHES.md rule), so the
+    // import exclusion lives here. The entries repeat the extension defaults
+    // plus the dashboard tree.
+    "java.import.exclusions": [
+        "**/node_modules/**",
+        "**/.metadata/**",
+        "**/archetype-resources/**",
+        "**/META-INF/maven/**",
+        "**/.scratch/**",
+        "**/apps/aurelius-atlas-dashboard/**"
+    ]
+}
