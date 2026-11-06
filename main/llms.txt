@@ -3,6 +3,7 @@
 ## User Guide
 
 - [User Guide](<https://aureliusenterprise.github.io/main/user-guide/index.md>)
+- [Standalone Server](<https://aureliusenterprise.github.io/main/user-guide/standalone-server/index.md>)
 
 ## Contributor Guide
 
