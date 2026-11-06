@@ -70,6 +70,7 @@ markdown_extensions:
 nav:
     - User Guide:
           - user-guide/index.md
+          - Standalone Server: user-guide/standalone-server.md
     - Contributor Guide:
           - contributor-guide/index.md
           - Development Environment: contributor-guide/development-environment.md
