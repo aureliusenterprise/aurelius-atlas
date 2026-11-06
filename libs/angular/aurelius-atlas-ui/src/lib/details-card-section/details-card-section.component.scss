@@ -1,0 +1,29 @@
+/* The legacy card-section chrome (details-cards-list.component.scss):
+   the underlined reset link and the stretch-equal card columns. The
+   scroll box keeps its height cap so the section scrolls its own cards,
+   as the legacy `.cards` did. */
+.column {
+    min-width: 333px;
+
+    display: flex;
+    flex-direction: column;
+    justify-content: stretch;
+    align-items: stretch;
+}
+
+.aurelius-card-section-reset {
+    text-decoration: underline;
+}
+
+.cards {
+    max-height: 533px;
+    overflow-y: auto;
+}
+
+.columns {
+    margin: 0;
+}
+
+.aurelius-card-section-controls {
+    margin-right: 0.75rem;
+}

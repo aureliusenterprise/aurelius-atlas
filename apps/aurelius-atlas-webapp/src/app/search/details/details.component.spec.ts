@@ -7,7 +7,7 @@ import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
-import type { AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
+import type { AtlasEntity, AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../alerts/alerts.service";
@@ -26,6 +26,9 @@ import { Details } from "./details.component";
  * arrival, `detectChanges` to let the effects and signals settle.
  */
 const ENTITY_URL = "/api/atlas/v2/entity/guid/";
+
+/** The layout dispatch's typedef read (DET-15): `/v2/types/typedef/name/{name}`. */
+const TYPEDEF_URL = "/api/atlas/v2/types/typedef/name/";
 
 /** The wire body of the fixture entity: two renderable properties. */
 const ANSWER: AtlasEntityWithExtInfo = {
@@ -82,6 +85,19 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
 function arrive(fixture: { detectChanges: () => void }, httpMock: HttpTestingController, body = ANSWER) {
     httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(body);
     fixture.detectChanges();
+    settleTypeDefs(httpMock);
+}
+
+/**
+ * Settle the DET-15 layout walk: a type that is not one of the seven reads
+ * its typedef; every fixture type here is `DataSet` or `m4i_*` with no
+ * layout of its own to walk, so a "no typedef" answer (the built-in
+ * error, DET-15) ends the walk and keeps the default layout.
+ */
+function settleTypeDefs(httpMock: HttpTestingController): void {
+    for (const request of httpMock.match((r) => r.url.startsWith(TYPEDEF_URL))) {
+        request.flush({}, { status: 404, statusText: "Not Found" });
+    }
 }
 
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
@@ -112,6 +128,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
 
         second.flush({ ...ANSWER, entity: { ...ANSWER.entity, guid: "second", attributes: { name: "second" } } });
         fixture.detectChanges();
+        settleTypeDefs(httpMock);
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("second");
     });
 
@@ -122,6 +139,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(requests).toHaveLength(1);
         requests[0].flush(ANSWER);
         fixture.detectChanges();
+        settleTypeDefs(httpMock);
 
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("genomic_variants");
     });
@@ -410,6 +428,433 @@ describe("Details data spine (DET-08..DET-13)", () => {
         // and the rendered entity stays as it arrived.
         httpMock.verify();
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("genomic_variants");
+    });
+});
+
+/** A related-entity end of the seeded `relationshipAttributes`. */
+function end(guid: string, displayText: string): Record<string, unknown> {
+    return { guid, displayText, typeName: "m4i_data_attribute", name: displayText };
+}
+
+/** A person end of the seeded `relationshipAttributes`. */
+function person(guid: string, displayText: string): Record<string, unknown> {
+    return { guid, displayText, typeName: "person" };
+}
+
+/** The m4i entity body, overridable per spec. */
+function m4iEntity(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+    return {
+        entity: {
+            guid: "m4i-1",
+            typeName: "m4i_data_entity",
+            attributes: {
+                name: "variants_entity",
+                qualifiedName: "variants@cluster",
+                description: "A governed entity.",
+            },
+            relationshipAttributes: {
+                attributes: [end("a1", "gene_symbol"), end("a2", "chromosome")],
+                businessOwner: [person("p1", "Ada")],
+                steward: [person("p2", "Lin"), person("p2", "Lin again")],
+                domainLead: [person("p3", "Ada Lead")],
+            },
+            ...overrides,
+        },
+        referredEntities: {},
+    };
+}
+
+/** The bulk answer for the two seeded attributes; extra overrides per guid. */
+function attributesAnswer(overrides: Record<string, Record<string, unknown>> = {}): Record<string, unknown> {
+    return {
+        entities: [
+            {
+                guid: "a1",
+                typeName: "m4i_data_attribute",
+                attributes: { name: "gene_symbol", qualifiedName: "gene_symbol@cluster", description: "HGNC symbol." },
+                relationshipAttributes: { steward: [person("p2", "Lin")] },
+                ...overrides["a1"],
+            },
+            {
+                guid: "a2",
+                typeName: "m4i_data_attribute",
+                attributes: { name: "chromosome", qualifiedName: "chromosome@cluster", description: "The pair." },
+                ...overrides["a2"],
+            },
+        ],
+        referredEntities: {},
+    };
+}
+
+/** Deliver an m4i entity's read and its sections' first chunk. */
+function arriveSections(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    body: AtlasEntityWithExtInfo = m4iEntity(),
+    answer: Record<string, unknown> = attributesAnswer(),
+) {
+    arrive(fixture, httpMock, body);
+    for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        request.flush(answer);
+    }
+    fixture.detectChanges();
+}
+
+/** Type a keyword in one section's box and submit it (the UIC-21 input). */
+function submitKeyword(
+    fixture: { detectChanges: () => void },
+    compiled: HTMLElement,
+    anchor: string,
+    term: string,
+): void {
+    const search = compiled.querySelector<HTMLInputElement>(`#${anchor} input[type='search']`)!;
+    search.value = term;
+    search.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+    search.dispatchEvent(new Event("search"));
+    fixture.detectChanges();
+}
+
+describe("Details m4i sections (DET-15..DET-26)", () => {
+    it("an m4i entity renders its layout's boxes and not the default's (DET-15)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        // The layout's two section boxes with the legacy anchors, the
+        // People box beside the description, and no default-layout chrome.
+        expect(compiled.querySelector("#related-attributes")).toBeTruthy();
+        expect(compiled.querySelector("#related-entities")).toBeTruthy();
+        expect(compiled.querySelector("#people-details")).toBeTruthy();
+        expect(normalize(compiled.querySelector("#people-details h3")?.textContent)).toBe("People");
+        // No typedef read: the name is one of the seven (DET-15's direct hit).
+        httpMock.verify();
+    });
+
+    it("the seed renders count and cards; the count rides the seed (DET-17)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arrive(fixture, httpMock, m4iEntity());
+        fixture.detectChanges(); // count first, ahead of the cards (DET-17)
+
+        const box = compiled.querySelector<HTMLElement>("#related-attributes");
+        expect(normalize(box?.querySelector("h6")?.textContent)).toBe("2 result(s)");
+        expect(box?.querySelector("aurelius-atlas-ui-entity-card .loader")).toBeTruthy(); // loading cards (DET-18)
+
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+            request.flush(attributesAnswer());
+        }
+        fixture.detectChanges();
+
+        const titles = [...(box?.querySelectorAll("aurelius-atlas-ui-entity-card .title.is-4 a") ?? [])].map((link) =>
+            normalize(link.textContent),
+        );
+        expect(titles).toEqual(["gene_symbol", "chromosome"]);
+        httpMock.verify();
+    });
+
+    it("a card body shows chips, the description, and the card entity's people (DET-19)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({ relationshipAttributes: { attributes: [end("a1", "gene_symbol")] } }),
+            {
+                entities: [
+                    {
+                        guid: "a1",
+                        typeName: "m4i_data_attribute",
+                        attributes: { name: "gene_symbol", description: "HGNC **symbol**." },
+                        classifications: [{ typeName: "PII" }],
+                        relationshipAttributes: { steward: [person("p2", "Lin")] },
+                    },
+                ],
+                referredEntities: {},
+            },
+        );
+
+        const card = compiled.querySelector("#related-attributes aurelius-atlas-ui-entity-card")!;
+        expect(normalize(card.querySelector(".field.is-grouped .control")?.textContent)).toBe("PII");
+        expect(card.querySelector(".aurelius-card-description strong")?.textContent).toBe("symbol"); // markdown (DET-10 sibling)
+        expect(normalize(card.querySelector(".aurelius-people-row")?.textContent)).toBe("Data Steward(s): Lin");
+        // No quality column (DET-19: the DQ column has no source).
+        expect(card.querySelector(".quality")).toBeNull();
+        httpMock.verify();
+    });
+
+    it("a card title click routes the screen to the card's guid (DET-19)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled
+            .querySelector<HTMLAnchorElement>("#related-attributes aurelius-atlas-ui-entity-card .title.is-4 a")!
+            .click();
+
+        expect(navigate).toHaveBeenCalledWith(["/search/details", "a1"]);
+    });
+
+    it("the People box links the owner and steward rows, deduped, and routes (DET-23)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const rows = [...compiled.querySelectorAll<HTMLElement>("#people-details .aurelius-people-row")].map((row) =>
+            normalize(row.textContent),
+        );
+        // Legacy order; the steward's duplicate guid is deduped (DET-23).
+        // The part renders "Label" + ": " (a nbsp) + the links.
+        expect(rows).toEqual(["Domain Lead(s): Ada Lead", "Data Owner(s): Ada", "Data Steward(s): Lin"]);
+
+        compiled.querySelector<HTMLAnchorElement>("#people-details .aurelius-people-row a")!.click();
+        expect(navigate).toHaveBeenCalledWith(["/search/details", "p3"]);
+    });
+
+    it("a People box with no people shows the italic line (DET-23)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({ relationshipAttributes: { attributes: [end("a1", "gene_symbol"), end("a2", "chromosome")] } }),
+        );
+
+        expect(compiled.querySelector("#people-details .aurelius-people-row")).toBeNull();
+        const empty = compiled.querySelector(".aurelius-people-empty");
+        expect(normalize(empty?.textContent)).toBe("No people assigned.");
+        expect(empty?.classList.contains("is-italic")).toBe(true);
+    });
+
+    it("the keyword filter narrows the cards and the count line resets them (DET-20)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        submitKeyword(fixture, compiled, "related-attributes", "chromosome");
+
+        const box = compiled.querySelector<HTMLElement>("#related-attributes");
+        expect(box?.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        // The count line becomes the filtered count as a reset link.
+        const reset = box?.querySelector<HTMLAnchorElement>("a.aurelius-card-section-reset");
+        expect(normalize(reset?.textContent)).toBe("1 result(s)");
+
+        reset!.click();
+        fixture.detectChanges();
+        expect(box?.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(2);
+        expect(normalize(box?.querySelector("h6")?.textContent)).toBe("2 result(s)");
+    });
+
+    it("the placeholder is the Aurelius keyword string (DET-20)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        const search = compiled.querySelector<HTMLInputElement>("#related-attributes input[type='search']");
+        expect(search?.getAttribute("placeholder")).toBe("Search for keywords");
+    });
+
+    it("Name sorts the cards by display text; the direction reverses (DET-21)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        const select = compiled.querySelector<HTMLSelectElement>("#related-attributes select")!;
+        select.value = "name";
+        select.dispatchEvent(new Event("change"));
+        fixture.detectChanges();
+
+        const titles = () =>
+            [...compiled.querySelectorAll("#related-attributes .title.is-4 a")].map((link) =>
+                normalize(link.textContent),
+            );
+        expect(titles()).toEqual(["chromosome", "gene_symbol"]);
+
+        compiled.querySelector<HTMLButtonElement>("#related-attributes .aurelius-card-section-direction")!.click();
+        fixture.detectChanges();
+        expect(titles()).toEqual(["gene_symbol", "chromosome"]);
+    });
+
+    it("the grid pages at 9; the load button extends the page (DET-22)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        const many = Array.from({ length: 10 }, (_, index) => end(`g${index}`, `name-${index}`));
+        arriveSections(fixture, httpMock, m4iEntity({ relationshipAttributes: { attributes: many } }), {
+            entities: many.map((row) => ({
+                guid: row["guid"],
+                typeName: "m4i_data_attribute",
+                attributes: { name: row["displayText"] },
+            })),
+            referredEntities: {},
+        });
+
+        expect(compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card")).toHaveLength(9);
+        const load = [...compiled.querySelectorAll<HTMLButtonElement>("#related-attributes button")].find(
+            (button) => normalize(button.textContent) === "Load next page...",
+        );
+        expect(load).toBeTruthy(); // the sentinel's button — one page remains
+
+        load!.click();
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card")).toHaveLength(10);
+        expect(
+            [...compiled.querySelectorAll("#related-attributes button")].some(
+                (button) => normalize(button.textContent) === "Load next page...",
+            ),
+        ).toBe(false); // the filtered set is exhausted
+    });
+
+    it("a failed chunk alerts once and keeps the section's count (DET-18)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        arrive(fixture, httpMock, m4iEntity());
+        fixture.detectChanges();
+
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+            request.flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
+        }
+        fixture.detectChanges();
+
+        expect(add).toHaveBeenCalledWith({
+            severity: "error",
+            source: "search",
+            message: "Retrieving the entity details",
+        });
+        // The cards the chunk carried drop; the count keeps them (DET-18).
+        expect(normalize(compiled.querySelector("#related-attributes h6")?.textContent)).toBe("2 result(s)");
+        expect(compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card")).toHaveLength(0);
+        httpMock.expectNone("/api/atlas/v2/entity/bulk"); // no retry loop
+    });
+
+    it("the stats bar carries the layout's counts and #hrefs (DET-24)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
+            const heading = item.querySelector("p.heading a")!;
+            return [
+                normalize(heading.textContent) ?? "",
+                heading.getAttribute("href") ?? "",
+                normalize(item.querySelector("p.title")?.textContent) ?? "",
+            ];
+        });
+        expect(stats).toEqual([
+            ["Data Attributes", "#related-attributes", "2"],
+            ["Child Entities", "#related-entities", "0"],
+            ["Properties", "#properties-details", "0"],
+        ]);
+        // No Data Quality stat at all (DD-369: not a zero, nothing).
+        expect(stats.some(([label]) => label.includes("Quality"))).toBe(false);
+    });
+
+    it("the side navigation lists the layout's boxes (DET-25)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) => [
+            normalize(link.textContent),
+            link.getAttribute("href"),
+        ]);
+        expect(items).toEqual([
+            ["Description", "#description-details"],
+            ["People", "#people-details"],
+            ["Data Attributes", "#related-attributes"],
+            ["Child Entities", "#related-entities"],
+            ["Properties", "#properties-details"],
+        ]);
+    });
+
+    it("the header badge and the cards show the typeAlias with the base type (DET-26)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({
+                attributes: {
+                    name: "variants_entity",
+                    qualifiedName: "variants@cluster",
+                    description: "A governed entity.",
+                    typeAlias: "Data Entity",
+                },
+            }),
+            attributesAnswer({ a1: { attributes: { name: "gene_symbol", typeAlias: "Data Attribute" } } }),
+        );
+
+        // The header badge: the alias with the base type beside it.
+        expect(normalize(compiled.querySelector(".aurelius-details-type")?.textContent)).toBe(
+            "Data Entity (m4i_data_entity)",
+        );
+        // The card badges: only the resolved card carrying an alias shows one.
+        const badges = [
+            ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
+        ].map((badge) => normalize(badge.textContent));
+        expect(badges).toEqual(["Data Attribute (m4i_data_attribute)", "m4i_data_attribute"]);
+    });
+
+    it("an m4i attribute shows its People box and its Fields section (DET-16, DET-23)", () => {
+        const { fixture, compiled, httpMock } = setup("attr-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            {
+                entity: {
+                    guid: "attr-1",
+                    typeName: "m4i_data_attribute",
+                    attributes: { name: "gene_symbol" },
+                    relationshipAttributes: { fields: [end("f1", "chromosome_pos")] },
+                },
+                referredEntities: {},
+            },
+            {
+                entities: [{ guid: "f1", typeName: "m4i_field", attributes: { name: "chromosome_pos" } }],
+                referredEntities: {},
+            },
+        );
+
+        // The attribute page carries a People box (the spec table and the
+        // legacy page both); with no people ends it shows the empty line.
+        expect(compiled.querySelector("#people-details")).toBeTruthy();
+        expect(normalize(compiled.querySelector(".aurelius-people-empty")?.textContent)).toBe("No people assigned.");
+        expect(normalize(compiled.querySelector("#related-fields h3")?.textContent)).toBe("Fields");
+        expect(compiled.querySelectorAll("#related-fields aurelius-atlas-ui-entity-card")).toHaveLength(1);
+    });
+
+    it("the save re-read re-seeds the sections (DET-17, DD-327)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        TestBed.inject(EntitySaved).notify("m4i-1");
+        fixture.detectChanges();
+        httpMock.expectOne("/api/atlas/v2/entity/guid/m4i-1").flush(m4iEntity({ relationshipAttributes: {} }));
+        fixture.detectChanges();
+
+        // The new entity has no ends: every section re-seeds to zero.
+        expect(normalize(compiled.querySelector("#related-attributes h6")?.textContent)).toBe("0 result(s)");
+        httpMock.verify();
+    });
+
+    it("a DataSet keeps the DET-14 default shape while its walk runs (DET-15)", async () => {
+        const { fixture, compiled, httpMock } = setup("ds-1");
+        // Delivered without settling the walk: this spec rides it to the end.
+        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        fixture.detectChanges();
+
+        // The default layout's boxes — no section boxes, no People box.
+        expect(compiled.querySelector("#related-fields")).toBeNull();
+        expect(compiled.querySelector("#people-details")).toBeNull();
+        expect(compiled.querySelector("table.aurelius-details-properties")).toBeTruthy();
+        expect(normalize(compiled.querySelector(".aurelius-details-property-count")?.textContent)).toBe("2");
+
+        // Settle the DET-15 walk: DataSet's typedef names two plain
+        // supertypes; each answers the built-in error and ends its branch.
+        for (let round = 0; round < 3; round++) {
+            for (const request of httpMock.match((r) => r.url.startsWith(TYPEDEF_URL))) {
+                if (request.request.url === `${TYPEDEF_URL}DataSet`) {
+                    request.flush({ category: "ENTITY_DEF", name: "DataSet", superTypes: ["Asset", "Process"] });
+                } else {
+                    request.flush({}, { status: 404, statusText: "Not Found" });
+                }
+            }
+            await new Promise((resolve) => setTimeout(resolve));
+            fixture.detectChanges();
+        }
+
+        // The walk ends at the default layout: the screen still renders it.
+        expect(compiled.querySelector("table.aurelius-details-properties")).toBeTruthy();
+        expect(compiled.querySelector("#related-fields")).toBeNull();
+        httpMock.verify();
     });
 });
 

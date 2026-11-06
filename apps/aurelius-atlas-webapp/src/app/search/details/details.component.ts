@@ -10,10 +10,15 @@ import {
     Accordion,
     Breadcrumbs,
     ClassificationChip,
+    DetailsCardSection,
     DetailsNavigation,
+    EntityCard,
     Markdown,
+    PeopleBox,
     PropertiesItem,
+    SectionStats,
     TypeName,
+    type SectionStat,
 } from "aurelius-atlas-ui";
 
 import { canWriteEntities } from "../editor/can-write-entities";
@@ -21,6 +26,11 @@ import { EntitySaved } from "../editor/entity-saved";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
+import { CardContent } from "./sections/card-content.component";
+import { DetailsLayoutState } from "./sections/layout.state";
+import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
+import { cardTypeAlias } from "./shared/card";
+import { peopleRows } from "./shared/people";
 
 /**
  * The entity details screen (DET-01, 7.6; the data spine 7.20): the Aurelius
@@ -47,15 +57,20 @@ import { detailProperties } from "./property-filter";
     imports: [
         Accordion,
         Breadcrumbs,
+        CardContent,
         ClassificationChip,
+        DetailsCardSection,
         DetailsNavigation,
+        EntityCard,
         FontAwesomeModule,
         Markdown,
+        PeopleBox,
         PropertiesItem,
+        SectionStats,
         TypeName,
     ],
     selector: "aurelius-atlas-webapp-details",
-    providers: [DetailsState, DetailsBreadcrumbState],
+    providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState],
     templateUrl: "./details.component.html",
     styleUrl: "./details.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -70,6 +85,12 @@ export class Details {
 
     /** The trail's app-side seam (DET-12, DD-317): empty until an API fills it. */
     protected readonly crumbs = inject(DetailsBreadcrumbState);
+
+    /** The layout dispatch (DET-15, DD-366): the m4i layout, or the default. */
+    protected readonly layoutState = inject(DetailsLayoutState);
+
+    /** The card sections of the entity's layout (DET-17..DET-22). */
+    protected readonly sections = inject(RelatedSectionsState);
 
     /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
     protected readonly canWrite = canWriteEntities();
@@ -110,10 +131,27 @@ export class Details {
                 this.state.load(event.guid);
             }
         });
+
+        // The layout dispatch follows the entity (DET-15): a direct name
+        // answers at once, a supertype walk on the next microtask. The
+        // seed follows the layout and the entity (DET-17): every arrival —
+        // the save re-read among them — re-seeds every section.
+        effect(() => {
+            this.layoutState.resolve(this.entity()?.typeName ?? null);
+        });
+        effect(() => {
+            this.sections.seed(this.entity(), this.layoutState.layout());
+        });
     }
 
     /** The resolved entity, or null in every no-entity state (DET-09). */
     protected readonly entity = computed<AtlasEntity | null>(() => this.state.entity());
+
+    /**
+     * The m4i layout of the entity's type, or undefined for the DET-01
+     * default (DET-15) — the switch below the header.
+     */
+    protected readonly layout = computed(() => this.layoutState.layout());
 
     /** The title (DET-09): the name attribute, else qualifiedName, else the fallback. */
     protected readonly title = computed(() => {
@@ -176,6 +214,57 @@ export class Details {
     /** The count above the accordion (DET-11): the rendered row count. */
     protected readonly propertyCount = computed(() => this.properties().length);
 
+    /**
+     * The badge's alias (DET-26, DD-371): `attributes.typeAlias` as a
+     * non-empty string, for the header badge — the cards carry their own
+     * alias from the store's card view.
+     */
+    protected readonly typeAlias = computed(() => {
+        const entity = this.entity();
+        return entity === null ? undefined : cardTypeAlias(entity);
+    });
+
+    /** The People box's rows of the opened entity (DET-23). */
+    protected readonly people = computed(() => {
+        const entity = this.entity();
+        return entity === null ? [] : peopleRows(entity);
+    });
+
+    /** The card sections as the store renders them (DET-17..DET-22). */
+    protected readonly views = this.sections.views;
+
+    /** The description box's title: the layout's own key, or the default's. */
+    protected readonly descriptionTitle = computed(
+        () => this.layout()?.descriptionTitle ?? $localize`:@@search.details.default.description:Description`,
+    );
+
+    /** The properties accordion's title: the layout's own key, or the default's. */
+    protected readonly propertiesTitle = computed(
+        () => this.layout()?.propertiesTitle ?? $localize`:@@search.details.default.properties:Properties`,
+    );
+
+    /** The stats bar of the layout, with live counts (DET-24). */
+    protected readonly stats = computed<SectionStat[]>(() =>
+        (this.layout()?.stats ?? []).map((stat) => ({
+            label: stat.label,
+            target: stat.anchor,
+            count:
+                stat.source.kind === "properties" ? this.propertyCount() : this.sections.countFor(stat.source.anchor),
+        })),
+    );
+
+    /** The card section's placeholder — `search.details.components.detailsCardsList.placeholder`. */
+    protected readonly searchPlaceholder = $localize`:@@search.details.components.detailsCardsList.placeholder:Search for keywords`;
+
+    /** The count line's word — `search.details.components.detailsCardsList.results`. */
+    protected readonly resultWord = $localize`:@@search.details.components.detailsCardsList.results:result(s)`;
+
+    /** The scroll container's label — `search.components.infiniteScrollContainer.loadNextPage`. */
+    protected readonly loadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
+
+    /** The People box's placeholder — `search.components.people.empty`. */
+    protected readonly peopleEmpty = $localize`:@@search.components.people.empty:No people assigned.`;
+
     /** The trail the 7.13 breadcrumbs render (DET-12): empty until the API join. */
     protected readonly trail = this.crumbs.trail.asReadonly();
 
@@ -211,5 +300,84 @@ export class Details {
      */
     protected edit(): void {
         void this.router.navigate([{ outlets: { drawer: ["edit", this.guid()] } }]);
+    }
+
+    /**
+     * A card's title or a person link was activated (DET-19, DET-23): the
+     * same details route the crumbs and property links take.
+     * @param guid the entity to open
+     */
+    protected onCardClick(guid: string): void {
+        void this.router.navigate(["/search/details", guid]);
+    }
+
+    /**
+     * A stats-bar heading was clicked (DET-24): smooth-scroll to the box.
+     * The 7.16 part cancels the fragment jump on its emit (DD-154's
+     * pattern), so the scroll is the screen's; the anchor's `#href` stays
+     * the keyboard path.
+     * @param target the box's anchor id
+     */
+    protected onStatClick(target: string): void {
+        document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    /**
+     * The loading card's row text (DET-18): `search.details.loading`
+     * ("Loading {{name}}...") at the card's display text. The card gets no
+     * name input, so it renders the label as given — the interpolation
+     * happened here, at the display text the seed carries.
+     * @param displayText the card's seed display text
+     * @returns the localized loading text
+     */
+    protected loadingText(displayText: string): string {
+        return loadingLabel(displayText);
+    }
+
+    /**
+     * The search box's text as typed (the card section's `queryChange`
+     * model): the store mirrors it so the echo survives a re-render while
+     * a chunk answers mid-type. Filtering still waits for the submit.
+     * @param view the section
+     * @param text the box's text
+     */
+    protected onSectionText(view: SectionView, text: string | null): void {
+        this.sections.setText(view.anchor, text);
+    }
+
+    /**
+     * A section's keyword submit or clear (DET-20).
+     * @param view the section
+     * @param query the submitted term, or null on clear
+     */
+    protected onSectionQuery(view: SectionView, query: string | null): void {
+        this.sections.setQuery(view.anchor, query);
+    }
+
+    /** A section's reset link was clicked (DET-20).
+     * @param view the section */
+    protected onSectionReset(view: SectionView): void {
+        this.sections.reset(view.anchor);
+    }
+
+    /**
+     * A section's sort select changed (DET-21).
+     * @param view the section
+     * @param sort the selected key
+     */
+    protected onSectionSort(view: SectionView, sort: string | null): void {
+        this.sections.setSort(view.anchor, sort);
+    }
+
+    /** A section's direction button toggled (DET-21).
+     * @param view the section */
+    protected onSectionDirection(view: SectionView): void {
+        this.sections.toggleDirection(view.anchor);
+    }
+
+    /** A section's scroll container asked for the next page (DET-22).
+     * @param view the section */
+    protected onSectionPage(view: SectionView): void {
+        this.sections.nextPage(view.anchor);
     }
 }

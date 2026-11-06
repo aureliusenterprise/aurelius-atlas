@@ -8,6 +8,7 @@ export * from "./lib/card/card.component";
 export * from "./lib/classification-chip/classification-chip.component";
 export * from "./lib/dark-mode/dark-mode.component";
 export * from "./lib/dark-mode/dark-mode.service";
+export * from "./lib/details-card-section/details-card-section.component";
 export * from "./lib/details-navigation/details-navigation.component";
 export * from "./lib/drawer/drawer.component";
 export * from "./lib/entity-card/entity-card.component";
@@ -18,6 +19,7 @@ export * from "./lib/infinite-scroll-container/infinite-scroll-container.compone
 export * from "./lib/markdown-editor/markdown-editor.component";
 export * from "./lib/markdown/markdown.component";
 export * from "./lib/modal/modal.component";
+export * from "./lib/people-box/people-box.component";
 export * from "./lib/pagination/pagination.component";
 export * from "./lib/properties-item/properties-item.component";
 export * from "./lib/search-field/search-field.component";

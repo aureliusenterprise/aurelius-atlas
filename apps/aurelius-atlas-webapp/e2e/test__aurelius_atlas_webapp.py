@@ -696,6 +696,234 @@ def test__details_screen_shows_a_seeded_entity(authenticated: Page, root_url: st
     expect(authenticated.locator(".aurelius-details-properties-empty")).to_have_text("No data available")
 
 
+def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dict[str, str]:
+    """Seed the DET-27 m4i mini-graph through the proxy's bulk endpoint.
+
+    One bulk create carries the whole graph: a domain, an entity with two
+    attributes and two persons on its people ends, a field on one attribute's
+    ``fields`` end, and a dataset holding the field. The ends ride
+    ``relationshipAttributes`` naming the request's own temporary guids, which
+    the server resolves through the request's guid assignments (REL-11 — the
+    editor scenarios' edge-seed idiom, per-request this time). Names are
+    single ``zz<run>`` tokens (the seed helper's word-exact rule); the
+    ``beta``/``alpha`` filter terms cannot appear inside a hex run token.
+    """
+    names = {
+        "domain": f"zz{run}domain",
+        "entity": f"zz{run}entity",
+        "alpha": f"zz{run}alpha",
+        "beta": f"zz{run}beta",
+        "field": f"zz{run}field",
+        "dataset": f"zz{run}warehouse",
+        "owner": f"zz{run}owner",
+        "steward": f"zz{run}steward",
+    }
+
+    def entity(temp_guid: str, type_name: str, key: str, **extra: object) -> dict:
+        body: dict = {
+            "typeName": type_name,
+            "guid": temp_guid,
+            "attributes": {"qualifiedName": names[key], "name": names[key]},
+        }
+        body.update(extra)
+        return body
+
+    body = {
+        "entities": [
+            entity(
+                "-0",
+                "m4i_data_domain",
+                "domain",
+                relationshipAttributes={"dataEntity": [{"guid": "-1", "typeName": "m4i_data_entity"}]},
+            ),
+            entity(
+                "-1",
+                "m4i_data_entity",
+                "entity",
+                relationshipAttributes={
+                    "attributes": [
+                        {"guid": "-2", "typeName": "m4i_data_attribute"},
+                        {"guid": "-3", "typeName": "m4i_data_attribute"},
+                    ],
+                    "businessOwner": [{"guid": "-6", "typeName": "m4i_person"}],
+                    "steward": [{"guid": "-7", "typeName": "m4i_person"}],
+                },
+            ),
+            {
+                "typeName": "m4i_data_attribute",
+                "guid": "-2",
+                "attributes": {
+                    "qualifiedName": names["alpha"],
+                    "name": names["alpha"],
+                    "definition": "The alpha definition.",
+                },
+            },
+            {
+                "typeName": "m4i_data_attribute",
+                "guid": "-3",
+                "attributes": {
+                    "qualifiedName": names["beta"],
+                    "name": names["beta"],
+                    "definition": "The beta definition.",
+                },
+            },
+            entity(
+                "-4",
+                "m4i_field",
+                "field",
+                relationshipAttributes={"attributes": [{"guid": "-2", "typeName": "m4i_data_attribute"}]},
+            ),
+            entity(
+                "-5",
+                "m4i_dataset",
+                "dataset",
+                relationshipAttributes={"fields": [{"guid": "-4", "typeName": "m4i_field"}]},
+            ),
+            entity("-6", "m4i_person", "owner"),
+            entity("-7", "m4i_person", "steward"),
+        ]
+    }
+
+    response = page.request.post(
+        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+        data=json.dumps(body),
+        headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+    )
+
+    assert response.status == 200, response.text()
+
+    assignments = response.json()["guidAssignments"]
+
+    return {key: assignments[temp_guid] for key, temp_guid in zip(names, [f"-{i}" for i in range(8)], strict=True)}
+
+
+def _active_edge(entity: dict, key: str, guid: str) -> bool:
+    """Whether an entity read holds an ACTIVE relationship edge to ``guid``."""
+    return any(
+        entry["guid"] == guid and entry.get("relationshipStatus") == "ACTIVE"
+        for entry in entity.get("relationshipAttributes", {}).get(key, [])
+    )
+
+
+def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The m4i details layout renders from a seeded mini-graph (DET-15..DET-20, DET-23, DET-27).
+
+    The 7.21a screen on real data: the dispatch picks the m4i layout for the
+    entity type (DET-15, a direct hit — no typedef walk), the People box
+    shows the owner and steward links of the seeded people ends (DET-23),
+    the Data Attributes section seeds from ``relationshipAttributes`` and
+    resolves its cards with their definition text (DET-17, DET-19), the
+    keyword filter narrows the cards and the reset count line restores them
+    (DET-20), and Child Entities renders at its zero count (the empty box,
+    no cards). Opening the seeded attribute shows its Fields section — the
+    field's edge read back at the other end. A ``DataSet`` is not m4i and
+    not an m4i subtype: it keeps the DET-01 default chrome (DET-14's shape,
+    no card sections). Self-cleaned by the purge helper (DD-223: no shared
+    service restarts, namespaced by the run token).
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+    entity_guid = guids["entity"]
+    alpha_guid = guids["alpha"]
+    dataset_guid = _seed_entities(authenticated, root_url, user_token, "DataSet", [f"zz{run}plain"])["-0"]
+
+    try:
+        # The edges are separate near-real-time records the read searches
+        # (CLS-12's race): wait both ends visible before the screen reads.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            entity_guid,
+            predicate=lambda entity: (
+                _active_edge(entity, "attributes", guids["alpha"])
+                and _active_edge(entity, "attributes", guids["beta"])
+                and _active_edge(entity, "businessOwner", guids["owner"])
+                and _active_edge(entity, "steward", guids["steward"])
+            ),
+        )
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            alpha_guid,
+            predicate=lambda entity: _active_edge(entity, "fields", guids["field"]),
+        )
+
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{entity_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
+
+        # DET-23: the People box with the owner and steward links (the empty
+        # Domain Lead end renders no row).
+        people = authenticated.locator("#people-details")
+        expect(people.locator(".aurelius-people-row")).to_have_count(2)
+        expect(people).to_contain_text(f"Data Owner(s): zz{run}owner")
+        expect(people).to_contain_text(f"Data Steward(s): zz{run}steward")
+
+        # DET-17/DET-19: the Data Attributes section at its seeded count,
+        # two cards whose bodies carry the seeded definition text.
+        section = authenticated.locator("#related-attributes")
+        cards = section.locator("aurelius-atlas-ui-entity-card")
+        expect(cards).to_have_count(2)
+        expect(section.locator(".aurelius-card-section-count")).to_contain_text("2 result(s)")
+        expect(cards.filter(has_text=f"zz{run}alpha")).to_contain_text("The alpha definition.")
+        expect(cards.filter(has_text=f"zz{run}beta")).to_contain_text("The beta definition.")
+
+        # DET-20: the keyword filter narrows the cards on submit (the submit
+        # button, not Enter — the native `search` event is Chromium-only).
+        section.locator("aurelius-atlas-ui-search-field input").fill("beta")
+        section.locator("aurelius-atlas-ui-search-field button.button.is-success").click()
+        expect(cards).to_have_count(1)
+        expect(cards.first).to_contain_text(f"zz{run}beta")
+        reset = section.locator("a.aurelius-card-section-reset")
+        expect(reset).to_have_text("1 result(s)")
+
+        # …and the reset count line restores them.
+        reset.click()
+        expect(cards).to_have_count(2)
+        expect(section.locator(".aurelius-card-section-count")).to_contain_text("2 result(s)")
+
+        # DET-17: Child Entities renders at its zero count — the box with
+        # the count line and no cards (the seed has no childEntity end).
+        children = authenticated.locator("#related-entities")
+        expect(children).to_be_visible()
+        expect(children.locator(".aurelius-card-section-count")).to_contain_text("0 result(s)")
+        expect(children.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
+
+        # DET-17: the attribute page shows its Fields section — the field's
+        # edge read back at the attribute end, one resolved card. The layout
+        # table gives the attribute a People box too (DET-16); the attribute
+        # holds no people ends, so its empty placeholder line renders (DET-23).
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{alpha_guid}"))
+        fields = authenticated.locator("#related-fields")
+        expect(fields).to_be_visible()
+        expect(fields.locator(".aurelius-card-section-count")).to_contain_text("1 result(s)")
+        expect(fields.locator("aurelius-atlas-ui-entity-card")).to_have_count(1)
+        expect(fields).to_contain_text(f"zz{run}field")
+        expect(authenticated.locator("#people-details .aurelius-people-empty")).to_have_text("No people assigned.")
+
+        # DET-15: a DataSet is neither an m4i type nor an m4i subtype, so it
+        # keeps the DET-01 default — no card sections at all. The supertype
+        # walk settles after the read (DataSet → Process, both built-in), so
+        # the boxes' absence is checked after it has had its turns.
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{dataset_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}plain")
+        authenticated.wait_for_timeout(1_000)
+        expect(authenticated.locator(".aurelius-details-section")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-people-row")).to_have_count(0)
+    finally:
+        for type_name in [
+            "m4i_data_entity",
+            "m4i_data_attribute",
+            "m4i_data_domain",
+            "m4i_field",
+            "m4i_dataset",
+            "m4i_person",
+        ]:
+            _purge_type(authenticated, root_url, user_token, type_name)
+        _delete_entity(authenticated, root_url, user_token, dataset_guid)
+
+
 def test__business_explore_lists_glossary_entities_without_a_url_query(
     authenticated: Page, root_url: str, user_token: str
 ) -> None:
