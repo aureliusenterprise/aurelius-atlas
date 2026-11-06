@@ -1,0 +1,66 @@
+<!-- UIC-26: Bulma's tabs anatomy (nav.tabs > ul > li > a), carrying the
+     tablist roles the plain Bulma markup omits. Both panes stay mounted and
+     the inactive one hides (DD-352): a switch re-parses nothing and the
+     textarea keeps its caret and undo history. The labels and the placeholder
+     are caller inputs (UIC-04, DD-136). -->
+<div class="tabs aurelius-markdown-editor-tabs" role="tablist">
+    <ul>
+        <li>
+            <a
+                role="tab"
+                tabindex="0"
+                [id]="writeTabId()"
+                [class.is-active]="tab() === 'write'"
+                [attr.aria-selected]="tab() === 'write'"
+                [attr.aria-controls]="writePaneId()"
+                (click)="showTab('write')"
+                (keydown.enter)="showTab('write')"
+                (keydown.space)="showTab('write'); $event.preventDefault()"
+                >{{ writeLabel() }}</a
+            >
+        </li>
+        <li>
+            <a
+                role="tab"
+                tabindex="0"
+                [id]="previewTabId()"
+                [class.is-active]="tab() === 'preview'"
+                [attr.aria-selected]="tab() === 'preview'"
+                [attr.aria-controls]="previewPaneId()"
+                (click)="showTab('preview')"
+                (keydown.enter)="showTab('preview')"
+                (keydown.space)="showTab('preview'); $event.preventDefault()"
+                >{{ previewLabel() }}</a
+            >
+        </li>
+    </ul>
+</div>
+<div
+    class="aurelius-markdown-editor-write"
+    role="tabpanel"
+    [id]="writePaneId()"
+    [attr.aria-labelledby]="writeTabId()"
+    [hidden]="tab() !== 'write'"
+>
+    <textarea
+        class="textarea"
+        [id]="textareaId()"
+        [value]="value()"
+        [attr.placeholder]="placeholder()"
+        [class.is-danger]="danger()"
+        [disabled]="disabled()"
+        (input)="typed($event)"
+        (blur)="touch.emit()"
+    ></textarea>
+</div>
+<!-- The wrapper carries `hidden`: the Markdown host's own `display: block`
+     (:host) would beat the UA stylesheet's [hidden] rule on its own host. -->
+<div
+    class="aurelius-markdown-editor-preview"
+    role="tabpanel"
+    [id]="previewPaneId()"
+    [attr.aria-labelledby]="previewTabId()"
+    [hidden]="tab() !== 'preview'"
+>
+    <aurelius-atlas-ui-markdown [markdown]="value()" />
+</div>

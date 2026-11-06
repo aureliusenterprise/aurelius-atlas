@@ -9,7 +9,7 @@ import {
 } from "aurelius-atlas-data-access";
 
 /** The input one editor field renders. */
-export type EditorFieldKind = "text" | "textarea" | "number" | "boolean" | "date" | "enum" | "multi";
+export type EditorFieldKind = "text" | "markdown" | "number" | "boolean" | "date" | "enum" | "multi";
 
 /** One form control: its name, the input to render, and its label/state. */
 export type EditorField = {
@@ -60,7 +60,9 @@ function kindOf(def: AtlasAttributeDef, enumNames: ReadonlySet<string>): EditorF
         return typeName === "array<string>" ? "multi" : null;
     }
     if (typeName === "string") {
-        return DESCRIPTION_KEYS.includes(def.name as (typeof DESCRIPTION_KEYS)[number]) ? "textarea" : "text";
+        // The two description keys ride the markdown field (EDT-20, DD-352);
+        // every other string stays a plain text input (EDT-03).
+        return DESCRIPTION_KEYS.includes(def.name as (typeof DESCRIPTION_KEYS)[number]) ? "markdown" : "text";
     }
     if (typeName === "boolean") {
         return "boolean";

@@ -15,6 +15,7 @@ export * from "./lib/header/header.component";
 export * from "./lib/hero/hero.component";
 export * from "./lib/holdable/holdable.directive";
 export * from "./lib/infinite-scroll-container/infinite-scroll-container.component";
+export * from "./lib/markdown-editor/markdown-editor.component";
 export * from "./lib/markdown/markdown.component";
 export * from "./lib/modal/modal.component";
 export * from "./lib/pagination/pagination.component";

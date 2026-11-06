@@ -15,7 +15,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
-import { ClassificationChip, Drawer, Holdable, Select } from "aurelius-atlas-ui";
+import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
 
 import { canWriteEntities } from "./can-write-entities";
 import { EditorState } from "./editor-state";
@@ -62,7 +62,16 @@ type EditorValue = string | number | boolean | string[] | null;
  * entity's details screen.
  */
 @Component({
-    imports: [ClassificationChip, Drawer, EntityRelationshipInput, FontAwesomeModule, FormField, Holdable, Select],
+    imports: [
+        ClassificationChip,
+        Drawer,
+        EntityRelationshipInput,
+        FontAwesomeModule,
+        FormField,
+        Holdable,
+        MarkdownEditor,
+        Select,
+    ],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
     templateUrl: "./entity-editor.component.html",
@@ -272,6 +281,15 @@ export class EntityEditor {
     protected readonly faXmark = faXmark;
 
     protected readonly nameRequired = $localize`:@@search.components.editor.attribute.nameRequired:Name is required.`;
+
+    /** The markdown field's tab pair and placeholder (EDT-20, DD-353): the
+     * vendored `components.markdownEditor.*` trio — the ui library's field
+     * carries no string of its own (UIC-04, DD-136). */
+    protected readonly markdownWriteLabel = $localize`:@@components.markdownEditor.writeLabel:Write`;
+
+    protected readonly markdownPreviewLabel = $localize`:@@components.markdownEditor.previewLabel:Preview`;
+
+    protected readonly markdownPlaceholder = $localize`:@@components.markdownEditor.placeholder:Please type some markdown to get started...`;
 
     protected readonly notificationLine = $localize`:@@search.components.editor.attribute.notification:This entity can't be saved because one or more required fields are missing.`;
 

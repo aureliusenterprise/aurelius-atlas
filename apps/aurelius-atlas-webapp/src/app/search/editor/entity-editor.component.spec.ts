@@ -244,19 +244,55 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         const names = [...compiled.querySelectorAll<HTMLInputElement>("input.aurelius-editor-text")].map((input) =>
             input.id.replace("editor-", ""),
         );
-        // The text inputs, in the resolved order: name first, the description
-        // key (a textarea) next, then the rest by name; the unique
-        // qualifiedName is dropped entirely (the form never edits it).
+        // The text inputs, in the resolved order: name first, then the rest
+        // by name; the description key rides the markdown field now (EDT-20)
+        // and the unique qualifiedName is dropped entirely (the form never
+        // edits it).
         expect(names).toEqual(["name", "displayName", "owner"]);
 
         const nameField = compiled.querySelector<HTMLInputElement>("#editor-name");
         expect(nameField?.value).toBe("genomic_variants");
         expect(nameField?.required).toBe(true);
+        // The seeded source reaches the textarea one level deeper — inside
+        // the markdown field (EDT-20); the read still seeds the raw string.
         expect(compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")?.value).toBe(
             "Curated variant calls.",
         );
         // The drawer title is the edit title (EDT-11's bridge strings).
         expect(normalize(compiled.querySelector(".aurelius-drawer-title")?.textContent)).toBe("Edit entity");
+    });
+
+    it("the description rides the markdown field: tabs, label seat, raw save (EDT-20)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        // The tab pair renders with Write active (the field's start, EDT-20).
+        const tabs = [...compiled.querySelectorAll<HTMLElement>('[role="tab"]')];
+        expect(tabs.map((tab) => normalize(tab.textContent))).toEqual(["Write", "Preview"]);
+        expect(tabs[0]?.getAttribute("aria-selected")).toBe("true");
+
+        // The label still reaches the textarea through the component's seat
+        // (EDT-11's for="editor-<name>", UIC-26's textareaId).
+        const label = compiled.querySelector('label[for="editor-description"]');
+        expect(label).toBeTruthy();
+        expect(compiled.querySelector("textarea#editor-description")).toBeTruthy();
+
+        // Typing rides the source string; the save sends it unchanged (EDT-06
+        // untouched — no transform between read and body).
+        const area = compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")!;
+        area.value = "# Headings stay source";
+        area.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const posted = (post.request.body as { entity: { attributes: Record<string, unknown> } }).entity;
+        expect(posted.attributes["description"]).toBe("# Headings stay source");
+        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalled();
     });
 
     it("seeds the tag box from the entity's own classifications (EDT-05, DD-326)", () => {

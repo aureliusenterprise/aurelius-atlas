@@ -95,16 +95,18 @@ describe("buildFields (EDT-03)", () => {
         });
     });
 
-    it("renders definition/description as the textarea, name required", () => {
+    it("renders definition/description as the markdown field, name required (EDT-20)", () => {
         const defs = new Map<string, AtlasEntityDef>([
             ["E", entityDef("E", [attr({ name: "name" }), attr({ name: "definition", isOptional: true })])],
         ]);
 
         const fields = buildFields(defs.get("E")!, defs, new Map());
 
+        // The kind flips from the 7.7a textarea on purpose (EDT-20, DD-352):
+        // the description keys ride the ui library's markdown field now.
         expect(fields.map((f) => [f.name, f.kind, f.required])).toEqual([
             ["name", "text", true],
-            ["definition", "textarea", false],
+            ["definition", "markdown", false],
         ]);
     });
 
