@@ -1800,6 +1800,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.root_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;root_path
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.session_timeout_seconds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8447,6 +8458,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.root_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;root_path
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.session_timeout_seconds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9524,6 +9546,12 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Hsts Enabled"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"boolean"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"root_path"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"pattern"</span><span class="p">:</span><span class="w"> </span><span class="s2">"^(/[^/\\s]+)*$"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Root Path"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"forwarded_allow_ips"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="s2">"127.0.0.1"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Forwarded Allow Ips"</span><span class="p">,</span>
@@ -10008,6 +10036,15 @@ Elasticsearch settings; it does not start without its store.</p>
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.hsts_enabled)" href="./#aurelius_atlas_server.settings.ServerSettings.hsts_enabled">hsts_enabled</a></code>
                 (<code><span title="bool">bool</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            root_path
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.root_path)" href="./#aurelius_atlas_server.settings.ServerSettings.root_path">root_path</a></code>
+                (<code><span title="str">str</span></code>)
             </li>
             <li>
               <code><a class="autorefs autorefs-internal" title="            forwarded_allow_ips
@@ -11872,6 +11909,31 @@ read: the 60s dev token cannot ride a static header (DD-196).</p>
     <div class="doc doc-contents ">
 
         <p>The source revision the server was built from, reported by <code>admin/version</code> (ADM-01).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.root_path" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">root_path</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.root_path" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">root_path</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="s1">''</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The path a proxy serves the server under, such as <code>/atlas2</code>, passed to uvicorn: the server's redirects
+and its sign-in's return lead there; empty serves it at the root (PFX-01, DD-363).</p>
 
     </div>
 

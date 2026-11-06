@@ -590,6 +590,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-it-fits-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How it fits together
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stop" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6323,6 +6334,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#how-it-fits-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        How it fits together
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#stop" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6417,27 +6439,48 @@
 <h1 id="standalone-server">Standalone Server<a class="headerlink" href="#standalone-server" title="Permanent link">&para;</a></h1>
 <!-- The rest of the page is the standalone stack's README, below its title; edit it there. -->
 
-<p>The server image alone, with the Apache Atlas 2.4.0 dashboards, on the dev Elasticsearch and the dev Keycloak.
-It is a way to try the server by hand. <code>nx serve</code> and the e2e stacks are unchanged.</p>
+<p>The server image alone, with the Apache Atlas 2.4.0 dashboards, behind one nginx entry on port 9000. It is a
+way to try the server by hand. <code>nx serve</code> and the e2e stacks are unchanged.</p>
+<table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Service</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>https://localhost:9000/atlas2/</code></td>
+<td>The server and its dashboards; <code>/</code> redirects here</td>
+</tr>
+<tr>
+<td><code>https://localhost:9000/auth/</code></td>
+<td>The stack's own Keycloak with the dev realm, and its admin</td>
+</tr>
+</tbody>
+</table>
+<p>The store is the dev Elasticsearch. Keycloak is the stack's own, because the dev Keycloak's address is the
+issuer the other dev services trust (DD-363); it imports the dev realm at every start.</p>
 <h2 id="start">Start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h2>
-<p>The dev store and identity provider run first; the server's secrets come from its <code>.env</code>:</p>
+<p>The dev store runs first. The secrets come from the server's <code>.env</code> and the dev Keycloak's <code>.env</code>:</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>dev/elasticsearch/docker-compose.yaml<span class="w"> </span>up<span class="w"> </span>-d
-docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>dev/keycloak/docker-compose.yaml<span class="w"> </span>up<span class="w"> </span>-d
 docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>up<span class="w"> </span>-d
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
-<p>The dashboards answer at <a href="https://localhost:21001/">https://localhost:21001/</a>. Sign in as <code>aurelius-writer</code> or <code>aurelius-reader</code>, with
-<code>DEV_USER_WRITER_PASSWORD</code> or <code>DEV_USER_READER_PASSWORD</code> from the server's <code>.env</code>. The certificates are the
-dev CA's, so the browser asks once for <code>localhost:21001</code> and once for <code>keycloak.localhost:8443</code>.</p>
+<p>The dashboards answer at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a> once Keycloak is ready, about a minute after the
+start. Sign in as <code>aurelius-writer</code> or <code>aurelius-reader</code>, with <code>DEV_USER_WRITER_PASSWORD</code> or
+<code>DEV_USER_READER_PASSWORD</code> from the dev Keycloak's <code>.env</code>. Keycloak's admin console is
+<a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a>, as <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>. The certificate is the dev CA's, so
+the browser asks once, for <code>localhost:9000</code>.</p>
 <p>The image is <code>aurelius-atlas-server:local</code>; <code>npx nx docker-build aurelius-atlas-server</code> builds it from the
 checkout.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
-<p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>atlas_sample_data/</code> at the repository root. Once the server
-is ready, the <code>sample-import</code> service signs in as <code>aurelius-writer</code> and posts it to <code>admin/import</code>. Without
-<code>SAMPLE_ZIP</code>, or when no file has that name, the option is ignored: the service logs why and exits, and the
-server runs as without it.</p>
+<p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
+is ready, the <code>sample-import</code> service signs in as <code>aurelius-writer</code> and posts it to <code>admin/import</code>, through
+the proxy. Without <code>SAMPLE_ZIP</code>, or when no file has that name, the option is ignored: the service logs why
+and exits, and the server runs as without it.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">SAMPLE_ZIP</span><span class="o">=</span>sample_data.zip<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>up<span class="w"> </span>-d
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>up<span class="w"> </span>-d
 docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>sample-import
 </code></pre></div>
 <p>The server creates the m4i types of the samples at start-up (ADR 058), so an import creates none. The log ends
@@ -6459,7 +6502,7 @@ entities it finds by GUID, so running it again is safe. Other settings:</p>
 </tr>
 <tr>
 <td><code>SAMPLE_DIR</code></td>
-<td><code>atlas_sample_data/</code></td>
+<td><code>data/atlas-sample/</code></td>
 <td>The sample folder; a relative path is read from this directory</td>
 </tr>
 <tr>
@@ -6476,8 +6519,18 @@ entities it finds by GUID, so running it again is safe. Other settings:</p>
 </table>
 <p>An import's propagation runs once it ends (DD-361), so an entity shows what is propagated to it a little
 later.</p>
+<h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
+<ul>
+<li><code>nginx.conf</code>: TLS on port 9000 with the server's certificate. <code>/atlas2/</code> goes to the server without the
+  prefix; the server knows it as <code>AURELIUS_ATLAS_SERVER_ROOT_PATH</code>, so its redirects and its sign-in's return
+  lead back under it (9.5). <code>/auth/</code> goes to Keycloak unchanged, which serves under <code>/auth</code> itself.</li>
+<li>The server and the sample import run in the proxy's network (<code>network_mode: service:proxy</code>). nginx reaches
+  the server on <code>127.0.0.1:21000</code>, and the server reaches Keycloak at <code>https://localhost:9000/auth</code>, the
+  address the browser uses, so the tokens' issuer is the one the server checks.</li>
+</ul>
 <h2 id="stop">Stop<a class="headerlink" href="#stop" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span>down
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>down
 </code></pre></div>
 <p>The data stays in the dev store, as everything <code>nx serve</code> writes there does.</p>
 

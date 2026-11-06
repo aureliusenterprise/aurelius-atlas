@@ -107,6 +107,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Hsts Enabled",
 >       "type": "boolean"
 >     },
+>     "root_path": {
+>       "default": "",
+>       "pattern": "^(/[^/\\s]+)*$",
+>       "title": "Root Path",
+>       "type": "string"
+>     },
 >     "forwarded_allow_ips": {
 >       "default": "127.0.0.1",
 >       "title": "Forwarded Allow Ips",
@@ -502,6 +508,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tls_cert_file` (`FilePath`)
 > - `tls_key_file` (`FilePath`)
 > - `hsts_enabled` (`bool`)
+> - `root_path` (`str`)
 > - `forwarded_allow_ips` (`str`)
 > - `dashboard_dir` (`DirectoryPath | None`)
 > - `models_dir` (`Path`)
@@ -1002,6 +1009,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The source revision the server was built from, reported by `admin/version` (ADM-01).
+>
+> ### root\_path
+>
+> ```
+> root_path: str = ''
+> ```
+>
+> The path a proxy serves the server under, such as `/atlas2`, passed to uvicorn: the server's redirects and its sign-in's return lead there; empty serves it at the root (PFX-01, DD-363).
 >
 > ### session\_timeout\_seconds
 >
