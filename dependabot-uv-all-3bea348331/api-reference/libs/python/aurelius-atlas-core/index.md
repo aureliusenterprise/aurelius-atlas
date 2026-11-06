@@ -75,6 +75,9 @@ Functions:
 - **`referenced_type_names`** –
 
   The type names inside `array<…>` and `map<…,…>` (`AtlasTypeUtil.getReferencedTypeNames`, TDS-04).
+- **`root_def`** –
+
+  The root definition a search's pseudo type names: `_ALL_ENTITY_TYPES` the entity root's, and
 - **`types_def_of`** –
 
   An `AtlasTypesDef` holding `typedefs`, each in the list of its kind.
@@ -203,7 +206,7 @@ Methods:
   The registered definition of `kind` with `guid` (`get{Kind}DefByGuid`, TYR-03).
 - **`get_def_by_name`** –
 
-  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03), or for a name not
 - **`load`** –
 
   Prepare the document and load every stored definition into the registry (`init`, TDS-12).
@@ -374,7 +377,7 @@ Raises:
 get_def_by_name(kind: TypeCategory, name: str) -> AtlasBaseTypeDef
 ```
 
-The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03), or for a name not registered, the root definition that `_ALL_ENTITY_TYPES` or `_ALL_CLASSIFICATION_TYPES` names (TYR-13).
 
 Raises:
 
@@ -481,6 +484,14 @@ referenced_type_names(type_name: str | None) -> list[str]
 ```
 
 The type names inside `array<…>` and `map<…,…>` (`AtlasTypeUtil.getReferencedTypeNames`, TDS-04).
+
+### root\_def
+
+```
+root_def(kind: TypeCategory, name: str) -> AtlasBaseTypeDef | None
+```
+
+The root definition a search's pseudo type names: `_ALL_ENTITY_TYPES` the entity root's, and `_ALL_CLASSIFICATION_TYPES`, in any case, the classification root's (TYR-13).
 
 ### types\_def\_of
 
@@ -1190,7 +1201,7 @@ Attributes:
   The alias of the unique value reservations (DD-045).
 - **`WRITE_REFRESH`** –
 
-  Every write's `refresh` parameter (ENS-11, DD-237): the response returns after the documents are visible,
+  Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
 
 ### CLASSIFICATION\_INDEX
 
@@ -1403,10 +1414,10 @@ The alias of the unique value reservations (DD-045).
 ### WRITE\_REFRESH
 
 ```
-WRITE_REFRESH = 'wait_for'
+WRITE_REFRESH = 'true'
 ```
 
-Every write's `refresh` parameter (ENS-11, DD-237): the response returns after the documents are visible, so the next read sees them — no read path pays a refresh of its own. `wait_for` (not `true`) also waits for the concurrent writes' refresh, which is the pair that keeps a reader from seeing half of one bulk.
+Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own, and no write waits for the index's next scheduled refresh.
 
 ### Linked
 
@@ -1619,7 +1630,7 @@ prepare() -> None
 
 Create each index behind its alias unless it exists (ENS-01).
 
-An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay.
+An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02).
 
 #### put\_journal
 
@@ -2917,6 +2928,9 @@ Attributes:
 
   `addons/models` of Apache Atlas 2.4.0, unchanged (DD-032).
 - **`LOGGER`** –
+- **`M4I_MODELS_DIR`** –
+
+  The m4i data dictionary types of `m4i_atlas_core`, laid out as Atlas's models, loaded after them (DD-362).
 - **`PATCHES_FOLDER_NAME`** –
 
   The sub-directory of a models directory that holds its patches.
@@ -2943,6 +2957,14 @@ BUILTIN_MODELS_DIR = Path(__file__).parent / 'models'
 ```
 LOGGER = logging.getLogger(__name__)
 ```
+
+### M4I\_MODELS\_DIR
+
+```
+M4I_MODELS_DIR = Path(__file__).parent / 'm4i_models'
+```
+
+The m4i data dictionary types of `m4i_atlas_core`, laid out as Atlas's models, loaded after them (DD-362).
 
 ### PATCHES\_FOLDER\_NAME
 
@@ -3337,12 +3359,23 @@ Classes:
 
 Attributes:
 
+- **`INDEX_SETTINGS`** (`dict[str, Any]`) –
+
+  The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
 - **`TYPEDEF_DOCUMENT_ID`** –
 
   The id of the one document that holds every type definition.
 - **`TYPEDEF_INDEX`** –
 
   The alias of the index that holds the type definitions.
+
+### INDEX\_SETTINGS
+
+```
+INDEX_SETTINGS: dict[str, Any] = {'index.auto_expand_replicas': '0-1'}
+```
+
+The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold it, none on a single node, whose indices are then green, not yellow.
 
 ### TYPEDEF\_DOCUMENT\_ID
 
@@ -3415,6 +3448,8 @@ prepare() -> None
 ```
 
 Create the index behind the alias unless it exists; the document itself is not searched.
+
+An existing index gets the settings of a new one, as its replicas (IDX-02).
 
 #### read
 

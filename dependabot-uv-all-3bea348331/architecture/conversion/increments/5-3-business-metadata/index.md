@@ -1,6 +1,6 @@
 # 5.3b Business metadata
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** to follow
 - **Records:** DD-302, DV-117, DV-118; relies on DD-052, DD-084, DD-300, DD-301
 

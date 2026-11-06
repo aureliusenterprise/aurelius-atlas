@@ -20,4 +20,4 @@ In Grafana, a span of the trace opens the records written under it (Tempo's link
 | `aurelius_atlas_core` | the core services' failures: the model loader's patches, the audit aging |
 | `uvicorn.error` | the server's own failures, such as a socket or TLS error |
 
-The level is `AURELIUS_ATLAS_SERVER_LOG_LEVEL`; `debug` also prints spans and records to the output. How long Loki keeps them is the retention of increment 6.4d.
+The level is `AURELIUS_ATLAS_SERVER_LOG_LEVEL`; `debug` also prints spans and records to the output. Loki deletes them after 30 days ([lifetimes](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-archiving/index.md>)).

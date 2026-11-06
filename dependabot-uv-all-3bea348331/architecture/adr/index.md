@@ -65,6 +65,7 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [055](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/adr/055-the-lineage-chain-is-a-named-data-surface/index.md>) | The lineage chain is a named data surface: the auxiliary APIs (lineage-model, data2model, validate-entity) join the server's surface set as a second family, superseding DD-140's lineage/validate exclusion. | Proposed |
 | [056](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>) | Behaviour is proven by executed tests, not by a trace gate; the `covers` marker stays as a review convention. | Accepted |
 | [057](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>) | The system ships as Helm charts — one per component, one umbrella — that a deployment installs; the repository names the path, not the cluster. | Accepted |
+| [058](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>) | A new catalogue starts with the m4i data dictionary types, created at start-up after Atlas's own; an operator may turn this off. | Proposed |
 
 ## Why record decisions
 

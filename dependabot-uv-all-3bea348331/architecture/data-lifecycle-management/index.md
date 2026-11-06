@@ -8,7 +8,7 @@ A data asset's journey in the catalogue: getting discovered and registered, stay
 | [Data Storage](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-storage/index.md>) | One search store as system of record: layout, identities, versioning | written (0.2/1.4/2.2) |
 | [Data Processing](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-processing/index.md>) | Classification propagation, audits, cascades | 3.2–3.5 |
 | [Data Sharing](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-sharing/index.md>) | Export ZIP, import, migration of an existing Atlas | 6.3 |
-| [Data Archiving](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-archiving/index.md>) | Soft delete, purge, retention of the store; snapshots | 2.5, 6.4 |
+| [Data Archiving](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-archiving/index.md>) | The lifetime of every kind of data; delete and purge; snapshots | written (6.4d) |
 
 > [!NOTE]
 >

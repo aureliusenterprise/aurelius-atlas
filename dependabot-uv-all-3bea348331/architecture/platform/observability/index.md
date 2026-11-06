@@ -8,4 +8,4 @@ How Aurelius Atlas raises its hand when it is broken (ADR 040): metrics, logs, t
 | [Logging](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/platform/observability/logging/index.md>) | The server's log records, their correlation to traces | 6.4c |
 | [Alerting](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/platform/observability/alerting/index.md>) | The alert rules, their destination, how to see one fire | 6.4c |
 
-How long each signal is kept is the retention of increment 6.4d (ADR 025).
+Metrics are kept 15 days, logs 30 days, traces 7 days and the alerts' history 30 days; the [lifetimes](<https://aureliusenterprise.github.io/dependabot-uv-all-3bea348331/architecture/data-lifecycle-management/data-archiving/index.md>) page says why and where each is set (ADR 025).
