@@ -3,13 +3,23 @@
 The server image alone, with the Apache Atlas 2.4.0 dashboards, behind one nginx entry on port 9000. It is a
 way to try the server by hand. `nx serve` and the e2e stacks are unchanged.
 
-| Path                             | Service                                                    |
-| -------------------------------- | ---------------------------------------------------------- |
-| `https://localhost:9000/atlas2/` | The server and its dashboards; `/` redirects here          |
-| `https://localhost:9000/auth/`   | The stack's own Keycloak with the dev realm, and its admin |
+| Path                             | Service                                                     |
+| -------------------------------- | ----------------------------------------------------------- |
+| `https://localhost:9000/atlas2/` | The server and its dashboards; `/` redirects here           |
+| `https://localhost:9000/auth/`   | The stack's own Keycloak with the demo realm, and its admin |
 
 The store is the dev Elasticsearch. Keycloak is the stack's own, because the dev Keycloak's address is the
-issuer the other dev services trust (DD-363); it imports the dev realm at every start.
+issuer the other dev services trust (DD-363). At every start it imports the realm `demo` from
+`keycloak/demo.json`, with three users (DD-366):
+
+| User        | Roles                                                     | May                                                                   |
+| ----------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| `atlas`     | `atlas-read`, `atlas-write`, `atlas-types`, `atlas-admin` | Everything: the catalogue, the types, import, export and purge        |
+| `steward`   | `atlas-read`, `atlas-write`                               | Read and change the entities, their relationships and classifications |
+| `scientist` | `atlas-read`                                              | Read the types and the entities                                       |
+
+Their passwords are `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`
+in the dev Keycloak's `.env`, decrypted from its `.env.enc`.
 
 ## Start
 
@@ -22,10 +32,9 @@ docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
 ```
 
 The dashboards answer at <https://localhost:9000/atlas2/> once Keycloak is ready, about a minute after the
-start. Sign in as `aurelius-writer` or `aurelius-reader`, with `DEV_USER_WRITER_PASSWORD` or
-`DEV_USER_READER_PASSWORD` from the dev Keycloak's `.env`. Keycloak's admin console is
-<https://localhost:9000/auth/admin/>, as `KC_BOOTSTRAP_ADMIN_USERNAME`. The certificate is the dev CA's, so
-the browser asks once, for `localhost:9000`.
+start. Sign in as one of the demo users. Keycloak's admin console is <https://localhost:9000/auth/admin/>, as
+`KC_BOOTSTRAP_ADMIN_USERNAME`, in the realm `master`; its session doesn't sign you in to the dashboards. The
+certificate is the dev CA's, so the browser asks once, for `localhost:9000`.
 
 The image is `aurelius-atlas-server:local`; `npx nx docker-build aurelius-atlas-server` builds it from the
 checkout.
@@ -33,7 +42,7 @@ checkout.
 ## A sample dataset
 
 `SAMPLE_ZIP` names an Apache Atlas export ZIP in `data/atlas-sample/` at the repository root. Once the server
-is ready, the `sample-import` service signs in as `aurelius-writer` and posts it to `admin/import`, through
+is ready, the `sample-import` service signs in as `atlas` and posts it to `admin/import`, through
 the proxy. Without `SAMPLE_ZIP`, or when no file has that name, the option is ignored: the service logs why
 and exits, and the server runs as without it.
 
