@@ -15,6 +15,7 @@ from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from elasticsearch import AsyncElasticsearch
+from fake_issuer import FakeIssuer
 
 TYPES = "/api/atlas/v2/types"
 JSON = "application/json; charset=UTF-8"
@@ -205,3 +206,30 @@ async def test__reads_see_what_another_server_stored(
     assert (missing.status_code, missing.headers["content-type"]) == (404, JSON)
     assert (found.status_code, found.headers["content-type"]) == (200, JSON)
     assert found.json()["name"] == "t_elsewhere"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_server.routes.types.kind_by_name",
+    "aurelius_atlas_core.typedef_store.TypedefStore.get_def_by_name",
+    "aurelius_atlas_core.typedef_store.root_def",
+    rules=["TYR-13"],
+)
+async def test__the_search_pseudo_types_name_the_roots(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
+    """``_ALL_ENTITY_TYPES`` reads the entity root, ``_ALL_CLASSIFICATION_TYPES`` in any case the classification
+    root, as ``AtlasTypeDefGraphStore`` answers them, even to a user without ``TYPE_READ``; other kinds don't.
+    """  # noqa: D205 - one sentence
+    nobody = {"Authorization": f"Bearer {issuer.token('nobody', atlas_roles=())}"}
+    await create(client, {"entityDefs": [{"name": "t_registered"}]})
+
+    refused = await client.get(f"{TYPES}/entitydef/name/t_registered", headers=nobody)
+    entities = await client.get(f"{TYPES}/entitydef/name/_ALL_ENTITY_TYPES", headers=nobody)
+    classifications = await client.get(f"{TYPES}/classificationdef/name/_all_classification_types")
+    exact = await client.get(f"{TYPES}/entitydef/name/_all_entity_types")
+    other_kind = await client.get(f"{TYPES}/structdef/name/_ALL_ENTITY_TYPES")
+
+    assert refused.status_code == 403
+    assert (entities.status_code, entities.json()["name"]) == (200, "__ENTITY_ROOT")
+    assert {"__guid", "__typeName", "__classificationNames"} <= {a["name"] for a in entities.json()["attributeDefs"]}
+    assert (classifications.status_code, classifications.json()["name"]) == (200, "__CLASSIFICATION_ROOT")
+    assert exact.status_code == 404
+    assert other_kind.status_code == 404
