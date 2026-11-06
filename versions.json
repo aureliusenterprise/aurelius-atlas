@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "feat-standalone-demo-realm",
+    "title": "feat-standalone-demo-realm",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
