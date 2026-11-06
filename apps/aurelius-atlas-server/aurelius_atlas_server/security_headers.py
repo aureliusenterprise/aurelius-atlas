@@ -52,7 +52,10 @@ DASHBOARD_SECURITY_HEADERS: tuple[Header, ...] = (
         (
             "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'self'"
             "; script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-            "; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
+            "; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:"
+            # Atlas's own policy allows these (HeadersUtil): jstree parses its trees in a blob worker, and a
+            # browser that refuses the worker without throwing leaves the tree spinning (SRV-11, DD-364).
+            "; font-src 'self' data:; worker-src 'self' blob:"
         ),
     ),
 )

@@ -134,3 +134,19 @@ async def test__hsts_off_leaves_localhost_free(
 
     assert "strict-transport-security" not in response.headers
     assert response.headers["x-content-type-options"] == "nosniff"
+
+
+@pytest.mark.covers("aurelius_atlas_server.security_headers.SecurityHeadersMiddleware.__call__", rules=["SRV-11"])
+async def test__the_dashboards_may_run_blob_workers_as_atlas_allows(dashboard_client: httpx.AsyncClient) -> None:
+    """Jstree's tree worker, ``blob:`` images and ``data:`` fonts, as Atlas's ``HeadersUtil`` policy allows them;
+    the API's policy stays closed.
+    """  # noqa: D205 - one sentence
+    page = await dashboard_client.get("/")
+    api = await dashboard_client.get("/api/atlas/admin/status")
+    parts = (part.strip().split(" ", 1) for part in page.headers["content-security-policy"].split(";"))
+    directives = {part[0]: part[1] if len(part) > 1 else "" for part in parts}
+
+    assert directives["worker-src"] == "'self' blob:"
+    assert directives["img-src"] == "'self' blob: data:"
+    assert directives["font-src"] == "'self' data:"
+    assert "blob:" not in api.headers["content-security-policy"]
