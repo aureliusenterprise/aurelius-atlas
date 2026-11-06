@@ -11,7 +11,7 @@ The decision is ADR 058. The rules are MDD-01 to MDD-04 of [the spec](./spec.md)
   `process` is the generic process and its two relationships, all also in `data_dictionary`. `kubernetes` (11
   entity and 14 relationship types) and `connectors` (13 and 9) describe those systems.
   `m4i_connector_process` is defined but in no group.
-- **The samples:** all three exports in `atlas_sample_data/` use only the `data_dictionary` types, besides
+- **The samples:** all three exports in `data/atlas-sample/` use only the `data_dictionary` types, besides
   Atlas's own. `small.zip` and `sample_data.zip` define them exactly as the library does.
   `only_gov_quality.zip` comes from an older install whose `businessOwner` descriptions differ.
 - **Clashes:** none of the names is one of Atlas's types. No test or scenario on a shared store creates a type

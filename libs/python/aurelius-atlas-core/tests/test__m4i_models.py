@@ -1,7 +1,7 @@
 """The m4i data dictionary types, loaded after Atlas's models (MDD-01 to MDD-04, DD-362), on the in-memory document.
 
 The model file is the data dictionary group of ``m4i_atlas_core`` (54d9e04): its entity, relationship and
-classification definitions as the sample exports in ``atlas_sample_data/`` carry them, without what a stored
+classification definitions as the sample exports in ``data/atlas-sample/`` carry them, without what a stored
 definition adds.
 """
 
@@ -22,7 +22,7 @@ from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.impexp import AtlasImportRequest
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
-SAMPLES = Path(__file__).parents[4] / "atlas_sample_data"
+SAMPLES = Path(__file__).parents[4] / "data" / "atlas-sample"
 MODEL = M4I_MODELS_DIR / "0010-m4i_data_dictionary_model.json"
 CLASSIFICATIONS = {"PII", "key_data", "low_risk", "medium_risk", "high_risk"}
 STORED = {
