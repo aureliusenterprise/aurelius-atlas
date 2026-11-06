@@ -35,6 +35,7 @@ from aurelius_atlas_core.entity_store import (
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.tag_propagation import Deferral, TagPropagation
+from aurelius_atlas_core.task_hold import TaskHold
 from aurelius_atlas_core.typedef_document import DocumentVersion
 
 ATTEMPTS = 2
@@ -59,11 +60,13 @@ type Notes = list[Callable[[], Awaitable[None]]]
 class EntityClassifications:
     """Classifications of the entities of ``store``, changed as ``user``; ``tasks`` defers propagation (TSK-02).
 
+    ``hold``, an import's, holds the tasks recorded from the workers (IMT-01).
+
     ``notifier`` is told each change once it is written (DD-085); ``authorizer`` checks each read and change
     (AUZ-08).
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - the request's options, each a keyword
         self,
         store: EntityStore,
         *,
@@ -71,10 +74,12 @@ class EntityClassifications:
         tasks: bool = False,
         notifier: EntityChangeNotifier | None = None,
         authorizer: Authorizer = ALLOW_ALL,
+        hold: TaskHold | None = None,
     ) -> None:
         self._store = store
         self._user = user
         self._tasks = tasks
+        self._hold = hold
         self._notifier = notifier
         self._authorizer = authorizer
 
@@ -424,19 +429,21 @@ class EntityClassifications:
         self, entities: Mapping[str, tuple[StoredEntity, DocumentVersion | None]] | None = None
     ) -> TagPropagation:
         """Propagation over the request's entities, deferred to tasks when they are enabled (TSK-02, TSK-08)."""
-        deferral = Deferral(self._user, self._store.now(), self._store.new_guid) if self._tasks else None
+        deferral = Deferral(self._user, self._store.now(), self._store.new_guid, self._hold) if self._tasks else None
         return TagPropagation(self._store, entities=entities, deferral=deferral)
 
     async def _check_no_pending(self, instance_guid: str, guid: str) -> None:
-        """No ``PENDING`` task names the classification instance and the entity (TSK-03).
+        """No ``PENDING`` task names the classification instance and the entity (TSK-03), but one this request's
+        import holds: it has not run, so there is nothing it propagated to undo (IMT-04).
 
         Raises:
             AtlasError: ``DELETE_TAG_PROPAGATION_NOT_ALLOWED``.
-        """
+        """  # noqa: D205 - one sentence
         for task, _ in await self._store.list_tasks(open_only=True):
             parameters = task.parameters or {}
             if (
                 task.status is TaskStatus.PENDING
+                and not (self._hold is not None and self._hold.holds(task))
                 and parameters.get("classificationVertexId") == instance_guid
                 and parameters.get("entityGuid") == guid
             ):

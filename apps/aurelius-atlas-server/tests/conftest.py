@@ -71,6 +71,7 @@ def settings(ca_file: Path, tls_pair: tuple[Path, Path], models_dir: Path) -> Se
             "tls_key_file": key,
             "revision": "abc123",
             "models_dir": models_dir,
+            "m4i_models_enabled": False,
             "tasks_enabled": False,
             "auth_server_url": SERVER_URL,
             "auth_client_secret": CLIENT_SECRET,

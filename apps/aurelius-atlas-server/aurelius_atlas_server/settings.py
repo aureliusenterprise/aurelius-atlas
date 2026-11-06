@@ -5,7 +5,7 @@ from typing import Literal
 
 from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX
-from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR
+from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
 from aurelius_atlas_store_es.snapshots import SnapshotPolicy
 from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
@@ -78,6 +78,10 @@ class ServerSettings(StoreAccessSettings):
     arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the
     plaintext dev surfaces (ADR 039's named relaxations)."""
 
+    root_path: str = Field(default="", pattern=r"^(/[^/\s]+)*$")
+    """The path a proxy serves the server under, such as ``/atlas2``, passed to uvicorn: the server's redirects
+    and its sign-in's return lead there; empty serves it at the root (PFX-01, DD-363)."""
+
     forwarded_allow_ips: str = "127.0.0.1"
     """Which peers may rewrite the client address through ``X-Forwarded-For`` (SRV-10, DD-238), passed to
     uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network,
@@ -91,6 +95,15 @@ class ServerSettings(StoreAccessSettings):
     models_dir: Path = BUILTIN_MODELS_DIR
     """The models loaded at start-up: by default ``addons/models`` of Apache Atlas 2.4.0; a missing directory loads
     none (MDL-01, MDL-16, DD-032)."""
+
+    m4i_models_enabled: bool = True
+    """Whether the m4i data dictionary types are loaded at start-up too, after ``models_dir``; off loads none and
+    leaves those stored as they are (MDD-01, MDD-03, ADR 058)."""
+
+    @property
+    def model_dirs(self) -> list[Path]:
+        """The models directories loaded at start-up, in order (MDD-01)."""
+        return [self.models_dir, *([M4I_MODELS_DIR] if self.m4i_models_enabled else [])]
 
     typedef_refresh_seconds: float = Field(default=5.0, ge=0)
     """How long the server answers from its type registry before it checks for another process's type change

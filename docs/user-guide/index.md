@@ -20,5 +20,8 @@ Until the conversion is complete, the
 system reproduces; every intended difference is listed in
 [Deviations from Apache Atlas](../architecture/conversion/deviations.md).
 
+To run the server on your machine and import a sample dataset, see
+[Standalone Server](./standalone-server.md).
+
 If you are setting up your machine for the first time, see the
 [Development Environment](../contributor-guide/development-environment.md) guide instead.

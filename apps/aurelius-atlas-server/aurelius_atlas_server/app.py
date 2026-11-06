@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
@@ -149,7 +149,7 @@ def create_app(
             )
             await typedef_store.load()
             admin_audits = AtlasAuditService(entity_store)
-            await _load_models(typedef_store, admin_audits, settings.models_dir)
+            await _load_models(typedef_store, admin_audits, settings.model_dirs)
             await entity_store.recover()
             app.state.typedef_store = typedef_store
             app.state.entity_store = entity_store
@@ -271,15 +271,17 @@ def _authentication(
     return verifier, build_oidc(settings, verifier, oidc_http), SessionStore(settings.session_timeout_seconds)
 
 
-async def _load_models(store: TypedefStore, audits: AtlasAuditService, models_dir: Path) -> None:
-    """Load the models with their typedef changes audited, the start's writes held to one write (ADA-03, DD-316).
+async def _load_models(store: TypedefStore, audits: AtlasAuditService, models_dirs: Sequence[Path]) -> None:
+    """Load the models directories in order, changes audited, the start's writes held to one (ADA-03, DD-316, MDD-01).
 
     One write per change adds a store refresh each to the start, minutes for Atlas's whole catalogue — long
     enough for the container's health check to give up before the server answers.
     """
     boot_audits = BufferedTypeDefAuditListener(audits)
     store.change_listeners.append(boot_audits)
-    await ModelLoader(store).load(models_dir)
+    loader = ModelLoader(store)
+    for models_dir in models_dirs:
+        await loader.load(models_dir)
     await boot_audits.flush()
 
 

@@ -145,6 +145,8 @@ diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurel
 
 ::: aurelius_atlas_core.task_management
 
+::: aurelius_atlas_core.task_hold
+
 ::: aurelius_atlas_core.entity_change_notifier
 
 ::: aurelius_atlas_core.entity_audit_listener
