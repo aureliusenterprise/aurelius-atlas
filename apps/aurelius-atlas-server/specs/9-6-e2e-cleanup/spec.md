@@ -1,7 +1,7 @@
 # 9.6 The server's e2e suites clean up after themselves
 
 - **Status:** in review
-- **Pull request:** to be opened
+- **Pull request:** [#283](https://github.com/aureliusenterprise/aurelius-atlas/pull/283)
 - **Records:** DD-368; relies on DD-223 (the e2e suites share the dev stores, their writes namespaced and
   self-cleaned), EDL-02 to EDL-08 (delete and purge) and TDS-09 (type deletion)
 
