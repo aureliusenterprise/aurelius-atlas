@@ -1,15 +1,62 @@
 # The server alone, with the Atlas dashboards, behind one nginx entry (see README.md):
 #   https://localhost:9000/atlas2/  the server and its dashboards
 #   https://localhost:9000/auth/    the stack's own Keycloak, with the demo realm and its users
-# The store is the dev Elasticsearch; secrets, the demo users' passwords among them, come from the server's
-# and the dev Keycloak's .env.
+# The store is the stack's own Elasticsearch, apart from the dev store the e2e suites write to; `down -v`
+# empties it. Secrets, the demo users' passwords among them, come from the server's and the dev Keycloak's .env.
 # SAMPLE_ZIP names an Atlas export ZIP in data/atlas-sample/ to import once the server is up;
 # empty, or a name no file has, imports nothing.
 name: aurelius-atlas-standalone
 
 x-certs: &certs ../certs:/certs:ro
+x-elasticsearch-image: &elasticsearch-image dhi.io/elasticsearch:9.5-debian13
 
 services:
+    # The image has no data directory, so Docker creates the volumes' mount points owned by root; this one-shot
+    # step hands them to Elasticsearch's uid 1000, as in dev/elasticsearch.
+    elasticsearch-volume-init:
+        image: *elasticsearch-image
+        user: "0"
+        entrypoint: ["chown", "1000:1000", "/usr/share/elasticsearch/data", "/usr/share/elasticsearch/snapshots"]
+        restart: "no"
+        volumes:
+            - elasticsearch-data:/usr/share/elasticsearch/data
+            - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
+
+    # The stack's store: dev/elasticsearch's configuration and certificate, its own volumes, no published port.
+    elasticsearch:
+        image: *elasticsearch-image
+        mem_limit: 2g
+        depends_on:
+            elasticsearch-volume-init:
+                condition: service_completed_successfully
+        environment:
+            ES_JAVA_OPTS: -Xms1g -Xmx1g -javaagent:/agent/coredump-noop.jar
+            # The server's password is the elastic user's here, so the two cannot differ.
+            ELASTIC_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "printf 'GET /_cluster/health HTTP/1.1\\r\\nHost: localhost\\r\\nAuthorization: Basic %s\\r\\nConnection: close\\r\\n\\r\\n' \"$$(printf 'elastic:%s' \"$$ELASTIC_PASSWORD\" | base64 -w0)\" | timeout 5 openssl s_client -quiet -verify_return_error -CAfile config/tls/ca.pem -connect localhost:9200 2>/dev/null | grep -qE '\"status\":\"(green|yellow)\"'",
+                ]
+            interval: 10s
+            timeout: 10s
+            retries: 30
+            start_period: 30s
+        volumes:
+            - elasticsearch-data:/usr/share/elasticsearch/data
+            - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
+            - ../../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
+            - ../../../dev/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+            - ../../../dev/elasticsearch/certs:/usr/share/elasticsearch/config/tls:ro
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+            nofile:
+                soft: 65536
+                hard: 65536
+
     proxy:
         image: dhi.io/nginx:1.30-alpine3.24
         ports:
@@ -17,10 +64,6 @@ services:
         volumes:
             - *certs
             - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-        networks:
-            default: {}
-            # The server, in this container's network, reaches the store as `elasticsearch` on it.
-            aurelius-atlas-dev-elasticsearch-network: {}
         depends_on:
             - keycloak
 
@@ -64,6 +107,8 @@ services:
         network_mode: service:proxy
         depends_on:
             keycloak:
+                condition: service_healthy
+            elasticsearch:
                 condition: service_healthy
         environment:
             AURELIUS_ATLAS_SERVER_ROOT_PATH: /atlas2
@@ -109,6 +154,6 @@ services:
             - ./import_sample.py:/standalone/import_sample.py:ro
             - ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
 
-networks:
-    aurelius-atlas-dev-elasticsearch-network:
-        external: true
+volumes:
+    elasticsearch-data:
+    elasticsearch-snapshots:
