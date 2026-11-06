@@ -35,6 +35,11 @@
     "aliases": []
   },
   {
+    "version": "feat-statistics-all-types",
+    "title": "feat-statistics-all-types",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
