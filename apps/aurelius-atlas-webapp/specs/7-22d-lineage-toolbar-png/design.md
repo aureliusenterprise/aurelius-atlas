@@ -8,20 +8,20 @@
 > repository: check the archive's topmost number and the sibling `specs/*/design.md`
 > files for the largest `DD-NNN` in use before taking the next.
 
-| Id      | Title                                                          |
-| ------- | -------------------------------------------------------------- |
-| DD-397. | The toolbar rides the diagram state, not a shared component    |
-| DD-398. | PNG metadata reads the runtime config and the session          |
-| DD-399. | The save-all-views ZIP stays out                               |
-| DD-400. | The lineage fetch state is a page signal, not the box's secret |
-| DD-402. | The drawer's tab strip is full width                           |
-| DD-403. | Dismissing the quickview deselects the diagram                 |
-| DD-404. | The relation rows name their source and target                 |
-| DD-405. | The Selection tab carries the search card                      |
-| DD-406. | The Browse tab regains the organization tree as a nested list  |
-| DD-407. | The save captures the view at the reader's zoom                |
-| DD-408. | The diagram's text inherits the app's brand font               |
-| DD-409. | Each connection gains a wide transparent hit path              |
+| Id      | Title                                                                           |
+| ------- | ------------------------------------------------------------------------------- |
+| DD-397. | The toolbar rides the diagram state, not a shared component                     |
+| DD-398. | PNG metadata reads the runtime config and the session                           |
+| DD-399. | The save-all-views ZIP stays out                                                |
+| DD-400. | The lineage fetch state is a page signal, not the box's secret                  |
+| DD-402. | The drawer's tab strip is full width                                            |
+| DD-403. | Dismissing the quickview deselects the diagram                                  |
+| DD-404. | The relation rows name their source and target (row shape superseded by DD-411) |
+| DD-405. | The Selection tab carries the search card                                       |
+| DD-406. | The Browse tab regains the organization tree as a nested list                   |
+| DD-407. | The save captures the view at the reader's zoom                                 |
+| DD-408. | The diagram's text inherits the app's brand font                                |
+| DD-409. | Each connection gains a wide transparent hit path                               |
 
 ## Decisions
 
@@ -208,9 +208,14 @@ unchanged.
 
 ### DD-404. The relation rows name their source and target
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-411 (the ends stay; the one-line arrow row
+  becomes the legacy's three-line row — 7.22c's design)
 - **Increment:** 7.22d
 - **Date:** 2026-11-07
+
+> Superseded: the parity round found the legacy's relationship row is a
+> three-line shape (ends with icons, the middle em line) — DD-411 keeps the
+> ends (this entry's reader ask) in that shape.
 
 **Decision.** A relation row in the Model tab shows its ends in the Name cell:
 `source → target`, read from the model's elements by id (LDG-23). The keyword

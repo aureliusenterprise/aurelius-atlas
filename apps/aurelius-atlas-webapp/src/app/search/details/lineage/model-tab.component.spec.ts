@@ -20,6 +20,8 @@ const ELEMENTS: LineageEntity[] = [
         properties: [],
         sourceName: "",
         targetName: "",
+        sourceType: "",
+        targetType: "",
     },
     {
         id: "e2",
@@ -31,6 +33,8 @@ const ELEMENTS: LineageEntity[] = [
         properties: [],
         sourceName: "",
         targetName: "",
+        sourceType: "",
+        targetType: "",
     },
     {
         id: "e3",
@@ -42,6 +46,8 @@ const ELEMENTS: LineageEntity[] = [
         properties: [],
         sourceName: "",
         targetName: "",
+        sourceType: "",
+        targetType: "",
     },
 ];
 const RELATIONS: LineageEntity[] = [
@@ -55,6 +61,8 @@ const RELATIONS: LineageEntity[] = [
         properties: [],
         sourceName: "Ingest Topic",
         targetName: "Sales Table",
+        sourceType: "lineage_dataset",
+        targetType: "lineage_dataset",
     },
 ];
 
@@ -131,16 +139,30 @@ describe("LineageModelTab (LDG-23)", () => {
         expect(emitted).toEqual(["e1"]);
     });
 
-    it("DD-404: a relationship row reads its ends — source → target", () => {
+    it("DD-411: a relationship row is the legacy's three lines — ends with icons, the em between", () => {
         const { compiled } = setup();
         const [row] = relationRows(compiled);
-        expect(row?.textContent).toContain("Ingest Topic");
-        expect(row?.textContent).toContain("→");
-        expect(row?.textContent).toContain("Sales Table");
-        // An element row keeps the plain name (no arrow).
+        // One cell across both columns (the legacy's colspan row).
+        const cell = row?.querySelector("td");
+        expect(cell?.getAttribute("colspan")).toBe("2");
+        expect(cell?.textContent).toContain("Ingest Topic");
+        expect(cell?.textContent).toContain("Sales Table");
+        // The middle em line: the relation's own name leads ("feeds"), with
+        // the human-readable type in parentheses (the legacy's
+        // name || displayName, then the type).
+        const middle = cell?.querySelector("p em");
+        expect(middle?.textContent?.trim()).toBe("feeds(Data Lineage)");
+        // Each end carries the element's icon (lineage_dataset — the blue
+        // dataset grid): two ends, two paths.
+        expect(cell?.querySelectorAll("strong").length).toBe(2);
+        expect(cell?.querySelectorAll("svg path").length).toBe(2);
+    });
+
+    it("DD-411: an element row is the narrow icon cell and the name", () => {
+        const { compiled } = setup();
         const elementRow = compiled.querySelector("table tbody tr");
+        expect(elementRow?.querySelector("td.is-narrow svg path")).not.toBeNull();
         expect(elementRow?.textContent).toContain("Ingest Topic");
-        expect(elementRow?.textContent).not.toContain("→");
     });
 
     it("DD-404: the keyword matches a relationship's displayed ends", () => {

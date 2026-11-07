@@ -24,6 +24,8 @@ const VIEW: LineageEntity = {
     properties: [],
     sourceName: "",
     targetName: "",
+    sourceType: "",
+    targetType: "",
 };
 const SECOND: LineageEntity = { ...VIEW, id: "view-2", name: "Second view" };
 

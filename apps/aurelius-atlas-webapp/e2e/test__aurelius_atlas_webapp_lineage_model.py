@@ -266,12 +266,18 @@ def test__the_quickview_panel_opens_on_a_node_click(authenticated: Page, root_ur
         active_tab = drawer.locator(".aurelius-model-browser-tab.is-active")
         expect(active_tab).to_have_text("Selection")
 
-        # LDG-19: the four-tab strip — Selection rides the open concept.
+        # LDG-19/DD-410: the four-tab strip in the legacy's order —
+        # Browse, Model, View, Selection (the keyvalue order over the
+        # legacy's tabs object). The panel is "Details" (the quickview's
+        # default header) and its footer holds the Close button.
         tabs = drawer.locator(".aurelius-model-browser-tab")
         expect(tabs).to_have_count(4)
         expect(tabs.nth(0)).to_have_text("Browse")
         expect(tabs.nth(1)).to_have_text("Model")
-        expect(tabs.nth(3)).to_have_text("View")
+        expect(tabs.nth(2)).to_have_text("View")
+        expect(tabs.nth(3)).to_have_text("Selection")
+        expect(drawer.locator(".aurelius-drawer-title")).to_have_text("Details")
+        expect(drawer.locator("button[drawer-footer]")).to_have_text("Close")
 
         # LDG-21 over the live chain: Name, Type, and the merged Properties
         # read the chain's own answer (the helper).

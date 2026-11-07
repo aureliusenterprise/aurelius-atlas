@@ -22,8 +22,10 @@ import { LineageModelTab } from "./model-tab.component";
 import { LineageSelectionPanel } from "./selection-panel.component";
 import { LineageViewTab } from "./view-tab.component";
 
-/** The drawer's four tabs, in the legacy's order (LDG-19). */
-type ModelBrowserTab = "browse" | "model" | "selection" | "view";
+/** The drawer's four tabs, in the legacy's order (LDG-19, DD-410: the
+ * legacy's `keyvalue` order over the tabs object — browse, model, view,
+ * selection). */
+type ModelBrowserTab = "browse" | "model" | "view" | "selection";
 
 /**
  * The lineage quickview (LDG-19/LDG-25): the legacy
@@ -48,6 +50,13 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
  * condition holds (the legacy's `condition` observables): a selected concept,
  * and a selected view — the shipped model's one view counts from the start
  * (the legacy's `handleSelectView` default).
+ *
+ * The legacy quickview's chrome (DD-410): the header reads "Details" — the
+ * quickview's own default name, which the model browser never overrode — and
+ * the footer holds a Close button. The header's pin toggle is not ported: a
+ * pinned panel makes no sense for a diagram overlay whose dismissal also
+ * deselects (DD-403), and the drawer has no pin state (the deviation is
+ * recorded in the spec).
  */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-model-browser",
@@ -57,7 +66,7 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
         <!-- The toolbar's Browse focuses this panel on open (LDG-27): the
              drawer element is always in the DOM, so the seam exists; the
              tabindex makes the focus a real keyboard stop. -->
-        <aurelius-atlas-ui-drawer #drawer tabindex="-1" [(active)]="active" [title]="title()" [ariaLabel]="closeLabel">
+        <aurelius-atlas-ui-drawer #drawer tabindex="-1" [(active)]="active" [title]="heading" [ariaLabel]="closeLabel">
             <!-- DD-402: Bulma's is-fullwidth grows the tabs to equal widths
                  across the strip (li flex-grow) and each label centers in its
                  cell — the wide, balanced tab row the reader asked for. -->
@@ -116,6 +125,12 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
                     <aurelius-atlas-webapp-lineage-view-tab [view]="activeViewEntity()" [metadata]="metadata()" />
                 }
             }
+            <!-- DD-410: the legacy quickview footer's Close button (its own
+                 footer template's literal "Close" — the catalogue carries no
+                 key for it, so the shared modal-close string stands in). -->
+            <button type="button" class="button aurelius-model-browser-close" drawer-footer (click)="close()">
+                <span>{{ closeLabel }}</span>
+            </button>
         </aurelius-atlas-ui-drawer>
     `,
     styles: `
@@ -136,9 +151,6 @@ export class LineageModelBrowser {
 
     /** The drawn view's id (LDG-12 with the legacy's first-view default). */
     readonly activeViewId = input<string | null>(null);
-
-    /** The drawer's heading — the model's own name (the box header's rule, LDG-09). */
-    readonly title = input("");
 
     /** The Browse tab's folder tree (DD-406): the document's organization items. */
     readonly organizations = input<readonly Ar3Organization[]>([]);
@@ -197,6 +209,20 @@ export class LineageModelBrowser {
 
     protected readonly closeLabel = $localize`:@@components.modal.close:Close`;
 
+    /** The drawer's heading (DD-410): the legacy quickview's default name —
+        the model browser never passed one, so every legacy panel read
+        "Details", whichever concept opened it. */
+    protected readonly heading = $localize`:@@search.details.components.navigation.details:Details`;
+
+    /**
+     * The footer's Close button (DD-410): the legacy's `close(true)` — the
+     * drawer's own dismissal path, so the slide-out plays and the selection
+     * clears with it (DD-403).
+     */
+    protected close(): void {
+        this.drawer().dismiss();
+    }
+
     /** The tab labels — the four legacy tab names (LDG-19). */
     private readonly labels: Record<ModelBrowserTab, string> = {
         browse: $localize`:@@modelview2.modelBrowser.modelBrowserBrowse:Browse`,
@@ -205,11 +231,12 @@ export class LineageModelBrowser {
         view: $localize`:@@modelview2.modelBrowser.modelBrowserView:View`,
     };
 
-    /** The visible tabs in legacy order, minus those whose condition fails (LDG-19). */
+    /** The visible tabs in legacy order (DD-410), minus those whose condition
+        fails (LDG-19). */
     protected readonly visibleTabs = computed(() => {
         const hasSelection = this.selection() !== null && this.selection() !== "";
         const hasView = this.activeViewId() !== null;
-        return (["browse", "model", "selection", "view"] as const)
+        return (["browse", "model", "view", "selection"] as const)
             .filter((id) => (id === "selection" ? hasSelection : id === "view" ? hasView : true))
             .map((id) => ({ id, label: this.labels[id] }));
     });
@@ -235,6 +262,11 @@ export class LineageModelBrowser {
         sits on the drawer component's host, so it must be read as the
         element (an unresolved component-host query yields the instance). */
     private readonly drawerRef = viewChild.required("drawer", { read: ElementRef });
+
+    /** The drawer component — the footer's Close dismisses through it, so
+        the slide-out animation and the cancel path run like the head's own
+        close button (DD-410). */
+    private readonly drawer = viewChild.required("drawer", { read: Drawer });
 
     /**
      * Open the panel (the legacy's `openBrowser`, called by 7.22d's toolbar

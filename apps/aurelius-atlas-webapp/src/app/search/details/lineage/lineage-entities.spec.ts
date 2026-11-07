@@ -34,6 +34,8 @@ describe("lineage entities (LDG-19..LDG-22)", () => {
             properties: [],
             sourceName: "",
             targetName: "",
+            sourceType: "",
+            targetType: "",
         });
         expect(entities.get(relationId)?.kind).toBe("relation");
         // The view entity carries the legacy parser's stamped type (LDG-20's
@@ -58,16 +60,21 @@ describe("lineage entities (LDG-19..LDG-22)", () => {
 
     it("DD-404: a relation entity carries its named ends; every other kind leaves them empty", () => {
         // The shipped chain names no relation, so the ends are the row's
-        // only readable text — resolved through the element index.
+        // only readable text — resolved through the element index. DD-411:
+        // each end carries its type too — the relationship row's icon.
         expect(entities.get("rel-1")).toMatchObject({
             kind: "relation",
             sourceName: "Ingest Topic",
             targetName: "Load Job",
+            sourceType: "lineage_dataset",
+            targetType: "lineage_process",
         });
         expect(entities.get("rel-2")).toMatchObject({
             kind: "relation",
             sourceName: "Load Job",
             targetName: "Sales Table",
+            sourceType: "lineage_process",
+            targetType: "lineage_dataset",
         });
         // Only relations hold ends.
         expect(entities.get(elementId)).toMatchObject({ sourceName: "", targetName: "" });
@@ -98,6 +105,8 @@ describe("lineage entities (LDG-19..LDG-22)", () => {
             humanReadableType: "Process",
             sourceName: "",
             targetName: "",
+            sourceType: "",
+            targetType: "",
             properties: [
                 { name: "owner", value: "team-a" },
                 { name: "tier", value: "bronze" },

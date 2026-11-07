@@ -46,6 +46,14 @@ export type LineageEntity = {
     readonly sourceName: string;
     /** A relation's target end, named (DD-404) — same rule as {@link sourceName}. */
     readonly targetName: string;
+    /**
+     * A relation's source end, typed (DD-411): the element's `@xsi_type`, so
+     * the relationship row draws the end's icon; empty for any other kind or
+     * an end the model does not hold.
+     */
+    readonly sourceType: string;
+    /** A relation's target end, typed (DD-411) — same rule as {@link sourceType}. */
+    readonly targetType: string;
 };
 
 /**
@@ -69,6 +77,8 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
             properties: element.properties,
             sourceName: "",
             targetName: "",
+            sourceType: "",
+            targetType: "",
         });
     }
     for (const relation of model.relations.values()) {
@@ -82,9 +92,12 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
             properties: relation.properties,
             // DD-404: the ends ride the row — the Model tab's table shows
             // them, and the shipped chain's relations carry no name, so the
-            // ends are the row's only readable text.
+            // ends are the row's only readable text. DD-411 adds each end's
+            // type: the legacy's relationship row draws an icon per end.
             sourceName: endLabel(model, relation.source),
             targetName: endLabel(model, relation.target),
+            sourceType: endType(model, relation.source),
+            targetType: endType(model, relation.target),
         });
     }
     for (const view of model.views) {
@@ -100,6 +113,8 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
             properties: view.properties,
             sourceName: "",
             targetName: "",
+            sourceType: "",
+            targetType: "",
         });
         for (const node of view.nodes) {
             entities.set(node.id, {
@@ -114,6 +129,8 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
                 properties: [],
                 sourceName: "",
                 targetName: "",
+                sourceType: "",
+                targetType: "",
             });
         }
         for (const connection of view.connections) {
@@ -127,6 +144,8 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
                 properties: [],
                 sourceName: "",
                 targetName: "",
+                sourceType: "",
+                targetType: "",
             });
         }
     }
@@ -145,6 +164,16 @@ function endLabel(model: Ar3Model, id: string): string {
         return "";
     }
     return element.name !== "" ? element.name : element.id;
+}
+
+/**
+ * A relation end's type (DD-411): the element's `@xsi_type`, or the empty
+ * string for an end the model does not hold — no icon draws for it.
+ * @param model the parsed model
+ * @param id the end's element id
+ */
+function endType(model: Ar3Model, id: string): string {
+    return model.elements.get(id)?.type ?? "";
 }
 
 /**

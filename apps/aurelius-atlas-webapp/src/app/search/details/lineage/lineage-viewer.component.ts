@@ -280,7 +280,6 @@ interface DrawnConnection {
             [metadata]="metadata()"
             [organizations]="model().organizations"
             [activeViewId]="drawnView()?.id ?? null"
-            [title]="model().name"
             [selection]="selected()"
             (selectionChange)="selected.set($event)"
             (viewChosen)="drawnViewId.set($event)"

@@ -103,6 +103,8 @@ describe("LineageSelectionPanel (LDG-20..22)", () => {
             properties: [],
             sourceName: "",
             targetName: "",
+            sourceType: "",
+            targetType: "",
         };
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({ imports: [LineageSelectionPanel] });
@@ -157,5 +159,58 @@ describe("LineageSelectionPanel (LDG-20..22)", () => {
         row?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         created.detectChanges();
         expect(emitted).toEqual(["rel-1"]);
+    });
+
+    it("DD-412: the Referencing views table is the legacy's Name | Description shape", () => {
+        const { created, compiled } = setup(PROCESS);
+        const field = [...compiled.querySelectorAll(".field")].find(
+            (node) => node.querySelector(".label")?.textContent?.trim() === "Referencing views",
+        );
+        if (field === undefined) {
+            throw new Error("the Referencing views field is missing");
+        }
+        // The legacy's viewsTableConfig headers (raw, never translated) and
+        // the row's th-scope-row name with the description cell beside it.
+        const headers = [...field.querySelectorAll("thead th")].map((th) => th.textContent?.trim());
+        expect(headers).toEqual(["Name", "Description"]);
+        const viewRow = field.querySelector("tbody tr");
+        expect(viewRow?.querySelector("th[scope='row']")?.textContent?.trim()).toBe("Lineage");
+        // Not the entities table — no narrow Type column here.
+        expect(field.querySelector("td.is-narrow")).toBeNull();
+        // The drawn view is the selected row (the legacy's selectedView$).
+        expect(viewRow?.classList.contains("is-selected")).toBe(true);
+        // The drawn view is already the selected row: clicking it toggles to
+        // a deselect, which emits nothing here — the shipped chain always
+        // draws a view (LDG-12), so there is no "no view" to return to (the
+        // deviation from the legacy's deselectView, recorded in the spec).
+        const emitted: string[] = [];
+        created.componentInstance.viewChosen.subscribe((id) => emitted.push(id));
+        viewRow?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        expect(emitted).toEqual([]);
+    });
+
+    it("DD-412: with no drawn view, a Referencing views row click draws it", () => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            imports: [LineageSelectionPanel],
+            providers: [{ provide: Router, useValue: { navigate: vi.fn() } }],
+        });
+        const created = TestBed.createComponent(LineageSelectionPanel);
+        created.componentRef.setInput("entity", ENTITIES.get(PROCESS) ?? null);
+        created.componentRef.setInput("metadata", METADATA);
+        created.componentRef.setInput("indexes", INDEXES);
+        created.componentRef.setInput("entities", ENTITIES);
+        created.componentRef.setInput("drawnViewId", null);
+        created.detectChanges();
+        const compiled = created.nativeElement as HTMLElement;
+        const field = [...compiled.querySelectorAll(".field")].find(
+            (node) => node.querySelector(".label")?.textContent?.trim() === "Referencing views",
+        );
+        const emitted: string[] = [];
+        created.componentInstance.viewChosen.subscribe((id) => emitted.push(id));
+        field?.querySelector("tbody tr")?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        expect(emitted).toEqual(["lineage_view"]);
     });
 });

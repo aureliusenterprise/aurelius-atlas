@@ -35,6 +35,8 @@ const SECOND_VIEW: LineageEntity = {
     properties: [],
     sourceName: "",
     targetName: "",
+    sourceType: "",
+    targetType: "",
 };
 
 function setup(
@@ -53,7 +55,6 @@ function setup(
     created.componentRef.setInput("indexes", INDEXES);
     created.componentRef.setInput("metadata", METADATA);
     created.componentRef.setInput("activeViewId", activeViewId);
-    created.componentRef.setInput("title", MODEL.name);
     created.componentRef.setInput("selection", selection);
     created.detectChanges();
     created.detectChanges();
@@ -84,12 +85,14 @@ function selectTab(compiled: HTMLElement, label: string): void {
 }
 
 describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
-    it("LDG-19: the open strip reads Browse, Model, Selection, View; Selection only holds a concept", () => {
+    it("LDG-19/DD-410: the open strip reads Browse, Model, View, Selection — the legacy's order", () => {
         // The strip is the drawer's (DD-180's subhead): visibleTabs is the
-        // strip's source, and it drives what an open drawer shows.
+        // strip's source, and it drives what an open drawer shows. DD-410:
+        // the legacy's keyvalue order puts View before Selection — the
+        // tabs object's insertion order was browse, model, view, selection.
         const { browser, compiled } = setup(PROCESS);
-        expect(browser["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "selection", "view"]);
-        expect(tabLabels(compiled)).toEqual(["Browse", "Model", "Selection", "View"]);
+        expect(browser["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "view", "selection"]);
+        expect(tabLabels(compiled)).toEqual(["Browse", "Model", "View", "Selection"]);
         const { browser: empty } = setup(null);
         expect(empty["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "view"]);
     });
@@ -189,6 +192,24 @@ describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
         created.detectChanges();
         expect(browser["active"]()).toBe(false);
         expect(browser.selection()).toBeNull();
+    });
+
+    it("DD-410: the legacy's chrome — the header reads Details, the footer closes", () => {
+        const { created, compiled } = setup(PROCESS);
+        // The quickview's default name, which the legacy model browser never
+        // overrode — the panel is "Details" whichever concept opened it.
+        expect(compiled.querySelector(".aurelius-drawer-title")?.textContent?.trim()).toBe("Details");
+        const close = compiled.querySelector("button[drawer-footer]");
+        if (close === null) {
+            throw new Error("the footer's Close button is missing");
+        }
+        expect(close.textContent?.trim()).toBe("Close");
+        // It dismisses like the head's close: the panel slides out and the
+        // selection clears with it (DD-403's rule, shared).
+        close.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        expect(created.componentInstance["active"]()).toBe(false);
+        expect(created.componentInstance.selection()).toBeNull();
     });
 
     it("DD-402: the tab strip is full width — Bulma's is-fullwidth tab nav", () => {

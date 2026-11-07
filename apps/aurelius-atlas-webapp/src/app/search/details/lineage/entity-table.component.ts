@@ -2,20 +2,25 @@ import { ChangeDetectionStrategy, Component, input, output } from "@angular/core
 
 import { SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
+import { LINEAGE_ICON_PATHS, lineageClass } from "./lineage-shapes";
+import { relationVerb } from "./lineage-metamodel";
 import type { LineageEntity } from "./lineage-entities";
 
 /**
- * The Model tab and Selection tab entity table (LDG-23, LDG-22, DD-404): the
- * legacy `model-browser-entities-table` component ported. The legacy table
- * pairs a narrow Type column (an archimate icon over the raw `type` sort key)
- * with a Name column; the lineage chain's relations and views have no
- * archimate icon (only `lineage_dataset`/`lineage_process` exist in the legacy
- * definitions), so the Type column shows the metamodel name (LDG-20) instead —
- * the same value the Selection tab shows. The legacy's relationship row shows
- * the ends instead of a name (source → target, its template's shape); the
- * shipped chain names no relation at all, so a relationship row is otherwise
- * blank — the Name cell carries `source → target` for a relation (the ends
- * the row entity already holds), and the plain name for anything else.
+ * The Model tab and Selection tab entity table (LDG-23, LDG-22, DD-411): the
+ * legacy `model-browser-entities-table` component ported row for row. The
+ * legacy table pairs a narrow Type column holding the element's archimate
+ * icon with a Name column; only `lineage_dataset`/`lineage_process` have an
+ * icon in the legacy's set, so any other type's cell draws nothing — as the
+ * legacy's icon component did for an unknown type. A relationship row is one
+ * cell across both columns (`colspan`, the legacy's) with three lines: the
+ * source end (icon + bold name), the middle `<em>` line (the relation's
+ * name, or the verb its type carries — the legacy relationship row's
+ * `name || displayName` — with the human-readable type in parentheses), and
+ * the target end. The Type column still sorts on `humanReadableType`: the
+ * legacy's `type` sort key was the raw `@xsi_type`, which the shipped chain's
+ * rows carry too — the metamodel name keeps the header honest about what the
+ * comparison means (an unportable detail: the legacy sorted the raw type).
  *
  * A row click selects the concept (LDG-25); clicking the selected row again
  * clears it (the legacy's `rowDeselected` → `deleteConceptSelection`). The
@@ -48,17 +53,60 @@ import type { LineageEntity } from "./lineage-entities";
                 {{ nameTitle }}
             </ng-template>
             <ng-template aurelius-atlas-ui-table-row let-row>
-                <td class="is-narrow">{{ row.humanReadableType }}</td>
                 @if (row.kind === "relation") {
-                    <!-- DD-404: the legacy's relationship row — its ends, with the
-                         arrow between them. A missing end (an edge into a model
-                         that does not hold it) shows the raw nothing its row
-                         carries; the shipped chain's relations have no name, so
-                         the ends are the row. -->
-                    <td class="truncate" [title]="row.sourceName + ' → ' + row.targetName">
-                        {{ row.sourceName }} → {{ row.targetName }}
+                    <!-- DD-411: the legacy's relationship row — one cell across
+                         both columns, the two ends each with their icon, and
+                         the em line between them. A missing end (an edge into
+                         a model that does not hold it) keeps the legacy's
+                         shape: its div stays, with only the name cell's text
+                         gone — the shipped chain always holds both ends. -->
+                    <td colspan="2" class="aurelius-relation-row">
+                        @if (row.sourceName !== "") {
+                            <div class="level is-mobile is-marginless aurelius-relation-end" [title]="row.sourceName">
+                                <span class="icon is-small">
+                                    @if (endIcon(row.sourceType); as path) {
+                                        <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path [attr.d]="path" [class]="endClass(row.sourceType)"></path>
+                                        </svg>
+                                    }
+                                </span>
+                                <strong class="truncate">{{ row.sourceName }}</strong>
+                            </div>
+                        }
+                        <p class="aurelius-relation-middle">
+                            <em>
+                                @if (relationLabel(row); as label) {
+                                    <span class="truncate" [title]="label">{{ label }}</span>
+                                }
+                                <span>({{ row.humanReadableType || row.type }})</span>
+                            </em>
+                        </p>
+                        @if (row.targetName !== "") {
+                            <div class="level is-mobile is-marginless aurelius-relation-end" [title]="row.targetName">
+                                <span class="icon is-small">
+                                    @if (endIcon(row.targetType); as path) {
+                                        <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
+                                            <path [attr.d]="path" [class]="endClass(row.targetType)"></path>
+                                        </svg>
+                                    }
+                                </span>
+                                <strong class="truncate">{{ row.targetName }}</strong>
+                            </div>
+                        }
                     </td>
                 } @else {
+                    <!-- The legacy's element row: the narrow icon cell — the
+                         archimate icon for the two lineage types, nothing for
+                         a type the legacy set has none for — and the name. -->
+                    <td class="is-narrow">
+                        <span class="icon is-small">
+                            @if (endIcon(row.type); as path) {
+                                <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
+                                    <path [attr.d]="path" [class]="endClass(row.type)"></path>
+                                </svg>
+                            }
+                        </span>
+                    </td>
                     <td class="truncate" [title]="row.name">{{ row.name }}</td>
                 }
             </ng-template>
@@ -70,6 +118,22 @@ import type { LineageEntity } from "./lineage-entities";
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+        }
+        .aurelius-relation-end .icon {
+            margin-right: 0.4em;
+        }
+        .aurelius-relation-middle {
+            /* The legacy's em line sits under the source end, clear of its
+               icon (the level's height plus its margin). */
+            margin-left: 2em;
+        }
+        .icon .dataset {
+            fill: blue;
+            stroke: none;
+        }
+        .icon .process {
+            fill: #00d1b2;
+            stroke: none;
         }
     `,
 })
@@ -94,5 +158,35 @@ export class LineageEntityTable {
 
     protected onSelected(row: LineageEntity): void {
         this.chosen.emit(row.id);
+    }
+
+    /**
+     * The archimate-icon path of a type (DD-411): the two lineage types have
+     * one (LDG-13's shapes); an unknown type draws nothing, as the legacy's
+     * icon component did when its definitions had no entry.
+     * @param type an entity or relation-end type
+     */
+    protected endIcon(type: string): string | null {
+        const cssClass = lineageClass(type);
+        return cssClass === null ? null : LINEAGE_ICON_PATHS[cssClass];
+    }
+
+    /**
+     * The icon's fill class (LDG-13: blue dataset, `#00d1b2` process).
+     * @param type an entity or relation-end type
+     */
+    protected endClass(type: string): string {
+        return lineageClass(type) ?? "";
+    }
+
+    /**
+     * The middle line's leading word (DD-411): the relation's own name, or
+     * the verb its type carries (the legacy relationship row's
+     * `name || displayName`). Empty hides the span, as the legacy's `*ngIf`
+     * hid it — only the parenthesised type is left.
+     * @param row the relation row
+     */
+    protected relationLabel(row: LineageEntity): string {
+        return row.name !== "" ? row.name : relationVerb(row.type);
     }
 }
