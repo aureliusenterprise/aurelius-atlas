@@ -7326,6 +7326,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>9.6</td>
+<td>The e2e suites clean up after themselves</td>
+<td>The server's e2e session records what its writes created and deletes, purges and removes it at its end (ECU-01..04, DD-368)</td>
+<td>none</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>10.1</td>
 <td>Deployment chart foundation</td>
 <td>Component charts in their project folders (<code>apps/&lt;app&gt;/helm</code>, <code>dev/&lt;name&gt;/helm</code>) + the <code>helm/</code> umbrella at the workspace root, the <code>helm</code> Nx plugin (targets merge onto the owning projects — a chart is not a project), CI lint/render/publish wiring (CHT-01..07, ADR 057, DD-298, DD-283..294)</td>
