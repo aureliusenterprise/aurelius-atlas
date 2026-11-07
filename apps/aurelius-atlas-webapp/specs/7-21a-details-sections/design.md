@@ -539,3 +539,51 @@ universe and its own increment's call). Listing the picker by typedef
 store carries none, so the display name is the label in practice).
 Translating the stored `typeName` in the save body (refused — EDT-16
 pins the raw name; the server would not recognise the display string).
+
+### DD-380. The side navigation's anchors jump in place, not to the landing page
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** The side navigation's items, the default stats bar's one
+link, and the layout's stats links all take their click the same way:
+cancel the fragment jump, then smooth-scroll the anchored box into view
+(`Details.onNavClick`, `Details.onStatClick` over one private
+`scrollToSection`). The `#anchor` `href` stays as the keyboard path. The
+anchored boxes carry `scroll-margin-top: var(--bulma-navbar-height)`,
+which seats every jump — from the menu or the stats bar — below the
+fixed navbar. DET-25 amends in place; UIC-18/UIC-19 stand unchanged (the
+lib's cancel-and-emit stays the lib's half, DD-154's pattern).
+
+**Reason.** The user reported: "I tried the floating navigation to jump
+to a particular section on the page, however the links are broken and
+send me to the app landing page instead." The items are bare
+`href="#anchor"` anchors. `index.html` sets `<base href="/">`, so the
+browser resolves such an href to the app root with a fragment, and
+Angular's anchor handling routes it: `/` matches the empty-path route
+(routed pages share one URL), which redirects to `search/browse` — the
+landing page — with the fragment riding along (reproduced: the click
+lands on `/search/browse#description-details`). The legacy carried no
+`href` on these items at all: its `DetailsNavigationItem` directive
+intercepted the click and scrolled the target (with a 68px offset for
+its fixed navbar). DD-191 kept that split — shell in the lib, scroll
+"app-side" — but the app-side half never arrived, so the items shipped
+as plain anchors and inherited the base-href resolution. The stats bar
+already had the right shape (UIC-19's cancel-and-emit, wired to the
+screen's `scrollIntoView`); the side nav's projected items simply never
+got their handler, because the shell projects raw caller markup. The
+fix is the stats bar's own pattern at the remaining bare-`#href` call
+sites, plus the navbar-height `scroll-margin-top` — the legacy offset,
+in the CSS idiom `scrollIntoView({ block: "start" })` reads.
+
+**Alternatives.** Dropping the `href` (refused — every other jump link
+in the app, the stats bar included, keeps the `#href` as the keyboard
+path; a handlerless anchor is exactly what broke). `routerLink` with a
+fragment (refused — the router has no fragment-only route to navigate;
+the whole complaint is a router navigation). `withInMemoryScrolling`'s
+`anchorScrolling` (refused — already on for real route changes; these
+clicks produce none, and its jump lands under the fixed navbar). A
+directive over the items (refused — one screen owns these links, and the
+stats bar's `(click)` is the precedent; a `DetailsNavigationItem` port
+would add a unit for two call sites in one template).

@@ -359,7 +359,35 @@ export class Details {
      * @param target the box's anchor id
      */
     protected onStatClick(target: string): void {
-        document.getElementById(target)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        this.scrollToSection(target);
+    }
+
+    /**
+     * A side-navigation item was clicked (DET-25, DD-380): cancel the
+     * browser jump and scroll the box into view, as the legacy
+     * `DetailsNavigationItem` directive's click did (DD-191's
+     * app-side half). The cancel is not a courtesy: with the document's
+     * `<base href="/">`, a bare `#anchor` resolves to the app root, so an
+     * uncancelled click navigates the whole page to `/` — the router's
+     * empty-path redirect answers it with `search/browse` (the landing
+     * screen). The `#href` stays the keyboard path, as in `section-stats`
+     * (UIC-19).
+     * @param event the click, to cancel
+     * @param anchor the box's anchor id
+     */
+    protected onNavClick(event: MouseEvent, anchor: string): void {
+        event.preventDefault();
+        this.scrollToSection(anchor);
+    }
+
+    /**
+     * The screen's one section jump: scroll the anchored box to the top,
+     * where its `scroll-margin-top` (the fixed navbar's height, the
+     * legacy directive's 68 px offset) seats it below the bar.
+     * @param anchor the box's anchor id
+     */
+    private scrollToSection(anchor: string): void {
+        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
 
     /**

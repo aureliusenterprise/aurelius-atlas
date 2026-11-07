@@ -795,6 +795,32 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         ]);
     });
 
+    it("a navigation item's click scrolls its box and cancels the jump (DET-25, DD-380)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        // jsdom scrolls nothing and navigates nowhere: the spy records the
+        // box the click reached, and `defaultPrevented` is the whole bug —
+        // uncancelled, the bare `#anchor` resolves against `<base href="/">`
+        // and the browser leaves for "/", where the router answers
+        // `search/browse` (the landing page, DD-380).
+        const scrolled: string[] = [];
+        const original = Element.prototype.scrollIntoView;
+        Element.prototype.scrollIntoView = function (this: Element): void {
+            scrolled.push(this.id);
+        };
+        try {
+            const link = compiled.querySelector<HTMLAnchorElement>(".aurelius-details-nav .menu-list a")!;
+            const event = new MouseEvent("click", { bubbles: true, cancelable: true });
+            link.dispatchEvent(event);
+
+            expect(event.defaultPrevented).toBe(true);
+            expect(scrolled).toEqual(["description-details"]);
+        } finally {
+            Element.prototype.scrollIntoView = original;
+        }
+    });
+
     it("the header badge shows the alias with the base type, the cards the alias alone (DET-26)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(

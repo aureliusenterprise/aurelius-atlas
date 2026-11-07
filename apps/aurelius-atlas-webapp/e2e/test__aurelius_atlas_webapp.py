@@ -805,6 +805,25 @@ def _active_edge(entity: dict, key: str, guid: str) -> bool:
     )
 
 
+def _jump_with_side_navigation(page: Page) -> None:
+    """The floating side navigation jumps within the details page (DET-25, DD-380).
+
+    Open the menu and click one item. The screen must stay put: left
+    uncancelled, the bare ``#anchor`` resolves against the document's
+    ``<base href="/">``, so the browser leaves for ``/`` and the router
+    answers ``search/browse`` — the landing page, which is what a user hit.
+    The url is the assertion; the scroll itself is browser behaviour no
+    headless assert adds. The item click waits for the opened menu by
+    itself (Playwright's actionability), so the open state needs no
+    assertion of its own — the toggle is the lib's UIC-18.
+    """
+    nav = page.locator(".aurelius-details-nav")
+    nav.locator("button").click()
+    nav.locator(".menu-list a", has_text="Data Attributes").click()
+    expect(page).to_have_url(re.compile(r"/search/details/"))
+    expect(page.locator("#related-attributes")).to_be_visible()
+
+
 def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: str, user_token: str) -> None:
     """The m4i details layout renders from a seeded mini-graph (DET-15..DET-20, DET-23, DET-27).
 
@@ -876,11 +895,10 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(cards).to_have_count(1)
         expect(cards.first).to_contain_text(f"zz{run}beta")
         section.locator("aurelius-atlas-ui-search-field button.button.is-success").click()
-        reset = section.locator("a.aurelius-card-section-reset")
-        expect(reset).to_have_text("1 result(s)")
+        expect(section.locator("a.aurelius-card-section-reset")).to_have_text("1 result(s)")
 
         # …and the reset count line restores them.
-        reset.click()
+        section.locator("a.aurelius-card-section-reset").click()
         expect(cards).to_have_count(2)
         expect(section.locator(".aurelius-card-section-count")).to_contain_text("2 result(s)")
 
@@ -890,6 +908,10 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(children).to_be_visible()
         expect(children.locator(".aurelius-card-section-count")).to_contain_text("0 result(s)")
         expect(children.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
+
+        # DET-25 (DD-380): the floating side navigation jumps to a box and
+        # the screen stays put (never the landing page).
+        _jump_with_side_navigation(authenticated)
 
         # DET-17: the attribute page shows its Fields section — the field's
         # edge read back at the attribute end, one resolved card. The layout
