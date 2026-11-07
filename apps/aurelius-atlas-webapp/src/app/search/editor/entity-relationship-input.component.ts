@@ -3,6 +3,7 @@ import { Subscription } from "rxjs";
 import { SearchService, type AtlasEntityHeader } from "aurelius-atlas-data-access";
 import { ClassificationChip } from "aurelius-atlas-ui";
 
+import { nameDisplay } from "../meta/type-display";
 import { type RelationshipField, type RelationshipPick, relationshipEntry } from "./form-fields";
 
 /** A suggestion row: the found entity, the label, and whether it is pickable. */
@@ -82,12 +83,14 @@ export class EntityRelationshipInput {
         return typeof entity.guid === "string" && entity.guid !== "";
     }
 
-    /** The chips' display labels — the value keeps the raw fields (EDT-15). */
+    /** The chips' display labels — the value keeps the raw fields (EDT-15).
+     * The lead word is the dictionary display name of the pick's type
+     * (DD-379), raw for a name the dictionary never saw. */
     protected readonly chips = computed(() =>
         this.selected().map((pick) => ({
             key: pick.guid,
             label: pick.displayText ?? pick.qualifiedName ?? pick.guid,
-            lead: pick.typeName ?? "",
+            lead: nameDisplay(pick.typeName ?? ""),
         })),
     );
 

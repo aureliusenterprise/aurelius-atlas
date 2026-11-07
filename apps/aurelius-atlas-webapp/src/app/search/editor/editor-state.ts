@@ -13,6 +13,7 @@ import {
 } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../alerts/alerts.service";
+import { nameDisplay } from "../meta/type-display";
 
 import { EntitySaved } from "./entity-saved";
 
@@ -108,7 +109,12 @@ export class EditorState {
     /**
      * The create-mode picker list (EDT-04): every entity typedef except the
      * glossary types and the `__`-prefixed internals, labelled by alias else
-     * name, sorted.
+     * the dictionary display name, sorted. The legacy row label is
+     * `translate.instant(entityDef.name)` (`type-select.component.ts:116`);
+     * the store ships no typedef `displayName`, so the label is the
+     * `nameDisplay` of the name — raw for a type the dictionary never saw
+     * (DD-379). The order is the raw names' — the legacy sorts the type
+     * names before mapping the display label (`type-select.component.ts:31`).
      */
     readonly pickerTypes = computed<readonly PickerType[]>(() => {
         const rows: PickerType[] = [];
@@ -117,9 +123,9 @@ export class EditorState {
             if (name === "" || name.startsWith("__") || name.startsWith("AtlasGlossary")) {
                 continue;
             }
-            rows.push({ name, label: def.options?.["displayName"] ?? name });
+            rows.push({ name, label: def.options?.["displayName"] ?? nameDisplay(name) });
         }
-        return rows.sort((a, b) => a.label.localeCompare(b.label));
+        return rows.sort((a, b) => a.name.localeCompare(b.name));
     });
 
     /**

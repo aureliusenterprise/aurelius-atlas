@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from "@an
 import type { AtlasEntity } from "aurelius-atlas-data-access";
 import { ClassificationChip, Markdown, PeopleBox } from "aurelius-atlas-ui";
 
+import { nameDisplay } from "../../meta/type-display";
 import { cardDescription } from "../shared/card";
 import { peopleRows } from "../shared/people";
 
@@ -54,11 +55,15 @@ export class CardContent {
     /** Emits a clicked person's guid — the screen routes (DET-19). */
     readonly personClicked = output<string>();
 
-    /** The chip labels (DET-19): the card entity's classifications. */
+    /**
+     * The chip labels (DET-19, DD-379): the card entity's classifications,
+     * each by its dictionary display name — the legacy card chip's
+     * `name | translate`.
+     */
     protected readonly classifications = computed(() =>
         (this.entity().classifications ?? [])
             .filter((classification) => typeof classification?.typeName === "string" && classification.typeName !== "")
-            .map((classification) => classification.typeName as string),
+            .map((classification) => nameDisplay(classification.typeName as string)),
     );
 
     /** The description text (DET-19), or empty. */

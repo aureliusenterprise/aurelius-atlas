@@ -153,10 +153,13 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(typeLine?.querySelector("aurelius-atlas-ui-type-name")).toBeTruthy();
         expect(normalize(typeLine?.textContent)).toContain("DataSet");
 
+        // The chips carry the dictionary display names (DET-09, DD-379);
+        // CONFIDENTIAL is outside the dictionary and stays raw, as the
+        // legacy's missing translate key rendered it.
         const chips = [...compiled.querySelectorAll(".aurelius-details-classifications .control")].map((control) =>
             normalize(control.textContent),
         );
-        expect(chips).toEqual(["PII", "CONFIDENTIAL"]);
+        expect(chips).toEqual(["Has PII", "CONFIDENTIAL"]);
     });
 
     it("falls back: no name, qualifiedName titles; neither, the localized label (DET-09)", () => {
@@ -587,7 +590,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         );
 
         const card = compiled.querySelector("#related-attributes aurelius-atlas-ui-entity-card")!;
-        expect(normalize(card.querySelector(".field.is-grouped .control")?.textContent)).toBe("PII");
+        expect(normalize(card.querySelector(".field.is-grouped .control")?.textContent)).toBe("Has PII");
         expect(card.querySelector(".aurelius-card-description strong")?.textContent).toBe("symbol"); // markdown (DET-10 sibling)
         expect(normalize(card.querySelector(".aurelius-people-row")?.textContent)).toBe("Data Steward(s) : Lin");
         // No quality column (DET-19: the DQ column has no source).
@@ -808,9 +811,12 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             attributesAnswer({ a1: { attributes: { name: "gene_symbol", typeAlias: "Data Attribute" } } }),
         );
 
-        // The header badge: the alias with the base type beside it.
+        // The header badge: the alias with the base type beside it, both
+        // by display name — the legacy's alias is stored already
+        // translated and its suffix pipes `typeName | translate`
+        // (DET-26, DD-379).
         expect(normalize(compiled.querySelector(".aurelius-details-type")?.textContent)).toBe(
-            "Data Entity (m4i_data_entity)",
+            "Data Entity (Data Entity)",
         );
         // The header badge leads with the type's icon (DET-26, DD-378):
         // an m4i_data_entity is the table glyph in the business family.
@@ -824,7 +830,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const badges = [
             ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
         ].map((badge) => normalize(badge.textContent));
-        expect(badges).toEqual(["Data Attribute", "m4i_data_attribute"]);
+        // The second card has no alias, so its badge shows the type's
+        // display name — what the raw name rendered before DD-379.
+        expect(badges).toEqual(["Data Attribute", "Data Attribute"]);
         // Every card badge carries its type's icon too (DET-19, DD-378):
         // both fixture cards are m4i_data_attribute — the tag glyph,
         // business family.

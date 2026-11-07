@@ -17,6 +17,7 @@ import { map } from "rxjs";
 
 import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
 
+import { nameDisplay } from "../meta/type-display";
 import { canWriteEntities } from "./can-write-entities";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
@@ -166,7 +167,12 @@ export class EntityEditor {
         this.state.applicableClassifications().map((def) => def.name ?? ""),
     );
 
-    /** The chosen tags that carry a name (EDT-05) — the template's tag row. */
+    /**
+     * The chosen tags that carry a name (EDT-05) — the template's tag row.
+     * The row keeps the raw `typeName` (the tooltip lookup and the remove
+     * emit ride it); the chip's label is the dictionary display name,
+     * rendered below (DD-379).
+     */
     protected readonly chosenTags = computed(() =>
         this.state
             .chosen()
@@ -174,11 +180,30 @@ export class EntityEditor {
             .map((tag) => ({ typeName: tag.typeName as string })),
     );
 
+    /**
+     * A type or classification name's display name for the template
+     * (EDT-05, DD-379): the legacy `name | translate` — the dictionary
+     * display name, raw for a name the dictionary never saw. The tag
+     * chips and the suggestion rows render through it; the values stored
+     * and sent keep the raw name (EDT-16).
+     * @param name the raw classification name
+     */
+    protected display(name: string): string {
+        return nameDisplay(name);
+    }
+
     /** The create-mode type field: the picker stays above the form (EDT-04, DD-330). */
     protected readonly pickerVisible = computed(() => this.isCreate);
 
-    /** Edit mode's static type text (EDT-04): the type never changes there. */
-    protected readonly staticType = computed(() => (!this.isCreate ? (this.state.entity()?.typeName ?? "") : ""));
+    /**
+     * Edit mode's static type text (EDT-04, DD-379): the type never
+     * changes there. The legacy's type select shows the dictionary
+     * display name (`translatedName`, `type-select.component.ts:116`),
+     * so the text is `nameDisplay` of the raw name.
+     */
+    protected readonly staticType = computed(() =>
+        !this.isCreate ? nameDisplay(this.state.entity()?.typeName ?? "") : "",
+    );
 
     /** The picker's selected row, read off the route's type (DD-330). The
      * row must be the pickerRows() array's own object — the Select matches

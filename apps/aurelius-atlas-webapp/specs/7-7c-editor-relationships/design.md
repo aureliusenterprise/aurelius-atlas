@@ -163,7 +163,9 @@ avoids a re-add assertion (it can only assert parity).
 
 - **Status:** Proposed (the `iconsByType` refusal superseded by
   [DD-378](../7-21a-details-sections/design.md#dd-378-the-type-to-icon-map-enters-the-webapp-the-badges-lead-with-their-icon)
-  — the map now ships; the chip's word lead stands)
+  — the map now ships; the chip's word lead stands, by its dictionary
+  display name since
+  [DD-379](../7-21a-details-sections/design.md#dd-379-type-and-classification-names-render-their-dictionary-display-name))
 - **Increment:** 7.7c
 - **Date:** 2026-11-05
 

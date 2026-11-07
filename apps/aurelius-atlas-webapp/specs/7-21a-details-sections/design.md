@@ -474,3 +474,68 @@ datasets, sources, and quality types in the sections; a partial map
 misrepresents the types it omits as unmapped). Keep the refusal and add
 icons only to the header (refused — the user asked for the type icons,
 and a header-only icon against icon-less cards below is the worse shape).
+
+### DD-379. Type and classification names render their dictionary display name
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** The webapp ports the legacy `| translate` over the Aurelius
+dictionary as `src/app/search/meta/type-display.ts`: a `NAME_DISPLAY`
+record of the dictionary's 19 name keys (every `m4i_*` type entry and the
+five classification entries — `PII`, `key_data`, `low_risk`,
+`medium_risk`, `high_risk`), each a `$localize` string carrying the
+dictionary key as its id and the English catalogue value as its
+fallback, plus a `nameDisplay(name)` lookup that answers the raw name
+for a key the dictionary never saw. Every place that shows a type or
+classification name renders the resolver's answer — the details header
+badge (DET-09, DET-26, its base-type suffix included), the details
+header classification chips (DET-09), every details card badge and card
+chip (DET-19, DET-26), every results card badge (SRH-05), the editor's
+static type text and its create picker rows (EDT-04), its classification
+tag chips and suggestion rows (EDT-05), the relationship chips' lead
+word (EDT-14, extending DD-341's word lead), and the relationship field
+labels' bracketed target type (EDT-13). Nothing stored or sent changes:
+the save bodies, searches, typedef lookups, and chip tooltips keep the
+raw name (EDT-16). The locale rides the existing build catalogue
+(DD-128): the ids already exist in `messages.xlf` and
+`messages.nl-NL.xlf`, so the Dutch names — "Data Attribuut",
+"Bevat PII" — arrive with no catalogue work. DET-09, DET-19, DET-26
+(7.20/7.21a), SRH-05 (7.4a), and EDT-04, EDT-05, EDT-13, EDT-14 (7.7a,
+7.7c) amend in place.
+
+**Reason.** The user asked: "The type names are currently presented as
+their internal values. Let's ensure they are translated to their human
+readable values (per locale)." The legacy pipes every displayed name
+through ngx-translate — the badge (`type-name.component.html`), the chip
+(`classification.component.html`, `classifications-input.component.html:16`),
+the type select (`displayField="translatedName"`, `type-select.component.ts:116`),
+the relationship chip lead's word — and the shipped store's names are the
+dictionary's keys (`m4i_data_attribute`, `PII`), so our screens show what
+the legacy's missing key would show: the internal spelling. The
+dictionary keys are already in both XLIFF catalogues (DD-128 migrated
+the whole dictionary; `i18n-completeness.spec.ts` gates it), so only the
+app-side lookup was missing. `$localize` — not a runtime translate
+service: the catalogue bridge is compile-time (DD-128), the app ships no
+ngx-translate, and every other translated string in the app is already
+this idiom. The fallback is the raw name because that is exactly what
+ngx-translate answers for a missing key — a `DataSet`, `spark_process`,
+or `CONFIDENTIAL` renders as the legacy renders it, and the sample
+store's 42 typedefs (which ship no `displayName` option) confirm the
+picker needs the raw fallback in production. `Object.hasOwn` guards the
+lookup so a type named `constructor` cannot surface `Object.prototype`.
+
+**Alternatives.** A runtime translate pipe (refused — DD-128 chose the
+compile-time catalogue bridge; a second translation mechanism would
+split the locale story). Resolving inside the ui parts (refused —
+UIC-15: the lib takes display strings as inputs; the translate is the
+app's job, as the `type-name` header comment already says). Translating
+the properties table's key column too (deferred — the legacy translates
+and titlecases it (`properties.component.html:7`), but its keys are
+attribute names, not type names; that key-name dictionary is a separate
+universe and its own increment's call). Listing the picker by typedef
+`displayName` (kept as the first choice when present — but the shipped
+store carries none, so the display name is the label in practice).
+Translating the stored `typeName` in the save body (refused — EDT-16
+pins the raw name; the server would not recognise the display string).

@@ -38,7 +38,7 @@
     <div class="subtitle name aurelius-details-type">
         @if (typeName()) {
             <aurelius-atlas-ui-type-name
-                [typeName]="typeName()"
+                [typeName]="typeDisplay()"
                 [typeAlias]="typeAlias()"
                 [showBaseTypeName]="true"
                 [icon]="typeIconDef()?.icon"
@@ -178,7 +178,7 @@
                             <aurelius-atlas-ui-entity-card
                                 [guid]="card.guid"
                                 [name]="card.displayText"
-                                [typeName]="card.entity.typeName ?? undefined"
+                                [typeName]="nameFor(card.entity.typeName)"
                                 [typeAlias]="card.alias"
                                 [typeIcon]="iconFor(card.entity.typeName)?.icon"
                                 [typeIconClass]="iconFor(card.entity.typeName)?.classIcon"

@@ -23,6 +23,7 @@ import {
 
 import { canWriteEntities } from "../editor/can-write-entities";
 import { EntitySaved } from "../editor/entity-saved";
+import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
@@ -172,6 +173,13 @@ export class Details {
     protected readonly typeName = computed(() => this.entity()?.typeName ?? undefined);
 
     /**
+     * The header badge's type name (DET-26, DD-379): the dictionary display
+     * name of the entity's type — the legacy badge's `typeName | translate`.
+     * A name the dictionary never saw stays raw, as the legacy's missing key did.
+     */
+    protected readonly typeDisplay = computed(() => nameDisplay(this.typeName()));
+
+    /**
      * The header badge's icon (DET-26, DD-378): the app's type-to-icon map
      * resolved for the entity's type — the legacy read the same index, and
      * an unmapped type (a `DataSet`) renders no icon, as the legacy's
@@ -188,11 +196,25 @@ export class Details {
         return typeIcon(typeName ?? undefined);
     }
 
-    /** The classification chips' labels (DET-09): the entity's classifications. */
+    /**
+     * Resolve a card badge's type name (DET-19, DET-26, DD-379): the
+     * dictionary display name, per card entity — the same resolver the
+     * header badge rides. The ui card takes display strings as inputs (UIC-15).
+     * @param typeName the card entity's type name, or nothing
+     */
+    protected nameFor(typeName: string | null | undefined) {
+        return nameDisplay(typeName ?? undefined);
+    }
+
+    /**
+     * The classification chips' labels (DET-09, DD-379): the entity's
+     * classifications, each by its dictionary display name — the legacy
+     * chip's `name | translate`.
+     */
     protected readonly classifications = computed(() =>
         (this.entity()?.classifications ?? [])
             .filter((classification) => typeof classification?.typeName === "string" && classification.typeName !== "")
-            .map((classification) => classification.typeName as string),
+            .map((classification) => nameDisplay(classification.typeName as string)),
     );
 
     /**

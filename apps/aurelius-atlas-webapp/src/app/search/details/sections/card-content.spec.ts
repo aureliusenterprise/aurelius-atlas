@@ -58,8 +58,9 @@ describe("Card content (DET-19)", () => {
         const { fixture } = mount(cardEntity());
         const chips = fixture.nativeElement.querySelectorAll("aurelius-atlas-ui-classification-chip");
         expect(chips).toHaveLength(2);
-        expect(chips[0].textContent).toContain("PII");
-        expect(chips[1].textContent).toContain("key_data");
+        // The chips carry the dictionary display names (DET-19, DD-379).
+        expect(chips[0].textContent).toContain("Has PII");
+        expect(chips[1].textContent).toContain("Is key");
     });
 
     it("omits the chip row when the entity has none (DET-19)", () => {

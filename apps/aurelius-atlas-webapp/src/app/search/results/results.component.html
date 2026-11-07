@@ -40,7 +40,7 @@
                                 <aurelius-atlas-ui-entity-card
                                     [guid]="entity.guid ?? undefined"
                                     [name]="displayName(entity)"
-                                    [typeName]="entity.typeName ?? undefined"
+                                    [typeName]="nameFor(entity.typeName)"
                                     [typeIcon]="iconFor(entity.typeName)?.icon"
                                     [typeIconClass]="iconFor(entity.typeName)?.classIcon"
                                     (entityClicked)="openDetails($event)"

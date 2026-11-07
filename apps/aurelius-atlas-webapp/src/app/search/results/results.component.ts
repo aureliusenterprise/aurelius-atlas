@@ -5,6 +5,7 @@ import { AtlasEntityHeader } from "aurelius-atlas-data-access";
 import { EntityCard, InfiniteScrollContainer } from "aurelius-atlas-ui";
 import { map } from "rxjs";
 
+import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
 import { SearchState } from "../search-state";
 
@@ -53,6 +54,17 @@ export class Results {
      */
     protected iconFor(typeName: string | null | undefined) {
         return typeIcon(typeName ?? undefined);
+    }
+
+    /**
+     * Resolve a card's badge name from the hit's type name (SRH-05,
+     * DD-379): the dictionary display name — the legacy card badge's
+     * `typeName | translate`. A name outside the dictionary (a `DataSet`)
+     * stays raw, as the legacy's missing key did.
+     * @param typeName the hit's type name, or nothing
+     */
+    protected nameFor(typeName: string | null | undefined) {
+        return nameDisplay(typeName ?? undefined);
     }
 
     /** The no-results heading (SRH-06, the legacy `search.results.noResults`). */
