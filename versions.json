@@ -10,11 +10,6 @@
     "aliases": []
   },
   {
-    "version": "feat-e2e-cleanup",
-    "title": "feat-e2e-cleanup",
-    "aliases": []
-  },
-  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
