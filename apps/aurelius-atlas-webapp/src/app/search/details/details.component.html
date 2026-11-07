@@ -198,6 +198,17 @@
                 }
             </aurelius-atlas-ui-details-card-section>
         </div>
+        <!-- The Lineage Model box (LDG-09, DD-388): the legacy dataset and
+             process pages place the #lineage-model div between two card
+             boxes — after Child Datasets / after Systems — and the layout
+             row names that anchor (TypeLayout.lineageAfter). Not a card
+             section: the box owns its own fetch (7.22a's client) and its
+             three states (LDG-10). Its nav entry and stat wait for 7.22d. -->
+        @if (layout()?.lineageAfter === view.anchor) {
+            <section id="lineage-model" class="box aurelius-details-lineage">
+                <aurelius-atlas-webapp-lineage-model [guid]="guid()" />
+            </section>
+        }
     }
 }
 

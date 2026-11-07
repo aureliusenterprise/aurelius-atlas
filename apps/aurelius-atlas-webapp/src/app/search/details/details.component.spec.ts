@@ -557,7 +557,7 @@ function m4iProcess(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInf
     };
 }
 
-/** Deliver an m4i entity's read and its sections' first chunk. */
+/** Deliver an m4i entity's read, its sections' first chunk, and the box's call. */
 function arriveSections(
     fixture: { detectChanges: () => void },
     httpMock: HttpTestingController,
@@ -567,6 +567,13 @@ function arriveSections(
     arrive(fixture, httpMock, body);
     for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
         request.flush(answer);
+    }
+    // The dataset/process layouts carry the Lineage Model box (LDG-09): its
+    // own call lands with the layout. The layouts specced here have no
+    // model — the 204 keeps every section test at the box's empty state,
+    // and httpMock.verify() stays honest (the box's drawing is its own spec).
+    for (const request of httpMock.match((r) => r.url === "/lineage-model/")) {
+        request.flush(null, { status: 204, statusText: "No Content" });
     }
     fixture.detectChanges();
 }
@@ -1087,6 +1094,20 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         // The card body is the uniform one (DET-19): the seeded definition text.
         expect(producers?.querySelector("aurelius-atlas-ui-entity-card")?.textContent).toContain("Indexes it.");
 
+        // LDG-09: the Lineage Model box sits after Child Datasets and before
+        // Producers — the legacy page's position. The box's own call answers
+        // the 204 here (arriveSections), so it rests at the empty message;
+        // its states and drawing are the box's own spec.
+        const lineage = compiled.querySelector("#lineage-model");
+        expect(lineage).toBeTruthy();
+        expect(lineage?.querySelector("aurelius-atlas-webapp-lineage-model")).toBeTruthy();
+        const boxIds = [...compiled.querySelectorAll(".box[id], section[id]")].map((box) => box.id);
+        expect(boxIds.slice(boxIds.indexOf("related-datasets"), boxIds.indexOf("related-producers") + 1)).toEqual([
+            "related-datasets",
+            "lineage-model",
+            "related-producers",
+        ]);
+
         // DET-32: the stats bar gains the two counts in the legacy order
         // (the lineage-model and Data Quality entries stay out, DD-369/383).
         const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
@@ -1135,6 +1156,18 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(compiled.querySelectorAll("#related-systems aurelius-atlas-ui-entity-card")).toHaveLength(1);
         expect(compiled.querySelectorAll("#related-inputs aurelius-atlas-ui-entity-card")).toHaveLength(1);
         expect(compiled.querySelectorAll("#related-outputs aurelius-atlas-ui-entity-card")).toHaveLength(1);
+
+        // LDG-09: the Lineage Model box sits after Systems and before Inputs
+        // — the legacy process page's position (empty here: arriveSections
+        // answers the box's call with the 204).
+        const lineage = compiled.querySelector("#lineage-model aurelius-atlas-webapp-lineage-model");
+        expect(lineage).toBeTruthy();
+        const boxIds = [...compiled.querySelectorAll(".box[id], section[id]")].map((box) => box.id);
+        expect(boxIds.slice(boxIds.indexOf("related-systems"), boxIds.indexOf("related-inputs") + 1)).toEqual([
+            "related-systems",
+            "lineage-model",
+            "related-inputs",
+        ]);
 
         // DET-33: the stats bar of the row, the lineage-model stat out with
         // its deferred box (DD-383).

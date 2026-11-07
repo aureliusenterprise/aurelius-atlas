@@ -1,8 +1,9 @@
 /**
  * The HTTP error reporter (ALR-05): the interceptor's rules are the
- * reportable set (5xx and network failures on /api, never 4xx), the
- * message's shape (method, path, status), and the untouched re-throw.
- * The store's grouping of the resulting alerts is specced at the store.
+ * reportable set (5xx and network failures on /api and the /lineage-model
+ * aux API, never 4xx), the message's shape (method, path, status), and the
+ * untouched re-throw. The store's grouping of the resulting alerts is
+ * specced at the store.
  */
 import { HttpClient, provideHttpClient, withInterceptors } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -71,6 +72,28 @@ describe("alertsHttpInterceptor (ALR-05)", () => {
 
         http.get("/config.json").subscribe({ error: () => undefined });
         controller.match("/config.json")[0].flush({}, { status: 502, statusText: "Bad Gateway" });
+
+        expect(alerts.alerts()).toHaveLength(0);
+    });
+
+    it("reports a 5xx on the lineage-model aux API (DD-392)", () => {
+        const { http, controller, alerts } = setup();
+
+        // The aux chain joined the reported set with 7.22b: the lineage box
+        // stays silent by design (LDG-10, DD-392), so the drawer is where a
+        // failed model call reads.
+        http.get("/lineage-model/").subscribe({ error: () => undefined });
+        controller.match("/lineage-model/")[0].flush({}, { status: 502, statusText: "Bad Gateway" });
+
+        expect(alerts.alerts()).toHaveLength(1);
+        expect(alerts.alerts()[0].message).toBe("Request failed: GET /lineage-model/ 502");
+    });
+
+    it("keeps a 4xx on the aux API silent too (ALR-05, DD-392)", () => {
+        const { http, controller, alerts } = setup();
+
+        http.get("/lineage-model/").subscribe({ error: () => undefined });
+        controller.match("/lineage-model/")[0].flush({}, { status: 400, statusText: "Bad Request" });
 
         expect(alerts.alerts()).toHaveLength(0);
     });

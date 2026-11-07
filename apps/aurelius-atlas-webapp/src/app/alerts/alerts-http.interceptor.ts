@@ -4,13 +4,19 @@ import { catchError, throwError } from "rxjs";
 
 import { AlertsService } from "./alerts.service";
 
-/** The same shape the bearer interceptor keys on (APC-06): the Atlas API. */
-const API_URL = /\/api\//;
+/**
+ * The same shape the bearer interceptor keys on (APC-06): the Atlas API and
+ * the lineage-model aux API. The aux chain belongs in the drawer too — a
+ * failed lineage fetch stays invisible on the box by design (LDG-10,
+ * DD-392), so the drawer is where its 5xx reads.
+ */
+const REPORTED_URL = /\/api\/|\/lineage-model\//;
 
 /**
- * The HTTP error reporter (ALR-05, DD-173): a failed `/api` call becomes
- * an error alert — the `5xx` responses and the network failures (status
- * 0, a request that never got a response). `4xx` stays silent: a client
+ * The HTTP error reporter (ALR-05, DD-173; the aux chain joined by DD-392):
+ * a failed `/api` or `/lineage-model` call becomes an error alert — the
+ * `5xx` responses and the network failures (status 0, a request that never
+ * got a response). `4xx` stays silent: a client
  * error is the calling feature's own business (its form validation, its
  * not-found handling), and reporting it here would train users to
  * ignore the drawer. The interceptor reports and re-throws; it changes
@@ -25,7 +31,7 @@ export const alertsHttpInterceptor: HttpInterceptorFn = (req, next) => {
 
     return next(req).pipe(
         catchError((error: unknown) => {
-            if (API_URL.test(req.url) && isReportable(error)) {
+            if (REPORTED_URL.test(req.url) && isReportable(error)) {
                 alerts.add({ severity: "error", message: describe(req.method, req.url, error), source: "http" });
             }
             return throwError(() => error);

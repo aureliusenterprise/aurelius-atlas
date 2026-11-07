@@ -13,6 +13,11 @@
  * stays green untouched). The anchors are the legacy ids
  * (`#related-attributes` and friends) so the navigation's and the stats
  * bar's `#href`s land.
+ *
+ * 7.22b adds the lineage box's position (LDG-09): the `lineageAfter` anchor
+ * names the card box the Lineage Model box follows — the legacy pages put
+ * the `#lineage-model` div between two card boxes, and it is no card
+ * section, so its place rides the layout row, not the `sections` list.
  */
 
 /** One card section of a layout (DET-17..DET-22 render it). */
@@ -62,6 +67,12 @@ export interface TypeLayout {
     readonly propertiesTitle: string;
     /** The side-navigation entries, in legacy order. */
     readonly nav: readonly NavDef[];
+    /**
+     * The anchor of the card box the Lineage Model box follows (LDG-09,
+     * DD-388), when the layout carries one: the dataset's and the process'
+     * rows name it, every other layout leaves the box out entirely.
+     */
+    readonly lineageAfter?: string;
 }
 
 /** The layout key: one of the eight m4i catalogue types. */
@@ -77,11 +88,12 @@ export type M4iLayoutType =
 
 /**
  * The eight layouts, key for key the spec's table (DET-16, amended by 7.21c's
- * DET-32/DET-33 rows). The stats and navigation list the rendered boxes only:
- * every deferred section's stat and link stays out (DD-369, and DD-383's
- * lineage-model entries among them — a link to a box that is not rendered
- * would strand the reader). Built once at load; `$localize` resolves per
- * locale at compile time.
+ * DET-32/DET-33 rows and 7.22b's LDG-09 box positions). The stats and
+ * navigation list the rendered boxes only: every deferred section's stat and
+ * link stays out (DD-369), and the lineage box's stat and nav link with them
+ * until the toolbar slice returns them (DD-383, amended by LDG-09 — the box
+ * itself renders from this slice, its `#lineage-model` anchor live).
+ * Built once at load; `$localize` resolves per locale at compile time.
  */
 export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
     m4i_data_domain: {
@@ -267,6 +279,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.dataset.datasetsCards.title:Child Datasets`,
                 seedKeys: ["childDataset"],
             },
+            // LDG-09: the Lineage Model box sits after Child Datasets and
+            // before Producers (dataset-details.component.html L115) — the
+            // `lineageAfter` row below, not a card section.
             // DET-32, DD-382: the dataset's own lineage ends — the processes
             // it outputs from (`outputFromProcesses`) and outputs to
             // (`inputToProcesses`) — the demo's Producers and Consumers
@@ -332,6 +347,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             { label: $localize`:@@search.details.dataset.properties:Properties`, anchor: "properties-details" },
         ],
+        // LDG-09: the Lineage Model box follows Child Datasets (the legacy
+        // dataset page's order: datasets, lineage, producers, consumers).
+        lineageAfter: "related-datasets",
     },
     m4i_collection: {
         descriptionTitle: $localize`:@@search.details.collection.description:Description`,
@@ -426,6 +444,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.process.systemsCards.title:Systems`,
                 seedKeys: ["system"],
             },
+            // LDG-09: the Lineage Model box sits after Systems and before
+            // Inputs (process-details.component.html L74) — the
+            // `lineageAfter` row below, not a card section.
             {
                 anchor: "related-inputs",
                 title: $localize`:@@search.details.process.inputCards.title:Inputs`,
@@ -463,10 +484,15 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
         nav: [
             { label: $localize`:@@search.details.process.description:Description`, anchor: "description-details" },
             { label: $localize`:@@search.details.process.systems:Systems`, anchor: "related-systems" },
+            // LDG-09: the Lineage Model box follows Systems (the legacy
+            // process page's order: systems, lineage, inputs, outputs).
+            // Its nav entry and stat wait for 7.22d (the DD-383 rule keeps
+            // them out while the box's chrome stays deferred).
             { label: $localize`:@@search.details.process.inputs:Inputs`, anchor: "related-inputs" },
             { label: $localize`:@@search.details.process.outputs:Outputs`, anchor: "related-outputs" },
             { label: $localize`:@@search.details.process.properties:Properties`, anchor: "properties-details" },
         ],
+        lineageAfter: "related-systems",
     },
 };
 
