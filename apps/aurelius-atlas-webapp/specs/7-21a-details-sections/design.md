@@ -338,3 +338,42 @@ a client-side filter has no reason to wait). Debounce the keystrokes
 if a server search ever rides this input, that slice adds its own
 debounce). Zero every `.field` margin app-wide (refused: Bulma's form
 stacking depends on it; only this row's field is wrong).
+
+### DD-376. The stacked card-section header uses the box's width
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** Below Bulma 1's level breakpoint (768px) the card-section
+header stops centering its stacked groups. The level and both its groups
+stretch; the title and count sit flush left as blocks; the sort field
+takes the full width, its select control growing so the row spans like
+the search box under it (the search box already does — its `control`
+carries `is-expanded`). DET-21 carries the one-line rule; the shape is
+measured in the browser at 390px (control row 44→346 of the 24→366 box,
+select 263px) and the desktop row is untouched (DD-375's alignment
+re-measured green).
+
+**Reason.** The user asked: on a phone the title and controls floated
+centered in the box, wasting the width. Two facts made this a section fix
+and not a theme one. First, Bulma 1 dropped `.level.is-widescreen` — the
+class our markup carries from the legacy template matches nothing in
+Bulma 1's CSS, so the level stacks at its own 769px breakpoint, not the
+legacy's widescreen one; the media query must match Bulma's real
+breakpoint or it fights the cascade. Second, the demo centers the same
+stacked groups (its `level-left`/`level-right` inherit Bulma 0.9.4's
+centering below widescreen) and its cards overflow the phone screen at
+the same time — the stacked demo is the broken half of the parity rule
+(DD-374's own criterion), left behind by choice. The legacy stacked
+controls did stretch where they could: its sorting field carried
+`is-expanded` (`details-cards-list.component.html`), which is what the
+stretched sort row here keeps.
+
+**Alternatives.** Center as the demo does (refused: the user asked, and
+the demo's stacked layout is broken anyway). Keep `is-widescreen` alive
+with our own media query at 1215px (refused: it changes where the row
+breaks, and Bulma 1's own stacking point is the shape the rest of the
+screen already follows). Restyle `.level` app-wide (refused: every other
+level on the site may want Bulma's centering; only this header's stacked
+shape is wrong).

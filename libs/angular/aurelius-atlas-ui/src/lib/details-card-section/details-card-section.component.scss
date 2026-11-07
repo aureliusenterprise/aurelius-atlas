@@ -40,3 +40,38 @@
 .aurelius-card-section-controls {
     margin-bottom: 0;
 }
+
+/*
+ * Stacked (Bulma 1's own level breakpoint — the `is-widescreen` class the
+ * legacy markup carries is dead in Bulma 1: the level stacks below 769px,
+ * not below the widescreen width). Stacked, Bulma centers every group in
+ * the box; here they use the width instead — the header and control
+ * groups stretch across it, the title and count sit flush left as blocks,
+ * and the sort select grows so its row spans like the search box under it
+ * (the legacy's stacked control field carried `is-expanded`). The demo's
+ * narrow layout centers and its cards overflow the screen (DD-376: the
+ * centered look is the demo's broken half, left behind by choice).
+ */
+@media screen and (max-width: 768px) {
+    .aurelius-card-section-level {
+        align-items: stretch;
+
+        .level-left,
+        .level-right {
+            align-items: stretch;
+        }
+
+        .aurelius-card-section-controls {
+            /* Bulma's `.select select` holds `width: auto`; the stretch
+               repeats Bulma's own `.select.is-fullwidth select` rule. */
+            .control.has-icons-left {
+                flex-grow: 1;
+            }
+
+            .select,
+            .select select {
+                width: 100%;
+            }
+        }
+    }
+}
