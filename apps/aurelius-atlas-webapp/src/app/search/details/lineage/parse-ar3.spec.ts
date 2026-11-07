@@ -29,11 +29,15 @@ describe("parseAr3Model (LDG-11)", () => {
             id: "00000000-0000-4000-8000-000000000001",
             type: "lineage_dataset",
             name: "Ingest Topic",
+            description: "",
+            properties: [],
         });
         expect(model.elements.get("00000000-0000-4000-8000-000000000002")).toEqual({
             id: "00000000-0000-4000-8000-000000000002",
             type: "lineage_process",
             name: "Load Job",
+            description: "",
+            properties: [],
         });
     });
 
@@ -45,6 +49,8 @@ describe("parseAr3Model (LDG-11)", () => {
                 target: "00000000-0000-4000-8000-000000000002",
                 type: "lineage_relation",
                 name: "",
+                description: "",
+                properties: [],
             },
             {
                 id: "rel-2",
@@ -52,6 +58,8 @@ describe("parseAr3Model (LDG-11)", () => {
                 target: "00000000-0000-4000-8000-000000000003",
                 type: "lineage_relation",
                 name: "",
+                description: "",
+                properties: [],
             },
         ]);
     });
@@ -176,6 +184,70 @@ describe("parseAr3Model (LDG-11)", () => {
         // Coordinates arrive as strings in a hand-built document and parse
         // like the legacy's parseFloat.
         expect([third.x, third.y, third.width, third.height]).toEqual([0, 0, 10, 10]);
+    });
+
+    it("LDG-21/DD-389: reads the description and the property list", () => {
+        // The shipped fixture carries neither ar3_documentation nor
+        // ar3_properties (8.2's rule set emits none), so the field map is
+        // pinned against a hand-built document using the legacy reader's
+        // shapes (parse-element.ts, get-properties.ts).
+        const document = {
+            ar3_model: {
+                ar3_elements: {
+                    ar3_element: [
+                        {
+                            "@identifier": "e1",
+                            "@xsi_type": "lineage_dataset",
+                            ar3_name: [{ value: "Described" }],
+                            ar3_documentation: { value: "What it holds" },
+                            ar3_properties: {
+                                ar3_property: [
+                                    { "@propertyDefinitionRef": "owner", ar3_value: { value: "data-team" } },
+                                    { "@propertyDefinitionRef": "tier", ar3_value: { value: "silver" } },
+                                ],
+                            },
+                        },
+                    ],
+                },
+                ar3_relationships: {
+                    ar3_relationship: [
+                        {
+                            "@identifier": "r1",
+                            "@source": "e1",
+                            "@target": "e1",
+                            "@xsi_type": "lineage_relation",
+                            ar3_documentation: { value: "Why it flows" },
+                        },
+                    ],
+                },
+                ar3_views: {
+                    ar3_diagrams: {
+                        ar3_view: [
+                            {
+                                "@identifier": "v1",
+                                ar3_name: [{ value: "The View" }],
+                                ar3_documentation: { value: "What it shows" },
+                                ar3_properties: {
+                                    ar3_property: [{ "@propertyDefinitionRef": "tag", ar3_value: { value: "core" } }],
+                                },
+                            },
+                        ],
+                    },
+                },
+            },
+        };
+        const parsed = parseAr3Model(JSON.stringify(document));
+        const element = parsed.elements.get("e1");
+        expect(element?.description).toBe("What it holds");
+        expect(element?.properties).toEqual([
+            { name: "owner", value: "data-team" },
+            { name: "tier", value: "silver" },
+        ]);
+        // Absent blocks read as empty (the legacy's optional chaining).
+        expect(parsed.relations.get("r1")?.description).toBe("Why it flows");
+        expect(parsed.relations.get("r1")?.properties).toEqual([]);
+        expect(parsed.views[0].description).toBe("What it shows");
+        expect(parsed.views[0].properties).toEqual([{ name: "tag", value: "core" }]);
     });
 
     it("LDG-11/DD-389: a document without ar3_model raises", () => {

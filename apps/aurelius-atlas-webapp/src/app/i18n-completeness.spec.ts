@@ -6,7 +6,9 @@
  * dictionaries are the chrome strings of the shared-components library,
  * carried by the `aurelius-atlas-ui` components (DD-136, UIC-04); the shell
  * dictionaries are the header/footer chrome the webapp's shell carries
- * (SHC-07).
+ * (SHC-07); the modelview2 dictionaries are the lineage viewer's strings,
+ * carried by the webapp's lineage viewer and its model browser
+ * (7.22c, LDG-26).
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
@@ -14,6 +16,8 @@ import { join, resolve } from "node:path";
 import componentsEnUs from "../../tests/fixtures/components-en-US.json";
 import componentsNlNl from "../../tests/fixtures/components-nl-NL.json";
 import enUs from "../../tests/fixtures/en-US.json";
+import modelview2EnUs from "../../tests/fixtures/modelview2-en-US.json";
+import modelview2NlNl from "../../tests/fixtures/modelview2-nl-NL.json";
 import nlNl from "../../tests/fixtures/nl-NL.json";
 import shellEnUs from "../../tests/fixtures/shell-en-US.json";
 import shellNlNl from "../../tests/fixtures/shell-nl-NL.json";
@@ -102,11 +106,13 @@ describe("Aurelius dictionary bridge", () => {
         ...flatten(enUs as Record<string, unknown>, "", {}),
         ...flatten(componentsEnUs as Record<string, unknown>, "", {}),
         ...flatten(shellEnUs as Record<string, unknown>, "", {}),
+        ...flatten(modelview2EnUs as Record<string, unknown>, "", {}),
     };
     const nlLeaves = {
         ...flatten(nlNl as Record<string, unknown>, "", {}),
         ...flatten(componentsNlNl as Record<string, unknown>, "", {}),
         ...flatten(shellNlNl as Record<string, unknown>, "", {}),
+        ...flatten(modelview2NlNl as Record<string, unknown>, "", {}),
     };
     const template = parseXlf("messages.xlf", "source");
     const translated = parseXlf("messages.nl-NL.xlf", "target");
@@ -144,14 +150,16 @@ describe("Aurelius dictionary bridge", () => {
         expect(translated.get(key)).toBe(nlLeaves[key]);
     });
 
-    it("uses only chrome strings the components/shell dictionaries define (UIC-04, DD-136, SHC-07)", () => {
+    it("uses only strings the vendored dictionaries define (UIC-04, DD-136, SHC-07, LDG-26)", () => {
         // Every `@@components.*` id carried by an aurelius-atlas-ui template,
-        // and every `@@shell.*` id carried by the webapp's shell chrome, must
-        // be a vendored chrome string — a component may not invent a unit the
-        // translations do not have.
+        // every `@@shell.*` id carried by the webapp's shell chrome, and every
+        // `@@modelview2.*` id carried by the lineage viewer must be a vendored
+        // string — a component may not invent a unit the translations do not
+        // have.
         const roots = [
             { dir: resolve("libs/angular/aurelius-atlas-ui/src"), pattern: /@@components\.[\w.]+/g },
             { dir: resolve("apps/aurelius-atlas-webapp/src"), pattern: /@@shell\.[\w.]+/g },
+            { dir: resolve("apps/aurelius-atlas-webapp/src"), pattern: /@@modelview2\.[\w.]+/g },
         ];
         const invented: string[] = [];
 

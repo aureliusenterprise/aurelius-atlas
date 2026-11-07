@@ -1,0 +1,174 @@
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { describe, expect, it } from "vitest";
+
+import type { LineageModelMetadata } from "aurelius-atlas-data-access";
+
+import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+
+import type { LineageEntity } from "./lineage-entities";
+import { buildEntitiesById } from "./lineage-entities";
+import { buildIndexes } from "./lineage-indexes";
+import { LineageModelBrowser } from "./model-browser.component";
+import { parseAr3Model } from "./parse-ar3";
+
+/**
+ * LDG-19/LDG-25: the quickview drawer over the shipped chain's document
+ * (DD-391) — the four tabs and their conditions, the auto-open on a concept
+ * selection, the close on deselect (with the previous-tab restore), and the
+ * close-and-redraw on a view choice.
+ */
+const MODEL = parseAr3Model(fixture.model);
+const ENTITIES = buildEntitiesById(MODEL);
+const INDEXES = buildIndexes(MODEL);
+const METADATA = fixture.metadata as LineageModelMetadata[];
+
+const PROCESS = "00000000-0000-4000-8000-000000000002";
+const VIEW_ID = "lineage_view";
+
+const SECOND_VIEW: LineageEntity = {
+    id: "other_view",
+    kind: "view",
+    name: "Other View",
+    type: "ar3_View",
+    humanReadableType: "View",
+    description: "",
+    properties: [],
+};
+
+function setup(
+    selection: string | null = null,
+    activeViewId: string | null = VIEW_ID,
+    entities: ReadonlyMap<string, LineageEntity> = ENTITIES,
+): {
+    browser: LineageModelBrowser;
+    created: ComponentFixture<LineageModelBrowser>;
+    compiled: HTMLElement;
+} {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ imports: [LineageModelBrowser] });
+    const created = TestBed.createComponent(LineageModelBrowser);
+    created.componentRef.setInput("entities", entities);
+    created.componentRef.setInput("indexes", INDEXES);
+    created.componentRef.setInput("metadata", METADATA);
+    created.componentRef.setInput("activeViewId", activeViewId);
+    created.componentRef.setInput("title", MODEL.name);
+    created.componentRef.setInput("selection", selection);
+    created.detectChanges();
+    created.detectChanges();
+    return { browser: created.componentInstance, created, compiled: created.nativeElement as HTMLElement };
+}
+
+function tabLabels(compiled: HTMLElement): string[] {
+    return [...compiled.querySelectorAll(".aurelius-model-browser-tab")].map((node) => node.textContent?.trim() ?? "");
+}
+
+function activeTab(compiled: HTMLElement): string | undefined {
+    return compiled.querySelector(".aurelius-model-browser-tab.is-active")?.textContent?.trim();
+}
+
+/** The drawer's layer, rendered only while the panel is open (DD-162). */
+function drawerLayer(compiled: HTMLElement): Element | null {
+    return compiled.querySelector(".aurelius-drawer");
+}
+
+function selectTab(compiled: HTMLElement, label: string): void {
+    const tab = [...compiled.querySelectorAll(".aurelius-model-browser-tab")].find(
+        (node) => node.textContent?.trim() === label,
+    );
+    if (tab === undefined) {
+        throw new Error(`no tab labelled ${label}`);
+    }
+    tab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+}
+
+describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
+    it("LDG-19: the open strip reads Browse, Model, Selection, View; Selection only holds a concept", () => {
+        // The strip is the drawer's (DD-180's subhead): visibleTabs is the
+        // strip's source, and it drives what an open drawer shows.
+        const { browser, compiled } = setup(PROCESS);
+        expect(browser["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "selection", "view"]);
+        expect(tabLabels(compiled)).toEqual(["Browse", "Model", "Selection", "View"]);
+        const { browser: empty } = setup(null);
+        expect(empty["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "view"]);
+    });
+
+    it("LDG-19: with no view selected the View tab hides (the legacy's condition)", () => {
+        const { browser } = setup(PROCESS, null);
+        expect(browser["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "selection"]);
+    });
+
+    it("LDG-25: a concept selection opens the drawer on the Selection tab", () => {
+        const { browser, created, compiled } = setup(null);
+        expect(drawerLayer(compiled)).toBeNull();
+        browser.selection.set(PROCESS);
+        created.detectChanges();
+        expect(drawerLayer(compiled)).not.toBeNull();
+        expect(activeTab(compiled)).toBe("Selection");
+        // The Selection tab's content: the concept's name (LDG-20).
+        expect(compiled.textContent).toContain("Load Job");
+    });
+
+    it("LDG-25: clearing the selection closes the drawer and restores the previous tab", () => {
+        const { browser, created, compiled } = setup(PROCESS);
+        // Open on Selection, read the Model tab, then clear — the close
+        // lands back on Model (the legacy's close() + selectTab(previousTab)).
+        selectTab(compiled, "Model");
+        created.detectChanges();
+        expect(activeTab(compiled)).toBe("Model");
+
+        browser.selection.set(null);
+        created.detectChanges();
+        browser.selection.set(PROCESS);
+        created.detectChanges();
+        expect(activeTab(compiled)).toBe("Selection");
+
+        browser.selection.set(null);
+        created.detectChanges();
+        // Closed, and the reader lands back on the tab they were reading
+        // (the legacy's close() + selectTab(previousTab)).
+        expect(drawerLayer(compiled)).toBeNull();
+        expect(browser["currentTab"]()).toBe("model");
+    });
+
+    it("LDG-25: choosing a view in the Browse dropdown closes the drawer and emits it", async () => {
+        const twoViews = new Map(ENTITIES);
+        twoViews.set(SECOND_VIEW.id, SECOND_VIEW);
+        // No drawn view: the dropdown shows its placeholder, so picking the
+        // first row is a real change for the control.
+        const { browser, created, compiled } = setup(null, null, twoViews);
+        const emitted: string[] = [];
+        browser.viewChosen.subscribe((id) => emitted.push(id));
+        // Open the panel through a selection, then switch to Browse.
+        browser.selection.set(PROCESS);
+        created.detectChanges();
+        selectTab(compiled, "Browse");
+        created.detectChanges();
+        expect(drawerLayer(compiled)).not.toBeNull();
+
+        const select = compiled.querySelector("select") as HTMLSelectElement;
+        expect(select.value).toBe("");
+        select.value = "0";
+        select.dispatchEvent(new Event("change"));
+        await created.whenStable();
+        created.detectChanges();
+
+        expect(emitted).toEqual([VIEW_ID]);
+        expect(drawerLayer(compiled)).toBeNull();
+    });
+
+    it("LDG-25: dismissal hides the panel and keeps the selection painted (the legacy close)", () => {
+        const { created, compiled } = setup(PROCESS);
+        const close = compiled.querySelector(".aurelius-drawer-panel button.delete");
+        if (close === null) {
+            throw new Error("the drawer's close button is missing");
+        }
+        close.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        // The panel slides out (the layer lingers for the exit animation
+        // only, DD-162) and the selection stays — the diagram keeps its
+        // painted node.
+        expect(created.componentInstance["active"]()).toBe(false);
+        expect(created.componentInstance.selection()).toBe(PROCESS);
+        expect(compiled.querySelector(".aurelius-drawer")?.classList.contains("is-closing")).toBe(true);
+    });
+});

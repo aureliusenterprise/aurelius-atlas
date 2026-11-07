@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal } from "@angular/core";
-import { LineageModelService } from "aurelius-atlas-data-access";
+import { LineageModelService, type LineageModelMetadata } from "aurelius-atlas-data-access";
 
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 
@@ -43,7 +43,11 @@ import { LineageViewer } from "./lineage-viewer.component";
             <!-- LDG-09: the header is the drawn view's name — the model's
                  data (the server names the view "Lineage"), never a key. -->
             <h3 class="title is-3 aurelius-lineage-title">{{ viewName() }}</h3>
-            <aurelius-atlas-webapp-lineage-viewer [model]="model" [highlightedGuid]="guid()" />
+            <aurelius-atlas-webapp-lineage-viewer
+                [model]="model"
+                [metadata]="metadataRows()"
+                [highlightedGuid]="guid()"
+            />
         } @else {
             <!-- LDG-10 / DD-392: no model and a failed call read alike. -->
             <div class="has-text-centered aurelius-lineage-empty">
@@ -66,6 +70,13 @@ export class LineageModel {
     /** The parsed model, or null for the empty/failed states (LDG-10). */
     protected readonly drawn = signal<Ar3Model | null>(null);
 
+    /**
+     * The answer's metadata rows (LDG-02's list): 7.22c's quickview merges
+     * them into the Selection tab's Properties table (LDG-21), so the box
+     * keeps them beside the parsed model instead of discarding them.
+     */
+    protected readonly metadataRows = signal<readonly LineageModelMetadata[]>([]);
+
     /** The drawn view's name — the box header (LDG-09), the model's data. */
     protected readonly viewName = computed(() => this.drawn()?.views[0]?.name ?? "");
 
@@ -78,6 +89,7 @@ export class LineageModel {
             const guid = this.guid();
             this.loading.set(true);
             this.drawn.set(null);
+            this.metadataRows.set([]);
             if (guid === "") {
                 return;
             }
@@ -93,8 +105,10 @@ export class LineageModel {
                     }
                     try {
                         this.drawn.set(parseAr3Model(response.model));
+                        this.metadataRows.set(response.metadata);
                     } catch {
                         this.drawn.set(null);
+                        this.metadataRows.set([]);
                     }
                 },
                 // DD-392: the legacy's silent catch, kept — the drawer is
@@ -102,6 +116,7 @@ export class LineageModel {
                 error: () => {
                     this.loading.set(false);
                     this.drawn.set(null);
+                    this.metadataRows.set([]);
                 },
             });
             onCleanup(() => subscription.unsubscribe());

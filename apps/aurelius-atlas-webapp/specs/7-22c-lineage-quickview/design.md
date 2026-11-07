@@ -123,3 +123,34 @@ and the box is cheap.
 **Consequences.** The filter state is a signal beside the tables (no store). If
 a real model outgrows the substring match, the filter widens to a tokenised
 match — a new rule with a perf reason, not a ported component.
+
+### DD-401. The vendored modelview2 catalogue keeps the English key names
+
+- **Status:** Proposed
+- **Increment:** 7.22c
+- **Date:** 2026-11-07
+
+**Decision.** The legacy `modelview2` catalogues disagree on one pair:
+en-US defines `modelBrowser.browse.viewSelect.nameDisplayName`/`.nameDescription`
+("View name", "The name of the view") while nl-NL renamed the keys to
+`viewNameDisplayName`/`viewNameDescription` with the same Dutch strings. The
+vendored `modelview2-nl-NL.json` keeps the English key names with the Dutch
+texts, so the fixture pair is symmetric (LDG-26).
+
+**Reason.** The bridge (DD-128) keys every trans-unit by the dictionary key
+path, and both the generator and `i18n-completeness.spec.ts` require the two
+catalogues to hold the same set of ids — a key that exists only in nl-NL fails
+either gate. The legacy's rename never reached the en file, so the templates
+reference the en names; the rename is a translation-drift artifact, not a
+meaning difference.
+
+**Alternatives.** Vendor both spellings and alias them. It loses: a duplicate
+trans-unit for one string and a rule about which id a template may use. Second,
+keep the nl-only names and reference those. It loses: the en catalogue would
+then lack the id, and the legacy templates' names leave no choice a reader of
+both sources would prefer.
+
+**Consequences.** The vendored nl file is the one place the pair differs from
+the legacy source; the divergence note in LDG-26 records it. The key is unused
+until the Browse tab's dropdown labels land, so no shipped string is affected
+by the rename.

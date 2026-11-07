@@ -7,8 +7,9 @@
  * concept types, one relation type, and one view, and its own scenario fixture
  * (`apps/aurelius-atlas-lineage-model/scenarios/fixtures/graph.extract.json`)
  * shows no organization, no view reference, no property dict, and no style
- * block in that output. Those stay unparsed (DD-389): the properties dict
- * arrives with 7.22c's selection panel, the rest has no page that renders it.
+ * block in that output. Those stay unparsed (DD-389): the rest has no page that
+ * renders it. The property dict and the documentation reader arrived with
+ * 7.22c's selection panel (LDG-21) — the page that needs them.
  *
  * The reader is pure and synchronous — the legacy `async` on every parse
  * function carried no behaviour (no await ever resolved anything). The names
@@ -23,6 +24,14 @@
  * the failure as LDG-10's empty state.
  */
 
+/** A name/value property of a concept (`ar3_property`: the `get-properties.ts` map). */
+export interface Ar3Property {
+    /** The property name (`@propertyDefinitionRef`). */
+    readonly name: string;
+    /** The property value (`ar3_value.value`). */
+    readonly value: string;
+}
+
 /** One model element (an entity of the lineage graph; its id is the guid). */
 export interface Ar3Element {
     /** The element's `@identifier` — the entity guid on the shipped chain. */
@@ -31,6 +40,10 @@ export interface Ar3Element {
     readonly type: string;
     /** The element's name (`ar3_name[0].value`), or empty. */
     readonly name: string;
+    /** The element's description (`ar3_documentation.value`), or empty (LDG-21). */
+    readonly description: string;
+    /** The element's properties (`ar3_properties.ar3_property[]`), in order (LDG-21). */
+    readonly properties: readonly Ar3Property[];
 }
 
 /** One model relation (one lineage edge). */
@@ -45,6 +58,10 @@ export interface Ar3Relation {
     readonly type: string;
     /** The relation's name (`ar3_name[0].value`), or empty. */
     readonly name: string;
+    /** The relation's description (`ar3_documentation.value`), or empty (LDG-21). */
+    readonly description: string;
+    /** The relation's properties (`ar3_properties.ar3_property[]`), in order (LDG-21). */
+    readonly properties: readonly Ar3Property[];
 }
 
 /** One bendpoint of a view connection — a waypoint in model coordinates. */
@@ -91,6 +108,10 @@ export interface Ar3View {
     readonly id: string;
     /** The view's name (`ar3_name[0].value`) — the box's header (LDG-09). */
     readonly name: string;
+    /** The view's description (`ar3_documentation.value`), or empty (LDG-24). */
+    readonly description: string;
+    /** The view's properties (`ar3_properties.ar3_property[]`), in order (LDG-24). */
+    readonly properties: readonly Ar3Property[];
     /** The view's nodes, in document order. */
     readonly nodes: readonly Ar3ViewNode[];
     /** The view's connections, in document order. */
@@ -99,6 +120,12 @@ export interface Ar3View {
 
 /** The parsed model: the elements, the relations, and the views. */
 export interface Ar3Model {
+    /**
+     * The model's name (`ar3_model.ar3_name[0].value`) — the quickview's
+     * title (LDG-19, the legacy's `parseModel` info.name; 7.22d's toolbar
+     * reads it too). The legacy's fallback for a nameless model is kept.
+     */
+    readonly name: string;
     /** The elements by id. */
     readonly elements: ReadonlyMap<string, Ar3Element>;
     /** The relations by id. */
@@ -129,6 +156,8 @@ export function parseAr3Model(model: string): Ar3Model {
             id: text(row["@identifier"]),
             type: text(row["@xsi_type"]),
             name: entryName(row["ar3_name"]),
+            description: entryText(row["ar3_documentation"]),
+            properties: properties(row),
         })),
     );
     const relations = indexById(
@@ -138,13 +167,18 @@ export function parseAr3Model(model: string): Ar3Model {
             target: text(row["@target"]),
             type: text(row["@xsi_type"]),
             name: entryName(row["ar3_name"]),
+            description: entryText(row["ar3_documentation"]),
+            properties: properties(row),
         })),
     );
     const views = rows(ar3, "ar3_views", "ar3_diagrams")
         .flatMap((diagrams) => rowsOf(diagrams, "ar3_view"))
         .map((view) => parseView(view, elements, relations));
+    // The legacy's info.name: the model's own name, with its fallback for a
+    // document that carries none (parse-model.ts).
+    const name = entryName(ar3["ar3_name"]);
 
-    return { elements, relations, views };
+    return { name: name === "" ? "ArchiMate Model" : name, elements, relations, views };
 }
 
 /**
@@ -212,7 +246,31 @@ function parseView(
         };
     });
 
-    return { id: text(view["@identifier"]), name: entryName(view["ar3_name"]), nodes, connections };
+    return {
+        id: text(view["@identifier"]),
+        name: entryName(view["ar3_name"]),
+        description: entryText(view["ar3_documentation"]),
+        properties: properties(view),
+        nodes,
+        connections,
+    };
+}
+
+/**
+ * The concept's property list (the legacy's `getProperties`): each
+ * `ar3_property` row contributes `{ name: @propertyDefinitionRef,
+ * value: ar3_value.value }`. The legacy decoded XML entities in both; the
+ * shipped producer writes plain JSON strings, so the raw value wins (as with
+ * the names).
+ */
+function properties(concept: JsonRow): Ar3Property[] {
+    const dict = concept["ar3_properties"];
+    return isRow(dict)
+        ? rowsOf(dict, "ar3_property").map((property) => ({
+              name: text(property["@propertyDefinitionRef"]),
+              value: entryText(property["ar3_value"]),
+          }))
+        : [];
 }
 
 /** The nested list at `container[key][key]` (the legacy's double-key walk). */
@@ -260,6 +318,11 @@ function optionalText(value: unknown): string | null {
 function entryName(entries: unknown): string {
     const first = Array.isArray(entries) ? entries[0] : undefined;
     return isRow(first) ? text(first["value"]) : "";
+}
+
+/** The `value` of a single `{ value }` object (the legacy's `ar3_documentation?.value`). */
+function entryText(entry: unknown): string {
+    return isRow(entry) ? text(entry["value"]) : "";
 }
 
 /** A coordinate field (the legacy's `Number.parseFloat(@x ?? 0)`). */

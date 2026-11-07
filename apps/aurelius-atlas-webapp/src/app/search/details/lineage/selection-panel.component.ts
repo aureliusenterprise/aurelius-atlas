@@ -1,0 +1,211 @@
+import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
+import type { LineageModelMetadata } from "aurelius-atlas-data-access";
+
+import { LINEAGE_ICON_PATHS, lineageClass } from "./lineage-shapes";
+import type { LineageEntity } from "./lineage-entities";
+import { mergeProperties } from "./lineage-entities";
+import type { LineageIndexes } from "./lineage-indexes";
+import { LineageEntityTable } from "./entity-table.component";
+import { LineagePropertyTable } from "./property-table.component";
+
+/**
+ * The Selection tab (LDG-20/LDG-21/LDG-22): the legacy
+ * `model-browser/selection` component ported, minus its two deferred parts —
+ * the `MODEL_BROWSER_SELECTION_ADDONS` outlet (the Data governance addon,
+ * 7.8's deferral) and the colour legend (7.22b's). Over the legacy's shape:
+ *
+ * - the Name / Type / Description fields, each hidden when empty (the
+ *   legacy's `*ngIf` conditions); the Type row shows the icon of the two
+ *   lineage types that have one (the legacy's archimate-icon, whose icon set
+ *   names only `lineage_dataset`/`lineage_process`) plus the metamodel's
+ *   human-readable name;
+ * - the "Open this view" button (the legacy's `parserType === 'view'` row,
+ *   kept: a view entity can be selected through the tables) — choosing it
+ *   draws that view (LDG-23's rule, emitted);
+ * - the Properties table: {@link mergeProperties} — the concept's own
+ *   `ar3_properties` widened by the metadata row with the same id (the
+ *   legacy's `{ ...properties, ...data }` over `dataByConceptId`); hidden
+ *   when the merge is empty;
+ * - the three reference tables over the LDG-22 indexes (Referenced concepts
+ *   — the ends of a selected relation; Referencing concepts — the relations
+ *   touching the selection; Referencing views), each hidden when empty;
+ * - the grey ID line below the sections.
+ *
+ * A table row click selects that concept here too (the legacy's
+ * `selectEntity`), closing nothing — the drawer stays on the Selection tab
+ * with the new concept (LDG-25).
+ */
+@Component({
+    selector: "aurelius-atlas-webapp-lineage-selection",
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [LineageEntityTable, LineagePropertyTable],
+    template: `
+        @if (entity(); as selected) {
+            @if (selected.name) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.name">Name</p>
+                    <p>{{ selected.name }}</p>
+                </div>
+            }
+            @if (selected.humanReadableType || selected.type) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.type">Type</p>
+                    <p class="aurelius-selection-type">
+                        @if (icon()) {
+                            <span class="icon is-small" aria-hidden="true">
+                                <svg width="16px" height="16px" viewBox="0 0 16 16">
+                                    <path [attr.d]="icon()!" [class]="iconClass()"></path>
+                                </svg>
+                            </span>
+                        }
+                        <span>{{ selected.humanReadableType || selected.type }}</span>
+                    </p>
+                </div>
+            }
+            @if (selected.description) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.description">Description</p>
+                    <p>{{ selected.description }}</p>
+                </div>
+            }
+            @if (selected.kind === "view") {
+                <div class="field">
+                    <button
+                        type="button"
+                        class="button is-link is-small aurelius-selection-open-view"
+                        [class.is-static]="selected.id === drawnViewId()"
+                        (click)="viewChosen.emit(selected.id)"
+                    >
+                        <span i18n="@@modelview2.modelBrowser.selection.openView">Open this view</span>
+                    </button>
+                </div>
+            }
+            @let rows = propertyRows();
+            @if (rows.length > 0) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.properties">Properties</p>
+                    <aurelius-atlas-webapp-lineage-property-table [rows]="rows" />
+                </div>
+            }
+            @let referenced = referencedConcepts();
+            @if (referenced.length > 0) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.referencedConcepts">
+                        Referenced concepts
+                    </p>
+                    <aurelius-atlas-webapp-lineage-entity-table
+                        [rows]="referenced"
+                        [selectedEntity]="selected"
+                        (chosen)="conceptChosen.emit($event)"
+                    />
+                </div>
+            }
+            @let referencing = referencingConcepts();
+            @if (referencing.length > 0) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.referencingConcepts">
+                        Referencing concepts
+                    </p>
+                    <aurelius-atlas-webapp-lineage-entity-table
+                        [rows]="referencing"
+                        [selectedEntity]="selected"
+                        (chosen)="conceptChosen.emit($event)"
+                    />
+                </div>
+            }
+            @let viewsHere = referencingViews();
+            @if (viewsHere.length > 0) {
+                <div class="field">
+                    <p class="label" i18n="@@modelview2.modelBrowser.selection.referencingViews">Referencing views</p>
+                    <aurelius-atlas-webapp-lineage-entity-table
+                        [rows]="viewsHere"
+                        [selectedEntity]="null"
+                        (chosen)="viewChosen.emit($event)"
+                    />
+                </div>
+            }
+            <!-- The legacy's ID line: the small light-grey line under the
+                 sections (is-size-7 has-text-grey-light). -->
+            <div class="field">
+                <p class="is-size-7 has-text-grey-light has-text-weight-light aurelius-selection-id">
+                    <!-- The literal legacy line: "ID:&nbsp;<guid>". -->
+                    ID:&nbsp;{{ selected.id }}
+                </p>
+            </div>
+        }
+    `,
+    styles: `
+        .aurelius-selection-type {
+            display: flex;
+            align-items: center;
+            gap: 0.4em;
+        }
+        .aurelius-selection-type .icon .dataset {
+            fill: blue;
+            stroke: none;
+        }
+        .aurelius-selection-type .icon .process {
+            fill: #00d1b2;
+            stroke: none;
+        }
+    `,
+})
+export class LineageSelectionPanel {
+    /** The selected concept's entity record (the legacy's `selectedEntity$`). */
+    readonly entity = input<LineageEntity | null>(null);
+
+    /** The answer's metadata rows (the legacy's `dataByConceptId` source). */
+    readonly metadata = input<readonly LineageModelMetadata[]>([]);
+
+    /** The three LDG-22 maps. */
+    readonly indexes = input.required<LineageIndexes>();
+
+    /** Every entity record, for the reference tables' id lookups. */
+    readonly entities = input.required<ReadonlyMap<string, LineageEntity>>();
+
+    /** The drawn view — the Open-this-view button's static state. */
+    readonly drawnViewId = input<string | null>(null);
+
+    /** A reference-table row click: select this concept (LDG-25). */
+    readonly conceptChosen = output<string>();
+
+    /** A view was chosen (the Open button, or a referencing-view row): draw it. */
+    readonly viewChosen = output<string>();
+
+    protected readonly propertyRows = computed(() => mergeProperties(this.entity(), this.metadata()));
+
+    /** Referenced concepts (LDG-22): the ends of a selected relation. */
+    protected readonly referencedConcepts = computed(() => this.resolve(this.indexes().conceptsByRelationId));
+
+    /** Referencing concepts (LDG-22): the relations touching the selection. */
+    protected readonly referencingConcepts = computed(() => this.resolve(this.indexes().relationsByConceptId));
+
+    /** Referencing views (LDG-22): the views containing the selection. */
+    protected readonly referencingViews = computed(() => this.resolve(this.indexes().viewsByEntityId));
+
+    /** The Type row's icon (LDG-20): the two lineage types have one. */
+    protected readonly icon = computed(() => {
+        const entity = this.entity();
+        if (entity === null) {
+            return null;
+        }
+        const cssClass = lineageClass(entity.type);
+        return cssClass === null ? null : LINEAGE_ICON_PATHS[cssClass];
+    });
+
+    protected readonly iconClass = computed(() => {
+        const entity = this.entity();
+        return entity === null ? "" : (lineageClass(entity.type) ?? "");
+    });
+
+    /** The map's ids under the selection, resolved to entities (the legacy's selectEntitiesById). */
+    private resolve(map: ReadonlyMap<string, readonly string[]>): LineageEntity[] {
+        const selected = this.entity();
+        if (selected === null) {
+            return [];
+        }
+        const ids = map.get(selected.id) ?? [];
+        const entities = this.entities();
+        return ids.map((id) => entities.get(id)).filter((entity): entity is LineageEntity => entity !== undefined);
+    }
+}
