@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from "@angular/core";
+import { Router } from "@angular/router";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
+import { EntityCard } from "aurelius-atlas-ui";
 
 import { LINEAGE_ICON_PATHS, lineageClass } from "./lineage-shapes";
 import type { LineageEntity } from "./lineage-entities";
@@ -34,13 +36,31 @@ import { LineagePropertyTable } from "./property-table.component";
  * A table row click selects that concept here too (the legacy's
  * `selectEntity`), closing nothing — the drawer stays on the Selection tab
  * with the new concept (LDG-25).
+ *
+ * A selected element gains the search card above the fields (DD-405): the
+ * ui card the results screen rows, title-click routes to the entity's
+ * details page — the convenient hop from a diagram box to the entity itself
+ * the reader asked for (the shipped chain's element ids are the guids). The
+ * LDG-20 fields stay; the card is the navigation, not a replacement.
  */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-selection",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [LineageEntityTable, LineagePropertyTable],
+    imports: [EntityCard, LineageEntityTable, LineagePropertyTable],
     template: `
         @if (entity(); as selected) {
+            @if (selected.kind === "element") {
+                <!-- DD-405: the legacy results card, reused — its title click
+                     opens the entity's details screen. -->
+                <aurelius-atlas-ui-entity-card
+                    class="aurelius-selection-card"
+                    [guid]="selected.id"
+                    [name]="selected.name"
+                    [typeName]="selected.humanReadableType || selected.type"
+                    [showIcon]="false"
+                    (entityClicked)="openDetails($event)"
+                />
+            }
             @if (selected.name) {
                 <div class="field">
                     <p class="label" i18n="@@modelview2.modelBrowser.selection.name">Name</p>
@@ -135,6 +155,10 @@ import { LineagePropertyTable } from "./property-table.component";
         }
     `,
     styles: `
+        .aurelius-selection-card {
+            display: block;
+            margin-bottom: 1rem;
+        }
         .aurelius-selection-type {
             display: flex;
             align-items: center;
@@ -151,6 +175,8 @@ import { LineagePropertyTable } from "./property-table.component";
     `,
 })
 export class LineageSelectionPanel {
+    private readonly router = inject(Router);
+
     /** The selected concept's entity record (the legacy's `selectedEntity$`). */
     readonly entity = input<LineageEntity | null>(null);
 
@@ -197,6 +223,16 @@ export class LineageSelectionPanel {
         const entity = this.entity();
         return entity === null ? "" : (lineageClass(entity.type) ?? "");
     });
+
+    /**
+     * The card's title click (DD-405): open the entity's details page — the
+     * results screen's rule, `search/details/<guid>`; the shipped chain's
+     * element ids are the Atlas guids.
+     * @param guid the selected element's id
+     */
+    protected openDetails(guid: string): void {
+        void this.router.navigate(["/search/details", guid]);
+    }
 
     /** The map's ids under the selection, resolved to entities (the legacy's selectEntitiesById). */
     private resolve(map: ReadonlyMap<string, readonly string[]>): LineageEntity[] {

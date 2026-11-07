@@ -32,6 +32,8 @@ describe("lineage entities (LDG-19..LDG-22)", () => {
             humanReadableType: "Process",
             description: "",
             properties: [],
+            sourceName: "",
+            targetName: "",
         });
         expect(entities.get(relationId)?.kind).toBe("relation");
         // The view entity carries the legacy parser's stamped type (LDG-20's
@@ -52,6 +54,24 @@ describe("lineage entities (LDG-19..LDG-22)", () => {
         // A node has no type of its own — the row hides (the legacy's
         // `|| type` fallback has nothing to show).
         expect(entities.get(model.views[0].nodes[0].id)?.humanReadableType).toBe("");
+    });
+
+    it("DD-404: a relation entity carries its named ends; every other kind leaves them empty", () => {
+        // The shipped chain names no relation, so the ends are the row's
+        // only readable text — resolved through the element index.
+        expect(entities.get("rel-1")).toMatchObject({
+            kind: "relation",
+            sourceName: "Ingest Topic",
+            targetName: "Load Job",
+        });
+        expect(entities.get("rel-2")).toMatchObject({
+            kind: "relation",
+            sourceName: "Load Job",
+            targetName: "Sales Table",
+        });
+        // Only relations hold ends.
+        expect(entities.get(elementId)).toMatchObject({ sourceName: "", targetName: "" });
+        expect(entities.get(viewId)).toMatchObject({ sourceName: "", targetName: "" });
     });
 
     it("LDG-21: the merge widens the concept's properties with its metadata row", () => {
@@ -76,6 +96,8 @@ describe("lineage entities (LDG-19..LDG-22)", () => {
             ...element,
             kind: "element" as const,
             humanReadableType: "Process",
+            sourceName: "",
+            targetName: "",
             properties: [
                 { name: "owner", value: "team-a" },
                 { name: "tier", value: "bronze" },

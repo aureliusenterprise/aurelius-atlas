@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { describe, expect, it } from "vitest";
+import { Router } from "@angular/router";
+import { describe, expect, it, vi } from "vitest";
 
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
@@ -30,7 +31,10 @@ function setup(id: string | null): {
     compiled: HTMLElement;
 } {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ imports: [LineageSelectionPanel] });
+    TestBed.configureTestingModule({
+        imports: [LineageSelectionPanel],
+        providers: [{ provide: Router, useValue: { navigate: vi.fn() } }],
+    });
     const created = TestBed.createComponent(LineageSelectionPanel);
     created.componentRef.setInput("entity", id === null ? null : (ENTITIES.get(id) ?? null));
     created.componentRef.setInput("metadata", METADATA);
@@ -97,6 +101,8 @@ describe("LineageSelectionPanel (LDG-20..22)", () => {
             humanReadableType: "Dataset",
             description: "",
             properties: [],
+            sourceName: "",
+            targetName: "",
         };
         TestBed.resetTestingModule();
         TestBed.configureTestingModule({ imports: [LineageSelectionPanel] });
@@ -108,6 +114,26 @@ describe("LineageSelectionPanel (LDG-20..22)", () => {
         created.detectChanges();
         const compiled = created.nativeElement as HTMLElement;
         expect(labels(compiled)).not.toContain("Properties");
+    });
+
+    it("DD-405: a selected element shows the search card; its title opens the details page", () => {
+        const { compiled } = setup(PROCESS);
+        const card = compiled.querySelector("aurelius-atlas-ui-entity-card");
+        if (card === null) {
+            throw new Error("the selection card is missing");
+        }
+        // The card is the results-screen's: the entity's name as the title.
+        expect(card.textContent).toContain("Load Job");
+        const title = card.querySelector(".title.is-4 a") as HTMLAnchorElement;
+        title.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        // The results screen's rule: /search/details/<guid> — the shipped
+        // chain's element id is the Atlas guid.
+        expect(TestBed.inject(Router).navigate).toHaveBeenCalledWith(["/search/details", PROCESS]);
+    });
+
+    it("DD-405: a relation, node, or view selection shows no card (no details page to open)", () => {
+        expect(setup(RELATION).compiled.querySelector("aurelius-atlas-ui-entity-card")).toBeNull();
+        expect(setup("lineage_view").compiled.querySelector("aurelius-atlas-ui-entity-card")).toBeNull();
     });
 
     it("LDG-20: the Open-this-view button shows only for a view entity", () => {

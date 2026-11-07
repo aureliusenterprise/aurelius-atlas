@@ -1,20 +1,21 @@
 import { Injectable } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
-import { zoomIdentity, type ZoomTransform } from "d3-zoom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { APP_CONFIG } from "../../../tokens";
 import { Session } from "../../../shell/session.service";
 import type { Ar3View } from "./parse-ar3";
 import { createChunk, joinChunk, splitChunk } from "./png-metadata";
-import { saveAroundZoomReset, SaveViewAsImage, type RasterSurface } from "./save-view-as-image";
+import { SaveViewAsImage, type RasterSurface } from "./save-view-as-image";
 
 /**
  * The save flow over a stubbed drawing surface (LDG-30's named stubs): the
- * serialize→draw→PNG path, the fallback taken when the first path throws,
- * the `${view name}.png` name, the metadata the bytes carry (LDG-31), and
- * the zoom reset-and-restore order (LDG-29).
+ * serialize→draw→PNG path, the fallback taken when the first path throws, the
+ * `${view name}.png` name, and the metadata the bytes carry (LDG-31). The
+ * service converts the svg it is handed, whatever transform it carries —
+ * DD-407 dropped the legacy's zoom reset-and-restore around the save (the
+ * viewer's own spec pins the no-move rule).
  */
 
 /** html2canvas, stubbed — the fallback's render target. */
@@ -205,32 +206,5 @@ describe("save-view-as-image (LDG-29/30/31)", () => {
         // The empty description skips too; Title, time, software, source stay.
         expect(keywords).not.toContain("Description");
         expect(keywords).toContain("Title");
-    });
-
-    it("LDG-29: the save runs at the identity transform and restores the old one", async () => {
-        const order: string[] = [];
-        const saved = zoomIdentity.translate(12, 20).scale(2);
-        let inPlace: ZoomTransform = saved;
-        await saveAroundZoomReset(
-            () => {
-                order.push("resetZoom");
-                const previous = inPlace;
-                inPlace = zoomIdentity;
-                return previous;
-            },
-            (previous) => {
-                order.push("setZoom");
-                inPlace = previous;
-            },
-            async () => {
-                order.push("save");
-                // The conversion measures at identity (the legacy's rule).
-                expect(inPlace).toBe(zoomIdentity);
-            },
-        );
-
-        expect(order).toEqual(["resetZoom", "save", "setZoom"]);
-        // The reader's view comes back exactly as left.
-        expect(inPlace.toString()).toBe(saved.toString());
     });
 });

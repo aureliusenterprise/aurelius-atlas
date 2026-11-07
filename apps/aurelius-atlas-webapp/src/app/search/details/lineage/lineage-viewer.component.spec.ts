@@ -1,12 +1,13 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
 import { APP_CONFIG } from "../../../tokens";
 import { LineageModelBrowser } from "./model-browser.component";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
+import { SaveViewAsImage } from "./save-view-as-image";
 import { LineageViewer } from "./lineage-viewer.component";
 import { ZOOM_SCALE_EXTENT } from "./lineage-shapes";
 
@@ -219,6 +220,34 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         // The path style: none-fill black (the legacy's .connection-path).
         expect(styleBlock()).toContain("fill: none;");
         expect(styleBlock()).toContain("stroke: black;");
+    });
+
+    it("DD-409: every connection carries a wide transparent hit path", () => {
+        const { compiled } = setup();
+        // The clickable twin: same geometry as the visible path, so the
+        // whole edge — not its ~1 px stroke — answers a click.
+        const hits = [...compiled.querySelectorAll("g.connection path.connection-hit")];
+        expect(hits.map((path) => path.getAttribute("d"))).toEqual(["M120,27.5L320,27.5", "M440,27.5L640,27.5"]);
+        // It rides inside the click handler's group (the group's (click)
+        // selects the relation — LDG-17's rule, unchanged).
+        expect(hits[0]?.closest("g.connection")?.getAttribute("data-concept")).toBe("rel-1");
+        // Transparent, wide, stroke-only — the style block's rule (the
+        // legacy never had this; DD-409 fixes its nearly-unhittable edge).
+        expect(styleBlock()).toMatch(/\.connection-hit[^{]*\{[^}]*stroke:\s*transparent/);
+        expect(styleBlock()).toMatch(/\.connection-hit[^{]*\{[^}]*stroke-width:\s*10px/);
+        expect(styleBlock()).toMatch(/\.connection-hit[^{]*\{[^}]*pointer-events:\s*stroke/);
+    });
+
+    it("DD-408: the drawing carries no font-family of its own — the app font rules", () => {
+        const { compiled } = setup();
+        // The legacy pinned "Segoe UI" on the svg, which set the diagram
+        // apart from the rest of the app; the svg now inherits the body's
+        // stack (the brand's --bulma-family-primary).
+        expect(styleBlock()).not.toMatch(/font-family/);
+        // The 12 px size stays — the legacy's own text scale for the drawing.
+        expect(styleBlock()).toMatch(/\.lineage-svg[^{]*\{[^}]*font-size:\s*12px/);
+        // Nothing on the drawing element carries a family either.
+        expect(compiled.querySelector("svg.lineage-svg")?.getAttribute("style")).toBeNull();
     });
 
     it("LDG-16: pan and zoom ride d3-zoom at [0.5, 3]; resetZoom restores", async () => {
@@ -499,5 +528,76 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-reset-zoom")?.click();
         created.detectChanges();
         expect(zoomGroup.getAttribute("transform")).toBe("translate(0,0) scale(1)");
+    });
+
+    it("LDG-29/DD-407: saving captures the current transform and never moves the view", async () => {
+        const { created, compiled } = setup();
+
+        // The save seam: record what the service is handed, draw nothing.
+        const save = vi.spyOn(TestBed.inject(SaveViewAsImage), "save").mockResolvedValue(undefined);
+
+        // Pan the diagram so a transform is in place.
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+        const zoomGroup = compiled.querySelector("svg.lineage-svg > g") as SVGGElement;
+        stubSvgExtent(svg);
+        Object.defineProperty(svg, "getBoundingClientRect", {
+            value: () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0 }),
+        });
+        const view = eventWindow();
+        const eventCtor = (view as unknown as { MouseEvent: typeof MouseEvent }).MouseEvent;
+        svg.dispatchEvent(
+            new eventCtor("mousedown", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 10,
+                clientY: 10,
+            }),
+        );
+        view.dispatchEvent(
+            new eventCtor("mousemove", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 50,
+                clientY: 30,
+            }),
+        );
+        view.dispatchEvent(
+            new eventCtor("mouseup", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 50,
+                clientY: 30,
+            }),
+        );
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(40,20) scale(1)");
+
+        // The save flow measures the container (LDG-30), not the svg —
+        // jsdom gives every element a 0×0 box, so pin the container too.
+        const container = compiled.querySelector(".screenshot-container") as HTMLElement;
+        Object.defineProperty(container, "getBoundingClientRect", {
+            value: () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0 }),
+        });
+
+        // The toolbar's save button (LDG-27's column).
+        const saveButton = compiled.querySelector("button.aurelius-lineage-save") as HTMLButtonElement;
+        saveButton.click();
+        await created.whenStable();
+        created.detectChanges();
+
+        // The service converts the live svg at the container's size — the
+        // clone it serializes carries the CURRENT transform (the legacy
+        // reset to identity around the save and restored after; the reader
+        // watched the view jump twice — DD-407 dropped that).
+        expect(save).toHaveBeenCalledTimes(1);
+        const [savedSvg, width, height] = save.mock.calls[0] as unknown as [SVGSVGElement, number, number];
+        expect(savedSvg).toBe(svg);
+        expect([width, height]).toEqual([800, 600]);
+
+        // And the view did not move: the transform still reads the pan.
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(40,20) scale(1)");
     });
 });

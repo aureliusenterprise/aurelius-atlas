@@ -33,6 +33,8 @@ const SECOND_VIEW: LineageEntity = {
     humanReadableType: "View",
     description: "",
     properties: [],
+    sourceName: "",
+    targetName: "",
 };
 
 function setup(
@@ -156,7 +158,7 @@ describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
         expect(drawerLayer(compiled)).toBeNull();
     });
 
-    it("LDG-25: dismissal hides the panel and keeps the selection painted (the legacy close)", () => {
+    it("DD-403: dismissal hides the panel and clears the selection (the box deselects)", () => {
         const { created, compiled } = setup(PROCESS);
         const close = compiled.querySelector(".aurelius-drawer-panel button.delete");
         if (close === null) {
@@ -165,10 +167,39 @@ describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
         close.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         created.detectChanges();
         // The panel slides out (the layer lingers for the exit animation
-        // only, DD-162) and the selection stays — the diagram keeps its
-        // painted node.
+        // only, DD-162) AND the selection clears — no box stays painted
+        // without its panel (the deliberate departure from the legacy's
+        // close, which left the node marked).
         expect(created.componentInstance["active"]()).toBe(false);
-        expect(created.componentInstance.selection()).toBe(PROCESS);
+        expect(created.componentInstance.selection()).toBeNull();
         expect(compiled.querySelector(".aurelius-drawer")?.classList.contains("is-closing")).toBe(true);
+        // The tab strip lost its Selection tab with the selection (LDG-19's
+        // condition) — the reader lands on the tab they were reading.
+        expect(created.componentInstance["currentTab"]()).not.toBe("selection");
+    });
+
+    it("DD-403: the view choice closes and deselects the same way", () => {
+        const twoViews = new Map(ENTITIES);
+        twoViews.set(SECOND_VIEW.id, SECOND_VIEW);
+        const { browser, created } = setup(null, null, twoViews);
+        // Open through a selection, then choose a view from the tab logic.
+        browser.selection.set(PROCESS);
+        created.detectChanges();
+        browser["onViewChosen"](VIEW_ID);
+        created.detectChanges();
+        expect(browser["active"]()).toBe(false);
+        expect(browser.selection()).toBeNull();
+    });
+
+    it("DD-402: the tab strip is full width — Bulma's is-fullwidth tab nav", () => {
+        const { compiled } = setup(PROCESS);
+        const tabs = compiled.querySelector("nav.aurelius-model-browser-tabs");
+        if (tabs === null) {
+            throw new Error("the tab strip is missing");
+        }
+        // is-fullwidth grows every li to fill the strip (equal cells), and
+        // Bulma's tab anchors center their label in the cell by default —
+        // the wide, balanced row the feedback asked for.
+        expect(tabs.classList.contains("is-fullwidth")).toBe(true);
     });
 });

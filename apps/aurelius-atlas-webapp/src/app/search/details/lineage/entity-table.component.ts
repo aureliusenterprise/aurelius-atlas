@@ -5,14 +5,17 @@ import { SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 import type { LineageEntity } from "./lineage-entities";
 
 /**
- * The Model tab and Selection tab entity table (LDG-23, LDG-22): the legacy
- * `model-browser-entities-table` component ported. The legacy table pairs a
- * narrow Type column (an archimate icon over the raw `type` sort key) with a
- * Name column; the lineage chain's relations and views have no archimate icon
- * (only `lineage_dataset`/`lineage_process` exist in the legacy definitions),
- * so the Type column shows the metamodel name (LDG-20) instead — the same
- * value the Selection tab shows. The legacy's relationship row (source →
- * target) is dropped: the spec simplifies both tables to the name/type shape.
+ * The Model tab and Selection tab entity table (LDG-23, LDG-22, DD-404): the
+ * legacy `model-browser-entities-table` component ported. The legacy table
+ * pairs a narrow Type column (an archimate icon over the raw `type` sort key)
+ * with a Name column; the lineage chain's relations and views have no
+ * archimate icon (only `lineage_dataset`/`lineage_process` exist in the legacy
+ * definitions), so the Type column shows the metamodel name (LDG-20) instead —
+ * the same value the Selection tab shows. The legacy's relationship row shows
+ * the ends instead of a name (source → target, its template's shape); the
+ * shipped chain names no relation at all, so a relationship row is otherwise
+ * blank — the Name cell carries `source → target` for a relation (the ends
+ * the row entity already holds), and the plain name for anything else.
  *
  * A row click selects the concept (LDG-25); clicking the selected row again
  * clears it (the legacy's `rowDeselected` → `deleteConceptSelection`). The
@@ -46,7 +49,18 @@ import type { LineageEntity } from "./lineage-entities";
             </ng-template>
             <ng-template aurelius-atlas-ui-table-row let-row>
                 <td class="is-narrow">{{ row.humanReadableType }}</td>
-                <td class="truncate" [title]="row.name">{{ row.name }}</td>
+                @if (row.kind === "relation") {
+                    <!-- DD-404: the legacy's relationship row — its ends, with the
+                         arrow between them. A missing end (an edge into a model
+                         that does not hold it) shows the raw nothing its row
+                         carries; the shipped chain's relations have no name, so
+                         the ends are the row. -->
+                    <td class="truncate" [title]="row.sourceName + ' → ' + row.targetName">
+                        {{ row.sourceName }} → {{ row.targetName }}
+                    </td>
+                } @else {
+                    <td class="truncate" [title]="row.name">{{ row.name }}</td>
+                }
             </ng-template>
         </aurelius-atlas-ui-sortable-table>
     `,

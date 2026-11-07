@@ -14,6 +14,7 @@ import {
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 import { Drawer } from "aurelius-atlas-ui";
 
+import type { Ar3Organization } from "./parse-ar3";
 import type { LineageEntity } from "./lineage-entities";
 import type { LineageIndexes } from "./lineage-indexes";
 import { LineageBrowseTab } from "./browse-tab.component";
@@ -41,8 +42,9 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
  *   (the legacy's `viewSelected`).
  *
  * Dismissal (backdrop, close button, Escape — the drawer's own set, DD-393)
- * hides the panel and leaves the selection painted in the diagram, as the
- * legacy's close did. The Selection and View tabs render only while their
+ * hides the panel AND clears the selection, so no box stays painted without
+ * its panel (DD-403 — a deliberate departure from the legacy's close, which
+ * left the box marked). The Selection and View tabs render only while their
  * condition holds (the legacy's `condition` observables): a selected concept,
  * and a selected view — the shipped model's one view counts from the start
  * (the legacy's `handleSelectView` default).
@@ -56,7 +58,10 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
              drawer element is always in the DOM, so the seam exists; the
              tabindex makes the focus a real keyboard stop. -->
         <aurelius-atlas-ui-drawer #drawer tabindex="-1" [(active)]="active" [title]="title()" [ariaLabel]="closeLabel">
-            <nav class="tabs aurelius-model-browser-tabs" drawer-subhead role="tablist">
+            <!-- DD-402: Bulma's is-fullwidth grows the tabs to equal widths
+                 across the strip (li flex-grow) and each label centers in its
+                 cell — the wide, balanced tab row the reader asked for. -->
+            <nav class="tabs is-fullwidth aurelius-model-browser-tabs" drawer-subhead role="tablist">
                 <ul>
                     @for (tab of visibleTabs(); track tab.id) {
                         <li>
@@ -79,8 +84,12 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
                 @case ("browse") {
                     <aurelius-atlas-webapp-lineage-browse-tab
                         [views]="viewEntities()"
+                        [entities]="entities()"
+                        [organizations]="organizations()"
                         [drawnViewId]="activeViewId()"
+                        [selectedConcept]="selection()"
                         (viewChosen)="onViewChosen($event)"
+                        (conceptChosen)="selection.set($event)"
                     />
                 }
                 @case ("model") {
@@ -131,6 +140,9 @@ export class LineageModelBrowser {
     /** The drawer's heading — the model's own name (the box header's rule, LDG-09). */
     readonly title = input("");
 
+    /** The Browse tab's folder tree (DD-406): the document's organization items. */
+    readonly organizations = input<readonly Ar3Organization[]>([]);
+
     /** The selected concept (LDG-25: the one signal, two-way with the viewer). */
     readonly selection = model<string | null>(null);
 
@@ -166,6 +178,20 @@ export class LineageModelBrowser {
                     }
                 }
             });
+        });
+        // DD-403: every closing path — backdrop, close button, Escape, or a
+        // view choice — deselects the diagram too, so the painted box and the
+        // panel always agree. The two effects settle on the same state: the
+        // cleared selection re-enters the effect above, which finds `active`
+        // already false and only restores the tab.
+        effect(() => {
+            if (!this.active()) {
+                untracked(() => {
+                    if (this.selection() !== null && this.selection() !== "") {
+                        this.selection.set(null);
+                    }
+                });
+            }
         });
     }
 

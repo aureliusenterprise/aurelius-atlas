@@ -14,7 +14,7 @@ import secrets
 from urllib.parse import urljoin
 
 import pytest
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Locator, Page, expect
 from test__aurelius_atlas_webapp import _active_edge, _purge_type, _seed_m4i_mini_graph, _wait_entity_read
 
 LINEAGE_PATH = "/lineage-model/"
@@ -130,7 +130,94 @@ def test__lineage_model_answers_the_seeded_chain(authenticated: Page, root_url: 
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
-@pytest.mark.covers(rules=["LDG-19", "LDG-21", "LDG-23", "LDG-25"])
+def _selection_reads_the_chain_metadata(
+    authenticated: Page, root_url: str, user_token: str, drawer: Locator, *, run: str, dataset_guid: str
+) -> None:
+    """LDG-21 over the live chain: the Selection tab's Name, Type, and merged Properties.
+
+    The expected value is the chain's own answer (DTM-03): the clicked
+    element's id and its row's m4i_original_id, read from the same aux call
+    the page made — the merge's row-wins half, over live data rather than the
+    fixture.
+    """
+    selection = drawer.locator("aurelius-atlas-webapp-lineage-selection")
+    expect(selection.locator(".field", has=authenticated.locator(".label", has_text="Name"))).to_contain_text(
+        f"zz{run}pipeline"
+    )
+    expect(selection.locator(".field", has=authenticated.locator(".label", has_text="Type"))).to_contain_text("Process")
+    chain = authenticated.request.get(
+        urljoin(root_url, LINEAGE_PATH),
+        params={"guid": dataset_guid, "depth": 3, "direction": "BOTH"},
+        headers={"authorization": f"Bearer {user_token}"},
+    )
+    assert chain.status == 200
+    ar3 = json.loads(chain.json()["model"])
+    rows = chain.json()["metadata"]
+    process_id = next(
+        element["@identifier"]
+        for element in ar3["ar3_model"]["ar3_elements"]["ar3_element"]
+        if any(name["value"] == f"zz{run}pipeline" for name in element.get("ar3_name", []))
+    )
+    original_id = next(row["data"]["m4i_original_id"] for row in rows if row["id"] == process_id)
+    properties = selection.locator(".field", has=authenticated.locator(".label", has_text="Properties"))
+    expect(properties).to_contain_text("Model Extractor API")
+    expect(properties).to_contain_text(original_id)
+
+
+def _browse_tab_lists_the_view_and_tree(drawer: Locator, box: Locator, run: str) -> None:
+    """LDG-23/DD-406: the Browse tab's dropdown lists the drawn view over the tree's folders.
+
+    Opened through a node (the reader's path): the dropdown holds the chain's
+    one view, named "Lineage" by the server's rule, and the tree under it
+    shows the producer's three folders holding the concepts as leaves.
+    """
+    box.locator("g.node", has_text=f"zz{run}warehouse").click()
+    expect(drawer).to_be_visible()
+    drawer.locator(".aurelius-model-browser-tab", has_text="Browse").click()
+    browse = drawer.locator("aurelius-atlas-webapp-lineage-browse-tab")
+    expect(browse.locator("select")).to_be_visible()
+    options = browse.locator("select option")
+    # The placeholder option plus the chain's one view.
+    expect(options).to_have_count(2)
+    expect(options.nth(1)).to_have_text("Lineage")
+    tree = browse.locator(".aurelius-browse-tree")
+    expect(tree).to_be_visible()
+    expect(browse.locator(".aurelius-browse-tree-folder")).to_have_text(["Other", "Relations", "Views"])
+    expect(tree.locator(".aurelius-browse-tree-leaf", has_text=f"zz{run}warehouse")).to_be_visible()
+
+
+def _edge_click_selects_the_relation(drawer: Locator, box: Locator) -> None:
+    """LDG-17/DD-409: an edge click — anywhere along the wide hit path — selects the relation.
+
+    The Selection tab reads the relation's type and carries no search card
+    (a relation has no details page, DD-405's condition). The click goes on
+    the wide hit path itself: the edge's visible stroke is 1 px and its
+    bounding box is a zero-height line (a straight horizontal edge here), so
+    a pointer aimed at the box races the slide animation and the redraw.
+    The Selection tab reads the relation's type and carries no search card
+    (a relation has no details page, DD-405's condition). The hit path's
+    bounding box is a zero-height line (the edge is straight horizontal
+    here), so Playwright's visibility gate misjudges it and the click goes
+    force: true — the mouse event is real and lands on the path, riding the
+    group's handler. The close that precedes this helper must be fully
+    committed first: the drawer's layer stays mounted through its slide-out
+    and its scrim covers the viewport, so the guard waits for the exit
+    animation to end — the layer is gone — before the click.
+    """
+    expect(drawer).to_have_count(0)
+    box.locator(".connection-hit").first.click(force=True)
+    expect(drawer).to_be_visible()
+    expect(drawer.locator(".aurelius-model-browser-tab.is-active")).to_have_text("Selection")
+    edge_selection = drawer.locator("aurelius-atlas-webapp-lineage-selection")
+    # The Type value element is unique to the Selection tab (LDG-20); its
+    # text is the relation's human-readable type from the metamodel table.
+    expect(edge_selection.locator(".aurelius-selection-type")).to_contain_text("Data Lineage")
+    expect(edge_selection.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
+    drawer.locator(".aurelius-drawer-panel button.delete").click()
+    expect(drawer).not_to_be_visible()
+
+
+@pytest.mark.covers(rules=["LDG-17", "LDG-19", "LDG-21", "LDG-23", "LDG-25"])
 def test__the_quickview_panel_opens_on_a_node_click(authenticated: Page, root_url: str, user_token: str) -> None:
     """The 7.22c quickview panel: a node click opens it, live metadata lands in Properties (LDG-19/LDG-21/LDG-25).
 
@@ -138,12 +225,15 @@ def test__the_quickview_panel_opens_on_a_node_click(authenticated: Page, root_ur
     on the Selection tab, whose Name and Type read the element and whose
     Properties table carries the chain's own metadata rows (created_by and
     the seed's guid as m4i_original_id — the LDG-21 merge over live rows,
-    DV-68's passthrough). The drawer's close hides the panel (LDG-25) and the
-    node stays selected — the diagram keeps its paint, the legacy's rule.
-    On the Browse tab the dropdown lists the drawn view ("Lineage", the
-    server's rule, LDG-23). Interactions only — the tab strip's pixels and
-    the table's sort are the unit specs' (the e2e rule). Self-cleaned by the
-    shared m4i purge (DD-223).
+    DV-68's passthrough). The selected element gains the search card (DD-405)
+    and its title opens the entity's own details page. The drawer's close
+    hides the panel AND deselects the diagram (LDG-25, DD-403 — no box stays
+    painted without its panel). On the Browse tab the dropdown lists the
+    drawn view ("Lineage", the server's rule, LDG-23) over the organization
+    tree's folders (DD-406). An edge click — the wide hit path, DD-409 —
+    selects the relation (LDG-17). Interactions only — the tab strip's pixels
+    and the table's sort are the unit specs' (the e2e rule). Self-cleaned by
+    the shared m4i purge (DD-223).
     """
     run = secrets.token_hex(4)
     guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
@@ -183,55 +273,43 @@ def test__the_quickview_panel_opens_on_a_node_click(authenticated: Page, root_ur
         expect(tabs.nth(1)).to_have_text("Model")
         expect(tabs.nth(3)).to_have_text("View")
 
-        # LDG-21 over the live chain: the Selection tab reads the concept's
-        # Name and Type, and the Properties table carries the metadata rows
-        # the extractor wrote. The expected value is the chain's own answer
-        # (DTM-03): the clicked element's id and its row's m4i_original_id,
-        # read from the same aux call the page made — the merge's row-wins
-        # half, over live data rather than the fixture.
-        selection = drawer.locator("aurelius-atlas-webapp-lineage-selection")
-        expect(selection.locator(".field", has=authenticated.locator(".label", has_text="Name"))).to_contain_text(
-            f"zz{run}pipeline"
+        # LDG-21 over the live chain: Name, Type, and the merged Properties
+        # read the chain's own answer (the helper).
+        _selection_reads_the_chain_metadata(
+            authenticated, root_url, user_token, drawer, run=run, dataset_guid=dataset_guid
         )
-        expect(selection.locator(".field", has=authenticated.locator(".label", has_text="Type"))).to_contain_text(
-            "Process"
-        )
-        chain = authenticated.request.get(
-            urljoin(root_url, LINEAGE_PATH),
-            params={"guid": dataset_guid, "depth": 3, "direction": "BOTH"},
-            headers={"authorization": f"Bearer {user_token}"},
-        )
-        assert chain.status == 200
-        ar3 = json.loads(chain.json()["model"])
-        rows = chain.json()["metadata"]
-        process_id = next(
-            element["@identifier"]
-            for element in ar3["ar3_model"]["ar3_elements"]["ar3_element"]
-            if any(name["value"] == f"zz{run}pipeline" for name in element.get("ar3_name", []))
-        )
-        original_id = next(row["data"]["m4i_original_id"] for row in rows if row["id"] == process_id)
-        properties = selection.locator(".field", has=authenticated.locator(".label", has_text="Properties"))
-        expect(properties).to_contain_text("Model Extractor API")
-        expect(properties).to_contain_text(original_id)
 
-        # LDG-25: the drawer's close hides the panel and keeps the selection
-        # painted (the legacy's close — the node stays selected).
+        # DD-405: the selected element gains the search card — the results
+        # screen's shape, name and badge included; its title is the anchor to
+        # the entity's own details page (checked after the drawer steps).
+        selection = drawer.locator("aurelius-atlas-webapp-lineage-selection")
+        card = selection.locator("aurelius-atlas-ui-entity-card")
+        expect(card).to_be_visible()
+        expect(card.locator(".title.is-4")).to_contain_text(f"zz{run}pipeline")
+        expect(card.locator(".icon-text")).to_contain_text("Process")
+
+        # LDG-25/DD-403: the drawer's close hides the panel and clears the
+        # selection — the painted box never outlives its panel.
         drawer.locator(".aurelius-drawer-panel button.delete").click()
         expect(drawer).not_to_be_visible()
-        expect(box.locator("g.node.is-selected")).to_have_count(1)
+        expect(box.locator("g.node.is-selected")).to_have_count(0)
 
-        # LDG-23: the Browse tab's dropdown lists the drawn view — the one
-        # view of this chain, named "Lineage" by the server's rule. Open the
-        # panel again through the Model tab's table (the reader's path).
-        box.locator("g.node", has_text=f"zz{run}warehouse").click()
+        # LDG-23/DD-406: reopened through a node, the Browse tab lists the
+        # drawn view in its dropdown over the organization tree's folders.
+        _browse_tab_lists_the_view_and_tree(drawer, box, run)
+        drawer.locator(".aurelius-drawer-panel button.delete").click()
+        expect(drawer).not_to_be_visible()
+
+        # LDG-17/DD-409: an edge click through the wide hit path selects the
+        # relation, not a node (the helper).
+        _edge_click_selects_the_relation(drawer, box)
+
+        # DD-405: the card's title click routes to the entity's details
+        # page — the element, not the dataset the reader arrived on.
+        box.locator("g.node", has_text=f"zz{run}pipeline").click()
         expect(drawer).to_be_visible()
-        drawer.locator(".aurelius-model-browser-tab", has_text="Browse").click()
-        browse = drawer.locator("aurelius-atlas-webapp-lineage-browse-tab")
-        expect(browse.locator("select")).to_be_visible()
-        options = browse.locator("select option")
-        # The placeholder option plus the chain's one view.
-        expect(options).to_have_count(2)
-        expect(options.nth(1)).to_have_text("Lineage")
+        drawer.locator("aurelius-atlas-ui-entity-card .title.is-4 a").click()
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}pipeline")
     finally:
         for type_name in _M4I_TYPES:
             _purge_type(authenticated, root_url, user_token, type_name)
@@ -308,9 +386,9 @@ def test__the_details_page_draws_the_lineage_box(authenticated: Page, root_url: 
 
         # LDG-17: a node click selects it and opens the quickview (7.22c);
         # the process node is the one not highlighted. The drawer's scrim
-        # covers the diagram while the panel is open (DD-393), so the
-        # clearing click lands after the panel is dismissed — the dismiss
-        # itself keeps the selection painted (the legacy's close, LDG-25).
+        # covers the diagram while the panel is open (DD-393), so the next
+        # diagram click lands after the panel is dismissed — and the dismiss
+        # itself deselects the box (LDG-25, DD-403).
         process_node = box.locator("g.node", has_text=f"zz{run}pipeline")
         process_node.click()
         expect(box.locator("g.node.is-selected")).to_have_count(1)
@@ -319,9 +397,11 @@ def test__the_details_page_draws_the_lineage_box(authenticated: Page, root_url: 
         expect(drawer).to_be_visible()
         drawer.locator(".aurelius-drawer-scrim").click()
         expect(drawer).not_to_be_visible()
-        expect(box.locator("g.node.is-selected")).to_have_count(1)
-        process_node.click()
         expect(box.locator("g.node.is-selected")).to_have_count(0)
+        process_node.click()
+        expect(box.locator("g.node.is-selected")).to_have_count(1)
+        drawer.locator(".aurelius-drawer-scrim").click()
+        expect(drawer).not_to_be_visible()
 
         # LDG-10's empty state: the unlinked process has no lineage — the
         # aux 204 (LM-05/LM-06, proven above) and the plain message.

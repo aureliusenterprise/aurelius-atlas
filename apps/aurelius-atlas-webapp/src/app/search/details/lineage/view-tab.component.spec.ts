@@ -26,6 +26,8 @@ const VIEW: LineageEntity = {
     humanReadableType: "View",
     description: "",
     properties: [],
+    sourceName: "",
+    targetName: "",
 };
 
 function setup(view: LineageEntity | null): HTMLElement {

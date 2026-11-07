@@ -118,6 +118,24 @@ export interface Ar3View {
     readonly connections: readonly Ar3ViewConnection[];
 }
 
+/**
+ * One node of the document's organization tree (DD-406): a folder (a label
+ * with children) or a leaf (a `@identifierRef` to a concept). The shipped
+ * producer emits one unlabeled root holding the "Other", "Relations", and
+ * "Views" folders (`extract.py`'s `_ar3_organizations`, the legacy's
+ * `to_JSON.format_organizations`); the legacy parser read the same shape
+ * into its `pathIndex`. The 7.22c parse skipped it (DD-395 kept the tree
+ * out); the Browse tab's navigation tree needs it again.
+ */
+export interface Ar3Organization {
+    /** The folder's `ar3_label[0].value` — empty for a leaf or the root. */
+    readonly label: string;
+    /** A leaf's referenced concept id (`@identifierRef`), null for a folder. */
+    readonly ref: string | null;
+    /** The folder's children, in document order — empty for a leaf. */
+    readonly children: readonly Ar3Organization[];
+}
+
 /** The parsed model: the elements, the relations, and the views. */
 export interface Ar3Model {
     /**
@@ -132,6 +150,8 @@ export interface Ar3Model {
     readonly relations: ReadonlyMap<string, Ar3Relation>;
     /** The views, in document order — the viewer draws the first (LDG-12). */
     readonly views: readonly Ar3View[];
+    /** The organization tree's roots (DD-406) — usually the one unlabeled root. */
+    readonly organizations: readonly Ar3Organization[];
 }
 
 /** One JSON object row, read by bracket access only (strict index rules). */
@@ -177,8 +197,24 @@ export function parseAr3Model(model: string): Ar3Model {
     // The legacy's info.name: the model's own name, with its fallback for a
     // document that carries none (parse-model.ts).
     const name = entryName(ar3["ar3_name"]);
+    const organizations = rowsOf(ar3, "ar3_organizations").map(parseOrganization);
 
-    return { name: name === "" ? "ArchiMate Model" : name, elements, relations, views };
+    return {
+        name: name === "" ? "ArchiMate Model" : name,
+        elements,
+        relations,
+        views,
+        organizations,
+    };
+}
+
+/** One `ar3_organizations` entry: folder (label + items) or leaf (a ref). */
+function parseOrganization(row: JsonRow): Ar3Organization {
+    return {
+        label: entryName(row["ar3_label"]),
+        ref: optionalText(row["@identifierRef"]),
+        children: rowsOf(row, "ar3_item").map(parseOrganization),
+    };
 }
 
 /**

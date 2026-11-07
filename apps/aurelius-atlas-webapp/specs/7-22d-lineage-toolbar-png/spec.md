@@ -2,7 +2,8 @@
 
 - **Status:** proposed
 - **Pull request:** —
-- **Records:** LDG-27..32; DD-397..400; amends DET-32 and DET-33 again (the
+- **Records:** LDG-27..32; DD-397..400, DD-407..409 (the reader-feedback
+  round); amends DET-32 and DET-33 again (the
   stats entries and navigation links their rows hold out, DD-383's rule — the
   stat and link return with the finished box); relies on LDG-01..26
   (7.22a/7.22b/7.22c), DD-390 (the viewer's signals), SHC-02/SHC-03 (the config
@@ -54,7 +55,7 @@ catalogue): no new fixture content in this slice.
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | LDG-27 | The diagram state of the box gains the legacy's toolbar: the header's right side carries the Browse button (`modelview2.browse`, label plus search icon) and the drawing's top-right control column (local markup, not a shared toolbar — DD-397) carries, in the legacy order, the View-info button (`modelview2.viewInfo`, opens the quickview on the View tab), the fullscreen toggle (`modelview2.toggleFullscreen`), the reset-zoom button (`modelview2.resetZoom`), and the save-view-as-image button (`modelview2.saveViewAsImage`, camera icon, `is-loading` while converting). All are icon buttons with the named tooltip (the legacy's `models4insight-tooltip` posture — `title` attribute, the webapp's idiom).                                                                                                                           |
 | LDG-28 | The fullscreen toggle sets a fixed-position class on the drawing region: top at the pinned navbar's height (the `NAVBAR_SCROLL_OFFSET` pair's 68 px — the legacy's `4.25rem` measured on the same navbar), full width, `100vh`, above the page; toggling again restores it. In fullscreen the control column also carries the Browse button (the legacy's fullscreen-only copy).                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| LDG-29 | The reset-zoom button returns the d3 transform to identity (the viewer's `resetZoom()`, LDG-16). The save flow uses the same call first and restores the previous transform after the image is produced (the legacy's zoom-around-save).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| LDG-29 | The reset-zoom button returns the d3 transform to identity (the viewer's `resetZoom()`, LDG-16). The save flow does not touch the transform: it captures the drawing at the reader's current zoom and position — the clone carries the same transform the screen shows (DD-407, in place of the legacy's zoom-around-save).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | LDG-30 | Save view as image draws the viewer's `<svg>` (cloned, fixed to the container's measured width and height — the Firefox rule the legacy carries) through `XMLSerializer` → a data-less blob URL → an `Image` → a `<canvas>`, and reads the canvas back as a PNG blob. When the canvas draw fails (the `foreignObject` labels taint the canvas on some engines), the fallback renders the container with html2canvas instead (the legacy's two-path converter). The download carries the file name `${view name}.png` via an anchor `download` (no `file-saver` dependency).                                                                                                                                                                                                                                                                            |
 | LDG-31 | Before the download, the PNG bytes gain one `tEXt` chunk per metadata field (keyword NUL value, CRC32 as the legacy's table-driven util — ported as pure functions: split a PNG at its chunk boundaries, append the chunks before `IEND`, rejoin): Title = the view's name, Author = the signed-in user's email when the Keycloak session carries one, Description = the view's description, Creation Time = the current UTC time, Software = `Aurelius Atlas/${appName}/${appVersion}` from the runtime config (LDG-07's file — DD-398), Source = `Generated model` (the value the legacy's lineage page always wrote: it had no repository project/branch to name). Fields with no value are omitted (the legacy's `if (!value) continue`).                                                                                                          |
 | LDG-32 | Both layouts regain their DD-383 hold-outs from the box's own state signal (hoisted per DD-400): the dataset stats bar gains Lineage Model (`search.details.dataset.lineageModel`) between Child Datasets and Producers and the side navigation gains the same link (`#lineage-model`) between Child Datasets and Producers (the legacy's positions); the process stats bar gains it between Systems and Inputs, the navigation likewise. The stat's value is the box's state: `search.details.dataset.available` / `...unavailable` (process pair on the process page), blank while the fetch is pending — never a count (the legacy's shape, DET-24 amended with it). The DET-16 table rows and DET-32/DET-33's orders now include the lineage box's stat and nav entries; the Data Quality and Data Entities hold-outs stay out unchanged (DD-369). |
@@ -67,8 +68,9 @@ cited by path:
 - `libs/modelview2/src/lib/modelview.component.html` (L1–53 header and control
   column, the `[class.is-fullscreen]` target, the `[class.is-loading]` save
   button, the fullscreen-only Browse copy) and `modelview.component.ts`
-  (`openBrowser`, `openViewInfo`, `resetZoom`, `saveViewAsImage` with the
-  zoom restore, `isFullscreen`) — LDG-27/28/29/30.
+  (`openBrowser`, `openViewInfo`, `resetZoom`, `saveViewAsImage`,
+  `isFullscreen`) — LDG-27/28/29/30. The save's zoom reset-and-restore is not
+  ported (DD-407).
 - `libs/modelview2/src/lib/modelview.component.scss` — LDG-28: the fixed
   fullscreen block (`top: 4.25rem`, `z-index`, 100vh).
 - `libs/modelview2/src/lib/save-view-as-image.service.ts` — LDG-30/LDG-31: the
@@ -103,6 +105,14 @@ Against the Aurelius product:
 - the save-all-views ZIP console hook stays out (DD-399).
 - the download rides an anchor `download` attribute instead of `file-saver`
   (one dependency kept out; WBP-02's lean-deps posture).
+- the save keeps the reader's zoom instead of the legacy's reset-and-restore
+  (DD-407): the legacy's jump-back visibly flickered the view and its
+  capture-and-restore raced other zoom events.
+- the diagram's text inherits the app's brand font instead of the legacy's
+  hard-coded `"Segoe UI"` stack (DD-408).
+- each connection gains a 10 px transparent hit path under the visible edge
+  (DD-409): the legacy's 1 px stroke is nearly unhittable — a flaw the legacy
+  itself carries (its click handler sits on the thin path).
 
 ## Acceptance
 
@@ -112,8 +122,8 @@ Against the Aurelius product:
       (LDG-31).
     - `save-view-as-image.spec.ts` — with a stubbed canvas/URL layer: the
       serialize→draw→PNG path, the fallback taken when the first path throws,
-      the `${view name}.png` name, the zoom reset-and-restore order (LDG-29,
-      LDG-30).
+      the `${view name}.png` name, and the save leaving the d3 transform alone
+      at any zoom (LDG-29, LDG-30, DD-407).
     - `lineage-viewer.component.spec.ts` — amended: the toolbar renders only in
       the diagram state with the five named tooltips; the fullscreen class
       toggles; View-info opens the drawer on the View tab (LDG-27, LDG-28).

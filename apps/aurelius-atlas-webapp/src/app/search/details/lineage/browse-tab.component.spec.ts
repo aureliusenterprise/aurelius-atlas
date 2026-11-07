@@ -1,13 +1,18 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { describe, expect, it } from "vitest";
 
+import { buildEntitiesById } from "./lineage-entities";
 import type { LineageEntity } from "./lineage-entities";
+import { parseAr3Model, type Ar3Organization } from "./parse-ar3";
 import { LineageBrowseTab } from "./browse-tab.component";
 
+import entityFixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+
 /**
- * LDG-23: the Browse tab's view dropdown over the shipped chain's one view
- * (the fixture's "Lineage" — DD-391's provenance). The tree half of the
- * legacy tab never lands here (DD-395).
+ * LDG-23 / DD-406: the Browse tab over the shipped chain's document — the
+ * view dropdown plus the organization navigation tree (the Other /
+ * Relations / Views folders the producer emits, DD-395's superseded
+ * deviation brought back by the feedback round).
  */
 const VIEW: LineageEntity = {
     id: "lineage_view",
@@ -17,12 +22,21 @@ const VIEW: LineageEntity = {
     humanReadableType: "View",
     description: "",
     properties: [],
+    sourceName: "",
+    targetName: "",
 };
 const SECOND: LineageEntity = { ...VIEW, id: "view-2", name: "Second view" };
+
+/** The fixture document's organization tree and entity index (DD-406). */
+const MODEL = parseAr3Model(entityFixture.model);
+const ENTITIES = buildEntitiesById(MODEL);
 
 function setup(
     views: LineageEntity[],
     drawnViewId: string | null,
+    organizations: readonly Ar3Organization[] = [],
+    entities: ReadonlyMap<string, LineageEntity> = new Map(),
+    selectedConcept: string | null = null,
 ): {
     tab: LineageBrowseTab;
     created: ComponentFixture<LineageBrowseTab>;
@@ -33,6 +47,9 @@ function setup(
     const created = TestBed.createComponent(LineageBrowseTab);
     created.componentRef.setInput("views", views);
     created.componentRef.setInput("drawnViewId", drawnViewId);
+    created.componentRef.setInput("organizations", organizations);
+    created.componentRef.setInput("entities", entities);
+    created.componentRef.setInput("selectedConcept", selectedConcept);
     created.detectChanges();
     return { tab: created.componentInstance, created, compiled: created.nativeElement as HTMLElement };
 }
@@ -75,5 +92,77 @@ describe("LineageBrowseTab (LDG-23)", () => {
         const { compiled } = setup([], null);
         const optionTexts = [...compiled.querySelectorAll("option")].map((option) => option.textContent ?? "");
         expect(optionTexts.some((text) => text.includes("No views available"))).toBe(true);
+    });
+
+    it("DD-406: the tree lists the folders open with their entity names, root not shown", () => {
+        const { compiled } = setup([VIEW], "lineage_view", MODEL.organizations, ENTITIES);
+        expect(compiled.textContent).toContain("Model tree");
+        const folders = [...compiled.querySelectorAll(".aurelius-browse-tree-folder")].map((node) =>
+            node.textContent?.trim(),
+        );
+        // The producer's single unlabeled root renders no row of its own.
+        expect(folders).toEqual(["Other", "Relations", "Views"]);
+        // The leaves read through the entity index — elements by name, the
+        // unnamed relation by its id (the shipped chain names none).
+        const leaves = [...compiled.querySelectorAll(".aurelius-browse-tree-leaf")].map((node) =>
+            node.textContent?.trim(),
+        );
+        expect(leaves).toEqual(["Ingest Topic", "Load Job", "Sales Table", "rel-1", "rel-2", "Lineage"]);
+    });
+
+    it("DD-406: a closed folder hides its whole branch", () => {
+        const { tab, created, compiled } = setup([VIEW], null, MODEL.organizations, ENTITIES);
+        const other = compiled.querySelector(".aurelius-browse-tree-folder") as HTMLButtonElement;
+        other.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        expect(other.getAttribute("aria-expanded")).toBe("false");
+        // The Other folder's three element leaves are gone; the other folders stay.
+        expect([...compiled.querySelectorAll(".aurelius-browse-tree-leaf")].map((n) => n.textContent?.trim())).toEqual([
+            "rel-1",
+            "rel-2",
+            "Lineage",
+        ]);
+        // Opened again, the branch returns.
+        const closed = compiled.querySelector(".aurelius-browse-tree-folder") as HTMLButtonElement;
+        closed.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        expect(tab["treeRows"]().filter((row) => !row.folder)).toHaveLength(6);
+    });
+
+    it("DD-406: an element leaf click selects the concept; the selected one is marked", () => {
+        // The selected concept is carried as the concept id (LDG-25's
+        // signal), not the label — the guid of "Load Job", the fixture's
+        // second element.
+        const { tab, created, compiled } = setup(
+            [VIEW],
+            null,
+            MODEL.organizations,
+            ENTITIES,
+            "00000000-0000-4000-8000-000000000002",
+        );
+        const emitted: string[] = [];
+        tab.conceptChosen.subscribe((id) => emitted.push(id));
+        const leaves = [...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-browse-tree-leaf")];
+        expect(leaves[1]?.classList.contains("is-active")).toBe(true);
+        leaves[0]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(emitted).toEqual(["00000000-0000-4000-8000-000000000001"]);
+    });
+
+    it("DD-406: a view leaf click chooses the view (LDG-23's close-and-draw)", () => {
+        const { tab, compiled } = setup([VIEW], null, MODEL.organizations, ENTITIES);
+        const views: string[] = [];
+        const concepts: string[] = [];
+        tab.viewChosen.subscribe((id) => views.push(id));
+        tab.conceptChosen.subscribe((id) => concepts.push(id));
+        const leaves = [...compiled.querySelectorAll<HTMLButtonElement>(".aurelius-browse-tree-leaf")];
+        leaves[5]?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(views).toEqual(["lineage_view"]);
+        expect(concepts).toEqual([]);
+    });
+
+    it("DD-406: a model without organizations shows no tree", () => {
+        const { compiled } = setup([VIEW], "lineage_view", [], ENTITIES);
+        expect(compiled.querySelector(".aurelius-browse-tree")).toBeNull();
+        expect(compiled.textContent).not.toContain("Model tree");
     });
 });

@@ -1,5 +1,4 @@
 import { Injectable, inject } from "@angular/core";
-import type { ZoomTransform } from "d3-zoom";
 import html2canvas from "html2canvas";
 
 import { APP_CONFIG } from "../../../tokens";
@@ -84,25 +83,6 @@ const domSurface: RasterSurface = {
 };
 
 /**
- * The zoom-around-save order (LDG-29, the legacy's `saveViewAsImage`):
- * reset the transform, measure and convert at identity, then put the
- * viewer back where the reader left it. Its own function so the order has
- * a named test; the viewer hands in its zoom seam.
- * @param resetZoom returns the transform being replaced (viewer's LDG-16)
- * @param applyTransform restores one saved transform
- * @param save the save itself, run while the identity transform is in place
- */
-export async function saveAroundZoomReset(
-    resetZoom: () => ZoomTransform,
-    applyTransform: (previous: ZoomTransform) => void,
-    save: () => Promise<void>,
-): Promise<void> {
-    const previous = resetZoom();
-    await save();
-    applyTransform(previous);
-}
-
-/**
  * Save the drawn view as a PNG (LDG-30/LDG-31, DD-398): the legacy
  * `SaveViewAsImageService`, ported. The converter runs two paths over the
  * viewer's `<svg>` — serialize a dimension-fixed clone to a blob URL, load
@@ -119,10 +99,11 @@ export async function saveAroundZoomReset(
  * legacy's lineage page always wrote — it had no repository project/branch.
  * Fields with no value ship no chunk (LDG-31's skip).
  *
- * The zoom reset-and-restore around the save is the viewer's, not the
- * service's (LDG-29 — the legacy held it in the component too), and the
- * one-conversion-at-a-time subject of the legacy collapses to the viewer's
- * save flag: the flow is a single awaited call here.
+ * The legacy reset the zoom around the save (LDG-29, held in its component);
+ * DD-407 dropped that — the viewer converts the svg as it stands, so the
+ * picture shows the reader's own pan/zoom. The one-conversion-at-a-time
+ * subject of the legacy collapses to the viewer's save flag: the flow is a
+ * single awaited call here.
  */
 @Injectable({ providedIn: "root" })
 export class SaveViewAsImage {

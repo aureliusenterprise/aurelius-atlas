@@ -69,9 +69,13 @@ this slice's test (DD-389's planned consequence, now due).
 
 ### DD-395. The Browse tab drops the organization tree
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-406
 - **Increment:** 7.22c
 - **Date:** 2026-11-07
+
+> Superseded in the 7.22d reader-feedback round: the reader asked for the tree
+> as the place future diagrams and views hang, and the cheap nested-list shape
+> costs far less than this entry feared (DD-406).
 
 **Decision.** The Browse tab is the view dropdown only (LDG-23). The legacy's
 second part — the folder tree built from the model's `ar3_organizations` — is

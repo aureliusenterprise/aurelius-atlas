@@ -18,6 +18,8 @@ const ELEMENTS: LineageEntity[] = [
         humanReadableType: "Dataset",
         description: "",
         properties: [],
+        sourceName: "",
+        targetName: "",
     },
     {
         id: "e2",
@@ -27,6 +29,8 @@ const ELEMENTS: LineageEntity[] = [
         humanReadableType: "Dataset",
         description: "",
         properties: [],
+        sourceName: "",
+        targetName: "",
     },
     {
         id: "e3",
@@ -36,6 +40,8 @@ const ELEMENTS: LineageEntity[] = [
         humanReadableType: "Process",
         description: "",
         properties: [],
+        sourceName: "",
+        targetName: "",
     },
 ];
 const RELATIONS: LineageEntity[] = [
@@ -47,6 +53,8 @@ const RELATIONS: LineageEntity[] = [
         humanReadableType: "Data Lineage",
         description: "",
         properties: [],
+        sourceName: "Ingest Topic",
+        targetName: "Sales Table",
     },
 ];
 
@@ -73,6 +81,12 @@ function setup(): {
 
 function bodyRows(compiled: HTMLElement): number {
     return compiled.querySelectorAll("table tbody tr").length;
+}
+
+/** The second table's rows — the Relationships table. */
+function relationRows(compiled: HTMLElement): HTMLTableRowElement[] {
+    const tables = [...compiled.querySelectorAll("table")];
+    return [...(tables[1]?.querySelectorAll<HTMLTableRowElement>("tbody tr") ?? [])];
 }
 
 describe("LineageModelTab (LDG-23)", () => {
@@ -115,5 +129,25 @@ describe("LineageModelTab (LDG-23)", () => {
         // The tables sort by the legacy's default (unsorted = source order):
         // the first element row is e1.
         expect(emitted).toEqual(["e1"]);
+    });
+
+    it("DD-404: a relationship row reads its ends — source → target", () => {
+        const { compiled } = setup();
+        const [row] = relationRows(compiled);
+        expect(row?.textContent).toContain("Ingest Topic");
+        expect(row?.textContent).toContain("→");
+        expect(row?.textContent).toContain("Sales Table");
+        // An element row keeps the plain name (no arrow).
+        const elementRow = compiled.querySelector("table tbody tr");
+        expect(elementRow?.textContent).toContain("Ingest Topic");
+        expect(elementRow?.textContent).not.toContain("→");
+    });
+
+    it("DD-404: the keyword matches a relationship's displayed ends", () => {
+        const { setQuery, compiled } = setup();
+        // "Topic" names the relation's source — a word neither the relation's
+        // name ("feeds") nor its type ("Data Lineage") carries.
+        setQuery("Topic");
+        expect(relationRows(compiled)).toHaveLength(1);
     });
 });

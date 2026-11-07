@@ -16,7 +16,7 @@ import { faArrowsAlt, faCamera, faExpand, faInfo, faSearch } from "@fortawesome/
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from "d3-zoom";
 
-import { SaveViewAsImage, saveAroundZoomReset } from "./save-view-as-image";
+import { SaveViewAsImage } from "./save-view-as-image";
 
 import type { Ar3Model, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
 import { connectionConceptId, nodeConceptId } from "./parse-ar3";
@@ -238,6 +238,11 @@ interface DrawnConnection {
                                         [attr.data-concept]="drawn.concept"
                                         (click)="onElementClicked(drawn.concept)"
                                     >
+                                        <!-- DD-409: the wide invisible twin of the visible
+                                 path — the click target. The legacy's edge is a
+                                 ~1 px stroke, nearly unhittable (its own known
+                                 flaw); this stroke makes the whole edge clickable. -->
+                                        <svg:path class="connection-hit" [attr.d]="drawn.path"></svg:path>
                                         <svg:path
                                             class="connection-path"
                                             [attr.id]="'path-' + drawn.connection.id"
@@ -273,6 +278,7 @@ interface DrawnConnection {
             [entities]="entities()"
             [indexes]="indexes()"
             [metadata]="metadata()"
+            [organizations]="model().organizations"
             [activeViewId]="drawnView()?.id ?? null"
             [title]="model().name"
             [selection]="selected()"
@@ -327,7 +333,9 @@ interface DrawnConnection {
         .lineage-svg {
             min-width: 100%;
             min-height: 100%;
-            font-family: "Segoe UI";
+            /* DD-408: no font-family — the legacy pinned "Segoe UI" here, which
+               set the drawing apart from the rest of the app; the svg now
+               inherits the body's stack (the brand's --bulma-family-primary). */
             font-size: 12px;
         }
         .background {
@@ -384,6 +392,13 @@ interface DrawnConnection {
         .connection-path {
             fill: none;
             stroke: black;
+        }
+        .connection-hit {
+            /* DD-409: the clickable edge — transparent, wide, stroke-only. */
+            fill: none;
+            stroke: transparent;
+            stroke-width: 10px;
+            pointer-events: stroke;
         }
         .connection.is-selected .connection-path {
             stroke: #40e0d0;
@@ -606,11 +621,15 @@ export class LineageViewer {
     }
 
     /**
-     * LDG-29/LDG-30: save the drawn view (the legacy's `saveViewAsImage`):
-     * reset the zoom, convert the svg at the container's measured size,
-     * restore the transform. One conversion at a time (the legacy's
-     * exhaustMap); a conversion that ends in nothing — both paths failed —
-     * saves nothing, as the legacy's empty-PNG skip did.
+     * LDG-29/LDG-30 (DD-407): save the drawn view (the legacy's
+     * `saveViewAsImage`) at the transform the reader is looking at — the
+     * legacy reset the zoom to identity around the save and restored it
+     * after, which visibly jumps the view twice; here nothing moves. The
+     * serialized clone already carries the zoom group's current transform,
+     * so the picture matches the screen at the container's measured size.
+     * One conversion at a time (the legacy's exhaustMap); a conversion that
+     * ends in nothing — both paths failed — saves nothing, as the legacy's
+     * empty-PNG skip did.
      */
     protected async saveView(): Promise<void> {
         const view = this.drawnView();
@@ -619,29 +638,14 @@ export class LineageViewer {
         }
         this.converting.set(true);
         try {
-            await saveAroundZoomReset(
-                () => this.resetZoom(),
-                (previous) => this.applyTransform(previous),
-                async () => {
-                    const { width, height } = this.screen().nativeElement.getBoundingClientRect();
-                    await this.saveViewAsImage.save(this.svgRef().nativeElement, width, height, view);
-                },
-            );
+            const { width, height } = this.screen().nativeElement.getBoundingClientRect();
+            await this.saveViewAsImage.save(this.svgRef().nativeElement, width, height, view);
         } catch {
             // Both conversion paths failed — nothing to save (the legacy
             // answered no-PNG and the save was skipped silently).
         } finally {
             this.converting.set(false);
         }
-    }
-
-    /** Put a saved transform back on the zoom group (LDG-29's restore). */
-    private applyTransform(transform: ZoomTransform): void {
-        if (this.zoomBehavior !== null) {
-            this.zoomBehavior.transform(select(this.svgRef().nativeElement), transform);
-        }
-        this.currentTransform = transform;
-        this.zoomTarget().nativeElement.setAttribute("transform", transform.toString());
     }
 
     /** LDG-17: a node or connection click — the same concept clears. */
