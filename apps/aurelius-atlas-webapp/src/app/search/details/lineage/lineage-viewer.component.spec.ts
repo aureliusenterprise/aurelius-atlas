@@ -414,6 +414,14 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         expect(styles).toContain("position: fixed");
         expect(styles).toContain("top: 68px");
         expect(styles).toContain("height: 100vh");
+
+        // The overlay is opaque because of the legacy's backdrop rect (the
+        // modelview-background): the white ground sits under the drawing,
+        // painted before it and excluded from the html2canvas fallback.
+        const backdrop = compiled.querySelector("svg.lineage-svg > rect.background");
+        expect(backdrop?.getAttribute("width")).toBe("100%");
+        expect(backdrop?.hasAttribute("data-html2canvas-ignore")).toBe(true);
+        expect(styles).toMatch(/\.background[^{]*\{[^}]*fill:\s*white/);
     });
 
     it("LDG-27: View-info opens the quickview on the View tab", () => {

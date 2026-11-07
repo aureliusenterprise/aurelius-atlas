@@ -168,6 +168,12 @@ interface DrawnConnection {
                             <svg:path [attr.d]="arrow.path" fill="#000000"></svg:path>
                         </svg:marker>
                     </svg:defs>
+                    <!-- The legacy's #modelview-background rect: the white
+                         ground the drawing rides (modelview.component.scss's
+                         .background) — the fixed fullscreen overlay is only
+                         opaque because of it. Excluded from the html2canvas
+                         fallback, as in the legacy. -->
+                    <svg:rect class="background" width="100%" height="100%" data-html2canvas-ignore></svg:rect>
                     <!-- LDG-15: the bounds group carries the legacy's -minX/-minY
                  translate; LDG-16: the zoom transform rides the parent so
                  pan/zoom and the bounds compose (the legacy applied the
@@ -323,6 +329,15 @@ interface DrawnConnection {
             min-height: 100%;
             font-family: "Segoe UI";
             font-size: 12px;
+        }
+        .background {
+            /* The legacy's backdrop rect: the white ground, dashed at the
+               edge, and the pan target (pointer-events). */
+            fill: white;
+            pointer-events: all;
+            stroke: gray;
+            stroke-dasharray: 2 2;
+            stroke-width: 2px;
         }
         .node-shape {
             stroke: #a0a0a0;
