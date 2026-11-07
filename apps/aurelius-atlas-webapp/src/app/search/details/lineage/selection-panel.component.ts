@@ -188,6 +188,11 @@ import { LineagePropertyTable } from "./property-table.component";
         .aurelius-selection-card {
             display: block;
             margin-bottom: 1rem;
+            /* The card's own host rule (min-height: 100%) stretches it inside
+               the results grid; here it would stretch the host to the whole
+               panel height — a wall of gap under the card. The drawer reads
+               the card at content size. */
+            min-height: 0;
         }
         .aurelius-selection-type {
             display: flex;
@@ -195,7 +200,8 @@ import { LineagePropertyTable } from "./property-table.component";
             gap: 0.4em;
         }
         .truncate {
-            max-width: 1px;
+            /* The legacy shell's cap (its sortable-table-shell style). */
+            max-width: 12rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;

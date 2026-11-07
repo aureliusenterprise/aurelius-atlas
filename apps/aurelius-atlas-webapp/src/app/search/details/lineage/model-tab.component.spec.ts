@@ -151,7 +151,9 @@ describe("LineageModelTab (LDG-23)", () => {
         // the human-readable type in parentheses (the legacy's
         // name || displayName, then the type).
         const middle = cell?.querySelector("p em");
-        expect(middle?.textContent?.trim()).toBe("feeds(Data Lineage)");
+        // The nbsp between the spans is the legacy's rendered space ("Flows
+        // into (Data Lineage)") — trim() leaves \u00A0 alone.
+        expect(middle?.textContent?.trim()).toBe("feeds\u00A0(Data Lineage)");
         // Each end carries the element's icon (lineage_dataset — the blue
         // dataset grid): two ends, two paths.
         expect(cell?.querySelectorAll("strong").length).toBe(2);

@@ -60,39 +60,53 @@ import type { LineageEntity } from "./lineage-entities";
                          a model that does not hold it) keeps the legacy's
                          shape: its div stays, with only the name cell's text
                          gone — the shipped chain always holds both ends. -->
-                    <td colspan="2" class="aurelius-relation-row">
-                        @if (row.sourceName !== "") {
-                            <div class="level is-mobile is-marginless aurelius-relation-end" [title]="row.sourceName">
-                                <span class="icon is-small">
-                                    @if (endIcon(row.sourceType); as path) {
-                                        <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
-                                            <path [attr.d]="path" [class]="endClass(row.sourceType)"></path>
-                                        </svg>
+                    <td colspan="2">
+                        <!-- The legacy relationship-row component's host: the
+                             three lines stack in a centered column. -->
+                        <div class="aurelius-relation-row">
+                            @if (row.sourceName !== "") {
+                                <div
+                                    class="level is-mobile is-marginless aurelius-relation-end"
+                                    [title]="row.sourceName"
+                                >
+                                    <span class="icon is-small">
+                                        @if (endIcon(row.sourceType); as path) {
+                                            <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
+                                                <path [attr.d]="path" [class]="endClass(row.sourceType)"></path>
+                                            </svg>
+                                        }
+                                    </span>
+                                    <strong class="truncate">{{ row.sourceName }}</strong>
+                                </div>
+                            }
+                            <p>
+                                <em>
+                                    @if (relationLabel(row); as label) {
+                                        <span class="truncate" [title]="label">{{ label }}</span>
                                     }
-                                </span>
-                                <strong class="truncate">{{ row.sourceName }}</strong>
-                            </div>
-                        }
-                        <p class="aurelius-relation-middle">
-                            <em>
-                                @if (relationLabel(row); as label) {
-                                    <span class="truncate" [title]="label">{{ label }}</span>
-                                }
-                                <span>({{ row.humanReadableType || row.type }})</span>
-                            </em>
-                        </p>
-                        @if (row.targetName !== "") {
-                            <div class="level is-mobile is-marginless aurelius-relation-end" [title]="row.targetName">
-                                <span class="icon is-small">
-                                    @if (endIcon(row.targetType); as path) {
-                                        <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
-                                            <path [attr.d]="path" [class]="endClass(row.targetType)"></path>
-                                        </svg>
-                                    }
-                                </span>
-                                <strong class="truncate">{{ row.targetName }}</strong>
-                            </div>
-                        }
+                                    <!-- The nbsp stands for the space between the
+                                         legacy template's two spans ("Flows into
+                                         (Data Lineage)") — Angular's whitespace
+                                         handling would eat a plain one. -->
+                                    <span>&nbsp;({{ row.humanReadableType || row.type }})</span>
+                                </em>
+                            </p>
+                            @if (row.targetName !== "") {
+                                <div
+                                    class="level is-mobile is-marginless aurelius-relation-end"
+                                    [title]="row.targetName"
+                                >
+                                    <span class="icon is-small">
+                                        @if (endIcon(row.targetType); as path) {
+                                            <svg width="16px" height="16px" viewBox="0 0 16 16" aria-hidden="true">
+                                                <path [attr.d]="path" [class]="endClass(row.targetType)"></path>
+                                            </svg>
+                                        }
+                                    </span>
+                                    <strong class="truncate">{{ row.targetName }}</strong>
+                                </div>
+                            }
+                        </div>
                     </td>
                 } @else {
                     <!-- The legacy's element row: the narrow icon cell — the
@@ -114,18 +128,23 @@ import type { LineageEntity } from "./lineage-entities";
     `,
     styles: `
         .truncate {
-            max-width: 1px;
+            /* The legacy's own cap (its shell/row styles) — not the
+               max-width: 1px table trick, which collapses a flex child to a
+               sliver: the ends live inside Bulma's flex .level and vanished. */
+            max-width: 12rem;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        .aurelius-relation-row {
+            /* The legacy relationship-row component's host: a centered
+               column — the three lines stack, centered in the cell. */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
         .aurelius-relation-end .icon {
             margin-right: 0.4em;
-        }
-        .aurelius-relation-middle {
-            /* The legacy's em line sits under the source end, clear of its
-               icon (the level's height plus its margin). */
-            margin-left: 2em;
         }
         .icon .dataset {
             fill: blue;
