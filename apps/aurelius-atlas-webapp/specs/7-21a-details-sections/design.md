@@ -209,7 +209,9 @@ slice bounds it in ES and a DD adds the control back). Ship a dead toggle
 
 ### DD-371. The type badge carries the alias without the icon
 
-- **Status:** Proposed
+- **Status:** Proposed (superseded by
+  [DD-378](#dd-378-the-type-to-icon-map-enters-the-webapp-the-badges-lead-with-their-icon)
+  — the icon half; the alias half stands)
 - **Increment:** 7.21a
 - **Date:** 2026-11-06
 
@@ -426,3 +428,49 @@ the link keeps its click target). Scope the ellipsis to the details
 screen only (refused: the shared card is the component that clips, and
 the results screen's rows are full-width, where an unclipped title
 never reaches the ellipsis — checked with the sample data).
+
+### DD-378. The type-to-icon map enters the webapp; the badges lead with their icon
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** The webapp ports the legacy `search/meta/icons-by-type.ts`
+as `src/app/search/meta/type-icons.ts`: one `TYPE_ICONS` record of the
+legacy's 37 m4i entries (glyph + colour family), plus a `typeIcon(name)`
+lookup that answers nothing for a type outside the map. The details
+header badge, every details card badge, and every results card badge
+resolve it and pass the result as the `IconDefinition`/class inputs the
+ui parts already take (UIC-12, UIC-15 — the lib stays icon-map-free).
+The `showIcon="false"` the header and card badges carried is dropped;
+the default (on, as the legacy component's) takes over, so an unmapped
+type renders a plain text badge exactly where the legacy `*ngIf` rendered
+none. This supersedes DD-371's icon half and DD-341's map refusal
+(DD-341's chip-lead decision stands — its chip still leads with the word).
+DET-19, DET-26 (7.21a) and SRH-05 (7.4a) amend in place.
+
+**Reason.** The user asked: "The legacy app represents each type with an
+icon in addition to its name. Those are currently missing." The legacy
+reads one app-level index for it (`type-name.component.ts`,
+`entity-type-name`, `bread-crumbs`), and the refusal that kept it out —
+DD-341's "hundreds of type→icon entries … no shipped screen indexes
+them" — was written when the picker chip was the only consumer in view;
+the real map is 37 entries, and the shipped details and results badges
+are the screens that index it. The demo dataset makes the gap visible on
+every card. The map is app metadata (UIC-15), so it lands in the webapp
+and nowhere else; the ui components needed no change — the inputs were
+built for this. The lookup is own-property-only (`Object.hasOwn`) so a
+type named `constructor` cannot surface `Object.prototype` as an icon.
+The legacy's misspelled keys (`m4i_kubenetes_serce_process`) are kept
+verbatim: the catalogue spells them that way and a corrected key would
+not match.
+
+**Alternatives.** Resolve the map inside the ui `type-name` (refused —
+UIC-15: `iconsByType` is app meta, the lib takes icons as inputs).
+Derive the icon server-side from the typedef (refused — Atlas typedefs
+carry no icon field; the map is Aurelius app metadata, not stored data).
+Port only the seven layout types' icons (refused — the sample data shows
+datasets, sources, and quality types in the sections; a partial map
+misrepresents the types it omits as unmapped). Keep the refusal and add
+icons only to the header (refused — the user asked for the type icons,
+and a header-only icon against icon-less cards below is the worse shape).

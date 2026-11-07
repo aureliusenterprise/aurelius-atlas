@@ -37,7 +37,13 @@
     <h1 class="title is-1 entity aurelius-details-title">{{ title() }}</h1>
     <div class="subtitle name aurelius-details-type">
         @if (typeName()) {
-            <aurelius-atlas-ui-type-name [typeName]="typeName()" [typeAlias]="typeAlias()" [showBaseTypeName]="true" />
+            <aurelius-atlas-ui-type-name
+                [typeName]="typeName()"
+                [typeAlias]="typeAlias()"
+                [showBaseTypeName]="true"
+                [icon]="typeIconDef()?.icon"
+                [iconClass]="typeIconDef()?.classIcon"
+            />
         }
     </div>
     @if (classifications().length > 0) {
@@ -174,7 +180,8 @@
                                 [name]="card.displayText"
                                 [typeName]="card.entity.typeName ?? undefined"
                                 [typeAlias]="card.alias"
-                                [showIcon]="false"
+                                [typeIcon]="iconFor(card.entity.typeName)?.icon"
+                                [typeIconClass]="iconFor(card.entity.typeName)?.classIcon"
                                 [showQuality]="false"
                                 (entityClicked)="onCardClick($event)"
                             >

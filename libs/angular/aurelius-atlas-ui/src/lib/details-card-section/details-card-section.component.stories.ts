@@ -1,4 +1,5 @@
 import { Component } from "@angular/core";
+import { faTag } from "@fortawesome/free-solid-svg-icons";
 import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, userEvent, within } from "storybook/test";
 
@@ -56,8 +57,9 @@ let resets = 0;
                         [guid]="card.guid"
                         [name]="card.name"
                         [typeName]="card.typeName"
+                        [typeIcon]="card.typeIcon"
+                        [typeIconClass]="card.typeIconClass"
                         [showQuality]="false"
-                        [showIcon]="false"
                     />
                 </div>
             }
@@ -69,10 +71,30 @@ class StoryHost {
 
     title = "Data Attributes";
 
+    // The badge icons arrive as inputs (UIC-15): the app resolves its
+    // type-to-icon map (DD-378); the story passes the entry by hand.
     readonly cards = [
-        { guid: "a1", name: "gene_symbol", typeName: "m4i_data_attribute" },
-        { guid: "a2", name: "variant_pos", typeName: "m4i_data_attribute" },
-        { guid: "a3", name: "assembly", typeName: "m4i_data_attribute" },
+        {
+            guid: "a1",
+            name: "gene_symbol",
+            typeName: "m4i_data_attribute",
+            typeIcon: faTag,
+            typeIconClass: "business",
+        },
+        {
+            guid: "a2",
+            name: "variant_pos",
+            typeName: "m4i_data_attribute",
+            typeIcon: faTag,
+            typeIconClass: "business",
+        },
+        {
+            guid: "a3",
+            name: "assembly",
+            typeName: "m4i_data_attribute",
+            typeIcon: faTag,
+            typeIconClass: "business",
+        },
     ];
 
     sort: string | null = "relevance";

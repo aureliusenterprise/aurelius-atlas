@@ -812,6 +812,12 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(normalize(compiled.querySelector(".aurelius-details-type")?.textContent)).toBe(
             "Data Entity (m4i_data_entity)",
         );
+        // The header badge leads with the type's icon (DET-26, DD-378):
+        // an m4i_data_entity is the table glyph in the business family.
+        const headerIcon = compiled.querySelector(".aurelius-details-type .icon-text > .icon");
+        expect(headerIcon).toBeTruthy();
+        expect(headerIcon!.classList.contains("business")).toBe(true);
+        expect(headerIcon!.querySelector("fa-icon svg")).toBeTruthy();
         // The card badges: only the resolved card carrying an alias shows
         // one, and it shows the alias alone (DD-374, demo-measured — the
         // legacy card never passes showBaseTypeName).
@@ -819,6 +825,27 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
         ].map((badge) => normalize(badge.textContent));
         expect(badges).toEqual(["Data Attribute", "m4i_data_attribute"]);
+        // Every card badge carries its type's icon too (DET-19, DD-378):
+        // both fixture cards are m4i_data_attribute — the tag glyph,
+        // business family.
+        const cardIcons = [...compiled.querySelectorAll("#related-attributes .media-right .icon")];
+        expect(cardIcons).toHaveLength(2);
+        for (const icon of cardIcons) {
+            expect(icon.classList.contains("business")).toBe(true);
+            expect(icon.querySelector("fa-icon svg")).toBeTruthy();
+        }
+    });
+
+    it("a type outside the icon map renders a plain badge (DET-26, DD-378)", () => {
+        // The default-layout ANSWER is a DataSet: the legacy's
+        // `iconsByType[typeName]` answers nothing, and its template's
+        // *ngIf rendered no icon — the badge stays text-only.
+        const { fixture, compiled, httpMock } = setup("ds-1");
+        arrive(fixture, httpMock);
+
+        const typeLine = compiled.querySelector(".aurelius-details-type");
+        expect(normalize(typeLine?.textContent)).toBe("DataSet");
+        expect(typeLine?.querySelector(".icon")).toBeNull();
     });
 
     it("an m4i attribute shows its People box and its Fields section (DET-16, DET-23)", () => {

@@ -23,6 +23,7 @@ import {
 
 import { canWriteEntities } from "../editor/can-write-entities";
 import { EntitySaved } from "../editor/entity-saved";
+import { typeIcon } from "../meta/type-icons";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
@@ -169,6 +170,23 @@ export class Details {
 
     /** The entity's type name for the type-name line, or nothing (DET-09). */
     protected readonly typeName = computed(() => this.entity()?.typeName ?? undefined);
+
+    /**
+     * The header badge's icon (DET-26, DD-378): the app's type-to-icon map
+     * resolved for the entity's type — the legacy read the same index, and
+     * an unmapped type (a `DataSet`) renders no icon, as the legacy's
+     * `*ngIf` did.
+     */
+    protected readonly typeIconDef = computed(() => typeIcon(this.typeName()));
+
+    /**
+     * Resolve a card's badge icon (DET-19, DD-378): the same map lookup,
+     * per card entity. The ui card takes icon and class as inputs (UIC-15).
+     * @param typeName the card entity's type name, or nothing
+     */
+    protected iconFor(typeName: string | null | undefined) {
+        return typeIcon(typeName ?? undefined);
+    }
 
     /** The classification chips' labels (DET-09): the entity's classifications. */
     protected readonly classifications = computed(() =>

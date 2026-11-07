@@ -9,7 +9,8 @@ import { CardContent } from "./card-content.component";
  * The uniform card body (DET-19, DD-367): classification chips, the
  * definition-else-description markdown, the card entity's own people rows
  * (silent — no placeholder), and nothing else: the legacy's DQ column and
- * icon have no source and stay out. These specs mount the body through a
+ * its leading column blocks have no source and stay out (the badge icon
+ * lives in the card header, not the body — DD-378). These specs mount the body through a
  * host that owns the entity input; the routing emit rides the host's
  * listener. The in-screen wiring — the header badge, the card click, the
  * people links inside a live section — rides `details.component.spec.ts`.
@@ -120,10 +121,10 @@ describe("Card content (DET-19)", () => {
     });
 
     it("carries no quality column and no leading icon column (DET-19, DD-367)", () => {
-        // The legacy body's unique columns were the DQ badges and the type
-        // icon (the refused iconsByType, DD-341): neither block is here. The
-        // chip's hashtag and the people row's person glyph are the parts'
-        // own, not the body's; the header badge carries the alias instead.
+        // The legacy body's unique columns were the DQ badges and the
+        // breadcrumb trail (both without a source): neither block is here.
+        // The chip's hashtag and the people row's person glyph are the parts'
+        // own, not the body's; the type icon rides the header badge (DD-378).
         const { fixture } = mount(cardEntity());
         expect(fixture.nativeElement.querySelector(".quality")).toBeNull();
         expect(fixture.nativeElement.querySelector(".media-left")).toBeNull();

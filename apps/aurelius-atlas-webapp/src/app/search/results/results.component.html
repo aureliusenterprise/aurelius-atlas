@@ -41,6 +41,8 @@
                                     [guid]="entity.guid ?? undefined"
                                     [name]="displayName(entity)"
                                     [typeName]="entity.typeName ?? undefined"
+                                    [typeIcon]="iconFor(entity.typeName)?.icon"
+                                    [typeIconClass]="iconFor(entity.typeName)?.classIcon"
                                     (entityClicked)="openDetails($event)"
                                 />
                             </div>
