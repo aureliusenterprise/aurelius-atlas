@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "feat-standalone-webapp",
+    "title": "feat-standalone-webapp",
+    "aliases": []
+  },
+  {
     "version": "feat-e2e-cleanup",
     "title": "feat-e2e-cleanup",
     "aliases": []
