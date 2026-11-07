@@ -869,12 +869,13 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(cards.filter(has_text=f"zz{run}alpha")).to_contain_text("The alpha definition.")
         expect(cards.filter(has_text=f"zz{run}beta")).to_contain_text("The beta definition.")
 
-        # DET-20: the keyword filter narrows the cards on submit (the submit
-        # button, not Enter — the native `search` event is Chromium-only).
+        # DET-20 (DD-375): the keyword filter narrows the cards as it is
+        # typed — no submit needed. The submit button click is a no-op the
+        # filter has already applied; the count line follows it.
         section.locator("aurelius-atlas-ui-search-field input").fill("beta")
-        section.locator("aurelius-atlas-ui-search-field button.button.is-success").click()
         expect(cards).to_have_count(1)
         expect(cards.first).to_contain_text(f"zz{run}beta")
+        section.locator("aurelius-atlas-ui-search-field button.button.is-success").click()
         reset = section.locator("a.aurelius-card-section-reset")
         expect(reset).to_have_text("1 result(s)")
 

@@ -185,20 +185,24 @@ export class RelatedSectionsState {
 
     /**
      * The search box's text on every keystroke (the card section's
-     * `queryChange` model): mirrored for the echo only — filtering waits
-     * for {@link setQuery} (DET-20).
+     * `queryChange` model): the filter follows the typing (DD-375 — a
+     * deliberate deviation: the legacy control emitted every keystroke on
+     * `queryChanged` and its section ignored it, filtering only on
+     * submit), and the page returns to its first size so the narrowed set
+     * shows from the top.
      * @param anchor the section's anchor
      * @param text the box's text
      */
     setText(anchor: string, text: string | null): void {
-        this.update(anchor, (record) => ({ ...record, text }));
+        const term = text === null || text === "" ? null : text;
+        this.update(anchor, (record) => ({ ...record, query: term, text: term, shown: PAGE_SIZE }));
     }
 
     /**
-     * The submitted keyword of a section (DET-20): filtering is on submit
-     * and on clear, the UIC-21 contract the card section forwards. The
-     * text follows the submitted term — the clear and the reset empty the
-     * box too.
+     * The submitted keyword of a section (DET-20): the submit/clear path
+     * of the ui input. Since DD-375 the filter rides every keystroke, so
+     * a submit of unchanged text changes nothing; the clear still lands
+     * here (and on {@link setText}) and empties the box and the filter.
      * @param anchor the section's anchor
      * @param query the submitted term, or null on clear
      */

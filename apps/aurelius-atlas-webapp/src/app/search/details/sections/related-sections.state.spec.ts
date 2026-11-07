@@ -177,6 +177,28 @@ describe("Related sections store (DET-17..DET-22)", () => {
         httpMock.expectNone(BULK_URL); // no retry loop
     });
 
+    it("filters as the text is typed, not only on submit (DET-20, DD-375)", () => {
+        const { store, httpMock } = setup();
+        store.seed(opened([related("a1", "Alpha"), related("a2", "Beta")]), LAYOUT);
+        flushAll(httpMock);
+
+        // The keystroke path (the part's queryChange model), with no submit.
+        store.setText("related-attributes", "attr-a2");
+        const typed = store.views().find((view) => view.anchor === "related-attributes");
+        expect(typed?.filtered).toBe(true);
+        expect(typed?.countShown).toBe(1);
+        expect(typed?.cards.map((card) => card.guid)).toEqual(["a2"]);
+        // The box keeps the typed text.
+        expect(typed?.query).toBe("attr-a2");
+
+        // Backspacing to empty clears the filter.
+        store.setText("related-attributes", "");
+        const cleared = store.views().find((view) => view.anchor === "related-attributes");
+        expect(cleared?.filtered).toBe(false);
+        expect(cleared?.cards).toHaveLength(2);
+        httpMock.verify();
+    });
+
     it("filters on the submitted term and clears on null (DET-20)", () => {
         const { store, httpMock } = setup();
         store.seed(opened([related("a1", "Alpha"), related("a2", "Beta")]), LAYOUT);

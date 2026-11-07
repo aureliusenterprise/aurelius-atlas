@@ -336,8 +336,8 @@ export class Details {
 
     /**
      * The search box's text as typed (the card section's `queryChange`
-     * model): the store mirrors it so the echo survives a re-render while
-     * a chunk answers mid-type. Filtering still waits for the submit.
+     * model): the store filters on it (DD-375) and the echo survives a
+     * re-render while a chunk answers mid-type.
      * @param view the section
      * @param text the box's text
      */
@@ -346,7 +346,9 @@ export class Details {
     }
 
     /**
-     * A section's keyword submit or clear (DET-20).
+     * A section's keyword submit or clear (DET-20). Since DD-375 the
+     * filter rides the typing, so a plain submit is a no-op; the clear
+     * lands here.
      * @param view the section
      * @param query the submitted term, or null on clear
      */

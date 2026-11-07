@@ -289,3 +289,52 @@ to: DET-26 as written; refused once the legacy template and the phone
 collapse were measured). Pin `--bulma-control-radius` directly (refused:
 Bulma's `:root` already maps it to `--bulma-radius`, so the second pin
 would drift).
+
+### DD-375. The keyword filter follows the typing; the control row owns its spacing
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** Two follow-ups to the parity pass (DD-374), both on the card
+section's header.
+
+1. Live filtering (behaviour). The keyword filter follows every keystroke,
+   and clearing the box by backspace restores the set. DET-20's
+   on-submit-and-clear rule narrows accordingly: submit and clear still
+   work (the ui input's contract is untouched), they just no longer gate
+   the filter. The paging window returns to its first page on each text
+   change, so a narrowed set shows from the top.
+2. The control row (styling). The sort group and the search box sit on one
+   explicit gap row. The section scss drops the sort field's stray
+   bottom margin and the row's right margin, which Bulma's
+   `.field:not(:last-child)` rule put there.
+
+**Reason.** The user asked for the typing to filter. The legacy could not:
+its search input emitted `queryChanged` per keystroke, but the cards list
+bound only `querySubmitted`, so every keystroke was dropped until Enter or
+the button (the legacy sources: `libs/components/src/lib/simple-search-input/
+simple-search-input.component.ts`,
+`apps/atlas/src/app/search/details/components/details-cards-list/
+details-cards-list.component.html`). The Aurelius filter is a client-side
+`includes` over cards the browser already holds (DD-368), so typing costs
+nothing and the submit step only delays the answer the user can see. The
+deviation is recorded because DET-20's old wording cited the legacy.
+
+The misalignment was the same family as DD-374's rhythm items. Bulma gives
+a `.field` that is not the last child a 12px bottom margin. In the demo the
+sorting field is the level item's only child, so the rule never fires. Our
+markup wraps the search box in its own div, so the sort field is "not last"
+inside `.level-right` and carries the margin; the centered level splits it
+and lifts the select 6px above the input (measured: select top 728.5, input
+top 734.5). When the row stacks below the widescreen breakpoint, the old
+12px right margin indented the select off the search box's edge. The row's
+spacing belongs to the row: an explicit `gap` on `.level-right` and the
+field's margin off fixes both orientations.
+
+**Alternatives.** Keep submit-only filtering (refused: the user asked; and
+a client-side filter has no reason to wait). Debounce the keystrokes
+(refused: there is nothing to debounce — no request leaves the browser;
+if a server search ever rides this input, that slice adds its own
+debounce). Zero every `.field` margin app-wide (refused: Bulma's form
+stacking depends on it; only this row's field is wrong).

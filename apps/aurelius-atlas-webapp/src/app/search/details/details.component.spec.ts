@@ -641,6 +641,26 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(normalize(box?.querySelector("h6")?.textContent)).toBe("2 result(s)");
     });
 
+    it("the keyword narrows the cards as it is typed, before any submit (DET-20, DD-375)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        const search = compiled.querySelector<HTMLInputElement>("#related-attributes input[type='search']")!;
+        search.value = "chromosome";
+        search.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        // No `search` event: typing alone filters (DD-375).
+        const box = compiled.querySelector<HTMLElement>("#related-attributes");
+        expect(box?.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        expect(normalize(box?.querySelector("a.aurelius-card-section-reset")?.textContent)).toBe("1 result(s)");
+
+        // Backspacing to empty restores them.
+        search.value = "";
+        search.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        expect(box?.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(2);
+    });
+
     it("the placeholder is the Aurelius keyword string (DET-20)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(fixture, httpMock);

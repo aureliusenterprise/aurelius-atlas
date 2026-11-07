@@ -24,6 +24,19 @@
     margin: 0;
 }
 
+/*
+ * The sort group and the search box are one control row (DD-375). Bulma
+ * gives a `.field` that is not the last child a 12px bottom margin — the
+ * search box rides in its own wrapper and escapes the rule, so the
+ * centered level split the difference and floated the select 6px above
+ * the input. The old 12px right margin indented the select off the
+ * search box's edge when the row stacks. The row owns its spacing
+ * instead: an explicit gap, and the field's stray margin off.
+ */
+.level-right {
+    gap: 0.75rem;
+}
+
 .aurelius-card-section-controls {
-    margin-right: 0.75rem;
+    margin-bottom: 0;
 }
