@@ -143,11 +143,11 @@ services:
             - ./webapp/resolve-nginx.sh:/standalone/resolve-nginx.sh:ro
             - webapp-nginx-conf:/out
 
-    # The webapp, in the proxy's network: nginx reaches it on 127.0.0.1:8080, and it reaches the server on
-    # 127.0.0.1:21000 for /api/. It signs in to the demo realm through the public client aurelius.
+    # The webapp's own nginx serves only the webapp, in a container of its own: the proxy in front routes to
+    # it by name and sends /api/ to the server itself. It signs in to the demo realm through the public client
+    # aurelius.
     aurelius-atlas-webapp:
         image: *webapp-image
-        network_mode: service:proxy
         depends_on:
             webapp-config:
                 condition: service_completed_successfully
