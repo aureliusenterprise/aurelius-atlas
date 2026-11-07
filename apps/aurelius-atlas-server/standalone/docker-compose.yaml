@@ -1,4 +1,5 @@
-# The server alone, with the Atlas dashboards, behind one nginx entry (see README.md):
+# The server with the Atlas dashboards and the Aurelius Atlas webapp, behind one nginx entry (see README.md):
+#   https://localhost:9000/         the webapp
 #   https://localhost:9000/atlas2/  the server and its dashboards
 #   https://localhost:9000/auth/    the stack's own Keycloak, with the demo realm and its users
 # The store is the stack's own Elasticsearch, apart from the dev store the e2e suites write to; `down -v`
@@ -9,6 +10,7 @@ name: aurelius-atlas-standalone
 
 x-certs: &certs ../certs:/certs:ro
 x-elasticsearch-image: &elasticsearch-image dhi.io/elasticsearch:9.5-debian13
+x-webapp-image: &webapp-image ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
 
 services:
     # The image has no data directory, so Docker creates the volumes' mount points owned by root; this one-shot
@@ -130,6 +132,32 @@ services:
         volumes:
             - *certs
 
+    # One shot: fills the webapp image's nginx template for this stack into a volume, as the chart's init
+    # container does (DD-262); a placeholder left fails it.
+    webapp-config:
+        image: *webapp-image
+        user: "0"
+        entrypoint: ["/bin/sh", "/standalone/resolve-nginx.sh"]
+        restart: "no"
+        volumes:
+            - ./webapp/resolve-nginx.sh:/standalone/resolve-nginx.sh:ro
+            - webapp-nginx-conf:/out
+
+    # The webapp's own nginx serves only the webapp, in a container of its own: the proxy in front routes to
+    # it by name and sends /api/ to the server itself. It signs in to the demo realm through the public client
+    # aurelius.
+    aurelius-atlas-webapp:
+        image: *webapp-image
+        depends_on:
+            webapp-config:
+                condition: service_completed_successfully
+            aurelius-atlas-server:
+                condition: service_started
+        volumes:
+            - webapp-nginx-conf:/etc/nginx/conf.d:ro
+            - ./webapp/config.json:/usr/share/nginx/html/config.json:ro
+            - ../../aurelius-atlas-webapp/certs:/certs:ro
+
     # One shot: waits for the server, signs in as the demo user atlas and posts SAMPLE_ZIP to admin/import, all
     # through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
     sample-import:
@@ -157,3 +185,4 @@ services:
 volumes:
     elasticsearch-data:
     elasticsearch-snapshots:
+    webapp-nginx-conf:
