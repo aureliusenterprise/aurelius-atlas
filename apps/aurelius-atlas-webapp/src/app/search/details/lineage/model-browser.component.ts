@@ -8,6 +8,8 @@ import {
     output,
     signal,
     untracked,
+    viewChild,
+    ElementRef,
 } from "@angular/core";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 import { Drawer } from "aurelius-atlas-ui";
@@ -50,7 +52,10 @@ type ModelBrowserTab = "browse" | "model" | "selection" | "view";
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [Drawer, LineageBrowseTab, LineageModelTab, LineageSelectionPanel, LineageViewTab],
     template: `
-        <aurelius-atlas-ui-drawer [(active)]="active" [title]="title()" [ariaLabel]="closeLabel">
+        <!-- The toolbar's Browse focuses this panel on open (LDG-27): the
+             drawer element is always in the DOM, so the seam exists; the
+             tabindex makes the focus a real keyboard stop. -->
+        <aurelius-atlas-ui-drawer #drawer tabindex="-1" [(active)]="active" [title]="title()" [ariaLabel]="closeLabel">
             <nav class="tabs aurelius-model-browser-tabs" drawer-subhead role="tablist">
                 <ul>
                     @for (tab of visibleTabs(); track tab.id) {
@@ -199,6 +204,29 @@ export class LineageModelBrowser {
         const entity = id === null ? undefined : this.entities().get(id);
         return entity?.kind === "view" ? entity : null;
     });
+
+    /** The drawer element — the toolbar's open seam focuses it. The ref
+        sits on the drawer component's host, so it must be read as the
+        element (an unresolved component-host query yields the instance). */
+    private readonly drawerRef = viewChild.required("drawer", { read: ElementRef });
+
+    /**
+     * Open the panel (the legacy's `openBrowser`, called by 7.22d's toolbar
+     * Browse). Focus moves in so the tab strip is one Tab away.
+     */
+    open(): void {
+        this.drawerRef().nativeElement.focus();
+        this.active.set(true);
+    }
+
+    /**
+     * Open on the View tab (the legacy's `openViewInfo`: `selectTab('view')`
+     * then `openBrowser()`) — the toolbar's View-info button.
+     */
+    showView(): void {
+        this.selectTab("view");
+        this.open();
+    }
 
     /** The legacy's `selectTab`: the switch remembers where the reader was. */
     protected selectTab(id: ModelBrowserTab): void {

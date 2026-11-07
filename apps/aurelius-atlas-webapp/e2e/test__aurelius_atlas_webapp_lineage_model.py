@@ -9,6 +9,7 @@ services: browser token -> aux -> Atlas lineage -> data2model -> ar3 model.
 """
 
 import json
+import re
 import secrets
 from urllib.parse import urljoin
 
@@ -329,6 +330,75 @@ def test__the_details_page_draws_the_lineage_box(authenticated: Page, root_url: 
         lonely_box = authenticated.locator("#lineage-model")
         expect(lonely_box.locator(".aurelius-lineage-empty")).to_be_visible()
         expect(lonely_box.locator("aurelius-atlas-webapp-lineage-viewer")).to_have_count(0)
+    finally:
+        for type_name in _M4I_TYPES:
+            _purge_type(authenticated, root_url, user_token, type_name)
+
+
+@pytest.mark.covers(rules=["LDG-28", "LDG-30", "LDG-31"])
+def test__the_toolbar_saves_the_view_and_toggles_fullscreen(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """The 7.22d toolbar: the save downloads the PNG, fullscreen fixes the drawing (LDG-28/LDG-30/LDG-31).
+
+    The same seeded chain: the save button hands the drawn view to the
+    converter and downloads ``Lineage.png`` (the view's own name, LDG-30),
+    whose bytes carry the ``tEXt`` chunk pairing ``Title`` with
+    ``Lineage`` — the metadata the writer placed before IEND, read back
+    from the download (LDG-31). Which conversion path produced the bytes is the engine's
+    (the foreignObject fallback included) — the unit spec pins both; here
+    the promise is the file. The fullscreen toggle fixes and frees the
+    drawing region (LDG-28) and swaps in the fullscreen-only Browse copy.
+    The tooltips and the class's pixels are the viewer's unit spec (the
+    e2e rule). Self-cleaned by the shared m4i purge (DD-223).
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+    dataset_guid = guids["dataset"]
+
+    try:
+        # The lineage walks the edge records (CLS-12's race): wait the
+        # dataset's lineage ends visible before the screen reads them.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            dataset_guid,
+            predicate=lambda entity: (
+                _active_edge(entity, "outputFromProcesses", guids["process"])
+                and _active_edge(entity, "inputToProcesses", guids["process"])
+            ),
+        )
+
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{dataset_guid}"))
+        box = authenticated.locator("#lineage-model")
+        expect(box.locator(".aurelius-lineage-title")).to_have_text("Lineage")
+        expect(box.locator("g.node", has_text=f"zz{run}warehouse")).to_have_count(1)
+
+        # LDG-30/LDG-31: the save downloads the view under its name, with
+        # the metadata chunk in the bytes (the writer's keyword NUL value,
+        # read from the download — the tEXt chunk lands before IEND).
+        with authenticated.expect_download() as download_info:
+            box.locator(".controls .aurelius-lineage-save").click()
+        download = download_info.value
+        assert download.suggested_filename == "Lineage.png"
+        png = download.path().read_bytes()
+        assert png[:8] == b"\x89PNG\r\n\x1a\n"
+        assert b"Title\x00Lineage" in png
+
+        # LDG-28: the toggle fixes the drawing region and gains the
+        # fullscreen-only Browse copy; toggling again frees both.
+        drawing = box.locator(".lineage-drawing")
+        expect(drawing).not_to_have_class(re.compile("is-fullscreen"))
+        expect(box.locator(".controls .aurelius-lineage-browse")).to_have_count(0)
+
+        box.locator(".controls .aurelius-lineage-fullscreen").click()
+        expect(drawing).to_have_class(re.compile("is-fullscreen"))
+        expect(box.locator(".controls .aurelius-lineage-browse")).to_be_visible()
+
+        box.locator(".controls .aurelius-lineage-fullscreen").click()
+        expect(drawing).not_to_have_class(re.compile("is-fullscreen"))
+        expect(box.locator(".controls .aurelius-lineage-browse")).to_have_count(0)
     finally:
         for type_name in _M4I_TYPES:
             _purge_type(authenticated, root_url, user_token, type_name)

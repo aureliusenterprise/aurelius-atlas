@@ -3,15 +3,20 @@ import {
     Component,
     computed,
     effect,
-    ElementRef,
+    inject,
     input,
     output,
     signal,
     viewChild,
+    type ElementRef,
 } from "@angular/core";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
+import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
+import { faArrowsAlt, faCamera, faExpand, faInfo, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from "d3-zoom";
+
+import { SaveViewAsImage, saveAroundZoomReset } from "./save-view-as-image";
 
 import type { Ar3Model, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
 import { connectionConceptId, nodeConceptId } from "./parse-ar3";
@@ -88,111 +93,177 @@ interface DrawnConnection {
 @Component({
     selector: "aurelius-atlas-webapp-lineage-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [LineageModelBrowser],
+    imports: [FontAwesomeModule, LineageModelBrowser],
     template: `
-        <svg class="lineage-svg" #svg>
-            <svg:defs>
-                <svg:marker
-                    id="generic-arrow"
-                    [attr.refX]="arrow.refX"
-                    [attr.refY]="arrow.refY"
-                    [attr.markerWidth]="arrow.markerWidth"
-                    [attr.markerHeight]="arrow.markerHeight"
-                    orient="auto"
+        <!-- LDG-28: the drawing region — the element the fullscreen toggle
+             fixes to the viewport (the legacy's .modelview [class.is-fullscreen]). -->
+        <div class="lineage-drawing" [class.is-fullscreen]="isFullscreen()">
+            <!-- LDG-27: the control column (DD-397 — local markup, the
+                 legacy's .controls buttons): icon buttons with the named
+                 tooltip, the fullscreen-only Browse first, the save last
+                 with the legacy's is-loading. -->
+            <div class="controls buttons">
+                @if (isFullscreen()) {
+                    <button
+                        type="button"
+                        class="button is-info aurelius-lineage-browse"
+                        [attr.title]="browseTooltip"
+                        [attr.aria-label]="browseTooltip"
+                        (click)="openBrowser()"
+                    >
+                        <span class="icon" aria-hidden="true"><fa-icon [icon]="faSearch"></fa-icon></span>
+                    </button>
+                }
+                <button
+                    type="button"
+                    class="button aurelius-lineage-view-info"
+                    [attr.title]="viewInfoTooltip"
+                    [attr.aria-label]="viewInfoTooltip"
+                    (click)="openViewInfo()"
                 >
-                    <svg:path [attr.d]="arrow.path" fill="#000000"></svg:path>
-                </svg:marker>
-            </svg:defs>
-            <!-- LDG-15: the bounds group carries the legacy's -minX/-minY
+                    <span class="icon" aria-hidden="true"><fa-icon [icon]="faInfo"></fa-icon></span>
+                </button>
+                <button
+                    type="button"
+                    class="button aurelius-lineage-fullscreen"
+                    [attr.title]="fullscreenTooltip"
+                    [attr.aria-label]="fullscreenTooltip"
+                    (click)="isFullscreen.set(!isFullscreen())"
+                >
+                    <span class="icon" aria-hidden="true"><fa-icon [icon]="faExpand"></fa-icon></span>
+                </button>
+                <button
+                    type="button"
+                    class="button aurelius-lineage-reset-zoom"
+                    [attr.title]="resetZoomTooltip"
+                    [attr.aria-label]="resetZoomTooltip"
+                    (click)="resetZoom()"
+                >
+                    <span class="icon" aria-hidden="true"><fa-icon [icon]="faArrowsAlt"></fa-icon></span>
+                </button>
+                <button
+                    type="button"
+                    class="button aurelius-lineage-save"
+                    [class.is-loading]="converting()"
+                    [attr.title]="saveTooltip"
+                    [attr.aria-label]="saveTooltip"
+                    (click)="saveView()"
+                >
+                    <span class="icon" aria-hidden="true"><fa-icon [icon]="faCamera"></fa-icon></span>
+                </button>
+            </div>
+            <!-- LDG-30: the measured container — the save hands its rect to
+                 the converter, and html2canvas draws this element. -->
+            <div id="screenshot-container" class="screenshot-container" #screen>
+                <svg class="lineage-svg" #svg>
+                    <svg:defs>
+                        <svg:marker
+                            id="generic-arrow"
+                            [attr.refX]="arrow.refX"
+                            [attr.refY]="arrow.refY"
+                            [attr.markerWidth]="arrow.markerWidth"
+                            [attr.markerHeight]="arrow.markerHeight"
+                            orient="auto"
+                        >
+                            <svg:path [attr.d]="arrow.path" fill="#000000"></svg:path>
+                        </svg:marker>
+                    </svg:defs>
+                    <!-- LDG-15: the bounds group carries the legacy's -minX/-minY
                  translate; LDG-16: the zoom transform rides the parent so
                  pan/zoom and the bounds compose (the legacy applied the
                  transform to the whole #modelview group — same DOM here). -->
-            <svg:g class="lineage-zoom" #zoomTarget>
-                <svg:g class="lineage-bounds" [attr.transform]="boundsTransform()">
-                    @for (drawn of nodes(); track drawn.node.id) {
-                        <!-- LDG-12/LDG-13: the node — the rectangle path from
+                    <svg:g class="lineage-zoom" #zoomTarget>
+                        <svg:g class="lineage-bounds" [attr.transform]="boundsTransform()">
+                            @for (drawn of nodes(); track drawn.node.id) {
+                                <!-- LDG-12/LDG-13: the node — the rectangle path from
                              x,y,w,h translated to the bounds-normalised
                              position, the type-class fill, the 16x16 icon
                              floated right, the clipped name (the legacy's
                              foreignObject label, LDG-13). -->
-                        <svg:g
-                            class="node"
-                            [class.dataset]="drawn.cssClass === 'dataset'"
-                            [class.process]="drawn.cssClass === 'process'"
-                            [class.is-selected]="isSelected(drawn.concept)"
-                            [class.is-highlighted]="isHighlighted(drawn)"
-                            [attr.transform]="drawn.transform"
-                            [attr.data-concept]="drawn.concept"
-                            (click)="onElementClicked(drawn.concept)"
-                        >
-                            <svg:clipPath [attr.id]="'clip-' + drawn.node.id">
-                                <svg:path [attr.d]="drawn.shape"></svg:path>
-                            </svg:clipPath>
-                            <svg:path class="node-shape" [attr.d]="drawn.shape"></svg:path>
-                            <svg:g [attr.clip-path]="'url(#clip-' + drawn.node.id + ')'">
-                                <svg:foreignObject [attr.width]="drawn.node.width" [attr.height]="drawn.node.height">
-                                    <xhtml:div xmlns="http://www.w3.org/1999/xhtml" class="node-content">
-                                        @if (drawn.icon) {
-                                            <xhtml:span class="node-icon">
-                                                <svg width="16px" height="16px" viewBox="0 0 16 16">
-                                                    <path
-                                                        [attr.d]="drawn.icon"
-                                                        [class.dataset]="drawn.cssClass === 'dataset'"
-                                                        [class.process]="drawn.cssClass === 'process'"
-                                                    ></path>
-                                                </svg>
-                                            </xhtml:span>
-                                        }
-                                        @if (drawn.name) {
-                                            <xhtml:span class="node-text" [attr.title]="drawn.name">{{
-                                                drawn.name
-                                            }}</xhtml:span>
-                                        }
-                                    </xhtml:div>
-                                </svg:foreignObject>
-                            </svg:g>
-                        </svg:g>
-                    }
-                    @for (drawn of connections(); track drawn.connection.id) {
-                        <!-- LDG-14: the connection — the edge-anchored path
+                                <svg:g
+                                    class="node"
+                                    [class.dataset]="drawn.cssClass === 'dataset'"
+                                    [class.process]="drawn.cssClass === 'process'"
+                                    [class.is-selected]="isSelected(drawn.concept)"
+                                    [class.is-highlighted]="isHighlighted(drawn)"
+                                    [attr.transform]="drawn.transform"
+                                    [attr.data-concept]="drawn.concept"
+                                    (click)="onElementClicked(drawn.concept)"
+                                >
+                                    <svg:clipPath [attr.id]="'clip-' + drawn.node.id">
+                                        <svg:path [attr.d]="drawn.shape"></svg:path>
+                                    </svg:clipPath>
+                                    <svg:path class="node-shape" [attr.d]="drawn.shape"></svg:path>
+                                    <svg:g [attr.clip-path]="'url(#clip-' + drawn.node.id + ')'">
+                                        <svg:foreignObject
+                                            [attr.width]="drawn.node.width"
+                                            [attr.height]="drawn.node.height"
+                                        >
+                                            <xhtml:div xmlns="http://www.w3.org/1999/xhtml" class="node-content">
+                                                @if (drawn.icon) {
+                                                    <xhtml:span class="node-icon">
+                                                        <svg width="16px" height="16px" viewBox="0 0 16 16">
+                                                            <path
+                                                                [attr.d]="drawn.icon"
+                                                                [class.dataset]="drawn.cssClass === 'dataset'"
+                                                                [class.process]="drawn.cssClass === 'process'"
+                                                            ></path>
+                                                        </svg>
+                                                    </xhtml:span>
+                                                }
+                                                @if (drawn.name) {
+                                                    <xhtml:span class="node-text" [attr.title]="drawn.name">{{
+                                                        drawn.name
+                                                    }}</xhtml:span>
+                                                }
+                                            </xhtml:div>
+                                        </svg:foreignObject>
+                                    </svg:g>
+                                </svg:g>
+                            }
+                            @for (drawn of connections(); track drawn.connection.id) {
+                                <!-- LDG-14: the connection — the edge-anchored path
                              through the bendpoints, the arrow marker end,
                              the relation name at the path centre. -->
-                        @if (drawn.path) {
-                            <svg:g
-                                class="connection"
-                                [class.is-selected]="isSelected(drawn.concept)"
-                                [attr.data-concept]="drawn.concept"
-                                (click)="onElementClicked(drawn.concept)"
-                            >
-                                <svg:path
-                                    class="connection-path"
-                                    [attr.id]="'path-' + drawn.connection.id"
-                                    [attr.d]="drawn.path"
-                                    marker-end="url(#generic-arrow)"
-                                ></svg:path>
-                                @if (drawn.name) {
-                                    <svg:text>
-                                        <svg:textPath
-                                            class="connection-label"
-                                            [attr.href]="'#path-' + drawn.connection.id"
-                                            dominant-baseline="ideographic"
-                                            startOffset="50%"
-                                        >
-                                            {{ drawn.name }}
-                                        </svg:textPath>
-                                    </svg:text>
+                                @if (drawn.path) {
+                                    <svg:g
+                                        class="connection"
+                                        [class.is-selected]="isSelected(drawn.concept)"
+                                        [attr.data-concept]="drawn.concept"
+                                        (click)="onElementClicked(drawn.concept)"
+                                    >
+                                        <svg:path
+                                            class="connection-path"
+                                            [attr.id]="'path-' + drawn.connection.id"
+                                            [attr.d]="drawn.path"
+                                            marker-end="url(#generic-arrow)"
+                                        ></svg:path>
+                                        @if (drawn.name) {
+                                            <svg:text>
+                                                <svg:textPath
+                                                    class="connection-label"
+                                                    [attr.href]="'#path-' + drawn.connection.id"
+                                                    dominant-baseline="ideographic"
+                                                    startOffset="50%"
+                                                >
+                                                    {{ drawn.name }}
+                                                </svg:textPath>
+                                            </svg:text>
+                                        }
+                                    </svg:g>
                                 }
-                            </svg:g>
-                        }
-                    }
-                </svg:g>
-            </svg:g>
-        </svg>
+                            }
+                        </svg:g>
+                    </svg:g>
+                </svg>
+            </div>
+        </div>
         <!-- LDG-19/LDG-25: the quickview drawer, mounted on the viewer — the
              legacy mounts its model-browser beside the #modelview svg. The
              selection is one signal read and written by both surfaces; the
              view choice re-renders the diagram (drawnView). -->
         <aurelius-atlas-webapp-lineage-model-browser
+            #browser
             [entities]="entities()"
             [indexes]="indexes()"
             [metadata]="metadata()"
@@ -210,9 +281,44 @@ interface DrawnConnection {
         :host {
             display: block;
         }
-        .lineage-svg {
-            /* LDG-15: the legacy's 50vh drawing area. */
+        .lineage-drawing {
+            /* LDG-15: the legacy's 50vh drawing area (.modelview) — the
+               svg's own min-size fills it, as in the legacy. */
             height: 50vh;
+            display: flex;
+            align-items: stretch;
+            position: relative;
+        }
+        .lineage-drawing.is-fullscreen {
+            /* LDG-28: the legacy's fixed block. The top is the pinned
+               navbar's height — NAVBAR_SCROLL_OFFSET's 68 px (app.config.ts,
+               the legacy's 4.25rem measured on the same navbar). */
+            position: fixed;
+            top: 68px;
+            left: 0;
+            height: 100vh;
+            width: 100%;
+            z-index: 5;
+        }
+        .screenshot-container {
+            /* LDG-30: the measured container of the save flow. */
+            height: 100%;
+            width: 100%;
+            display: flex;
+            align-items: stretch;
+        }
+        .controls {
+            /* LDG-27: the legacy's top-right control column. */
+            flex-direction: column;
+            position: absolute;
+            right: 0;
+            padding: 10px;
+            z-index: 1;
+        }
+        .controls .button {
+            margin-right: 0;
+        }
+        .lineage-svg {
             min-width: 100%;
             min-height: 100%;
             font-family: "Segoe UI";
@@ -288,8 +394,35 @@ export class LineageViewer {
     /** The marker's geometry — the legacy defs entry, ported (LDG-14). */
     protected readonly arrow = GENERIC_ARROW;
 
+    /** The icons of the control column (LDG-27 — the legacy's five). */
+    protected readonly faSearch = faSearch;
+    protected readonly faInfo = faInfo;
+    protected readonly faExpand = faExpand;
+    protected readonly faArrowsAlt = faArrowsAlt;
+    protected readonly faCamera = faCamera;
+
+    /** The control column's tooltips (LDG-27 — the legacy's `modelview2.*`). */
+    protected readonly browseTooltip = $localize`:@@modelview2.browse:Browse the model`;
+    protected readonly viewInfoTooltip = $localize`:@@modelview2.viewInfo:View info`;
+    protected readonly fullscreenTooltip = $localize`:@@modelview2.toggleFullscreen:Toggle fullscreen`;
+    protected readonly resetZoomTooltip = $localize`:@@modelview2.resetZoom:Reset zoom and pan`;
+    protected readonly saveTooltip = $localize`:@@modelview2.saveViewAsImage:Save view as image`;
+
+    /** Whether the drawing is fullscreen (LDG-28 — the legacy's flag). */
+    protected readonly isFullscreen = signal(false);
+
+    /** Whether a PNG conversion is in flight (LDG-27's `is-loading`). */
+    protected readonly converting = signal(false);
+
+    /** The save flow (LDG-30/31). */
+    private readonly saveViewAsImage = inject(SaveViewAsImage);
+
     private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>("svg");
     private readonly zoomTarget = viewChild.required<ElementRef<SVGGElement>>("zoomTarget");
+    /** The measured container of the save flow (LDG-30's width/height). */
+    private readonly screen = viewChild.required<ElementRef<HTMLDivElement>>("screen");
+    /** The quickview — the Browse/View-info buttons open it (LDG-27). */
+    private readonly browser = viewChild.required<LineageModelBrowser>("browser");
 
     /** The d3 zoom behaviour, attached once the SVG is in the DOM (LDG-16). */
     private zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
@@ -441,6 +574,59 @@ export class LineageViewer {
         this.currentTransform = zoomIdentity;
         this.zoomTarget().nativeElement.setAttribute("transform", zoomIdentity.toString());
         return previous;
+    }
+
+    /**
+     * LDG-27: open the quickview (legacy `openBrowser`). Public because the
+     * box header's Browse button sits above the viewer and calls it; the
+     * toolbar's fullscreen-only Browse calls the same seam.
+     */
+    openBrowser(): void {
+        this.browser().open();
+    }
+
+    /** LDG-27: View-info opens the quickview on the View tab (legacy `openViewInfo`). */
+    protected openViewInfo(): void {
+        this.browser().showView();
+    }
+
+    /**
+     * LDG-29/LDG-30: save the drawn view (the legacy's `saveViewAsImage`):
+     * reset the zoom, convert the svg at the container's measured size,
+     * restore the transform. One conversion at a time (the legacy's
+     * exhaustMap); a conversion that ends in nothing — both paths failed —
+     * saves nothing, as the legacy's empty-PNG skip did.
+     */
+    protected async saveView(): Promise<void> {
+        const view = this.drawnView();
+        if (view === undefined || this.converting()) {
+            return;
+        }
+        this.converting.set(true);
+        try {
+            await saveAroundZoomReset(
+                () => this.resetZoom(),
+                (previous) => this.applyTransform(previous),
+                async () => {
+                    const { width, height } = this.screen().nativeElement.getBoundingClientRect();
+                    await this.saveViewAsImage.save(this.svgRef().nativeElement, width, height, view);
+                },
+            );
+        } catch {
+            // Both conversion paths failed — nothing to save (the legacy
+            // answered no-PNG and the save was skipped silently).
+        } finally {
+            this.converting.set(false);
+        }
+    }
+
+    /** Put a saved transform back on the zoom group (LDG-29's restore). */
+    private applyTransform(transform: ZoomTransform): void {
+        if (this.zoomBehavior !== null) {
+            this.zoomBehavior.transform(select(this.svgRef().nativeElement), transform);
+        }
+        this.currentTransform = transform;
+        this.zoomTarget().nativeElement.setAttribute("transform", transform.toString());
     }
 
     /** LDG-17: a node or connection click — the same concept clears. */

@@ -1,7 +1,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { By } from "@angular/platform-browser";
+import Keycloak from "keycloak-js";
 import { describe, expect, it } from "vitest";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import { APP_CONFIG } from "../../../tokens";
+import { LineageModelBrowser } from "./model-browser.component";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 import { LineageViewer } from "./lineage-viewer.component";
 import { ZOOM_SCALE_EXTENT } from "./lineage-shapes";
@@ -26,7 +30,16 @@ function setup(model: Ar3Model = MODEL): {
     compiled: HTMLElement;
 } {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ imports: [LineageViewer] });
+    TestBed.configureTestingModule({
+        imports: [LineageViewer],
+        // The toolbar's save flow injects the session (Keycloak) and the
+        // runtime config (LDG-31's fields) — the save itself is the save
+        // spec's; here the viewer only needs the injections to resolve.
+        providers: [
+            { provide: Keycloak, useValue: { tokenParsed: {} } },
+            { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas", appVersion: "0.0.0" } },
+        ],
+    });
     const created = TestBed.createComponent(LineageViewer);
     created.componentRef.setInput("model", model);
     // Two passes: the first creates the view, the second lets the zoom
@@ -214,8 +227,10 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         // The legacy SVGZoomDirective's extent, verbatim.
         expect(ZOOM_SCALE_EXTENT).toEqual([0.5, 3]);
 
-        const svg = compiled.querySelector("svg") as SVGSVGElement;
-        const zoomGroup = compiled.querySelector("svg > g") as SVGGElement;
+        // The lineage svg by class — the toolbar's fa-icon svgs are earlier
+        // in the DOM now (LDG-27).
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+        const zoomGroup = compiled.querySelector("svg.lineage-svg > g") as SVGGElement;
 
         // jsdom lacks the SVG geometry d3 reads (the default extent's
         // width/height baseVal, getScreenCTM), so hand it a fixed drawing
@@ -354,5 +369,127 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
 
         // The highlight stroke (LDG-18): the legacy's hsl(141, 53%, 53%).
         expect(styleBlock()).toContain("stroke: hsl(141, 53%, 53%)");
+    });
+
+    it("LDG-27: the control column carries the named tooltips", () => {
+        const { compiled } = setup();
+
+        // The legacy's column, in order (the Browse copy is fullscreen-only,
+        // LDG-28 — so four buttons ride it at rest). The header's Browse is
+        // the box's (LDG-27's level-right — the box spec pins it).
+        const buttons = [...compiled.querySelectorAll(".controls button")];
+        expect(buttons.map((button) => button.getAttribute("title"))).toEqual([
+            "View info",
+            "Toggle fullscreen",
+            "Reset zoom and pan",
+            "Save view as image",
+        ]);
+        // Each is an icon button (the legacy's span.icon) — DD-397's title
+        // tooltips, not the ported tooltip directive.
+        for (const button of buttons) {
+            expect(button.querySelector("span.icon fa-icon")).toBeTruthy();
+        }
+    });
+
+    it("LDG-28: the fullscreen toggle fixes and frees the drawing region", () => {
+        const { created, compiled } = setup();
+        const drawing = compiled.querySelector(".lineage-drawing") as HTMLElement;
+
+        expect(drawing.classList.contains("is-fullscreen")).toBe(false);
+        // At rest the column has no Browse button (the fullscreen-only copy).
+        expect(compiled.querySelector(".aurelius-lineage-browse")).toBeNull();
+
+        compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-fullscreen")?.click();
+        created.detectChanges();
+        expect(drawing.classList.contains("is-fullscreen")).toBe(true);
+        // Fullscreen gains the Browse button (the legacy's fullscreen copy).
+        expect(compiled.querySelector(".aurelius-lineage-browse")?.getAttribute("title")).toBe("Browse the model");
+
+        compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-fullscreen")?.click();
+        created.detectChanges();
+        expect(drawing.classList.contains("is-fullscreen")).toBe(false);
+
+        // The legacy's fixed block, measured on this navbar (68 px).
+        const styles = styleBlock();
+        expect(styles).toContain("position: fixed");
+        expect(styles).toContain("top: 68px");
+        expect(styles).toContain("height: 100vh");
+    });
+
+    it("LDG-27: View-info opens the quickview on the View tab", () => {
+        const { created, compiled } = setup();
+        const browser = created.debugElement.query(By.directive(LineageModelBrowser))
+            .componentInstance as LineageModelBrowser;
+
+        compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-view-info")?.click();
+        created.detectChanges();
+
+        expect(browser["active"]()).toBe(true);
+        expect(browser["currentTab"]()).toBe("view");
+    });
+
+    it("LDG-27: the fullscreen Browse opens the quickview on the Browse tab", () => {
+        const { created, compiled } = setup();
+        const browser = created.debugElement.query(By.directive(LineageModelBrowser))
+            .componentInstance as LineageModelBrowser;
+
+        compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-fullscreen")?.click();
+        created.detectChanges();
+        compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-browse")?.click();
+        created.detectChanges();
+
+        expect(browser["active"]()).toBe(true);
+        expect(browser["currentTab"]()).toBe("browse");
+    });
+
+    it("LDG-29: the reset button restores the identity transform", async () => {
+        const { created, compiled } = setup();
+
+        // Pan the diagram (the LDG-16 gesture) so there is something to reset.
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+        const zoomGroup = compiled.querySelector("svg.lineage-svg > g") as SVGGElement;
+        stubSvgExtent(svg);
+        Object.defineProperty(svg, "getBoundingClientRect", {
+            value: () => ({ left: 0, top: 0, right: 800, bottom: 600, width: 800, height: 600, x: 0, y: 0 }),
+        });
+        const view = eventWindow();
+        const eventCtor = (view as unknown as { MouseEvent: typeof MouseEvent }).MouseEvent;
+        svg.dispatchEvent(
+            new eventCtor("mousedown", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 10,
+                clientY: 10,
+            }),
+        );
+        view.dispatchEvent(
+            new eventCtor("mousemove", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 50,
+                clientY: 30,
+            }),
+        );
+        view.dispatchEvent(
+            new eventCtor("mouseup", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 50,
+                clientY: 30,
+            }),
+        );
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(40,20) scale(1)");
+
+        // d3-drag's post-drag click guard swallows one click until its
+        // setTimeout(0) runs (the LDG-16 note) — let it pass before the
+        // button's click.
+        await new Promise((resolve) => setTimeout(resolve, 0));
+
+        compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-reset-zoom")?.click();
+        created.detectChanges();
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(0,0) scale(1)");
     });
 });
