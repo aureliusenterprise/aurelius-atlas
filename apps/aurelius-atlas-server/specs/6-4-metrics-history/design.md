@@ -40,6 +40,10 @@ removes them.
 own count, per snapshot and state. The vendored dashboards' Statistics chart starts with that name instead of
 `hive_table` (`PATCHES.md`, patch 02). Clicking a type in the Entities table charts that type, as before.
 
+The chart stays open when Atlas closes the Entities panel past 25 types (patch 03). Its panel shares the
+selector `data-id="entity"` with the Entities panel, so Atlas closed both, and the chart was fetched but
+never shown.
+
 **Reason.** The dashboards hard-code `hive_table` as the chart's first type. A catalogue without Hive, which
 this one is, opens the chart on nothing. The name is the one the dashboards already use for every entity type
 in search, so it reads the same in both places. Summing on the server keeps the request one name long; summing

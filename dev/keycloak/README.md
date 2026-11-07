@@ -40,6 +40,11 @@ placeholders resolved from the container environment at import time
 (`-Dkeycloak.migration.replace-placeholders=true`); the values live in this
 project's `.env.enc` like every other dev credential.
 
+The `.env.enc` also holds `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and
+`DEMO_USER_SCIENTIST_PASSWORD`, the passwords of the users of the standalone
+stack's realm `demo` (`apps/aurelius-atlas-server/standalone/keycloak/demo.json`,
+DD-366). This Keycloak doesn't import that realm.
+
 > [!NOTE]
 > `--import-realm` uses `IGNORE_EXISTING`: changing users/roles requires
 > recreating the stack (`docker compose down -v && docker compose up -d`).
