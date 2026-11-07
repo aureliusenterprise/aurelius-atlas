@@ -79,13 +79,14 @@ later.
 - `elasticsearch`: one node with `dev/elasticsearch/config/elasticsearch.yml`, the volumes
   `elasticsearch-data` and `elasticsearch-snapshots`, and no published port. The server reaches it as
   `https://elasticsearch:9200` with its own password, which is the `elastic` user's here.
-- `/` and every other path go to the webapp's own nginx, which passes `/api/` on to the server unchanged.
+- `nginx.conf` is the stack's only reverse proxy. `/api/` goes to the server with its prefix, and `/` and every
+  other path to the webapp, whose own nginx, in a container of its own, only serves the webapp's files.
   `webapp-config` fills that nginx's template into the volume `webapp-nginx-conf` before it starts
   (`webapp/resolve-nginx.sh`, as the chart's init container does), and `webapp/config.json` points the webapp
   at the demo realm. The stack has no telemetry collector, so `/otel/` takes the webapp's pushes and drops
   them.
-- The server, the webapp and the sample import run in the proxy's network (`network_mode: service:proxy`).
-  nginx reaches the server on `127.0.0.1:21000` and the webapp on `127.0.0.1:8080`, and the server reaches
+- The server and the sample import run in the proxy's network (`network_mode: service:proxy`). nginx reaches
+  the server on `127.0.0.1:21000` and the webapp as `aurelius-atlas-webapp:8080`, and the server reaches
   Keycloak at `https://localhost:9000/auth`, the
   address the browser uses, so the tokens' issuer is the one the server checks.
 
