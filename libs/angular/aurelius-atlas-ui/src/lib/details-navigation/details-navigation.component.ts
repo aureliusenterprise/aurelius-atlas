@@ -9,11 +9,12 @@ import { faBars, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
  * scrolling (UIC-18).
  *
  * The shell is presentational: the label arrives as an input (DD-136) and
- * the `li` items are projected content — their hrefs are the app's
- * anchors, and the screen wires their click (DD-191): the legacy
- * `DetailsNavigationItem` directive's scroll arrived as the details
- * screen's `(click)` handler, not a directive (DD-380). The toggle's open
- * state is the component's: Bulma's CSS does the rest.
+ * the `li` items are projected content — the caller owns their links, and
+ * the screen wires their behaviour (DD-191): the legacy
+ * `DetailsNavigationItem` directive's scroll arrived as routerLink
+ * anchors, the router scrolling to the fragment (DD-380, delivered by
+ * DD-381). The toggle's open state is the component's: Bulma's CSS does
+ * the rest.
  */
 @Component({
     selector: "aurelius-atlas-ui-details-navigation",

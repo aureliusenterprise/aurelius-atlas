@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptors, withXhr } from "@angular/common/http";
-import { DATE_PIPE_DEFAULT_TIMEZONE } from "@angular/common";
+import { DATE_PIPE_DEFAULT_TIMEZONE, ViewportScroller } from "@angular/common";
 import {
     ApplicationConfig,
     ErrorHandler,
@@ -81,6 +81,28 @@ export function keycloakInitOptions(): KeycloakInitOptions {
  * server verifies it (AUT-02); it was sent from day one (DD-141).
  */
 export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }];
+
+/**
+ * The height of the fixed navbar in px, the gap an anchor jump must clear
+ * (DD-381). It is the brand's `--bulma-navbar-height` (4.25rem = 68px, the
+ * legacy scroll directive's own 68px offset); the router's scroller takes a
+ * pixel pair, not a CSS length, so the value is spelled out here.
+ */
+export const NAVBAR_SCROLL_OFFSET: [number, number] = [0, 68];
+
+/**
+ * The app initializer that seats the router's anchor jumps below the fixed
+ * navbar (DD-381).
+ *
+ * `withInMemoryScrolling`'s `scrollOffset` option reaches the scroller only on
+ * the `RouterModule.forRoot` path; on the `provideRouter` path this app takes,
+ * the option is read by nothing. The offset goes to the `ViewportScroller`
+ * itself, which is where the anchor jump reads it. Runs at bootstrap, before
+ * the first navigation.
+ */
+export function setNavbarScrollOffset(): void {
+    inject(ViewportScroller).setOffset(NAVBAR_SCROLL_OFFSET);
+}
 
 /**
  * Load the application configuration and assemble the providers.
@@ -175,8 +197,15 @@ export async function initialize(): Promise<ApplicationConfig> {
                 routes,
                 withComponentInputBinding(),
                 // Aurelius routes with `scrollPositionRestoration: 'enabled'` (SHL-06).
+                // `anchorScrolling` is the router's own anchor jump (DD-381): a URL
+                // fragment scrolls to its box, so the details screen's section links
+                // ride the router and the address carries the section.
                 withInMemoryScrolling({ anchorScrolling: "enabled", scrollPositionRestoration: "enabled" }),
             ),
+            // The navbar's height on the anchor jump (DD-381): the scroller's
+            // option does not reach this path, so the offset is set where the
+            // jump reads it.
+            provideAppInitializer(setNavbarScrollOffset),
             // The OTLP interceptor adds W3C traceparent to every API call so
             // browser and server spans join one trace (ADR 016); the bearer
             // interceptor adds the Keycloak token to /api (APC-06); the alerts

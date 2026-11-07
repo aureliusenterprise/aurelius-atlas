@@ -15,7 +15,7 @@ from conftest import (
     TEMPO_HOST,
     TEMPO_PORT,
 )
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Locator, Page, expect
 
 EN_PLACEHOLDER = (
     "Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below."
@@ -806,22 +806,71 @@ def _active_edge(entity: dict, key: str, guid: str) -> bool:
 
 
 def _jump_with_side_navigation(page: Page) -> None:
-    """The floating side navigation jumps within the details page (DET-25, DD-380).
+    """The floating side navigation jumps within the details page (DET-25, DD-381).
 
-    Open the menu and click one item. The screen must stay put: left
-    uncancelled, the bare ``#anchor`` resolves against the document's
-    ``<base href="/">``, so the browser leaves for ``/`` and the router
-    answers ``search/browse`` — the landing page, which is what a user hit.
-    The url is the assertion; the scroll itself is browser behaviour no
-    headless assert adds. The item click waits for the opened menu by
-    itself (Playwright's actionability), so the open state needs no
-    assertion of its own — the toggle is the lib's UIC-18.
+    Open the menu and click one item. The click is a router navigation
+    (DD-381): the item's ``routerLink`` keeps the screen and puts the
+    box's anchor in the url, so the section is shareable and a back step
+    walks the jumps (never the landing page — DD-380's bare ``#anchor``
+    bug). The scroll itself is browser behaviour no headless assert
+    adds. The item click waits for the opened menu by itself
+    (Playwright's actionability), so the open state needs no assertion
+    of its own — the toggle is the lib's UIC-18.
     """
     nav = page.locator(".aurelius-details-nav")
     nav.locator("button").click()
     nav.locator(".menu-list a", has_text="Data Attributes").click()
-    expect(page).to_have_url(re.compile(r"/search/details/"))
+    expect(page).to_have_url(re.compile(r"/search/details/[^#]+#related-attributes$"))
     expect(page.locator("#related-attributes")).to_be_visible()
+
+    # DD-381: the box seats below the fixed navbar (the 68px offset the
+    # router scroller carries). The smooth scroll settles; the wait polls
+    # until the box reaches the navbar's foot.
+    page.wait_for_function(
+        "() => Math.abs(document.getElementById('related-attributes').getBoundingClientRect().top - 68) <= 2"
+    )
+
+    # DD-381: the jumps are history now — back leaves the fragment off
+    # and the screen stays the entity's, forward puts the anchor back.
+    page.go_back()
+    expect(page).to_have_url(re.compile(r"/search/details/[^#]+$"))
+    expect(page.locator("h1.aurelius-details-title")).to_be_visible()
+    page.go_forward()
+    expect(page).to_have_url(re.compile(r"/search/details/[^#]+#related-attributes$"))
+
+
+def _filters_the_cards_and_resets_them(section: Locator, cards: Locator, run: str) -> None:
+    """The section's keyword filter narrows the cards as typed, and the count line resets (DET-20).
+
+    DD-375: the filter follows the keystroke, so the submit button's click
+    is a no-op the filter already applied. The reset line restores both the
+    cards and its own count.
+    """
+    section.locator("aurelius-atlas-ui-search-field input").fill("beta")
+    expect(cards).to_have_count(1)
+    expect(cards.first).to_contain_text(f"zz{run}beta")
+    section.locator("aurelius-atlas-ui-search-field button.button.is-success").click()
+    expect(section.locator("a.aurelius-card-section-reset")).to_have_text("1 result(s)")
+
+    section.locator("a.aurelius-card-section-reset").click()
+    expect(cards).to_have_count(2)
+    expect(section.locator(".aurelius-card-section-count")).to_contain_text("2 result(s)")
+
+
+def _deep_link_lands_its_section(page: Page, root_url: str, entity_guid: str, run: str) -> None:
+    """A cold visit to a section's url opens the entity at that section (DET-25, DD-381).
+
+    The jump's address is shareable: opened cold, the screen shows the
+    entity, its cards fill the section, and the section seats below the
+    fixed navbar (the router's own jump runs before the entity answers,
+    so the screen lands it once its box renders).
+    """
+    page.goto(urljoin(root_url, f"/en-US/search/details/{entity_guid}#related-attributes"))
+    expect(page.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
+    expect(page.locator("#related-attributes aurelius-atlas-ui-entity-card")).to_have_count(2)
+    page.wait_for_function(
+        "() => Math.abs(document.getElementById('related-attributes').getBoundingClientRect().top - 68) <= 2"
+    )
 
 
 def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: str, user_token: str) -> None:
@@ -889,18 +938,8 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(cards.filter(has_text=f"zz{run}beta")).to_contain_text("The beta definition.")
 
         # DET-20 (DD-375): the keyword filter narrows the cards as it is
-        # typed — no submit needed. The submit button click is a no-op the
-        # filter has already applied; the count line follows it.
-        section.locator("aurelius-atlas-ui-search-field input").fill("beta")
-        expect(cards).to_have_count(1)
-        expect(cards.first).to_contain_text(f"zz{run}beta")
-        section.locator("aurelius-atlas-ui-search-field button.button.is-success").click()
-        expect(section.locator("a.aurelius-card-section-reset")).to_have_text("1 result(s)")
-
-        # …and the reset count line restores them.
-        section.locator("a.aurelius-card-section-reset").click()
-        expect(cards).to_have_count(2)
-        expect(section.locator(".aurelius-card-section-count")).to_contain_text("2 result(s)")
+        # typed, and the reset count line restores them.
+        _filters_the_cards_and_resets_them(section, cards, run)
 
         # DET-17: Child Entities renders at its zero count — the box with
         # the count line and no cards (the seed has no childEntity end).
@@ -909,9 +948,13 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(children.locator(".aurelius-card-section-count")).to_contain_text("0 result(s)")
         expect(children.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
 
-        # DET-25 (DD-380): the floating side navigation jumps to a box and
-        # the screen stays put (never the landing page).
+        # DET-25 (DD-380/DD-381): the floating side navigation jumps to a
+        # box, the anchor rides the url, and the screen stays put (never
+        # the landing page).
         _jump_with_side_navigation(authenticated)
+
+        # DET-25 (DD-381): the same url opens cold — the jump is shareable.
+        _deep_link_lands_its_section(authenticated, root_url, entity_guid, run)
 
         # DET-17: the attribute page shows its Fields section — the field's
         # edge read back at the attribute end, one resolved card. The layout

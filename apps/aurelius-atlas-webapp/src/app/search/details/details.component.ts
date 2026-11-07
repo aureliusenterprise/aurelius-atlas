@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject } from "@angular/core";
+import { ViewportScroller } from "@angular/common";
+import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect, inject } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { ActivatedRoute, Router } from "@angular/router";
+import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import type { AtlasEntity } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
@@ -70,6 +71,7 @@ import { peopleRows } from "./shared/people";
         PropertiesItem,
         SectionStats,
         TypeName,
+        RouterLink,
     ],
     selector: "aurelius-atlas-webapp-details",
     providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState],
@@ -81,6 +83,9 @@ export class Details {
     private readonly route = inject(ActivatedRoute);
 
     private readonly router = inject(Router);
+
+    /** The router's own scroll seam (DD-381): the anchor jump with the navbar offset. */
+    private readonly viewportScroller = inject(ViewportScroller);
 
     /** The read store (DET-08): the entity, and whether a load is in flight. */
     protected readonly state = inject(DetailsState);
@@ -107,6 +112,15 @@ export class Details {
     protected readonly guid = toSignal(this.route.paramMap.pipe(map((params) => params.get("guid") ?? "")), {
         initialValue: "",
     });
+
+    /** The address's anchor (DET-25, DD-381): the section the URL names. */
+    protected readonly fragment = toSignal(this.route.fragment, { initialValue: null });
+
+    /** The address this screen has landed its anchor on once (DD-381). */
+    private landedKey = "";
+
+    /** The anchor whose box this screen is still waiting for (DD-381). */
+    private waitedKey = "";
 
     constructor() {
         // The fetch follows the URL (DET-08): on arrival and on every guid
@@ -143,6 +157,41 @@ export class Details {
         });
         effect(() => {
             this.sections.seed(this.entity(), this.layoutState.layout());
+        });
+
+        // A deep link's anchor lands when its box arrives (DET-25, DD-381).
+        // The router's own anchor jump runs at NavigationEnd, and on a cold
+        // arrival at a card section the entity has not answered yet, so the
+        // box is not on the page and the router's jump finds nothing. This
+        // effect watches for that case: a fragment whose box was missing on
+        // arrival lands once the render brings it. A fragment that arrives
+        // while its box already stands (a click, a back or forward step)
+        // belongs to the router — its anchor scroll or its position
+        // restore — and the effect only records it. The content reads keep
+        // the effect awake across the renders that fill the boxes.
+        afterRenderEffect(() => {
+            const anchor = this.fragment();
+            this.entity();
+            this.views();
+            if (anchor === null || anchor === "") {
+                return;
+            }
+            const key = `${this.guid()}#${anchor}`;
+            if (key === this.landedKey) {
+                return;
+            }
+            if (document.getElementById(anchor) === null) {
+                // The box has not arrived: the jump waits for it.
+                this.waitedKey = key;
+                return;
+            }
+            this.landedKey = key;
+            if (this.waitedKey !== key) {
+                return;
+            }
+            // The router's own jump path: the offset below the fixed
+            // navbar is the one its scroller reads (DD-381).
+            this.viewportScroller.scrollToAnchor(anchor);
         });
     }
 
@@ -352,42 +401,17 @@ export class Details {
     }
 
     /**
-     * A stats-bar heading was clicked (DET-24): smooth-scroll to the box.
-     * The 7.16 part cancels the fragment jump on its emit (DD-154's
-     * pattern), so the scroll is the screen's; the anchor's `#href` stays
-     * the keyboard path.
+     * A stats-bar heading was clicked (DET-24): route to the box's
+     * fragment (DET-25, DD-381). The 7.16 part cancels the bare `#href`
+     * jump on its emit (DD-154's pattern) — uncancelled, it resolves
+     * against the document's `<base href="/">` and leaves the screen
+     * (DD-380). The router's own anchor scrolling then smooth-scrolls the
+     * box below the navbar, and the address names the section: the same
+     * URL the side navigation's `routerLink` items carry.
      * @param target the box's anchor id
      */
     protected onStatClick(target: string): void {
-        this.scrollToSection(target);
-    }
-
-    /**
-     * A side-navigation item was clicked (DET-25, DD-380): cancel the
-     * browser jump and scroll the box into view, as the legacy
-     * `DetailsNavigationItem` directive's click did (DD-191's
-     * app-side half). The cancel is not a courtesy: with the document's
-     * `<base href="/">`, a bare `#anchor` resolves to the app root, so an
-     * uncancelled click navigates the whole page to `/` — the router's
-     * empty-path redirect answers it with `search/browse` (the landing
-     * screen). The `#href` stays the keyboard path, as in `section-stats`
-     * (UIC-19).
-     * @param event the click, to cancel
-     * @param anchor the box's anchor id
-     */
-    protected onNavClick(event: MouseEvent, anchor: string): void {
-        event.preventDefault();
-        this.scrollToSection(anchor);
-    }
-
-    /**
-     * The screen's one section jump: scroll the anchored box to the top,
-     * where its `scroll-margin-top` (the fixed navbar's height, the
-     * legacy directive's 68 px offset) seats it below the bar.
-     * @param anchor the box's anchor id
-     */
-    private scrollToSection(anchor: string): void {
-        document.getElementById(anchor)?.scrollIntoView({ behavior: "smooth", block: "start" });
+        void this.router.navigate([], { relativeTo: this.route, fragment: target });
     }
 
     /**

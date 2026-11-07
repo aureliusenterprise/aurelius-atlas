@@ -119,10 +119,7 @@
             <div class="level-item has-text-centered">
                 <div>
                     <p class="heading">
-                        <a
-                            href="#properties-details"
-                            i18n="@@search.details.default.properties"
-                            (click)="onNavClick($event, 'properties-details')"
+                        <a [routerLink]="[]" fragment="properties-details" i18n="@@search.details.default.properties"
                             >Properties</a
                         >
                     </p>
@@ -256,15 +253,12 @@
         @if (layout()) {
             @for (entry of layout()?.nav; track entry.anchor) {
                 <li>
-                    <a [attr.href]="'#' + entry.anchor" (click)="onNavClick($event, entry.anchor)">{{ entry.label }}</a>
+                    <a [routerLink]="[]" [fragment]="entry.anchor">{{ entry.label }}</a>
                 </li>
             }
         } @else {
             <li>
-                <a
-                    href="#properties-details"
-                    i18n="@@search.details.default.properties"
-                    (click)="onNavClick($event, 'properties-details')"
+                <a [routerLink]="[]" fragment="properties-details" i18n="@@search.details.default.properties"
                     >Properties</a
                 >
             </li>

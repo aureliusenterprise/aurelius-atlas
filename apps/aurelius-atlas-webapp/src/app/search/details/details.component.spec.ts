@@ -1,7 +1,8 @@
+import { ViewportScroller } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter, type UrlTree } from "@angular/router";
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
@@ -60,13 +61,16 @@ const NO_CHIPS = { ...ANSWER, entity: { ...ANSWER.entity, classifications: [] } 
  */
 function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = {}) {
     const paramMap = new Subject<ParamMap>();
+    // The router's fragment feed (DD-381): a plain Subject — toSignal seeds
+    // the initial null, and the deep-link test pushes after creation.
+    const fragment$ = new Subject<string | null>();
     TestBed.configureTestingModule({
         imports: [Details],
         providers: [
             provideHttpClient(),
             provideHttpClientTesting(),
             provideRouter([]),
-            { provide: ActivatedRoute, useValue: { paramMap } },
+            { provide: ActivatedRoute, useValue: { paramMap, fragment: fragment$ } },
             { provide: APP_CONFIG, useValue: { atlasClientId: "aurelius-atlas-server" } },
             {
                 provide: Keycloak,
@@ -78,7 +82,13 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
     paramMap.next(convertToParamMap({ guid }));
     fixture.detectChanges(); // the URL effect runs, the request fires
     const compiled = fixture.nativeElement as HTMLElement;
-    return { fixture, compiled, paramMap, httpMock: TestBed.inject(HttpTestingController) };
+    return {
+        fixture,
+        compiled,
+        paramMap,
+        fragment: fragment$,
+        httpMock: TestBed.inject(HttpTestingController),
+    };
 }
 
 /** Deliver the entity body for the in-flight read and settle the screen. */
@@ -778,47 +788,90 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(stats.some(([label]) => label.includes("Quality"))).toBe(false);
     });
 
-    it("the side navigation lists the layout's boxes (DET-25)", () => {
+    it("the side navigation links each box by router URL and anchor (DET-25, DD-381)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(fixture, httpMock);
 
+        // The items are routerLinks over the current route with the box id
+        // as the URL fragment (DD-381): the href is a real address (the
+        // keyboard and middle-click path), and the anchor rides the URL.
+        // With no route configured, the router serialises the current (root)
+        // tree with the fragment grafted on.
         const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) => [
             normalize(link.textContent),
             link.getAttribute("href"),
         ]);
         expect(items).toEqual([
-            ["Description", "#description-details"],
-            ["People", "#people-details"],
-            ["Data Attributes", "#related-attributes"],
-            ["Child Entities", "#related-entities"],
-            ["Properties", "#properties-details"],
+            ["Description", "/#description-details"],
+            ["People", "/#people-details"],
+            ["Data Attributes", "/#related-attributes"],
+            ["Child Entities", "/#related-entities"],
+            ["Properties", "/#properties-details"],
         ]);
     });
 
-    it("a navigation item's click scrolls its box and cancels the jump (DET-25, DD-380)", () => {
+    it("a navigation item's click is a router navigation to its anchor (DET-25, DD-381)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(fixture, httpMock);
 
-        // jsdom scrolls nothing and navigates nowhere: the spy records the
-        // box the click reached, and `defaultPrevented` is the whole bug —
-        // uncancelled, the bare `#anchor` resolves against `<base href="/">`
-        // and the browser leaves for "/", where the router answers
-        // `search/browse` (the landing page, DD-380).
-        const scrolled: string[] = [];
-        const original = Element.prototype.scrollIntoView;
-        Element.prototype.scrollIntoView = function (this: Element): void {
-            scrolled.push(this.id);
-        };
-        try {
-            const link = compiled.querySelector<HTMLAnchorElement>(".aurelius-details-nav .menu-list a")!;
-            const event = new MouseEvent("click", { bubbles: true, cancelable: true });
-            link.dispatchEvent(event);
+        // The whole DD-380 bug was a bare `#href` that the browser resolved
+        // against <base href="/"> and the router answered with the landing
+        // page. A routerLink cannot repeat it: the click goes through the
+        // router, and the address names the section.
+        const router = TestBed.inject(Router);
+        const targets: UrlTree[] = [];
+        vi.spyOn(router, "navigateByUrl").mockImplementation((url) => {
+            targets.push(url as UrlTree);
+            return { catch: () => undefined } as never;
+        });
 
-            expect(event.defaultPrevented).toBe(true);
-            expect(scrolled).toEqual(["description-details"]);
-        } finally {
-            Element.prototype.scrollIntoView = original;
-        }
+        compiled.querySelector<HTMLAnchorElement>(".aurelius-details-nav .menu-list a")!.click();
+
+        expect(targets).toHaveLength(1);
+        expect(router.serializeUrl(targets[0])).toBe("/#description-details");
+    });
+
+    it("a stats heading routes its anchor as the URL fragment (DET-24, DET-25, DD-381)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        // The lib cancels its bare `#href` on the emit (UIC-19, DD-154) and
+        // the screen routes the fragment — the same URL a side-navigation
+        // item carries, so both bars name the section in the address.
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        const stats = [...compiled.querySelectorAll<HTMLAnchorElement>(".aurelius-details-stats p.heading a")];
+        stats[0].click();
+
+        expect(navigate).toHaveBeenCalledWith([], expect.objectContaining({ fragment: "related-attributes" }));
+    });
+
+    it("a deep link lands its anchor once the box is on the page (DET-25, DD-381)", () => {
+        // A cold arrival at …/details/<guid>#related-attributes: the
+        // router's own jump runs at NavigationEnd, before the entity
+        // answered, so the box is not there yet. The screen's landing
+        // effect (DD-381) scrolls it through the ViewportScroller — the
+        // router's own seam, navbar offset included — on the render that
+        // brings the box, once.
+        const { fixture, httpMock, fragment } = setup("m4i-1");
+        // jsdom has no window.scrollTo, so the spy records without scrolling.
+        const landed: string[] = [];
+        vi.spyOn(TestBed.inject(ViewportScroller), "scrollToAnchor").mockImplementation((anchor) => {
+            landed.push(anchor);
+        });
+
+        fragment.next("related-attributes");
+        fixture.detectChanges();
+        // Nothing to land on yet: the entity has not answered.
+        expect(landed).toEqual([]);
+
+        arriveSections(fixture, httpMock);
+        TestBed.tick(); // the after-render phase runs the landing effect
+
+        expect(landed).toEqual(["related-attributes"]);
+
+        // The anchor stays landed: re-renders do not re-jump (DD-381).
+        TestBed.tick();
+        expect(landed).toEqual(["related-attributes"]);
     });
 
     it("the header badge shows the alias with the base type, the cards the alias alone (DET-26)", () => {

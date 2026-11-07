@@ -542,7 +542,8 @@ pins the raw name; the server would not recognise the display string).
 
 ### DD-380. The side navigation's anchors jump in place, not to the landing page
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-381 (same day — the user asked for the
+  anchor in the address and router navigation, which DD-381 delivers)
 - **Increment:** 7.21a
 - **Date:** 2026-11-07
 
@@ -587,3 +588,71 @@ clicks produce none, and its jump lands under the fixed navbar). A
 directive over the items (refused — one screen owns these links, and the
 stats bar's `(click)` is the precedent; a `DetailsNavigationItem` port
 would add a unit for two call sites in one template).
+
+The refusal of `routerLink` here was wrong in its first half: the router
+reuses a component across navigations that change only the fragment, so
+a fragment-only navigation over the current route is exactly the
+fragment-keeping navigation this screen needs (DD-381).
+
+### DD-381. The section anchors ride the router and ride the URL
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** The side navigation's items become `routerLink` anchors
+over the current route with the box id as the URL fragment, and the
+stats bar's emit routes the same fragment
+(`router.navigate([], { relativeTo, fragment })`). A click is a router
+navigation: the address names the section (`…/details/<guid>#related-
+attributes`), a back step walks the jumps, and the jump is shareable.
+The router's own `anchorScrolling` (on since 7.1, unused by these
+links until now) performs the scroll, seated below the fixed navbar by
+an offset set on the `ViewportScroller` at bootstrap — the router's
+`scrollOffset` option is read only on the `RouterModule.forRoot` path,
+and this app takes `provideRouter`. Because a card section's box does
+not exist yet at `NavigationEnd` of a cold arrival (the entity has not
+answered), one `afterRenderEffect` lands a fragment that arrived while
+its box was missing, on the render that brings the box; a fragment that
+arrives with its box already on the page (a click, a back or forward
+step) belongs to the router alone. The smooth travel is
+`scroll-behavior: smooth` on `html`, which the router's scroll calls
+honour and its position-restore calls override with `instant`.
+DD-380's `onNavClick`, `scrollToSection`, and `scroll-margin-top` rule
+leave with this record; UIC-18/UIC-19 keep their shapes (the lib's
+cancel-and-emit stays the lib's half, DD-154's pattern).
+
+**Reason.** The user asked, over DD-380's fix: "Would it be at all
+possible to get anchor links to work? With the anchor captured in the
+URL I mean. In general I'd prefer if navigation uses the router so it's
+transparent to the user." DD-380's handler hides the anchor: after a
+jump the address still names no section, sharing the screen at a
+section is impossible, and Back leaves the page instead of undoing the
+jump. The router already ships every half of this: `RouterLink`'s
+`fragment` input builds the href (the keyboard and middle-click path
+survives), a fragment-only navigation reuses the component (the router
+reuses a component when the route config is unchanged, and the fragment
+is not part of the route identity), and `anchorScrolling` scrolls to
+the id after the navigation. The two real gaps this record closes: the
+navbar offset (the router's option is dropped on the provider path —
+verified in the installed router: only `forRoot`'s factory calls
+`setOffset`), and the cold deep link (the router jumps at
+`NavigationEnd`, before the boxes exist). The offset is the legacy
+`PageScrollService`'s 68px, one constant in `app.config.ts`.
+
+**Alternatives.** Keeping DD-380 and pushing the anchor into the URL
+with `history.replaceState` beside the manual scroll (refused — a
+second history mechanism next to the router, and the back button still
+would not know the jumps). `anchorScrolling` with the option's
+`scrollOffset` (refused — read by nothing on this path; the
+`ViewportScroller.setOffset` call is where the jump actually reads the
+offset). Scoping the smooth travel to the screen's own scroll call
+instead of the CSS (refused — the router's jump does not take a
+behavior option, so CSS `scroll-behavior` is the only lever, and it
+lands the legacy's smooth glide on every anchor jump app-wide).
+Scrolling every fragment on every render (refused — it fights the
+router's position restore on back/forward, which is the half of the
+feature the user asked for; the landing effect fires only for a
+fragment whose box was missing when it arrived). A directive over the
+items (refused again, DD-380's refusal stands: `routerLink` is a
+directive already, and a second one adds nothing).
