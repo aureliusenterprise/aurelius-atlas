@@ -71,14 +71,17 @@ initResources:
 dnsResolver: ""
 
 # The upstreams the nginx template names (placeholders _API_UPSTREAM,
-# _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME). "" defaults in
-# 10.3: server/collector service DNS in this namespace. _NAME is the
+# _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME, and the
+# _LINEAGE_MODEL pair of 7.22a). "" defaults in 10.3: server/collector/
+# lineage-model service DNS in this namespace. _NAME is the
 # proxy_ssl_name — it must match the upstream certificate's SAN (DD-286).
 nginx:
     apiUpstream: ""
     apiUpstreamName: ""
     otelUpstream: ""
     otelUpstreamName: ""
+    lineageModelUpstream: ""
+    lineageModelUpstreamName: ""
     # Override for the edge exporter's endpoint — the template's
     # _OTLP_ENDPOINT, nginx's own edge-span leg (DD-239). "" derives
     # https://<collector>:<collector.legacyGrpcPort> (CHT-25). The SPA's
@@ -117,6 +120,11 @@ config:
     # write affordances gate on atlas-write in this client's roles. Pairs with
     # the server's auth_client_id (src/app/config.ts).
     atlasClientId: aurelius-atlas-server
+    # The lineage-model API's base URL as the browser sees it (7.22a, LDG-07):
+    # the same-origin path this chart's nginx proxies. The SPA defaults to the
+    # same value without the key; it is spelled here so a deployment that moves
+    # the aux API off this nginx changes one value.
+    lineageModelBaseUrl: /lineage-model
     keycloak:
         clientId: aurelius
         url: ""
@@ -143,6 +151,11 @@ probes:
 server:
     service: ""
     port: 21000
+# The lineage-model API this nginx proxies /lineage-model/ to (7.22a,
+# LDG-06): the details page's lineage diagram data path (LM-01).
+lineageModel:
+    service: ""
+    port: 21002
 collector:
     service: ""
     # The browser leg (OTLP/HTTP + OIDC) — the /otel/ proxy's upstream

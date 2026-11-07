@@ -91,12 +91,14 @@ services:
             AURELIUS_ATLAS_LINEAGE_MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-lineage-model-key.pem
             AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CA_FILE: /certs/ca.pem
             # The e2e issuer (dev/keycloak, TLS listener): GET / verifies the
-            # caller's bearer token (LM-08). Audience `aurelius` — the webapp's
-            # client id, the audience of the tokens the chain forwards (AUX-04);
-            # the suite mints its test tokens for it.
+            # caller's bearer token (LM-08). The app keeps its own audience and
+            # joins the browser client as the extra audience (DD-385) — the
+            # suite mints its test tokens for `aurelius`, the audience the
+            # chain forwards (AUX-04); both values ride the project .env.
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: ${AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE:?}
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES: ${AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES:?}
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /certs/ca.pem
             AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL: http://fixture-atlas:21000
             AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL: https://aurelius-atlas-data2model:21001

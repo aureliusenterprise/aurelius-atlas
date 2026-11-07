@@ -31,8 +31,12 @@ def test__the_settings_are_read_from_prefixed_variables(environment: pytest.Monk
     assert str(settings.data2model_url) == "https://localhost:21001/"
     assert settings.auth_realm == "master"
     assert settings.auth_audience == "aurelius-atlas-lineage-model"
+    assert settings.auth_extra_audiences == []  # unset: only the app's own client (DD-385)
     assert settings.otel_client_id == "otel-lineage-model"
     assert settings.otel_endpoint == "https://localhost:4319"
+    # The browser client joins as a JSON list (DD-385, AUT-10).
+    environment.setenv("AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES", '["aurelius"]')
+    assert LineageModelSettings().auth_extra_audiences == ["aurelius"]  # pyright: ignore[reportCallIssue]
     # The ingest secret's value never appears in the repr (DD-196).
     environment.setenv("AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET", "s3cr3t")
     assert "s3cr3t" not in repr(LineageModelSettings())  # pyright: ignore[reportCallIssue]

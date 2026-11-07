@@ -3,6 +3,13 @@
         "secure": true,
         "target": "https://127.0.0.1:21000"
     },
+    "/lineage-model": {
+        "pathRewrite": {
+            "^/lineage-model": ""
+        },
+        "secure": true,
+        "target": "https://localhost:21002"
+    },
     "/otel": {
         "pathRewrite": {
             "^/otel": ""

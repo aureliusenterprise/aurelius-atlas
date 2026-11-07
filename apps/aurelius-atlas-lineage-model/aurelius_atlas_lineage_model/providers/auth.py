@@ -20,6 +20,7 @@ def build_auth(settings: LineageModelSettings, http: httpx.Client | None = None)
             server_url=str(settings.auth_server_url),
             realm=settings.auth_realm,
             audience=settings.auth_audience,
+            extra_audiences=tuple(settings.auth_extra_audiences),
             ca_file=str(settings.auth_ca_file) if settings.auth_ca_file else None,
         ),
         http=http,

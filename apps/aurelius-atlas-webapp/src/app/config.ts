@@ -64,6 +64,17 @@ export interface AppConfig {
      * `auth_client_id` and defaults to its value, `aurelius-atlas-server`.
      */
     readonly atlasClientId?: string;
+
+    /**
+     * Base URL that the lineage-model auxiliary API is reachable under,
+     * same-origin (e.g. `/lineage-model`) — the details page's lineage diagram
+     * data path (7.22a, LDG-07). Provided to `aurelius-atlas-data-access` via
+     * the `LINEAGE_MODEL_BASE_URL` token; the client's own default is the same
+     * path, so the key is optional and only a deployment that moves the aux API
+     * off the webapp's nginx sets it (the legacy's per-environment deployment
+     * proxy is not ported, DD-139).
+     */
+    readonly lineageModelBaseUrl?: string;
 }
 
 /**
@@ -110,6 +121,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         appCopyright,
         appVersion,
         atlasClientId,
+        lineageModelBaseUrl,
     } = value as Partial<AppConfig>;
 
     if (typeof keycloak !== "object" || keycloak === null) {
@@ -133,6 +145,10 @@ export function parseAppConfig(value: unknown): AppConfig {
         requireString("atlasClientId", atlasClientId);
     }
 
+    if (lineageModelBaseUrl !== undefined) {
+        requireString("lineageModelBaseUrl", lineageModelBaseUrl);
+    }
+
     const requireYear = (name: string, field: unknown): number => {
         if (typeof field !== "number" || !Number.isInteger(field)) {
             throw new TypeError(`Invalid app config: "${name}" must be an integer year.`);
@@ -152,6 +168,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         appCopyright: requireYear("appCopyright", appCopyright),
         appVersion: requireString("appVersion", appVersion),
         ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
+        ...(lineageModelBaseUrl ? { lineageModelBaseUrl } : {}),
         atlasClientId: atlasClientId ?? DEFAULT_ATLAS_CLIENT_ID,
     };
 }

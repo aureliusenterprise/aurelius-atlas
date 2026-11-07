@@ -23,7 +23,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { DATE_PIPE_DEFAULT_TIMEZONE, ViewportScroller } from "@angular/common";
 import { ApplicationConfig, Provider } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { API_BASE_URL } from "aurelius-atlas-data-access";
+import { API_BASE_URL, LINEAGE_MODEL_BASE_URL } from "aurelius-atlas-data-access";
 import { AURELIUS_METER_PROVIDER, AURELIUS_WEB_TRACER_PROVIDER } from "aurelius-atlas-observability";
 import Keycloak from "keycloak-js";
 import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
@@ -77,10 +77,10 @@ function makeKeycloakStub(): KeycloakStub {
  * creation, which these tests never do).
  * @returns the provider list, for inspection
  */
-async function bootstrap(keycloak: KeycloakStub): Promise<Provider[]> {
+async function bootstrap(keycloak: KeycloakStub, payload: unknown = configPayload): Promise<Provider[]> {
     vi.stubGlobal(
         "fetch",
-        vi.fn(async () => new Response(JSON.stringify(configPayload), { status: 200 })),
+        vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 })),
     );
     const appConfig: ApplicationConfig = await initialize();
     vi.unstubAllGlobals();
@@ -119,13 +119,15 @@ describe("app providers (7.3)", () => {
         });
     });
 
-    it("bearerTokenConfig covers /api calls only (APC-06)", () => {
-        expect(bearerTokenConfig).toHaveLength(1);
-        const { urlPattern } = bearerTokenConfig[0];
-        expect(urlPattern.test("/api/atlas/admin/version")).toBe(true);
-        expect(urlPattern.test("/api/atlas/v2/types/typedefs")).toBe(true);
-        expect(urlPattern.test("/otel/v1/traces")).toBe(false);
-        expect(urlPattern.test("/config.json")).toBe(false);
+    it("bearerTokenConfig covers /api and /lineage-model calls only (APC-06, LDG-05)", () => {
+        expect(bearerTokenConfig).toHaveLength(2);
+        const [api, lineageModel] = bearerTokenConfig;
+        expect(api.urlPattern.test("/api/atlas/admin/version")).toBe(true);
+        expect(api.urlPattern.test("/api/atlas/v2/types/typedefs")).toBe(true);
+        expect(lineageModel.urlPattern.test("/lineage-model/?guid=g-1")).toBe(true);
+        expect(lineageModel.urlPattern.test("/api/atlas/admin/version")).toBe(false);
+        expect(api.urlPattern.test("/otel/v1/traces")).toBe(false);
+        expect(api.urlPattern.test("/config.json")).toBe(false);
     });
 
     it("assembles the bearer config into the provider set (APC-06)", async () => {
@@ -157,6 +159,16 @@ describe("app providers (7.3)", () => {
     it("provides the API base URL from the runtime config (APC-01)", async () => {
         await bootstrap(makeKeycloakStub());
         expect(TestBed.inject(API_BASE_URL)).toBe("/api");
+    });
+
+    it("leaves the lineage-model default when the config omits the key (LDG-07)", async () => {
+        await bootstrap(makeKeycloakStub());
+        expect(TestBed.inject(LINEAGE_MODEL_BASE_URL)).toBe("/lineage-model");
+    });
+
+    it("provides the lineage-model base URL from the runtime config (LDG-07)", async () => {
+        await bootstrap(makeKeycloakStub(), { ...configPayload, lineageModelBaseUrl: "/aux/lineage" });
+        expect(TestBed.inject(LINEAGE_MODEL_BASE_URL)).toBe("/aux/lineage");
     });
 
     it("assembles the SDK providers when telemetry is on, the default (SPL-11)", async () => {
@@ -209,6 +221,19 @@ describe("app providers (7.3)", () => {
         await new Promise((resolve) => setTimeout(resolve));
 
         const req = TestBed.inject(HttpTestingController).expectOne("/api/atlas/admin/version");
+        expect(req.request.headers.get("Authorization")).toBe("Bearer test-token");
+        req.flush({});
+    });
+
+    it("the bearer interceptor signs /lineage-model calls (APC-06, LDG-05)", async () => {
+        await bootstrap(makeKeycloakStub());
+
+        TestBed.inject(HttpClient)
+            .get("/lineage-model/", { params: { guid: "g-1" } })
+            .subscribe();
+        await new Promise((resolve) => setTimeout(resolve));
+
+        const req = TestBed.inject(HttpTestingController).expectOne("/lineage-model/?guid=g-1");
         expect(req.request.headers.get("Authorization")).toBe("Bearer test-token");
         req.flush({});
     });

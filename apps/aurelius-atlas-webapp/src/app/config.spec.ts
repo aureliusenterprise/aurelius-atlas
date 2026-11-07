@@ -75,6 +75,22 @@ describe("parseAppConfig", () => {
     it("throws when atlasClientId is present but empty (DD-324)", () => {
         expect(() => parseAppConfig({ ...valid, atlasClientId: "" })).toThrow(/"atlasClientId"/);
     });
+
+    it("keeps lineageModelBaseUrl absent when the config omits it (LDG-07)", () => {
+        // The client's own /lineage-model default is what the app runs on, so
+        // the parsed config must not invent a key (DD-387's override-only rule).
+        expect("lineageModelBaseUrl" in parseAppConfig(valid)).toBe(false);
+    });
+
+    it("keeps an explicit lineageModelBaseUrl (LDG-07)", () => {
+        expect(parseAppConfig({ ...valid, lineageModelBaseUrl: "/aux/lineage" }).lineageModelBaseUrl).toBe(
+            "/aux/lineage",
+        );
+    });
+
+    it("throws when lineageModelBaseUrl is present but empty (LDG-07)", () => {
+        expect(() => parseAppConfig({ ...valid, lineageModelBaseUrl: "" })).toThrow(/"lineageModelBaseUrl"/);
+    });
 });
 
 describe("metricsUrl", () => {
