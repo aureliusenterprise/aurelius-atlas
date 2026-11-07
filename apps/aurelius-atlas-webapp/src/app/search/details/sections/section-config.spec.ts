@@ -1,13 +1,13 @@
 import { LAYOUTS, layoutForTypeName } from "./section-config";
 
 /**
- * The config table (DET-16, DD-366): the seven layouts key for key the
- * spec's table — anchors, titles, seed keys, People box flag, stats, and
- * nav. The table itself is the fixture; these specs pin the dispatch's
- * lookup and the shapes one renderer depends on.
+ * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33): the eight
+ * layouts key for key the spec's table — anchors, titles, seed keys, People
+ * box flag, stats, and nav. The table itself is the fixture; these specs pin
+ * the dispatch's lookup and the shapes one renderer depends on.
  */
 describe("Section config (DET-16)", () => {
-    it("holds exactly the seven m4i layouts (DET-16)", () => {
+    it("holds exactly the eight m4i layouts (DET-16, DET-33)", () => {
         expect(Object.keys(LAYOUTS).sort()).toEqual([
             "m4i_collection",
             "m4i_data_attribute",
@@ -15,11 +15,12 @@ describe("Section config (DET-16)", () => {
             "m4i_data_entity",
             "m4i_dataset",
             "m4i_field",
+            "m4i_generic_process",
             "m4i_system",
         ]);
     });
 
-    it("maps each of the seven names to its layout (DET-15, DET-16)", () => {
+    it("maps each of the eight names to its layout (DET-15, DET-16)", () => {
         for (const name of Object.keys(LAYOUTS)) {
             expect(layoutForTypeName(name)).toBe(LAYOUTS[name as keyof typeof LAYOUTS]);
         }
@@ -27,6 +28,9 @@ describe("Section config (DET-16)", () => {
 
     it("maps every other name to no layout (DET-15)", () => {
         expect(layoutForTypeName("DataSet")).toBeUndefined();
+        // The bare Atlas `Process` keeps the default: the legacy's dispatch
+        // names the m4i type, not the built-in (DET-33, DD-383).
+        expect(layoutForTypeName("Process")).toBeUndefined();
         expect(layoutForTypeName("m4i_person")).toBeUndefined();
         expect(layoutForTypeName("")).toBeUndefined();
     });
@@ -54,6 +58,9 @@ describe("Section config (DET-16)", () => {
         expect(LAYOUTS.m4i_dataset.peopleBox).toBe(false);
         expect(LAYOUTS.m4i_collection.peopleBox).toBe(false);
         expect(LAYOUTS.m4i_system.peopleBox).toBe(false);
+        // The process page carries a `processOwner` end and no People box —
+        // DET-23's `m4i_field` case (DET-33, DD-383).
+        expect(LAYOUTS.m4i_generic_process.peopleBox).toBe(false);
     });
 
     it("lists the spec table's anchors and seed keys, in order (DET-16)", () => {
@@ -73,12 +80,57 @@ describe("Section config (DET-16)", () => {
         expect(shape("m4i_dataset")).toEqual([
             ["related-fields", ["fields"]],
             ["related-datasets", ["childDataset"]],
+            // DET-32, DD-382: the dataset's own lineage ends, in the legacy
+            // positions after Child Datasets.
+            ["related-producers", ["outputFromProcesses"]],
+            ["related-consumers", ["inputToProcesses"]],
         ]);
         expect(shape("m4i_collection")).toEqual([["related-datasets", ["datasets"]]]);
         expect(shape("m4i_system")).toEqual([
             ["related-collections", ["collections"]],
             ["related-systems", ["childSystem"]],
             ["related-processes", ["processes"]],
+        ]);
+        // DET-33: the process row's three sections, the legacy order.
+        expect(shape("m4i_generic_process")).toEqual([
+            ["related-systems", ["system"]],
+            ["related-inputs", ["inputs"]],
+            ["related-outputs", ["outputs"]],
+        ]);
+    });
+
+    it("keeps the stats and nav of 7.21c's rows in the legacy order (DET-32, DET-33)", () => {
+        const labels = (name: keyof typeof LAYOUTS) => LAYOUTS[name].stats.map((stat) => stat.anchor);
+        const nav = (name: keyof typeof LAYOUTS) => LAYOUTS[name].nav.map((entry) => entry.anchor);
+
+        expect(labels("m4i_dataset")).toEqual([
+            "related-fields",
+            "related-datasets",
+            "related-producers",
+            "related-consumers",
+            "properties-details",
+        ]);
+        expect(nav("m4i_dataset")).toEqual([
+            "description-details",
+            "related-fields",
+            "related-datasets",
+            "related-producers",
+            "related-consumers",
+            "properties-details",
+        ]);
+
+        expect(labels("m4i_generic_process")).toEqual([
+            "related-systems",
+            "related-inputs",
+            "related-outputs",
+            "properties-details",
+        ]);
+        expect(nav("m4i_generic_process")).toEqual([
+            "description-details",
+            "related-systems",
+            "related-inputs",
+            "related-outputs",
+            "properties-details",
         ]);
     });
 

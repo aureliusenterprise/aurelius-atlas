@@ -6,10 +6,11 @@ import { LAYOUTS, type TypeLayout } from "./section-config";
 import { DetailsLayoutState } from "./layout.state";
 
 /**
- * The layout dispatch (DET-15, DD-366): the seven names answer directly,
- * a type naming one of them among its super types inherits that layout,
- * and everything else — built-in errors among them — keeps the default.
- * The typedef cache rule: one read per name, one URL (APC-01).
+ * The layout dispatch (DET-15, DD-366; 7.21c's eighth name, DET-33/DD-383):
+ * the eight names answer directly, a type naming one of them among its super
+ * types inherits that layout, and everything else — built-in errors among
+ * them — keeps the default. The typedef cache rule: one read per name, one
+ * URL (APC-01).
  */
 const TYPEDEF_URL = "/api/atlas/v2/types/typedef/name/";
 
@@ -44,7 +45,7 @@ async function settle() {
 }
 
 describe("Layout dispatch (DET-15)", () => {
-    it("each of the seven names answers its layout without a read (DET-15)", () => {
+    it("each of the eight names answers its layout without a read (DET-15, DET-33)", () => {
         const { store, httpMock } = setup();
 
         for (const name of Object.keys(LAYOUTS)) {
@@ -52,6 +53,21 @@ describe("Layout dispatch (DET-15)", () => {
             expect(store.layout()).toBe(LAYOUTS[name as keyof typeof LAYOUTS]);
         }
         httpMock.expectNone(TYPEDEF_URL); // a direct hit never reads a typedef
+        httpMock.verify();
+    });
+
+    it("the built-in Process keeps the default: the walk ends at its error (DET-33)", async () => {
+        const { store, httpMock } = setup();
+
+        // DET-33's row names the m4i type, as the legacy's dispatch did; a
+        // plain `Process` (the Atlas built-in) walks, its typedef read
+        // answers SYSTEM_TYPE, and the branch ends at the default.
+        store.resolve("Process");
+        expect(store.layout()).toBeUndefined();
+        flushTypeDefs(httpMock, "error");
+        await settle();
+
+        expect(store.layout()).toBeUndefined();
         httpMock.verify();
     });
 

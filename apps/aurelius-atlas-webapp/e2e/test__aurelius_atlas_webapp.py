@@ -697,11 +697,13 @@ def test__details_screen_shows_a_seeded_entity(authenticated: Page, root_url: st
 
 
 def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dict[str, str]:
-    """Seed the DET-27 m4i mini-graph through the proxy's bulk endpoint.
+    """Seed the DET-27/DET-34 m4i mini-graph through the proxy's bulk endpoint.
 
     One bulk create carries the whole graph: a domain, an entity with two
     attributes and two persons on its people ends, a field on one attribute's
-    ``fields`` end, and a dataset holding the field. The ends ride
+    ``fields`` end, a dataset holding the field, and — since 7.21c — a system,
+    a process seeded from its own ``inputs``/``outputs``/``system`` ends to the
+    dataset and system, and a second process left unconnected. The ends ride
     ``relationshipAttributes`` naming the request's own temporary guids, which
     the server resolves through the request's guid assignments (REL-11 — the
     editor scenarios' edge-seed idiom, per-request this time). Names are
@@ -717,6 +719,9 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
         "dataset": f"zz{run}warehouse",
         "owner": f"zz{run}owner",
         "steward": f"zz{run}steward",
+        "system": f"zz{run}elastic",
+        "process": f"zz{run}pipeline",
+        "lonely": f"zz{run}lonely",
     }
 
     def entity(temp_guid: str, type_name: str, key: str, **extra: object) -> dict:
@@ -781,6 +786,23 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
             ),
             entity("-6", "m4i_person", "owner"),
             entity("-7", "m4i_person", "steward"),
+            # DET-34's lineage nodes (7.21c), added without renaming the
+            # DET-27 nodes: a system, a process seeded from its own ends
+            # (inputs/outputs to the dataset, system to the system — so the
+            # dataset reads back one producer and one consumer), and a second
+            # process left unconnected (DET-33's zero case).
+            entity("-8", "m4i_system", "system"),
+            entity(
+                "-9",
+                "m4i_generic_process",
+                "process",
+                relationshipAttributes={
+                    "inputs": [{"guid": "-5", "typeName": "m4i_dataset"}],
+                    "outputs": [{"guid": "-5", "typeName": "m4i_dataset"}],
+                    "system": [{"guid": "-8", "typeName": "m4i_system"}],
+                },
+            ),
+            entity("-10", "m4i_generic_process", "lonely"),
         ]
     }
 
@@ -794,7 +816,7 @@ def _seed_m4i_mini_graph(page: Page, root_url: str, token: str, run: str) -> dic
 
     assignments = response.json()["guidAssignments"]
 
-    return {key: assignments[temp_guid] for key, temp_guid in zip(names, [f"-{i}" for i in range(8)], strict=True)}
+    return {key: assignments[temp_guid] for key, temp_guid in zip(names, [f"-{i}" for i in range(11)], strict=True)}
 
 
 def _active_edge(entity: dict, key: str, guid: str) -> bool:
@@ -983,11 +1005,141 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
             "m4i_data_attribute",
             "m4i_data_domain",
             "m4i_field",
+            "m4i_system",
+            "m4i_generic_process",
             "m4i_dataset",
             "m4i_person",
         ]:
             _purge_type(authenticated, root_url, user_token, type_name)
         _delete_entity(authenticated, root_url, user_token, dataset_guid)
+
+
+def test__the_dataset_and_process_pages_render_their_lineage_sections(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """Producers/Consumers on the m4i dataset, and the eighth layout on its process (DET-32..DET-34).
+
+    The 7.21c screens on the same seeded mini-graph: opened at the m4i
+    dataset, the Producers box counts 1 and holds the process card and the
+    Consumers box counts it too — both seeded from the dataset's own lineage
+    ends (DET-32), with the stats bar in the legacy order (the deferred
+    lineage-model entry out, DD-383). Clicking the producer card routes the
+    screen to the process, which renders the eighth layout: Systems/Inputs/
+    Outputs boxes with their one card each, no People box (DET-33). The
+    unconnected process renders the same three boxes at zero. Self-cleaned by
+    the purge helper (DD-223), which the DET-27 finally gained the two new
+    types for.
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+    dataset_guid = guids["dataset"]
+    process_guid = guids["process"]
+    lonely_guid = guids["lonely"]
+
+    try:
+        # The lineage edges are separate near-real-time records (CLS-12's
+        # race): wait them visible at both ends before the screens read.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            dataset_guid,
+            predicate=lambda entity: (
+                _active_edge(entity, "fields", guids["field"])
+                and _active_edge(entity, "outputFromProcesses", process_guid)
+                and _active_edge(entity, "inputToProcesses", process_guid)
+            ),
+        )
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            process_guid,
+            predicate=lambda entity: (
+                _active_edge(entity, "system", guids["system"])
+                and _active_edge(entity, "inputs", dataset_guid)
+                and _active_edge(entity, "outputs", dataset_guid)
+            ),
+        )
+
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{dataset_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}warehouse")
+
+        # DET-32: the two lineage boxes at their seeded counts — one process
+        # card each, read through the same bulk path as every section.
+        for anchor in ("related-producers", "related-consumers"):
+            box = authenticated.locator(f"#{anchor}")
+            expect(box).to_be_visible()
+            expect(box.locator(".aurelius-card-section-count")).to_contain_text("1 result(s)")
+            cards = box.locator("aurelius-atlas-ui-entity-card")
+            expect(cards).to_have_count(1)
+            expect(cards.first).to_contain_text(f"zz{run}pipeline")
+
+        # DET-32: the stats bar in the legacy order (lineage-model and Data
+        # Quality out, DD-369/DD-383), the two lineage counts live. The strip
+        # renders its labels uppercase (CSS text-transform), so the labels are
+        # compared case-folded.
+        stats = [
+            (
+                item.locator("p.heading a").inner_text().strip().casefold(),
+                item.locator("p.title").inner_text().strip(),
+            )
+            for item in authenticated.locator(".aurelius-details-stats .level-item").all()
+        ]
+        assert stats == [
+            ("fields", "1"),
+            ("child datasets", "0"),
+            ("producers", "1"),
+            ("consumers", "1"),
+            ("properties", "0"),
+        ]
+
+        # DET-32/DET-33: the producer card's title routes the screen to the
+        # process — the eighth layout, no People box, three boxes at one.
+        authenticated.locator("#related-producers aurelius-atlas-ui-entity-card a").first.click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{process_guid}$"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}pipeline")
+        expect(authenticated.locator("#people-details")).to_have_count(0)
+
+        boxes = {
+            "related-systems": f"zz{run}elastic",
+            "related-inputs": f"zz{run}warehouse",
+            "related-outputs": f"zz{run}warehouse",
+        }
+        for anchor, expected in boxes.items():
+            box = authenticated.locator(f"#{anchor}")
+            expect(box).to_be_visible()
+            cards = box.locator("aurelius-atlas-ui-entity-card")
+            expect(cards).to_have_count(1)
+            expect(cards.first).to_contain_text(expected)
+
+        stats = [
+            item.locator("p.heading a").inner_text().strip().casefold()
+            for item in authenticated.locator(".aurelius-details-stats .level-item").all()
+        ]
+        assert stats == ["systems", "inputs", "outputs", "properties"]
+
+        # DET-33: the unconnected process renders the same layout at zeros —
+        # the empty boxes with their count lines, no cards.
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{lonely_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}lonely")
+        for anchor in ("related-systems", "related-inputs", "related-outputs"):
+            box = authenticated.locator(f"#{anchor}")
+            expect(box).to_be_visible()
+            expect(box.locator(".aurelius-card-section-count")).to_contain_text("0 result(s)")
+            expect(box.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
+    finally:
+        for type_name in [
+            "m4i_generic_process",
+            "m4i_system",
+            "m4i_data_attribute",
+            "m4i_data_entity",
+            "m4i_data_domain",
+            "m4i_field",
+            "m4i_dataset",
+            "m4i_person",
+        ]:
+            _purge_type(authenticated, root_url, user_token, type_name)
 
 
 def test__business_explore_lists_glossary_entities_without_a_url_query(

@@ -449,6 +449,11 @@ function end(guid: string, displayText: string): Record<string, unknown> {
     return { guid, displayText, typeName: "m4i_data_attribute", name: displayText };
 }
 
+/** A related-entity end naming one type (7.21c's lineage ends). */
+function endOf(guid: string, typeName: string, displayText: string): Record<string, unknown> {
+    return { guid, displayText, typeName, name: displayText };
+}
+
 /** A person end of the seeded `relationshipAttributes`. */
 function person(guid: string, displayText: string): Record<string, unknown> {
     return { guid, displayText, typeName: "person" };
@@ -495,6 +500,59 @@ function attributesAnswer(overrides: Record<string, Record<string, unknown>> = {
                 ...overrides["a2"],
             },
         ],
+        referredEntities: {},
+    };
+}
+
+/**
+ * The m4i dataset body with its lineage ends (DET-32): one process on
+ * `outputFromProcesses` (a producer) and the same on `inputToProcesses` (a
+ * consumer), no fields and no children.
+ */
+function m4iDataset(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+    return {
+        entity: {
+            guid: "ds-1",
+            typeName: "m4i_dataset",
+            attributes: { name: "hourly_index", qualifiedName: "hourly_index@cluster" },
+            relationshipAttributes: {
+                outputFromProcesses: [endOf("pr-1", "m4i_generic_process", "build_index")],
+                inputToProcesses: [endOf("pr-1", "m4i_generic_process", "build_index")],
+            },
+            ...overrides,
+        },
+        referredEntities: {},
+    };
+}
+
+/** The bulk answer for the dataset's two lineage sections: the one process. */
+function processAnswer(): Record<string, unknown> {
+    return {
+        entities: [
+            {
+                guid: "pr-1",
+                typeName: "m4i_generic_process",
+                attributes: { name: "build_index", qualifiedName: "build_index@cluster", definition: "Indexes it." },
+            },
+        ],
+        referredEntities: {},
+    };
+}
+
+/** The m4i process body: the three forward ends of DET-33's row. */
+function m4iProcess(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+    return {
+        entity: {
+            guid: "pr-1",
+            typeName: "m4i_generic_process",
+            attributes: { name: "build_index", qualifiedName: "build_index@cluster" },
+            relationshipAttributes: {
+                system: [endOf("sy-1", "m4i_system", "elastic1")],
+                inputs: [endOf("ds-1", "m4i_dataset", "raw_logs")],
+                outputs: [endOf("ds-2", "m4i_dataset", "hourly_index")],
+            },
+            ...overrides,
+        },
         referredEntities: {},
     };
 }
@@ -1007,6 +1065,102 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(compiled.querySelector("table.aurelius-details-properties")).toBeTruthy();
         expect(compiled.querySelector("#related-fields")).toBeNull();
         httpMock.verify();
+    });
+
+    it("an m4i dataset renders the Producers and Consumers boxes (DET-32)", () => {
+        const { fixture, compiled, httpMock } = setup("ds-1");
+        arriveSections(fixture, httpMock, m4iDataset(), processAnswer());
+
+        // DET-32: the two lineage boxes after Child Datasets, each seeded
+        // from the dataset's own end and resolved to the one process card.
+        const producers = compiled.querySelector("#related-producers");
+        const consumers = compiled.querySelector("#related-consumers");
+        expect(producers).toBeTruthy();
+        expect(consumers).toBeTruthy();
+        expect(normalize(producers?.querySelector("h3")?.textContent)).toBe("Producers");
+        expect(normalize(consumers?.querySelector("h3")?.textContent)).toBe("Consumers");
+        expect(compiled.querySelectorAll("#related-producers aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        expect(compiled.querySelectorAll("#related-consumers aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        expect(normalize(producers?.querySelector("aurelius-atlas-ui-entity-card")?.textContent)).toContain(
+            "build_index",
+        );
+        // The card body is the uniform one (DET-19): the seeded definition text.
+        expect(producers?.querySelector("aurelius-atlas-ui-entity-card")?.textContent).toContain("Indexes it.");
+
+        // DET-32: the stats bar gains the two counts in the legacy order
+        // (the lineage-model and Data Quality entries stay out, DD-369/383).
+        const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
+            const heading = item.querySelector("p.heading a")!;
+            return [
+                normalize(heading.textContent) ?? "",
+                heading.getAttribute("href") ?? "",
+                normalize(item.querySelector("p.title")?.textContent) ?? "",
+            ];
+        });
+        expect(stats).toEqual([
+            ["Fields", "#related-fields", "0"],
+            ["Child Datasets", "#related-datasets", "0"],
+            ["Producers", "#related-producers", "1"],
+            ["Consumers", "#related-consumers", "1"],
+            ["Properties", "#properties-details", "0"],
+        ]);
+
+        // DET-32: the side navigation gains the two links in the legacy
+        // positions — the DD-369 rule keeps the deferred lineage link out.
+        const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
+            normalize(link.textContent),
+        );
+        expect(items).toEqual(["Description", "Fields", "Child Datasets", "Producers", "Consumers", "Properties"]);
+        // No People box on this layout (DET-16's row).
+        expect(compiled.querySelector("#people-details")).toBeNull();
+    });
+
+    it("an m4i process renders the eighth layout's three boxes (DET-33)", () => {
+        const { fixture, compiled, httpMock } = setup("pr-1");
+        arriveSections(fixture, httpMock, m4iProcess(), {
+            entities: [
+                { guid: "sy-1", typeName: "m4i_system", attributes: { name: "elastic1" } },
+                { guid: "ds-1", typeName: "m4i_dataset", attributes: { name: "raw_logs" } },
+                { guid: "ds-2", typeName: "m4i_dataset", attributes: { name: "hourly_index" } },
+            ],
+            referredEntities: {},
+        });
+
+        // DET-33: the three section boxes with the legacy anchors; no
+        // People box (the legacy page has none — DET-23's field case).
+        expect(normalize(compiled.querySelector("#related-systems h3")?.textContent)).toBe("Systems");
+        expect(normalize(compiled.querySelector("#related-inputs h3")?.textContent)).toBe("Inputs");
+        expect(normalize(compiled.querySelector("#related-outputs h3")?.textContent)).toBe("Outputs");
+        expect(compiled.querySelector("#people-details")).toBeNull();
+        expect(compiled.querySelectorAll("#related-systems aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        expect(compiled.querySelectorAll("#related-inputs aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        expect(compiled.querySelectorAll("#related-outputs aurelius-atlas-ui-entity-card")).toHaveLength(1);
+
+        // DET-33: the stats bar of the row, the lineage-model stat out with
+        // its deferred box (DD-383).
+        const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
+            const heading = item.querySelector("p.heading a")!;
+            return [
+                normalize(heading.textContent) ?? "",
+                heading.getAttribute("href") ?? "",
+                normalize(item.querySelector("p.title")?.textContent) ?? "",
+            ];
+        });
+        expect(stats).toEqual([
+            ["Systems", "#related-systems", "1"],
+            ["Inputs", "#related-inputs", "1"],
+            ["Outputs", "#related-outputs", "1"],
+            ["Properties", "#properties-details", "0"],
+        ]);
+
+        // DET-33: the navigation of the row, the deferred box's link out.
+        const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
+            normalize(link.textContent),
+        );
+        expect(items).toEqual(["Description", "Systems", "Inputs", "Outputs", "Properties"]);
+
+        // No typedef read: the name is a direct dispatch hit (DET-15).
+        httpMock.expectNone(TYPEDEF_URL);
     });
 });
 

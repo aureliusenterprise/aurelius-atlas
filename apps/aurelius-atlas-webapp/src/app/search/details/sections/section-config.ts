@@ -1,10 +1,11 @@
 /**
- * The seven m4i layouts as one config table (DET-16, DD-366): per type the
- * description box, the People box, the ordered card sections, the stats-bar
- * entries, and the side-navigation entries. The legacy shipped nine
- * copy-pasted layout components (`apps/atlas/src/app/search/details/<type>/`
- * in the Aurelius source); this table is their content, and one renderer
- * draws them all.
+ * The eight m4i layouts as one config table (DET-16, DD-366; 7.21c's eighth
+ * row, DET-33/DD-383): per type the description box, the People box, the
+ * ordered card sections, the stats-bar entries, and the side-navigation
+ * entries. The legacy shipped nine copy-pasted layout components
+ * (`apps/atlas/src/app/search/details/<type>/` in the Aurelius source); this
+ * table is their content, and one renderer draws them all (the person page
+ * stays deferred — the last row 7.21c does not take).
  *
  * Every string is the Aurelius catalogue key it shows (DET-04, SHL-08): the
  * `$localize` id names the key and the fallback text is that key's English
@@ -63,7 +64,7 @@ export interface TypeLayout {
     readonly nav: readonly NavDef[];
 }
 
-/** The layout key: one of the seven m4i catalogue types. */
+/** The layout key: one of the eight m4i catalogue types. */
 export type M4iLayoutType =
     | "m4i_data_domain"
     | "m4i_data_entity"
@@ -71,14 +72,16 @@ export type M4iLayoutType =
     | "m4i_field"
     | "m4i_dataset"
     | "m4i_collection"
-    | "m4i_system";
+    | "m4i_system"
+    | "m4i_generic_process";
 
 /**
- * The seven layouts, key for key the spec's table (DET-16). The stats and
- * navigation list the rendered boxes only: every deferred section's stat and
- * link stays out (DD-369 — a link to a box that is not rendered would strand
- * the reader). Built once at load; `$localize` resolves per locale at compile
- * time.
+ * The eight layouts, key for key the spec's table (DET-16, amended by 7.21c's
+ * DET-32/DET-33 rows). The stats and navigation list the rendered boxes only:
+ * every deferred section's stat and link stays out (DD-369, and DD-383's
+ * lineage-model entries among them — a link to a box that is not rendered
+ * would strand the reader). Built once at load; `$localize` resolves per
+ * locale at compile time.
  */
 export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
     m4i_data_domain: {
@@ -264,6 +267,21 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.dataset.datasetsCards.title:Child Datasets`,
                 seedKeys: ["childDataset"],
             },
+            // DET-32, DD-382: the dataset's own lineage ends — the processes
+            // it outputs from (`outputFromProcesses`) and outputs to
+            // (`inputToProcesses`) — the demo's Producers and Consumers
+            // boxes. 7.21a's deferral misread them as reverse lookups; the
+            // legacy components select these very ends off the opened entity.
+            {
+                anchor: "related-producers",
+                title: $localize`:@@search.details.dataset.producersCards.title:Producers`,
+                seedKeys: ["outputFromProcesses"],
+            },
+            {
+                anchor: "related-consumers",
+                title: $localize`:@@search.details.dataset.consumersCards.title:Consumers`,
+                seedKeys: ["inputToProcesses"],
+            },
         ],
         stats: [
             {
@@ -275,6 +293,18 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.dataset.childDatasets:Child Datasets`,
                 anchor: "related-datasets",
                 source: { kind: "section", anchor: "related-datasets" },
+            },
+            // DET-32: the legacy bar's Producers and Consumers counts (the
+            // lineage-model and Data Quality entries stay out, DD-369/DD-383).
+            {
+                label: $localize`:@@search.details.dataset.producers:Producers`,
+                anchor: "related-producers",
+                source: { kind: "section", anchor: "related-producers" },
+            },
+            {
+                label: $localize`:@@search.details.dataset.consumers:Consumers`,
+                anchor: "related-consumers",
+                source: { kind: "section", anchor: "related-consumers" },
             },
             {
                 label: $localize`:@@search.details.dataset.properties:Properties`,
@@ -289,6 +319,16 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             {
                 label: $localize`:@@search.details.dataset.childDatasets:Child Datasets`,
                 anchor: "related-datasets",
+            },
+            // DET-32: the two lineage links in the legacy positions (the
+            // deferred lineage-model link stays out, DD-383).
+            {
+                label: $localize`:@@search.details.dataset.producers:Producers`,
+                anchor: "related-producers",
+            },
+            {
+                label: $localize`:@@search.details.dataset.consumers:Consumers`,
+                anchor: "related-consumers",
             },
             { label: $localize`:@@search.details.dataset.properties:Properties`, anchor: "properties-details" },
         ],
@@ -369,6 +409,63 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             { label: $localize`:@@search.details.system.subSystems:Subsystems`, anchor: "related-systems" },
             { label: $localize`:@@search.details.system.processes:Processes`, anchor: "related-processes" },
             { label: $localize`:@@search.details.system.properties:Properties`, anchor: "properties-details" },
+        ],
+    },
+    // DET-33, DD-383: the legacy's ninth page enters as the eighth row. The
+    // lineage-model box (and its stat and link) stays deferred with the ADR
+    // 055 chain's data path; the page carries a `processOwner` end but its
+    // legacy box does not exist, so the row has no People box (DET-23's
+    // `m4i_field` case).
+    m4i_generic_process: {
+        descriptionTitle: $localize`:@@search.details.process.description:Description`,
+        peopleBox: false,
+        peopleTitle: "",
+        sections: [
+            {
+                anchor: "related-systems",
+                title: $localize`:@@search.details.process.systemsCards.title:Systems`,
+                seedKeys: ["system"],
+            },
+            {
+                anchor: "related-inputs",
+                title: $localize`:@@search.details.process.inputCards.title:Inputs`,
+                seedKeys: ["inputs"],
+            },
+            {
+                anchor: "related-outputs",
+                title: $localize`:@@search.details.process.outputCards.title:Outputs`,
+                seedKeys: ["outputs"],
+            },
+        ],
+        stats: [
+            {
+                label: $localize`:@@search.details.process.systems:Systems`,
+                anchor: "related-systems",
+                source: { kind: "section", anchor: "related-systems" },
+            },
+            {
+                label: $localize`:@@search.details.process.inputs:Inputs`,
+                anchor: "related-inputs",
+                source: { kind: "section", anchor: "related-inputs" },
+            },
+            {
+                label: $localize`:@@search.details.process.outputs:Outputs`,
+                anchor: "related-outputs",
+                source: { kind: "section", anchor: "related-outputs" },
+            },
+            {
+                label: $localize`:@@search.details.process.properties:Properties`,
+                anchor: "properties-details",
+                source: { kind: "properties" },
+            },
+        ],
+        propertiesTitle: $localize`:@@search.details.process.properties:Properties`,
+        nav: [
+            { label: $localize`:@@search.details.process.description:Description`, anchor: "description-details" },
+            { label: $localize`:@@search.details.process.systems:Systems`, anchor: "related-systems" },
+            { label: $localize`:@@search.details.process.inputs:Inputs`, anchor: "related-inputs" },
+            { label: $localize`:@@search.details.process.outputs:Outputs`, anchor: "related-outputs" },
+            { label: $localize`:@@search.details.process.properties:Properties`, anchor: "properties-details" },
         ],
     },
 };
