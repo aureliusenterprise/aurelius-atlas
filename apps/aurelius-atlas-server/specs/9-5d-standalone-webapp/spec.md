@@ -1,7 +1,7 @@
 # 9.5d The standalone stack's webapp
 
 - **Status:** in review
-- **Pull request:** to be opened
+- **Pull request:** [#284](https://github.com/aureliusenterprise/aurelius-atlas/pull/284)
 - **Records:** DD-369; relies on DD-363 (the standalone stack behind nginx), DD-366 (its demo realm), DD-262
   (the webapp's nginx template resolved by the deployment) and DD-139 (the `/api` prefix passed intact)
 
