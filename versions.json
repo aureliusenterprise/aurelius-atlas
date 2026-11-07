@@ -30,6 +30,11 @@
     "aliases": []
   },
   {
+    "version": "feat-standalone-keycloak-theme",
+    "title": "feat-standalone-keycloak-theme",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
