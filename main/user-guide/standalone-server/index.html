@@ -6439,8 +6439,8 @@
 <h1 id="standalone-server">Standalone Server<a class="headerlink" href="#standalone-server" title="Permanent link">&para;</a></h1>
 <!-- The rest of the page is the standalone stack's README, below its title; edit it there. -->
 
-<p>The server image alone, with the Apache Atlas 2.4.0 dashboards, behind one nginx entry on port 9000. It is a
-way to try the server by hand. <code>nx serve</code> and the e2e stacks are unchanged.</p>
+<p>The server image with the Apache Atlas 2.4.0 dashboards and the Aurelius Atlas webapp, behind one nginx entry
+on port 9000. It is a way to try them by hand. <code>nx serve</code> and the e2e stacks are unchanged.</p>
 <table>
 <thead>
 <tr>
@@ -6450,8 +6450,12 @@ way to try the server by hand. <code>nx serve</code> and the e2e stacks are unch
 </thead>
 <tbody>
 <tr>
+<td><code>https://localhost:9000/</code></td>
+<td>The Aurelius Atlas webapp, in English or Dutch</td>
+</tr>
+<tr>
 <td><code>https://localhost:9000/atlas2/</code></td>
-<td>The server and its dashboards; <code>/</code> redirects here</td>
+<td>The server and its Atlas dashboards</td>
 </tr>
 <tr>
 <td><code>https://localhost:9000/auth/</code></td>
@@ -6493,17 +6497,19 @@ address is the issuer the other dev services trust (DD-363). At every start it i
 in the dev Keycloak's <code>.env</code>, decrypted from its <code>.env.enc</code>.</p>
 <h2 id="start">Start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h2>
 <p>The secrets come from the server's <code>.env</code> and the dev Keycloak's <code>.env</code>. The store uses the dev store's
-configuration and certificate, <code>dev/elasticsearch/certs/</code>; <code>npx nx certgen aurelius-atlas-dev-elasticsearch</code>
-makes it on a new clone.</p>
+configuration and certificate, <code>dev/elasticsearch/certs/</code>, and the webapp its own, <code>apps/aurelius-atlas-webapp/certs/</code>.
+On a new clone, <code>npx nx certgen aurelius-atlas-dev-elasticsearch</code> and <code>npx nx certgen aurelius-atlas-webapp</code>
+make them.</p>
 <div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
-<p>The dashboards answer at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a> once Keycloak is ready, about a minute after the
-start. Sign in as one of the demo users. Keycloak's admin console is <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a>, as
+<p>The webapp answers at <a href="https://localhost:9000/">https://localhost:9000/</a> and the dashboards at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a> once
+Keycloak is ready, about a minute after the start. Sign in to either as one of the demo users; one sign-in
+serves both, as they share the realm. Keycloak's admin console is <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a>, as
 <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>, in the realm <code>master</code>; its session doesn't sign you in to the dashboards. The
 certificate is the dev CA's, so the browser asks once, for <code>localhost:9000</code>.</p>
-<p>The image is <code>aurelius-atlas-server:local</code>; <code>npx nx docker-build aurelius-atlas-server</code> builds it from the
-checkout.</p>
+<p>The images are <code>aurelius-atlas-server:local</code> and <code>aurelius-atlas-webapp:local</code>; <code>npx nx docker-build
+aurelius-atlas-server</code> and <code>npx nx docker-build aurelius-atlas-webapp</code> build them from the checkout.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
 <p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
 is ready, the <code>sample-import</code> service signs in as <code>atlas</code> and posts it to <code>admin/import</code>, through
@@ -6557,8 +6563,15 @@ later.</p>
 <li><code>elasticsearch</code>: one node with <code>dev/elasticsearch/config/elasticsearch.yml</code>, the volumes
   <code>elasticsearch-data</code> and <code>elasticsearch-snapshots</code>, and no published port. The server reaches it as
   <code>https://elasticsearch:9200</code> with its own password, which is the <code>elastic</code> user's here.</li>
+<li><code>nginx.conf</code> is the stack's only reverse proxy. <code>/api/</code> goes to the server with its prefix, and <code>/</code> and every
+  other path to the webapp, whose own nginx, in a container of its own, only serves the webapp's files.
+  <code>webapp-config</code> fills that nginx's template into the volume <code>webapp-nginx-conf</code> before it starts
+  (<code>webapp/resolve-nginx.sh</code>, as the chart's init container does), and <code>webapp/config.json</code> points the webapp
+  at the demo realm. The stack has no telemetry collector, so <code>/otel/</code> takes the webapp's pushes and drops
+  them.</li>
 <li>The server and the sample import run in the proxy's network (<code>network_mode: service:proxy</code>). nginx reaches
-  the server on <code>127.0.0.1:21000</code>, and the server reaches Keycloak at <code>https://localhost:9000/auth</code>, the
+  the server on <code>127.0.0.1:21000</code> and the webapp as <code>aurelius-atlas-webapp:8080</code>, and the server reaches
+  Keycloak at <code>https://localhost:9000/auth</code>, the
   address the browser uses, so the tokens' issuer is the one the server checks.</li>
 </ul>
 <h2 id="stop">Stop<a class="headerlink" href="#stop" title="Permanent link">&para;</a></h2>
