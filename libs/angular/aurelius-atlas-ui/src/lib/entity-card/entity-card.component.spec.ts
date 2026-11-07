@@ -29,6 +29,9 @@ describe("EntityCard", () => {
         // The href is the keyboard path: a native anchor activates on Enter,
         // the click handler emits and cancels the fragment navigation (DD-154).
         expect(title.getAttribute("href")).toBe("#");
+        // The one-line ellipsis (DD-377) hides the tail of a long name; the
+        // title attribute keeps the whole name readable.
+        expect(title.getAttribute("title")).toBe("Sales Domain");
     });
 
     it("emits entityClicked on a title click, without navigating (DD-154, UIC-12)", () => {

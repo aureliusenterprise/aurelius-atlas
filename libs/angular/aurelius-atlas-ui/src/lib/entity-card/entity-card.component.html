@@ -14,8 +14,10 @@
                 <div class="media-content">
                     <p class="title is-4">
                         <!-- The href is the keyboard path; the click handler
-                             cancels the fragment navigation and emits (DD-154). -->
-                        <a href="#" (click)="onEntityClick($event)">{{ name() }}</a>
+                             cancels the fragment navigation and emits (DD-154).
+                             The title attribute keeps the whole name readable
+                             when the one-line ellipsis clips it (DD-377). -->
+                        <a href="#" (click)="onEntityClick($event)" [attr.title]="name()">{{ name() }}</a>
                     </p>
                 </div>
                 <div class="media-right">

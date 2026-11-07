@@ -152,7 +152,12 @@
                 (nextPage)="onSectionPage(view)"
             >
                 @for (card of view.cards; track card.guid) {
-                    <div class="column">
+                    <!-- The column rides Bulma's sizing helpers: three
+                             across on a desktop at most, two on a tablet,
+                             one full-width on a phone (DET-22, DD-377 —
+                             a bare column grows to share one row, which
+                             squeezed six cards side by side). -->
+                    <div class="column is-half-tablet is-one-third-desktop">
                         @if (card.kind === "loading") {
                             <!-- DET-18: the loading row — `search.details
                                      .loading` at the seed's display text.

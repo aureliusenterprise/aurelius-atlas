@@ -1,16 +1,11 @@
 /* The legacy card-section chrome (details-cards-list.component.scss):
-   the underlined reset link and the stretch-equal card columns. The
-   scroll box keeps its height cap so the section scrolls its own cards,
-   as the legacy `.cards` did. */
-.column {
-    min-width: 333px;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: stretch;
-    align-items: stretch;
-}
-
+   the underlined reset link; the scroll box keeps its height cap so the
+   section scrolls its own cards, as the legacy `.cards` did. The legacy
+   `.column` rule (min-width 333px, stretch) is NOT ported: the legacy
+   built its own column divs so its component rule matched them, while
+   our grid projects the caller's cards (WBP-04) and a component rule
+   never reaches projected content. The caller sizes the columns with
+   Bulma's helpers instead — at most three across (DET-22, DD-377). */
 .aurelius-card-section-reset {
     text-decoration: underline;
 }

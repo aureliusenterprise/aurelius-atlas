@@ -551,6 +551,21 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         httpMock.verify();
     });
 
+    it("the cards sit in columns capped at three across (DET-22, DD-377)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(fixture, httpMock);
+
+        // Bulma's sizing helpers, not a min-width: a bare column shares the
+        // row with every sibling (six long names rendered one word per
+        // line). Half on a tablet, a third on a desktop, full on a phone.
+        const columns = [...compiled.querySelectorAll("#related-attributes .aurelius-card-section-grid > .column")];
+        expect(columns.length).toBeGreaterThan(0);
+        for (const column of columns) {
+            expect(column.classList.contains("is-half-tablet")).toBe(true);
+            expect(column.classList.contains("is-one-third-desktop")).toBe(true);
+        }
+    });
+
     it("a card body shows chips, the description, and the card entity's people (DET-19)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(

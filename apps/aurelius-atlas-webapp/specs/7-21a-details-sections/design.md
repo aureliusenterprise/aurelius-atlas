@@ -377,3 +377,52 @@ breaks, and Bulma 1's own stacking point is the shape the rest of the
 screen already follows). Restyle `.level` app-wide (refused: every other
 level on the site may want Bulma's centering; only this header's stacked
 shape is wrong).
+
+### DD-377. The card grid caps at three across; a long card title ellipsizes
+
+- **Status:** Proposed
+- **Increment:** 7.21a
+- **Date:** 2026-11-07
+
+**Decision.** Each card column of a section's grid carries Bulma's
+sizing helpers `is-half-tablet is-one-third-desktop` (the caller's
+projected div, DET-22): three cards across on a desktop at most, two on
+a tablet, one full-width on a phone. The section's stylesheet drops the
+ported `.column` rule (min-width 333px, stretch) — it never matched, see
+**Reason**. The `entity-card`'s title shows one line: nowrap, overflow
+hidden, `text-overflow: ellipsis` on the `.media-content .title`, with
+the whole name kept in the anchor's `title` attribute (amending UIC-12
+in its own spec, 7.13).
+
+**Reason.** The real demo dataset (the sample export, imported through
+`admin/import`) puts eight dataset cards in one Fields section, and six
+sat on one row: Bulma's base `.column` is `flex-grow: 1` with no width,
+so columns only stop sharing a row when a width or min-width stops
+them. The long hyphenated qualified names then broke at every hyphen,
+which rendered the titles downward, one fragment per line. The legacy
+never showed this: its cards-list built its own column divs, so its
+component rule `min-width: 333px` matched them and three per row fell
+out (measured: 427px card columns in the demo). Ours projects the
+caller's cards (WBP-04), and a component's scoped rule never reaches
+projected content — the ported rule was dead on arrival, and with it
+the legacy's cap. The helpers are Bulma's idiom for the cap (the demo's
+own grid has no more structure than a third per row at its width); the
+ellipsis is what the user asked for and is the shape the legacy used
+elsewhere for one-line text (`bread-crumbs.component.scss`, the
+relationships input). A clipped title keeps its whole text in `title`
+because the card links to the entity — the name must stay readable.
+Measured after the change: 3/row at 1280px+ (rows of 3, 3, 2), 2/row at
+1000px, one full-width column per row at 390px; a forced long name
+clips at one line (27px high) with the ellipsis.
+
+**Alternatives.** Port `min-width: 333px` in the caller's stylesheet
+(refused: it caps at three only by accident of width — an ultrawide
+screen still gets five, and the user asked for a max of three). A
+`grid-template-columns: repeat(auto-fill, minmax(…))` of our own
+(refused: the columns are Bulma's, the helpers are the platform's
+answer, and a CSS grid fights the `.column` padding model). Ellipsize
+with Angular's CDK instead of CSS (refused: CSS does it in one line and
+the link keeps its click target). Scope the ellipsis to the details
+screen only (refused: the shared card is the component that clips, and
+the results screen's rows are full-width, where an unclipped title
+never reaches the ellipsis — checked with the sample data).

@@ -51,7 +51,7 @@ let resets = 0;
             (sortDirectionToggled)="descending = !descending"
         >
             @for (card of shown; track card.guid) {
-                <div class="column">
+                <div class="column is-half-tablet is-one-third-desktop">
                     <aurelius-atlas-ui-entity-card
                         [guid]="card.guid"
                         [name]="card.name"
@@ -181,7 +181,7 @@ export const Loading: Story = {
     [sortOptions]="sortOptions"
     [allLoaded]="allLoaded"
 >
-    <div class="column">
+    <div class="column is-half-tablet is-one-third-desktop">
         <aurelius-atlas-ui-entity-card
             [loading]="true"
             loadingLabel="Loading"
@@ -189,7 +189,7 @@ export const Loading: Story = {
             [showQuality]="false"
         />
     </div>
-    <div class="column">
+    <div class="column is-half-tablet is-one-third-desktop">
         <aurelius-atlas-ui-entity-card
             [loading]="true"
             loadingLabel="Loading"

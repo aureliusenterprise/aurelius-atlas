@@ -30,6 +30,15 @@
 
 .media-content {
     overflow: hidden;
+
+    /* One line, ellipsis (DD-377): a narrow card would otherwise break a
+       long hyphenated display text at every hyphen — the title rendering
+       downward, one fragment per line. */
+    .title {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
 }
 
 .title a {
