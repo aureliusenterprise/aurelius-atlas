@@ -51,8 +51,9 @@ Delivered here:
 - The two signals and the pick seam on `LineageModelState` (the app's single
   owner, DD-415), and the shell's pass-through to the canvas.
 - The stories: a bucketed chain with palette colours, one with a picked
-  override, and a playground that exposes the three category colours as
-  colour controls so a reviewer can repaint the canvas live.
+  override, and a playground whose legend rows hold native colour pickers —
+  the same input the View tab ships — so a reviewer repaints a category and
+  watches the canvas.
 
 Explicitly not delivered here:
 
@@ -129,8 +130,9 @@ renderer, each deliberate:
       the view-id/concept chain holds on the DOM.
     - The stories: CategoryColors (three buckets, palette colours pinned in
       `play`), CategoryColorsCustom (a picked override), and Playground
-      (each node wears its category's control colour and the legend table
-      lists the join, pinned in `play` — the pin holds under any picks).
+      (the join pinned in `play`, then the "gold" row's picker driven: both
+      gold nodes take the picked colour and the row follows, the other
+      categories keep theirs).
 - Vitest (webapp, `aurelius-atlas-webapp`):
     - `view-tab.component.spec.ts` — the legend hidden without categories
       (the legacy's null-legend guard), the rows rendered in first-seen

@@ -1,3 +1,4 @@
+import { computed, signal } from "@angular/core";
 import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, waitFor } from "storybook/test";
 
@@ -519,49 +520,43 @@ export const CategoryColorsCustom: Story = {
 
 /**
  * The playground: the colour view with live pickers, so a reviewer can
- * repaint a category and watch the canvas. The three category colours are
- * story arguments with colour controls — the Controls panel opens a native
- * colour picker for each, and a pick re-renders the story so the canvas
- * repaints. This is the same join the app's View tab drives through the
- * shared state (UIC-31, DD-420), with the categories a host would supply;
- * the legend under the canvas lists each category's current colour, as
- * the drawer's table does.
+ * repaint a category and watch the canvas. Each legend row under the canvas
+ * holds a native colour input — the same control the app's View tab ships —
+ * and picking one writes an override, so the whole category repaints and
+ * the legend row follows. That is the join the app drives through the
+ * shared state (UIC-31, DD-420), here with the categories a host would
+ * supply. The picks are signals — the story host re-renders on a write the
+ * way the app's signal write repaints the drawer — and a story switch or a
+ * page reload resets them to the palette, as the app's picks die with the
+ * page (DD-420).
  */
-// The story's args are the three colour controls, not the component's
-// inputs, so the object is built plain and widened — the render reads the
-// args, the preview binds the props.
 const playground = {
-    args: {
-        colorBronze: CATEGORY_PALETTE[0],
-        colorSilver: CATEGORY_PALETTE[1],
-        colorGold: CATEGORY_PALETTE[2],
-    } as Record<string, unknown>,
-    argTypes: {
-        colorBronze: { name: "Colour: bronze", control: "color" },
-        colorSilver: { name: "Colour: silver", control: "color" },
-        colorGold: { name: "Colour: gold", control: "color" },
-    } as Record<string, { name: string; control: string }>,
-    render: (args: Record<string, unknown>) => {
-        const categoryColors = {
-            bronze: String(args["colorBronze"]),
-            silver: String(args["colorSilver"]),
-            gold: String(args["colorGold"]),
-        };
+    render: () => {
+        // The picked overrides (DD-420): category name -> hex, empty at
+        // first so the palette answers, as the app's state does.
+        const categoryColors = signal<Record<string, string>>({});
         return {
             props: {
                 ...heatChain,
                 height: 320,
                 categories: heatCategories,
                 categoryColors,
+                // One picked swatch (UIC-31): write the override, the
+                // canvas and the legend repaint through the join.
+                pick: (category: string, event: Event) =>
+                    categoryColors.update((current) => ({
+                        ...current,
+                        [category]: (event.target as HTMLInputElement).value,
+                    })),
                 // The legend rows: each category with its current colour,
                 // the same join the canvas and the View tab read. Named
                 // legendRows, not legend — a story prop lands on the host
                 // context and must not shadow anything the reader owns.
-                legendRows: Object.entries(deriveCategoryLegend(heatCategories, categoryColors)).map(
-                    ([category, color]) => ({
+                legendRows: computed(() =>
+                    Object.entries(deriveCategoryLegend(heatCategories, categoryColors())).map(([category, color]) => ({
                         category,
                         color,
-                    }),
+                    })),
                 ),
             },
             template: `
@@ -571,7 +566,7 @@ const playground = {
             [model]="model"
             [view]="view"
             [categories]="categories"
-            [categoryColors]="categoryColors"
+            [categoryColors]="categoryColors()"
         />
     </div>
     <table>
@@ -582,11 +577,11 @@ const playground = {
             </tr>
         </thead>
         <tbody>
-            @for (row of legendRows; track row.category) {
+            @for (row of legendRows(); track row.category) {
                 <tr>
                     <td>{{ row.category }}</td>
                     <td>
-                        <span style="display: inline-block; width: 16px; height: 16px; border: 1px solid #888; background: {{ row.color }}"></span>
+                        <input type="color" [value]="row.color" (input)="pick(row.category, $event)" />
                         {{ row.color }}
                     </td>
                 </tr>
@@ -600,10 +595,9 @@ const playground = {
     play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
         const canvas = canvasElement as HTMLElement;
         // The canvas draws the heat chain and the legend lists its three
-        // categories. The pins check the join, not the palette, so they
-        // hold however the reviewer has picked the Controls colours: each
-        // node wears its category's legend colour, and the two "gold"
-        // nodes wear one colour.
+        // categories with their pickers. Then a pick is driven — the same
+        // control the app's View tab ships: write a colour, the category
+        // repaints, and the legend row follows.
         await waitFor(() => expect(canvas.querySelectorAll("tbody tr")).toHaveLength(3));
         const legendRow = (category: string) =>
             [...canvas.querySelectorAll<HTMLTableRowElement>("tbody tr")]
@@ -621,6 +615,18 @@ const playground = {
             rgb(silver),
             rgb(gold),
         ]);
+        // Drive the "gold" picker: write a colour into the row's input and
+        // fire its event, as a picked swatch does. Both gold nodes take the
+        // new colour, the other categories keep theirs, and the legend row
+        // follows. The repaint rides the re-render, so wait for it.
+        const goldSwatch = [...canvas.querySelectorAll<HTMLInputElement>("tbody input[type='color']")][2];
+        goldSwatch.value = "#123456";
+        goldSwatch.dispatchEvent(new Event("input", { bubbles: true }));
+        await waitFor(() => expect(fillAt(2)).toBe(rgb("#123456")));
+        await expect(fillAt(4)).toBe(rgb("#123456"));
+        await expect(fillAt(0)).toBe(rgb(bronze));
+        await expect(fillAt(1)).toBe(rgb(silver));
+        await expect(legendRow("gold").toLowerCase()).toContain("#123456");
     },
 };
 export const Playground: Story = playground as unknown as Story;
