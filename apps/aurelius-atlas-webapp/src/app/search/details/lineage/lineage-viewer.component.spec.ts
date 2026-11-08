@@ -9,7 +9,7 @@ import { LineageModelState } from "./lineage-state";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 import { SaveViewAsImage } from "./save-view-as-image";
 import { LineageViewer } from "./lineage-viewer.component";
-import { ZOOM_SCALE_EXTENT } from "./lineage-shapes";
+import { BOUNDS_INSET, ZOOM_SCALE_EXTENT } from "./lineage-shapes";
 
 /**
  * The viewer over the shipped chain's document (LDG-12..LDG-18, DD-391):
@@ -148,10 +148,10 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         const { compiled } = setup();
 
         // The bounds group: -minX/-minY over all node positions (the legacy
-        // ModelviewService); the fixture starts at 0,0, and each node rides
-        // its raw model coordinate — the group's shift seats them at the
-        // origin.
-        expect(compiled.querySelector("svg > g > g")?.getAttribute("transform")).toBe("translate(0, 0)");
+        // ModelviewService) plus the default inset (DD-417); the fixture
+        // starts at 0,0, and each node rides its raw model coordinate — the
+        // group's shift seats them a BOUNDS_INSET off the corner.
+        expect(compiled.querySelector("svg > g > g")?.getAttribute("transform")).toBe("translate(20, 20)");
         expect([...compiled.querySelectorAll("g.node")].map((node) => node.getAttribute("transform"))).toEqual([
             "translate(0, 0)",
             "translate(320, 0)",
@@ -159,11 +159,11 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         ]);
 
         // A model laid out at any origin fits its container: shifted by
-        // (1000, 500) the group takes the negated minimum and the nodes
-        // (raw coordinates, so they keep aligning with the connection
-        // paths) render back at 0/320/640 on screen.
+        // (1000, 500) the group takes the negated minimum plus the inset and
+        // the nodes (raw coordinates, so they keep aligning with the
+        // connection paths) render back at 20/340/660 on screen.
         const shifted = setup(shiftModel(1000, 500));
-        expect(shifted.compiled.querySelector("svg > g > g")?.getAttribute("transform")).toBe("translate(-1000, -500)");
+        expect(shifted.compiled.querySelector("svg > g > g")?.getAttribute("transform")).toBe("translate(-980, -480)");
         expect([...shifted.compiled.querySelectorAll("g.node")].map((node) => node.getAttribute("transform"))).toEqual([
             "translate(1000, 500)",
             "translate(1320, 500)",
@@ -172,6 +172,49 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
 
         // The legacy's 50vh drawing area.
         expect(styleBlock()).toContain("50vh");
+    });
+
+    it("DD-417: the drawing sits off the top-left corner by default", () => {
+        const { viewer, created, compiled } = setup();
+
+        // The inset rides the bounds group, so the reader sees air between
+        // the corner and the first node's stroke.
+        const bounds = compiled.querySelector("svg.lineage-svg > g > g") as SVGGElement;
+        expect(bounds.getAttribute("transform")).toBe(`translate(${BOUNDS_INSET}, ${BOUNDS_INSET})`);
+
+        // The inset is not part of the zoom transform: panning and
+        // resetting the zoom leave it in place (LDG-16's reset restores the
+        // zoom group's identity, the bounds group keeps its seating).
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+        stubSvgExtent(svg);
+        const view = eventWindow();
+        const eventCtor = (view as unknown as { MouseEvent: typeof MouseEvent }).MouseEvent;
+        svg.dispatchEvent(
+            new eventCtor("mousedown", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 400,
+                clientY: 300,
+            }),
+        );
+        view.dispatchEvent(
+            new eventCtor("mousemove", {
+                bubbles: true,
+                cancelable: true,
+                view: view as Window,
+                clientX: 460,
+                clientY: 340,
+            }),
+        );
+        view.dispatchEvent(new eventCtor("mouseup", { bubbles: true, cancelable: true, view: view as Window }));
+        created.detectChanges();
+        const zoomGroup = svg.querySelector("g.lineage-zoom") as SVGGElement;
+        expect(zoomGroup.getAttribute("transform")).not.toBe("translate(0,0) scale(1)");
+
+        viewer.resetZoom();
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(0,0) scale(1)");
+        expect(bounds.getAttribute("transform")).toBe(`translate(${BOUNDS_INSET}, ${BOUNDS_INSET})`);
     });
 
     it("LDG-13: fills, classes, and the vendored icons per type", () => {

@@ -121,6 +121,16 @@ export const GENERIC_ARROW = {
 export const ZOOM_SCALE_EXTENT: readonly [number, number] = [0.5, 3];
 
 /**
+ * The drawing's default inset from the area's top-left corner (DD-417): the
+ * bounds group (LDG-15) seats the model's top-left node flush at the origin,
+ * where the node's 2px stroke touches the drawing's edge. The reader reads
+ * the diagram better with a little air, so the group adds this shift and the
+ * model sits slightly off the corner. The legacy sat flush; this is a
+ * deliberate deviation (7.22b's Deviations, DD-417).
+ */
+export const BOUNDS_INSET = 20;
+
+/**
  * The quickview drawer's own navigations leave the page's scroll where it
  * is (DD-416): the router's `scrollPositionRestoration: "enabled"` (SHL-06)
  * scrolls every finished navigation to the top, and the drawer is an

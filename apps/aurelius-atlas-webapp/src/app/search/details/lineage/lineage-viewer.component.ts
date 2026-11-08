@@ -22,6 +22,7 @@ import { connectionConceptId, nodeConceptId } from "./parse-ar3";
 import { LineageModelState } from "./lineage-state";
 import { buildConnectionPath, type PathSurface } from "./connection-path";
 import {
+    BOUNDS_INSET,
     DRAWER_SCROLL,
     GENERIC_ARROW,
     lineageClass,
@@ -462,8 +463,15 @@ export class LineageViewer {
         };
     });
 
-    /** The bounds group's transform (LDG-15). */
-    protected readonly boundsTransform = computed(() => `translate(${-this.bounds().minX}, ${-this.bounds().minY})`);
+    /**
+     * The bounds group's transform (LDG-15): the legacy's `-minX/-minY` plus
+     * the default inset (DD-417) — the model sits `BOUNDS_INSET` px off the
+     * drawing's top-left corner instead of flush against it. The inset rides
+     * the same group, so pan, zoom, and the save ride over it unchanged.
+     */
+    protected readonly boundsTransform = computed(
+        () => `translate(${BOUNDS_INSET - this.bounds().minX}, ${BOUNDS_INSET - this.bounds().minY})`,
+    );
 
     /** The nodes as drawn (LDG-12/LDG-13). */
     protected readonly nodes = computed<DrawnNode[]>(() => {
