@@ -50,8 +50,9 @@ Delivered here:
   through the shared state (the legacy's `updateLegendColor`).
 - The two signals and the pick seam on `LineageModelState` (the app's single
   owner, DD-415), and the shell's pass-through to the canvas.
-- The stories: a bucketed chain with palette colours, and one with a picked
-  override.
+- The stories: a bucketed chain with palette colours, one with a picked
+  override, and a playground that exposes the three category colours as
+  colour controls so a reviewer can repaint the canvas live.
 
 Explicitly not delivered here:
 
@@ -127,7 +128,9 @@ renderer, each deliberate:
       picked colour repaints its whole category (UIC-31's canvas half), and
       the view-id/concept chain holds on the DOM.
     - The stories: CategoryColors (three buckets, palette colours pinned in
-      `play`) and CategoryColorsCustom (a picked override).
+      `play`), CategoryColorsCustom (a picked override), and Playground
+      (each node wears its category's control colour and the legend table
+      lists the join, pinned in `play` — the pin holds under any picks).
 - Vitest (webapp, `aurelius-atlas-webapp`):
     - `view-tab.component.spec.ts` — the legend hidden without categories
       (the legacy's null-legend guard), the rows rendered in first-seen

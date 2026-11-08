@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/angular";
-import { expect } from "storybook/test";
+import { expect, waitFor } from "storybook/test";
 
 import { ModelViewer } from "./model-viewer.component";
 import { AR3_ICON_TYPES, NO_RELATION_OPTIONS } from "./archimate-shapes";
-import { CATEGORY_PALETTE } from "./category-colors";
+import { CATEGORY_PALETTE, deriveCategoryLegend } from "./category-colors";
 import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./ar3-types";
 
 /**
@@ -21,6 +21,9 @@ import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, A
  * form, not the hex the palette stores.
  */
 function rgb(hex: string): string {
+    if (hex.startsWith("rgb")) {
+        return hex;
+    }
     const n = parseInt(hex.slice(1), 16);
     return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
 }
@@ -513,3 +516,111 @@ export const CategoryColorsCustom: Story = {
         await expect(shapes[0].style.fill).toBe(rgb(CATEGORY_PALETTE[0]));
     },
 };
+
+/**
+ * The playground: the colour view with live pickers, so a reviewer can
+ * repaint a category and watch the canvas. The three category colours are
+ * story arguments with colour controls — the Controls panel opens a native
+ * colour picker for each, and a pick re-renders the story so the canvas
+ * repaints. This is the same join the app's View tab drives through the
+ * shared state (UIC-31, DD-420), with the categories a host would supply;
+ * the legend under the canvas lists each category's current colour, as
+ * the drawer's table does.
+ */
+// The story's args are the three colour controls, not the component's
+// inputs, so the object is built plain and widened — the render reads the
+// args, the preview binds the props.
+const playground = {
+    args: {
+        colorBronze: CATEGORY_PALETTE[0],
+        colorSilver: CATEGORY_PALETTE[1],
+        colorGold: CATEGORY_PALETTE[2],
+    } as Record<string, unknown>,
+    argTypes: {
+        colorBronze: { name: "Colour: bronze", control: "color" },
+        colorSilver: { name: "Colour: silver", control: "color" },
+        colorGold: { name: "Colour: gold", control: "color" },
+    } as Record<string, { name: string; control: string }>,
+    render: (args: Record<string, unknown>) => {
+        const categoryColors = {
+            bronze: String(args["colorBronze"]),
+            silver: String(args["colorSilver"]),
+            gold: String(args["colorGold"]),
+        };
+        return {
+            props: {
+                ...heatChain,
+                height: 320,
+                categories: heatCategories,
+                categoryColors,
+                // The legend rows: each category with its current colour,
+                // the same join the canvas and the View tab read. Named
+                // legendRows, not legend — a story prop lands on the host
+                // context and must not shadow anything the reader owns.
+                legendRows: Object.entries(deriveCategoryLegend(heatCategories, categoryColors)).map(
+                    ([category, color]) => ({
+                        category,
+                        color,
+                    }),
+                ),
+            },
+            template: `
+<div style="width: 760px">
+    <div style="height: 320px">
+        <aurelius-atlas-ui-model-viewer
+            [model]="model"
+            [view]="view"
+            [categories]="categories"
+            [categoryColors]="categoryColors"
+        />
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Colour</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of legendRows; track row.category) {
+                <tr>
+                    <td>{{ row.category }}</td>
+                    <td>
+                        <span style="display: inline-block; width: 16px; height: 16px; border: 1px solid #888; background: {{ row.color }}"></span>
+                        {{ row.color }}
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+`,
+        };
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = canvasElement as HTMLElement;
+        // The canvas draws the heat chain and the legend lists its three
+        // categories. The pins check the join, not the palette, so they
+        // hold however the reviewer has picked the Controls colours: each
+        // node wears its category's legend colour, and the two "gold"
+        // nodes wear one colour.
+        await waitFor(() => expect(canvas.querySelectorAll("tbody tr")).toHaveLength(3));
+        const legendRow = (category: string) =>
+            [...canvas.querySelectorAll<HTMLTableRowElement>("tbody tr")]
+                .find((row) => row.cells[0].textContent?.trim() === category)
+                ?.cells[1].textContent?.trim() ?? "";
+        const fillAt = (index: number) =>
+            (canvas.querySelectorAll<SVGPathElement>("g.node path.node-shape")[index] as SVGPathElement).style.fill;
+        const bronze = legendRow("bronze").toLowerCase();
+        const silver = legendRow("silver").toLowerCase();
+        const gold = legendRow("gold").toLowerCase();
+        await expect([fillAt(0), fillAt(1), fillAt(2), fillAt(3), fillAt(4)]).toEqual([
+            rgb(bronze),
+            rgb(silver),
+            rgb(gold),
+            rgb(silver),
+            rgb(gold),
+        ]);
+    },
+};
+export const Playground: Story = playground as unknown as Story;
