@@ -1029,8 +1029,8 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
     The 7.21c screens on the same seeded mini-graph: opened at the m4i
     dataset, the Producers box counts 1 and holds the process card and the
     Consumers box counts it too — both seeded from the dataset's own lineage
-    ends (DET-32), with the stats bar in the legacy order (the deferred
-    lineage-model entry out, DD-383). Clicking the producer card routes the
+    ends (DET-32), with the stats bar in the legacy order (the lineage-model
+    entry back in since 7.22d, LDG-32). Clicking the producer card routes the
     screen to the process, which renders the eighth layout: Systems/Inputs/
     Outputs boxes with their one card each, no People box (DET-33). The
     unconnected process renders the same three boxes at zero. Self-cleaned by
@@ -1082,24 +1082,36 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
             expect(cards).to_have_count(1)
             expect(cards.first).to_contain_text(f"zz{run}pipeline")
 
-        # DET-32: the stats bar in the legacy order (lineage-model and Data
-        # Quality out, DD-369/DD-383), the two lineage counts live. The strip
-        # renders its labels uppercase (CSS text-transform), so the labels are
-        # compared case-folded.
+        # DET-32/LDG-32: the stats bar in the legacy order (Data Quality
+        # out, DD-369) with the lineage entry between Child Datasets and
+        # Producers — its word reads the box's state, and the seeded dataset
+        # has lineage, so the model drew ("Available"). The strip renders its
+        # labels uppercase (CSS text-transform), so they are compared
+        # case-folded; the wait below both pins the word and settles the
+        # box's own call before the list read.
+        lineage_stat = authenticated.locator(
+            ".aurelius-details-stats .level-item",
+            has=authenticated.locator('p.heading a[href="#lineage-model"]'),
+        )
+        expect(lineage_stat.locator("p.title")).to_have_text("Available")
         stats = [
             (
                 item.locator("p.heading a").inner_text().strip().casefold(),
-                item.locator("p.title").inner_text().strip(),
+                item.locator("p.title").inner_text().strip().casefold(),
             )
             for item in authenticated.locator(".aurelius-details-stats .level-item").all()
         ]
         assert stats == [
             ("fields", "1"),
             ("child datasets", "0"),
+            ("lineage model", "available"),
             ("producers", "1"),
             ("consumers", "1"),
             ("properties", "0"),
         ]
+        # LDG-32: the side navigation lists the link beside the stat (the
+        # menu stays closed — the list is projected either way, UIC-18).
+        expect(authenticated.locator(".aurelius-details-nav .menu-list a", has_text="Lineage Model")).to_have_count(1)
 
         # DET-32/DET-33: the producer card's title routes the screen to the
         # process — the eighth layout, no People box, three boxes at one.
@@ -1120,11 +1132,18 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
             expect(cards).to_have_count(1)
             expect(cards.first).to_contain_text(expected)
 
+        # DET-33/LDG-32: the lineage stat sits between Systems and Inputs —
+        # the seeded process has lineage ends, so its box drew a model.
+        lineage_stat = authenticated.locator(
+            ".aurelius-details-stats .level-item",
+            has=authenticated.locator('p.heading a[href="#lineage-model"]'),
+        )
+        expect(lineage_stat.locator("p.title")).to_have_text("Available")
         stats = [
             item.locator("p.heading a").inner_text().strip().casefold()
             for item in authenticated.locator(".aurelius-details-stats .level-item").all()
         ]
-        assert stats == ["systems", "inputs", "outputs", "properties"]
+        assert stats == ["systems", "lineage model", "inputs", "outputs", "properties"]
 
         # DET-33: the unconnected process renders the same layout at zeros —
         # the empty boxes with their count lines, no cards.
@@ -1135,6 +1154,15 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
             expect(box).to_be_visible()
             expect(box.locator(".aurelius-card-section-count")).to_contain_text("0 result(s)")
             expect(box.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
+
+        # LDG-32: the unconnected process has no lineage — the box's state
+        # rests empty, so its stat reads "Unavailable" (the word, never a
+        # count — the legacy's shape).
+        lineage_stat = authenticated.locator(
+            ".aurelius-details-stats .level-item",
+            has=authenticated.locator('p.heading a[href="#lineage-model"]'),
+        )
+        expect(lineage_stat.locator("p.title")).to_have_text("Unavailable")
     finally:
         for type_name in [
             "m4i_generic_process",

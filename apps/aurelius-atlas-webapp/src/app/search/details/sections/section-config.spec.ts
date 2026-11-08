@@ -116,13 +116,17 @@ describe("Section config (DET-16)", () => {
         expect(LAYOUTS.m4i_system.lineageAfter).toBeUndefined();
     });
 
-    it("keeps the stats and nav of 7.21c's rows in the legacy order (DET-32, DET-33)", () => {
+    it("keeps the stats and nav of 7.21c's rows in the legacy order (DET-32, DET-33, LDG-32)", () => {
         const labels = (name: keyof typeof LAYOUTS) => LAYOUTS[name].stats.map((stat) => stat.anchor);
         const nav = (name: keyof typeof LAYOUTS) => LAYOUTS[name].nav.map((entry) => entry.anchor);
 
+        // LDG-32 (DD-383's hold-out returns): the lineage pair sits before
+        // Producers on the dataset (the legacy bar, its no-Data-Entities
+        // shape) and before Inputs on the process.
         expect(labels("m4i_dataset")).toEqual([
             "related-fields",
             "related-datasets",
+            "lineage-model",
             "related-producers",
             "related-consumers",
             "properties-details",
@@ -131,6 +135,7 @@ describe("Section config (DET-16)", () => {
             "description-details",
             "related-fields",
             "related-datasets",
+            "lineage-model",
             "related-producers",
             "related-consumers",
             "properties-details",
@@ -138,6 +143,7 @@ describe("Section config (DET-16)", () => {
 
         expect(labels("m4i_generic_process")).toEqual([
             "related-systems",
+            "lineage-model",
             "related-inputs",
             "related-outputs",
             "properties-details",
@@ -145,20 +151,51 @@ describe("Section config (DET-16)", () => {
         expect(nav("m4i_generic_process")).toEqual([
             "description-details",
             "related-systems",
+            "lineage-model",
             "related-inputs",
             "related-outputs",
             "properties-details",
         ]);
     });
 
-    it("lists only rendered boxes in the stats and the nav (DET-24, DET-25, DD-369)", () => {
+    it("carries the lineage stat's kind and word pair (LDG-32)", () => {
+        const lineageStat = (name: "m4i_dataset" | "m4i_generic_process") =>
+            LAYOUTS[name].stats.find((stat) => stat.anchor === "lineage-model");
+
+        const dataset = lineageStat("m4i_dataset");
+        expect(dataset?.source).toEqual({ kind: "lineage" });
+        expect(dataset?.available).toBe("Available");
+        expect(dataset?.unavailable).toBe("Unavailable");
+
+        const process = lineageStat("m4i_generic_process");
+        expect(process?.source).toEqual({ kind: "lineage" });
+        expect(process?.available).toBe("Available");
+        expect(process?.unavailable).toBe("Unavailable");
+
+        // Every other layout's stat keeps its count shape: no pair, no
+        // lineage kind.
+        for (const layout of Object.values(LAYOUTS)) {
+            for (const stat of layout.stats) {
+                if (stat.anchor !== "lineage-model") {
+                    expect(stat.available, stat.anchor).toBeUndefined();
+                    expect(stat.unavailable, stat.anchor).toBeUndefined();
+                }
+            }
+        }
+    });
+
+    it("lists only rendered boxes in the stats and the nav (DET-24, DET-25, DD-369, LDG-32)", () => {
         // Each layout's stats and nav name a box that layout renders: one
-        // of its own sections, or one of the shared ids. The deferred DQ
-        // and lineage entries are absent by this rule.
+        // of its own sections, the lineage box the row seats (LDG-09's
+        // lineageAfter), or one of the shared ids. The deferred DQ entry
+        // stays absent by this rule (DD-369).
         for (const [name, layout] of Object.entries(LAYOUTS)) {
             const rendered = new Set(["description-details", "properties-details"]);
             if (layout.peopleBox) {
                 rendered.add("people-details");
+            }
+            if (layout.lineageAfter !== undefined) {
+                rendered.add("lineage-model");
             }
             for (const section of layout.sections) {
                 rendered.add(section.anchor);

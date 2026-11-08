@@ -1,3 +1,8 @@
+import type { NavigationBehaviorOptions } from "@angular/router";
+import type { IconDefinition, IconName } from "@fortawesome/free-solid-svg-icons";
+
+import type { TypeIconClass } from "../../meta/type-icons";
+
 /**
  * The lineage shape table (LDG-13, LDG-14): the legacy
  * `libs/modelview2/src/lib/shapes/languages/lineage.ts` ported to the one
@@ -60,6 +65,46 @@ export const LINEAGE_ICON_PATHS: Readonly<Record<LineageClass, string>> = {
 };
 
 /**
+ * The badge icons of the two lineage types (DD-405 amended): the same two
+ * legacy paths as {@link LINEAGE_ICON_PATHS}, shaped as FontAwesome icon
+ * definitions so the shared card's type badge (`aurelius-atlas-ui-type-name`)
+ * can ink them. The legacy badge drew its icon from `iconsByType` — the
+ * app's own type index (DD-378) — which never carried the two lineage
+ * types; the demo's lineage card badge shows the archimate glyphs
+ * (`definitions.ts`, the `lineage_dataset`/`lineage_process` entries), and
+ * those are the paths below. FA renders the path with `fill: currentColor`,
+ * so the badge's colour class carries the lineage fills: `.technical` is
+ * the dataset's blue, `.technical-process` the process's `#00d1b2` — the
+ * same two inks the Type row and the diagram nodes use.
+ */
+export const LINEAGE_BADGE_ICONS: Readonly<Record<LineageClass, IconDefinition>> = {
+    dataset: {
+        prefix: "fas",
+        iconName: "lineage-dataset" as IconName,
+        icon: [16, 16, [], "", LINEAGE_ICON_PATHS.dataset],
+    },
+    process: {
+        prefix: "fas",
+        iconName: "lineage-process" as IconName,
+        icon: [16, 16, [], "", LINEAGE_ICON_PATHS.process],
+    },
+};
+
+/**
+ * The badge's colour class for one lineage type (DD-405 amended): the two
+ * shared badge families whose ink is the lineage fill — blue for a
+ * dataset, `#00d1b2` for a process (`type-name.component.scss`).
+ * @param cssClass the lineage class, or null for an unknown type
+ * @returns the badge class, or undefined for no icon at all
+ */
+export function lineageBadgeClass(cssClass: LineageClass | null): TypeIconClass | undefined {
+    if (cssClass === "dataset") {
+        return "technical";
+    }
+    return cssClass === "process" ? "technical-process" : undefined;
+}
+
+/**
  * The arrow marker (LDG-14): the legacy defs' `generic-arrow` — the one
  * marker the lineage language names (`marker-end: 'generic-arrow'`), ported
  * field for field; the archimate marker set stays with the explorer.
@@ -74,3 +119,23 @@ export const GENERIC_ARROW = {
 
 /** The viewer's pan/zoom scale extent (LDG-16): the legacy's verbatim. */
 export const ZOOM_SCALE_EXTENT: readonly [number, number] = [0.5, 3];
+
+/**
+ * The drawing's default inset from the area's top-left corner (DD-417): the
+ * bounds group (LDG-15) seats the model's top-left node flush at the origin,
+ * where the node's 2px stroke touches the drawing's edge. The reader reads
+ * the diagram better with a little air, so the group adds this shift and the
+ * model sits slightly off the corner. The legacy sat flush; this is a
+ * deliberate deviation (7.22b's Deviations, DD-417).
+ */
+export const BOUNDS_INSET = 20;
+
+/**
+ * The quickview drawer's own navigations leave the page's scroll where it
+ * is (DD-416): the router's `scrollPositionRestoration: "enabled"` (SHL-06)
+ * scrolls every finished navigation to the top, and the drawer is an
+ * overlay — opening it, switching its tab, or closing it must not move the
+ * details page the reader is reading underneath. `scroll: "manual"` is the
+ * router's per-navigation opt-out (NavigationBehaviorOptions).
+ */
+export const DRAWER_SCROLL: NavigationBehaviorOptions = { scroll: "manual" };

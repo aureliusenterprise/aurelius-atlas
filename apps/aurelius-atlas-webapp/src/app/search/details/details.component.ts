@@ -30,9 +30,11 @@ import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
+import { LineageModelState } from "./lineage/lineage-state";
 import { CardContent } from "./sections/card-content.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
+import type { StatDef } from "./sections/section-config";
 import { cardTypeAlias } from "./shared/card";
 import { peopleRows } from "./shared/people";
 
@@ -76,6 +78,10 @@ import { peopleRows } from "./shared/people";
         RouterLink,
     ],
     selector: "aurelius-atlas-webapp-details",
+    // LineageModelState is NOT listed here (DD-415): the routed quickview
+    // drawer lives in the root `drawer` aux outlet and a page-scoped provider
+    // would hide the box's state from it, so the service is the root
+    // singleton both this page and the drawer read.
     providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState],
     templateUrl: "./details.component.html",
     styleUrl: "./details.component.scss",
@@ -100,6 +106,9 @@ export class Details {
 
     /** The card sections of the entity's layout (DET-17..DET-22). */
     protected readonly sections = inject(RelatedSectionsState);
+
+    /** The Lineage Model fetch state (DD-400): the LDG-32 stat reads it. */
+    protected readonly lineage = inject(LineageModelState);
 
     /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
     protected readonly canWrite = canWriteEntities();
@@ -340,9 +349,26 @@ export class Details {
             label: stat.label,
             target: stat.anchor,
             count:
-                stat.source.kind === "properties" ? this.propertyCount() : this.sections.countFor(stat.source.anchor),
+                stat.source.kind === "properties"
+                    ? this.propertyCount()
+                    : stat.source.kind === "lineage"
+                      ? this.lineageWord(stat)
+                      : this.sections.countFor(stat.source.anchor),
         })),
     );
+
+    /**
+     * The lineage stat's word (LDG-32): "Available" once a model drew,
+     * "Unavailable" at rest, blank while the call is pending (the legacy's
+     * shape — never a count). The pair is the layout's own keys; a layout
+     * without the lineage entry never asks.
+     */
+    private lineageWord(stat: StatDef): string {
+        if (this.lineage.loading()) {
+            return "";
+        }
+        return this.lineage.model() !== null ? (stat.available ?? "") : (stat.unavailable ?? "");
+    }
 
     /** The card section's placeholder — `search.details.components.detailsCardsList.placeholder`. */
     protected readonly searchPlaceholder = $localize`:@@search.details.components.detailsCardsList.placeholder:Search for keywords`;

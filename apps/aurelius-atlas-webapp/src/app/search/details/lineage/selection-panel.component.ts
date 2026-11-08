@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, input, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from "@angular/core";
+import { Router } from "@angular/router";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
+import { EntityCard, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
-import { LINEAGE_ICON_PATHS, lineageClass } from "./lineage-shapes";
+import { LINEAGE_BADGE_ICONS, LINEAGE_ICON_PATHS, lineageBadgeClass, lineageClass } from "./lineage-shapes";
 import type { LineageEntity } from "./lineage-entities";
 import { mergeProperties } from "./lineage-entities";
 import type { LineageIndexes } from "./lineage-indexes";
@@ -28,17 +30,34 @@ import { LineagePropertyTable } from "./property-table.component";
  *   when the merge is empty;
  * - the three reference tables over the LDG-22 indexes (Referenced concepts
  *   — the ends of a selected relation; Referencing concepts — the relations
- *   touching the selection; Referencing views), each hidden when empty;
+ *   touching the selection), each hidden when empty;
+ * - the Referencing views table (DD-412): the legacy's own shape — a Name /
+ *   Description table (name in a `th scope="row"`), not the entities table,
+ *   selectable, the drawn view the selected row, a row click drawing it (the
+ *   legacy's `selectView`). The legacy's row-deselect clears the selected
+ *   view; the shipped chain always draws one (LDG-12's first-view default),
+ *   so a re-click of the selected row keeps the view — there is no "no view"
+ *   state to return to;
  * - the grey ID line below the sections.
  *
  * A table row click selects that concept here too (the legacy's
  * `selectEntity`), closing nothing — the drawer stays on the Selection tab
  * with the new concept (LDG-25).
+ *
+ * A selected element gains the search card under the Type field (DD-405,
+ * amended): the ui card the results screen rows, title-click routes to the
+ * entity's details page — the convenient hop from a diagram box to the
+ * entity itself the reader asked for (the shipped chain's element ids are
+ * the guids). The LDG-20 fields stay; the card is the navigation, not a
+ * replacement. The badge carries the type's icon (the demo's card badge
+ * shows the archimate glyph, so the lineage paths ride it now), and the
+ * card sits between Type and Description — where the demo's panel reads
+ * the card, below the type it names.
  */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-selection",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [LineageEntityTable, LineagePropertyTable],
+    imports: [EntityCard, LineageEntityTable, LineagePropertyTable, SortableTable, TableColumn, TableRow],
     template: `
         @if (entity(); as selected) {
             @if (selected.name) {
@@ -61,6 +80,21 @@ import { LineagePropertyTable } from "./property-table.component";
                         <span>{{ selected.humanReadableType || selected.type }}</span>
                     </p>
                 </div>
+            }
+            @if (selected.kind === "element") {
+                <!-- DD-405 (amended): the legacy results card, reused — its
+                     title click opens the entity's details screen. Under the
+                     Type field, where the demo's panel reads it; the badge
+                     carries the lineage glyph (the demo's badge shows it). -->
+                <aurelius-atlas-ui-entity-card
+                    class="aurelius-selection-card"
+                    [guid]="selected.id"
+                    [name]="selected.name"
+                    [typeName]="selected.humanReadableType || selected.type"
+                    [typeIcon]="badgeIcon()"
+                    [typeIconClass]="badgeClass()"
+                    (entityClicked)="openDetails($event)"
+                />
             }
             @if (selected.description) {
                 <div class="field">
@@ -117,11 +151,34 @@ import { LineagePropertyTable } from "./property-table.component";
             @if (viewsHere.length > 0) {
                 <div class="field">
                     <p class="label" i18n="@@modelview2.modelBrowser.selection.referencingViews">Referencing views</p>
-                    <aurelius-atlas-webapp-lineage-entity-table
+                    <!-- DD-412: the legacy's own Name | Description table
+                         (viewsTableConfig) — the name in a row header, the
+                         documentation beside it; the drawn view is the
+                         selected row and a row click draws that view. The
+                         headers are the legacy config's raw strings, which
+                         its translate pipe never resolved. -->
+                    <aurelius-atlas-ui-sortable-table
                         [rows]="viewsHere"
-                        [selectedEntity]="null"
-                        (chosen)="viewChosen.emit($event)"
-                    />
+                        [pageSize]="5"
+                        [rowsSelectable]="true"
+                        [selectedRow]="selectedViewRow()"
+                        (rowSelected)="viewChosen.emit($event.id)"
+                    >
+                        <ng-template aurelius-atlas-ui-table-column [sortBy]="'name'" [title]="viewNameHint">
+                            Name
+                        </ng-template>
+                        <ng-template
+                            aurelius-atlas-ui-table-column
+                            [sortBy]="'description'"
+                            [title]="viewDescriptionHint"
+                        >
+                            Description
+                        </ng-template>
+                        <ng-template aurelius-atlas-ui-table-row let-row>
+                            <th class="truncate" scope="row" [title]="row.name">{{ row.name }}</th>
+                            <td class="truncate" [title]="row.description">{{ row.description }}</td>
+                        </ng-template>
+                    </aurelius-atlas-ui-sortable-table>
                 </div>
             }
             <!-- The legacy's ID line: the small light-grey line under the
@@ -135,10 +192,26 @@ import { LineagePropertyTable } from "./property-table.component";
         }
     `,
     styles: `
+        .aurelius-selection-card {
+            display: block;
+            margin-bottom: 1rem;
+            /* The card's own host rule (min-height: 100%) stretches it inside
+               the results grid; here it would stretch the host to the whole
+               panel height — a wall of gap under the card. The drawer reads
+               the card at content size. */
+            min-height: 0;
+        }
         .aurelius-selection-type {
             display: flex;
             align-items: center;
             gap: 0.4em;
+        }
+        .truncate {
+            /* The legacy shell's cap (its sortable-table-shell style). */
+            max-width: 12rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .aurelius-selection-type .icon .dataset {
             fill: blue;
@@ -151,6 +224,8 @@ import { LineagePropertyTable } from "./property-table.component";
     `,
 })
 export class LineageSelectionPanel {
+    private readonly router = inject(Router);
+
     /** The selected concept's entity record (the legacy's `selectedEntity$`). */
     readonly entity = input<LineageEntity | null>(null);
 
@@ -183,6 +258,17 @@ export class LineageSelectionPanel {
     /** Referencing views (LDG-22): the views containing the selection. */
     protected readonly referencingViews = computed(() => this.resolve(this.indexes().viewsByEntityId));
 
+    /** The drawn view's row in the Referencing views table (DD-412, the
+        legacy's `selectedView$` over the same list); undefined for none. */
+    protected readonly selectedViewRow = computed(() => {
+        const id = this.drawnViewId();
+        return id === null ? undefined : this.referencingViews().find((view) => view.id === id);
+    });
+
+    /** The legacy viewsTableConfig's raw hint strings. */
+    protected readonly viewNameHint = "The name of the view";
+    protected readonly viewDescriptionHint = "The view documentation";
+
     /** The Type row's icon (LDG-20): the two lineage types have one. */
     protected readonly icon = computed(() => {
         const entity = this.entity();
@@ -197,6 +283,27 @@ export class LineageSelectionPanel {
         const entity = this.entity();
         return entity === null ? "" : (lineageClass(entity.type) ?? "");
     });
+
+    /** The card badge's icon (DD-405 amended): the lineage glyph for the
+        two types that have one; an unknown type keeps the plain badge, as
+        the legacy's missing `iconsByType` entry did. */
+    protected readonly badgeIcon = computed(() => {
+        const cssClass = lineageClass(this.entity()?.type ?? "");
+        return cssClass === null ? undefined : LINEAGE_BADGE_ICONS[cssClass];
+    });
+
+    /** The badge's colour class — the family whose ink is the lineage fill. */
+    protected readonly badgeClass = computed(() => lineageBadgeClass(lineageClass(this.entity()?.type ?? "")));
+
+    /**
+     * The card's title click (DD-405): open the entity's details page — the
+     * results screen's rule, `search/details/<guid>`; the shipped chain's
+     * element ids are the Atlas guids.
+     * @param guid the selected element's id
+     */
+    protected openDetails(guid: string): void {
+        void this.router.navigate(["/search/details", guid]);
+    }
 
     /** The map's ids under the selection, resolved to entities (the legacy's selectEntitiesById). */
     private resolve(map: ReadonlyMap<string, readonly string[]>): LineageEntity[] {

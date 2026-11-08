@@ -95,6 +95,7 @@
         "@opentelemetry/semantic-conventions": "^1.43.0",
         "d3-selection": "^3.0.1",
         "d3-zoom": "^3.0.1",
+        "html2canvas": "^1.4.1",
         "keycloak-angular": "^21.0.0",
         "keycloak-js": "^26.2.0",
         "marked": "^18.1.3",

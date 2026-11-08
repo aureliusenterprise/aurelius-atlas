@@ -11,6 +11,8 @@ import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import type { AtlasEntity, AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 
+import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json";
+
 import { AlertsService } from "../../alerts/alerts.service";
 import { APP_CONFIG } from "../../tokens";
 import { EntitySaved } from "../editor/entity-saved";
@@ -1108,8 +1110,10 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             "related-producers",
         ]);
 
-        // DET-32: the stats bar gains the two counts in the legacy order
-        // (the lineage-model and Data Quality entries stay out, DD-369/383).
+        // DET-32/LDG-32: the stats bar carries the counts in the legacy
+        // order (Data Quality stays out, DD-369) with the Lineage Model
+        // entry before Producers; its value reads the box's state, and the
+        // 204 arriveSections answered rests at "Unavailable".
         const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
             const heading = item.querySelector("p.heading a")!;
             return [
@@ -1121,17 +1125,27 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(stats).toEqual([
             ["Fields", "#related-fields", "0"],
             ["Child Datasets", "#related-datasets", "0"],
+            ["Lineage Model", "#lineage-model", "Unavailable"],
             ["Producers", "#related-producers", "1"],
             ["Consumers", "#related-consumers", "1"],
             ["Properties", "#properties-details", "0"],
         ]);
 
-        // DET-32: the side navigation gains the two links in the legacy
-        // positions — the DD-369 rule keeps the deferred lineage link out.
+        // DET-32/LDG-32: the side navigation carries the links in the
+        // legacy positions, the lineage link between Child Datasets and
+        // Producers (DD-383's hold-out ended).
         const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
             normalize(link.textContent),
         );
-        expect(items).toEqual(["Description", "Fields", "Child Datasets", "Producers", "Consumers", "Properties"]);
+        expect(items).toEqual([
+            "Description",
+            "Fields",
+            "Child Datasets",
+            "Lineage Model",
+            "Producers",
+            "Consumers",
+            "Properties",
+        ]);
         // No People box on this layout (DET-16's row).
         expect(compiled.querySelector("#people-details")).toBeNull();
     });
@@ -1169,8 +1183,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             "related-inputs",
         ]);
 
-        // DET-33: the stats bar of the row, the lineage-model stat out with
-        // its deferred box (DD-383).
+        // DET-33/LDG-32: the stats bar of the row carries the lineage stat
+        // between Systems and Inputs (the process pair's keys), reading the
+        // box's 204 state.
         const stats = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].map((item) => {
             const heading = item.querySelector("p.heading a")!;
             return [
@@ -1181,19 +1196,49 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         });
         expect(stats).toEqual([
             ["Systems", "#related-systems", "1"],
+            ["Lineage Model", "#lineage-model", "Unavailable"],
             ["Inputs", "#related-inputs", "1"],
             ["Outputs", "#related-outputs", "1"],
             ["Properties", "#properties-details", "0"],
         ]);
 
-        // DET-33: the navigation of the row, the deferred box's link out.
+        // DET-33/LDG-32: the navigation of the row carries the lineage link
+        // in the legacy slot.
         const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) =>
             normalize(link.textContent),
         );
-        expect(items).toEqual(["Description", "Systems", "Inputs", "Outputs", "Properties"]);
+        expect(items).toEqual(["Description", "Systems", "Lineage Model", "Inputs", "Outputs", "Properties"]);
 
         // No typedef read: the name is a direct dispatch hit (DET-15).
         httpMock.expectNone(TYPEDEF_URL);
+    });
+
+    it("the Lineage Model stat follows the box's fetch state (LDG-32, DD-400)", () => {
+        const { fixture, compiled, httpMock } = setup("ds-1");
+        arrive(fixture, httpMock, m4iDataset());
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+            request.flush(processAnswer());
+        }
+        fixture.detectChanges();
+
+        const statValue = () => {
+            const item = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats .level-item")].find(
+                (entry) => normalize(entry.querySelector("p.heading a")?.textContent) === "Lineage Model",
+            );
+            return normalize(item?.querySelector("p.title")?.textContent) ?? "";
+        };
+
+        // Pending: the box's call is in flight — the stat is blank, never a
+        // count and never a spinner (LDG-32's shape).
+        expect(statValue()).toBe("");
+        const lineageCall = httpMock.expectOne((request) => request.url === "/lineage-model/");
+
+        // A model that draws reads "Available" — the page's fetch state
+        // (DD-400), not the box's internals: the stat is on the bar while
+        // the box renders its diagram below.
+        lineageCall.flush({ model: modelFixture.model, metadata: modelFixture.metadata });
+        fixture.detectChanges();
+        expect(statValue()).toBe("Available");
     });
 });
 

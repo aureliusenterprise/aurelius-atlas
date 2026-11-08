@@ -18,6 +18,10 @@ const ELEMENTS: LineageEntity[] = [
         humanReadableType: "Dataset",
         description: "",
         properties: [],
+        sourceName: "",
+        targetName: "",
+        sourceType: "",
+        targetType: "",
     },
     {
         id: "e2",
@@ -27,6 +31,10 @@ const ELEMENTS: LineageEntity[] = [
         humanReadableType: "Dataset",
         description: "",
         properties: [],
+        sourceName: "",
+        targetName: "",
+        sourceType: "",
+        targetType: "",
     },
     {
         id: "e3",
@@ -36,6 +44,10 @@ const ELEMENTS: LineageEntity[] = [
         humanReadableType: "Process",
         description: "",
         properties: [],
+        sourceName: "",
+        targetName: "",
+        sourceType: "",
+        targetType: "",
     },
 ];
 const RELATIONS: LineageEntity[] = [
@@ -47,6 +59,10 @@ const RELATIONS: LineageEntity[] = [
         humanReadableType: "Data Lineage",
         description: "",
         properties: [],
+        sourceName: "Ingest Topic",
+        targetName: "Sales Table",
+        sourceType: "lineage_dataset",
+        targetType: "lineage_dataset",
     },
 ];
 
@@ -73,6 +89,12 @@ function setup(): {
 
 function bodyRows(compiled: HTMLElement): number {
     return compiled.querySelectorAll("table tbody tr").length;
+}
+
+/** The second table's rows — the Relationships table. */
+function relationRows(compiled: HTMLElement): HTMLTableRowElement[] {
+    const tables = [...compiled.querySelectorAll("table")];
+    return [...(tables[1]?.querySelectorAll<HTMLTableRowElement>("tbody tr") ?? [])];
 }
 
 describe("LineageModelTab (LDG-23)", () => {
@@ -115,5 +137,41 @@ describe("LineageModelTab (LDG-23)", () => {
         // The tables sort by the legacy's default (unsorted = source order):
         // the first element row is e1.
         expect(emitted).toEqual(["e1"]);
+    });
+
+    it("DD-411: a relationship row is the legacy's three lines — ends with icons, the em between", () => {
+        const { compiled } = setup();
+        const [row] = relationRows(compiled);
+        // One cell across both columns (the legacy's colspan row).
+        const cell = row?.querySelector("td");
+        expect(cell?.getAttribute("colspan")).toBe("2");
+        expect(cell?.textContent).toContain("Ingest Topic");
+        expect(cell?.textContent).toContain("Sales Table");
+        // The middle em line: the relation's own name leads ("feeds"), with
+        // the human-readable type in parentheses (the legacy's
+        // name || displayName, then the type).
+        const middle = cell?.querySelector("p em");
+        // The nbsp between the spans is the legacy's rendered space ("Flows
+        // into (Data Lineage)") — trim() leaves \u00A0 alone.
+        expect(middle?.textContent?.trim()).toBe("feeds\u00A0(Data Lineage)");
+        // Each end carries the element's icon (lineage_dataset — the blue
+        // dataset grid): two ends, two paths.
+        expect(cell?.querySelectorAll("strong").length).toBe(2);
+        expect(cell?.querySelectorAll("svg path").length).toBe(2);
+    });
+
+    it("DD-411: an element row is the narrow icon cell and the name", () => {
+        const { compiled } = setup();
+        const elementRow = compiled.querySelector("table tbody tr");
+        expect(elementRow?.querySelector("td.is-narrow svg path")).not.toBeNull();
+        expect(elementRow?.textContent).toContain("Ingest Topic");
+    });
+
+    it("DD-404: the keyword matches a relationship's displayed ends", () => {
+        const { setQuery, compiled } = setup();
+        // "Topic" names the relation's source — a word neither the relation's
+        // name ("feeds") nor its type ("Data Lineage") carries.
+        setQuery("Topic");
+        expect(relationRows(compiled)).toHaveLength(1);
     });
 });

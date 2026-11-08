@@ -1,11 +1,15 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Router } from "@angular/router";
+import Keycloak from "keycloak-js";
 import { describe, expect, it } from "vitest";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import { APP_CONFIG } from "../../../tokens";
 
 import { LineageModel } from "./lineage-model.component";
+import { LineageModelState } from "./lineage-state";
 
 /**
  * The Lineage Model box (LDG-09/LDG-10, DD-392): the three states of the
@@ -33,7 +37,17 @@ function setup(guid = "ds-1"): {
 } {
     TestBed.configureTestingModule({
         imports: [LineageModel],
-        providers: [provideHttpClient(), provideHttpClientTesting()],
+        // DD-400: the fetch state is the page's; mounted alone here, the
+        // box gets its own instance — the page's provider is the Details
+        // spec's (the stat reads the same one). The diagram state mounts
+        // the viewer, whose save flow injects the session and the config.
+        providers: [
+            provideHttpClient(),
+            provideHttpClientTesting(),
+            LineageModelState,
+            { provide: Keycloak, useValue: { tokenParsed: {} } },
+            { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas", appVersion: "0.0.0" } },
+        ],
     });
     const fixture = TestBed.createComponent(LineageModel);
     fixture.componentRef.setInput("guid", guid);
@@ -113,5 +127,25 @@ describe("LineageModel box (LDG-09/LDG-10, DD-392)", () => {
         expect(highlighted[0].classList.contains("dataset")).toBe(true);
 
         expect(compiled.querySelector(".aurelius-lineage-empty")).toBeNull();
+    });
+
+    it("LDG-27/DD-415: the header's Browse routes the quickview open", () => {
+        const { fixture, compiled, httpMock } = setup("00000000-0000-4000-8000-000000000001");
+
+        httpMock.expectOne(lineageCall("00000000-0000-4000-8000-000000000001")).flush(MODEL_ANSWER);
+        fixture.detectChanges();
+        fixture.detectChanges();
+
+        // The legacy's level-right: label plus search icon (LDG-27).
+        const browse = compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-browse");
+        expect(browse?.textContent?.trim()).toBe("Browse the model");
+        expect(browse?.querySelector("span.icon fa-icon")).toBeTruthy();
+
+        // DD-415: the click reaches the quickview through the outlet route —
+        // the panel is no longer the viewer's child, so the seam is the URL.
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        browse?.click();
+        // DD-416: the overlay's route leaves the page's scroll where it is.
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }], { scroll: "manual" });
     });
 });

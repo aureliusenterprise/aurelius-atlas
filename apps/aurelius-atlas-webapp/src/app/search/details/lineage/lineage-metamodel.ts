@@ -27,3 +27,25 @@ const HUMAN_READABLE_TYPES: Readonly<Record<string, string>> = {
 export function humanReadableType(type: string): string {
     return HUMAN_READABLE_TYPES[type] ?? "";
 }
+
+/**
+ * The relation types' verb phrases (DD-411): the legacy
+ * `parsers/archimate3/parse-relation.ts` `humanReadableTypes` table — the
+ * `displayName` the relationship row's middle line leads with when the
+ * relation carries no name of its own. The shipped chain's one relation type
+ * is `lineage_relation`; the rest of the archimate verbs stay with the
+ * explorer. An unknown type reads as the empty string (the legacy's
+ * dictionary answered `undefined`, and the row hid the span).
+ */
+const RELATION_VERBS: Readonly<Record<string, string>> = {
+    lineage_relation: "Flows into",
+};
+
+/**
+ * The verb phrase of a relation type (the legacy parser's `displayName`).
+ * @param type the relation's `@xsi_type`
+ * @returns the verb phrase, or the empty string when unknown
+ */
+export function relationVerb(type: string): string {
+    return RELATION_VERBS[type] ?? "";
+}

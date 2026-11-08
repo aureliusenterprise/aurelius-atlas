@@ -38,6 +38,22 @@ export type LineageEntity = {
     readonly description: string;
     /** The `ar3_properties` rows (LDG-21's left side of the merge). */
     readonly properties: readonly Ar3Property[];
+    /**
+     * A relation's source end, named (DD-404): the element's name, its id
+     * when it carries none, empty for any other kind or an end the model
+     * does not hold.
+     */
+    readonly sourceName: string;
+    /** A relation's target end, named (DD-404) — same rule as {@link sourceName}. */
+    readonly targetName: string;
+    /**
+     * A relation's source end, typed (DD-411): the element's `@xsi_type`, so
+     * the relationship row draws the end's icon; empty for any other kind or
+     * an end the model does not hold.
+     */
+    readonly sourceType: string;
+    /** A relation's target end, typed (DD-411) — same rule as {@link sourceType}. */
+    readonly targetType: string;
 };
 
 /**
@@ -59,6 +75,10 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
             humanReadableType: humanReadableType(element.type),
             description: element.description,
             properties: element.properties,
+            sourceName: "",
+            targetName: "",
+            sourceType: "",
+            targetType: "",
         });
     }
     for (const relation of model.relations.values()) {
@@ -70,6 +90,14 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
             humanReadableType: humanReadableType(relation.type),
             description: relation.description,
             properties: relation.properties,
+            // DD-404: the ends ride the row — the Model tab's table shows
+            // them, and the shipped chain's relations carry no name, so the
+            // ends are the row's only readable text. DD-411 adds each end's
+            // type: the legacy's relationship row draws an icon per end.
+            sourceName: endLabel(model, relation.source),
+            targetName: endLabel(model, relation.target),
+            sourceType: endType(model, relation.source),
+            targetType: endType(model, relation.target),
         });
     }
     for (const view of model.views) {
@@ -83,6 +111,10 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
             humanReadableType: humanReadableType("ar3_View"),
             description: view.description,
             properties: view.properties,
+            sourceName: "",
+            targetName: "",
+            sourceType: "",
+            targetType: "",
         });
         for (const node of view.nodes) {
             entities.set(node.id, {
@@ -95,6 +127,10 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
                 humanReadableType: "",
                 description: "",
                 properties: [],
+                sourceName: "",
+                targetName: "",
+                sourceType: "",
+                targetType: "",
             });
         }
         for (const connection of view.connections) {
@@ -106,10 +142,38 @@ export function buildEntitiesById(model: Ar3Model): ReadonlyMap<string, LineageE
                 humanReadableType: "",
                 description: "",
                 properties: [],
+                sourceName: "",
+                targetName: "",
+                sourceType: "",
+                targetType: "",
             });
         }
     }
     return entities;
+}
+
+/**
+ * A relation end as text (DD-404): the element's name, falling back to its
+ * id — a row that names its ends must name them with something.
+ * @param model the parsed model
+ * @param id the end's element id
+ */
+function endLabel(model: Ar3Model, id: string): string {
+    const element = model.elements.get(id);
+    if (element === undefined) {
+        return "";
+    }
+    return element.name !== "" ? element.name : element.id;
+}
+
+/**
+ * A relation end's type (DD-411): the element's `@xsi_type`, or the empty
+ * string for an end the model does not hold — no icon draws for it.
+ * @param model the parsed model
+ * @param id the end's element id
+ */
+function endType(model: Ar3Model, id: string): string {
+    return model.elements.get(id)?.type ?? "";
 }
 
 /**
