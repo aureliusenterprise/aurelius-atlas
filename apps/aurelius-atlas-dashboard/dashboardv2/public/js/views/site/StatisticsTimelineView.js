@@ -618,7 +618,7 @@ define(['require',
                     this.ui.entity.find(".count").html("&nbsp;(" + _.numberFormatWithComma(data.general.entityCount) + ")");
                     if (statsKeys.length > this.DATA_MAX_LENGTH) {
                         this.closePanel({
-                            el: this.ui.entity
+                            el: this.ui.entity.not(".entity-chart-panel") //the chart's panel shares data-id 'entity'; it stays open (Aurelius patch 03)
                         })
                     }
                 }

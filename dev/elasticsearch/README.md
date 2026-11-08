@@ -7,11 +7,11 @@ Part of the **spine**.
 
 ## Services
 
-| Service        | Image                                               | Host port                             |
-| -------------- | --------------------------------------------------- | ------------------------------------- |
-| elasticsearch  | `dhi.io/elasticsearch:9.5-debian13`                 | `${ELASTICSEARCH_PORT}` (9200, HTTPS) |
-| metrics-puller | `dhi.io/opentelemetry-collector:0-debian13-contrib` | –                                     |
-| volume-init    | same as `elasticsearch` (one-shot, runs as root)    | –                                     |
+| Service        | Image                                                   | Host port                             |
+| -------------- | ------------------------------------------------------- | ------------------------------------- |
+| elasticsearch  | `dhi.io/elasticsearch:9.5-debian13`                     | `${ELASTICSEARCH_PORT}` (9200, HTTPS) |
+| metrics-puller | `dhi.io/opentelemetry-collector:0.164-debian13-contrib` | –                                     |
+| volume-init    | same as `elasticsearch` (one-shot, runs as root)        | –                                     |
 
 - Single node, cluster name `aurelius-atlas`, heap `${ELASTICSEARCH_HEAP}` (1 GiB)
 - Security on (DD-006): HTTPS only with a certificate from the workspace CA, basic authentication as
