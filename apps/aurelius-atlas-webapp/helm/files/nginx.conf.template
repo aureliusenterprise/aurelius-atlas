@@ -57,6 +57,10 @@ limit_req_zone $atlas_api_limit_addr zone=atlas_api:10m rate=300r/m;
 # /api/ buckets. Browser-sized with headroom: an OTLP push is bursty by
 # design, an attack is a sustained stream.
 limit_req_zone $atlas_api_limit_addr zone=atlas_otel:10m rate=600r/m;
+# The lineage-model twin (7.22a, LDG-06): the aux API verifies every caller
+# (LM-08), but the 401 path is still work — the same browser-sized bucket as
+# /otel/ (a page draws its diagram with one call; a flood is sustained).
+limit_req_zone $atlas_api_limit_addr zone=atlas_lineage_model:10m rate=600r/m;
 limit_req_status 429;
 
 # Native edge tracing (SHL-15, DD-239): every /api/ request gets an edge span
@@ -148,8 +152,8 @@ server {
     # /api/atlas/..., and the client composes `${apiBaseUrl}/atlas/...` from
     # config — a rewriting proxy would double-strip the prefix. The /otel
     # prefix is stripped, as the collector serves /v1/traces at its root.
-    # The CSP above already promises connect-src 'self' for /api and /otel —
-    # these locations make that real in production.
+    # The CSP above already promises connect-src 'self' for /api, /otel and
+    # /lineage-model — these locations make that real in production.
     #
     # The upstream names below are the service names of this repo's stacks
     # (compose project / k8s Service names); the whole block follows the same
@@ -223,6 +227,32 @@ server {
         proxy_ssl_verify on;
         proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
         proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME};
+        proxy_redirect off;
+    }
+
+    # The lineage-model auxiliary API (7.22a, LDG-06, DD-384): the details
+    # page's lineage diagram fetches its model here (LM-01); the /lineage-model
+    # prefix is stripped, as the aux API serves its route at its root. The aux
+    # API verifies the bearer token itself (LM-08) — nginx adds no auth of its
+    # own, an anonymous request reaches the API's 401. The prefix carries user
+    # bearer tokens, so the upstream certificate is verified exactly as /api/'s
+    # is (DD-142's reason: unverified, a path attacker harvests every token).
+    location /lineage-model/ {
+        limit_req zone=atlas_lineage_model burst=100 nodelay;
+
+        set $lineage_model_upstream ${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM};
+        rewrite ^/lineage-model(/.*)$ $1 break;
+        proxy_pass $lineage_model_upstream;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate ${AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE};
+        proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME};
         proxy_redirect off;
     }
 

@@ -53,8 +53,12 @@ class LineageModelSettings(BaseSettings):
     """The realm the tokens are issued from."""
 
     auth_audience: str = "aurelius-atlas-lineage-model"
-    """The accepted ``azp``/``aud`` value — this app's Keycloak client id (AUX-04, AUX-05);
-    the dev deployment sets the webapp's ``aurelius``, whose tokens the chain forwards."""
+    """The accepted ``azp``/``aud`` value — this app's Keycloak client id (AUX-04, AUX-05)."""
+
+    auth_extra_audiences: list[str] = Field(default_factory=list)
+    """Further accepted ``azp``/``aud`` values (AUT-10, DD-385): the dev, e2e, and chart
+    deployments join the webapp's ``aurelius`` here — the browser's own token is what
+    the chain forwards upstream (LM-04), and the app's own client stays ``auth_audience``."""
 
     auth_ca_file: FilePath | None = None
     """PEM CA verifying the issuer's TLS; unset uses the system trust store."""

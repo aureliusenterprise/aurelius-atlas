@@ -14,6 +14,8 @@ export * from "./lib/atlas/atlas-relationship";
 export * from "./lib/atlas/atlas-search";
 export * from "./lib/atlas/atlas-tasks";
 export * from "./lib/atlas/atlas-typedef";
+export * from "./lib/aux/aux-config";
+export * from "./lib/aux/lineage-model.service";
 export * from "./lib/atlas/glossary.service";
 export * from "./lib/atlas/lineage.service";
 export * from "./lib/atlas/relationship.service";

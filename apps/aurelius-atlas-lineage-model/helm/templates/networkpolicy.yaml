@@ -1,0 +1,34 @@
+{{/*
+The lineage-model ingress allow (7.22a, LDG-06, DD-384; the CHT-66 shape).
+Before 7.22a nothing dialed this API in-cluster — its chart rendered no
+policy at all (CHT-66's second half: a policy that opened it would pin a
+caller that does not exist). The webapp's nginx now dials it: the details
+page's lineage diagram reaches the API through the `/lineage-model/`
+location, the same data path the webapp's chart pins for /api/ (DD-142).
+Peers join by pod labels (CHT-70): chart name + release instance, never a
+Service name. The probe surface is exempt by CNI design (CHT-71).
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" (include "atlas-lineage-model.fullname" .) }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-lineage-model.labels" . | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            {{- include "atlas-lineage-model.selectorLabels" . | nindent 12 }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ default "atlas-webapp" .Values.networkPolicy.peers.webapp | quote }}
+                            app.kubernetes.io/instance: {{ .Release.Name | quote }}
+            ports:
+                -   port: {{ int .Values.port }}
+                    protocol: TCP
+{{- end }}

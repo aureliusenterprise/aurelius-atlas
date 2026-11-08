@@ -97,6 +97,12 @@ itself is 10.3b). */}}
 {{- include "atlas-webapp.siblingService" (dict "name" "atlas-observability" "release" .Release.Name "override" .Values.collector.service) -}}
 {{- end -}}
 
+{{/* The lineage-model Service this nginx proxies /lineage-model/ to (7.22a,
+LDG-06, DD-384). */}}
+{{- define "atlas-webapp.lineageModelService" -}}
+{{- include "atlas-webapp.siblingService" (dict "name" "atlas-lineage-model" "release" .Release.Name "override" .Values.lineageModel.service) -}}
+{{- end -}}
+
 {{/*
 The Secret carrying the trust root (key: ca.crt) this nginx pins as a TLS
 client (CHT-25, DD-259): explicit value wins, else the chain's CA named by the

@@ -111,6 +111,10 @@ telemetry:
 
 config:
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: aurelius-atlas-lineage-model
+    # The webapp's browser client joins the accepted audiences (7.22a, DD-385):
+    # the details page calls this API with the user's own token (LM-08 verifies
+    # it, LM-04 forwards it), and the app's own client identity stays.
+    AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES: '["aurelius"]'
     AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info
     AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
@@ -143,6 +147,14 @@ securityContext:
     capabilities:
         drop:
             - ALL
+
+# Network segmentation (7.22a, LDG-06): the ingress allow for this Service —
+# the webapp only (its /lineage-model/ proxy, DD-384). peers.<peer> renames a
+# peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        webapp: ""
 
 # The issuer guard is the chart's own (validate.yaml): AUTH_SERVER_URL may
 # arrive as global.issuer.url (the umbrella) or derive from global.domain.

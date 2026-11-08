@@ -92,6 +92,19 @@ def test__lineage_upstreams_are_joins(lineage_docs: list[dict[str, Any]]) -> Non
     assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL") == "https://atlas-data2model:21001/"
 
 
+@pytest.mark.covers(rules=["LDG-05"])
+def test__lineage_admits_the_browser_client(lineage_docs: list[dict[str, Any]]) -> None:
+    """The chart joins the browser client to the audiences (7.22a, DD-385).
+
+    The details page calls the API with the user's own token (azp `aurelius`),
+    so the verifier must accept it beside the app's own audience — the join is
+    a JSON list, the shape the app's settings parse (pydantic list field).
+    """
+    envs = env_map(_app(lineage_docs))
+    assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE") == "aurelius-atlas-lineage-model"
+    assert env_value(envs, "AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES") == '["aurelius"]'
+
+
 @pytest.mark.covers(rules=["CHT-42", "CHT-90"])
 @pytest.mark.parametrize("component", AUX)
 def test__telemetry_join_names_collector_and_public_issuer(component: str) -> None:
@@ -226,16 +239,33 @@ def test__data2model_admits_only_lineage_model() -> None:
 
 
 @pytest.mark.covers(rules=["CHT-66"])
-def test__lineage_model_and_validate_entity_render_no_policies() -> None:
-    """Nothing in the system dials them, so no allow is rendered (CHT-66).
+def test__validate_entity_renders_no_policies() -> None:
+    """Nothing in the system dials it, so no allow is rendered (CHT-66).
 
     A policy here would be a lie about a caller that does not exist; the
-    charts render zero NetworkPolicy even with the default-on gate.
+    chart renders zero NetworkPolicy even with the default-on gate.
     """
-    for component in ("lineage-model", "validate-entity"):
-        chart = AUX_CHARTS[component]
-        docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
-        assert names(docs, "NetworkPolicy") == set()
+    chart = AUX_CHARTS["validate-entity"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    assert names(docs, "NetworkPolicy") == set()
+
+
+@pytest.mark.covers(rules=["LDG-06"])
+def test__lineage_model_admits_the_webapp() -> None:
+    """21002 accepts the webapp join only (7.22a, LDG-06, DD-384).
+
+    Since 7.22a the webapp's nginx dials this API — the `/lineage-model/`
+    location, the details page's lineage data path. Before it, nothing
+    dialed the port and the chart rendered no policy (CHT-66's second half).
+    """
+    chart = AUX_CHARTS["lineage-model"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    policy = find(docs, "NetworkPolicy", "atlas-lineage-model-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-lineage-model")
+    assert policy_peers_by_port(docs, "atlas-lineage-model-ingress") == {21002: {"atlas-webapp"}}
+
+    off = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=("networkPolicy.enabled=false",))
+    assert names(off, "NetworkPolicy") == set()
 
 
 @pytest.mark.covers(rules=["CHT-92"])

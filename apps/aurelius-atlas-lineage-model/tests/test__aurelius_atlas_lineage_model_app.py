@@ -11,10 +11,12 @@ from uuid import UUID
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_lineage_model.app import create_app
 from aurelius_atlas_lineage_model.globals import FAST_FAIL_ATLAS, FAST_FAIL_D2M, UPSTREAM_TIMEOUT_SECONDS
 from aurelius_atlas_server_client.client import AtlasClient
+from conftest import AUDIENCE, issuer_client
 from fake_upstream import FakeUpstream
 from fastapi import FastAPI
 from httpx2 import ASGITransport, AsyncClient
@@ -127,6 +129,46 @@ async def test__a_token_minted_for_another_audience_is_rejected(
 
     assert response.status_code == 401
     assert upstream.requests == []
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-01", "LM-08"])
+async def test__a_browser_client_token_passes_when_it_joined_the_audiences(
+    settings: Any,  # noqa: ANN401  # the fixture's settings object
+    upstream: FakeUpstream,
+    token: Callable[..., str],
+) -> None:
+    """The browser's own token passes when the deployment joined its client (DD-385).
+
+    The webapp sends its `aurelius` token and the chain forwards it upstream
+    (LM-04); the deployment joins it as an extra audience so the app keeps its
+    own client identity (``aurelius-atlas-lineage-model``) and still admits the
+    browser — and a token for a third client, outside the union, is still a 401.
+    """
+    _happy_upstream(upstream)
+
+    browser_auth = KeycloakAuth(
+        AuthConfig(server_url="http://issuer.test", realm="master", audience=AUDIENCE, extra_audiences=("aurelius",)),
+        http=issuer_client(),
+    )
+    app = create_app(
+        settings,
+        auth=browser_auth,
+        atlas=AtlasClient(httpx.AsyncClient(base_url="http://atlas.test", transport=upstream.transport()), "t"),
+        d2m=Data2ModelClient(httpx.AsyncClient(base_url="http://data2model.test", transport=upstream.transport()), "t"),
+    )
+    try:
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://lineage-model") as http:
+            accepted = await http.get(
+                "/", params={"guid": str(E_IN)}, headers=_bearer(token(azp="aurelius", audience="aurelius"))
+            )
+            rejected = await http.get(
+                "/", params={"guid": str(E_IN)}, headers=_bearer(token(azp="third-client", audience="third-client"))
+            )
+    finally:
+        browser_auth.close()
+
+    assert accepted.status_code == 200
+    assert rejected.status_code == 401
 
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-09"])

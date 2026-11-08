@@ -3,11 +3,11 @@ The data2model ingress allow (CHT-66, DD-271). The one caller this API
 serves in-cluster is lineage-model (its DATA2MODEL_URL join, DD-294); the
 aux APIs' other clients are external (the browser through the gateway — and
 data2model is not a browser host). Peers join by pod labels (CHT-70): chart
-name + release instance, never a Service name. lineage-model and
-validate-entity render no policy at all — nothing dials them (their clients
-are external), and a policy that opened them would pin a caller that does not
-exist (CHT-66's second half). The probe surface is exempt by CNI design
-(CHT-71).
+name + release instance, never a Service name. validate-entity renders no
+policy at all — nothing dials it (its clients are external), and a policy
+that opened it would pin a caller that does not exist (CHT-66's second half).
+lineage-model has its own allow since 7.22a (LDG-06: the webapp's nginx
+dials it). The probe surface is exempt by CNI design (CHT-71).
 */}}
 {{- if .Values.networkPolicy.enabled }}
 apiVersion: networking.k8s.io/v1

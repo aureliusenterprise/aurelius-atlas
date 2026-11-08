@@ -9,7 +9,7 @@ The nginx config never reaches the container unresolved: the shipped image
 bakes the raw template (its parse-fails-loudly contract) and this pod mounts
 an emptyDir over /etc/nginx/conf.d that a resolve-nginx-config init container
 fills (same image — the hardened base has neither envsubst nor bash, so plain
-sh + sed; DD-262). The init's env is the thirteen template placeholders the
+sh + sed; DD-262). The init's env is the fifteen template placeholders the
 chart computes (CHT-25, DD-270): every one a join or a Secret ref, and the
 ingest bearer arrives from <release>-collector-legacy at *pod start* — never
 rendered into the ConfigMap, where Helm would re-draw the umbrella's
@@ -22,6 +22,7 @@ ride emptyDirs with fsGroup (CHT-23, DD-257's uid pin in values).
 {{- $ns := default .Release.Namespace .Values.global.namespace -}}
 {{- $server := include "atlas-webapp.serverService" . -}}
 {{- $collector := include "atlas-webapp.collectorService" . -}}
+{{- $lineageModel := include "atlas-webapp.lineageModelService" . -}}
 {{- $tokenSecret := default (printf "%s-collector-legacy" .Release.Name) .Values.otelIngestToken.secret -}}
 {{- /* One line, semicolon-separated: nginx directives need no newlines and
 sed replacements must not carry them (DD-261). [] resolves to nothing. */ -}}
@@ -45,9 +46,12 @@ resolv.conf's search list — the defaults must be cluster FQDNs (the peer
 Certificates carry the .svc.cluster.local SAN, DD-286). */ -}}
 {{- $apiFqdn := printf "%s.%s.svc.cluster.local" $server $ns -}}
 {{- $collectorFqdn := printf "%s.%s.svc.cluster.local" $collector $ns -}}
+{{- $lineageModelFqdn := printf "%s.%s.svc.cluster.local" $lineageModel $ns -}}
 {{- $placeholders := dict
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM" (default (printf "https://%s:%d" $apiFqdn (int .Values.server.port)) .Values.nginx.apiUpstream)
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME" (default $apiFqdn .Values.nginx.apiUpstreamName)
+    "AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM" (default (printf "https://%s:%d" $lineageModelFqdn (int .Values.lineageModel.port)) .Values.nginx.lineageModelUpstream)
+    "AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME" (default $lineageModelFqdn .Values.nginx.lineageModelUpstreamName)
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM" (default (printf "https://%s:%d" $collectorFqdn (int .Values.collector.browserPort)) .Values.nginx.otelUpstream)
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME" (default $collectorFqdn .Values.nginx.otelUpstreamName)
     "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT" (default (printf "https://%s:%d" $collectorFqdn (int .Values.collector.legacyGrpcPort)) .Values.nginx.otlpEndpoint)
@@ -105,7 +109,8 @@ spec:
                         {{- toYaml .Values.initResources | nindent 24 }}
                     {{- /* The placeholder values, verbatim in the init's env
                     (nothing secret but the token, which rides a secretKeyRef
-                    from the generated Secret — CHT-25/31). */}}
+                    from the generated Secret — CHT-25/31). The lineage-model
+                    pair joined with 7.22a (LDG-06, DD-384). */}}
                     env:
                         {{- range $name, $value := $placeholders }}
                         - name: {{ $name }}
@@ -117,12 +122,12 @@ spec:
                                   name: {{ $tokenSecret }}
                                   key: {{ .Values.otelIngestToken.key }}
                     command: ["/bin/sh", "-ec"]
-                    {{- /* The thirteen names verbatim (CHT-25's contract, DD-270; the
-                    thirteenth joined with CHT-99): the
+                    {{- /* The fifteen names verbatim (CHT-25's contract, DD-270; the
+                    thirteenth joined with CHT-99, the last two with 7.22a): the
                     pattern side anchors on ${NAME} — braces included, so
                     _NAME siblings never match a prefix — and the shell
                     expands ${NAME} from this container's env before sed
-                    ever sees it. A contract test pins these thirteen against the
+                    ever sees it. A contract test pins these fifteen against the
                     ConfigMap asset's placeholders and the init's env. */}}
                     args:
                         - |
@@ -133,6 +138,8 @@ spec:
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME}|${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER}|${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}|${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM}|${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM}|g" \
+                                -e "s|\${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME}|${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM}|${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME}|${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME}|g" \
                                 -e "s|\${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|g" \
