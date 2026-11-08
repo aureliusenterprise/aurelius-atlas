@@ -46,13 +46,13 @@ Delivered here:
 
 Explicitly not delivered here, with the increment that will:
 
-| Not delivered                                     | Lands with | Why                                                                                       |
-| ------------------------------------------------- | ---------- | ----------------------------------------------------------------------------------------- |
-| The Browse tab's organization folder tree         | —          | Delivered after all: the reader asked for it (DD-395 superseded by DD-406)                |
-| The toolbar                                       | 7.22d      | Unchanged from 7.22b's table                                                              |
-| The Data governance addon in the Selection tab    | 7.8        | It queries governance quality for the selected guid (DD-369's deferral, unchanged)        |
-| Colour legend and palette editing in the View tab | —          | No bucket mapping exists on the details page (7.22b's deferral table, unchanged)          |
-| Fuzzy search (mnemonist inverted index, SymSpell) | —          | The webapp's sections already filter client-side on a keyword (DET-20); deviation, DD-396 |
+| Not delivered                                     | Lands with | Why                                                                                                                                                                                   |
+| ------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| The Browse tab's organization folder tree         | —          | Delivered after all: the reader asked for it (DD-395 superseded by DD-406)                                                                                                            |
+| The toolbar                                       | 7.22d      | Unchanged from 7.22b's table                                                                                                                                                          |
+| The Data governance addon in the Selection tab    | 7.8        | It queries governance quality for the selected guid (DD-369's deferral, unchanged)                                                                                                    |
+| Colour legend and palette editing in the View tab | 7.22g      | Delivered after all: the legend table with its picker lands as UIC-31 (DD-420). No producer feeds categories on this page today, so the table stays hidden until a host supplies them |
+| Fuzzy search (mnemonist inverted index, SymSpell) | —          | The webapp's sections already filter client-side on a keyword (DET-20); deviation, DD-396                                                                                             |
 
 ## Semantics
 

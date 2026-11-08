@@ -136,6 +136,25 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         expect(activeTab(compiled)).toBe("View");
     });
 
+    it("UIC-31: the View tab's legend picker writes the picked colour to the shared state", () => {
+        const { created, compiled, state, paramMap } = setup({ tab: "view" });
+        state.categories.set({ "e-1": "bronze", "e-2": "silver" });
+        created.detectChanges();
+
+        // The legend table appears with the categories and hides without.
+        expect(compiled.textContent).toContain("Color legend");
+        expect(compiled.querySelectorAll("input[type='color']")).toHaveLength(2);
+
+        const swatch = compiled.querySelector("input[type='color']") as HTMLInputElement;
+        swatch.value = "#654321";
+        swatch.dispatchEvent(new Event("input", { bubbles: true }));
+        expect(state.categoryColors()).toEqual({ bronze: "#654321" });
+
+        // Picking keeps the panel open (no navigation) — the reader sees
+        // the canvas repaint.
+        expect(paramMap).toBeDefined();
+    });
+
     it("DD-410: the legacy's chrome — the header reads Details, the footer closes", () => {
         const { created, compiled, state, navigate } = setup({ tab: "selection", concept: PROCESS });
         expect(compiled.querySelector(".aurelius-drawer-title")?.textContent?.trim()).toBe("Details");

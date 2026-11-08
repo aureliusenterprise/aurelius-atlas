@@ -3,6 +3,7 @@ import { expect } from "storybook/test";
 
 import { ModelViewer } from "./model-viewer.component";
 import { AR3_ICON_TYPES, NO_RELATION_OPTIONS } from "./archimate-shapes";
+import { CATEGORY_PALETTE } from "./category-colors";
 import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./ar3-types";
 
 /**
@@ -13,6 +14,16 @@ import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, A
  * wants to show, not a fetched document. Pan and zoom work here too: drag
  * and the wheel ride the canvas (LDG-16).
  */
+
+/**
+ * A palette colour as a browser reports it: a real browser serialises an
+ * inline `fill` back as `rgb(r, g, b)`, so a play pin compares against this
+ * form, not the hex the palette stores.
+ */
+function rgb(hex: string): string {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
 
 /** One placed node of a story fixture. */
 interface PlacedNode {
@@ -118,6 +129,8 @@ const template = `
         [view]="view"
         [selected]="selected"
         [highlightedGuid]="highlightedGuid"
+        [categories]="categories"
+        [categoryColors]="categoryColors"
         (conceptSelected)="onClick($event)"
     />
 </div>
@@ -132,6 +145,8 @@ const host = (args: Record<string, unknown>) => ({
         height: 300,
         selected: null,
         highlightedGuid: null,
+        categories: null,
+        categoryColors: null,
         ...args,
         onClick: (concept: string) => clicked.push(concept),
     },
@@ -434,5 +449,67 @@ export const AllTypes: Story = {
     render: host,
     play: async ({ canvasElement }) => {
         await expect((canvasElement as HTMLElement).querySelectorAll("g.node")).toHaveLength(AR3_ICON_TYPES.length);
+    },
+};
+
+/** The heat-map-ish chain the colour stories share: five datasets, three buckets. */
+const heatChain = diagram(
+    {
+        raw: { type: "lineage_dataset", x: 0, y: 60, name: "raw.events" },
+        stage: { type: "lineage_dataset", x: COL, y: 60, name: "stg.events" },
+        mart: { type: "lineage_dataset", x: COL * 2, y: 60, name: "mart.events" },
+        audit: { type: "lineage_dataset", x: COL, y: 220, name: "audit.log" },
+        report: { type: "lineage_dataset", x: COL * 2, y: 220, name: "report.daily" },
+    },
+    [
+        { type: "lineage_relation", source: "raw", target: "stage" },
+        { type: "lineage_relation", source: "stage", target: "mart" },
+        { type: "lineage_relation", source: "stage", target: "audit" },
+        { type: "lineage_relation", source: "mart", target: "report" },
+    ],
+);
+
+/** The colour view's buckets, keyed by the fixture's concept ids. */
+const heatCategories = { raw: "bronze", stage: "silver", mart: "gold", audit: "silver", report: "gold" };
+
+/**
+ * The colour view (UIC-30): the caller's categories replace the class fills
+ * with the legend's colours — each distinct category takes the next palette
+ * colour in first-seen order, exactly the legacy's `ColorViewService` join.
+ * A relation whose concept carries no category keeps its black stroke, as
+ * the canvas spec's connection test pins (UIC-30).
+ */
+export const CategoryColors: Story = {
+    args: { ...heatChain, categories: heatCategories, height: 360 } as Record<string, unknown>,
+    render: host,
+    play: async ({ canvasElement }) => {
+        const shapes = [...(canvasElement as HTMLElement).querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        await expect(shapes.map((shape) => shape.style.fill)).toEqual([
+            rgb(CATEGORY_PALETTE[0]),
+            rgb(CATEGORY_PALETTE[1]),
+            rgb(CATEGORY_PALETTE[2]),
+            rgb(CATEGORY_PALETTE[1]),
+            rgb(CATEGORY_PALETTE[2]),
+        ]);
+    },
+};
+
+/**
+ * A picked colour (UIC-31): the drawer's legend table writes an override and
+ * the whole category repaints with it — here "gold" was picked to green.
+ * The un-picked categories keep their palette colours.
+ */
+export const CategoryColorsCustom: Story = {
+    args: {
+        ...heatChain,
+        categories: heatCategories,
+        categoryColors: { gold: "#22aa44" },
+        height: 360,
+    } as Record<string, unknown>,
+    render: host,
+    play: async ({ canvasElement }) => {
+        const shapes = [...(canvasElement as HTMLElement).querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        await expect(shapes[2].style.fill).toBe(rgb("#22aa44"));
+        await expect(shapes[0].style.fill).toBe(rgb(CATEGORY_PALETTE[0]));
     },
 };

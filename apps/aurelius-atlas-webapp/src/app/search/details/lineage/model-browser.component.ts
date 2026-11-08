@@ -143,7 +143,13 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
                     />
                 }
                 @case ("view") {
-                    <aurelius-atlas-webapp-lineage-view-tab [view]="activeViewEntity()" [metadata]="metadata()" />
+                    <aurelius-atlas-webapp-lineage-view-tab
+                        [view]="activeViewEntity()"
+                        [metadata]="metadata()"
+                        [categories]="state.categories()"
+                        [categoryColors]="state.categoryColors()"
+                        (colorPicked)="onColorPicked($event)"
+                    />
                 }
             }
             <!-- DD-410: the legacy quickview footer's Close button (its own
@@ -335,6 +341,17 @@ export class LineageModelBrowser {
     protected onViewChosen(id: string): void {
         this.state.drawnViewId.set(id);
         this.close();
+    }
+
+    /**
+     * The View tab's legend picker changed one category's colour (UIC-31,
+     * the legacy's `updateLegendColor`): the shared state holds the pick and
+     * the canvas repaints every element in that category — the panel stays
+     * open so the reader sees the change land.
+     * @param picked the category and its new hex
+     */
+    protected onColorPicked(picked: { category: string; color: string }): void {
+        this.state.setCategoryColor(picked.category, picked.color);
     }
 
     /**

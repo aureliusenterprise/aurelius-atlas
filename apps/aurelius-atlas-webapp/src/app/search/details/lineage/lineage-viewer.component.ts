@@ -103,6 +103,8 @@ import { DRAWER_SCROLL } from "./lineage-shapes";
                     [view]="drawnView()"
                     [selected]="state.selected()"
                     [highlightedGuid]="highlightedGuid()"
+                    [categories]="state.categories()"
+                    [categoryColors]="state.categoryColors()"
                     (conceptSelected)="onElementClicked($event)"
                 />
             </div>

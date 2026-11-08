@@ -24,6 +24,7 @@ import {
     type Ar3MarkerDef,
 } from "./archimate-shapes";
 import { BOUNDS_INSET, ZOOM_SCALE_EXTENT } from "./lineage-shapes";
+import { categoryColor, deriveCategoryLegend, type CategoryLegend, type CategoryMap } from "./category-colors";
 import { buildConnectionPath, type PathSurface } from "./connection-path";
 import {
     connectionConceptId,
@@ -51,6 +52,8 @@ interface DrawnNode {
     readonly icon: string | null;
     /** The icon's fill class (LDG-35), empty when no table names the type. */
     readonly iconColor: string;
+    /** The category colour that overrides the class fill (UIC-30), null for none. */
+    readonly fill: string | null;
     /** The concept a click selects (LDG-17: `ref ?? id`). */
     readonly concept: string;
     /** The raw model position (LDG-15: `translate(x, y)`; the group holds the shift). */
@@ -68,6 +71,8 @@ interface DrawnConnection {
     readonly style: Ar3ConnectionStyle;
     /** The concept a click selects (LDG-17: `ref ?? id`). */
     readonly concept: string;
+    /** The category colour that overrides the black stroke (UIC-30), null for none. */
+    readonly stroke: string | null;
 }
 
 /**
@@ -156,7 +161,7 @@ interface DrawnConnection {
                             <svg:clipPath [attr.id]="'clip-' + drawn.node.id">
                                 <svg:path [attr.d]="drawn.shape"></svg:path>
                             </svg:clipPath>
-                            <svg:path class="node-shape" [attr.d]="drawn.shape"></svg:path>
+                            <svg:path class="node-shape" [attr.d]="drawn.shape" [style.fill]="drawn.fill"></svg:path>
                             <svg:g [attr.clip-path]="'url(#clip-' + drawn.node.id + ')'">
                                 <svg:foreignObject [attr.width]="drawn.node.width" [attr.height]="drawn.node.height">
                                     <xhtml:div xmlns="http://www.w3.org/1999/xhtml" class="node-content">
@@ -197,6 +202,7 @@ interface DrawnConnection {
                                     class="connection-path"
                                     [attr.id]="'path-' + drawn.connection.id"
                                     [attr.d]="drawn.path"
+                                    [style.stroke]="drawn.stroke"
                                     [attr.marker-start]="
                                         drawn.style.markerStart ? 'url(#' + drawn.style.markerStart + ')' : null
                                     "
@@ -407,12 +413,30 @@ export class ModelViewer {
     /** The page's entity guid (LDG-18): its node gains the highlight stroke. */
     readonly highlightedGuid = input<string | null>(null);
 
+    /** The colour view's categories (UIC-30, the legacy's `bucketMapping`):
+        concept id → category name. The caller — a heatmap or violation
+        producer — owns it; null (the default) draws no colour view, exactly
+        the legacy's state on this page. An element reads it by its view id
+        first and its concept second, as the legacy's node service did. */
+    readonly categories = input<CategoryMap | null>(null);
+
+    /** The picked category colours (UIC-31): category name → hex. The
+        drawer's legend table writes it; every element in the category
+        repaints with it (the legacy's `updateLegendColor`). */
+    readonly categoryColors = input<CategoryMap | null>(null);
+
     /** A node or connection was clicked, with the concept it stands for
         (LDG-17: `ref ?? id`). The caller decides what selection means. */
     readonly conceptSelected = output<string>();
 
     /** The marker set — the legacy defs loop over `ar3RelationDef` (LDG-14/LDG-36). */
     protected readonly markerDefs: readonly Ar3MarkerDef[] = AR3_MARKER_DEFS;
+
+    /** The category→colour legend the drawing inks with (UIC-30): the join
+        of {@link categories} with the {@link categoryColors} picks. */
+    private readonly legend = computed<CategoryLegend>(() =>
+        deriveCategoryLegend(this.categories(), this.categoryColors()),
+    );
 
     private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>("svg");
     private readonly zoomTarget = viewChild.required<ElementRef<SVGGElement>>("zoomTarget");
@@ -476,6 +500,10 @@ export class ModelViewer {
                 icon: icon?.path ?? null,
                 iconColor: icon?.color ?? "",
                 concept: nodeConceptId(node),
+                // UIC-30: the colour view wins over the class fill (the
+                // legacy's colorMapping ?? style ?? class chain), null keeps
+                // the class fill in charge.
+                fill: categoryColor(this.legend(), this.categories(), node.id, nodeConceptId(node)),
                 // LDG-15: the node rides its raw model coordinate; the one
                 // bounds normalisation (the -minX/-minY on the group) shifts
                 // every node and connection together — subtracting it here
@@ -519,6 +547,10 @@ export class ModelViewer {
                 name: connection.displayName,
                 style: ar3ConnectionStyle(relation?.type ?? "", relation?.options ?? NO_RELATION_OPTIONS),
                 concept: connectionConceptId(connection),
+                // UIC-30: the same join, the legacy's connection mirror —
+                // the category colour replaces the black stroke (the
+                // markers keep their own colour, as there).
+                stroke: categoryColor(this.legend(), this.categories(), connection.id, connectionConceptId(connection)),
             };
         });
     });

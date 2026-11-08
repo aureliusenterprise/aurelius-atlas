@@ -18,6 +18,7 @@ export * from "./lib/holdable/holdable.directive";
 export * from "./lib/infinite-scroll-container/infinite-scroll-container.component";
 export * from "./lib/model-viewer/ar3-types";
 export * from "./lib/model-viewer/archimate-shapes";
+export * from "./lib/model-viewer/category-colors";
 export * from "./lib/model-viewer/connection-path";
 export * from "./lib/model-viewer/model-viewer.component";
 export * from "./lib/model-viewer/lineage-shapes";
