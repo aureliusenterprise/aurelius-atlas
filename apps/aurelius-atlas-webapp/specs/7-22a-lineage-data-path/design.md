@@ -180,3 +180,32 @@ SWA-02 reads that one.
 SWA-02 turns green again. A future increment that runs the aux API in the
 standalone stack adds the service and its audience without a resolver change
 beyond the value.
+
+### DD-423. The per-test sign-in replay retries once like the boot sign-in
+
+- **Status:** Proposed
+- **Increment:** 7.22a
+- **Date:** 2026-11-08
+
+**Decision.** The `authenticated` and `reader_authenticated` e2e fixtures run
+their goto-and-sign-in pass inside the same tenacity retry the session's boot
+sign-in uses: two attempts, a clean cookie jar between them, the
+`PlaywrightError` classes only.
+
+**Reason.** The boot sign-in has retried since DD-224 because a navigation
+aborts when the e2e stack starts its compose networks while tests run. The
+per-test replay was written as a plain call, and it failed the way the boot
+pass used to: one chromium test errored in setup when Keycloak's form
+navigation stalled past the 30s wait on a network still settling
+(`test__locale_switch_shows_localized_shell`, local full-suite run of
+2026-11-08). A replay is the same navigation, so it needs the same rider.
+
+**Alternatives.** Retry inside `_sign_in` itself. It loses: the session boot
+would then ride three layers of retry for one navigation, and the reader
+fixture's state refresh must stay outside the retried block. Second, treat it
+as a known flake and re-run jobs. It loses: the failure lands on whatever test
+happens to run first after a stack start, and every CI re-run costs 25 minutes.
+
+**Consequences.** One transient network event no longer errors a test, and the
+failure that survives a second attempt stays visible as a real bug. The retry
+costs nothing on the common path because a signed-in replay never raises.
