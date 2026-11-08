@@ -4,7 +4,7 @@ How Aurelius Atlas protects identity, access, secrets, and data. The system's se
 
 | Page | Scope | Written by |
 | --- | --- | --- |
-| [Access Management](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/platform/security/access-management/index.md>) | Authorizer policies on every endpoint, role model | 6.2 (ADR 038) |
+| [Access Management](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/platform/security/access-management/index.md>) | The role model, what is checked, granting and revoking | written (6.2, ADR 038) |
 | [Identity Management](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/platform/security/identity-management/index.md>) | Shared identity provider, sessions, the dashboard's identity | 6.1 (ADR 007) |
 | [Secrets Management](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/platform/security/secrets-management/index.md>) | Production: env channel, ownership (ADR 028), boundaries; dev/CI rules after; how-to in the [Contributor Guide](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/contributor-guide/secrets-management/index.md>) | written (ADRs 008/028) |
 | [Data Encryption](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/platform/security/data-encryption/index.md>) | TLS in flight (production), at rest; dev certificates and named relaxations after | written (0.2/0.5) |

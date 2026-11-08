@@ -71,13 +71,4 @@ Any acceptable arrangement must deliver:
 
 - The credential format per boundary (identity provider, platform, or deployment) is a follow-up per service, not settled here.
 - A service credential is a secret and rests where the secrets record says ([008](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/008-secrets-never-in-plaintext/index.md>)); who owns its rotation is the question a proposed record takes up ([028](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/028-operational-secret-handling-has-a-named-owner/index.md>)).
-
-## Implementation
-
-**Demonstrated, then removed with the slice.** The rule was proven end-to-end on the development event platform, which at acceptance ran unauthenticated — a defect by this record's definition. The proof, before the slice left ([050](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>)):
-
-- The local Kafka cluster was closed to anonymous callers: token callers arrive with OAuth 2.0 bearer tokens (SASL/OAUTHBEARER over TLS) from a dedicated `kafka` realm, each a distinct confidential client so the broker's session log names the caller (R1, R2, R3, R6).
-- Library exceptions arrive with per-service client certificates under mutual TLS.
-- Every E2E suite authenticates over TLS (R5).
-
-**The rule stands** and now governs the boundaries the catalogue keeps: the server to its search store, its identity provider, and its HTTP API. Transport protection belongs to the data-protection record ([039](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>)); this record covers the credential presented once the channel is open.
+- The rule governs the boundaries the catalogue keeps: the server to its search store, its identity provider, and its HTTP API. Transport protection belongs to the data-protection record ([039](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>)); this record covers the credential presented once the channel is open. The proof of the rule ran on the event platform and left with that slice ([050](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/050-the-system-carries-only-what-the-catalogue-needs/index.md>)).

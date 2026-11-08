@@ -1,6 +1,6 @@
 # aurelius-atlas-typesystem
 
-The Atlas type system for Aurelius Atlas, without I/O ([DD-002](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)): the type registry and the types that type definitions resolve to. Since increment [1.2](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/conversion/increments/1-2-type-registry/index.md>): the built-in, array, map, enum and struct types, attribute types and constraints. Since [1.3](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/conversion/increments/1-3-type-hierarchies/index.md>): entity and classification hierarchies, relationship and business metadata types. Since [2.1b](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/conversion/increments/2-1-value-types/index.md>): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values. Since [2.1c](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/conversion/increments/2-1-entity-validation/index.md>): the same for structs, classifications (with their validity periods) and entities (with their relationship attributes).
+The Atlas type system for Aurelius Atlas, without I/O (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)): the type registry and the types that type definitions resolve to. Since increment `1.2` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/spec.md`): the built-in, array, map, enum and struct types, attribute types and constraints. Since `1.3` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/spec.md`): entity and classification hierarchies, relationship and business metadata types. Since `2.1b` (the spec: `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/spec.md`): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values. Since `2.1c` (the spec: `libs/python/aurelius-atlas-typesystem/specs/2-1-entity-validation/spec.md`): the same for structs, classifications (with their validity periods) and entities (with their relationship attributes).
 
 ```
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -13,7 +13,8 @@ registry.entity_type("hive_table")
 int_type = registry.get_type("int")
 int_type.get_normalized_value("42")  # 42; Java's Integer.valueOf rules, None when invalid
 registry.get_type("array<int>").validate_value(["x"], "a", messages := [])  # messages: a[0]=x: invalid value…
-registry.entity_type("hive_table").validate_value(entity, "entity", messages)  # e.g. mandatory attribute missing
+registry.entity_type("hive_table").validate_value(entity, "entity", messages)  # e.g. mandatory attribute
+missing
 ```
 
 ## Installation
@@ -798,7 +799,7 @@ Attributes:
   `__CLASSIFICATION_ROOT`; not registered, resolved by every registry (THY-05).
 - **`CLASSIFICATION_ROOT_NAME`** –
 - **`ENTITY_HEADER_ATTRIBUTES`** –
-- **`ENTITY_ROOT`** –
+- **`ENTITY_ROOT`** (`EntityType`) –
 
   `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
 - **`ENTITY_ROOT_NAME`** –
@@ -829,7 +830,7 @@ ENTITY_HEADER_ATTRIBUTES = ('name', 'description', 'owner', 'createTime')
 ### ENTITY\_ROOT
 
 ```
-ENTITY_ROOT = EntityType(_root_entity_def())
+ENTITY_ROOT: EntityType = _RootEntityType()
 ```
 
 `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
@@ -4801,7 +4802,7 @@ Attributes:
 - **`DYN_ATTRIBUTE_PREFIX`** –
 
   The entity type option naming a dynamic attribute: `dynAttribute:<name>`, its value the template.
-- **`ENTITY_ROOT`** –
+- **`ENTITY_ROOT`** (`EntityType`) –
 
   `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).
 
@@ -4816,7 +4817,7 @@ The entity type option naming a dynamic attribute: `dynAttribute:<name>`, its va
 ### ENTITY\_ROOT
 
 ```
-ENTITY_ROOT = EntityType(_root_entity_def())
+ENTITY_ROOT: EntityType = _RootEntityType()
 ```
 
 `__ENTITY_ROOT`; not registered, resolved by every registry (THY-05).

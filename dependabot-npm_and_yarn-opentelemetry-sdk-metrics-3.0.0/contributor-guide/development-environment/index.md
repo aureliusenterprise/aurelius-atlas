@@ -111,14 +111,13 @@ The rule that surprises people: **services are reached by service name, not `loc
 | Service | Host port | Slice | Notes |
 | --- | --- | --- | --- |
 | Atlas server | 21000 | app | Atlas's own port |
-| Elasticsearch | `${ELASTICSEARCH_PORT}` → 9200 | `elasticsearch` | TLS only |
-| Postgres (examples) | `${DATABASE_PORT}` → 5432 | `postgres` | Keycloak keeps its own, on its network |
+| Elasticsearch | 127.0.0.1:${ELASTICSEARCH\_PORT} → 9200 | `elasticsearch` | TLS only; loopback-pinned (CHT-101) |
 | Keycloak | 8080 / 8443 | `keycloak` | 8080 dev convenience; 8443 is the verified TLS path |
-| OTel collector | 4317 / 4318 | `observability` | OTLP gRPC / HTTP, TLS only |
-| Prometheus / Loki / Tempo | 9090 / 3100 / 3200 | `observability` | Consumed through the collector |
+| OTel collector | 127.0.0.1:4317 / 4318 / 4319 | `observability` | OTLP: 4318 browser leg (user JWT), 4317/4319 service leg (shared token); TLS (DD-193), loopback-pinned |
+| Prometheus / Loki / Tempo | 127.0.0.1:9090 / 3100 / 3200 | `observability` | Loopback-pinned (CHT-101); Grafana datasources ride the compose network |
 | Grafana | 127.0.0.1:3000 | `observability` | Loopback only |
 
-Each slice documents its own services, images, and run commands in its colocated README: `dev/elasticsearch`, `dev/keycloak`, `dev/postgres`, `dev/observability`.
+Each slice documents its own services, images, and run commands in its colocated README: `dev/elasticsearch`, `dev/keycloak`, `dev/observability`.
 
 > [!WARNING]
 >
@@ -137,7 +136,7 @@ Per [ADR 031](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-open
 | Java | 21 (dev tooling for the vendored dashboards' build only) | `.devcontainer` java feature |
 | Elasticsearch | 9.x (dev image 9.5) | `dev/elasticsearch/docker-compose.yaml` image tag |
 | Keycloak | 26.x | `dev/keycloak/docker-compose.yaml` image tag |
-| PostgreSQL | 18 (Keycloak's database and the template example only — ADR 047) | `dev/postgres`, `dev/keycloak` compose image tags |
+| PostgreSQL | 18 (Keycloak's database only — ADR 047) | `dev/keycloak` compose image tags |
 
 Minor and patch releases inside a window follow the dependency rule ([ADR 020](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-opentelemetry-sdk-metrics-3.0.0/architecture/adr/020-dependencies-stay-current-by-default/index.md>)); the floor rises only when every pin above moves in one change.
 
@@ -152,11 +151,10 @@ The workspace is organized as a monorepo, which means that all the projects are 
 > The workspace is divided into the following main directories:
 >
 > - `apps`: Contains the main applications and services that make up the workspace.
-> - `dev`: Compose files and configuration for the supporting development infrastructure (Elasticsearch, Keycloak, Postgres, observability stack).
+> - `dev`: Compose files and configuration for the supporting development infrastructure (Elasticsearch, Keycloak, observability stack).
 > - `docs`: Central location for all project documentation, guides, and reference materials.
 > - `libs`: Shared libraries and utilities used by multiple applications within the monorepo.
 > - `reports`: License and vulnerability report generators.
-> - `schemas`: Avro event schemas used by the template's example library only.
 > - `secrets`: Your personal SOPS/age key; this folder is excluded from version control.
 > - `tools`: Custom automation (Nx plugins) that wires builds, containers, secrets, and docs into `Nx`.
 
