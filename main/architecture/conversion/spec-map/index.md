@@ -72,6 +72,9 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.18 | Collector ingest identity | `libs/python/aurelius-atlas-otel` + `dev/keycloak` + `dev/observability` | CIA |
 | 7.19 | Frontend failure UX | `apps/aurelius-atlas-webapp` | – (no new ids, DD-214) |
 | 7.20 | Details data spine | `apps/aurelius-atlas-webapp` | DET |
+| 7.21a | Details sections: the seven m4i pages | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | DET |
+| 7.21b | Details sections: the entity datasets walk | `apps/aurelius-atlas-webapp` | DET |
+| 7.21c | Details sections: producers, consumers, the process page | `apps/aurelius-atlas-webapp` | DET |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
