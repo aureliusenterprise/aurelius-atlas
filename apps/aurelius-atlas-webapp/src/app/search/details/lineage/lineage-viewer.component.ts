@@ -530,29 +530,6 @@ export class LineageViewer {
     /** The save flow (LDG-30/31). */
     private readonly saveViewAsImage = inject(SaveViewAsImage);
 
-    /** The icons of the control column (LDG-27 — the legacy's five). */
-    protected readonly faSearch = faSearch;
-    protected readonly faInfo = faInfo;
-    protected readonly faExpand = faExpand;
-    protected readonly faArrowsAlt = faArrowsAlt;
-    protected readonly faCamera = faCamera;
-
-    /** The control column's tooltips (LDG-27 — the legacy's `modelview2.*`). */
-    protected readonly browseTooltip = $localize`:@@modelview2.browse:Browse the model`;
-    protected readonly viewInfoTooltip = $localize`:@@modelview2.viewInfo:View info`;
-    protected readonly fullscreenTooltip = $localize`:@@modelview2.toggleFullscreen:Toggle fullscreen`;
-    protected readonly resetZoomTooltip = $localize`:@@modelview2.resetZoom:Reset zoom and pan`;
-    protected readonly saveTooltip = $localize`:@@modelview2.saveViewAsImage:Save view as image`;
-
-    /** Whether the drawing is fullscreen (LDG-28 — the legacy's flag). */
-    protected readonly isFullscreen = signal(false);
-
-    /** Whether a PNG conversion is in flight (LDG-27's `is-loading`). */
-    protected readonly converting = signal(false);
-
-    /** The save flow (LDG-30/31). */
-    private readonly saveViewAsImage = inject(SaveViewAsImage);
-
     private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>("svg");
     private readonly zoomTarget = viewChild.required<ElementRef<SVGGElement>>("zoomTarget");
     /** The measured container of the save flow (LDG-30's width/height). */
