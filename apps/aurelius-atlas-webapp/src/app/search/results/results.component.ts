@@ -5,6 +5,8 @@ import { AtlasEntityHeader } from "aurelius-atlas-data-access";
 import { EntityCard, InfiniteScrollContainer } from "aurelius-atlas-ui";
 import { map } from "rxjs";
 
+import { nameDisplay } from "../meta/type-display";
+import { typeIcon } from "../meta/type-icons";
 import { SearchState } from "../search-state";
 
 /**
@@ -43,6 +45,27 @@ export class Results {
 
     /** The filter shell's line (SRH-07, the legacy `#noFilters` twin). */
     protected readonly noFilters = $localize`:@@search.components.filter.notAvailable:No filters available.`;
+
+    /**
+     * Resolve a card's badge icon from the hit's type name (DET-26,
+     * DD-378): the app's type-to-icon map — the legacy card badge led
+     * with it, and a type outside the map (a `DataSet`) renders none.
+     * @param typeName the hit's type name, or nothing
+     */
+    protected iconFor(typeName: string | null | undefined) {
+        return typeIcon(typeName ?? undefined);
+    }
+
+    /**
+     * Resolve a card's badge name from the hit's type name (SRH-05,
+     * DD-379): the dictionary display name — the legacy card badge's
+     * `typeName | translate`. A name outside the dictionary (a `DataSet`)
+     * stays raw, as the legacy's missing key did.
+     * @param typeName the hit's type name, or nothing
+     */
+    protected nameFor(typeName: string | null | undefined) {
+        return nameDisplay(typeName ?? undefined);
+    }
 
     /** The no-results heading (SRH-06, the legacy `search.results.noResults`). */
     protected readonly noResultsMessage = $localize`:@@search.results.noResults:No results found`;

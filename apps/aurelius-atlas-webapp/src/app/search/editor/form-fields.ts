@@ -8,6 +8,8 @@ import {
     AtlasRelationshipAttributeDef,
 } from "aurelius-atlas-data-access";
 
+import { nameDisplay } from "../meta/type-display";
+
 /** The input one editor field renders. */
 export type EditorFieldKind = "text" | "markdown" | "number" | "boolean" | "date" | "enum" | "multi";
 
@@ -281,11 +283,14 @@ export function buildRelationshipFields(
     return fields.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** The picker field one merged relationship definition becomes (EDT-13). */
+/** The picker field one merged relationship definition becomes (EDT-13).
+ * The label's parenthesised target is the dictionary display name of the
+ * type (DD-379) — the legacy label was a translated catalogue string;
+ * `targetType` keeps the raw name the search and save ride. */
 function relationshipFieldOf(def: AtlasRelationshipAttributeDef, name: string, target: string): RelationshipField {
     return {
         name,
-        label: `${def.displayName ?? def.name} (${target})`,
+        label: `${def.displayName ?? def.name} (${nameDisplay(target)})`,
         targetType: target,
         single: (def.cardinality ?? "SINGLE") === "SINGLE",
         required: def.isOptional === false,

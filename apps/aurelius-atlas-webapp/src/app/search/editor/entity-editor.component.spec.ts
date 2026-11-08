@@ -300,7 +300,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         arrive(fixture, httpMock);
 
         const tags = [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
-        expect(tags).toEqual(["PII"]);
+        // The chip carries the dictionary display name (EDT-05, DD-379).
+        expect(tags).toEqual(["Has PII"]);
     });
 
     it("renders a picker per relationship attribute, in order, seeded ACTIVE-only (EDT-13, EDT-15)", () => {
@@ -561,14 +562,16 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
         const tags = () =>
             [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
-        expect(tags()).toEqual(["PII", "CONFIDENTIAL"]);
+        // The chips carry the dictionary display names (EDT-05, DD-379);
+        // CONFIDENTIAL is outside the dictionary and stays raw.
+        expect(tags()).toEqual(["Has PII", "CONFIDENTIAL"]);
 
         // A type that does not apply is ignored.
         input.value = "FINANCE";
         input.dispatchEvent(new Event("input"));
         input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
         fixture.detectChanges();
-        expect(tags()).toEqual(["PII", "CONFIDENTIAL"]);
+        expect(tags()).toEqual(["Has PII", "CONFIDENTIAL"]);
 
         // A type that does not apply keeps its text (the input is cleared
         // only on a real add).
@@ -605,7 +608,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         fixture.detectChanges();
         const tags = () =>
             [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
-        expect(tags()).toEqual(["PII", "CONFIDENTIAL"]);
+        expect(tags()).toEqual(["Has PII", "CONFIDENTIAL"]);
 
         // Escape inside the box hides the panel, not the drawer (DD-335).
         input.dispatchEvent(new Event("focusin", { bubbles: true }));

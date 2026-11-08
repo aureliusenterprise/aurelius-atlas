@@ -1,0 +1,72 @@
+<!--
+    The Aurelius card section (UIC-27, DET-17..DET-22): the level of
+    title + count line and sort control + keyword input, then the paged
+    grid of projected cards. The legacy chrome, rebuilt dumb — the count
+    line is the legacy reset link: always underlined, always clickable
+    (an unfiltered reset is a no-op), and while a search filters it the
+    count it shows is the filtered one (DET-20); the sort select and its
+    direction button are the legacy sorting component's native controls
+    (their DQ options drop, DD-369).
+-->
+<div class="level is-widescreen aurelius-card-section-level">
+    <div class="level-left">
+        <div>
+            <h3 class="title is-3">{{ title() }}</h3>
+            <h6 class="subtitle is-6 aurelius-card-section-count">
+                <a href="#" class="aurelius-card-section-reset" (click)="onCountClick($event)"
+                    >{{ filtered() ? filteredCount() : count() }} {{ resultWord() }}</a
+                >
+            </h6>
+        </div>
+    </div>
+    <div class="level-right">
+        <div class="field has-addons aurelius-card-section-controls">
+            <div class="control has-icons-left">
+                <div class="select">
+                    <select [ngModel]="sort()" (ngModelChange)="sort.set($event)" [attr.aria-label]="sortLabel()">
+                        @for (option of sortOptions(); track option.key) {
+                            <option [value]="option.key">{{ option.label }}</option>
+                        }
+                    </select>
+                </div>
+                <span class="icon is-small has-text-info is-left">
+                    <fa-icon aria-hidden="true" [icon]="faSort"></fa-icon>
+                </span>
+            </div>
+            <div class="control">
+                <button
+                    type="button"
+                    class="button is-info aurelius-card-section-direction"
+                    [attr.aria-label]="directionLabel()"
+                    [attr.aria-pressed]="sortDescending()"
+                    (click)="onDirectionClick()"
+                >
+                    <span class="icon is-small">
+                        <fa-icon aria-hidden="true" [icon]="directionIcon()"></fa-icon>
+                    </span>
+                </button>
+            </div>
+        </div>
+        <div class="aurelius-card-section-search">
+            <aurelius-atlas-ui-search-field
+                [query]="query()"
+                [placeholder]="placeholder()"
+                (queryChange)="query.set($event)"
+                (querySubmitted)="querySubmitted.emit($event)"
+            />
+        </div>
+    </div>
+</div>
+
+<div class="cards">
+    <aurelius-atlas-ui-infinite-scroll-container
+        [loading]="loading()"
+        [allLoaded]="allLoaded()"
+        [loadLabel]="loadLabel()"
+        (nextPage)="nextPage.emit()"
+    >
+        <div class="columns is-multiline aurelius-card-section-grid">
+            <ng-content></ng-content>
+        </div>
+    </aurelius-atlas-ui-infinite-scroll-container>
+</div>

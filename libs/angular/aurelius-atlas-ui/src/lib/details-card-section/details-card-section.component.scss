@@ -1,0 +1,72 @@
+/* The legacy card-section chrome (details-cards-list.component.scss):
+   the underlined reset link; the scroll box keeps its height cap so the
+   section scrolls its own cards, as the legacy `.cards` did. The legacy
+   `.column` rule (min-width 333px, stretch) is NOT ported: the legacy
+   built its own column divs so its component rule matched them, while
+   our grid projects the caller's cards (WBP-04) and a component rule
+   never reaches projected content. The caller sizes the columns with
+   Bulma's helpers instead — at most three across (DET-22, DD-377). */
+.aurelius-card-section-reset {
+    text-decoration: underline;
+}
+
+.cards {
+    max-height: 533px;
+    overflow-y: auto;
+}
+
+.columns {
+    margin: 0;
+}
+
+/*
+ * The sort group and the search box are one control row (DD-375). Bulma
+ * gives a `.field` that is not the last child a 12px bottom margin — the
+ * search box rides in its own wrapper and escapes the rule, so the
+ * centered level split the difference and floated the select 6px above
+ * the input. The old 12px right margin indented the select off the
+ * search box's edge when the row stacks. The row owns its spacing
+ * instead: an explicit gap, and the field's stray margin off.
+ */
+.level-right {
+    gap: 0.75rem;
+}
+
+.aurelius-card-section-controls {
+    margin-bottom: 0;
+}
+
+/*
+ * Stacked (Bulma 1's own level breakpoint — the `is-widescreen` class the
+ * legacy markup carries is dead in Bulma 1: the level stacks below 769px,
+ * not below the widescreen width). Stacked, Bulma centers every group in
+ * the box; here they use the width instead — the header and control
+ * groups stretch across it, the title and count sit flush left as blocks,
+ * and the sort select grows so its row spans like the search box under it
+ * (the legacy's stacked control field carried `is-expanded`). The demo's
+ * narrow layout centers and its cards overflow the screen (DD-376: the
+ * centered look is the demo's broken half, left behind by choice).
+ */
+@media screen and (max-width: 768px) {
+    .aurelius-card-section-level {
+        align-items: stretch;
+
+        .level-left,
+        .level-right {
+            align-items: stretch;
+        }
+
+        .aurelius-card-section-controls {
+            /* Bulma's `.select select` holds `width: auto`; the stretch
+               repeats Bulma's own `.select.is-fullwidth select` rule. */
+            .control.has-icons-left {
+                flex-grow: 1;
+            }
+
+            .select,
+            .select select {
+                width: 100%;
+            }
+        }
+    }
+}

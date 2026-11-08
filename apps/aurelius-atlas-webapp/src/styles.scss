@@ -16,3 +16,21 @@ body {
     flex-direction: column;
     min-height: 100vh;
 }
+
+/*
+ * Anchor jumps glide (DET-25, DD-381): the router's anchor scrolling ends
+ * in `window.scrollTo`, which honours this property, so every URL-fragment
+ * jump — the details screen's sections included — smooth-scrolls. Scroll
+ * restoration is unaffected: the router's restore call passes
+ * `behavior: "instant"` itself. A reader who asks the system for reduced
+ * motion gets the jump without the travel.
+ */
+html {
+    scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html {
+        scroll-behavior: auto;
+    }
+}

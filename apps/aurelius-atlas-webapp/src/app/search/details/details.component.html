@@ -37,7 +37,13 @@
     <h1 class="title is-1 entity aurelius-details-title">{{ title() }}</h1>
     <div class="subtitle name aurelius-details-type">
         @if (typeName()) {
-            <aurelius-atlas-ui-type-name [typeName]="typeName()" [showBaseTypeName]="true" />
+            <aurelius-atlas-ui-type-name
+                [typeName]="typeDisplay()"
+                [typeAlias]="typeAlias()"
+                [showBaseTypeName]="true"
+                [icon]="typeIconDef()?.icon"
+                [iconClass]="typeIconDef()?.classIcon"
+            />
         }
     </div>
     @if (classifications().length > 0) {
@@ -62,14 +68,15 @@
     }
 </div>
 
-<!-- The legacy default layout's row (default-details.component.html):
-             one full-width column holding the description box — the
-             `columns` is there for the type layouts' two-column shape, not
-             for a sidebar. -->
+<!-- The layout's first row (DET-15/DET-16): the description box, and
+         beside it the People box on the layouts that carry one (DET-23).
+         The default layout's row is the legacy single full-width column
+         (default-details.component.html) — the `columns` is there for the
+         type layouts' two-column shape, not for a sidebar. -->
 <div class="columns">
     <div class="column">
         <div id="description-details" class="box">
-            <h3 class="title is-3" i18n="@@search.details.default.description">Description</h3>
+            <h3 class="title is-3">{{ descriptionTitle() }}</h3>
             <!-- The legacy description component (DET-10, DD-321):
                          the text renders as markdown, and an empty
                          description shows its italic centered placeholder
@@ -83,24 +90,120 @@
             }
         </div>
     </div>
-</div>
-
-<div class="box">
-    <nav class="level">
-        <div class="level-item has-text-centered">
-            <div>
-                <p class="heading">
-                    <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
-                </p>
-                <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
+    @if (layout()?.peopleBox) {
+        <div class="column">
+            <div id="people-details" class="box aurelius-details-people">
+                <h3 class="title is-3">{{ layout()?.peopleTitle }}</h3>
+                <!-- The People box (DET-23, UIC-28): the three labelled
+                         rows of the opened entity, deduped and filtered
+                         app-side; a person link routes the screen. -->
+                <aurelius-atlas-ui-people-box
+                    [rows]="people()"
+                    [emptyLabel]="peopleEmpty"
+                    (personClicked)="onCardClick($event)"
+                />
             </div>
         </div>
-    </nav>
+    }
 </div>
+
+<!-- The stats bar (DET-24): the layout's `section-stats` in legacy order,
+         counts live (a section's seed count, Properties the rendered rows)
+         and every sourceless stat left out (DD-369). The default layout
+         keeps the 7.20 single Properties level. -->
+<div class="box aurelius-details-stats">
+    @if (layout()) {
+        <aurelius-atlas-ui-section-stats [items]="stats()" (itemClicked)="onStatClick($event)" />
+    } @else {
+        <nav class="level">
+            <div class="level-item has-text-centered">
+                <div>
+                    <p class="heading">
+                        <a [routerLink]="[]" fragment="properties-details" i18n="@@search.details.default.properties"
+                            >Properties</a
+                        >
+                    </p>
+                    <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
+                </div>
+            </div>
+        </nav>
+    }
+</div>
+
+<!-- The layout's card sections (DET-17..DET-22): the box carries the
+         legacy anchor id so the stats bar's and the navigation's `#href`s
+         land; the section chrome is the ui part (UIC-27) and every card is
+         the 7.13 `entity-card` (DET-19: quality column off, no badge icon,
+         DET-26 alias with the base type beside it). -->
+@if (layout()) {
+    @for (view of views(); track view.anchor) {
+        <div [id]="view.anchor" class="box aurelius-details-section">
+            <aurelius-atlas-ui-details-card-section
+                [title]="view.title"
+                [count]="view.count"
+                [sortOptions]="view.sortOptions"
+                [sort]="view.sort"
+                [sortDescending]="view.descending"
+                [query]="view.query"
+                [placeholder]="searchPlaceholder"
+                [resultWord]="resultWord"
+                [filtered]="view.filtered"
+                [filteredCount]="view.countShown"
+                [loading]="view.loading"
+                [allLoaded]="view.allLoaded"
+                [loadLabel]="loadLabel"
+                (resetRequested)="onSectionReset(view)"
+                (sortDirectionToggled)="onSectionDirection(view)"
+                (queryChange)="onSectionText(view, $event)"
+                (querySubmitted)="onSectionQuery(view, $event)"
+                (sortChange)="onSectionSort(view, $event)"
+                (nextPage)="onSectionPage(view)"
+            >
+                @for (card of view.cards; track card.guid) {
+                    <!-- The column rides Bulma's sizing helpers: three
+                             across on a desktop at most, two on a tablet,
+                             one full-width on a phone (DET-22, DD-377 —
+                             a bare column grows to share one row, which
+                             squeezed six cards side by side). -->
+                    <div class="column is-half-tablet is-one-third-desktop">
+                        @if (card.kind === "loading") {
+                            <!-- DET-18: the loading row — `search.details
+                                     .loading` at the seed's display text.
+                                     No name input: the interpolation
+                                     already happened in loadingText(). -->
+                            <aurelius-atlas-ui-entity-card
+                                [guid]="card.guid"
+                                [loading]="true"
+                                [loadingLabel]="loadingText(card.displayText)"
+                            />
+                        } @else {
+                            <aurelius-atlas-ui-entity-card
+                                [guid]="card.guid"
+                                [name]="card.displayText"
+                                [typeName]="nameFor(card.entity.typeName)"
+                                [typeAlias]="card.alias"
+                                [typeIcon]="iconFor(card.entity.typeName)?.icon"
+                                [typeIconClass]="iconFor(card.entity.typeName)?.classIcon"
+                                [showQuality]="false"
+                                (entityClicked)="onCardClick($event)"
+                            >
+                                <aurelius-atlas-webapp-card-content
+                                    card-content
+                                    [entity]="card.entity"
+                                    (personClicked)="onCardClick($event)"
+                                />
+                            </aurelius-atlas-ui-entity-card>
+                        }
+                    </div>
+                }
+            </aurelius-atlas-ui-details-card-section>
+        </div>
+    }
+}
 
 <aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
     <ng-container header>
-        <h3 class="title is-3" i18n="@@search.details.default.properties">Properties</h3>
+        <h3 class="title is-3 aurelius-details-properties-title">{{ propertiesTitle() }}</h3>
     </ng-container>
     <ng-container content>
         <!-- The legacy `sortable-table-shell` swap (DET-11): with
@@ -143,10 +246,22 @@
              projected here as the legacy layout's anchors. -->
 <aurelius-atlas-ui-details-navigation class="aurelius-details-nav" [label]="navLabel">
     <!-- The shell projects this list as-is (UIC-18), so the caller owns the
-         ul.menu-list container — the same shape the legacy pages wrote. -->
+         ul.menu-list container — the same shape the legacy pages wrote.
+         The layout's entries in legacy order (DET-25): the rendered box set
+         only, each entry the #href path the default layout takes. -->
     <ul class="menu-list">
-        <li>
-            <a href="#properties-details" i18n="@@search.details.default.properties">Properties</a>
-        </li>
+        @if (layout()) {
+            @for (entry of layout()?.nav; track entry.anchor) {
+                <li>
+                    <a [routerLink]="[]" [fragment]="entry.anchor">{{ entry.label }}</a>
+                </li>
+            }
+        } @else {
+            <li>
+                <a [routerLink]="[]" fragment="properties-details" i18n="@@search.details.default.properties"
+                    >Properties</a
+                >
+            </li>
+        }
     </ul>
 </aurelius-atlas-ui-details-navigation>

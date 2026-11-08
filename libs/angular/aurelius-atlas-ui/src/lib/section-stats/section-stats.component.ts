@@ -23,8 +23,9 @@ export interface SectionStat {
  *
  * A heading click emits `itemClicked(target)` — the legacy
  * `DetailsNavigationItem` directive's anchor, turned into an emit
- * (DD-154's pattern). The anchor's `#target` href is the plain-jump
- * keyboard path; the app's directive smooth-scrolls when it wires them.
+ * (DD-154's pattern). The click cancels the bare `#target` jump (the
+ * browser would resolve it against `<base href="/">` and leave the
+ * screen, DD-380) and the app routes the fragment on the emit (DD-381).
  */
 @Component({
     selector: "aurelius-atlas-ui-section-stats",

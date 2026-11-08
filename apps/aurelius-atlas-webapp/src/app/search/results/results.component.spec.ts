@@ -132,8 +132,29 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         const { compiled, navigate } = arrive("genomic");
 
         compiled.querySelector<HTMLElement>("aurelius-atlas-ui-entity-card .title.is-4 a")!.click();
-
         expect(navigate).toHaveBeenCalledWith(["/search/details", "g0"]);
+    });
+
+    it("a hit whose type is in the icon map leads its badge with the icon (DET-26, DD-378)", () => {
+        const hitPage = {
+            ...page(1, 1),
+            entities: [
+                { guid: "g0", typeName: "m4i_dataset", displayText: "topic-x", attributes: { name: "topic-x" } },
+            ],
+        };
+        const { compiled } = arrive("topic", hitPage);
+
+        const icon = compiled.querySelector("aurelius-atlas-ui-entity-card .media-right .icon");
+        expect(icon).toBeTruthy();
+        expect(icon!.classList.contains("technical")).toBe(true);
+        expect(icon!.querySelector("fa-icon svg")).toBeTruthy();
+        // The badge shows the dictionary display name (SRH-05, DD-379).
+        expect(normalize(compiled.querySelector("aurelius-atlas-ui-entity-card .media-right")?.textContent)).toBe(
+            "Dataset",
+        );
+        // The fixture page's DataSet hits are outside the map: the legacy
+        // *ngIf rendered no icon for them — checked by the map spec; here
+        // the m4i card is the only one on screen.
     });
 
     it("the filter column is the legacy shell: the keyed line, no controls (SRH-07)", () => {

@@ -283,7 +283,7 @@
                     @for (tag of chosenTags(); track tag.typeName) {
                         <aurelius-atlas-ui-classification-chip
                             class="aurelius-editor-tag"
-                            [label]="tag.typeName"
+                            [label]="display(tag.typeName)"
                             [tooltip]="chipTooltip(tag.typeName)"
                             [deletable]="true"
                             [deleteLabel]="deleteLabel"
@@ -340,7 +340,7 @@
                                     (mousedown)="pickSuggestion($event, name)"
                                     (click)="pickSuggestion($event, name)"
                                 >
-                                    {{ name }}
+                                    {{ display(name) }}
                                 </button>
                             }
                         </div>

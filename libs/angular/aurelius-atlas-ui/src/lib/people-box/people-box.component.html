@@ -1,0 +1,32 @@
+<!--
+    The Aurelius People box (UIC-28, DET-23): one labelled row per people
+    end, each person a link. A row with no people renders nothing; with
+    every row empty, the italic centered placeholder line stands in.
+    The href="#" is the keyboard path; the click handler cancels it and
+    emits (DD-154's split, the entity-card's idiom).
+-->
+@if (allEmpty && showEmpty()) {
+    <p class="is-italic has-text-centered aurelius-people-empty">{{ emptyLabel() }}</p>
+} @else {
+    @for (row of rows(); track row.label) {
+        @if (row.people.length > 0) {
+            <div class="aurelius-people-row">
+                <span class="icon is-small">
+                    <fa-icon class="business" aria-hidden="true" [icon]="personIcon"></fa-icon>
+                </span>
+                <span>{{ row.label }}</span>
+                <!-- The legacy separator carries the gap before the colon too
+                     (the demo reads "Data Owner(s) :", DD-374). -->
+                <span>&nbsp;:&nbsp;</span>
+                @for (person of row.people; track person.guid; let last = $last) {
+                    <span class="is-clickable">
+                        <a href="#" (click)="onPersonClick($event, person)">{{ person.displayText }}</a>
+                    </span>
+                    @if (!last) {
+                        <span>,&nbsp;</span>
+                    }
+                }
+            </div>
+        }
+    }
+}

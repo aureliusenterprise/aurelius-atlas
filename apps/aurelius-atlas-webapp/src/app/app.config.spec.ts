@@ -20,7 +20,7 @@
  */
 import { HttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { DATE_PIPE_DEFAULT_TIMEZONE } from "@angular/common";
+import { DATE_PIPE_DEFAULT_TIMEZONE, ViewportScroller } from "@angular/common";
 import { ApplicationConfig, Provider } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { API_BASE_URL } from "aurelius-atlas-data-access";
@@ -30,7 +30,14 @@ import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import { bearerTokenConfig, initialize, keycloakInitOptions, metricsUrl } from "./app.config";
+import {
+    bearerTokenConfig,
+    initialize,
+    keycloakInitOptions,
+    metricsUrl,
+    NAVBAR_SCROLL_OFFSET,
+    setNavbarScrollOffset,
+} from "./app.config";
 import { parseAppConfig } from "./config";
 import { TELEMETRY_KEY, TIMEZONE_KEY } from "./settings/user-preference";
 
@@ -132,6 +139,19 @@ describe("app providers (7.3)", () => {
             .find((p) => p.provide === INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG);
 
         expect(bearerProvider?.useValue).toBe(bearerTokenConfig);
+    });
+
+    it("seats the router's anchor jumps below the fixed navbar (DD-381)", async () => {
+        // The scroller's `scrollOffset` option is read only on the
+        // RouterModule.forRoot path, and this app takes provideRouter —
+        // so the initializer carries the navbar's height to the seam the
+        // anchor jump actually reads.
+        await bootstrap(makeKeycloakStub());
+
+        const setOffset = vi.spyOn(TestBed.inject(ViewportScroller), "setOffset");
+        TestBed.runInInjectionContext(setNavbarScrollOffset);
+
+        expect(setOffset).toHaveBeenCalledWith(NAVBAR_SCROLL_OFFSET);
     });
 
     it("provides the API base URL from the runtime config (APC-01)", async () => {
