@@ -27,22 +27,27 @@
             "webOrigins": []
         },
         {
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:9000/*"
+            },
             "clientId": "aurelius",
-            "description": "The public client the sample import signs in through, with a password; its tokens carry the server's roles.",
+            "description": "The public client the webapp signs in through (authorization code with PKCE), and the sample import with a password; its tokens carry the server's roles.",
             "directAccessGrantsEnabled": true,
             "enabled": true,
             "fullScopeAllowed": false,
             "name": "aurelius",
             "protocol": "openid-connect",
             "publicClient": true,
-            "redirectUris": [],
+            "redirectUris": ["https://localhost:9000/*"],
             "serviceAccountsEnabled": false,
-            "standardFlowEnabled": false,
-            "webOrigins": []
+            "standardFlowEnabled": true,
+            "webOrigins": ["https://localhost:9000"]
         }
     ],
     "displayName": "Aurelius Atlas demo",
     "enabled": true,
+    "loginTheme": "aurelius",
     "loginWithEmailAllowed": false,
     "realm": "demo",
     "registrationAllowed": false,

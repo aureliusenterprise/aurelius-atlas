@@ -1,0 +1,13 @@
+{
+    "apiBaseUrl": "/api",
+    "appCopyright": 2022,
+    "appName": "Aurelius Atlas Data Governance",
+    "appVersion": "0.0.0",
+    "atlasClientId": "aurelius-atlas-server",
+    "keycloak": {
+        "clientId": "aurelius",
+        "realm": "demo",
+        "url": "https://localhost:9000/auth"
+    },
+    "otelExporterUrl": "/otel/v1/traces"
+}

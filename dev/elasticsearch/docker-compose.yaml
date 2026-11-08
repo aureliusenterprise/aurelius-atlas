@@ -78,7 +78,7 @@ services:
         # Slice-owned OTel collector: scrapes this cluster and pushes OTLP to
         # the dev collector, so dev/observability never learns this project
         # exists. Targets and attribution live in config/metrics-puller.yaml.
-        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        image: dhi.io/opentelemetry-collector:0.164-debian13-contrib
         mem_limit: 256m
         command: ["--config=/etc/otelcol-contrib/config.yaml"]
         # The oauth2client extension mints its ingest JWT from Keycloak at
