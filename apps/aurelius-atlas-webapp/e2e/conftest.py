@@ -357,15 +357,32 @@ def authenticated(
     session died (the resilience suite's logout test ends the realm session,
     DD-153/RSL-03) — the fixture runs the form login and refreshes the shared
     state, so the next test replays from a live session again.
+
+    One retry, like the boot sign-in: the guard's redirect is a navigation too,
+    and a network still settling after a stack restart aborts it (a Keycloak
+    form navigation dies with `net::ERR_NETWORK_CHANGED`, or its auth request
+    stalls to the 30s wait timeout). The boot sign-in has ridden that since
+    DD-224; a per-test replay is the same navigation (DD-423).
     """
     context = browser.new_context(storage_state=_storage_state, **browser_context_args)
-    try:
-        page = context.new_page()
+
+    @retry(
+        retry=retry_if_exception_type(PlaywrightError),
+        stop=stop_after_attempt(2),
+        wait=wait_fixed(1),
+        reraise=True,
+        before_sleep=_clear_cookies,
+    )
+    def replay(page: Page) -> None:
         page.goto(base_url)
 
         if not _wait_signed_in(page):
             _sign_in(page, base_url, settings)
             context.storage_state(path=_storage_state)
+
+    page = context.new_page()
+    try:
+        replay(page=page)
 
         yield page
     finally:
@@ -421,16 +438,28 @@ def reader_authenticated(
     """Return a page signed in as the reader (atlas-read only, EDT-09).
 
     The self-healing replay of {@link authenticated} for the second identity:
-    a dead shared session re-runs the reader's form login.
+    a dead shared session re-runs the reader's form login, once retried like
+    {@link authenticated} does (DD-423).
     """
     context = browser.new_context(storage_state=_reader_storage_state, **browser_context_args)
-    try:
-        page = context.new_page()
+
+    @retry(
+        retry=retry_if_exception_type(PlaywrightError),
+        stop=stop_after_attempt(2),
+        wait=wait_fixed(1),
+        reraise=True,
+        before_sleep=_clear_cookies,
+    )
+    def replay(page: Page) -> None:
         page.goto(base_url)
 
         if not _wait_signed_in(page):
             _sign_in(page, base_url, settings, reader=True)
             context.storage_state(path=_reader_storage_state)
+
+    page = context.new_page()
+    try:
+        replay(page=page)
 
         yield page
     finally:
