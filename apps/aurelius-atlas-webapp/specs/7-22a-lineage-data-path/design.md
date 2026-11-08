@@ -149,3 +149,63 @@ and the DTO field names are the Angular twin of
 `LineageModelResponse`, `None` for `204`), so the pair joins the coverage matrix
 DD-217 opened: the row closes CL-30's pair. If a later slice ports the data2model
 or validate-entity surface, its client joins this folder with its own token.
+
+### DD-422. The standalone resolver points the lineage pair at the service name
+
+- **Status:** Proposed
+- **Increment:** 7.22a
+- **Date:** 2026-11-08
+
+**Decision.** The standalone stack's `resolve-nginx.sh` fills the two new
+placeholders with `https://aurelius-atlas-lineage-model:21002` and
+`aurelius-atlas-lineage-model`. The stack runs no lineage-model container, and
+its `webapp/config.json` sets no `lineageModelBaseUrl`, so the browser never
+calls the pair.
+
+**Reason.** LDG-06 added the pair to the webapp's nginx template, and SWA-02
+tests that the resolver covers every placeholder the template carries. The
+resolver did not learn the pair in 7.22a, so its own fail-on-leftover guard
+broke the standalone stack. The service-name value matches the chart's default
+(`deployment.yaml` builds the same name and port from `lineageModel.port`).
+An nginx variable `proxy_pass` resolves lazily, so a dead upstream fails one
+request and never stops the container from serving.
+
+**Alternatives.** Fill the pair with the server's own upstream. It loses: the
+server does not serve `/lineage-model/` (it is an aux API, ADR 055), so every
+diagram call would fail against a wrong peer. Second, keep the standalone copy
+of the template free of the pair. It loses: the image ships one template, and
+SWA-02 reads that one.
+
+**Consequences.** The chart, dev, and standalone now each fill the pair, and
+SWA-02 turns green again. A future increment that runs the aux API in the
+standalone stack adds the service and its audience without a resolver change
+beyond the value.
+
+### DD-423. The per-test sign-in replay retries once like the boot sign-in
+
+- **Status:** Proposed
+- **Increment:** 7.22a
+- **Date:** 2026-11-08
+
+**Decision.** The `authenticated` and `reader_authenticated` e2e fixtures run
+their goto-and-sign-in pass inside the same tenacity retry the session's boot
+sign-in uses: two attempts, a clean cookie jar between them, the
+`PlaywrightError` classes only.
+
+**Reason.** The boot sign-in has retried since DD-224 because a navigation
+aborts when the e2e stack starts its compose networks while tests run. The
+per-test replay was written as a plain call, and it failed the way the boot
+pass used to: one chromium test errored in setup when Keycloak's form
+navigation stalled past the 30s wait on a network still settling
+(`test__locale_switch_shows_localized_shell`, local full-suite run of
+2026-11-08). A replay is the same navigation, so it needs the same rider.
+
+**Alternatives.** Retry inside `_sign_in` itself. It loses: the session boot
+would then ride three layers of retry for one navigation, and the reader
+fixture's state refresh must stay outside the retried block. Second, treat it
+as a known flake and re-run jobs. It loses: the failure lands on whatever test
+happens to run first after a stack start, and every CI re-run costs 25 minutes.
+
+**Consequences.** One transient network event no longer errors a test, and the
+failure that survives a second attempt stays visible as a real bug. The retry
+costs nothing on the common path because a signed-in replay never raises.
