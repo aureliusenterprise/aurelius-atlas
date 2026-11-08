@@ -7341,6 +7341,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A catalogue without Hive opened the chart on nothing</td>
 <td>6.4</td>
 </tr>
+<tr>
+<td>DV-142</td>
+<td>Webapp</td>
+<td>The lineage-model API reaches the browser at the underscore path <code>lineage_model</code>, rewritten to the legacy Flask app by a deployment proxy on its own origin (<code>:7100</code>)</td>
+<td>The webapp's nginx serves it same-origin at <code>/lineage-model/</code>, beside <code>/api/</code> and <code>/otel/</code>, TLS-verified like the API upstream (LDG-06, DD-384)</td>
+<td>The kebab style is what the webapp's own locations use; the underscore is the legacy proxy's accident, not a contract, and a second browser origin would widen the CSP and the Keycloak allowed origins</td>
+<td>7.22a</td>
+</tr>
 </tbody>
 </table>
 
