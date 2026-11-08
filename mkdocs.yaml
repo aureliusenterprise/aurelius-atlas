@@ -216,6 +216,7 @@ nav:
                 - architecture/platform/index.md
                 - Components & Interfaces: architecture/platform/components-and-interfaces.md
                 - Data Pipelines: architecture/platform/data-pipelines.md
+                - Vector Search and Chat: architecture/platform/vector-search-and-chat.md
                 - Connectivity:
                       - architecture/platform/connectivity/index.md
                       - Integration Methods: architecture/platform/connectivity/integration-methods.md

@@ -1,0 +1,71 @@
+/*
+ * The Aurelius look on Keycloak's v2 login (SKT-02): the legacy m4i theme's page, a logo over one white
+ * box on the light band with a teal sign-in button, in the webapp's brand (7.12: SHM-03, SHM-04).
+ */
+
+:root {
+    --aurelius-ink: #4a4a4a;
+    --aurelius-band: #f5f5f5;
+    --aurelius-primary: #00d1b2;
+    --aurelius-primary-hover: #00c4a7;
+    --aurelius-primary-active: #00b89c;
+    --aurelius-link: #0073dd;
+    --aurelius-font:
+        BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    --pf-v5-global--FontFamily--text: var(--aurelius-font);
+    --pf-v5-global--FontFamily--heading: var(--aurelius-font);
+    --pf-v5-global--Color--100: var(--aurelius-ink);
+    --pf-v5-global--link--Color: var(--aurelius-link);
+    --pf-v5-global--link--Color--hover: var(--aurelius-link);
+    --pf-v5-global--primary-color--100: var(--aurelius-primary);
+    --pf-v5-global--primary-color--200: var(--aurelius-primary-active);
+    --keycloak-card-top-color: var(--aurelius-primary);
+}
+
+/* The light band of the legacy hero, in place of Keycloak's background picture. */
+.login-pf body {
+    background: var(--aurelius-band);
+    color: var(--aurelius-ink);
+}
+
+.pf-v5-c-login__container {
+    grid-template-columns: minmax(0, 28rem);
+}
+
+/* The Aurelius Atlas logo over the box; the realm's name stays in the page for screen readers. */
+#kc-header-wrapper {
+    height: 97px;
+    background: url("../img/aurelius-atlas-logo.png") no-repeat center / contain;
+    font-size: 0;
+    color: transparent;
+}
+
+/* The legacy Bulma box: white, rounded, a soft shadow, no coloured top edge. */
+.pf-v5-c-login__main {
+    border-radius: 6px;
+    box-shadow:
+        0 0.5em 1em -0.125em rgba(10, 10, 10, 0.1),
+        0 0 0 1px rgba(10, 10, 10, 0.02);
+}
+
+.pf-v5-c-login__main-header {
+    border-top: 0;
+    justify-content: center;
+    text-align: center;
+}
+
+/* The sign-in button: Bulma's teal primary, full width and large, as in m4i. */
+.pf-v5-c-button.pf-m-primary {
+    --pf-v5-c-button--m-primary--BackgroundColor: var(--aurelius-primary);
+    --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--aurelius-primary-hover);
+    --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--aurelius-primary-hover);
+    --pf-v5-c-button--m-primary--active--BackgroundColor: var(--aurelius-primary-active);
+    --pf-v5-c-button--m-primary--Color: #fff;
+}
+
+#kc-login {
+    width: 100%;
+    font-size: 1.25rem;
+}

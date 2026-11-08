@@ -1,11 +1,12 @@
 # Standalone server
 
-The server image alone, with the Apache Atlas 2.4.0 dashboards, behind one nginx entry on port 9000. It is a
-way to try the server by hand. `nx serve` and the e2e stacks are unchanged.
+The server image with the Apache Atlas 2.4.0 dashboards and the Aurelius Atlas webapp, behind one nginx entry
+on port 9000. It is a way to try them by hand. `nx serve` and the e2e stacks are unchanged.
 
 | Path                             | Service                                                     |
 | -------------------------------- | ----------------------------------------------------------- |
-| `https://localhost:9000/atlas2/` | The server and its dashboards; `/` redirects here           |
+| `https://localhost:9000/`        | The Aurelius Atlas webapp, in English or Dutch              |
+| `https://localhost:9000/atlas2/` | The server and its Atlas dashboards                         |
 | `https://localhost:9000/auth/`   | The stack's own Keycloak with the demo realm, and its admin |
 
 The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or
@@ -22,24 +23,30 @@ address is the issuer the other dev services trust (DD-363). At every start it i
 Their passwords are `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`
 in the dev Keycloak's `.env`, decrypted from its `.env.enc`.
 
+The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a
+stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
+one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.
+
 ## Start
 
 The secrets come from the server's `.env` and the dev Keycloak's `.env`. The store uses the dev store's
-configuration and certificate, `dev/elasticsearch/certs/`; `npx nx certgen aurelius-atlas-dev-elasticsearch`
-makes it on a new clone.
+configuration and certificate, `dev/elasticsearch/certs/`, and the webapp its own, `apps/aurelius-atlas-webapp/certs/`.
+On a new clone, `npx nx certgen aurelius-atlas-dev-elasticsearch` and `npx nx certgen aurelius-atlas-webapp`
+make them.
 
 ```bash
 docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
     --env-file apps/aurelius-atlas-server/.env --env-file dev/keycloak/.env up -d
 ```
 
-The dashboards answer at <https://localhost:9000/atlas2/> once Keycloak is ready, about a minute after the
-start. Sign in as one of the demo users. Keycloak's admin console is <https://localhost:9000/auth/admin/>, as
+The webapp answers at <https://localhost:9000/> and the dashboards at <https://localhost:9000/atlas2/> once
+Keycloak is ready, about a minute after the start. Sign in to either as one of the demo users; one sign-in
+serves both, as they share the realm. Keycloak's admin console is <https://localhost:9000/auth/admin/>, as
 `KC_BOOTSTRAP_ADMIN_USERNAME`, in the realm `master`; its session doesn't sign you in to the dashboards. The
 certificate is the dev CA's, so the browser asks once, for `localhost:9000`.
 
-The image is `aurelius-atlas-server:local`; `npx nx docker-build aurelius-atlas-server` builds it from the
-checkout.
+The images are `aurelius-atlas-server:local` and `aurelius-atlas-webapp:local`; `npx nx docker-build
+aurelius-atlas-server` and `npx nx docker-build aurelius-atlas-webapp` build them from the checkout.
 
 ## A sample dataset
 
@@ -76,8 +83,15 @@ later.
 - `elasticsearch`: one node with `dev/elasticsearch/config/elasticsearch.yml`, the volumes
   `elasticsearch-data` and `elasticsearch-snapshots`, and no published port. The server reaches it as
   `https://elasticsearch:9200` with its own password, which is the `elastic` user's here.
+- `nginx.conf` is the stack's only reverse proxy. `/api/` goes to the server with its prefix, and `/` and every
+  other path to the webapp, whose own nginx, in a container of its own, only serves the webapp's files.
+  `webapp-config` fills that nginx's template into the volume `webapp-nginx-conf` before it starts
+  (`webapp/resolve-nginx.sh`, as the chart's init container does), and `webapp/config.json` points the webapp
+  at the demo realm. The stack has no telemetry collector, so `/otel/` takes the webapp's pushes and drops
+  them.
 - The server and the sample import run in the proxy's network (`network_mode: service:proxy`). nginx reaches
-  the server on `127.0.0.1:21000`, and the server reaches Keycloak at `https://localhost:9000/auth`, the
+  the server on `127.0.0.1:21000` and the webapp as `aurelius-atlas-webapp:8080`, and the server reaches
+  Keycloak at `https://localhost:9000/auth`, the
   address the browser uses, so the tokens' issuer is the one the server checks.
 
 ## Stop
