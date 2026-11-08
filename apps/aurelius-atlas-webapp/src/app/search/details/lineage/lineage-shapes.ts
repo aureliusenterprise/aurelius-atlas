@@ -1,3 +1,4 @@
+import type { NavigationBehaviorOptions } from "@angular/router";
 import type { IconDefinition, IconName } from "@fortawesome/free-solid-svg-icons";
 
 import type { TypeIconClass } from "../../meta/type-icons";
@@ -118,3 +119,13 @@ export const GENERIC_ARROW = {
 
 /** The viewer's pan/zoom scale extent (LDG-16): the legacy's verbatim. */
 export const ZOOM_SCALE_EXTENT: readonly [number, number] = [0.5, 3];
+
+/**
+ * The quickview drawer's own navigations leave the page's scroll where it
+ * is (DD-416): the router's `scrollPositionRestoration: "enabled"` (SHL-06)
+ * scrolls every finished navigation to the top, and the drawer is an
+ * overlay — opening it, switching its tab, or closing it must not move the
+ * details page the reader is reading underneath. `scroll: "manual"` is the
+ * router's per-navigation opt-out (NavigationBehaviorOptions).
+ */
+export const DRAWER_SCROLL: NavigationBehaviorOptions = { scroll: "manual" };

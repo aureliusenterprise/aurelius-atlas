@@ -11,6 +11,7 @@ import { buildEntitiesById } from "./lineage-entities";
 import type { LineageIndexes } from "./lineage-indexes";
 import { buildIndexes } from "./lineage-indexes";
 import { LineageModelState } from "./lineage-state";
+import { DRAWER_SCROLL } from "./lineage-shapes";
 import { LineageBrowseTab } from "./browse-tab.component";
 import { LineageModelTab } from "./model-tab.component";
 import { LineageSelectionPanel } from "./selection-panel.component";
@@ -88,7 +89,12 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
             <nav class="tabs is-fullwidth aurelius-model-browser-tabs" drawer-subhead role="tablist">
                 <ul>
                     @for (tab of visibleTabs(); track tab.id) {
-                        <li>
+                        <!-- DD-416: Bulma paints the active tab from its
+                             li.is-active a rule (tabs.scss), so the class
+                             goes on the li too — on the anchor alone the
+                             rule never matched and the tab stayed grey. The
+                             anchor keeps it as the reader's selector. -->
+                        <li [class.is-active]="currentTab() === tab.id">
                             <a
                                 role="tab"
                                 tabindex="0"
@@ -150,6 +156,13 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
     `,
     styles: `
         .aurelius-model-browser-tabs {
+            /* The drawer panel is a flex column and this strip is its
+               flex item (DD-416): with no pin, a long tab body (the Model
+               tab's tables) shrinks the strip — Bulma's .tabs overflow
+               makes its min-size 0 — the tab row clips and the rule under
+               it rises mid-panel while the short tabs keep the full strip.
+               The pin is the head's and foot's own flex-shrink: 0. */
+            flex-shrink: 0;
             margin-bottom: 0;
         }
     `,
@@ -282,12 +295,14 @@ export class LineageModelBrowser {
      * Selection tab keeps carrying the concept so the URL stays whole
      * (`lineage:selection:<concept>`); the others drop it. One matcher
      * config serves every shape, so the component survives the switch and
-     * the slide-in never replays (the DD-355 posture).
+     * the slide-in never replays (the DD-355 posture). The navigation
+     * leaves the page's scroll alone (DD-416): the drawer is an overlay,
+     * and its own route must not move the page underneath it.
      * @param id the tab to read
      */
     protected selectTab(id: ModelBrowserTab): void {
         const segments = id === "selection" ? ["lineage", "selection", this.state.selected() ?? ""] : ["lineage", id];
-        void this.router.navigate([{ outlets: { drawer: segments } }]);
+        void this.router.navigate([{ outlets: { drawer: segments } }], DRAWER_SCROLL);
     }
 
     /**
@@ -298,7 +313,7 @@ export class LineageModelBrowser {
      */
     protected chooseConcept(id: string): void {
         this.state.selected.set(id);
-        void this.router.navigate([{ outlets: { drawer: ["lineage", "selection", id] } }]);
+        void this.router.navigate([{ outlets: { drawer: ["lineage", "selection", id] } }], DRAWER_SCROLL);
     }
 
     /**
@@ -333,7 +348,7 @@ export class LineageModelBrowser {
     protected close(): void {
         this.state.selected.set(null);
         this.active.set(false);
-        void this.router.navigate([{ outlets: { drawer: null } }]);
+        void this.router.navigate([{ outlets: { drawer: null } }], DRAWER_SCROLL);
     }
 
     private entityList(kind: LineageEntity["kind"]): LineageEntity[] {

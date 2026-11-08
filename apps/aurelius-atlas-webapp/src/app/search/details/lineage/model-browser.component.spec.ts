@@ -150,7 +150,9 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         close.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         created.detectChanges();
         expect(state.selected()).toBeNull();
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
+        // DD-416: the drawer's navigations carry the router's per-navigation
+        // scroll opt-out — the overlay never moves the page underneath it.
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }], { scroll: "manual" });
     });
 
     it("DD-415: the route's concept reopens the Selection tab on it (a reload)", () => {
@@ -196,13 +198,17 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
     it("DD-415: a tab label navigates the drawer outlet to the tab", () => {
         const { compiled, navigate } = setup({ tab: "browse", selected: PROCESS });
         selectTab(compiled, "Model");
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "model"] } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "model"] } }], {
+            scroll: "manual",
+        });
     });
 
     it("DD-415: the Selection tab's label keeps carrying the concept", () => {
         const { compiled, navigate } = setup({ tab: "browse", selected: PROCESS });
         selectTab(compiled, "Selection");
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }], {
+            scroll: "manual",
+        });
     });
 
     it("LDG-25: a tree leaf click re-routes the Selection tab to that concept", () => {
@@ -218,7 +224,9 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         }
         leaf.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         expect(state.selected()).toBe(PROCESS);
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }], {
+            scroll: "manual",
+        });
     });
 
     it("LDG-25: the Model tab's selected row re-clicked deselects and closes", () => {
@@ -240,7 +248,7 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         created.detectChanges();
         expect(state.selected()).toBeNull();
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }], { scroll: "manual" });
     });
 
     it("LDG-23: choosing a view draws it and closes the panel (the legacy's rule)", () => {
@@ -273,7 +281,7 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         created.detectChanges();
 
         expect(state.drawnViewId()).toBe("other_view");
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }], { scroll: "manual" });
     });
 
     it("DD-403: the drawer's own dismissal (Escape) clears the selection too", () => {
@@ -285,7 +293,7 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
             .dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
         created.detectChanges();
         expect(state.selected()).toBeNull();
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }], { scroll: "manual" });
     });
 
     it("DD-402: the tab strip is full width — Bulma's is-fullwidth tab nav", () => {
@@ -298,6 +306,21 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         // Bulma's tab anchors center their label in the cell by default —
         // the wide, balanced row the feedback asked for.
         expect(tabs.classList.contains("is-fullwidth")).toBe(true);
+    });
+
+    it("DD-416: the active tab carries the marker where Bulma's ink hangs", () => {
+        // Bulma's active-tab rule is `li.is-active a` (tabs.scss): on the
+        // anchor alone the tab stayed grey. The class must sit on the li —
+        // and the strip must never shrink: a long tab body (the Model tab)
+        // squeezed the strip, clipped the row, and raised its rule
+        // mid-panel. flex-shrink: 0 is the head's and foot's own pin.
+        const { compiled } = setup({ tab: "model", selected: PROCESS });
+        const activeLi = compiled.querySelector("li.is-active");
+        expect(activeLi?.querySelector("a.aurelius-model-browser-tab")?.textContent?.trim()).toBe("Model");
+        const styles = ((LineageModelBrowser as unknown as { ɵcmp: { styles?: string[] } }).ɵcmp.styles ?? []).join(
+            "\n",
+        );
+        expect(styles).toContain("flex-shrink: 0");
     });
 
     it("the drawer's entities are the state's model (LDG-19's index)", () => {

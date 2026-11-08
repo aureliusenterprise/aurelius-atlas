@@ -145,6 +145,7 @@ describe("LineageModel box (LDG-09/LDG-10, DD-392)", () => {
         // the panel is no longer the viewer's child, so the seam is the URL.
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
         browse?.click();
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }]);
+        // DD-416: the overlay's route leaves the page's scroll where it is.
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }], { scroll: "manual" });
     });
 });

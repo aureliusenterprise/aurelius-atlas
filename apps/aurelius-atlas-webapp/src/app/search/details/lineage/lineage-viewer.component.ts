@@ -22,6 +22,7 @@ import { connectionConceptId, nodeConceptId } from "./parse-ar3";
 import { LineageModelState } from "./lineage-state";
 import { buildConnectionPath, type PathSurface } from "./connection-path";
 import {
+    DRAWER_SCROLL,
     GENERIC_ARROW,
     lineageClass,
     LINEAGE_ICON_PATHS,
@@ -574,13 +575,13 @@ export class LineageViewer {
      * toolbar's fullscreen-only Browse calls the same seam.
      */
     openBrowser(): void {
-        void this.router.navigate([{ outlets: { drawer: ["lineage", "browse"] } }]);
+        void this.router.navigate([{ outlets: { drawer: ["lineage", "browse"] } }], DRAWER_SCROLL);
     }
 
     /** LDG-27 (DD-415): View-info opens the quickview on the View tab
         (legacy `openViewInfo`) — the View tab's route. */
     protected openViewInfo(): void {
-        void this.router.navigate([{ outlets: { drawer: ["lineage", "view"] } }]);
+        void this.router.navigate([{ outlets: { drawer: ["lineage", "view"] } }], DRAWER_SCROLL);
     }
 
     /**
@@ -624,9 +625,9 @@ export class LineageViewer {
         const next = this.state.selected() === concept ? null : concept;
         this.state.selected.set(next);
         if (next === null) {
-            void this.router.navigate([{ outlets: { drawer: null } }]);
+            void this.router.navigate([{ outlets: { drawer: null } }], DRAWER_SCROLL);
         } else {
-            void this.router.navigate([{ outlets: { drawer: ["lineage", "selection", next] } }]);
+            void this.router.navigate([{ outlets: { drawer: ["lineage", "selection", next] } }], DRAWER_SCROLL);
         }
     }
 

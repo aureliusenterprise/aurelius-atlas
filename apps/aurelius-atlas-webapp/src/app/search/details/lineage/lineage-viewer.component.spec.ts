@@ -481,7 +481,7 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-view-info")?.click();
         created.detectChanges();
 
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "view"] } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "view"] } }], { scroll: "manual" });
     });
 
     it("LDG-27/DD-415: the fullscreen Browse routes the quickview open on the Browse tab", () => {
@@ -492,7 +492,9 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-browse")?.click();
         created.detectChanges();
 
-        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }]);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }], {
+            scroll: "manual",
+        });
     });
 
     it("LDG-29: the reset button restores the identity transform", async () => {

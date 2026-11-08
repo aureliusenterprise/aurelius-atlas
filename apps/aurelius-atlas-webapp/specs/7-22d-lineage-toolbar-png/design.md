@@ -24,6 +24,7 @@
 | DD-409. | Each connection gains a wide transparent hit path                                 |
 | DD-414. | The Selection card moves under the Type field and gains the lineage glyph         |
 | DD-415. | The quickview drawer is routed; its state is app-scoped                           |
+| DD-416. | The drawer's strip is pinned, marked, and scroll-neutral                          |
 
 ## Decisions
 
@@ -451,3 +452,56 @@ the panel's arrival with the page's fetch, and `load()` clears the selection
 with the old document — so the hydration effect reads the entity index: the
 URL's concept re-asserts when its model arrives, and a concept the loaded
 document does not know never paints.
+
+### DD-416. The drawer's strip is pinned, marked, and scroll-neutral
+
+- **Status:** Proposed
+- **Increment:** 7.22d
+- **Date:** 2026-11-08
+
+**Decision.** Three parts, one entry — the reader's second pass over the
+routed quickview (DD-415):
+
+1. The tab strip carries `flex-shrink: 0`. The drawer panel is a flex
+   column and the strip is its flex item; Bulma's `.tabs` overflow makes
+   the strip's min-size 0, so a long tab body (the Model tab's tables)
+   squeezed the strip, clipped the tab row, and raised its rule mid-panel
+   while the short tabs kept the full strip. The pin is the head's and
+   foot's own (`flex-shrink: 0` in the drawer) applied to the strip at its
+   owner, the lineage panel — the shared drawer's DOM stays as it is.
+2. The active tab's `is-active` class rides the `li` as well as the
+   anchor. Bulma's active-tab ink hangs on `li.is-active a` (tabs.scss),
+   so the class alone on the anchor never painted the blue border; the
+   anchor keeps the class as the reader's selector (the specs' and e2e's).
+3. Every drawer-outlet navigation the lineage code fires (open, tab,
+   concept, close) carries `scroll: "manual"` — the router's
+   per-navigation opt-out (`NavigationBehaviorOptions`). The app's
+   `scrollPositionRestoration: "enabled"` (SHL-06) scrolls every finished
+   navigation to the top, and the quickview is an overlay: opening it
+   bounced the details page to its top.
+
+**Reason.** All three are the routed drawer's first live weeks measured
+against use, not against the legacy: a flex column's unpinned item shrinks
+under a long sibling; a Bulma hook read wrong is a silent grey tab; and a
+URL-owned drawer inherits the router's scroll habits, which suit pages and
+not overlays. The scroll extra also stops the drawer's route from yanking
+the page's focus-scroll when it opens.
+
+**Alternatives.** (1) Wrap the drawer's `ng-content` subhead slot in a
+pinned div in the shared component. It loses: it changes the DOM contract
+every subhead consumer rides (the drawer spec asserts the projected element
+is a direct child of the panel) to fix one panel's strip; the owner of the
+clipped element can pin its own. (2) Put `is-active` on the li only. It
+loses the existing `.aurelius-model-browser-tab.is-active` selectors in
+the specs and e2e. (3) Switch the app to `scrollPositionRestoration:
+'top'`-off entirely. It loses the page-to-page scroll rule (SHL-06) for
+the whole app; the per-navigation opt-out is surgical.
+
+**Consequences.** One declaration in the panel's styles; one class binding
+on the `li`; a shared `DRAWER_SCROLL` constant (`lineage-shapes.ts`,
+beside the viewer's constants) passed as the navigate extras at the seven
+drawer-route call sites in the viewer and the panel. The unit specs pin
+the literal `{ scroll: "manual" }` second argument, the `li.is-active`
+shape, and the style pin. The alerts drawer's inbox strip can still shrink
+under a long feed — its content has no overflow, so its min-content height
+holds it up; if it ever clips, the same one-liner belongs to its owner.
