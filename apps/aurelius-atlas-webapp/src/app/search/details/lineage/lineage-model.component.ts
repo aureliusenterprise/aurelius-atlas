@@ -65,12 +65,7 @@ import { LineageViewer } from "./lineage-viewer.component";
                     </button>
                 </div>
             </div>
-            <aurelius-atlas-webapp-lineage-viewer
-                #viewer
-                [model]="model"
-                [metadata]="metadataRows()"
-                [highlightedGuid]="guid()"
-            />
+            <aurelius-atlas-webapp-lineage-viewer #viewer [highlightedGuid]="guid()" />
         } @else {
             <!-- LDG-10 / DD-392: no model and a failed call read alike. -->
             <div class="has-text-centered aurelius-lineage-empty">
@@ -93,12 +88,6 @@ export class LineageModel {
 
     /** The parsed model, or null for the empty/failed states (LDG-10). */
     protected readonly drawn = computed(() => this.state.model());
-
-    /**
-     * The answer's metadata rows (LDG-02's list): 7.22c's quickview merges
-     * them into the Selection tab's Properties table (LDG-21).
-     */
-    protected readonly metadataRows = computed(() => this.state.metadata());
 
     /** The drawn view's name — the box header (LDG-09), the model's data. */
     protected readonly viewName = computed(() => this.drawn()?.views[0]?.name ?? "");

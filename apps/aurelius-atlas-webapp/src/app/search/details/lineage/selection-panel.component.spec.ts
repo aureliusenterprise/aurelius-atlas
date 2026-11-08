@@ -138,6 +138,33 @@ describe("LineageSelectionPanel (LDG-20..22)", () => {
         expect(setup("lineage_view").compiled.querySelector("aurelius-atlas-ui-entity-card")).toBeNull();
     });
 
+    it("DD-414: the card sits under the Type field, where the demo's panel reads it", () => {
+        const { compiled } = setup(PROCESS);
+        const typeField = [...compiled.querySelectorAll(".field")].find(
+            (node) => node.querySelector(".label")?.textContent?.trim() === "Type",
+        );
+        const card = compiled.querySelector("aurelius-atlas-ui-entity-card");
+        if (typeField === undefined || card === null) {
+            throw new Error("the Type field or the card is missing");
+        }
+        expect(typeField.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("DD-414: the card's badge carries the lineage glyph in the type's ink", () => {
+        // A process: the gear glyph, the process's teal (the badge's
+        // technical-process family — #00d1b2, the diagram's own fill).
+        const process = setup(PROCESS).compiled.querySelector("aurelius-atlas-ui-entity-card");
+        const processIcon = process?.querySelector(".media-right .icon");
+        expect(processIcon?.querySelector("svg")).toBeTruthy();
+        expect(processIcon?.classList.contains("technical-process")).toBe(true);
+        // A dataset: the table glyph in the dataset's blue.
+        const dataset = setup(DATASET).compiled.querySelector("aurelius-atlas-ui-entity-card");
+        const datasetIcon = dataset?.querySelector(".media-right .icon");
+        expect(datasetIcon?.querySelector("svg")).toBeTruthy();
+        expect(datasetIcon?.classList.contains("technical")).toBe(true);
+        expect(datasetIcon?.classList.contains("technical-process")).toBe(false);
+    });
+
     it("LDG-20: the Open-this-view button shows only for a view entity", () => {
         const { compiled } = setup("lineage_view");
         expect(compiled.querySelector(".aurelius-selection-open-view")).not.toBeNull();

@@ -1,6 +1,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { Router } from "@angular/router";
 import Keycloak from "keycloak-js";
 import { describe, expect, it } from "vitest";
 
@@ -128,7 +129,7 @@ describe("LineageModel box (LDG-09/LDG-10, DD-392)", () => {
         expect(compiled.querySelector(".aurelius-lineage-empty")).toBeNull();
     });
 
-    it("LDG-27: the header's Browse opens the quickview", () => {
+    it("LDG-27/DD-415: the header's Browse routes the quickview open", () => {
         const { fixture, compiled, httpMock } = setup("00000000-0000-4000-8000-000000000001");
 
         httpMock.expectOne(lineageCall("00000000-0000-4000-8000-000000000001")).flush(MODEL_ANSWER);
@@ -140,13 +141,10 @@ describe("LineageModel box (LDG-09/LDG-10, DD-392)", () => {
         expect(browse?.textContent?.trim()).toBe("Browse the model");
         expect(browse?.querySelector("span.icon fa-icon")).toBeTruthy();
 
-        // The click reaches the quickview through the viewer's seam: the
-        // drawer's layer renders (the drawer only paints content while open).
+        // DD-415: the click reaches the quickview through the outlet route —
+        // the panel is no longer the viewer's child, so the seam is the URL.
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
         browse?.click();
-        fixture.detectChanges();
-        expect(compiled.querySelector(".aurelius-drawer")).toBeTruthy();
-        expect(compiled.querySelector(".aurelius-drawer .aurelius-model-browser-tab")?.textContent?.trim()).toBe(
-            "Browse",
-        );
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }]);
     });
 });

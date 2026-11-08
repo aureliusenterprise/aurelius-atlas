@@ -5,12 +5,11 @@ import {
     effect,
     inject,
     input,
-    output,
     signal,
     viewChild,
     type ElementRef,
 } from "@angular/core";
-import type { LineageModelMetadata } from "aurelius-atlas-data-access";
+import { Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faArrowsAlt, faCamera, faExpand, faInfo, faSearch } from "@fortawesome/free-solid-svg-icons";
 import { select } from "d3-selection";
@@ -18,11 +17,9 @@ import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from "d3-zo
 
 import { SaveViewAsImage } from "./save-view-as-image";
 
-import type { Ar3Model, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
+import type { Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
 import { connectionConceptId, nodeConceptId } from "./parse-ar3";
-import { buildEntitiesById } from "./lineage-entities";
-import { buildIndexes } from "./lineage-indexes";
-import { LineageModelBrowser } from "./model-browser.component";
+import { LineageModelState } from "./lineage-state";
 import { buildConnectionPath, type PathSurface } from "./connection-path";
 import {
     GENERIC_ARROW,
@@ -80,20 +77,22 @@ interface DrawnConnection {
  * One selected-concept signal holds the selection (LDG-17): a node or
  * connection click selects the concept it references (`ref ?? id`), clicking
  * the same concept again clears it, and the drawn element gains the legacy's
- * `.is-selected` stroke (`#40e0d0`). The `selectedConcept` output carries the
- * change to the box (7.22c's panel reads it later). The `highlightedGuid`
- * input paints the page's own entity with the legacy's `.is-highlighted`
- * stroke (`hsl(141, 53%, 53%)`, LDG-18): the node whose element id equals it.
+ * `.is-selected` stroke (`#40e0d0`). Since DD-415 the selection is the shared
+ * {@link LineageModelState} signal and a click doubles as navigation: the
+ * routed quickview drawer opens on the Selection tab at the concept, and a
+ * clear routes the drawer away. The `highlightedGuid` input paints the page's
+ * own entity with the legacy's `.is-highlighted` stroke (`hsl(141, 53%, 53%)`,
+ * LDG-18): the node whose element id equals it.
  *
- * The state is the component's own signals (DD-390): the legacy's per-node and
- * per-connection `BasicStore` services have no twin here — the shared slices
- * (selection, highlight) sit once on this component, where 7.22c can read
- * them.
+ * The state is the app's shared signal set (DD-400, DD-415): the legacy's
+ * per-node and per-connection `BasicStore` services have no twin here — the
+ * shared slices (model, selection, drawn view) sit once in the state, read
+ * and written by the box, this viewer, and the routed drawer.
  */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FontAwesomeModule, LineageModelBrowser],
+    imports: [FontAwesomeModule],
     template: `
         <!-- LDG-28: the drawing region — the element the fullscreen toggle
              fixes to the viewport (the legacy's .modelview [class.is-fullscreen]). -->
@@ -269,21 +268,6 @@ interface DrawnConnection {
                 </svg>
             </div>
         </div>
-        <!-- LDG-19/LDG-25: the quickview drawer, mounted on the viewer — the
-             legacy mounts its model-browser beside the #modelview svg. The
-             selection is one signal read and written by both surfaces; the
-             view choice re-renders the diagram (drawnView). -->
-        <aurelius-atlas-webapp-lineage-model-browser
-            #browser
-            [entities]="entities()"
-            [indexes]="indexes()"
-            [metadata]="metadata()"
-            [organizations]="model().organizations"
-            [activeViewId]="drawnView()?.id ?? null"
-            [selection]="selected()"
-            (selectionChange)="selected.set($event)"
-            (viewChosen)="drawnViewId.set($event)"
-        />
     `,
     styles: `
         /* LDG-13/LDG-14/LDG-17/LDG-18: the legacy modelview style block
@@ -408,17 +392,16 @@ interface DrawnConnection {
     `,
 })
 export class LineageViewer {
-    /** The parsed model to draw (LDG-11's output). */
-    readonly model = input.required<Ar3Model>();
-
-    /** The answer's metadata rows (LDG-21's merge input; empty in tests). */
-    readonly metadata = input<readonly LineageModelMetadata[]>([]);
-
     /** The page's entity guid (LDG-18): its node gains the highlight stroke. */
     readonly highlightedGuid = input<string | null>(null);
 
-    /** The selected concept (LDG-17): emitted on every click (null = cleared). */
-    readonly selectedConcept = output<string | null>();
+    /** The shared diagram state (DD-415/DD-400): the model the box fetched,
+        the selection both surfaces share, and the drawn view. The viewer is
+        the diagram's writer; the routed quickview drawer (DD-415) is its
+        reader, so neither mounts the other any more. */
+    protected readonly state = inject(LineageModelState);
+
+    private readonly router = inject(Router);
 
     /** The marker's geometry — the legacy defs entry, ported (LDG-14). */
     protected readonly arrow = GENERIC_ARROW;
@@ -450,8 +433,6 @@ export class LineageViewer {
     private readonly zoomTarget = viewChild.required<ElementRef<SVGGElement>>("zoomTarget");
     /** The measured container of the save flow (LDG-30's width/height). */
     private readonly screen = viewChild.required<ElementRef<HTMLDivElement>>("screen");
-    /** The quickview — the Browse/View-info buttons open it (LDG-27). */
-    private readonly browser = viewChild.required<LineageModelBrowser>("browser");
 
     /** The d3 zoom behaviour, attached once the SVG is in the DOM (LDG-16). */
     private zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
@@ -459,29 +440,10 @@ export class LineageViewer {
     /** The transform d3 currently holds — what `resetZoom()` restores from. */
     private currentTransform: ZoomTransform = zoomIdentity;
 
-    /** The concept the viewer marks selected (LDG-17: the single slot). */
-    protected readonly selected = signal<string | null>(null);
-
-    /**
-     * The view chosen from the Browse dropdown (LDG-23), or null for the
-     * document's first (LDG-12). The legacy's `handleSelectView` auto-selects
-     * the first view when none is chosen — that default resolves once here,
-     * in {@link drawnView}, not in the store.
-     */
-    protected readonly drawnViewId = signal<string | null>(null);
-
-    /** The view being drawn: the chosen one, else the first (LDG-12/LDG-23). */
-    protected readonly drawnView = computed<Ar3View | undefined>(() => {
-        const views = this.model().views;
-        const id = this.drawnViewId();
-        return id === null ? views[0] : views.find((view) => view.id === id);
-    });
-
-    /** The entity index the quickview reads (LDG-19's spread). */
-    protected readonly entities = computed(() => buildEntitiesById(this.model()));
-
-    /** The Selection tab's index maps (LDG-22). */
-    protected readonly indexes = computed(() => buildIndexes(this.model()));
+    /** The view being drawn: the chosen one, else the first (LDG-12/LDG-23,
+        DD-415) — resolved once in the shared state, where the drawer reads
+        the same answer for its tab conditions. */
+    protected readonly drawnView = computed<Ar3View | null>(() => this.state.activeView());
 
     /**
      * The view's bounds (LDG-15): the legacy's minX/minY over all node
@@ -505,10 +467,10 @@ export class LineageViewer {
     /** The nodes as drawn (LDG-12/LDG-13). */
     protected readonly nodes = computed<DrawnNode[]>(() => {
         const view = this.drawnView();
-        if (view === undefined) {
+        const model = this.state.model();
+        if (view === null || model === null) {
             return [];
         }
-        const model = this.model();
         return view.nodes.map((node) => {
             // LDG-13: the type is the referenced element's (the legacy's
             // `modelType ?? viewType`; the reader keeps no node type — LDG-11
@@ -534,7 +496,7 @@ export class LineageViewer {
     /** The connections as drawn (LDG-14), in document order over the nodes. */
     protected readonly connections = computed<DrawnConnection[]>(() => {
         const view = this.drawnView();
-        if (view === undefined) {
+        if (view === null) {
             return [];
         }
         const byId = new Map(view.nodes.map((node) => [node.id, node]));
@@ -606,17 +568,19 @@ export class LineageViewer {
     }
 
     /**
-     * LDG-27: open the quickview (legacy `openBrowser`). Public because the
-     * box header's Browse button sits above the viewer and calls it; the
+     * LDG-27 (DD-415): open the quickview (legacy `openBrowser`) — now the
+     * Browse tab's route, `(drawer:lineage:browse)`. Public because the box
+     * header's Browse button sits above the viewer and calls it; the
      * toolbar's fullscreen-only Browse calls the same seam.
      */
     openBrowser(): void {
-        this.browser().open();
+        void this.router.navigate([{ outlets: { drawer: ["lineage", "browse"] } }]);
     }
 
-    /** LDG-27: View-info opens the quickview on the View tab (legacy `openViewInfo`). */
+    /** LDG-27 (DD-415): View-info opens the quickview on the View tab
+        (legacy `openViewInfo`) — the View tab's route. */
     protected openViewInfo(): void {
-        this.browser().showView();
+        void this.router.navigate([{ outlets: { drawer: ["lineage", "view"] } }]);
     }
 
     /**
@@ -632,7 +596,7 @@ export class LineageViewer {
      */
     protected async saveView(): Promise<void> {
         const view = this.drawnView();
-        if (view === undefined || this.converting()) {
+        if (view === null || this.converting()) {
             return;
         }
         this.converting.set(true);
@@ -647,16 +611,28 @@ export class LineageViewer {
         }
     }
 
-    /** LDG-17: a node or connection click — the same concept clears. */
+    /**
+     * LDG-17/LDG-25 (DD-415): a node or connection click — the same concept
+     * clears. The click writes the shared selection and the drawer follows
+     * by route: selecting opens the Selection tab at the concept
+     * (`drawer:lineage:selection:<concept>` — the legacy's auto-open, now
+     * the URL's), clearing navigates the outlet away (the legacy's
+     * close-on-deselect). The panel exists only while its route does, so
+     * the two surfaces cannot drift.
+     */
     protected onElementClicked(concept: string): void {
-        const next = this.selected() === concept ? null : concept;
-        this.selected.set(next);
-        this.selectedConcept.emit(next);
+        const next = this.state.selected() === concept ? null : concept;
+        this.state.selected.set(next);
+        if (next === null) {
+            void this.router.navigate([{ outlets: { drawer: null } }]);
+        } else {
+            void this.router.navigate([{ outlets: { drawer: ["lineage", "selection", next] } }]);
+        }
     }
 
     /** Whether a drawn element holds the selection (LDG-17). */
     protected isSelected(concept: string): boolean {
-        return this.selected() === concept;
+        return this.state.selected() === concept;
     }
 
     /**

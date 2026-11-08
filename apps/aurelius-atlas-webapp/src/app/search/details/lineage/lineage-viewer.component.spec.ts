@@ -1,11 +1,11 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { By } from "@angular/platform-browser";
+import { Router } from "@angular/router";
 import Keycloak from "keycloak-js";
 import { describe, expect, it, vi } from "vitest";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
 import { APP_CONFIG } from "../../../tokens";
-import { LineageModelBrowser } from "./model-browser.component";
+import { LineageModelState } from "./lineage-state";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 import { SaveViewAsImage } from "./save-view-as-image";
 import { LineageViewer } from "./lineage-viewer.component";
@@ -25,10 +25,18 @@ const MODEL: Ar3Model = parseAr3Model(fixture.model);
 const DATASET_ONE = "00000000-0000-4000-8000-000000000001";
 const PROCESS = "00000000-0000-4000-8000-000000000002";
 
+/**
+ * The viewer over the shared state (DD-415): the specs fill the state's
+ * model directly — the fetch is the box's and the state's own specs — and a
+ * Router spy watches the clicks' navigation (LDG-17's click now doubles as
+ * the drawer's open, the legacy's auto-open turned route).
+ */
 function setup(model: Ar3Model = MODEL): {
     viewer: LineageViewer;
+    state: LineageModelState;
     created: ComponentFixture<LineageViewer>;
     compiled: HTMLElement;
+    navigate: ReturnType<typeof vi.spyOn>;
 } {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
@@ -41,13 +49,21 @@ function setup(model: Ar3Model = MODEL): {
             { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas", appVersion: "0.0.0" } },
         ],
     });
+    const state = TestBed.inject(LineageModelState);
+    state.model.set(model);
+    const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
     const created = TestBed.createComponent(LineageViewer);
-    created.componentRef.setInput("model", model);
     // Two passes: the first creates the view, the second lets the zoom
     // effect (a viewChild reader) run.
     created.detectChanges();
     created.detectChanges();
-    return { viewer: created.componentInstance, created, compiled: created.nativeElement as HTMLElement };
+    return {
+        viewer: created.componentInstance,
+        state,
+        created,
+        compiled: created.nativeElement as HTMLElement,
+        navigate,
+    };
 }
 
 /** The component's own style block — the pixels LDG-13/14/17/18 pin. */
@@ -331,10 +347,8 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
-    it("LDG-17: a click selects the concept, the same click clears it", () => {
-        const { viewer, created, compiled } = setup();
-        const emitted: (string | null)[] = [];
-        viewer.selectedConcept.subscribe((concept) => emitted.push(concept));
+    it("LDG-17/DD-415: a click selects the concept and opens the drawer; the same click clears it", () => {
+        const { state, created, compiled, navigate } = setup();
 
         // A bare dispatched click needs a change-detection pass for the
         // class bindings to follow the signal.
@@ -364,7 +378,15 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         click(connections[0]);
         expect(connections[0].classList.contains("is-selected")).toBe(false);
 
-        expect(emitted).toEqual([PROCESS, "rel-1", null]);
+        expect(state.selected()).toBeNull();
+        // DD-415: every click doubles as the drawer's navigation — the
+        // legacy's auto-open/close, now the outlet's (the routed panel exists
+        // only while its route does, so the surfaces cannot drift).
+        expect(navigate.mock.calls.map((call: unknown[]) => call[0])).toEqual([
+            [{ outlets: { drawer: ["lineage", "selection", PROCESS] } }],
+            [{ outlets: { drawer: ["lineage", "selection", "rel-1"] } }],
+            [{ outlets: { drawer: null } }],
+        ]);
 
         // The selection stroke (LDG-17): the legacy's #40e0d0, on both the
         // node and the connection.
@@ -453,30 +475,24 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         expect(styles).toMatch(/\.background[^{]*\{[^}]*fill:\s*white/);
     });
 
-    it("LDG-27: View-info opens the quickview on the View tab", () => {
-        const { created, compiled } = setup();
-        const browser = created.debugElement.query(By.directive(LineageModelBrowser))
-            .componentInstance as LineageModelBrowser;
+    it("LDG-27/DD-415: View-info routes the quickview open on the View tab", () => {
+        const { created, compiled, navigate } = setup();
 
         compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-view-info")?.click();
         created.detectChanges();
 
-        expect(browser["active"]()).toBe(true);
-        expect(browser["currentTab"]()).toBe("view");
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "view"] } }]);
     });
 
-    it("LDG-27: the fullscreen Browse opens the quickview on the Browse tab", () => {
-        const { created, compiled } = setup();
-        const browser = created.debugElement.query(By.directive(LineageModelBrowser))
-            .componentInstance as LineageModelBrowser;
+    it("LDG-27/DD-415: the fullscreen Browse routes the quickview open on the Browse tab", () => {
+        const { created, compiled, navigate } = setup();
 
         compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-fullscreen")?.click();
         created.detectChanges();
         compiled.querySelector<HTMLButtonElement>(".aurelius-lineage-browse")?.click();
         created.detectChanges();
 
-        expect(browser["active"]()).toBe(true);
-        expect(browser["currentTab"]()).toBe("browse");
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }]);
     });
 
     it("LDG-29: the reset button restores the identity transform", async () => {

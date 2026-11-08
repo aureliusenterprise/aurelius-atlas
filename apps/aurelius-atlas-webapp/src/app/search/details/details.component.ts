@@ -78,7 +78,11 @@ import { peopleRows } from "./shared/people";
         RouterLink,
     ],
     selector: "aurelius-atlas-webapp-details",
-    providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState, LineageModelState],
+    // LineageModelState is NOT listed here (DD-415): the routed quickview
+    // drawer lives in the root `drawer` aux outlet and a page-scoped provider
+    // would hide the box's state from it, so the service is the root
+    // singleton both this page and the drawer read.
+    providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState],
     templateUrl: "./details.component.html",
     styleUrl: "./details.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,

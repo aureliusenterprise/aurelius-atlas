@@ -3,7 +3,8 @@
 - **Status:** proposed
 - **Pull request:** —
 - **Records:** LDG-27..32; DD-397..400, DD-407..409 (the reader-feedback
-  round); amends DET-32 and DET-33 again (the
+  round), DD-414/DD-415 (the card's place and glyph; the routed drawer — amends
+  LDG-25's seam and DD-405); amends DET-32 and DET-33 again (the
   stats entries and navigation links their rows hold out, DD-383's rule — the
   stat and link return with the finished box); relies on LDG-01..26
   (7.22a/7.22b/7.22c), DD-390 (the viewer's signals), SHC-02/SHC-03 (the config

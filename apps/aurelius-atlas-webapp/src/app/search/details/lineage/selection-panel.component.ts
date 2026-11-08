@@ -3,7 +3,7 @@ import { Router } from "@angular/router";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 import { EntityCard, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
-import { LINEAGE_ICON_PATHS, lineageClass } from "./lineage-shapes";
+import { LINEAGE_BADGE_ICONS, LINEAGE_ICON_PATHS, lineageBadgeClass, lineageClass } from "./lineage-shapes";
 import type { LineageEntity } from "./lineage-entities";
 import { mergeProperties } from "./lineage-entities";
 import type { LineageIndexes } from "./lineage-indexes";
@@ -44,11 +44,15 @@ import { LineagePropertyTable } from "./property-table.component";
  * `selectEntity`), closing nothing — the drawer stays on the Selection tab
  * with the new concept (LDG-25).
  *
- * A selected element gains the search card above the fields (DD-405): the
- * ui card the results screen rows, title-click routes to the entity's
- * details page — the convenient hop from a diagram box to the entity itself
- * the reader asked for (the shipped chain's element ids are the guids). The
- * LDG-20 fields stay; the card is the navigation, not a replacement.
+ * A selected element gains the search card under the Type field (DD-405,
+ * amended): the ui card the results screen rows, title-click routes to the
+ * entity's details page — the convenient hop from a diagram box to the
+ * entity itself the reader asked for (the shipped chain's element ids are
+ * the guids). The LDG-20 fields stay; the card is the navigation, not a
+ * replacement. The badge carries the type's icon (the demo's card badge
+ * shows the archimate glyph, so the lineage paths ride it now), and the
+ * card sits between Type and Description — where the demo's panel reads
+ * the card, below the type it names.
  */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-selection",
@@ -56,18 +60,6 @@ import { LineagePropertyTable } from "./property-table.component";
     imports: [EntityCard, LineageEntityTable, LineagePropertyTable, SortableTable, TableColumn, TableRow],
     template: `
         @if (entity(); as selected) {
-            @if (selected.kind === "element") {
-                <!-- DD-405: the legacy results card, reused — its title click
-                     opens the entity's details screen. -->
-                <aurelius-atlas-ui-entity-card
-                    class="aurelius-selection-card"
-                    [guid]="selected.id"
-                    [name]="selected.name"
-                    [typeName]="selected.humanReadableType || selected.type"
-                    [showIcon]="false"
-                    (entityClicked)="openDetails($event)"
-                />
-            }
             @if (selected.name) {
                 <div class="field">
                     <p class="label" i18n="@@modelview2.modelBrowser.selection.name">Name</p>
@@ -88,6 +80,21 @@ import { LineagePropertyTable } from "./property-table.component";
                         <span>{{ selected.humanReadableType || selected.type }}</span>
                     </p>
                 </div>
+            }
+            @if (selected.kind === "element") {
+                <!-- DD-405 (amended): the legacy results card, reused — its
+                     title click opens the entity's details screen. Under the
+                     Type field, where the demo's panel reads it; the badge
+                     carries the lineage glyph (the demo's badge shows it). -->
+                <aurelius-atlas-ui-entity-card
+                    class="aurelius-selection-card"
+                    [guid]="selected.id"
+                    [name]="selected.name"
+                    [typeName]="selected.humanReadableType || selected.type"
+                    [typeIcon]="badgeIcon()"
+                    [typeIconClass]="badgeClass()"
+                    (entityClicked)="openDetails($event)"
+                />
             }
             @if (selected.description) {
                 <div class="field">
@@ -276,6 +283,17 @@ export class LineageSelectionPanel {
         const entity = this.entity();
         return entity === null ? "" : (lineageClass(entity.type) ?? "");
     });
+
+    /** The card badge's icon (DD-405 amended): the lineage glyph for the
+        two types that have one; an unknown type keeps the plain badge, as
+        the legacy's missing `iconsByType` entry did. */
+    protected readonly badgeIcon = computed(() => {
+        const cssClass = lineageClass(this.entity()?.type ?? "");
+        return cssClass === null ? undefined : LINEAGE_BADGE_ICONS[cssClass];
+    });
+
+    /** The badge's colour class — the family whose ink is the lineage fill. */
+    protected readonly badgeClass = computed(() => lineageBadgeClass(lineageClass(this.entity()?.type ?? "")));
 
     /**
      * The card's title click (DD-405): open the entity's details page — the

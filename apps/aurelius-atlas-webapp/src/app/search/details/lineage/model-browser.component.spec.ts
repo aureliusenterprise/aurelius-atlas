@@ -1,64 +1,94 @@
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { describe, expect, it } from "vitest";
+import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter } from "@angular/router";
+import { Subject } from "rxjs";
+import { describe, expect, it, vi } from "vitest";
 
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
 
-import type { LineageEntity } from "./lineage-entities";
 import { buildEntitiesById } from "./lineage-entities";
-import { buildIndexes } from "./lineage-indexes";
+import { LineageModelState } from "./lineage-state";
 import { LineageModelBrowser } from "./model-browser.component";
-import { parseAr3Model } from "./parse-ar3";
+import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 
 /**
- * LDG-19/LDG-25: the quickview drawer over the shipped chain's document
- * (DD-391) — the four tabs and their conditions, the auto-open on a concept
- * selection, the close on deselect (with the previous-tab restore), and the
- * close-and-redraw on a view choice.
+ * LDG-19/LDG-25 (DD-415): the quickview drawer as the routed panel in the
+ * `drawer` aux outlet. The specs ride the editor's routed-drawer idiom: a
+ * fake `ActivatedRoute` (paramMap carries the tab and concept, DD-415), a spy
+ * on the Router, and the shared {@link LineageModelState} the drawer reads —
+ * the panel fills itself from the state, so the specs set the model and
+ * selection there rather than through inputs. The rules: the legacy tab
+ * order and its conditions (LDG-19, DD-410), the route-driven tab, a concept
+ * row click re-routing the Selection tab (LDG-25), dismissal clearing the
+ * selection and routing away (DD-403, DD-415), the view choice drawing and
+ * closing, the URL concept reopening the Selection tab (a reload), and the
+ * legacy chrome (DD-410).
  */
 const MODEL = parseAr3Model(fixture.model);
-const ENTITIES = buildEntitiesById(MODEL);
-const INDEXES = buildIndexes(MODEL);
 const METADATA = fixture.metadata as LineageModelMetadata[];
 
 const PROCESS = "00000000-0000-4000-8000-000000000002";
 const VIEW_ID = "lineage_view";
 
-const SECOND_VIEW: LineageEntity = {
-    id: "other_view",
-    kind: "view",
-    name: "Other View",
-    type: "ar3_View",
-    humanReadableType: "View",
-    description: "",
-    properties: [],
-    sourceName: "",
-    targetName: "",
-    sourceType: "",
-    targetType: "",
-};
+/** A model with no view: the View tab's condition (LDG-19) hides with none. */
+const NO_VIEW_MODEL: Ar3Model = { ...MODEL, views: [] };
 
-function setup(
-    selection: string | null = null,
-    activeViewId: string | null = VIEW_ID,
-    entities: ReadonlyMap<string, LineageEntity> = ENTITIES,
-): {
+function setup({
+    tab,
+    concept,
+    model = MODEL,
+    selected = null,
+    drawnViewId = VIEW_ID,
+}: {
+    tab?: string;
+    concept?: string;
+    model?: Ar3Model;
+    selected?: string | null;
+    drawnViewId?: string | null;
+} = {}): {
     browser: LineageModelBrowser;
+    state: LineageModelState;
     created: ComponentFixture<LineageModelBrowser>;
     compiled: HTMLElement;
+    paramMap: Subject<ParamMap>;
+    navigate: ReturnType<typeof vi.spyOn>;
 } {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ imports: [LineageModelBrowser] });
+    const paramMap = new Subject<ParamMap>();
+    TestBed.configureTestingModule({
+        imports: [LineageModelBrowser],
+        providers: [
+            provideHttpClient(),
+            provideHttpClientTesting(),
+            provideRouter([]),
+            { provide: ActivatedRoute, useValue: { paramMap, snapshot: { data: {} } } },
+        ],
+    });
+    // The drawer reads the shared state the box and viewer write; the specs
+    // fill it directly (the fetch itself is the state's own concern).
+    const state = TestBed.inject(LineageModelState);
+    state.model.set(model);
+    state.metadata.set(METADATA);
+    state.selected.set(selected);
+    state.drawnViewId.set(drawnViewId);
+
+    const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
     const created = TestBed.createComponent(LineageModelBrowser);
-    created.componentRef.setInput("entities", entities);
-    created.componentRef.setInput("indexes", INDEXES);
-    created.componentRef.setInput("metadata", METADATA);
-    created.componentRef.setInput("activeViewId", activeViewId);
-    created.componentRef.setInput("selection", selection);
+    paramMap.next(
+        convertToParamMap({ ...(tab === undefined ? {} : { tab }), ...(concept === undefined ? {} : { concept }) }),
+    );
     created.detectChanges();
-    created.detectChanges();
-    return { browser: created.componentInstance, created, compiled: created.nativeElement as HTMLElement };
+    return {
+        browser: created.componentInstance,
+        state,
+        created,
+        compiled: created.nativeElement as HTMLElement,
+        paramMap,
+        navigate,
+    };
 }
 
 function tabLabels(compiled: HTMLElement): string[] {
@@ -67,11 +97,6 @@ function tabLabels(compiled: HTMLElement): string[] {
 
 function activeTab(compiled: HTMLElement): string | undefined {
     return compiled.querySelector(".aurelius-model-browser-tab.is-active")?.textContent?.trim();
-}
-
-/** The drawer's layer, rendered only while the panel is open (DD-162). */
-function drawerLayer(compiled: HTMLElement): Element | null {
-    return compiled.querySelector(".aurelius-drawer");
 }
 
 function selectTab(compiled: HTMLElement, label: string): void {
@@ -84,136 +109,187 @@ function selectTab(compiled: HTMLElement, label: string): void {
     tab.dispatchEvent(new MouseEvent("click", { bubbles: true }));
 }
 
-describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
-    it("LDG-19/DD-410: the open strip reads Browse, Model, View, Selection — the legacy's order", () => {
-        // The strip is the drawer's (DD-180's subhead): visibleTabs is the
-        // strip's source, and it drives what an open drawer shows. DD-410:
-        // the legacy's keyvalue order puts View before Selection — the
-        // tabs object's insertion order was browse, model, view, selection.
-        const { browser, compiled } = setup(PROCESS);
-        expect(browser["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "view", "selection"]);
+describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () => {
+    it("LDG-19/DD-410: the strip reads Browse, Model, View, Selection — the legacy's order", () => {
+        const { compiled } = setup({ tab: "browse", selected: PROCESS });
         expect(tabLabels(compiled)).toEqual(["Browse", "Model", "View", "Selection"]);
-        const { browser: empty } = setup(null);
-        expect(empty["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "view"]);
     });
 
-    it("LDG-19: with no view selected the View tab hides (the legacy's condition)", () => {
-        const { browser } = setup(PROCESS, null);
-        expect(browser["visibleTabs"]().map((tab) => tab.id)).toEqual(["browse", "model", "selection"]);
+    it("LDG-19: the Selection tab needs a selected concept; the View tab a drawn view", () => {
+        // No concept: the Selection tab hides (the legacy's condition).
+        const { compiled } = setup({ tab: "browse", selected: null });
+        expect(tabLabels(compiled)).toEqual(["Browse", "Model", "View"]);
+
+        // A model with no view: the View tab hides too.
+        const bare = setup({ tab: "browse", selected: null, model: NO_VIEW_MODEL, drawnViewId: null });
+        expect(tabLabels(bare.compiled)).toEqual(["Browse", "Model"]);
     });
 
-    it("LDG-25: a concept selection opens the drawer on the Selection tab", () => {
-        const { browser, created, compiled } = setup(null);
-        expect(drawerLayer(compiled)).toBeNull();
-        browser.selection.set(PROCESS);
-        created.detectChanges();
-        expect(drawerLayer(compiled)).not.toBeNull();
-        expect(activeTab(compiled)).toBe("Selection");
-        // The Selection tab's content: the concept's name (LDG-20).
-        expect(compiled.textContent).toContain("Load Job");
-    });
-
-    it("LDG-25: clearing the selection closes the drawer and restores the previous tab", () => {
-        const { browser, created, compiled } = setup(PROCESS);
-        // Open on Selection, read the Model tab, then clear — the close
-        // lands back on Model (the legacy's close() + selectTab(previousTab)).
-        selectTab(compiled, "Model");
-        created.detectChanges();
+    it("DD-415: the tab the route names is the tab that reads", () => {
+        const { created, compiled, paramMap } = setup({ tab: "model", selected: PROCESS });
         expect(activeTab(compiled)).toBe("Model");
 
-        browser.selection.set(null);
+        // The router answers a tab navigation with the new segment: the
+        // component stays (one matcher config, DD-355) and re-reads.
+        paramMap.next(convertToParamMap({ tab: "view" }));
         created.detectChanges();
-        browser.selection.set(PROCESS);
-        created.detectChanges();
-        expect(activeTab(compiled)).toBe("Selection");
-
-        browser.selection.set(null);
-        created.detectChanges();
-        // Closed, and the reader lands back on the tab they were reading
-        // (the legacy's close() + selectTab(previousTab)).
-        expect(drawerLayer(compiled)).toBeNull();
-        expect(browser["currentTab"]()).toBe("model");
-    });
-
-    it("LDG-25: choosing a view in the Browse dropdown closes the drawer and emits it", async () => {
-        const twoViews = new Map(ENTITIES);
-        twoViews.set(SECOND_VIEW.id, SECOND_VIEW);
-        // No drawn view: the dropdown shows its placeholder, so picking the
-        // first row is a real change for the control.
-        const { browser, created, compiled } = setup(null, null, twoViews);
-        const emitted: string[] = [];
-        browser.viewChosen.subscribe((id) => emitted.push(id));
-        // Open the panel through a selection, then switch to Browse.
-        browser.selection.set(PROCESS);
-        created.detectChanges();
-        selectTab(compiled, "Browse");
-        created.detectChanges();
-        expect(drawerLayer(compiled)).not.toBeNull();
-
-        const select = compiled.querySelector("select") as HTMLSelectElement;
-        expect(select.value).toBe("");
-        select.value = "0";
-        select.dispatchEvent(new Event("change"));
-        await created.whenStable();
-        created.detectChanges();
-
-        expect(emitted).toEqual([VIEW_ID]);
-        expect(drawerLayer(compiled)).toBeNull();
-    });
-
-    it("DD-403: dismissal hides the panel and clears the selection (the box deselects)", () => {
-        const { created, compiled } = setup(PROCESS);
-        const close = compiled.querySelector(".aurelius-drawer-panel button.delete");
-        if (close === null) {
-            throw new Error("the drawer's close button is missing");
-        }
-        close.dispatchEvent(new MouseEvent("click", { bubbles: true }));
-        created.detectChanges();
-        // The panel slides out (the layer lingers for the exit animation
-        // only, DD-162) AND the selection clears — no box stays painted
-        // without its panel (the deliberate departure from the legacy's
-        // close, which left the node marked).
-        expect(created.componentInstance["active"]()).toBe(false);
-        expect(created.componentInstance.selection()).toBeNull();
-        expect(compiled.querySelector(".aurelius-drawer")?.classList.contains("is-closing")).toBe(true);
-        // The tab strip lost its Selection tab with the selection (LDG-19's
-        // condition) — the reader lands on the tab they were reading.
-        expect(created.componentInstance["currentTab"]()).not.toBe("selection");
-    });
-
-    it("DD-403: the view choice closes and deselects the same way", () => {
-        const twoViews = new Map(ENTITIES);
-        twoViews.set(SECOND_VIEW.id, SECOND_VIEW);
-        const { browser, created } = setup(null, null, twoViews);
-        // Open through a selection, then choose a view from the tab logic.
-        browser.selection.set(PROCESS);
-        created.detectChanges();
-        browser["onViewChosen"](VIEW_ID);
-        created.detectChanges();
-        expect(browser["active"]()).toBe(false);
-        expect(browser.selection()).toBeNull();
+        expect(activeTab(compiled)).toBe("View");
     });
 
     it("DD-410: the legacy's chrome — the header reads Details, the footer closes", () => {
-        const { created, compiled } = setup(PROCESS);
-        // The quickview's default name, which the legacy model browser never
-        // overrode — the panel is "Details" whichever concept opened it.
+        const { created, compiled, state, navigate } = setup({ tab: "selection", concept: PROCESS });
         expect(compiled.querySelector(".aurelius-drawer-title")?.textContent?.trim()).toBe("Details");
         const close = compiled.querySelector("button[drawer-footer]");
         if (close === null) {
             throw new Error("the footer's Close button is missing");
         }
         expect(close.textContent?.trim()).toBe("Close");
-        // It dismisses like the head's close: the panel slides out and the
-        // selection clears with it (DD-403's rule, shared).
+
+        // It dismisses like the head's close: the selection clears and the
+        // outlet navigates away (DD-403's rule, shared).
         close.dispatchEvent(new MouseEvent("click", { bubbles: true }));
         created.detectChanges();
-        expect(created.componentInstance["active"]()).toBe(false);
-        expect(created.componentInstance.selection()).toBeNull();
+        expect(state.selected()).toBeNull();
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
+    });
+
+    it("DD-415: the route's concept reopens the Selection tab on it (a reload)", () => {
+        // Arrival with a concept in the URL but an empty shared selection —
+        // the reload/paste-link case: the panel fills the selection from it.
+        const { compiled, state } = setup({ tab: "selection", concept: PROCESS, selected: null });
+        expect(state.selected()).toBe(PROCESS);
+        expect(activeTab(compiled)).toBe("Selection");
+        // The Selection tab's content: the concept's name (LDG-20).
+        expect(compiled.textContent).toContain("Load Job");
+    });
+
+    it("DD-415: the concept re-asserts when its model arrives after mount (the live reload)", async () => {
+        // The live reload's race: the panel and the page's fetch mount
+        // together, and load() clears the selection with the old document
+        // (DD-415) — after the effect first set it. The effect depends on
+        // the entity index, so the arriving model re-asserts the concept.
+        const { created, state } = setup({ tab: "selection", concept: PROCESS, selected: null });
+        expect(state.selected()).toBe(PROCESS);
+        // What load() does when the page refetches: the old document and its
+        // selection go, the new one arrives.
+        state.model.set(null);
+        state.selected.set(null);
+        await created.whenStable();
+        created.detectChanges();
+        expect(state.selected()).toBeNull();
+        state.model.set(MODEL);
+        await created.whenStable();
+        created.detectChanges();
+        expect(state.selected()).toBe(PROCESS);
+    });
+
+    it("DD-415: switching to the Browse tab keeps the concept (no deselect)", () => {
+        // A route change to a tab with no concept must not clear a selection
+        // the reader still holds — the legacy kept it across the other tabs.
+        const { created, compiled, state, paramMap } = setup({ tab: "selection", concept: PROCESS });
+        paramMap.next(convertToParamMap({ tab: "browse" }));
+        created.detectChanges();
+        expect(activeTab(compiled)).toBe("Browse");
+        expect(state.selected()).toBe(PROCESS);
+    });
+
+    it("DD-415: a tab label navigates the drawer outlet to the tab", () => {
+        const { compiled, navigate } = setup({ tab: "browse", selected: PROCESS });
+        selectTab(compiled, "Model");
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "model"] } }]);
+    });
+
+    it("DD-415: the Selection tab's label keeps carrying the concept", () => {
+        const { compiled, navigate } = setup({ tab: "browse", selected: PROCESS });
+        selectTab(compiled, "Selection");
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }]);
+    });
+
+    it("LDG-25: a tree leaf click re-routes the Selection tab to that concept", () => {
+        // The Browse tab's organization tree holds the process leaf; its
+        // click is the legacy's selectEntity — the selection follows and the
+        // Selection tab routes to it (the drawer stays open).
+        const { compiled, state, navigate } = setup({ tab: "browse", selected: null });
+        const leaf = [...compiled.querySelectorAll(".aurelius-browse-tree-leaf")].find((row) =>
+            row.textContent?.includes("Load Job"),
+        );
+        if (leaf === undefined) {
+            throw new Error("the Browse tree's process leaf is missing");
+        }
+        leaf.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        expect(state.selected()).toBe(PROCESS);
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }]);
+    });
+
+    it("LDG-25: the Model tab's selected row re-clicked deselects and closes", () => {
+        const { created, compiled, state, navigate } = setup({ tab: "model", concept: undefined, selected: PROCESS });
+        // The Elements table's selected row (the process) — clicking it again
+        // is the legacy's deselect (LDG-25), which closes the drawer.
+        const elementsField = [...compiled.querySelectorAll(".field")].find((field) =>
+            field.querySelector(".label")?.textContent?.trim().startsWith("Elements"),
+        );
+        // Only the SELECTED row's re-click deselects (LDG-25): the process's
+        // own row, not the table's first (the dataset).
+        const row =
+            [...(elementsField?.querySelectorAll("tbody tr") ?? [])].find((tr) =>
+                tr.textContent?.includes("Load Job"),
+            ) ?? null;
+        if (row === null) {
+            throw new Error("the Elements table has no process row");
+        }
+        row.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+        created.detectChanges();
+        expect(state.selected()).toBeNull();
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }]);
+    });
+
+    it("LDG-23: choosing a view draws it and closes the panel (the legacy's rule)", () => {
+        // Two views so the dropdown's pick is a real change; the drawn view
+        // starts unset and the Browse dropdown answers on arrival (DD-415).
+        const twoViews = {
+            ...MODEL,
+            views: [
+                ...MODEL.views,
+                {
+                    id: "other_view",
+                    name: "Other View",
+                    description: "",
+                    nodes: [],
+                    connections: [],
+                    properties: [],
+                },
+            ],
+        };
+        const { created, compiled, state, navigate } = setup({ tab: "browse", model: twoViews });
+        // Pick the SECOND view by its option — a real change from the drawn
+        // first (the dropdown's selected row is the drawn view, DD-155).
+        const select = compiled.querySelector("select") as HTMLSelectElement;
+        const option = [...select.options].find((o) => o.textContent?.includes("Other View"));
+        if (option === undefined) {
+            throw new Error("the dropdown has no second view");
+        }
+        select.value = option.value;
+        select.dispatchEvent(new Event("change"));
+        created.detectChanges();
+
+        expect(state.drawnViewId()).toBe("other_view");
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }]);
+    });
+
+    it("DD-403: the drawer's own dismissal (Escape) clears the selection too", () => {
+        const { created, compiled, state, navigate } = setup({ tab: "selection", concept: PROCESS });
+        // Escape on the dialog — the drawer's keyboard dismissal path (the
+        // panel element carries the handler, not the layer).
+        compiled
+            .querySelector(".aurelius-drawer-panel")!
+            .dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+        created.detectChanges();
+        expect(state.selected()).toBeNull();
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: null } }]);
     });
 
     it("DD-402: the tab strip is full width — Bulma's is-fullwidth tab nav", () => {
-        const { compiled } = setup(PROCESS);
+        const { compiled } = setup({ tab: "browse" });
         const tabs = compiled.querySelector("nav.aurelius-model-browser-tabs");
         if (tabs === null) {
             throw new Error("the tab strip is missing");
@@ -222,5 +298,13 @@ describe("LineageModelBrowser (LDG-19, LDG-25)", () => {
         // Bulma's tab anchors center their label in the cell by default —
         // the wide, balanced row the feedback asked for.
         expect(tabs.classList.contains("is-fullwidth")).toBe(true);
+    });
+
+    it("the drawer's entities are the state's model (LDG-19's index)", () => {
+        // The panel derives the entity index from the shared model — the
+        // Selection tab's content proves the read (the concept's name, DD-415).
+        const { browser, state } = setup({ tab: "selection", concept: PROCESS });
+        const expected = buildEntitiesById(state.model()!);
+        expect([...browser["entities"]().keys()]).toEqual([...expected.keys()]);
     });
 });

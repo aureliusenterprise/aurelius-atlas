@@ -1,3 +1,7 @@
+import type { IconDefinition, IconName } from "@fortawesome/free-solid-svg-icons";
+
+import type { TypeIconClass } from "../../meta/type-icons";
+
 /**
  * The lineage shape table (LDG-13, LDG-14): the legacy
  * `libs/modelview2/src/lib/shapes/languages/lineage.ts` ported to the one
@@ -58,6 +62,46 @@ export const LINEAGE_ICON_PATHS: Readonly<Record<LineageClass, string>> = {
     process:
         "M 15.4545 10.0102 l -1.3508 -0.78 c 0.1363 -0.7356 0.1363 -1.4903 0 -2.2259 l 1.3508 -0.78 c 0.1554 -0.0888 0.2251 -0.2727 0.1744 -0.4439 c -0.352 -1.1288 -0.9512 -2.1498 -1.7344 -2.9996 c -0.1205 -0.13 -0.3171 -0.1617 -0.4693 -0.0729 L 12.0744 3.4879 c -0.5676 -0.4883 -1.2208 -0.8656 -1.9279 -1.113 V 0.8181 c 0 -0.1776 -0.1237 -0.3329 -0.2981 -0.371 c -1.1637 -0.26 -2.3559 -0.2473 -3.4625 0 c -0.1744 0.038 -0.2981 0.1934 -0.2981 0.371 V 2.3781 c -0.7039 0.2505 -1.3571 0.6278 -1.9279 1.113 L 2.8125 2.711 c -0.1554 -0.0888 -0.3488 -0.0602 -0.4693 0.0729 c -0.7832 0.8466 -1.3825 1.8676 -1.7344 2.9996 c -0.0539 0.1712 0.019 0.3551 0.1744 0.4439 L 2.134 7.0075 c -0.1363 0.7356 -0.1363 1.4903 0 2.2259 l -1.3508 0.78 c -0.1554 0.0888 -0.2251 0.2727 -0.1744 0.4439 c 0.352 1.1288 0.9512 2.1498 1.7344 2.9996 c 0.1205 0.13 0.3171 0.1617 0.4693 0.0729 l 1.3508 -0.78 c 0.5676 0.4883 1.2208 0.8656 1.9279 1.113 v 1.56 c 0 0.1776 0.1237 0.3329 0.2981 0.371 c 1.1637 0.26 2.3559 0.2473 3.4625 0 c 0.1744 -0.038 0.2981 -0.1934 0.2981 -0.371 v -1.56 c 0.7039 -0.2505 1.3571 -0.6278 1.9279 -1.113 l 1.3508 0.78 c 0.1554 0.0888 0.3488 0.0602 0.4693 -0.0729 c 0.7832 -0.8466 1.3825 -1.8676 1.7344 -2.9996 c 0.0476 -0.1744 -0.0222 -0.3583 -0.1776 -0.4471 z M 8.1173 10.6539 c -1.3983 0 -2.5366 -1.1383 -2.5366 -2.5366 s 1.1383 -2.5366 2.5366 -2.5366 s 2.5366 1.1383 2.5366 2.5366 s -1.1383 2.5366 -2.5366 2.5366 z",
 };
+
+/**
+ * The badge icons of the two lineage types (DD-405 amended): the same two
+ * legacy paths as {@link LINEAGE_ICON_PATHS}, shaped as FontAwesome icon
+ * definitions so the shared card's type badge (`aurelius-atlas-ui-type-name`)
+ * can ink them. The legacy badge drew its icon from `iconsByType` — the
+ * app's own type index (DD-378) — which never carried the two lineage
+ * types; the demo's lineage card badge shows the archimate glyphs
+ * (`definitions.ts`, the `lineage_dataset`/`lineage_process` entries), and
+ * those are the paths below. FA renders the path with `fill: currentColor`,
+ * so the badge's colour class carries the lineage fills: `.technical` is
+ * the dataset's blue, `.technical-process` the process's `#00d1b2` — the
+ * same two inks the Type row and the diagram nodes use.
+ */
+export const LINEAGE_BADGE_ICONS: Readonly<Record<LineageClass, IconDefinition>> = {
+    dataset: {
+        prefix: "fas",
+        iconName: "lineage-dataset" as IconName,
+        icon: [16, 16, [], "", LINEAGE_ICON_PATHS.dataset],
+    },
+    process: {
+        prefix: "fas",
+        iconName: "lineage-process" as IconName,
+        icon: [16, 16, [], "", LINEAGE_ICON_PATHS.process],
+    },
+};
+
+/**
+ * The badge's colour class for one lineage type (DD-405 amended): the two
+ * shared badge families whose ink is the lineage fill — blue for a
+ * dataset, `#00d1b2` for a process (`type-name.component.scss`).
+ * @param cssClass the lineage class, or null for an unknown type
+ * @returns the badge class, or undefined for no icon at all
+ */
+export function lineageBadgeClass(cssClass: LineageClass | null): TypeIconClass | undefined {
+    if (cssClass === "dataset") {
+        return "technical";
+    }
+    return cssClass === "process" ? "technical-process" : undefined;
+}
 
 /**
  * The arrow marker (LDG-14): the legacy defs' `generic-arrow` — the one

@@ -8,20 +8,22 @@
 > repository: check the archive's topmost number and the sibling `specs/*/design.md`
 > files for the largest `DD-NNN` in use before taking the next.
 
-| Id      | Title                                                                           |
-| ------- | ------------------------------------------------------------------------------- |
-| DD-397. | The toolbar rides the diagram state, not a shared component                     |
-| DD-398. | PNG metadata reads the runtime config and the session                           |
-| DD-399. | The save-all-views ZIP stays out                                                |
-| DD-400. | The lineage fetch state is a page signal, not the box's secret                  |
-| DD-402. | The drawer's tab strip is full width                                            |
-| DD-403. | Dismissing the quickview deselects the diagram                                  |
-| DD-404. | The relation rows name their source and target (row shape superseded by DD-411) |
-| DD-405. | The Selection tab carries the search card                                       |
-| DD-406. | The Browse tab regains the organization tree as a nested list                   |
-| DD-407. | The save captures the view at the reader's zoom                                 |
-| DD-408. | The diagram's text inherits the app's brand font                                |
-| DD-409. | Each connection gains a wide transparent hit path                               |
+| Id      | Title                                                                             |
+| ------- | --------------------------------------------------------------------------------- |
+| DD-397. | The toolbar rides the diagram state, not a shared component                       |
+| DD-398. | PNG metadata reads the runtime config and the session                             |
+| DD-399. | The save-all-views ZIP stays out                                                  |
+| DD-400. | The lineage fetch state is a page signal, not the box's secret                    |
+| DD-402. | The drawer's tab strip is full width                                              |
+| DD-403. | Dismissing the quickview deselects the diagram                                    |
+| DD-404. | The relation rows name their source and target (row shape superseded by DD-411)   |
+| DD-405. | The Selection tab carries the search card (placement and badge amended by DD-414) |
+| DD-406. | The Browse tab regains the organization tree as a nested list                     |
+| DD-407. | The save captures the view at the reader's zoom                                   |
+| DD-408. | The diagram's text inherits the app's brand font                                  |
+| DD-409. | Each connection gains a wide transparent hit path                                 |
+| DD-414. | The Selection card moves under the Type field and gains the lineage glyph         |
+| DD-415. | The quickview drawer is routed; its state is app-scoped                           |
 
 ## Decisions
 
@@ -240,7 +242,7 @@ tests' fixtures carry the two new fields.
 
 ### DD-405. The Selection tab carries the search card
 
-- **Status:** Proposed
+- **Status:** Proposed (placement and badge amended by DD-414)
 - **Increment:** 7.22d
 - **Date:** 2026-11-07
 
@@ -371,3 +373,81 @@ cheap bounding shape, and the rect would swallow clicks meant for nodes.
 **Consequences.** The e2e scenario clicks an edge through the hit path. A
 straight horizontal edge has a zero-height bounding box, so the e2e clicks it
 with `force: true` — the real mouse event still hit-tests the stroke.
+
+### DD-414. The Selection card moves under the Type field and gains the lineage glyph
+
+- **Status:** Proposed
+- **Increment:** 7.22d
+- **Date:** 2026-11-08
+
+**Decision.** Amends DD-405. The search card moves from above the fields to
+between the Type field and the Description field — where the demo's panel
+reads the card, below the type it names. And the card's type badge carries the
+type's icon: the two lineage glyph paths (LDG-13's vendored archimate shapes)
+re-shaped as FontAwesome icon definitions, inked with the badge colour families
+whose ink matches the diagram's fills — `.technical` (blue) for a dataset,
+`.technical-process` (`#00d1b2`) for a process. An unknown type gets no icon.
+
+**Reason.** The reader compared the panel against the demo and reported both
+gaps: the demo shows the card under the Type row, and its badge shows the
+archimate glyph while ours showed none. The legacy's own badge drew from the
+app's `iconsByType` index, which never carried the two lineage types — the
+glyph lives in the archimate icon set (`definitions.ts`), the same paths the
+diagram nodes and the Type row already draw. Reusing those paths as an
+`IconDefinition` costs one small table; FA renders `fill: currentColor`, so
+the existing badge classes carry the exact lineage inks with no new CSS.
+
+**Alternatives.** Keep the card above the fields. It loses the demo match the
+reader asked for. Second, port the legacy `iconsByType` index. It loses: the
+index (DD-378) has no lineage entries and inventing them there would spread
+lineage knowledge into the app-wide type index for two types that appear on
+one page.
+
+**Consequences.** `lineage-shapes.ts` gains `LINEAGE_BADGE_ICONS` and
+`lineageBadgeClass()`; the Selection panel passes `typeIcon`/`typeIconClass`
+to the shared card. The card's component is unchanged — it already accepts
+both inputs (UIC-12). DD-405's status notes the amendment.
+
+### DD-415. The quickview drawer is routed; its state is app-scoped
+
+- **Status:** Proposed
+- **Increment:** 7.22d
+- **Date:** 2026-11-08
+
+**Decision.** The lineage quickview opens in the root `drawer` aux outlet
+through a matcher route: `lineage`, `lineage/<tab>`, and
+`lineage/selection/<concept>` in one config (`lineageDrawerMatcher`, the
+`createEntityMatcher` posture — DD-355). The diagram's node/edge click, the
+header's Browse, and the View-info button navigate instead of flipping a
+signal; dismissing navigates `drawer: null` and clears the selection (DD-403
+unchanged). The shared state (`LineageModelState`) moves from the Details
+page's providers to root, and gains the `selected` concept and the drawn
+view id the two components now share across the outlet boundary. Reload or a
+pasted link reopens the Selection tab with its concept from the URL.
+
+**Reason.** The reader asked the drawer to work like the other drawers
+(settings, alerts, editor): the URL owns the open state, so reload, back, and
+a pasted link all restore it. The aux outlet is where that contract lives,
+and it also kills the drawer's two sources of truth — the viewer's open
+signal plus the browser's own tab state — one navigation replaces both, and
+the two surfaces can no longer drift. A root outlet cannot see page
+providers, which forces the state service to root scope: one singleton per
+tab, its `load()` clearing the selection when a new model arrives.
+
+**Alternatives.** Keep the in-page drawer with `RouterStateSerializer`
+decoration. It loses: every other drawer's reload/back behaviour, and a
+custom serializer for one drawer is more machinery than the route. Second,
+`lineage/:tab` and `lineage/selection/:concept` as two configs. It loses —
+the DD-355 lesson: two configs rebuild the component on the tab switch and
+replay the slide-in.
+
+**Consequences.** The viewer and the browser exchange the `model`/`metadata`
+inputs and the `selectedConcept` output for the injected state. The panel
+reads `:tab`/`:concept` from its own `ActivatedRoute`; a tab-only route never
+clears the selection. The matcher keeps the component alive across all four
+tabs and every concept, so tab changes are parameter changes, not rebuilds.
+The unit specs assert navigations, not mounted children. The reload races
+the panel's arrival with the page's fetch, and `load()` clears the selection
+with the old document — so the hydration effect reads the entity index: the
+URL's concept re-asserts when its model arrives, and a concept the loaded
+document does not know never paints.

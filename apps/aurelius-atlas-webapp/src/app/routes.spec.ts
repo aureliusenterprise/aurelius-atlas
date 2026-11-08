@@ -2,7 +2,7 @@ import { Injector, runInInjectionContext } from "@angular/core";
 import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlSegment } from "@angular/router";
 import Keycloak from "keycloak-js";
 
-import { createEntityMatcher, routes } from "./routes";
+import { createEntityMatcher, lineageDrawerMatcher, routes } from "./routes";
 import { SEARCH_ROUTES } from "./search/search.routes";
 import { SettingsPanel } from "./settings/settings-panel.component";
 
@@ -88,6 +88,64 @@ describe("routes", () => {
         expect(createRoutes[0]?.path).toBeUndefined();
         // The matcher config must not be the edit one, whose mode differs.
         expect(drawerRoutes.find((route) => route.path === "edit/:guid")?.data).toEqual({ editorMode: "edit" });
+    });
+
+    it("matches the bare lineage segment (DD-415)", () => {
+        const match = lineageDrawerMatcher([new UrlSegment("lineage", {})]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual(["lineage"]);
+        expect(match?.posParams).toBeUndefined();
+    });
+
+    it("matches a lineage tab and carries it as :tab (DD-415)", () => {
+        const match = lineageDrawerMatcher([new UrlSegment("lineage", {}), new UrlSegment("view", {})]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual(["lineage", "view"]);
+        expect(match?.posParams?.["tab"]?.path).toBe("view");
+    });
+
+    it("matches a lineage selection and carries the concept as :concept (DD-415)", () => {
+        const match = lineageDrawerMatcher([
+            new UrlSegment("lineage", {}),
+            new UrlSegment("selection", {}),
+            new UrlSegment("00000000-0000-4000-8000-000000000002", {}),
+        ]);
+
+        expect(match?.consumed.map((segment) => segment.path)).toEqual([
+            "lineage",
+            "selection",
+            "00000000-0000-4000-8000-000000000002",
+        ]);
+        expect(match?.posParams?.["tab"]?.path).toBe("selection");
+        expect(match?.posParams?.["concept"]?.path).toBe("00000000-0000-4000-8000-000000000002");
+    });
+
+    it("leaves an unknown lineage second segment as the bare route (DD-415)", () => {
+        // Not a tab name: consume only `lineage` so the panel opens on its
+        // default tab rather than matching nothing. Another first segment —
+        // or none — goes to the rest of the table.
+        expect(
+            lineageDrawerMatcher([new UrlSegment("lineage", {}), new UrlSegment("bogus", {})])?.consumed.map(
+                (segment) => segment.path,
+            ),
+        ).toEqual(["lineage"]);
+        expect(lineageDrawerMatcher([new UrlSegment("settings", {})])).toBeNull();
+        expect(lineageDrawerMatcher([])).toBeNull();
+    });
+
+    it("serves every lineage URL from one drawer config (DD-415, DD-355 posture)", async () => {
+        // One matcher config for all three shapes keeps the panel alive
+        // across tab and concept changes — no rebuilt drawer, no replayed
+        // slide-in (the create editor's lesson, DD-355).
+        const drawerRoutes = routes[0].children?.filter((route) => route.outlet === "drawer") ?? [];
+        const lineageRoutes = drawerRoutes.filter((route) => route.matcher === lineageDrawerMatcher);
+
+        expect(lineageRoutes).toHaveLength(1);
+        expect(lineageRoutes[0]?.path).toBeUndefined();
+
+        const loadComponent = lineageRoutes[0]?.loadComponent as unknown as () => Promise<unknown>;
+        const { LineageModelBrowser } = await import("./search/details/lineage/model-browser.component");
+        await expect(loadComponent()).resolves.toBe(LineageModelBrowser);
     });
 
     it("routes the details skeleton at search/details/:guid (DET-01)", async () => {
