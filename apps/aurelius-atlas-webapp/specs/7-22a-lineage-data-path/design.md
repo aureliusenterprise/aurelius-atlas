@@ -149,3 +149,34 @@ and the DTO field names are the Angular twin of
 `LineageModelResponse`, `None` for `204`), so the pair joins the coverage matrix
 DD-217 opened: the row closes CL-30's pair. If a later slice ports the data2model
 or validate-entity surface, its client joins this folder with its own token.
+
+### DD-422. The standalone resolver points the lineage pair at the service name
+
+- **Status:** Proposed
+- **Increment:** 7.22a
+- **Date:** 2026-11-08
+
+**Decision.** The standalone stack's `resolve-nginx.sh` fills the two new
+placeholders with `https://aurelius-atlas-lineage-model:21002` and
+`aurelius-atlas-lineage-model`. The stack runs no lineage-model container, and
+its `webapp/config.json` sets no `lineageModelBaseUrl`, so the browser never
+calls the pair.
+
+**Reason.** LDG-06 added the pair to the webapp's nginx template, and SWA-02
+tests that the resolver covers every placeholder the template carries. The
+resolver did not learn the pair in 7.22a, so its own fail-on-leftover guard
+broke the standalone stack. The service-name value matches the chart's default
+(`deployment.yaml` builds the same name and port from `lineageModel.port`).
+An nginx variable `proxy_pass` resolves lazily, so a dead upstream fails one
+request and never stops the container from serving.
+
+**Alternatives.** Fill the pair with the server's own upstream. It loses: the
+server does not serve `/lineage-model/` (it is an aux API, ADR 055), so every
+diagram call would fail against a wrong peer. Second, keep the standalone copy
+of the template free of the pair. It loses: the image ships one template, and
+SWA-02 reads that one.
+
+**Consequences.** The chart, dev, and standalone now each fill the pair, and
+SWA-02 turns green again. A future increment that runs the aux API in the
+standalone stack adds the service and its audience without a resolver change
+beyond the value.
