@@ -854,14 +854,15 @@ def _jump_with_side_navigation(page: Page) -> None:
 
     # DD-381: the jumps are history now — back leaves the fragment off
     # and the screen stays the entity's, forward puts the anchor back.
-    # WebKit keeps the sign-in callback's OAuth fragment (#state=...&
-    # session_state=...&code=...) on the history entry it restored, even
-    # though the app cleaned the address bar; Chromium cleans the entry
-    # too. The residue is the browser's history bookkeeping, not the
-    # app's — the DD-381 rule is the anchor, so the pin tolerates the
-    # OAuth fragment and still rejects #related-attributes.
+    # WebKit restores the sign-in callback's OAuth fragment (#state=...&
+    # code=...) on the history entry a back step lands on, even though the
+    # app cleaned the address bar (its replaceState edits the address, not
+    # the stored entry); Chromium/Firefox clean the entry too. The residue
+    # is the browser's history bookkeeping, not the app's — the DD-381 rule
+    # is the app's own anchor, so the pin rejects #related-attributes and
+    # tolerates the OAuth fragment.
     page.go_back()
-    expect(page).to_have_url(re.compile(r"/search/details/[^#]*(#(state|session_state|code)=.*)?$"))
+    expect(page).to_have_url(re.compile(r"/search/details/[^#]*(#(state|session_state|iss|code)=.*)?$"))
     expect(page.locator("h1.aurelius-details-title")).to_be_visible()
     page.go_forward()
     expect(page).to_have_url(re.compile(r"/search/details/[^#]+#related-attributes$"))
