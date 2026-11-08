@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { describe, expect, it } from "vitest";
 
-import { AR3_ICON_FILLS } from "./archimate-shapes";
+import { AR3_ICON_FILLS } from "aurelius-atlas-ui";
 import { LineageEntityTable } from "./entity-table.component";
 import type { LineageEntity } from "./lineage-entities";
 import { LineageModelTab } from "./model-tab.component";

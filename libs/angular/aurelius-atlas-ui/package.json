@@ -6,7 +6,9 @@
         "@angular/core": "^22.0.0",
         "@fortawesome/angular-fontawesome": "^5.0.0",
         "@fortawesome/free-regular-svg-icons": "^7.0.0",
-        "@fortawesome/free-solid-svg-icons": "^7.0.0"
+        "@fortawesome/free-solid-svg-icons": "^7.0.0",
+        "d3-selection": "^3.0.1",
+        "d3-zoom": "^3.0.1"
     },
     "sideEffects": false
 }

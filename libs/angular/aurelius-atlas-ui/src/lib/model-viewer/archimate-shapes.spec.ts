@@ -4,7 +4,6 @@ import {
     AR3_ICON_FILLS,
     AR3_MARKER_DEFS,
     AR3_NODE_FILLS,
-    ar3BadgeClass,
     ar3Class,
     ar3ConnectionStyle,
     ar3Icon,
@@ -146,12 +145,6 @@ describe("archimate-shapes (LDG-33..LDG-36)", () => {
         expect(ar3Icon("ar3_Unknown")).toBeNull();
         expect(ar3Icon("ar3_Junction")).toBeNull();
         expect(ar3Icon("")).toBeNull();
-    });
-
-    it("DD-405: only the lineage glyphs get a card badge", () => {
-        expect(ar3BadgeClass("dataset")).toBe("technical");
-        expect(ar3BadgeClass("process")).toBe("technical-process");
-        expect(ar3BadgeClass("motivation")).toBeUndefined();
     });
 
     it("LDG-36: the eight markers are the legacy ar3RelationDef rows", () => {

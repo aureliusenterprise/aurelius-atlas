@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
-import { AR3_ICON_FILLS } from "./archimate-shapes";
+import { AR3_ICON_FILLS } from "aurelius-atlas-ui";
 import { buildEntitiesById, type LineageEntity } from "./lineage-entities";
 import { buildIndexes } from "./lineage-indexes";
 import { parseAr3Model } from "./parse-ar3";
