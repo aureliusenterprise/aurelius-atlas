@@ -25,6 +25,12 @@ export interface RasterSurface {
     createCanvas(width: number, height: number): HTMLCanvasElement;
     /** Draw the loaded image onto the canvas at the origin. */
     drawImage(canvas: HTMLCanvasElement, image: HTMLImageElement): void;
+    /**
+     * Rasterize an element through the browser's own paint (the fallback's
+     * html2canvas leg: the element and its subtree are rendered, the
+     * measured box fixed first — the legacy's rule).
+     */
+    renderHtml(element: HTMLElement, width: number, height: number): Promise<HTMLCanvasElement>;
     /** The canvas's PNG bytes as a binary string. */
     canvasToPng(canvas: HTMLCanvasElement): Promise<string>;
     /** Hand the bytes to the browser as a file download. */
@@ -59,6 +65,27 @@ const domSurface: RasterSurface = {
         }
         ctx.drawImage(image, 0, 0);
     },
+    renderHtml: (element, width, height) =>
+        html2canvas(element, {
+            logging: false,
+            width,
+            height,
+            scrollX: -window.scrollX,
+            scrollY: -window.scrollY,
+            // html2canvas renders its own clone of the document — the
+            // legacy's fix-ups apply the fixed dimensions there.
+            onclone: (clonedDocument: Document) => {
+                const cloned = clonedDocument.getElementById("screenshot-container");
+                if (cloned === null) {
+                    return;
+                }
+                if (cloned.parentElement !== null) {
+                    cloned.parentElement.style.display = "inline";
+                }
+                cloned.style.width = `${width}px`;
+                cloned.style.height = `${height}px`;
+            },
+        }),
     canvasToPng: async (canvas) => {
         const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob((result) => resolve(result)));
         if (blob === null) {
@@ -185,26 +212,7 @@ export class SaveViewAsImage {
         if (container === null) {
             throw new Error("the svg has no container to render");
         }
-        const canvas = await html2canvas(container, {
-            logging: false,
-            width,
-            height,
-            scrollX: -window.scrollX,
-            scrollY: -window.scrollY,
-            // html2canvas renders its own clone of the document — the
-            // legacy's fix-ups apply the fixed dimensions there.
-            onclone: (clonedDocument: Document) => {
-                const cloned = clonedDocument.getElementById("screenshot-container");
-                if (cloned === null) {
-                    return;
-                }
-                if (cloned.parentElement !== null) {
-                    cloned.parentElement.style.display = "inline";
-                }
-                cloned.style.width = `${width}px`;
-                cloned.style.height = `${height}px`;
-            },
-        });
+        const canvas = await surface.renderHtml(container, width, height);
         return surface.canvasToPng(canvas);
     }
 }
