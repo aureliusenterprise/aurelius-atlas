@@ -9,6 +9,7 @@ import { LineageModelState } from "./lineage-state";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
 import { SaveViewAsImage } from "./save-view-as-image";
 import { LineageViewer } from "./lineage-viewer.component";
+import { AR3_ICON_FILLS, AR3_NODE_FILLS } from "./archimate-shapes";
 import { BOUNDS_INSET, ZOOM_SCALE_EXTENT } from "./lineage-shapes";
 
 /**
@@ -116,6 +117,108 @@ function eventWindow(): EventTarget {
 function stubSvgExtent(svg: SVGSVGElement): void {
     Object.defineProperty(svg, "width", { value: { baseVal: { value: 800 } } });
     Object.defineProperty(svg, "height", { value: { baseVal: { value: 600 } } });
+}
+
+/**
+ * An archimate document, hand-built in the shipped writer's shape (the
+ * model-extraction's contract — DV-68/DTM-11): a motivation Goal (octagon,
+ * icon), an And Junction (hidden icon and name), a Data Object joined to the
+ * Goal by a Flow, an Access Read/Write, and a connection whose relation the
+ * model does not carry (the plain line).
+ */
+function archimateModel(): Ar3Model {
+    const document = {
+        ar3_model: {
+            "@identifier": "m",
+            ar3_name: [{ value: "The Architecture" }],
+            ar3_elements: {
+                ar3_element: [
+                    { "@identifier": "goal", "@xsi_type": "ar3_Goal", ar3_name: [{ value: "Reduce Cost" }] },
+                    { "@identifier": "junction", "@xsi_type": "ar3_AndJunction" },
+                    { "@identifier": "data", "@xsi_type": "ar3_DataObject", ar3_name: [{ value: "Invoices" }] },
+                ],
+            },
+            ar3_relationships: {
+                ar3_relationship: [
+                    {
+                        "@identifier": "flow",
+                        "@source": "data",
+                        "@target": "goal",
+                        "@xsi_type": "ar3_Flow",
+                    },
+                    {
+                        "@identifier": "access",
+                        "@source": "data",
+                        "@target": "junction",
+                        "@xsi_type": "ar3_Access",
+                        "@accessType": "ReadWrite",
+                    },
+                ],
+            },
+            ar3_views: {
+                ar3_diagrams: {
+                    ar3_view: [
+                        {
+                            "@identifier": "v1",
+                            ar3_name: [{ value: "The View" }],
+                            ar3_node: [
+                                {
+                                    "@identifier": "n-goal",
+                                    "@elementRef": "goal",
+                                    "@x": 320,
+                                    "@y": 0,
+                                    "@w": 120,
+                                    "@h": 80,
+                                    "@xsi_type": "ar3_Element",
+                                },
+                                {
+                                    "@identifier": "n-junction",
+                                    "@elementRef": "junction",
+                                    "@x": 0,
+                                    "@y": 200,
+                                    "@w": 14,
+                                    "@h": 14,
+                                    "@xsi_type": "ar3_Element",
+                                },
+                                {
+                                    "@identifier": "n-data",
+                                    "@elementRef": "data",
+                                    "@x": 0,
+                                    "@y": 0,
+                                    "@w": 120,
+                                    "@h": 80,
+                                    "@xsi_type": "ar3_Element",
+                                },
+                            ],
+                            ar3_connection: [
+                                {
+                                    "@identifier": "c-flow",
+                                    "@relationshipRef": "flow",
+                                    "@source": "n-data",
+                                    "@target": "n-goal",
+                                    "@xsi_type": "ar3_Relationship",
+                                },
+                                {
+                                    "@identifier": "c-access",
+                                    "@relationshipRef": "access",
+                                    "@source": "n-data",
+                                    "@target": "n-junction",
+                                    "@xsi_type": "ar3_Relationship",
+                                },
+                                {
+                                    "@identifier": "c-lost",
+                                    "@source": "n-junction",
+                                    "@target": "n-goal",
+                                    "@xsi_type": "ar3_Relationship",
+                                },
+                            ],
+                        },
+                    ],
+                },
+            },
+        },
+    };
+    return parseAr3Model(JSON.stringify(document));
 }
 
 describe("LineageViewer (LDG-12..LDG-18)", () => {
@@ -264,8 +367,8 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
         const paths = [...compiled.querySelectorAll("g.connection path.connection-path")];
         expect(paths.map((path) => path.getAttribute("d"))).toEqual(["M120,27.5L320,27.5", "M440,27.5L640,27.5"]);
 
-        // Every connection ends in the generic-arrow marker; the one defs
-        // marker is the legacy's ported geometry.
+        // Every connection ends in the generic-arrow marker; the defs set
+        // carries it among the legacy's eight (LDG-36).
         expect(paths[0].getAttribute("marker-end")).toBe("url(#generic-arrow)");
         const marker = compiled.querySelector("defs marker[id='generic-arrow']");
         expect(marker?.getAttribute("refX")).toBe("7");
@@ -660,5 +763,137 @@ describe("LineageViewer (LDG-12..LDG-18)", () => {
 
         // And the view did not move: the transform still reads the pan.
         expect(zoomGroup.getAttribute("transform")).toBe("translate(40,20) scale(1)");
+    });
+});
+
+describe("LineageViewer over an archimate document (LDG-33..LDG-36, DD-418)", () => {
+    it("LDG-36: the defs carry all eight legacy markers, dash-proof", () => {
+        const { compiled } = setup(archimateModel());
+        const markers = [...compiled.querySelectorAll("defs marker")];
+        expect(markers.map((marker) => marker.id)).toEqual([
+            "access-read",
+            "aggregation",
+            "assignment-start",
+            "association",
+            "block-arrow",
+            "composition",
+            "generic-arrow",
+            "generic-arrow-open",
+        ]);
+        // The legacy's stroke-dasharray="999" rides every marker path so a
+        // dashed connection never dashes its own arrowhead, and the fill
+        // rides as a style — the open arrows carry none, the closed one black.
+        const closed = markers.find((marker) => marker.id === "generic-arrow");
+        expect(closed?.querySelector("path")?.getAttribute("stroke-dasharray")).toBe("999");
+        expect(closed?.querySelector("path")?.style.fill).toBe("#000000");
+        expect(closed?.querySelector("path")?.style.stroke).toBe("");
+        const open = markers.find((marker) => marker.id === "generic-arrow-open");
+        expect(open?.querySelector("path")?.style.fill).toBe("none");
+        expect(open?.querySelector("path")?.style.stroke).toBe("#000000");
+    });
+
+    it("LDG-33/LDG-34/LDG-35: an archimate node draws its shape, fill class, and glyph", () => {
+        const { compiled } = setup(archimateModel());
+
+        // The Goal: the legacy octagon over its 120x80, the motivation
+        // class on the group (the fill rule reads it), the goal glyph inked
+        // motivation.
+        const goal = compiled.querySelector("g.node[data-concept='goal']") as SVGGElement;
+        expect(goal.classList.contains("motivation")).toBe(true);
+        expect(goal.querySelector("path.node-shape")?.getAttribute("d")).toBe(
+            "m12,0h96l12,12v56l-12,12h-96l-12,-12v-56l12,-12z",
+        );
+        expect(goal.querySelector(".node-icon path")?.getAttribute("d")).toMatch(/^M 6\.1538 8 a/);
+        expect(goal.querySelector(".node-icon path")?.classList.contains("motivation")).toBe(true);
+        expect(goal.querySelector(".node-text")?.textContent?.trim()).toBe("Reduce Cost");
+
+        // The Data Object: application class, plain rectangle, object glyph.
+        const data = compiled.querySelector("g.node[data-concept='data']") as SVGGElement;
+        expect(data.classList.contains("application")).toBe(true);
+        expect(data.querySelector("path.node-shape")?.getAttribute("d")).toBe("m0,0h120v80h-120z");
+        expect(data.querySelector(".node-icon path")?.classList.contains("application")).toBe(true);
+    });
+
+    it("LDG-33: a junction is an unlabelled, uninked ellipse", () => {
+        const { compiled } = setup(archimateModel());
+        const junction = compiled.querySelector("g.node[data-concept='junction']") as SVGGElement;
+        // The And class (black fill), the ellipse over the writer's 14x14.
+        expect(junction.classList.contains("and")).toBe(true);
+        expect(junction.querySelector("path.node-shape")?.getAttribute("d")).toBe(
+            "m0,0a7,7,0,0,0,14,14a7,7,0,0,0,-14,-14z",
+        );
+        // The legacy compose hid both the icon and the name (showIcon:
+        // false, showName: false).
+        expect(junction.querySelector(".node-icon")).toBeNull();
+        expect(junction.querySelector(".node-text")).toBeNull();
+    });
+
+    it("LDG-36: each connection rides its relation type's markers and dash", () => {
+        const { compiled } = setup(archimateModel());
+        const pathFor = (concept: string) =>
+            compiled.querySelector(`g.connection[data-concept='${concept}'] path.connection-path`) as SVGPathElement;
+
+        // The Flow: the filled arrow at the end, the legacy's 4,2 dash.
+        const flow = pathFor("flow");
+        expect(flow.getAttribute("marker-end")).toBe("url(#generic-arrow)");
+        expect(flow.getAttribute("marker-start")).toBeNull();
+        expect(flow.style.strokeDasharray).toBe("4,2");
+
+        // The Access Read/Write: the open access hook at the start, the
+        // open arrow at the end, dashed 2,2.
+        const access = pathFor("access");
+        expect(access.getAttribute("marker-start")).toBe("url(#access-read)");
+        expect(access.getAttribute("marker-end")).toBe("url(#generic-arrow-open)");
+        expect(access.style.strokeDasharray).toBe("2,2");
+
+        // A connection whose relation the model does not carry: the plain
+        // line, no markers, no dash (the legacy's no-style answer). Its
+        // concept is its own id (LDG-17's `ref ?? id`).
+        const lost = pathFor("c-lost");
+        expect(lost.getAttribute("marker-start")).toBeNull();
+        expect(lost.getAttribute("marker-end")).toBeNull();
+        expect(lost.style.strokeDasharray).toBe("");
+    });
+
+    it("LDG-34/LDG-35: the shipped style block carries every fill of the tables", () => {
+        const styles = styleBlock();
+        // The lineage fills the shipped chain still uses stay (7.22b's pin).
+        expect(styles).toContain("fill: hsl(240, 100%, 95%)");
+        // The builder drops an imported constant interpolated into a
+        // component's styles, so the archimate blocks ship as a literal copy
+        // (DD-418). This pins every declaration of the AR3_NODE_FILLS and
+        // AR3_ICON_FILLS tables into the shipped block, so the copy cannot
+        // drift from the data the tables answer.
+        for (const table of [AR3_NODE_FILLS, AR3_ICON_FILLS]) {
+            for (const rule of table.match(/\.[\w.-]+[^{]*\{[^}]*\}/g) ?? []) {
+                const selector = rule.slice(0, rule.indexOf("{")).trim();
+                const declarations = rule
+                    .slice(rule.indexOf("{") + 1, rule.lastIndexOf("}"))
+                    .split(";")
+                    .map((declaration) => declaration.trim())
+                    .filter((declaration) => declaration !== "");
+                for (const declaration of declarations) {
+                    const property = declaration.slice(0, declaration.indexOf(":")).trim();
+                    const value = declaration.slice(declaration.indexOf(":") + 1).trim();
+                    // The builder stamps a _ngcontent attribute into each
+                    // selector part and may reformat spacing, so each part
+                    // matches with an optional attribute after it, and the
+                    // declaration by property and value inside the rule.
+                    const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, (char) => `\\${char}`);
+                    // The leading lookbehind keeps a bare glyph selector like
+                    // .motivation from matching inside .node.motivation.
+                    const selectorPattern =
+                        "(?<![\\w-])" +
+                        selector
+                            .split(/\s+/)
+                            .map((part) => `${escape(part)}(?:\\[[^\\]]*\\])?`)
+                            .join("\\s+");
+                    const pattern = new RegExp(
+                        `${selectorPattern}[^{]*\\{[^}]*${escape(property)}\\s*:\\s*${escape(value)}\\b`,
+                    );
+                    expect(styles, `the style block carries ${selector} { ${declaration} }`).toMatch(pattern);
+                }
+            }
+        }
     });
 });

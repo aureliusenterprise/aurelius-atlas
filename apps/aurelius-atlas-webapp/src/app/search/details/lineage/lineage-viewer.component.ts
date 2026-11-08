@@ -1,3 +1,4 @@
+import { NgClass } from "@angular/common";
 import {
     ChangeDetectionStrategy,
     Component,
@@ -22,54 +23,71 @@ import { connectionConceptId, nodeConceptId } from "./parse-ar3";
 import { LineageModelState } from "./lineage-state";
 import { buildConnectionPath, type PathSurface } from "./connection-path";
 import {
-    BOUNDS_INSET,
-    DRAWER_SCROLL,
-    GENERIC_ARROW,
-    lineageClass,
-    LINEAGE_ICON_PATHS,
-    rectanglePath,
-    ZOOM_SCALE_EXTENT,
-    type LineageClass,
-} from "./lineage-shapes";
+    AR3_MARKER_DEFS,
+    ar3Class,
+    ar3ConnectionStyle,
+    ar3Icon,
+    ar3NodeShape,
+    nodePath,
+    NO_RELATION_OPTIONS,
+    type Ar3ConnectionStyle,
+    type Ar3MarkerDef,
+} from "./archimate-shapes";
+import { BOUNDS_INSET, DRAWER_SCROLL, ZOOM_SCALE_EXTENT } from "./lineage-shapes";
 
-/** The drawn node: a view node with its resolved shape (LDG-12/LDG-13). */
+/** The drawn node: a view node with its resolved shape (LDG-12/LDG-13/LDG-33). */
 interface DrawnNode {
     readonly node: Ar3ViewNode;
-    /** The rectangle path from `x,y,w,h` (the legacy's `basicShapes.rectangle`). */
+    /** The shape path from `x,y,w,h` (the legacy's `basicShapes`, LDG-33). */
     readonly shape: string;
-    /** The fill class (`dataset`/`process`), or null for an unknown type. */
-    readonly cssClass: LineageClass | null;
-    /** The name inside the rectangle (LDG-11's display name). */
+    /** The fill class (LDG-34: the archimate layer, or dataset/process). */
+    readonly shapeClass: string;
+    /** Whether the type icon draws (LDG-33: no for a junction or the grouping). */
+    readonly showIcon: boolean;
+    /** Whether the name draws (LDG-33: no for a junction). */
+    readonly showName: boolean;
+    /** The name inside the shape (LDG-11's display name). */
     readonly name: string;
     /** The 16x16 icon path, or null when the type has none. */
     readonly icon: string | null;
+    /** The icon's fill class (LDG-35), empty when no table names the type. */
+    readonly iconColor: string;
     /** The concept a click selects (LDG-17: `ref ?? id`). */
     readonly concept: string;
     /** The raw model position (LDG-15: `translate(x, y)`; the group holds the shift). */
     readonly transform: string;
 }
 
-/** The drawn connection: a view connection with its resolved path (LDG-14). */
+/** The drawn connection: a view connection with its resolved path (LDG-14/LDG-36). */
 interface DrawnConnection {
     readonly connection: Ar3ViewConnection;
     /** The absolute path in model coordinates, empty when nothing draws. */
     readonly path: string;
     /** The relation name at the path centre, or empty (no label). */
     readonly name: string;
+    /** The relation type's markers and dash (LDG-36). */
+    readonly style: Ar3ConnectionStyle;
     /** The concept a click selects (LDG-17: `ref ?? id`). */
     readonly concept: string;
 }
 
 /**
  * The lineage viewer (LDG-12..LDG-18, DD-388/DD-390): the first view of a
- * parsed ar3 model, drawn as the legacy modelview2 drew the lineage language
- * — nodes first, connections on top, every node and connection riding its raw
- * model coordinate under one bounds group shifted by `-minX, -minY` (LDG-15:
+ * parsed ar3 model, drawn as the legacy modelview2 drew it — nodes first,
+ * connections on top, every node and connection riding its raw model
+ * coordinate under one bounds group shifted by `-minX, -minY` (LDG-15:
  * the legacy `ModelviewService` bounds), each connection the
- * `getShortestLineEndpoints` polyline through the server's bendpoints with the
- * `generic-arrow` marker end (LDG-14). The fills, icons, strokes, and the 50vh
- * area are the legacy `lineage.scss` / `modelview-node.component.scss` /
- * `modelview.component.scss` values (LDG-13).
+ * `getShortestLineEndpoints` polyline through the server's bendpoints with
+ * its relation type's markers (LDG-14). Since 7.22e (DD-418) the drawing
+ * speaks the archimate language too: each node's shape, fill class, and icon
+ * come from the ported `ar3Elements`/`ar3Classes`/glyph tables (LDG-33..35)
+ * and each connection's markers and dash from `ar3Relations` (LDG-36, the
+ * `generic-arrow` end a lineage edge draws is its row). The 7.22b reading of
+ * this line — the `generic-arrow` marker end — stays true for the shipped
+ * chain's one relation type. The fills, icons, strokes, and the 50vh area are
+ * the legacy `lineage.scss` / `archimate3.scss` /
+ * `modelview-node.component.scss` / `modelview.component.scss` values
+ * (LDG-13/LDG-34/LDG-35).
  *
  * Pan and zoom ride the SVG with d3-zoom at the legacy's [0.5, 3] extent,
  * applied as a transform on the drawing group (LDG-16, the legacy
@@ -94,7 +112,7 @@ interface DrawnConnection {
 @Component({
     selector: "aurelius-atlas-webapp-lineage-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FontAwesomeModule],
+    imports: [FontAwesomeModule, NgClass],
     template: `
         <!-- LDG-28: the drawing region — the element the fullscreen toggle
              fixes to the viewport (the legacy's .modelview [class.is-fullscreen]). -->
@@ -157,17 +175,28 @@ interface DrawnConnection {
                  the converter, and html2canvas draws this element. -->
             <div id="screenshot-container" class="screenshot-container" #screen>
                 <svg class="lineage-svg" #svg>
+                    <!-- LDG-14/LDG-36: the marker set — the legacy defs loop
+                         over ar3RelationDef, each path keeping the legacy's
+                         stroke-dasharray="999" so a dashed connection never
+                         dashes its own arrowhead. -->
                     <svg:defs>
-                        <svg:marker
-                            id="generic-arrow"
-                            [attr.refX]="arrow.refX"
-                            [attr.refY]="arrow.refY"
-                            [attr.markerWidth]="arrow.markerWidth"
-                            [attr.markerHeight]="arrow.markerHeight"
-                            orient="auto"
-                        >
-                            <svg:path [attr.d]="arrow.path" fill="#000000"></svg:path>
-                        </svg:marker>
+                        @for (marker of markerDefs; track marker.id) {
+                            <svg:marker
+                                [attr.id]="marker.id"
+                                [attr.refX]="marker.refX"
+                                [attr.refY]="marker.refY"
+                                [attr.markerWidth]="marker.markerWidth"
+                                [attr.markerHeight]="marker.markerHeight"
+                                orient="auto"
+                            >
+                                <svg:path
+                                    [attr.d]="marker.path"
+                                    [style.fill]="marker.fill"
+                                    [style.stroke]="marker.stroke === '' ? null : marker.stroke"
+                                    stroke-dasharray="999"
+                                ></svg:path>
+                            </svg:marker>
+                        }
                     </svg:defs>
                     <!-- The legacy's #modelview-background rect: the white
                          ground the drawing rides (modelview.component.scss's
@@ -189,8 +218,7 @@ interface DrawnConnection {
                              foreignObject label, LDG-13). -->
                                 <svg:g
                                     class="node"
-                                    [class.dataset]="drawn.cssClass === 'dataset'"
-                                    [class.process]="drawn.cssClass === 'process'"
+                                    [ngClass]="drawn.shapeClass"
                                     [class.is-selected]="isSelected(drawn.concept)"
                                     [class.is-highlighted]="isHighlighted(drawn)"
                                     [attr.transform]="drawn.transform"
@@ -207,18 +235,17 @@ interface DrawnConnection {
                                             [attr.height]="drawn.node.height"
                                         >
                                             <xhtml:div xmlns="http://www.w3.org/1999/xhtml" class="node-content">
-                                                @if (drawn.icon) {
+                                                @if (drawn.showIcon && drawn.icon) {
                                                     <xhtml:span class="node-icon">
                                                         <svg width="16px" height="16px" viewBox="0 0 16 16">
                                                             <path
                                                                 [attr.d]="drawn.icon"
-                                                                [class.dataset]="drawn.cssClass === 'dataset'"
-                                                                [class.process]="drawn.cssClass === 'process'"
+                                                                [class]="drawn.iconColor"
                                                             ></path>
                                                         </svg>
                                                     </xhtml:span>
                                                 }
-                                                @if (drawn.name) {
+                                                @if (drawn.showName && drawn.name) {
                                                     <xhtml:span class="node-text" [attr.title]="drawn.name">{{
                                                         drawn.name
                                                     }}</xhtml:span>
@@ -248,7 +275,13 @@ interface DrawnConnection {
                                             class="connection-path"
                                             [attr.id]="'path-' + drawn.connection.id"
                                             [attr.d]="drawn.path"
-                                            marker-end="url(#generic-arrow)"
+                                            [attr.marker-start]="
+                                                drawn.style.markerStart ? 'url(#' + drawn.style.markerStart + ')' : null
+                                            "
+                                            [attr.marker-end]="
+                                                drawn.style.markerEnd ? 'url(#' + drawn.style.markerEnd + ')' : null
+                                            "
+                                            [style.stroke-dasharray]="drawn.style.dash"
                                         ></svg:path>
                                         @if (drawn.name) {
                                             <svg:text>
@@ -391,6 +424,72 @@ interface DrawnConnection {
         .connection-label {
             text-anchor: middle;
         }
+        /* LDG-34/LDG-35 (DD-418): the archimate fills — archimate3.scss's
+           node block and archimate-icon.component.scss's glyph block. The
+           builder drops an imported constant interpolated into a component's
+           styles, so the rules ship as this literal copy; the viewer spec
+           pins every line of the AR3_NODE_FILLS/AR3_ICON_FILLS tables into
+           the shipped block, so the copy cannot drift. */
+        .node.business .node-shape {
+            fill: #ffffb5;
+        }
+        .node.application .node-shape {
+            fill: #b5ffff;
+        }
+        .node.technology .node-shape {
+            fill: #c9e7b7;
+        }
+        .node.physical .node-shape {
+            fill: #c9e7b7;
+        }
+        .node.motivation .node-shape {
+            fill: #ccccff;
+        }
+        .node.implementation .node-shape {
+            fill: #ffe0e0;
+        }
+        .node.strategy .node-shape {
+            fill: #f4deaa;
+        }
+        .node.and .node-shape {
+            fill: #000000;
+        }
+        .node.or .node-shape {
+            fill: #ffffff;
+        }
+        .node.location .node-shape {
+            fill: #ff8c00;
+        }
+        .business {
+            fill: #ffffb5;
+        }
+        .application {
+            fill: #b5ffff;
+        }
+        .technology {
+            fill: #c9e7b7;
+        }
+        .physical {
+            fill: #c9e7b7;
+        }
+        .motivation {
+            fill: #ccccff;
+        }
+        .implementation {
+            fill: #ffe0e0;
+        }
+        .strategy {
+            fill: #f4deaa;
+        }
+        .and {
+            fill: #000000;
+        }
+        .or {
+            fill: #ffffff;
+        }
+        .location {
+            fill: #ff8c00;
+        }
     `,
 })
 export class LineageViewer {
@@ -405,8 +504,8 @@ export class LineageViewer {
 
     private readonly router = inject(Router);
 
-    /** The marker's geometry — the legacy defs entry, ported (LDG-14). */
-    protected readonly arrow = GENERIC_ARROW;
+    /** The marker set — the legacy defs loop over `ar3RelationDef` (LDG-14/LDG-36). */
+    protected readonly markerDefs: readonly Ar3MarkerDef[] = AR3_MARKER_DEFS;
 
     /** The icons of the control column (LDG-27 — the legacy's five). */
     protected readonly faSearch = faSearch;
@@ -473,7 +572,7 @@ export class LineageViewer {
         () => `translate(${BOUNDS_INSET - this.bounds().minX}, ${BOUNDS_INSET - this.bounds().minY})`,
     );
 
-    /** The nodes as drawn (LDG-12/LDG-13). */
+    /** The nodes as drawn (LDG-12/LDG-13/LDG-33..LDG-35). */
     protected readonly nodes = computed<DrawnNode[]>(() => {
         const view = this.drawnView();
         const model = this.state.model();
@@ -483,15 +582,21 @@ export class LineageViewer {
         return view.nodes.map((node) => {
             // LDG-13: the type is the referenced element's (the legacy's
             // `modelType ?? viewType`; the reader keeps no node type — LDG-11
-            // — so an unreferenced node has none, and draws without a class).
+            // — so an unreferenced node has none, and the tables' plain
+            // fallback draws it).
             const element = node.ref === null ? undefined : model.elements.get(node.ref);
-            const cssClass = lineageClass(element?.type ?? "");
+            const type = element?.type ?? "";
+            const shape = ar3NodeShape(type);
+            const icon = ar3Icon(type);
             return {
                 node,
-                shape: rectanglePath(node.width, node.height),
-                cssClass,
+                shape: nodePath(shape.kind, node.width, node.height),
+                shapeClass: ar3Class(type),
+                showIcon: shape.showIcon,
+                showName: shape.showName,
                 name: node.displayName,
-                icon: cssClass === null ? null : LINEAGE_ICON_PATHS[cssClass],
+                icon: icon?.path ?? null,
+                iconColor: icon?.color ?? "",
                 concept: nodeConceptId(node),
                 // LDG-15: the node rides its raw model coordinate; the one
                 // bounds normalisation (the -minX/-minY on the group) shifts
@@ -502,12 +607,13 @@ export class LineageViewer {
         });
     });
 
-    /** The connections as drawn (LDG-14), in document order over the nodes. */
+    /** The connections as drawn (LDG-14/LDG-36), in document order over the nodes. */
     protected readonly connections = computed<DrawnConnection[]>(() => {
         const view = this.drawnView();
         if (view === null) {
             return [];
         }
+        const model = this.state.model();
         const byId = new Map(view.nodes.map((node) => [node.id, node]));
         return view.connections.map((connection) => {
             const source = byId.get(connection.source);
@@ -518,6 +624,10 @@ export class LineageViewer {
                 width: node.width,
                 height: node.height,
             });
+            // LDG-36: the style rides the referenced relation (the legacy's
+            // `relation?.type ?? connection.type` — the reader gives an
+            // unreferenced connection no type, so the plain line draws).
+            const relation = model?.relations.get(connection.ref ?? "");
             return {
                 connection,
                 path:
@@ -529,6 +639,7 @@ export class LineageViewer {
                               connection.bendpoints.map((bendpoint) => ({ x: bendpoint.x, y: bendpoint.y })),
                           ),
                 name: connection.displayName,
+                style: ar3ConnectionStyle(relation?.type ?? "", relation?.options ?? NO_RELATION_OPTIONS),
                 concept: connectionConceptId(connection),
             };
         });
