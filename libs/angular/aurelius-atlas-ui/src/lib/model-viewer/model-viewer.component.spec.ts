@@ -1,7 +1,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { describe, expect, it } from "vitest";
 
-import { LineageDiagram } from "./lineage-diagram.component";
+import { ModelViewer } from "./model-viewer.component";
 import { AR3_ICON_FILLS, AR3_NODE_FILLS, NO_RELATION_OPTIONS } from "./archimate-shapes";
 import { BOUNDS_INSET, GENERIC_ARROW, LINEAGE_ICON_PATHS } from "./lineage-shapes";
 import type { Ar3DiagramModel, Ar3View } from "./ar3-types";
@@ -109,13 +109,13 @@ function setup(
     model: Ar3DiagramModel,
     view?: Ar3View,
 ): {
-    diagram: LineageDiagram;
-    created: ComponentFixture<LineageDiagram>;
+    diagram: ModelViewer;
+    created: ComponentFixture<ModelViewer>;
     compiled: HTMLElement;
 } {
     TestBed.resetTestingModule();
-    TestBed.configureTestingModule({ imports: [LineageDiagram] });
-    const created = TestBed.createComponent(LineageDiagram);
+    TestBed.configureTestingModule({ imports: [ModelViewer] });
+    const created = TestBed.createComponent(ModelViewer);
     created.componentRef.setInput("model", model);
     created.componentRef.setInput("view", view ?? model.views[0] ?? null);
     // Two passes: the first creates the view, the second runs the zoom effect.
@@ -126,7 +126,7 @@ function setup(
 
 /** The canvas's own style block — the pixels LDG-13/14/34/35/36 pin. */
 function styleBlock(): string {
-    const def = (LineageDiagram as unknown as { ɵcmp: { styles?: string[] } }).ɵcmp;
+    const def = (ModelViewer as unknown as { ɵcmp: { styles?: string[] } }).ɵcmp;
     return (def.styles ?? []).join("\n");
 }
 
@@ -157,7 +157,7 @@ function stubSvgExtent(svg: SVGSVGElement): void {
     });
 }
 
-describe("LineageDiagram (LDG-12..LDG-18)", () => {
+describe("ModelViewer (LDG-12..LDG-18)", () => {
     it("LDG-12: the view draws — every node before every connection", () => {
         const { compiled } = setup(lineageModel());
 
@@ -246,6 +246,37 @@ describe("LineageDiagram (LDG-12..LDG-18)", () => {
         expect(hits[0]?.closest("g.connection")?.getAttribute("data-concept")).toBe("rel-1");
         expect(styleBlock()).toMatch(/\.connection-hit[^{]*\{[^}]*stroke:\s*transparent/);
         expect(styleBlock()).toMatch(/\.connection-hit[^{]*\{[^}]*pointer-events:\s*stroke/);
+    });
+
+    it("LDG-14: a named connection draws its name centred beneath the line", () => {
+        const model = lineageModel();
+        const view = model.views[0];
+        const named: Ar3View = {
+            ...view,
+            connections: view.connections.map((connection, index) =>
+                index === 0 ? { ...connection, displayName: "streams into" } : connection,
+            ),
+        };
+        const { compiled } = setup(model, named);
+
+        const text = compiled.querySelector("g.connection text");
+        expect(text?.getAttribute("text-anchor")).toBe("middle");
+        const label = compiled.querySelector("g.connection textPath");
+        expect(label?.textContent).toBe("streams into");
+        expect(label?.getAttribute("startOffset")).toBe("50%");
+        // The hanging baseline sits the glyphs below the stroke, and the
+        // anchor at the path's midpoint keeps the name under its centre.
+        expect(label?.getAttribute("dominant-baseline")).toBe("hanging");
+    });
+
+    it("DD-419: the drawing inks its text with a fixed dark colour", () => {
+        // The white ground rect keeps the picture light in every theme, so
+        // the names and labels must not inherit the page's (light) text
+        // colour — dark mode made them illegible until they were pinned.
+        setup(lineageModel());
+        const styles = styleBlock();
+        expect(styles).toMatch(/\.node-text[^{]*\{[^}]*color:\s*#000000/s);
+        expect(styles).toMatch(/\.connection-label[^{]*\{[^}]*fill:\s*#000000/s);
     });
 
     it("DD-408: the drawing carries no font-family of its own", () => {
@@ -364,7 +395,7 @@ describe("LineageDiagram (LDG-12..LDG-18)", () => {
     });
 });
 
-describe("LineageDiagram over an archimate document (LDG-33..LDG-36, DD-418)", () => {
+describe("ModelViewer over an archimate document (LDG-33..LDG-36, DD-418)", () => {
     it("LDG-36: the defs carry all eight legacy markers, dash-proof", () => {
         const { compiled } = setup(archimateModel());
         const markers = [...compiled.querySelectorAll("defs marker")];

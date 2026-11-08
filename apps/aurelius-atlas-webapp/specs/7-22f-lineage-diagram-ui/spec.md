@@ -21,7 +21,7 @@ the same picture inside one `modelview` component, chrome and all, so no other
 page could draw a model without the toolbar, the save flow, and the routing.
 This slice cuts the picture out of the shell.
 
-The canvas moves to `aurelius-atlas-ui` as `LineageDiagram`: the SVG, the
+The canvas moves to `aurelius-atlas-ui` as `ModelViewer`: the SVG, the
 shape/glyph/marker tables, the bounds group, the d3 zoom, and the two state
 strokes. The webapp's `LineageViewer` keeps what the page owns: the box's
 drawing area, the control column, the fullscreen toggle, the save-as-PNG
@@ -37,12 +37,14 @@ until now.
 
 Delivered here:
 
-- The `LineageDiagram` canvas in `aurelius-atlas-ui` (UIC-29), with the moved
+- The `ModelViewer` canvas in `aurelius-atlas-ui` (UIC-29), with the moved
   data modules (`ar3-types.ts`, `archimate-shapes.ts`, `connection-path.ts`,
-  `lineage-shapes.ts`).
+  `lineage-shapes.ts`). The name says "model", not "lineage": an archimate
+  document draws here just as well.
 - The webapp's `LineageViewer` reduced to the shell (same selector, same
   e2e surface).
-- Seven stories per shape family in the lib.
+- Eight stories per shape family in the lib — the seven of the shape
+  families plus one drawing every glyph-table type.
 - The canvas spec in the lib: the drawing tests LDG-12..18 and the archimate
   block LDG-33..36 move from the viewer spec with their ids.
 
@@ -60,9 +62,9 @@ Explicitly not delivered here:
 One new rule. The moved rules keep their text where they were written, and
 the tests that named them move with them.
 
-| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| UIC-29 | `LineageDiagram` is a dumb canvas in `aurelius-atlas-ui` (DD-419). It draws the `view` of the `model` it is given, with the rules of LDG-12..18 and LDG-33..36, and owns no state beyond its zoom. Its inputs are `model`, `view`, `selected`, and `highlightedGuid`, and its one output is `conceptSelected` with the clicked concept (`ref ?? id`, LDG-17). It injects no service and routes nowhere, so the caller answers its own clicks. `resetZoom()` restores the identity transform for the caller's toolbar (LDG-16/LDG-29), and `svgElement()` hands the live SVG to a caller that serialises it (LDG-30). It fills its host element, so the caller sizes the drawing. It ships a story per shape family (the lib's story rule). |
+| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UIC-29 | `ModelViewer` is a dumb canvas in `aurelius-atlas-ui` (DD-419). It draws the `view` of the `model` it is given, with the rules of LDG-12..18 and LDG-33..36, and owns no state beyond its zoom. Its inputs are `model`, `view`, `selected`, and `highlightedGuid`, and its one output is `conceptSelected` with the clicked concept (`ref ?? id`, LDG-17). It injects no service and routes nowhere, so the caller answers its own clicks. `resetZoom()` restores the identity transform for the caller's toolbar (LDG-16/LDG-29), and `svgElement()` hands the live SVG to a caller that serialises it (LDG-30). It fills its host element, so the caller sizes the drawing. The drawing keeps a fixed dark ink for its node names and connection labels (`.node-text`, `.connection-label`), so no theme can make them illegible on its light ground, and a named connection draws its name anchored at the path's midpoint, beneath the line (LDG-14). It ships a story per shape family (the lib's story rule). |
 
 ## Aurelius origin
 
@@ -95,7 +97,7 @@ renderer:
 ## Acceptance
 
 - Vitest (lib, `aurelius-atlas-ui`):
-    - `lineage-diagram.component.spec.ts` (new) — the drawing tests moved from
+    - `model-viewer.component.spec.ts` (new) — the drawing tests moved from
       the viewer spec over hand-built models: draw order and shape paths
       (LDG-12), the bounds group and the inset (LDG-15, DD-417), fills,
       classes, glyphs, and names (LDG-13), the connection path and marker
@@ -106,10 +108,13 @@ renderer:
       (LDG-36), the goal octagon with glyph (LDG-33..35), the unlabelled
       junction (LDG-33), the per-relation markers and dashes (LDG-36), and
       the shipped style block pinned against both fill tables (DD-418).
+      New: the named connection's centre/below anchor (LDG-14) and the
+      fixed dark ink (DD-419).
     - `archimate-shapes.spec.ts` — moved with the module, unchanged.
-    - The stories: seven over the shape families, the fills, the junctions,
-      the relation table, the states, and a named connection. Each checks
-      its own node/icon/path counts in `play`.
+    - The stories: eight over the shape families, the fills, the junctions,
+      the relation table, the states, a named connection, and every
+      glyph-table type in one grid. Each checks its own node/icon/path
+      counts in `play`.
 - Vitest (webapp, `aurelius-atlas-webapp`):
     - `lineage-viewer.component.spec.ts` — reduced to the shell: the 50vh
       area (LDG-15), the click-through to state and routes (LDG-17/DD-415),

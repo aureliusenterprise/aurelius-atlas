@@ -11,7 +11,7 @@ import {
 import { Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faArrowsAlt, faCamera, faExpand, faInfo, faSearch } from "@fortawesome/free-solid-svg-icons";
-import { LineageDiagram } from "aurelius-atlas-ui";
+import { ModelViewer } from "aurelius-atlas-ui";
 
 import type { Ar3View } from "./parse-ar3";
 import { SaveViewAsImage } from "./save-view-as-image";
@@ -22,7 +22,7 @@ import { DRAWER_SCROLL } from "./lineage-shapes";
 /**
  * The lineage box's diagram state (LDG-12..18, LDG-27..31, DD-388/DD-390,
  * amended by DD-419): the details page's chrome around the shared
- * {@link LineageDiagram} canvas. The canvas (the UI lib since DD-419) draws
+ * {@link ModelViewer} canvas. The canvas (the UI lib since DD-419) draws
  * the model and answers clicks; this shell owns what the page owns: the
  * shared state (the model the box fetched, the selection both surfaces read,
  * the drawn view — DD-400/DD-415), the routed drawer the clicks drive
@@ -36,7 +36,7 @@ import { DRAWER_SCROLL } from "./lineage-shapes";
 @Component({
     selector: "aurelius-atlas-webapp-lineage-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [FontAwesomeModule, LineageDiagram],
+    imports: [FontAwesomeModule, ModelViewer],
     template: `
         <!-- LDG-28: the drawing region — the element the fullscreen toggle
              fixes to the viewport (the legacy's .modelview [class.is-fullscreen]). -->
@@ -98,7 +98,7 @@ import { DRAWER_SCROLL } from "./lineage-shapes";
             <!-- LDG-30: the measured container — the save hands its rect to
                  the converter, and html2canvas draws this element. -->
             <div id="screenshot-container" class="screenshot-container" #screen>
-                <aurelius-atlas-ui-lineage-diagram
+                <aurelius-atlas-ui-model-viewer
                     [model]="state.model()"
                     [view]="drawnView()"
                     [selected]="state.selected()"
@@ -188,7 +188,7 @@ export class LineageViewer {
 
     /** The shared canvas (DD-419): the save reads its svg, the reset button
         forwards to it. */
-    private readonly diagram = viewChild.required(LineageDiagram);
+    private readonly diagram = viewChild.required(ModelViewer);
 
     /** The measured container of the save flow (LDG-30's width/height). */
     private readonly screen = viewChild.required<ElementRef<HTMLDivElement>>("screen");

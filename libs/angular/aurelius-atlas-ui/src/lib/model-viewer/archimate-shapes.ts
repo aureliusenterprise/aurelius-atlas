@@ -423,6 +423,13 @@ const AR3_ICONS: Readonly<Record<string, Ar3Icon>> = {
     lineage_process: { path: LINEAGE_ICON_PATHS.process, color: "process" },
 };
 
+/**
+ * Every type the glyph table knows — the archimate `@xsi_type`s plus the two
+ * lineage ones (the keys of {@link ar3Icon}). The "All Types" story draws one
+ * node per entry so each shape, fill, and glyph can be checked with an eye.
+ */
+export const AR3_ICON_TYPES: readonly string[] = Object.keys(AR3_ICONS);
+
 /** One marker of the defs block (the legacy `ar3RelationDef` row). */
 export interface Ar3MarkerDef {
     /** The marker id the style names. */

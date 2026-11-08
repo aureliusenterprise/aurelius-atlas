@@ -1,12 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/angular";
 import { expect } from "storybook/test";
 
-import { LineageDiagram } from "./lineage-diagram.component";
-import { NO_RELATION_OPTIONS } from "./archimate-shapes";
+import { ModelViewer } from "./model-viewer.component";
+import { AR3_ICON_TYPES, NO_RELATION_OPTIONS } from "./archimate-shapes";
 import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./ar3-types";
 
 /**
- * The lineage diagram canvas (DD-419): one ar3 view drawn like the legacy
+ * The model viewer canvas (DD-419): one ar3 view drawn like the legacy
  * modelview2. These stories show every shape family, layer fill, junction,
  * and relation marker the ported tables know, so each can be checked with an
  * eye. The models are hand-built literals — each story states the shapes it
@@ -113,7 +113,7 @@ const lineageChain = diagram(
 /** The host template: the canvas inside a fixed drawing box. */
 const template = `
 <div [style.width.px]="width" [style.height.px]="height">
-    <aurelius-atlas-ui-lineage-diagram
+    <aurelius-atlas-ui-model-viewer
         [model]="model"
         [view]="view"
         [selected]="selected"
@@ -138,14 +138,14 @@ const host = (args: Record<string, unknown>) => ({
     template,
 });
 
-const meta: Meta<LineageDiagram> = {
-    component: LineageDiagram,
-    title: "Lineage Diagram",
+const meta: Meta<ModelViewer> = {
+    component: ModelViewer,
+    title: "Model Viewer",
     args: { model: lineageChain.model, view: lineageChain.view, selected: null, highlightedGuid: null },
     argTypes: { model: { control: false }, view: { control: false } },
 };
 export default meta;
-type Story = StoryObj<LineageDiagram>;
+type Story = StoryObj<ModelViewer>;
 
 /**
  * The shipped chain: two pale-blue datasets around a pale-teal process, each
@@ -382,5 +382,57 @@ export const NamedConnection: Story = {
     play: async ({ canvasElement }) => {
         const label = (canvasElement as HTMLElement).querySelector("textPath")?.textContent?.trim();
         await expect(label).toBe("streams into");
+        // The name sits centred beneath the line (LDG-14): the anchor is the
+        // midpoint of the 600 px path and the hanging baseline keeps the
+        // glyphs below the stroke.
+        const text = canvasElement.querySelector("text") as SVGTextElement;
+        await expect(text.getAttribute("text-anchor")).toBe("middle");
+        const textPath = canvasElement.querySelector("textPath") as SVGTextPathElement;
+        await expect(textPath.getAttribute("startOffset")).toBe("50%");
+        await expect(textPath.getAttribute("dominant-baseline")).toBe("hanging");
+    },
+};
+
+/** The All Types grid: eight nodes per row, each its type's shape and glyph. */
+const ALL_TYPES_COLS = 8;
+const ALL_TYPES_COL = 200;
+const ALL_TYPES_ROW = 120;
+
+/** Every glyph-table type as one model: each node named with its type. */
+function allTypesModel(): { model: Ar3DiagramModel; view: Ar3View } {
+    const nodes: Ar3ViewNode[] = AR3_ICON_TYPES.map((type, index) => ({
+        id: `n-${index}`,
+        ref: `e-${index}`,
+        label: "",
+        displayName: type,
+        x: (index % ALL_TYPES_COLS) * ALL_TYPES_COL,
+        y: Math.floor(index / ALL_TYPES_COLS) * ALL_TYPES_ROW,
+        width: 160,
+        height: 70,
+    }));
+    const view: Ar3View = { id: "v1", name: "All Types", nodes, connections: [] };
+    const model: Ar3DiagramModel = {
+        elements: new Map(AR3_ICON_TYPES.map((type, index) => [`e-${index}`, { type }])),
+        relations: new Map(),
+        views: [view],
+    };
+    return { model, view };
+}
+
+const allTypes = allTypesModel();
+
+/**
+ * Every supported type, one node each: all 62 archimate glyphs and the two
+ * lineage ones, each with its shape (LDG-33), its layer fill (LDG-34), and
+ * its glyph colour (LDG-35). The node names are the raw `@xsi_type` keys. The
+ * And/Or junctions draw as bare dots — the legacy hides both icon and name
+ * there (LDG-33) — and the Grouping folder keeps its name but no icon, so
+ * those rows show less than their neighbours on purpose.
+ */
+export const AllTypes: Story = {
+    args: { model: allTypes.model, view: allTypes.view, width: 1600, height: 980 } as Record<string, unknown>,
+    render: host,
+    play: async ({ canvasElement }) => {
+        await expect((canvasElement as HTMLElement).querySelectorAll("g.node")).toHaveLength(AR3_ICON_TYPES.length);
     },
 };

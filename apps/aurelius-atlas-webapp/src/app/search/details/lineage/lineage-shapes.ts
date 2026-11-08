@@ -9,7 +9,7 @@ import type { TypeIconClass } from "../../meta/type-icons";
  * The lineage badge helpers and the drawer's scroll posture (DD-419): what
  * the details page owns of 7.22b's shape module. The drawing's table data —
  * the lineage classes, the icon paths, the arrow, the shape tables, and the
- * zoom constants — moved to `aurelius-atlas-ui`'s `lineage-diagram` with the
+ * zoom constants — moved to `aurelius-atlas-ui`'s `model-viewer` with the
  * canvas itself (DD-419: the renderer of DD-388, ported into the shared
  * lib). This file keeps the card badge (DD-405), which belongs to the app's
  * badge families (`type-icons.ts`), and the router navigation option.

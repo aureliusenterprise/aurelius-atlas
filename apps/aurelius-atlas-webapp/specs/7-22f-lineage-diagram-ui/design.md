@@ -21,9 +21,10 @@
 - **Date:** 2026-11-08
 
 **Decision.** The drawing of 7.22b/7.22e moves to `aurelius-atlas-ui` as the
-`LineageDiagram` component (UIC-29), with the four data modules it reads
-(`ar3-types.ts`, `archimate-shapes.ts`, `connection-path.ts`, and
-`lineage-shapes.ts`) under `src/lib/lineage-diagram/`. Its API is four
+`ModelViewer` component (UIC-29) — named for the model it draws, not for
+lineage, because an archimate document draws here too — with the four data
+modules it reads (`ar3-types.ts`, `archimate-shapes.ts`, `connection-path.ts`,
+and `lineage-shapes.ts`) under `src/lib/model-viewer/`. Its API is four
 `input()`s (`model`, `view`, `selected`, `highlightedGuid`), one `output()`
 (`conceptSelected`), and two public methods (`resetZoom`, `svgElement`). It
 injects nothing (WBP-02). The webapp's `LineageViewer` keeps its selector and
@@ -41,7 +42,14 @@ field the canvas reads, `type`). The badge helper stays in the webapp: the
 canvas must not import the app's `TypeIconClass`, so 7.22e's `ar3BadgeClass`
 folds into the webapp's `lineageBadgeClass`, which already answered the same
 pair. The lib's `package.json` gains `d3-selection`/`d3-zoom` peer
-dependencies, and seven stories ship with the component.
+dependencies, and eight stories ship with the component. The canvas inks its
+own text with a fixed dark colour (`.node-text`, `.connection-label`): the
+white ground rect keeps the picture light in every theme, so text left
+inheriting the page colour turns illegible in dark mode. A named connection
+anchors its label at the path's midpoint beneath the line (`text-anchor`
+riding the `<text>` element, `startOffset="50%"`, a hanging baseline, and no
+template whitespace inside the `textPath` — surrounding whitespace offsets
+the anchor toward the source).
 
 **Reason.** The user asked for a reusable, dumb viewer in the UI library with
 stories per shape. The lib's rules make that split mechanical: components are

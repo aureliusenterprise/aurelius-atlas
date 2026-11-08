@@ -95,10 +95,11 @@ interface DrawnConnection {
  * 7.22b's details-page box (LDG-09) and 7.22d's toolbar (LDG-27) stay with
  * the webapp: the box fetches, the toolbar toggles fullscreen and saves the
  * PNG. This canvas is the picture both serve, reusable wherever a model
- * needs drawing.
+ * needs drawing — the name says "model", not "lineage", because an archimate
+ * document draws here just as well (DD-419).
  */
 @Component({
-    selector: "aurelius-atlas-ui-lineage-diagram",
+    selector: "aurelius-atlas-ui-model-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [NgClass],
     template: `
@@ -205,15 +206,21 @@ interface DrawnConnection {
                                     [style.stroke-dasharray]="drawn.style.dash"
                                 ></svg:path>
                                 @if (drawn.name) {
-                                    <svg:text>
+                                    <!-- The name at the path centre, beneath the
+                                         line (LDG-14). text-anchor rides the <text>
+                                         element as an attribute and the name sits
+                                         flush inside <svg:textPath> — a text node
+                                         with template whitespace around it offsets
+                                         the anchor, and the hanging baseline keeps
+                                         the glyphs below the stroke. -->
+                                    <svg:text text-anchor="middle">
                                         <svg:textPath
                                             class="connection-label"
                                             [attr.href]="'#path-' + drawn.connection.id"
-                                            dominant-baseline="ideographic"
+                                            dominant-baseline="hanging"
                                             startOffset="50%"
-                                        >
-                                            {{ drawn.name }}
-                                        </svg:textPath>
+                                            [textContent]="drawn.name"
+                                        ></svg:textPath>
                                     </svg:text>
                                 }
                             </svg:g>
@@ -290,6 +297,10 @@ interface DrawnConnection {
             max-width: 100%;
             overflow: hidden;
             text-overflow: ellipsis;
+            /* The drawing keeps a fixed dark ink (DD-419): the white ground
+               rect makes the picture light in every theme, so text that
+               inherited the page colour turned illegible in dark mode. */
+            color: #000000;
         }
         .connection-path {
             fill: none;
@@ -307,6 +318,8 @@ interface DrawnConnection {
         }
         .connection-label {
             text-anchor: middle;
+            /* The same fixed dark ink as the node names — see .node-text. */
+            fill: #000000;
         }
         /* LDG-34/LDG-35 (DD-418): the archimate fills — archimate3.scss's
            node block and archimate-icon.component.scss's glyph block. The
@@ -376,7 +389,7 @@ interface DrawnConnection {
         }
     `,
 })
-export class LineageDiagram {
+export class ModelViewer {
     /** The parsed model the view belongs to (LDG-12/LDG-36): the canvas reads
         the elements' types (a node draws its element's shape) and the
         relations' types (a connection draws its relation's style). */

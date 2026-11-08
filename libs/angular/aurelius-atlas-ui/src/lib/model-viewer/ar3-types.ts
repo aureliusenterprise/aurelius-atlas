@@ -1,6 +1,6 @@
 /**
  * The diagram's model types (LDG-11's shape, DD-419): the pieces of the
- * parsed ar3 document the {@link LineageDiagram} canvas reads — the view it
+ * parsed ar3 document the {@link ModelViewer} canvas reads — the view it
  * draws, the placed nodes and routed connections, and the relations whose
  * types style the connections. The types live with the canvas so a caller
  * outside the details page can hand it a document of its own; the webapp's
