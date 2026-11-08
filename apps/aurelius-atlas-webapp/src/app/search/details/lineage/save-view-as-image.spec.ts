@@ -1,7 +1,7 @@
 import { Injectable } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 import { APP_CONFIG } from "../../../tokens";
 import { Session } from "../../../shell/session.service";
@@ -17,10 +17,6 @@ import { SaveViewAsImage, type RasterSurface } from "./save-view-as-image";
  * DD-407 dropped the legacy's zoom reset-and-restore around the save (the
  * viewer's own spec pins the no-move rule).
  */
-
-/** html2canvas, stubbed — the fallback's render target. */
-const html2canvasMock = vi.hoisted(() => vi.fn());
-vi.mock("html2canvas", () => ({ default: html2canvasMock }));
 
 /** A minimal well-formed PNG binary string (the bytes the stubs hand back). */
 function minimalPng(): string {
@@ -53,6 +49,10 @@ function stubSurface(overrides: Partial<RasterSurface> = {}) {
             return { width, height } as HTMLCanvasElement;
         },
         drawImage: () => void calls.push("drawImage"),
+        renderHtml: () => {
+            calls.push("renderHtml");
+            return Promise.resolve({} as HTMLCanvasElement);
+        },
         canvasToPng: () => {
             calls.push("canvasToPng");
             return Promise.resolve(minimalPng());
@@ -101,10 +101,6 @@ function setup(email = "ada@example.org") {
 }
 
 describe("save-view-as-image (LDG-29/30/31)", () => {
-    beforeEach(() => {
-        html2canvasMock.mockReset();
-    });
-
     it("LDG-30: the main path serializes, draws, and reads the canvas back", async () => {
         const { service, svg } = setup();
         const { surface, calls } = captureSurface();
@@ -122,7 +118,7 @@ describe("save-view-as-image (LDG-29/30/31)", () => {
             "canvasToPng",
             "download",
         ]);
-        expect(html2canvasMock).not.toHaveBeenCalled();
+        expect(calls).not.toContain("renderHtml");
     });
 
     it("LDG-30: the clone carries the measured dimensions (the Firefox rule)", async () => {
@@ -146,16 +142,21 @@ describe("save-view-as-image (LDG-29/30/31)", () => {
 
     it("LDG-30: the fallback renders the container when the draw fails", async () => {
         const { service, svg } = setup();
-        html2canvasMock.mockResolvedValue({} as HTMLCanvasElement);
+        const rendered: HTMLElement[] = [];
         const { surface, calls } = captureSurface({
             loadImage: () => Promise.reject(new Error("the serialized svg did not load")),
+            renderHtml: (element) => {
+                calls.push("renderHtml");
+                rendered.push(element);
+                return Promise.resolve({} as HTMLCanvasElement);
+            },
         });
 
         await service.save(svg, 640, 480, view, surface);
 
-        expect(html2canvasMock).toHaveBeenCalledTimes(1);
+        expect(calls.filter((c) => c === "renderHtml")).toHaveLength(1);
         // The fallback's render target is the svg's container element.
-        expect(html2canvasMock.mock.calls[0]?.[0]).toBe(svg.parentElement);
+        expect(rendered[0]).toBe(svg.parentElement);
         expect(calls).toContain("download");
         expect(calls).not.toContain("createCanvas");
     });
