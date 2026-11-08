@@ -1,0 +1,43 @@
+# Design decisions
+
+The `DD-NNN` entries of the increment specified in [`spec.md`](./spec.md). The
+[rules](../../../../docs/architecture/conversion/design-log.md#rules) of the design log apply: an accepted
+entry is never edited except its status line, and a changed decision is a new entry that supersedes the old
+one.
+
+## Entries
+
+### DD-369. The standalone stack's proxy routes everything; the webapp's own nginx only serves the webapp
+
+- **Status:** Proposed
+- **Increment:** 9.5d
+- **Date:** 2026-11-07
+- **Supersedes:** none; DD-363's redirect of `/` to `/atlas2/` gives way to the webapp
+
+**Decision.** The stack's entry is its only reverse proxy. It passes `/api/` to the server itself, and `/`
+and every path not otherwise routed to the webapp image's own nginx, which runs in a container of its own and
+only serves the webapp's files. A one-shot service of the same image fills that nginx's template into a
+volume, as the chart's init container does. The webapp signs in to the demo realm through its public client
+`aurelius`.
+
+**Reason.** The webapp's build serves at the root of its origin: its locales live at `/en-US/` and `/nl-NL/`,
+its silent sign-in page at `/silent-check-sso.html`, and it calls the server at `/api/atlas/`. Serving it
+under a path such as `/webapp/` would take a different build. One proxy in front, routing every path, keeps
+the routes of the stack in one file, and the webapp's container to serving the webapp; it keeps its own nginx
+for its pages' security headers, as the chart deploys them. Filling the template the chart's way, from the
+image's own copy, follows any change to the template without a second copy in the stack, and a placeholder
+left fails the start.
+
+**Alternatives.**
+
+- The webapp under a path prefix: a separate build with another base href and API address.
+- The webapp's nginx passing `/api/` on to the server, behind the proxy: two proxies in a row, the webapp's
+  container sharing the proxy's network to reach the server.
+- The stack's nginx serving the webapp's files itself: the webapp's headers rewritten in a second place.
+- A filled copy of the template committed to the stack, as the webapp's e2e stack has: it drifts from the
+  template.
+
+**Consequences.** `https://localhost:9000/` is the webapp, no longer a redirect to the dashboards. The stack
+needs the webapp image and certificate, built with `nx docker-build` and `nx certgen` of the webapp. Its
+telemetry has no collector: `/otel/` drops the browser's pushes. The webapp's nginx traces only its own
+`/api/`, which the proxy no longer sends it, so it exports nothing; the stack has no edge spans of the API.
