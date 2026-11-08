@@ -64,7 +64,7 @@ model data, not strings.
 | LDG-23 | The Browse tab holds the view dropdown (label `modelview2.modelBrowser.browse.viewSelect.label`): one row per view of the model (the lineage model carries one), and choosing one sets the drawn view. The Model tab (`modelview2.modelBrowser.model.elements` / `.model.relationships` headings) lists the model's elements and relations in two sortable tables (name, human-readable type) over a keyword filter box that narrows both as the reader types (the DET-20 posture: client-side, on name and type, case-insensitive). A row click in any of these tables selects the concept (LDG-25).                                                                                                                                                                       |
 | LDG-24 | The View tab shows the selected view's Name (`modelview2.modelBrowser.view.name`), Description (`...view.description`), and Properties table (`...view.properties`, same merge rule as LDG-21 over the view's metadata row). The lineage document's view has a name ("Lineage") and no description or properties, so those sections hide (the legacy's conditions).                                                                                                                                                                                                                                                                                                                                                                                                         |
 | LDG-25 | Selection is one signal read and written by both surfaces (DD-390's seam): a diagram click sets it (LDG-17) and opens the drawer on the Selection tab (the legacy's auto-open); a table row click in the drawer sets it the same way; clearing it (second click, or the drawer's deselect affordances) closes the Selection tab and hides the drawer when no other tab keeps it open (the legacy's close-on-deselect). Selecting a view (LDG-23) closes the drawer and re-renders the diagram (the legacy's rule).                                                                                                                                                                                                                                                          |
-| LDG-26 | The panel's labels are XLIFF ids under `modelview2.`: the fixture pair `tests/fixtures/modelview2-en-US.json` / `modelview2-nl-NL.json` (the legacy lib's two catalogues, vendored whole), the generator (`tools/generate-legacy-catalogue.mjs`) reads them beside the existing three pairs, and `messages.xlf` / `messages.nl-NL.xlf` regenerate. `i18n-completeness.spec.ts` stays green untouched (every key present in both locales in the legacy source).                                                                                                                                                                                                                                                                                                              |
+| LDG-26 | The panel's labels are XLIFF ids under `modelview2.`: the fixture pair `tests/fixtures/modelview2-en-US.json` / `modelview2-nl-NL.json` (the legacy lib's two catalogues, vendored whole), the generator (`tools/generate-legacy-catalogue.mjs`) reads them beside the existing three pairs, and `messages.xlf` / `messages.nl-NL.xlf` regenerate. The two legacy catalogues disagree on one key pair (`browse.viewSelect.nameDisplayName`/`.nameDescription` in en vs `.viewNameDisplayName`/`.viewNameDescription` in nl, same strings); the vendored nl file keeps the en names so the pair is symmetric (DD-401). `i18n-completeness.spec.ts` grows the two fixture imports and stays green on the rest.                                                                |
 
 ## Aurelius origin
 
@@ -135,10 +135,12 @@ surface changes). Against the Aurelius product:
       concept selected shows its relations and views (LDG-22).
     - `model-browser.component.spec.ts` — tab visibility conditions, open on
       selection, close on deselect and view-select (LDG-19, LDG-25).
-    - `browse.component.spec.ts` / `model.component.spec.ts` — the dropdown
-      lists the model's views and choosing re-renders the viewer (LDG-23); the
-      keyword filter narrows both tables as typed and resets on clear (LDG-23,
-      the DET-20 idiom).
+    - `browse-tab.component.spec.ts` / `model-tab.component.spec.ts` — the
+      dropdown lists the model's views and choosing re-renders the viewer
+      (LDG-23); the keyword filter narrows both tables as typed and resets on
+      clear (LDG-23, the DET-20 idiom).
+    - `view-tab.component.spec.ts` — the view's Name and merged Properties,
+      the empty Description hiding (LDG-24).
     - `parse-ar3.spec.ts` — amended: the properties reader (LDG-21) over the
       fixture's element and metadata rows.
     - `i18n-completeness.spec.ts` — green with the regenerated catalogues

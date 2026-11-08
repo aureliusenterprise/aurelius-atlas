@@ -362,6 +362,11 @@
         <target>Heeft Bovenliggend Object</target>
         <note priority="1" from="description">Aurelius dictionary key: hasParent</note>
       </trans-unit>
+      <trans-unit id="high_risk" datatype="html">
+        <source>High risk</source>
+        <target>Hoog risico</target>
+        <note priority="1" from="description">Aurelius dictionary key: high_risk</note>
+      </trans-unit>
       <trans-unit id="holdable.tooltip.plural" datatype="html">
         <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> seconds</source>
         <target>Houd <x id="seconds"/> seconden ingedrukt</target>
@@ -371,11 +376,6 @@
         <source>Hold for <x id="seconds" equiv-text="{{seconds}}"/> second</source>
         <target>Houd <x id="seconds"/> seconde ingedrukt</target>
         <note priority="1" from="description">Aurelius dictionary key: holdable.tooltip.single</note>
-      </trans-unit>
-      <trans-unit id="high_risk" datatype="html">
-        <source>High risk</source>
-        <target>Hoog risico</target>
-        <note priority="1" from="description">Aurelius dictionary key: high_risk</note>
       </trans-unit>
       <trans-unit id="input" datatype="html">
         <source>Input</source>
@@ -491,6 +491,186 @@
         <source>Medium risk</source>
         <target>Middelgroot risico</target>
         <note priority="1" from="description">Aurelius dictionary key: medium_risk</note>
+      </trans-unit>
+      <trans-unit id="modelview2.browse" datatype="html">
+        <source>Browse the model</source>
+        <target>Blader door het model</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.browse</note>
+      </trans-unit>
+      <trans-unit id="modelview2.loading" datatype="html">
+        <source>Loading the model...</source>
+        <target>Model wordt geladen...</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.loading</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.modelTree" datatype="html">
+        <source>Model tree</source>
+        <target>Modelboom</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.modelTree</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.cancel" datatype="html">
+        <source>Close</source>
+        <target>Sluiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.cancel</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.descriptionDescription" datatype="html">
+        <source>Documentation of the view</source>
+        <target>Documentatie van de weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.descriptionDescription</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.descriptionDisplayName" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.descriptionDisplayName</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.label" datatype="html">
+        <source>View</source>
+        <target>Weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.label</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.nameDescription" datatype="html">
+        <source>The name of the view</source>
+        <target>De naam van de weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.nameDescription</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.nameDisplayName" datatype="html">
+        <source>View name</source>
+        <target>Weergavenaam</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.nameDisplayName</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.noDataMessage" datatype="html">
+        <source>No views available</source>
+        <target>Geen weergaven beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.noDataMessage</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.nullInputMessage" datatype="html">
+        <source>No view selected</source>
+        <target>Geen weergave geselecteerd</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.nullInputMessage</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.browse.viewSelect.title" datatype="html">
+        <source>Choose a view</source>
+        <target>Kies een weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.browse.viewSelect.title</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.model.elements" datatype="html">
+        <source>Elements</source>
+        <target>Elementen</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.model.elements</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.model.relationships" datatype="html">
+        <source>Relationships</source>
+        <target>Relaties</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.model.relationships</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.modelBrowserBrowse" datatype="html">
+        <source>Browse</source>
+        <target>Bladeren</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.modelBrowserBrowse</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.modelBrowserModel" datatype="html">
+        <source>Model</source>
+        <target>Model</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.modelBrowserModel</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.modelBrowserSelection" datatype="html">
+        <source>Selection</source>
+        <target>Selectie</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.modelBrowserSelection</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.modelBrowserView" datatype="html">
+        <source>View</source>
+        <target>Weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.modelBrowserView</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.description</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.name" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.name</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.openView" datatype="html">
+        <source>Open this view</source>
+        <target>Open deze weergave</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.openView</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.properties</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.referencedConcepts" datatype="html">
+        <source>Referenced concepts</source>
+        <target>Gerefereerde concepten</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.referencedConcepts</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.referencingConcepts" datatype="html">
+        <source>Referencing concepts</source>
+        <target>Refererende concepten</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.referencingConcepts</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.referencingViews" datatype="html">
+        <source>Referencing views</source>
+        <target>Refererende weergaven</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.referencingViews</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.selection.type" datatype="html">
+        <source>Type</source>
+        <target>Type</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.selection.type</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.view.colorLegend" datatype="html">
+        <source>Color legend</source>
+        <target>Kleurenlegenda</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.view.colorLegend</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.view.description" datatype="html">
+        <source>Description</source>
+        <target>Beschrijving</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.view.description</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.view.name" datatype="html">
+        <source>Name</source>
+        <target>Naam</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.view.name</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.view.properties" datatype="html">
+        <source>Properties</source>
+        <target>Eigenschappen</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.view.properties</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.view.referencedViews" datatype="html">
+        <source>Referenced views</source>
+        <target>Gerefereerde weergaven</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.view.referencedViews</note>
+      </trans-unit>
+      <trans-unit id="modelview2.modelBrowser.view.referencingViews" datatype="html">
+        <source>Referencing views</source>
+        <target>Refererende weergaven</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.modelBrowser.view.referencingViews</note>
+      </trans-unit>
+      <trans-unit id="modelview2.resetZoom" datatype="html">
+        <source>Reset zoom and pan</source>
+        <target>Zoom en pan resetten</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.resetZoom</note>
+      </trans-unit>
+      <trans-unit id="modelview2.saveViewAsImage" datatype="html">
+        <source>Save view as image</source>
+        <target>Sla weergave op als afbeelding</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.saveViewAsImage</note>
+      </trans-unit>
+      <trans-unit id="modelview2.toggleFullscreen" datatype="html">
+        <source>Toggle fullscreen</source>
+        <target>Schakel volledig scherm in</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.toggleFullscreen</note>
+      </trans-unit>
+      <trans-unit id="modelview2.viewInfo" datatype="html">
+        <source>View info</source>
+        <target>Bekijk info</target>
+        <note priority="1" from="description">Aurelius dictionary key: modelview2.viewInfo</note>
       </trans-unit>
       <trans-unit id="optionalField" datatype="html">
         <source>Optional Field</source>

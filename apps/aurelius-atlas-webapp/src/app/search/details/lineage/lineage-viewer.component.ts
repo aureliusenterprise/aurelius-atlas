@@ -9,11 +9,15 @@ import {
     signal,
     viewChild,
 } from "@angular/core";
+import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 import { select } from "d3-selection";
 import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from "d3-zoom";
 
-import type { Ar3Model, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
+import type { Ar3Model, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
 import { connectionConceptId, nodeConceptId } from "./parse-ar3";
+import { buildEntitiesById } from "./lineage-entities";
+import { buildIndexes } from "./lineage-indexes";
+import { LineageModelBrowser } from "./model-browser.component";
 import { buildConnectionPath, type PathSurface } from "./connection-path";
 import {
     GENERIC_ARROW,
@@ -84,6 +88,7 @@ interface DrawnConnection {
 @Component({
     selector: "aurelius-atlas-webapp-lineage-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
+    imports: [LineageModelBrowser],
     template: `
         <svg class="lineage-svg" #svg>
             <svg:defs>
@@ -183,6 +188,20 @@ interface DrawnConnection {
                 </svg:g>
             </svg:g>
         </svg>
+        <!-- LDG-19/LDG-25: the quickview drawer, mounted on the viewer — the
+             legacy mounts its model-browser beside the #modelview svg. The
+             selection is one signal read and written by both surfaces; the
+             view choice re-renders the diagram (drawnView). -->
+        <aurelius-atlas-webapp-lineage-model-browser
+            [entities]="entities()"
+            [indexes]="indexes()"
+            [metadata]="metadata()"
+            [activeViewId]="drawnView()?.id ?? null"
+            [title]="model().name"
+            [selection]="selected()"
+            (selectionChange)="selected.set($event)"
+            (viewChosen)="drawnViewId.set($event)"
+        />
     `,
     styles: `
         /* LDG-13/LDG-14/LDG-17/LDG-18: the legacy modelview style block
@@ -257,6 +276,9 @@ export class LineageViewer {
     /** The parsed model to draw (LDG-11's output). */
     readonly model = input.required<Ar3Model>();
 
+    /** The answer's metadata rows (LDG-21's merge input; empty in tests). */
+    readonly metadata = input<readonly LineageModelMetadata[]>([]);
+
     /** The page's entity guid (LDG-18): its node gains the highlight stroke. */
     readonly highlightedGuid = input<string | null>(null);
 
@@ -276,10 +298,28 @@ export class LineageViewer {
     private currentTransform: ZoomTransform = zoomIdentity;
 
     /** The concept the viewer marks selected (LDG-17: the single slot). */
-    private readonly selected = signal<string | null>(null);
+    protected readonly selected = signal<string | null>(null);
 
-    /** The first view of the model (LDG-12: the document carries exactly one). */
-    private readonly view = computed(() => this.model().views[0]);
+    /**
+     * The view chosen from the Browse dropdown (LDG-23), or null for the
+     * document's first (LDG-12). The legacy's `handleSelectView` auto-selects
+     * the first view when none is chosen — that default resolves once here,
+     * in {@link drawnView}, not in the store.
+     */
+    protected readonly drawnViewId = signal<string | null>(null);
+
+    /** The view being drawn: the chosen one, else the first (LDG-12/LDG-23). */
+    protected readonly drawnView = computed<Ar3View | undefined>(() => {
+        const views = this.model().views;
+        const id = this.drawnViewId();
+        return id === null ? views[0] : views.find((view) => view.id === id);
+    });
+
+    /** The entity index the quickview reads (LDG-19's spread). */
+    protected readonly entities = computed(() => buildEntitiesById(this.model()));
+
+    /** The Selection tab's index maps (LDG-22). */
+    protected readonly indexes = computed(() => buildIndexes(this.model()));
 
     /**
      * The view's bounds (LDG-15): the legacy's minX/minY over all node
@@ -287,7 +327,7 @@ export class LineageViewer {
      * at the drawing area's origin.
      */
     private readonly bounds = computed(() => {
-        const nodes = this.view()?.nodes ?? [];
+        const nodes = this.drawnView()?.nodes ?? [];
         if (nodes.length === 0) {
             return { minX: 0, minY: 0 };
         }
@@ -302,7 +342,7 @@ export class LineageViewer {
 
     /** The nodes as drawn (LDG-12/LDG-13). */
     protected readonly nodes = computed<DrawnNode[]>(() => {
-        const view = this.view();
+        const view = this.drawnView();
         if (view === undefined) {
             return [];
         }
@@ -331,7 +371,7 @@ export class LineageViewer {
 
     /** The connections as drawn (LDG-14), in document order over the nodes. */
     protected readonly connections = computed<DrawnConnection[]>(() => {
-        const view = this.view();
+        const view = this.drawnView();
         if (view === undefined) {
             return [];
         }

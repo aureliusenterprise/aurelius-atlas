@@ -43,6 +43,13 @@ const nlComponents = JSON.parse(readFileSync(join(fixtures, "components-nl-NL.js
 const enShell = JSON.parse(readFileSync(join(fixtures, "shell-en-US.json"), "utf8"));
 const nlShell = JSON.parse(readFileSync(join(fixtures, "shell-nl-NL.json"), "utf8"));
 
+// The Aurelius model-view library shipped its own dictionary (the lineage
+// viewer and its model browser). The webapp's lineage viewer carries those
+// strings as `i18n="@@modelview2.*"` units (7.22c, LDG-26), so the same keys
+// must exist in the catalogues.
+const enModelview2 = JSON.parse(readFileSync(join(fixtures, "modelview2-en-US.json"), "utf8"));
+const nlModelview2 = JSON.parse(readFileSync(join(fixtures, "modelview2-nl-NL.json"), "utf8"));
+
 /**
  * Flatten a nested dictionary into `{ "a.b.c": "value" }`.
  * @param {Record<string, unknown>} obj The (sub)object to flatten.
@@ -109,8 +116,18 @@ function encodeLineEndSpaces(text) {
     );
 }
 
-const enFlat = { ...flatten(en, "", {}), ...flatten(enComponents, "", {}), ...flatten(enShell, "", {}) };
-const nlFlat = { ...flatten(nl, "", {}), ...flatten(nlComponents, "", {}), ...flatten(nlShell, "", {}) };
+const enFlat = {
+    ...flatten(en, "", {}),
+    ...flatten(enComponents, "", {}),
+    ...flatten(enShell, "", {}),
+    ...flatten(enModelview2, "", {}),
+};
+const nlFlat = {
+    ...flatten(nl, "", {}),
+    ...flatten(nlComponents, "", {}),
+    ...flatten(nlShell, "", {}),
+    ...flatten(nlModelview2, "", {}),
+};
 // The keys are ASCII dotted paths; code-unit sort is the stable, review-friendly
 // order the committed catalogues are keyed by.
 const keys = Object.keys(enFlat).sort(); // NOSONAR S3798: see the note above.
