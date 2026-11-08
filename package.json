@@ -19,7 +19,7 @@
         "@nx/vitest": "23.3.0",
         "@nx/web": "23.3.0",
         "@nx/workspace": "23.3.0",
-        "@nxlv/python": "^22.0.5",
+        "@nxlv/python": "^23.3.1",
         "@schematics/angular": "22.2.2",
         "@storybook/addon-docs": "10.6.2",
         "@storybook/angular": "10.6.2",
