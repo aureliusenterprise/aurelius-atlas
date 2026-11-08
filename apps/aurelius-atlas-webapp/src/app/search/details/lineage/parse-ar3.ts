@@ -26,8 +26,16 @@
  * 7.22e added the relation options (LDG-36): an `ar3_Access` carries an
  * `@accessType` and an `ar3_Association` an `@isDirected`, and the relation
  * style needs both. Every other archimate relation types on the document as
- * it stands (DD-418).
+ * it stands (DD-418). Since DD-419 the shared canvas in `aurelius-atlas-ui`
+ * reads its own view types, and the option pair and the two concept-id rules
+ * (LDG-17) live with it — re-exported here, so every reader of this module
+ * keeps the same names.
  */
+
+import type { Ar3RelationOptions } from "aurelius-atlas-ui";
+
+export type { Ar3RelationOptions };
+export { connectionConceptId, nodeConceptId } from "aurelius-atlas-ui";
 
 /** A name/value property of a concept (`ar3_property`: the `get-properties.ts` map). */
 export interface Ar3Property {
@@ -74,14 +82,6 @@ export interface Ar3Relation {
      * each empty when the document carries no value for it.
      */
     readonly options: Ar3RelationOptions;
-}
-
-/** The two attributes an archimate relation style reads (LDG-36). */
-export interface Ar3RelationOptions {
-    /** The `@accessType` attribute (`Read`, `Write`, or `ReadWrite`). */
-    readonly accessType: string;
-    /** The `@isDirected` attribute, kept as its raw string. */
-    readonly isDirected: string;
 }
 
 /** One bendpoint of a view connection — a waypoint in model coordinates. */
@@ -244,24 +244,6 @@ function parseOrganization(row: JsonRow): Ar3Organization {
         ref: optionalText(row["@identifierRef"]),
         children: rowsOf(row, "ar3_item").map(parseOrganization),
     };
-}
-
-/**
- * Resolve a node's concept id for selection (LDG-17): the element it
- * references, else the node itself — the legacy's `ref ?? id`.
- * @param node the view node
- */
-export function nodeConceptId(node: Ar3ViewNode): string {
-    return node.ref ?? node.id;
-}
-
-/**
- * Resolve a connection's concept id for selection (LDG-17): the relation it
- * references, else the connection itself — the legacy's `ref ?? id`.
- * @param connection the view connection
- */
-export function connectionConceptId(connection: Ar3ViewConnection): string {
-    return connection.ref ?? connection.id;
 }
 
 /**

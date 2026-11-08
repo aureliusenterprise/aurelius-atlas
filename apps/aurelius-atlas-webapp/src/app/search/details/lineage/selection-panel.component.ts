@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from "@angular/core";
 import { Router } from "@angular/router";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
-import { EntityCard, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
+import { ar3Icon, EntityCard, lineageClass, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
-import { ar3Icon } from "./archimate-shapes";
-import { LINEAGE_BADGE_ICONS, lineageBadgeClass, lineageClass } from "./lineage-shapes";
+import { LINEAGE_BADGE_ICONS, lineageBadgeClass } from "./lineage-shapes";
 import type { LineageEntity } from "./lineage-entities";
 import { mergeProperties } from "./lineage-entities";
 import type { LineageIndexes } from "./lineage-indexes";

@@ -27,7 +27,7 @@
 
 import { LINEAGE_ICON_PATHS } from "./lineage-shapes";
 
-import type { TypeIconClass } from "../../meta/type-icons";
+import type { Ar3RelationOptions } from "./ar3-types";
 
 /** The marker a connection style names (the legacy `RelationDef` keys). */
 export type Ar3Marker =
@@ -538,14 +538,6 @@ export interface Ar3ConnectionStyle {
     readonly dash: string | null;
 }
 
-/** The relation's style inputs (the legacy `ModelRelation.options`). */
-export interface Ar3RelationOptions {
-    /** The access relation's `@accessType`, empty for any other type. */
-    readonly accessType: string;
-    /** The association's `@isDirected` ("true" from the writer). */
-    readonly isDirected: string;
-}
-
 /** No options, for a call site with no relation to read. */
 export const NO_RELATION_OPTIONS: Ar3RelationOptions = { accessType: "", isDirected: "" };
 
@@ -623,20 +615,6 @@ export function ar3Class(type: string): string {
  */
 export function ar3Icon(type: string): Ar3Icon | null {
     return AR3_ICONS[type] ?? null;
-}
-
-/**
- * The badge colour class of an archimate glyph (DD-405's family, kept for
- * the drawer's card badge): the lineage pair rides the two families the
- * card knows; no archimate type has a badge, as the legacy's `iconsByType`
- * (DD-378) never carried one either.
- * @param color the glyph's fill class
- */
-export function ar3BadgeClass(color: string): TypeIconClass | undefined {
-    if (color === "dataset") {
-        return "technical";
-    }
-    return color === "process" ? "technical-process" : undefined;
 }
 
 /**

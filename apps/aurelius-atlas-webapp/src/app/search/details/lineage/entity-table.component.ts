@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from "@angular/core";
 
-import { SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
+import { ar3Icon, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
-import { ar3Icon } from "./archimate-shapes";
 import { relationVerb } from "./lineage-metamodel";
 import type { LineageEntity } from "./lineage-entities";
 
