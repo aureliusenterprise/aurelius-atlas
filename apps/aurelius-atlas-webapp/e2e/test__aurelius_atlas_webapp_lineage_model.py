@@ -13,7 +13,7 @@ import secrets
 from urllib.parse import urljoin
 
 import pytest
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from test__aurelius_atlas_webapp import _active_edge, _purge_type, _seed_m4i_mini_graph, _wait_entity_read
 
 LINEAGE_PATH = "/lineage-model/"
@@ -124,6 +124,96 @@ def test__lineage_model_answers_the_seeded_chain(authenticated: Page, root_url: 
         elements = ar3["ar3_model"]["ar3_elements"]["ar3_element"]
         names = {name["value"] for element in elements for name in element.get("ar3_name", [])}
         assert f"zz{run}warehouse" in names
+    finally:
+        for type_name in _M4I_TYPES:
+            _purge_type(authenticated, root_url, user_token, type_name)
+
+
+@pytest.mark.covers(rules=["LDG-09", "LDG-10", "LDG-17", "LDG-18"])
+def test__the_details_page_draws_the_lineage_box(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The Lineage Model box draws the seeded chain on the details page (LDG-09/LDG-10/LDG-17/LDG-18).
+
+    The 7.22b screen over the DET-34 mini-graph and the real aux chain: the
+    box sits between Child Datasets and Producers on the dataset page (the
+    legacy position, LDG-09), its header carries the drawn view's name —
+    "Lineage", the server's rule — and the diagram holds the seeded process
+    and dataset by their names (LDG-10's diagram state, over the whole
+    chain). Clicking a node selects it (LDG-17, the ``.is-selected``
+    stroke); the page's own entity rides the highlight (LDG-18,
+    ``.is-highlighted`` on the dataset node the page opened). The unlinked
+    process answers the aux 204 and the box rests at the empty message
+    (LDG-10). Interactions only — the pixels are the unit specs' (the e2e
+    rule). Self-cleaned by the shared m4i purge (DD-223).
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+    dataset_guid = guids["dataset"]
+    lonely_guid = guids["lonely"]
+
+    try:
+        # The lineage walks the edge records (CLS-12's race): wait the
+        # dataset's lineage ends visible before the screen reads them.
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            dataset_guid,
+            predicate=lambda entity: (
+                _active_edge(entity, "outputFromProcesses", guids["process"])
+                and _active_edge(entity, "inputToProcesses", guids["process"])
+            ),
+        )
+
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{dataset_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}warehouse")
+
+        # LDG-09: the box, in the legacy position between Child Datasets and
+        # Producers (the section order is the unit spec's; the anchor living
+        # between the two boxes is the position the page must keep).
+        box = authenticated.locator("#lineage-model")
+        expect(box).to_be_visible()
+        box_ids = authenticated.locator("section[id], div.box[id]").evaluate_all("(els) => els.map((el) => el.id)")
+        assert box_ids.index("lineage-model") == box_ids.index("related-datasets") + 1
+        assert box_ids.index("related-producers") == box_ids.index("lineage-model") + 1
+
+        # LDG-10's diagram state through the chain, LDG-09's header: the
+        # drawn view's name (the server's rule names it "Lineage").
+        expect(box.locator(".aurelius-lineage-title")).to_have_text("Lineage")
+        nodes = box.locator("g.node")
+        # The walk's own count is the chain's (both lineage ends ride it);
+        # the screen's promise is the seeded ends drawn, each once.
+        expect(nodes.filter(has_text=f"zz{run}pipeline")).to_have_count(1)
+        expect(nodes.filter(has_text=f"zz{run}warehouse")).to_have_count(1)
+
+        # LDG-14 through the chain: the connections and the arrow marker are
+        # drawn (the walk's own count is the chain's; the path geometry and
+        # the marker's pixels are the viewer's unit spec — a horizontal
+        # line has no box to be "visible" in, per the e2e rule).
+        expect(box.locator("g.connection")).not_to_have_count(0)
+        expect(box.locator("defs marker#generic-arrow")).to_have_count(1)
+
+        # LDG-18: the page's own entity carries the highlight stroke — the
+        # dataset node, on the dataset's page (not the process node).
+        highlighted = box.locator("g.node.is-highlighted")
+        expect(highlighted).to_have_count(1)
+        expect(highlighted).to_contain_text(f"zz{run}warehouse")
+
+        # LDG-17: a node click selects it (the second click clears); the
+        # process node is the one not highlighted.
+        process_node = box.locator("g.node", has_text=f"zz{run}pipeline")
+        process_node.click()
+        expect(box.locator("g.node.is-selected")).to_have_count(1)
+        expect(box.locator("g.node.is-selected")).to_contain_text(f"zz{run}pipeline")
+        process_node.click()
+        expect(box.locator("g.node.is-selected")).to_have_count(0)
+
+        # LDG-10's empty state: the unlinked process has no lineage — the
+        # aux 204 (LM-05/LM-06, proven above) and the plain message.
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{lonely_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}lonely")
+        lonely_box = authenticated.locator("#lineage-model")
+        expect(lonely_box.locator(".aurelius-lineage-empty")).to_be_visible()
+        expect(lonely_box.locator("aurelius-atlas-webapp-lineage-viewer")).to_have_count(0)
     finally:
         for type_name in _M4I_TYPES:
             _purge_type(authenticated, root_url, user_token, type_name)

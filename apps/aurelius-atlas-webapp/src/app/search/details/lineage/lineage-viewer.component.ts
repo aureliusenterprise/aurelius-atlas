@@ -1,0 +1,426 @@
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    effect,
+    ElementRef,
+    input,
+    output,
+    signal,
+    viewChild,
+} from "@angular/core";
+import { select } from "d3-selection";
+import { zoom, zoomIdentity, type ZoomBehavior, type ZoomTransform } from "d3-zoom";
+
+import type { Ar3Model, Ar3ViewConnection, Ar3ViewNode } from "./parse-ar3";
+import { connectionConceptId, nodeConceptId } from "./parse-ar3";
+import { buildConnectionPath, type PathSurface } from "./connection-path";
+import {
+    GENERIC_ARROW,
+    lineageClass,
+    LINEAGE_ICON_PATHS,
+    rectanglePath,
+    ZOOM_SCALE_EXTENT,
+    type LineageClass,
+} from "./lineage-shapes";
+
+/** The drawn node: a view node with its resolved shape (LDG-12/LDG-13). */
+interface DrawnNode {
+    readonly node: Ar3ViewNode;
+    /** The rectangle path from `x,y,w,h` (the legacy's `basicShapes.rectangle`). */
+    readonly shape: string;
+    /** The fill class (`dataset`/`process`), or null for an unknown type. */
+    readonly cssClass: LineageClass | null;
+    /** The name inside the rectangle (LDG-11's display name). */
+    readonly name: string;
+    /** The 16x16 icon path, or null when the type has none. */
+    readonly icon: string | null;
+    /** The concept a click selects (LDG-17: `ref ?? id`). */
+    readonly concept: string;
+    /** The raw model position (LDG-15: `translate(x, y)`; the group holds the shift). */
+    readonly transform: string;
+}
+
+/** The drawn connection: a view connection with its resolved path (LDG-14). */
+interface DrawnConnection {
+    readonly connection: Ar3ViewConnection;
+    /** The absolute path in model coordinates, empty when nothing draws. */
+    readonly path: string;
+    /** The relation name at the path centre, or empty (no label). */
+    readonly name: string;
+    /** The concept a click selects (LDG-17: `ref ?? id`). */
+    readonly concept: string;
+}
+
+/**
+ * The lineage viewer (LDG-12..LDG-18, DD-388/DD-390): the first view of a
+ * parsed ar3 model, drawn as the legacy modelview2 drew the lineage language
+ * — nodes first, connections on top, every node and connection riding its raw
+ * model coordinate under one bounds group shifted by `-minX, -minY` (LDG-15:
+ * the legacy `ModelviewService` bounds), each connection the
+ * `getShortestLineEndpoints` polyline through the server's bendpoints with the
+ * `generic-arrow` marker end (LDG-14). The fills, icons, strokes, and the 50vh
+ * area are the legacy `lineage.scss` / `modelview-node.component.scss` /
+ * `modelview.component.scss` values (LDG-13).
+ *
+ * Pan and zoom ride the SVG with d3-zoom at the legacy's [0.5, 3] extent,
+ * applied as a transform on the drawing group (LDG-16, the legacy
+ * `SVGZoomDirective` ported: the behaviour is attached once, `resetZoom()`
+ * returns to the identity — 7.22d's toolbar button calls it).
+ *
+ * One selected-concept signal holds the selection (LDG-17): a node or
+ * connection click selects the concept it references (`ref ?? id`), clicking
+ * the same concept again clears it, and the drawn element gains the legacy's
+ * `.is-selected` stroke (`#40e0d0`). The `selectedConcept` output carries the
+ * change to the box (7.22c's panel reads it later). The `highlightedGuid`
+ * input paints the page's own entity with the legacy's `.is-highlighted`
+ * stroke (`hsl(141, 53%, 53%)`, LDG-18): the node whose element id equals it.
+ *
+ * The state is the component's own signals (DD-390): the legacy's per-node and
+ * per-connection `BasicStore` services have no twin here — the shared slices
+ * (selection, highlight) sit once on this component, where 7.22c can read
+ * them.
+ */
+@Component({
+    selector: "aurelius-atlas-webapp-lineage-viewer",
+    changeDetection: ChangeDetectionStrategy.OnPush,
+    template: `
+        <svg class="lineage-svg" #svg>
+            <svg:defs>
+                <svg:marker
+                    id="generic-arrow"
+                    [attr.refX]="arrow.refX"
+                    [attr.refY]="arrow.refY"
+                    [attr.markerWidth]="arrow.markerWidth"
+                    [attr.markerHeight]="arrow.markerHeight"
+                    orient="auto"
+                >
+                    <svg:path [attr.d]="arrow.path" fill="#000000"></svg:path>
+                </svg:marker>
+            </svg:defs>
+            <!-- LDG-15: the bounds group carries the legacy's -minX/-minY
+                 translate; LDG-16: the zoom transform rides the parent so
+                 pan/zoom and the bounds compose (the legacy applied the
+                 transform to the whole #modelview group — same DOM here). -->
+            <svg:g class="lineage-zoom" #zoomTarget>
+                <svg:g class="lineage-bounds" [attr.transform]="boundsTransform()">
+                    @for (drawn of nodes(); track drawn.node.id) {
+                        <!-- LDG-12/LDG-13: the node — the rectangle path from
+                             x,y,w,h translated to the bounds-normalised
+                             position, the type-class fill, the 16x16 icon
+                             floated right, the clipped name (the legacy's
+                             foreignObject label, LDG-13). -->
+                        <svg:g
+                            class="node"
+                            [class.dataset]="drawn.cssClass === 'dataset'"
+                            [class.process]="drawn.cssClass === 'process'"
+                            [class.is-selected]="isSelected(drawn.concept)"
+                            [class.is-highlighted]="isHighlighted(drawn)"
+                            [attr.transform]="drawn.transform"
+                            [attr.data-concept]="drawn.concept"
+                            (click)="onElementClicked(drawn.concept)"
+                        >
+                            <svg:clipPath [attr.id]="'clip-' + drawn.node.id">
+                                <svg:path [attr.d]="drawn.shape"></svg:path>
+                            </svg:clipPath>
+                            <svg:path class="node-shape" [attr.d]="drawn.shape"></svg:path>
+                            <svg:g [attr.clip-path]="'url(#clip-' + drawn.node.id + ')'">
+                                <svg:foreignObject [attr.width]="drawn.node.width" [attr.height]="drawn.node.height">
+                                    <xhtml:div xmlns="http://www.w3.org/1999/xhtml" class="node-content">
+                                        @if (drawn.icon) {
+                                            <xhtml:span class="node-icon">
+                                                <svg width="16px" height="16px" viewBox="0 0 16 16">
+                                                    <path
+                                                        [attr.d]="drawn.icon"
+                                                        [class.dataset]="drawn.cssClass === 'dataset'"
+                                                        [class.process]="drawn.cssClass === 'process'"
+                                                    ></path>
+                                                </svg>
+                                            </xhtml:span>
+                                        }
+                                        @if (drawn.name) {
+                                            <xhtml:span class="node-text" [attr.title]="drawn.name">{{
+                                                drawn.name
+                                            }}</xhtml:span>
+                                        }
+                                    </xhtml:div>
+                                </svg:foreignObject>
+                            </svg:g>
+                        </svg:g>
+                    }
+                    @for (drawn of connections(); track drawn.connection.id) {
+                        <!-- LDG-14: the connection — the edge-anchored path
+                             through the bendpoints, the arrow marker end,
+                             the relation name at the path centre. -->
+                        @if (drawn.path) {
+                            <svg:g
+                                class="connection"
+                                [class.is-selected]="isSelected(drawn.concept)"
+                                [attr.data-concept]="drawn.concept"
+                                (click)="onElementClicked(drawn.concept)"
+                            >
+                                <svg:path
+                                    class="connection-path"
+                                    [attr.id]="'path-' + drawn.connection.id"
+                                    [attr.d]="drawn.path"
+                                    marker-end="url(#generic-arrow)"
+                                ></svg:path>
+                                @if (drawn.name) {
+                                    <svg:text>
+                                        <svg:textPath
+                                            class="connection-label"
+                                            [attr.href]="'#path-' + drawn.connection.id"
+                                            dominant-baseline="ideographic"
+                                            startOffset="50%"
+                                        >
+                                            {{ drawn.name }}
+                                        </svg:textPath>
+                                    </svg:text>
+                                }
+                            </svg:g>
+                        }
+                    }
+                </svg:g>
+            </svg:g>
+        </svg>
+    `,
+    styles: `
+        /* LDG-13/LDG-14/LDG-17/LDG-18: the legacy modelview style block
+           (modelview.component.html's <defs><style>) and lineage.scss,
+           narrowed to the two lineage fills and the two state strokes. */
+        :host {
+            display: block;
+        }
+        .lineage-svg {
+            /* LDG-15: the legacy's 50vh drawing area. */
+            height: 50vh;
+            min-width: 100%;
+            min-height: 100%;
+            font-family: "Segoe UI";
+            font-size: 12px;
+        }
+        .node-shape {
+            stroke: #a0a0a0;
+            stroke-width: 2px;
+            fill: none;
+        }
+        .node.dataset .node-shape {
+            fill: hsl(240, 100%, 95%);
+        }
+        .node.process .node-shape {
+            fill: hsl(171, 100%, 95%);
+        }
+        .node.is-highlighted .node-shape {
+            stroke: hsl(141, 53%, 53%);
+        }
+        .node.is-selected .node-shape {
+            stroke: #40e0d0;
+        }
+        .node-content {
+            height: 100%;
+            line-height: 1.1em;
+            padding: 5px;
+        }
+        .node-icon {
+            float: right;
+            margin-left: 5px;
+            stroke: #000000;
+        }
+        .node-icon .dataset {
+            fill: blue;
+            stroke: none;
+        }
+        .node-icon .process {
+            fill: #00d1b2;
+            stroke: none;
+        }
+        .node-text {
+            display: block;
+            max-height: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .connection-path {
+            fill: none;
+            stroke: black;
+        }
+        .connection.is-selected .connection-path {
+            stroke: #40e0d0;
+        }
+        .connection-label {
+            text-anchor: middle;
+        }
+    `,
+})
+export class LineageViewer {
+    /** The parsed model to draw (LDG-11's output). */
+    readonly model = input.required<Ar3Model>();
+
+    /** The page's entity guid (LDG-18): its node gains the highlight stroke. */
+    readonly highlightedGuid = input<string | null>(null);
+
+    /** The selected concept (LDG-17): emitted on every click (null = cleared). */
+    readonly selectedConcept = output<string | null>();
+
+    /** The marker's geometry — the legacy defs entry, ported (LDG-14). */
+    protected readonly arrow = GENERIC_ARROW;
+
+    private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>("svg");
+    private readonly zoomTarget = viewChild.required<ElementRef<SVGGElement>>("zoomTarget");
+
+    /** The d3 zoom behaviour, attached once the SVG is in the DOM (LDG-16). */
+    private zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
+
+    /** The transform d3 currently holds — what `resetZoom()` restores from. */
+    private currentTransform: ZoomTransform = zoomIdentity;
+
+    /** The concept the viewer marks selected (LDG-17: the single slot). */
+    private readonly selected = signal<string | null>(null);
+
+    /** The first view of the model (LDG-12: the document carries exactly one). */
+    private readonly view = computed(() => this.model().views[0]);
+
+    /**
+     * The view's bounds (LDG-15): the legacy's minX/minY over all node
+     * positions — the group translation that sits the model's top-left node
+     * at the drawing area's origin.
+     */
+    private readonly bounds = computed(() => {
+        const nodes = this.view()?.nodes ?? [];
+        if (nodes.length === 0) {
+            return { minX: 0, minY: 0 };
+        }
+        return {
+            minX: Math.min(...nodes.map((node) => node.x)),
+            minY: Math.min(...nodes.map((node) => node.y)),
+        };
+    });
+
+    /** The bounds group's transform (LDG-15). */
+    protected readonly boundsTransform = computed(() => `translate(${-this.bounds().minX}, ${-this.bounds().minY})`);
+
+    /** The nodes as drawn (LDG-12/LDG-13). */
+    protected readonly nodes = computed<DrawnNode[]>(() => {
+        const view = this.view();
+        if (view === undefined) {
+            return [];
+        }
+        const model = this.model();
+        return view.nodes.map((node) => {
+            // LDG-13: the type is the referenced element's (the legacy's
+            // `modelType ?? viewType`; the reader keeps no node type — LDG-11
+            // — so an unreferenced node has none, and draws without a class).
+            const element = node.ref === null ? undefined : model.elements.get(node.ref);
+            const cssClass = lineageClass(element?.type ?? "");
+            return {
+                node,
+                shape: rectanglePath(node.width, node.height),
+                cssClass,
+                name: node.displayName,
+                icon: cssClass === null ? null : LINEAGE_ICON_PATHS[cssClass],
+                concept: nodeConceptId(node),
+                // LDG-15: the node rides its raw model coordinate; the one
+                // bounds normalisation (the -minX/-minY on the group) shifts
+                // every node and connection together — subtracting it here
+                // too would double it and misalign the nodes from the paths.
+                transform: `translate(${node.x}, ${node.y})`,
+            };
+        });
+    });
+
+    /** The connections as drawn (LDG-14), in document order over the nodes. */
+    protected readonly connections = computed<DrawnConnection[]>(() => {
+        const view = this.view();
+        if (view === undefined) {
+            return [];
+        }
+        const byId = new Map(view.nodes.map((node) => [node.id, node]));
+        return view.connections.map((connection) => {
+            const source = byId.get(connection.source);
+            const target = byId.get(connection.target);
+            const surface = (node: Ar3ViewNode): PathSurface => ({
+                x: node.x,
+                y: node.y,
+                width: node.width,
+                height: node.height,
+            });
+            return {
+                connection,
+                path:
+                    source === undefined || target === undefined
+                        ? ""
+                        : buildConnectionPath(
+                              surface(source),
+                              surface(target),
+                              connection.bendpoints.map((bendpoint) => ({ x: bendpoint.x, y: bendpoint.y })),
+                          ),
+                name: connection.displayName,
+                concept: connectionConceptId(connection),
+            };
+        });
+    });
+
+    constructor() {
+        // LDG-16: the zoom behaviour attaches once the SVG exists, with the
+        // legacy's scale extent; every transform rides the zoom group (the
+        // legacy's SVGZoomDirective applied `transform.toString()` to the
+        // #zoomTarget element — kept).
+        effect((onCleanup) => {
+            const svg = this.svgRef().nativeElement;
+            const target = this.zoomTarget().nativeElement;
+            const container = select(svg);
+
+            const behavior = zoom<SVGSVGElement, unknown>()
+                .scaleExtent([...ZOOM_SCALE_EXTENT])
+                .on("zoom", (event: { transform: ZoomTransform }) => {
+                    this.currentTransform = event.transform;
+                    target.setAttribute("transform", event.transform.toString());
+                });
+            this.zoomBehavior = behavior;
+            container.call(behavior);
+
+            onCleanup(() => {
+                container.on(".zoom", null);
+                this.zoomBehavior = null;
+            });
+        });
+    }
+
+    /**
+     * Restore the identity transform (LDG-16): the seam 7.22d's toolbar
+     * reset button calls. The legacy's `resetZoom` returned the transform it
+     * replaced; this one does too.
+     * @returns the transform that was in place
+     */
+    resetZoom(): ZoomTransform {
+        const previous = this.currentTransform;
+        if (this.zoomBehavior !== null) {
+            this.zoomBehavior.transform(select(this.svgRef().nativeElement), zoomIdentity);
+        }
+        this.currentTransform = zoomIdentity;
+        this.zoomTarget().nativeElement.setAttribute("transform", zoomIdentity.toString());
+        return previous;
+    }
+
+    /** LDG-17: a node or connection click — the same concept clears. */
+    protected onElementClicked(concept: string): void {
+        const next = this.selected() === concept ? null : concept;
+        this.selected.set(next);
+        this.selectedConcept.emit(next);
+    }
+
+    /** Whether a drawn element holds the selection (LDG-17). */
+    protected isSelected(concept: string): boolean {
+        return this.selected() === concept;
+    }
+
+    /**
+     * LDG-18: the highlight rides the node whose element id equals the
+     * opened guid — the legacy's `highlightedEntity === ref || === id`.
+     */
+    protected isHighlighted(drawn: DrawnNode): boolean {
+        const guid = this.highlightedGuid();
+        return guid !== null && guid !== "" && (drawn.node.ref === guid || drawn.node.id === guid);
+    }
+}

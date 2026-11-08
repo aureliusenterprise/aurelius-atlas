@@ -99,6 +99,23 @@ describe("Section config (DET-16)", () => {
         ]);
     });
 
+    it("carries the Lineage Model box position on the two layouts (LDG-09)", () => {
+        // 7.22b: the box rides the layout row as `lineageAfter`, not the
+        // sections list — it is the viewer, not a card section (DD-388).
+        // The anchor names the card box the legacy seats it after: the
+        // dataset's deferral position (DET-32's table, after Child
+        // Datasets) and the process's (DET-33's, after Systems).
+        expect(LAYOUTS.m4i_dataset.lineageAfter).toBe("related-datasets");
+        expect(LAYOUTS.m4i_generic_process.lineageAfter).toBe("related-systems");
+        // Every other legacy page draws no lineage box: no anchor, no box.
+        expect(LAYOUTS.m4i_data_domain.lineageAfter).toBeUndefined();
+        expect(LAYOUTS.m4i_data_entity.lineageAfter).toBeUndefined();
+        expect(LAYOUTS.m4i_data_attribute.lineageAfter).toBeUndefined();
+        expect(LAYOUTS.m4i_field.lineageAfter).toBeUndefined();
+        expect(LAYOUTS.m4i_collection.lineageAfter).toBeUndefined();
+        expect(LAYOUTS.m4i_system.lineageAfter).toBeUndefined();
+    });
+
     it("keeps the stats and nav of 7.21c's rows in the legacy order (DET-32, DET-33)", () => {
         const labels = (name: keyof typeof LAYOUTS) => LAYOUTS[name].stats.map((stat) => stat.anchor);
         const nav = (name: keyof typeof LAYOUTS) => LAYOUTS[name].nav.map((entry) => entry.anchor);

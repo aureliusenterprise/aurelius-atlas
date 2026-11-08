@@ -29,6 +29,7 @@ import { typeIcon } from "../meta/type-icons";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
+import { LineageModel } from "./lineage/lineage-model.component";
 import { CardContent } from "./sections/card-content.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
@@ -66,6 +67,7 @@ import { peopleRows } from "./shared/people";
         DetailsNavigation,
         EntityCard,
         FontAwesomeModule,
+        LineageModel,
         Markdown,
         PeopleBox,
         PropertiesItem,
