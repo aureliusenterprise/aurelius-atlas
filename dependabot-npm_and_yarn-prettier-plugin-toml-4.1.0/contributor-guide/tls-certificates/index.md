@@ -49,6 +49,12 @@ mkcert -uninstall             # drop the CA and its system trust entries entirel
 
 The architecture page names the rule; these are the specific plaintext exceptions a developer sees, each accepted deliberately ([ADR 039](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/adr/039-data-is-protected-where-it-travels-and-where-it-rests/index.md>)):
 
+> [!NOTE]
+>
+> **Why is a plaintext listener a named exception and not a defect?**
+>
+> Because it is a developer convenience on a wire that never leaves the machine (ADR 039's R4), and R1's rule is that such relaxations are written down, not implied. The line R4 guards: the same plaintext path outside the development arrangement — the localhost URL copied into a deployment — is a defect, which is why each occurrence carries a comment naming the record.
+
 - The identity provider slice serves a plaintext HTTP listener (port 8080) so the developer browser opens a familiar URL; its TLS listener (8443) serves every CI/E2E path.
 - Browser-facing developer surfaces (SPA dev-server, Grafana, Storybook) stay plaintext on a developer machine.
 - Playwright's bundled browsers carry their own trust stores and cannot enroll the mkcert root, so frontend E2E page navigation skips browser certificate verification (`ignore_https_errors`). The E2E suite verifies the same browser-facing endpoint against the CA out-of-band (hostname + chain), and nginx still verifies the backend with `proxy_ssl_verify`.

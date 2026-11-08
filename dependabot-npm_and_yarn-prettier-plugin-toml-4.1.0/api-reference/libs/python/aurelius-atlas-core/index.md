@@ -1,6 +1,6 @@
 # aurelius-atlas-core
 
-Atlas stores and services for Aurelius Atlas ([DD-002](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/conversion/design-log/#dd-002-atlas-code-lives-in-aurelius-atlas-projects-split-by-layer>)). Since increment [1.4](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/conversion/increments/1-4-typedef-store/index.md>): the typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type registry. Since [1.5](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/conversion/increments/1-5-builtin-models/index.md>): Apache Atlas's built-in models and their typedef patches, loaded at start-up. Since [1.6](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/conversion/increments/1-6-types-rest/index.md>): the store's reads and the search of `/v2/types/typedefs`. Since [2.2](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/conversion/increments/2-2-entity-store/index.md>): the entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes several entities all or nothing through a journal (DD-043 to DD-048).
+Atlas stores and services for Aurelius Atlas (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)). Since increment `1.4` (the spec: `libs/python/aurelius-atlas-core/specs/1-4-typedef-store/spec.md`): the typedef store, which keeps type definitions in one Elasticsearch document and serves them from the type registry. Since `1.5` (the spec: `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/spec.md`): Apache Atlas's built-in models and their typedef patches, loaded at start-up. Since `1.6` (the spec: `apps/aurelius-atlas-server/specs/1-6-types-rest/spec.md`): the store's reads and the search of `/v2/types/typedefs`. Since `2.2` (the spec: `libs/python/aurelius-atlas-core/specs/2-2-entity-store/spec.md`): the entity store, which keeps each entity as one Elasticsearch document, reserves unique attribute values and writes several entities all or nothing through a journal (DD-043 to DD-048).
 
 ```
 store = TypedefStore(TypeRegistry(), ElasticsearchTypedefDocument(elasticsearch_store.client))
@@ -23,10 +23,11 @@ workspace = true
 
 ## Vendored models
 
-`aurelius_atlas_core/models/` is `addons/models` of Apache Atlas `release-2.4.0`, byte for byte ([DD-032](<https://aureliusenterprise.github.io/dependabot-npm_and_yarn-prettier-plugin-toml-4.1.0/architecture/conversion/design-log/#dd-032-the-built-in-models-are-vendored-unchanged-and-read-from-a-directory>)). To prove it, compare it with the tag:
+`aurelius_atlas_core/models/` is `addons/models` of Apache Atlas `release-2.4.0`, byte for byte (`DD-032` (the record: `libs/python/aurelius-atlas-core/specs/1-5-builtin-models/design.md`)). To prove it, compare it with the tag:
 
 ```
-diff -r <apache-atlas checkout at release-2.4.0>/addons/models libs/python/aurelius-atlas-core/aurelius_atlas_core/models
+diff -r <apache-atlas checkout at release-2.4.0>/addons/models
+libs/python/aurelius-atlas-core/aurelius_atlas_core/models
 ```
 
 ## Documentation
@@ -72,6 +73,9 @@ Functions:
 - **`referenced_type_names`** –
 
   The type names inside `array<…>` and `map<…,…>` (`AtlasTypeUtil.getReferencedTypeNames`, TDS-04).
+- **`root_def`** –
+
+  The root definition a search's pseudo type names: `_ALL_ENTITY_TYPES` the entity root's, and
 - **`types_def_of`** –
 
   An `AtlasTypesDef` holding `typedefs`, each in the list of its kind.
@@ -90,6 +94,7 @@ Attributes:
 - **`DEFAULT_REFRESH_SECONDS`** –
 
   How long a process answers from its registry before it checks for another process's change (DD-029).
+- **`LOGGER`** –
 
 ### ADD\_MANDATORY\_ATTRIBUTE
 
@@ -106,6 +111,12 @@ DEFAULT_REFRESH_SECONDS = 5.0
 ```
 
 How long a process answers from its registry before it checks for another process's change (DD-029).
+
+### LOGGER
+
+```
+LOGGER = logging.getLogger(__name__)
+```
 
 ### TypeUsage
 
@@ -193,7 +204,7 @@ Methods:
   The registered definition of `kind` with `guid` (`get{Kind}DefByGuid`, TYR-03).
 - **`get_def_by_name`** –
 
-  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+  The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03), or for a name not
 - **`load`** –
 
   Prepare the document and load every stored definition into the registry (`init`, TDS-12).
@@ -209,7 +220,18 @@ Methods:
 
 Attributes:
 
+- **`change_listeners`** (`list[TypeDefChangeListener]`) –
+
+  `typeDefChangeListeners`: told of each change once it is written (ADA-03).
 - **`registry`** –
+
+#### change\_listeners
+
+```
+change_listeners: list[TypeDefChangeListener] = []
+```
+
+`typeDefChangeListeners`: told of each change once it is written (ADA-03).
 
 #### registry
 
@@ -353,7 +375,7 @@ Raises:
 get_def_by_name(kind: TypeCategory, name: str) -> AtlasBaseTypeDef
 ```
 
-The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03).
+The registered definition of `kind` named `name` (`get{Kind}DefByName`, TYR-03), or for a name not registered, the root definition that `_ALL_ENTITY_TYPES` or `_ALL_CLASSIFICATION_TYPES` names (TYR-13).
 
 Raises:
 
@@ -460,6 +482,14 @@ referenced_type_names(type_name: str | None) -> list[str]
 ```
 
 The type names inside `array<…>` and `map<…,…>` (`AtlasTypeUtil.getReferencedTypeNames`, TDS-04).
+
+### root\_def
+
+```
+root_def(kind: TypeCategory, name: str) -> AtlasBaseTypeDef | None
+```
+
+The root definition a search's pseudo type names: `_ALL_ENTITY_TYPES` the entity root's, and `_ALL_CLASSIFICATION_TYPES`, in any case, the classification root's (TYR-13).
 
 ### types\_def\_of
 
@@ -662,6 +692,9 @@ Entities of the registry's entity types, and the relationships between them, in 
 
 Methods:
 
+- **`classification_type_counts`** –
+
+  How many classification instances there are of each type (MET-02).
 - **`classifications_of_types`** –
 
   The classification instances of these types, or of every type for None (DD-090).
@@ -695,6 +728,9 @@ Methods:
 - **`now`** –
 
   The current time in epoch milliseconds, as Atlas stores times.
+- **`of_types`** –
+
+  The entities of exactly these types, in any state (EXP-03).
 - **`prepare`** –
 
   Create the indices that are missing (ENS-01).
@@ -706,7 +742,13 @@ Methods:
   The entities whose references name any of these GUIDs (EDL-10, DD-057).
 - **`search`** –
 
-  The entities of a search query's page, how many match it in all, and their scores (DD-089).
+  The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+- **`terms`** –
+
+  Per search field, its most frequent words beginning with `prefix` (DD-094).
+- **`type_counts`** –
+
+  How many entities there are of each type, state and shell flag (MET-02).
 - **`type_in_use`** –
 
   Whether an entity, relationship or classification of exactly this type exists, in any state.
@@ -734,6 +776,14 @@ task_listeners: list[Callable[[], None]] = []
 ```
 
 Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### classification\_type\_counts
+
+```
+classification_type_counts() -> dict[str, int]
+```
+
+How many classification instances there are of each type (MET-02).
 
 #### classifications\_of\_types
 
@@ -825,6 +875,14 @@ now() -> int
 
 The current time in epoch milliseconds, as Atlas stores times.
 
+#### of\_types
+
+```
+of_types(type_names: Sequence[str]) -> list[StoredEntity]
+```
+
+The entities of exactly these types, in any state (EXP-03).
+
 #### prepare
 
 ```
@@ -840,6 +898,8 @@ recover() -> int
 ```
 
 Finish or undo the writes whose lease has passed; the number of entries handled (ENS-07, DD-046).
+
+The journal's listing may lag its writes (DD-247): each entry is acted on as it is now, one already deleted or still leased left alone.
 
 A committed write only releases what it no longer holds; any other is undone: an entity is restored only while it carries the write's id, a reservation released only while the write holds it.
 
@@ -857,7 +917,23 @@ The entities whose references name any of these GUIDs (EDL-10, DD-057).
 search(query: SearchQuery) -> SearchHits
 ```
 
-The entities of a search query's page, how many match it in all, and their scores (DD-089).
+The entities of a search query's page, how many match it in all, their scores and facets (DD-089).
+
+#### terms
+
+```
+terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
+```
+
+Per search field, its most frequent words beginning with `prefix` (DD-094).
+
+#### type\_counts
+
+```
+type_counts() -> list[TypeCount]
+```
+
+How many entities there are of each type, state and shell flag (MET-02).
 
 #### type\_in\_use
 
@@ -1051,6 +1127,9 @@ Classes:
 - **`Reservation`** –
 
   A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+- **`TypeCount`** –
+
+  How many entities of a type are in a state, shells (`isIncomplete`) or not (MET-02).
 - **`VersionedClassification`** –
 
   A stored classification instance and the version it was read in (DD-047, DD-070).
@@ -1075,6 +1154,9 @@ Attributes:
 - **`CLASSIFICATION_PAGE`** –
 
   How many classification instances one search page holds.
+- **`COUNT_PAGE`** –
+
+  How many buckets one page of a composite count aggregation holds (MET-02).
 - **`ENTITY_FIELD_LIMIT`** –
 
   `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
@@ -1115,6 +1197,9 @@ Attributes:
 - **`UNIQUE_VALUE_INDEX`** –
 
   The alias of the unique value reservations (DD-045).
+- **`WRITE_REFRESH`** –
+
+  Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
 
 ### CLASSIFICATION\_INDEX
 
@@ -1150,6 +1235,14 @@ CLASSIFICATION_PAGE = 1000
 ```
 
 How many classification instances one search page holds.
+
+### COUNT\_PAGE
+
+```
+COUNT_PAGE = 1000
+```
+
+How many buckets one page of a composite count aggregation holds (MET-02).
 
 ### ENTITY\_FIELD\_LIMIT
 
@@ -1316,6 +1409,14 @@ UNIQUE_VALUE_INDEX = f'{INDEX_PREFIX}-unique-values'
 
 The alias of the unique value reservations (DD-045).
 
+### WRITE\_REFRESH
+
+```
+WRITE_REFRESH = 'true'
+```
+
+Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own, and no write waits for the index's next scheduled refresh.
+
 ### Linked
 
 ```
@@ -1336,40 +1437,49 @@ Methods:
 
 - **`classifications_of_types`** –
 
-  Refresh the classification index, then page through the instances of the types by GUID (DD-090).
+  Page through the classification index for the instances of the types by GUID (DD-090).
 - **`classified`** –
 
-  Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
+  Page through the entities whose `classificationGuids` hold one (DD-076): writes refresh (ENS-11).
 - **`count_linked_type`** –
 
-  Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
+  Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).
 - **`count_type`** –
 
-  Refresh the entity index, then count the entities of the type (DD-048).
+  Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
 - **`delete_journal`** –
 
-  Delete the entry; one already gone is fine.
+  Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).
 - **`get`** –
 
   `mget` of the entity index: real time, as a get by id is (ENS-04).
+- **`get_journal`** –
+
+  The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
 - **`get_linked`** –
 
   `mget` of the kind's index: real time (DD-061, DD-070).
 - **`journal`** –
 
-  The entries of the journal, refreshed first so none written a moment ago is missed.
+  The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
+- **`linked_type_counts`** –
+
+  A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11).
 - **`list_tasks`** –
 
-  Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).
+  Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+- **`of_types`** –
+
+  Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
 - **`prepare`** –
 
   Create each index behind its alias unless it exists (ENS-01).
 - **`put_journal`** –
 
-  Index the entry under its write id.
+  Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
 - **`referring`** –
 
-  Refresh the entity index, then page through the entities whose `references` hold a GUID (DD-057).
+  Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
 - **`release`** –
 
   Delete the reservation when `guid` still holds it, guarded by its version.
@@ -1384,10 +1494,16 @@ Methods:
   Index the state before, or delete an entity that did not exist before (DD-046).
 - **`restore_linked`** –
 
-  Index the document's state before, or delete one that did not exist before (DD-062).
+  Put back a linked document's state before a write, or delete one the write created (DD-062).
 - **`search`** –
 
-  Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+  Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
+- **`terms`** –
+
+  A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+- **`type_counts`** –
+
+  A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1412,7 +1528,9 @@ The aliases of the entity index, the reservations, the journal and the linked do
 classifications_of_types(type_names: Collection[str] | None) -> list[StoredClassification]
 ```
 
-Refresh the classification index, then page through the instances of the types by GUID (DD-090).
+Page through the classification index for the instances of the types by GUID (DD-090).
+
+Writes refresh (ENS-11).
 
 #### classified
 
@@ -1420,7 +1538,7 @@ Refresh the classification index, then page through the instances of the types b
 classified(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
-Refresh the entity index, then page through the entities whose `classificationGuids` hold one (DD-076).
+Page through the entities whose `classificationGuids` hold one (DD-076): writes refresh (ENS-11).
 
 #### count\_linked\_type
 
@@ -1428,7 +1546,7 @@ Refresh the entity index, then page through the entities whose `classificationGu
 count_linked_type(kind: LinkedKind, type_name: str) -> int
 ```
 
-Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
+Count the kind's documents of the type (REL-10, CLS-12): writes refresh, so the count is current (ENS-11).
 
 #### count\_type
 
@@ -1436,7 +1554,7 @@ Refresh the kind's index, then count its documents of the type (REL-10, CLS-12).
 count_type(type_name: str) -> int
 ```
 
-Refresh the entity index, then count the entities of the type (DD-048).
+Count the entities of the type (DD-048): every write refreshes, so the count is current (ENS-11).
 
 #### delete\_journal
 
@@ -1444,7 +1562,7 @@ Refresh the entity index, then count the entities of the type (DD-048).
 delete_journal(write_id: str) -> None
 ```
 
-Delete the entry; one already gone is fine.
+Delete the entry, without waiting for a refresh; one already gone is fine (ENS-11, DD-247).
 
 #### get
 
@@ -1453,6 +1571,14 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 ```
 
 `mget` of the entity index: real time, as a get by id is (ENS-04).
+
+#### get\_journal
+
+```
+get_journal(write_id: str) -> JournalEntry | None
+```
+
+The entry by its write id, real time: what recovery acts on (ENS-07, DD-247).
 
 #### get\_linked
 
@@ -1468,7 +1594,15 @@ get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, Do
 journal() -> list[JournalEntry]
 ```
 
-The entries of the journal, refreshed first so none written a moment ago is missed.
+The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has passed, long after the index's own refresh (DD-247), and acts on each as `get_journal` reads it.
+
+#### linked\_type\_counts
+
+```
+linked_type_counts(kind: LinkedKind) -> dict[str, int]
+```
+
+A composite aggregation of the kind's documents by type (MET-02): writes refresh (ENS-11).
 
 #### list\_tasks
 
@@ -1476,7 +1610,15 @@ The entries of the journal, refreshed first so none written a moment ago is miss
 list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
-Refresh the task index, then page through its tasks by creation time (TSK-04, TSK-06).
+Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+
+#### of\_types
+
+```
+of_types(type_names: Sequence[str]) -> list[VersionedEntity]
+```
+
+Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
 
 #### prepare
 
@@ -1486,7 +1628,7 @@ prepare() -> None
 
 Create each index behind its alias unless it exists (ENS-01).
 
-An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay.
+An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02).
 
 #### put\_journal
 
@@ -1494,7 +1636,7 @@ An existing entity index gets the fields it lacks mapped, as `references` (EDL-1
 put_journal(entry: JournalEntry) -> None
 ```
 
-Index the entry under its write id.
+Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
 
 #### referring
 
@@ -1502,7 +1644,7 @@ Index the entry under its write id.
 referring(guids: Sequence[str]) -> list[VersionedEntity]
 ```
 
-Refresh the entity index, then page through the entities whose `references` hold a GUID (DD-057).
+Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
 
 #### release
 
@@ -1542,7 +1684,7 @@ Index the state before, or delete an entity that did not exist before (DD-046).
 restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
-Index the document's state before, or delete one that did not exist before (DD-062).
+Put back a linked document's state before a write, or delete one the write created (DD-062).
 
 #### search
 
@@ -1550,9 +1692,25 @@ Index the document's state before, or delete one that did not exist before (DD-0
 search(query: SearchQuery) -> SearchHits
 ```
 
-Refresh the entity index, then answer the query as a `bool` query of the search fields (DD-089).
+Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 
-Free text is a scored `simple_query_string` over the text sub-fields (DD-092).
+Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093).
+
+#### terms
+
+```
+terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
+```
+
+A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+
+#### type\_counts
+
+```
+type_counts() -> list[TypeCount]
+```
+
+A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 
 #### write
 
@@ -1594,15 +1752,24 @@ Methods:
 - **`get`** –
 
   The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
+- **`get_journal`** –
+
+  The journal entry of a write as of now, None when there is none.
 - **`get_linked`** –
 
   The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
 - **`journal`** –
 
-  Every journal entry.
+  Every journal entry, as the last refresh shows them.
+- **`linked_type_counts`** –
+
+  How many documents of the kind there are of each type, as of now (MET-02).
 - **`list_tasks`** –
 
   Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+- **`of_types`** –
+
+  The entities of exactly these types, in any state, as of now (EXP-03).
 - **`prepare`** –
 
   Create the indices that are missing.
@@ -1629,7 +1796,13 @@ Methods:
   Put back a linked document's state before a write, or delete one the write created (DD-062).
 - **`search`** –
 
-  The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
+  The entities of the query's page, as of now, how many match it in all, their scores, and the query's
+- **`terms`** –
+
+  Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many
+- **`type_counts`** –
+
+  How many entities there are of each type, state and shell flag, as of now (MET-02).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1682,6 +1855,14 @@ get(guids: Sequence[str]) -> dict[str, VersionedEntity]
 
 The stored entities with these GUIDs, in real time; unknown GUIDs are left out.
 
+#### get\_journal
+
+```
+get_journal(write_id: str) -> JournalEntry | None
+```
+
+The journal entry of a write as of now, None when there is none.
+
 #### get\_linked
 
 ```
@@ -1696,7 +1877,15 @@ The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are
 journal() -> list[JournalEntry]
 ```
 
-Every journal entry.
+Every journal entry, as the last refresh shows them.
+
+#### linked\_type\_counts
+
+```
+linked_type_counts(kind: LinkedKind) -> dict[str, int]
+```
+
+How many documents of the kind there are of each type, as of now (MET-02).
 
 #### list\_tasks
 
@@ -1705,6 +1894,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
 Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+
+#### of\_types
+
+```
+of_types(type_names: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities of exactly these types, in any state, as of now (EXP-03).
 
 #### prepare
 
@@ -1776,7 +1973,23 @@ Put back a linked document's state before a write, or delete one the write creat
 search(query: SearchQuery) -> SearchHits
 ```
 
-The entities of the query's page, as of now, how many match it in all, and their scores (DD-089).
+The entities of the query's page, as of now, how many match it in all, their scores, and the query's facets (DD-089, DD-093).
+
+#### terms
+
+```
+terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
+```
+
+Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many entities hold each, most first, then by word (DD-094).
+
+#### type\_counts
+
+```
+type_counts() -> list[TypeCount]
+```
+
+How many entities there are of each type, state and shell flag, as of now (MET-02).
 
 #### write
 
@@ -1978,6 +2191,45 @@ key: str
 
 ```
 write_id: str
+```
+
+### TypeCount
+
+```
+TypeCount(type_name: str, state: str, incomplete: bool, count: int)
+```
+
+How many entities of a type are in a state, shells (`isIncomplete`) or not (MET-02).
+
+Attributes:
+
+- **`count`** (`int`) –
+- **`incomplete`** (`bool`) –
+- **`state`** (`str`) –
+- **`type_name`** (`str`) –
+
+#### count
+
+```
+count: int
+```
+
+#### incomplete
+
+```
+incomplete: bool
+```
+
+#### state
+
+```
+state: str
+```
+
+#### type\_name
+
+```
+type_name: str
 ```
 
 ### VersionedClassification
@@ -2674,6 +2926,9 @@ Attributes:
 
   `addons/models` of Apache Atlas 2.4.0, unchanged (DD-032).
 - **`LOGGER`** –
+- **`M4I_MODELS_DIR`** –
+
+  The m4i data dictionary types of `m4i_atlas_core`, laid out as Atlas's models, loaded after them (DD-362).
 - **`PATCHES_FOLDER_NAME`** –
 
   The sub-directory of a models directory that holds its patches.
@@ -2700,6 +2955,14 @@ BUILTIN_MODELS_DIR = Path(__file__).parent / 'models'
 ```
 LOGGER = logging.getLogger(__name__)
 ```
+
+### M4I\_MODELS\_DIR
+
+```
+M4I_MODELS_DIR = Path(__file__).parent / 'm4i_models'
+```
+
+The m4i data dictionary types of `m4i_atlas_core`, laid out as Atlas's models, loaded after them (DD-362).
 
 ### PATCHES\_FOLDER\_NAME
 
@@ -3094,12 +3357,23 @@ Classes:
 
 Attributes:
 
+- **`INDEX_SETTINGS`** (`dict[str, Any]`) –
+
+  The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
 - **`TYPEDEF_DOCUMENT_ID`** –
 
   The id of the one document that holds every type definition.
 - **`TYPEDEF_INDEX`** –
 
   The alias of the index that holds the type definitions.
+
+### INDEX\_SETTINGS
+
+```
+INDEX_SETTINGS: dict[str, Any] = {'index.auto_expand_replicas': '0-1'}
+```
+
+The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold it, none on a single node, whose indices are then green, not yellow.
 
 ### TYPEDEF\_DOCUMENT\_ID
 
@@ -3172,6 +3446,8 @@ prepare() -> None
 ```
 
 Create the index behind the alias unless it exists; the document itself is not searched.
+
+An existing index gets the settings of a new one, as its replicas (IDX-02).
 
 #### read
 

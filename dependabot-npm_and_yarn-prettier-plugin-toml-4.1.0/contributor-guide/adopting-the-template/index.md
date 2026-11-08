@@ -47,7 +47,7 @@ Every project under `apps/`, `libs/`, `connectors/`, `dev/`, `docker/`, and `rep
 
 ### 3\. Python package names
 
-Python packages use underscored names derived from the project (`aurelius_atlas_fastapi_example`, `aurelius_atlas_sdk`, `aurelius_atlas_example`, `aurelius_kafka`, `aurelius_aws_lambda`). Renaming a package means renaming its directory, the `name` and `packages` fields in its `pyproject.toml`, and **every import** across apps, libs, and `e2e/` test modules.
+Python packages use underscored names derived from the project (`aurelius_atlas_server`, `aurelius_atlas_store_es`, `aurelius_atlas_trace`). Renaming a package means renaming its directory, the `name` and `packages` fields in its `pyproject.toml`, and **every import** across apps, libs, and `e2e/` test modules.
 
 ### 4\. Java packages and the Avro namespace
 
@@ -77,7 +77,7 @@ Each analyzed app has `sonar.organization=aureliusenterprise` and `sonar.project
 
 ### 8\. Keycloak realm and clients
 
-The development realm import (`dev/keycloak/import/master.json`) defines a client with id `aurelius`. Rename it there and in both consumers: `apps/aurelius-atlas-frontend-example/dev/config.json` and `apps/aurelius-atlas-frontend-example/e2e/config/config.json` (`clientId`).
+The development realm import (`dev/keycloak/import/master.json`) defines a client with id `aurelius`. Rename it there and in both consumers: `apps/aurelius-atlas-webapp/dev/config.json` and `apps/aurelius-atlas-webapp/e2e/config/config.json` (`clientId`).
 
 ### 9\. Documentation references
 
