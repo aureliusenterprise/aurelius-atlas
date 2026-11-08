@@ -246,6 +246,27 @@ def _sign_in(page: Page, base_url: str, settings: Settings, *, reader: bool = Fa
 
     page.locator("nav.navbar").wait_for(state="visible", timeout=30_000)
 
+    _wait_url_clean(page)
+
+
+def _wait_url_clean(page: Page) -> None:
+    """Wait until the sign-in callback's OAuth fragment leaves the address bar.
+
+    keycloak-js trades the check-sso code for tokens, then strips the
+    ``#state=...&session_state=...&iss=...&code=...`` callback fragment with
+    ``history.replaceState``. The navbar renders before that strip lands, and
+    WebKit applies it slower than Chromium/Firefox, so a test that navigates
+    off this page right away races the strip and webkit carries the fragment
+    into the next URL (the app's own replaceState is the cleaner — the fixture
+    must not hand the page over before it). The wait is a no-op once the
+    fragment is gone, so the common path pays ~0 (DD-224's settle).
+    """
+    deadline = time.monotonic() + 5
+    while time.monotonic() < deadline:
+        if "#" not in page.url:
+            return
+        page.wait_for_timeout(100)
+
 
 def _wait_signed_in(page: Page) -> bool:
     """Watch the boot: True when the app renders, False when Keycloak's form answers.
@@ -261,6 +282,7 @@ def _wait_signed_in(page: Page) -> bool:
         if "/realms/" in page.url:
             return False
         if page.locator("nav.navbar").count() > 0:
+            _wait_url_clean(page)
             return True
         page.wait_for_timeout(250)
     return False

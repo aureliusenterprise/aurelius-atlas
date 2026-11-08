@@ -31,6 +31,7 @@ from aurelius_atlas_model.typedef import (
     RelationshipCategory,
 )
 from aurelius_atlas_server_client import AtlasClient
+from cleanup import Created
 
 QUALIFIED_NAME = AtlasAttributeDef(name="qualifiedName", type_name="string", is_unique=True, is_indexable=True)
 """The unique, indexable attribute every entity type below defines."""
@@ -127,7 +128,9 @@ async def test__an_export_imports_back_into_the_catalogue(api: AtlasClient) -> N
     "aurelius_atlas_server.routes.admin.get_export_import_audit",
     rules=["REP-01", "REP-02", "REP-04", "REP-05"],
 )
-async def test__a_replicating_export_is_audited_and_marks_its_entity(client: httpx.AsyncClient) -> None:
+async def test__a_replicating_export_is_audited_and_marks_its_entity(
+    client: httpx.AsyncClient, created: Created
+) -> None:
     """The target server saved, the entity marked ``replicatedTo`` it, the export found in the audit trail."""
     run = uuid.uuid4().hex
     name, server = f"e2e_repl_{run}", f"e2e_server_{run}"
@@ -142,6 +145,7 @@ async def test__a_replicating_export_is_audited_and_marks_its_entity(client: htt
     assert (await client.post("/api/atlas/admin/export", json=request)).status_code == 200
 
     target = (await client.get(f"/api/atlas/admin/server/dc${server}")).json()
+    created.entity(target["guid"])  # the export made it, no answer lists it
     entity = (await client.get(f"/api/atlas/v2/entity/guid/{guid}")).json()["entity"]
     audits = (await client.get("/api/atlas/admin/expimp/audit", params={"serverName": server})).json()
 
