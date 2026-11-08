@@ -9,7 +9,7 @@ one.
 
 ### DD-414. The Aurelius sign-in is a stylesheet over Keycloak's own login, not the m4i templates
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Increment:** 9.5e
 - **Date:** 2026-11-07
 - **Supersedes:** none
