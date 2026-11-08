@@ -23,6 +23,10 @@ address is the issuer the other dev services trust (DD-363). At every start it i
 Their passwords are `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`
 in the dev Keycloak's `.env`, decrypted from its `.env.enc`.
 
+The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a
+stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
+one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.
+
 ## Start
 
 The secrets come from the server's `.env` and the dev Keycloak's `.env`. The store uses the dev store's

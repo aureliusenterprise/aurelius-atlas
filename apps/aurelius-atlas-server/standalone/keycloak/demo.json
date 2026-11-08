@@ -47,6 +47,7 @@
     ],
     "displayName": "Aurelius Atlas demo",
     "enabled": true,
+    "loginTheme": "aurelius",
     "loginWithEmailAllowed": false,
     "realm": "demo",
     "registrationAllowed": false,
