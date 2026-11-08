@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, input, output } from "@angular/core
 
 import { SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
-import { LINEAGE_ICON_PATHS, lineageClass } from "./lineage-shapes";
+import { ar3Icon } from "./archimate-shapes";
 import { relationVerb } from "./lineage-metamodel";
 import type { LineageEntity } from "./lineage-entities";
 
@@ -10,9 +10,9 @@ import type { LineageEntity } from "./lineage-entities";
  * The Model tab and Selection tab entity table (LDG-23, LDG-22, DD-411): the
  * legacy `model-browser-entities-table` component ported row for row. The
  * legacy table pairs a narrow Type column holding the element's archimate
- * icon with a Name column; only `lineage_dataset`/`lineage_process` have an
- * icon in the legacy's set, so any other type's cell draws nothing — as the
- * legacy's icon component did for an unknown type. A relationship row is one
+ * icon with a Name column; since 7.22e (DD-418) the glyph table is the legacy
+ * `definitions.ts` in full, so a type it does not name draws nothing — as the
+ * legacy's icon component did for a missing entry. A relationship row is one
  * cell across both columns (`colspan`, the legacy's) with three lines: the
  * source end (icon + bold name), the middle `<em>` line (the relation's
  * name, or the verb its type carries — the legacy relationship row's
@@ -154,6 +154,46 @@ import type { LineageEntity } from "./lineage-entities";
             fill: #00d1b2;
             stroke: none;
         }
+        /* LDG-35 (DD-418): the archimate glyph fills —
+           archimate-icon.component.scss's block, the icon component's own
+           black path stroke with it. The builder drops an imported constant
+           interpolated into a component's styles, so the rules ship as this
+           literal copy; the model-tab spec pins every line of the
+           AR3_ICON_FILLS table into the shipped block, so the copy cannot
+           drift. */
+        .icon path {
+            stroke: #000000;
+        }
+        .icon .business {
+            fill: #ffffb5;
+        }
+        .icon .application {
+            fill: #b5ffff;
+        }
+        .icon .technology {
+            fill: #c9e7b7;
+        }
+        .icon .physical {
+            fill: #c9e7b7;
+        }
+        .icon .motivation {
+            fill: #ccccff;
+        }
+        .icon .implementation {
+            fill: #ffe0e0;
+        }
+        .icon .strategy {
+            fill: #f4deaa;
+        }
+        .icon .and {
+            fill: #000000;
+        }
+        .icon .or {
+            fill: #ffffff;
+        }
+        .icon .location {
+            fill: #ff8c00;
+        }
     `,
 })
 export class LineageEntityTable {
@@ -180,22 +220,22 @@ export class LineageEntityTable {
     }
 
     /**
-     * The archimate-icon path of a type (DD-411): the two lineage types have
-     * one (LDG-13's shapes); an unknown type draws nothing, as the legacy's
-     * icon component did when its definitions had no entry.
+     * The archimate-icon path of a type (DD-411, LDG-35): the glyph the
+     * table names; a type it does not draw nothing, as the legacy's icon
+     * component did when its definitions had no entry.
      * @param type an entity or relation-end type
      */
     protected endIcon(type: string): string | null {
-        const cssClass = lineageClass(type);
-        return cssClass === null ? null : LINEAGE_ICON_PATHS[cssClass];
+        return ar3Icon(type)?.path ?? null;
     }
 
     /**
-     * The icon's fill class (LDG-13: blue dataset, `#00d1b2` process).
+     * The icon's fill class (LDG-35: blue dataset, `#00d1b2` process, the
+     * archimate layers).
      * @param type an entity or relation-end type
      */
     protected endClass(type: string): string {
-        return lineageClass(type) ?? "";
+        return ar3Icon(type)?.color ?? "";
     }
 
     /**

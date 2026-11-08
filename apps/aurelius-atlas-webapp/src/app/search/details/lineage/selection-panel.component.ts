@@ -3,7 +3,8 @@ import { Router } from "@angular/router";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 import { EntityCard, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
-import { LINEAGE_BADGE_ICONS, LINEAGE_ICON_PATHS, lineageBadgeClass, lineageClass } from "./lineage-shapes";
+import { ar3Icon } from "./archimate-shapes";
+import { LINEAGE_BADGE_ICONS, lineageBadgeClass, lineageClass } from "./lineage-shapes";
 import type { LineageEntity } from "./lineage-entities";
 import { mergeProperties } from "./lineage-entities";
 import type { LineageIndexes } from "./lineage-indexes";
@@ -221,6 +222,46 @@ import { LineagePropertyTable } from "./property-table.component";
             fill: #00d1b2;
             stroke: none;
         }
+        /* LDG-35 (DD-418): the archimate glyph fills —
+           archimate-icon.component.scss's block, the icon component's own
+           black path stroke with it. The builder drops an imported constant
+           interpolated into a component's styles, so the rules ship as this
+           literal copy; the selection-panel spec pins every line of the
+           AR3_ICON_FILLS table into the shipped block, so the copy cannot
+           drift. */
+        .aurelius-selection-type .icon path {
+            stroke: #000000;
+        }
+        .aurelius-selection-type .icon .business {
+            fill: #ffffb5;
+        }
+        .aurelius-selection-type .icon .application {
+            fill: #b5ffff;
+        }
+        .aurelius-selection-type .icon .technology {
+            fill: #c9e7b7;
+        }
+        .aurelius-selection-type .icon .physical {
+            fill: #c9e7b7;
+        }
+        .aurelius-selection-type .icon .motivation {
+            fill: #ccccff;
+        }
+        .aurelius-selection-type .icon .implementation {
+            fill: #ffe0e0;
+        }
+        .aurelius-selection-type .icon .strategy {
+            fill: #f4deaa;
+        }
+        .aurelius-selection-type .icon .and {
+            fill: #000000;
+        }
+        .aurelius-selection-type .icon .or {
+            fill: #ffffff;
+        }
+        .aurelius-selection-type .icon .location {
+            fill: #ff8c00;
+        }
     `,
 })
 export class LineageSelectionPanel {
@@ -269,19 +310,16 @@ export class LineageSelectionPanel {
     protected readonly viewNameHint = "The name of the view";
     protected readonly viewDescriptionHint = "The view documentation";
 
-    /** The Type row's icon (LDG-20): the two lineage types have one. */
+    /** The Type row's icon (LDG-20, LDG-35): the glyph the (since 7.22e,
+        full) definitions table names; a type it does not draws nothing. */
     protected readonly icon = computed(() => {
         const entity = this.entity();
-        if (entity === null) {
-            return null;
-        }
-        const cssClass = lineageClass(entity.type);
-        return cssClass === null ? null : LINEAGE_ICON_PATHS[cssClass];
+        return entity === null ? null : (ar3Icon(entity.type)?.path ?? null);
     });
 
     protected readonly iconClass = computed(() => {
         const entity = this.entity();
-        return entity === null ? "" : (lineageClass(entity.type) ?? "");
+        return entity === null ? "" : (ar3Icon(entity.type)?.color ?? "");
     });
 
     /** The card badge's icon (DD-405 amended): the lineage glyph for the

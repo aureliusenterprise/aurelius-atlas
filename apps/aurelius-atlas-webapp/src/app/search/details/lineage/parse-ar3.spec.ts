@@ -51,6 +51,7 @@ describe("parseAr3Model (LDG-11)", () => {
                 name: "",
                 description: "",
                 properties: [],
+                options: { accessType: "", isDirected: "" },
             },
             {
                 id: "rel-2",
@@ -60,6 +61,7 @@ describe("parseAr3Model (LDG-11)", () => {
                 name: "",
                 description: "",
                 properties: [],
+                options: { accessType: "", isDirected: "" },
             },
         ]);
     });
@@ -248,6 +250,48 @@ describe("parseAr3Model (LDG-11)", () => {
         expect(parsed.relations.get("r1")?.properties).toEqual([]);
         expect(parsed.views[0].description).toBe("What it shows");
         expect(parsed.views[0].properties).toEqual([{ name: "tag", value: "core" }]);
+    });
+
+    it("LDG-36/DD-418: each option is read only for its own relation type", () => {
+        // The legacy's parseRelation reads @accessType only for ar3_Access
+        // and @isDirected only for ar3_Association; every other relation
+        // keeps both empty even when the document carries the attributes.
+        const document = {
+            ar3_model: {
+                ar3_relationships: {
+                    ar3_relationship: [
+                        {
+                            "@identifier": "acc",
+                            "@source": "e1",
+                            "@target": "e2",
+                            "@xsi_type": "ar3_Access",
+                            "@accessType": "ReadWrite",
+                            "@isDirected": "true",
+                        },
+                        {
+                            "@identifier": "assoc",
+                            "@source": "e1",
+                            "@target": "e2",
+                            "@xsi_type": "ar3_Association",
+                            "@accessType": "Read",
+                            "@isDirected": "false",
+                        },
+                        {
+                            "@identifier": "flow",
+                            "@source": "e1",
+                            "@target": "e2",
+                            "@xsi_type": "ar3_Flow",
+                            "@accessType": "Write",
+                            "@isDirected": "true",
+                        },
+                    ],
+                },
+            },
+        };
+        const parsed = parseAr3Model(JSON.stringify(document));
+        expect(parsed.relations.get("acc")?.options).toEqual({ accessType: "ReadWrite", isDirected: "" });
+        expect(parsed.relations.get("assoc")?.options).toEqual({ accessType: "", isDirected: "false" });
+        expect(parsed.relations.get("flow")?.options).toEqual({ accessType: "", isDirected: "" });
     });
 
     it("LDG-11/DD-389: a document without ar3_model raises", () => {

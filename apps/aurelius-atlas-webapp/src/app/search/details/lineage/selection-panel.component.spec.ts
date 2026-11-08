@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
+import { AR3_ICON_FILLS } from "./archimate-shapes";
 import { buildEntitiesById, type LineageEntity } from "./lineage-entities";
 import { buildIndexes } from "./lineage-indexes";
 import { parseAr3Model } from "./parse-ar3";
@@ -148,6 +149,73 @@ describe("LineageSelectionPanel (LDG-20..22)", () => {
             throw new Error("the Type field or the card is missing");
         }
         expect(typeField.compareDocumentPosition(card) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("LDG-35/DD-418: the Type row inks an archimate glyph; its card badge stays plain", () => {
+        // The full definitions table (DD-418): a Goal now answers the goal
+        // glyph inked motivation under the Type row, while the card's badge
+        // stays plain — the legacy's iconsByType carried no archimate entry.
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({ imports: [LineageSelectionPanel] });
+        const created = TestBed.createComponent(LineageSelectionPanel);
+        const goal: LineageEntity = {
+            id: "goal",
+            kind: "element",
+            name: "Reduce Cost",
+            type: "ar3_Goal",
+            humanReadableType: "Goal",
+            description: "",
+            properties: [],
+            sourceName: "",
+            targetName: "",
+            sourceType: "",
+            targetType: "",
+        };
+        created.componentRef.setInput("entity", goal);
+        created.componentRef.setInput("metadata", []);
+        created.componentRef.setInput("indexes", INDEXES);
+        created.componentRef.setInput("entities", new Map([["goal", goal]]));
+        created.componentRef.setInput("drawnViewId", null);
+        created.detectChanges();
+        const compiled = created.nativeElement as HTMLElement;
+
+        const typePath = compiled.querySelector(".aurelius-selection-type .icon svg path");
+        expect(typePath?.getAttribute("d")).toMatch(/^M 6\.1538 8 a/);
+        expect(typePath?.classList.contains("motivation")).toBe(true);
+        expect(compiled.textContent).toContain("Goal");
+        // The badge: no glyph for an archimate type (DD-405's family stays
+        // lineage-only — ar3BadgeClass answers none).
+        expect(compiled.querySelector(".media-right .icon svg")).toBeNull();
+    });
+
+    it("LDG-35/DD-418: the shipped icon fills carry every AR3_ICON_FILLS rule", () => {
+        // The panel's styles hold a literal copy of the glyph fills (the
+        // builder drops an imported constant interpolated into a component's
+        // styles, DD-418) — this pins every declaration, so the copy cannot
+        // drift from the data the lookup answers.
+        const def = (LineageSelectionPanel as unknown as { ɵcmp: { styles?: string[] } }).ɵcmp;
+        const styles = (def.styles ?? []).join("\n");
+        // The builder stamps a _ngcontent attribute after each selector part
+        // and widens the descendant combinator, so every part may carry
+        // attributes and the parts join on any whitespace.
+        const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, (char) => `\\${char}`);
+        for (const tableRule of AR3_ICON_FILLS.match(/\.[\w.-]+\s*\{[^}]*\}/g) ?? []) {
+            const selector = `.aurelius-selection-type .icon ${tableRule.slice(0, tableRule.indexOf("{")).trim()}`;
+            const declaration = tableRule.slice(tableRule.indexOf("{") + 1, tableRule.lastIndexOf("}")).trim();
+            const property = declaration.slice(0, declaration.indexOf(":")).trim();
+            const value = declaration
+                .slice(declaration.indexOf(":") + 1)
+                .replace(/;\s*$/, "")
+                .trim();
+            const selectorPattern = selector
+                .split(/\s+/)
+                .map((part) => escape(part) + "(?:\\[[^\\]]*\\])?")
+                .join("\\s+");
+            const pattern = new RegExp(
+                `${selectorPattern}[^{]*\\{[^}]*${escape(property)}\\s*:\\s*${escape(value)}\\b`,
+            );
+            expect(styles, `the style block carries ${selector} { ${declaration} }`).toMatch(pattern);
+        }
     });
 
     it("DD-414: the card's badge carries the lineage glyph in the type's ink", () => {

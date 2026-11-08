@@ -22,6 +22,11 @@
  * {@link parseAr3Model} throws on a document without `ar3_model` (DD-389):
  * a producer that changes its contract fails loudly here, and the box renders
  * the failure as LDG-10's empty state.
+ *
+ * 7.22e added the relation options (LDG-36): an `ar3_Access` carries an
+ * `@accessType` and an `ar3_Association` an `@isDirected`, and the relation
+ * style needs both. Every other archimate relation types on the document as
+ * it stands (DD-418).
  */
 
 /** A name/value property of a concept (`ar3_property`: the `get-properties.ts` map). */
@@ -62,6 +67,21 @@ export interface Ar3Relation {
     readonly description: string;
     /** The relation's properties (`ar3_properties.ar3_property[]`), in order (LDG-21). */
     readonly properties: readonly Ar3Property[];
+    /**
+     * The relation's styling options (LDG-36, the legacy's `options`):
+     * `accessType` is read only for `ar3_Access` and `isDirected` only for
+     * `ar3_Association` (the legacy's two `if` blocks in `parseRelation`),
+     * each empty when the document carries no value for it.
+     */
+    readonly options: Ar3RelationOptions;
+}
+
+/** The two attributes an archimate relation style reads (LDG-36). */
+export interface Ar3RelationOptions {
+    /** The `@accessType` attribute (`Read`, `Write`, or `ReadWrite`). */
+    readonly accessType: string;
+    /** The `@isDirected` attribute, kept as its raw string. */
+    readonly isDirected: string;
 }
 
 /** One bendpoint of a view connection — a waypoint in model coordinates. */
@@ -181,15 +201,24 @@ export function parseAr3Model(model: string): Ar3Model {
         })),
     );
     const relations = indexById(
-        rows(ar3, "ar3_relationships", "ar3_relationship").map((row) => ({
-            id: text(row["@identifier"]),
-            source: text(row["@source"]),
-            target: text(row["@target"]),
-            type: text(row["@xsi_type"]),
-            name: entryName(row["ar3_name"]),
-            description: entryText(row["ar3_documentation"]),
-            properties: properties(row),
-        })),
+        rows(ar3, "ar3_relationships", "ar3_relationship").map((row) => {
+            const type = text(row["@xsi_type"]);
+            return {
+                id: text(row["@identifier"]),
+                source: text(row["@source"]),
+                target: text(row["@target"]),
+                type,
+                name: entryName(row["ar3_name"]),
+                description: entryText(row["ar3_documentation"]),
+                properties: properties(row),
+                // The legacy's two `if` blocks (parse-relation.ts): each
+                // attribute is read only for its own relation type.
+                options: {
+                    accessType: type === "ar3_Access" ? text(row["@accessType"]) : "",
+                    isDirected: type === "ar3_Association" ? text(row["@isDirected"]) : "",
+                },
+            };
+        }),
     );
     const views = rows(ar3, "ar3_views", "ar3_diagrams")
         .flatMap((diagrams) => rowsOf(diagrams, "ar3_view"))
