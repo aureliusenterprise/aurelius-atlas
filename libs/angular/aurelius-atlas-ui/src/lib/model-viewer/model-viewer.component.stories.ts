@@ -2,6 +2,7 @@ import { computed, signal } from "@angular/core";
 import type { Meta, StoryObj } from "@storybook/angular";
 import { expect, waitFor } from "storybook/test";
 
+import { ColorSquare } from "../color-square/color-square.component";
 import { ModelViewer } from "./model-viewer.component";
 import { AR3_ICON_TYPES, NO_RELATION_OPTIONS } from "./archimate-shapes";
 import { CATEGORY_PALETTE, deriveCategoryLegend } from "./category-colors";
@@ -521,14 +522,14 @@ export const CategoryColorsCustom: Story = {
 /**
  * The playground: the colour view with live pickers, so a reviewer can
  * repaint a category and watch the canvas. Each legend row under the canvas
- * holds a native colour input — the same control the app's View tab ships —
- * and picking one writes an override, so the whole category repaints and
- * the legend row follows. That is the join the app drives through the
- * shared state (UIC-31, DD-420), here with the categories a host would
- * supply. The picks are signals — the story host re-renders on a write the
- * way the app's signal write repaints the drawer — and a story switch or a
- * page reload resets them to the palette, as the app's picks die with the
- * page (DD-420).
+ * holds the lib's colour square (UIC-32) — the same control the app's View
+ * tab ships — and picking one writes an override, so the whole category
+ * repaints and the legend row follows. That is the join the app drives
+ * through the shared state (UIC-31, DD-420), here with the categories a
+ * host would supply. The picks are signals — the story host re-renders on a
+ * write the way the app's signal write repaints the drawer — and a story
+ * switch or a page reload resets them to the palette, as the app's picks
+ * die with the page (DD-420).
  */
 const playground = {
     render: () => {
@@ -536,18 +537,20 @@ const playground = {
         // first so the palette answers, as the app's state does.
         const categoryColors = signal<Record<string, string>>({});
         return {
+            // The legend rows draw the lib's square — a render imports it
+            // through moduleMetadata, this Storybook's rule for stories
+            // with their own template.
+            moduleMetadata: { imports: [ColorSquare] },
             props: {
                 ...heatChain,
                 height: 320,
                 categories: heatCategories,
                 categoryColors,
-                // One picked swatch (UIC-31): write the override, the
-                // canvas and the legend repaint through the join.
-                pick: (category: string, event: Event) =>
-                    categoryColors.update((current) => ({
-                        ...current,
-                        [category]: (event.target as HTMLInputElement).value,
-                    })),
+                // One picked square (UIC-31, UIC-32): the square emits the
+                // hex; write the override, the canvas and the legend
+                // repaint through the join.
+                pick: (category: string, color: string) =>
+                    categoryColors.update((current) => ({ ...current, [category]: color })),
                 // The legend rows: each category with its current colour,
                 // the same join the canvas and the View tab read. Named
                 // legendRows, not legend — a story prop lands on the host
@@ -581,7 +584,11 @@ const playground = {
                 <tr>
                     <td>{{ row.category }}</td>
                     <td>
-                        <input type="color" [value]="row.color" (input)="pick(row.category, $event)" />
+                        <aurelius-atlas-ui-color-square
+                            [color]="row.color"
+                            [label]="row.category"
+                            (colorPicked)="pick(row.category, $event)"
+                        />
                         {{ row.color }}
                     </td>
                 </tr>
@@ -615,9 +622,9 @@ const playground = {
             rgb(silver),
             rgb(gold),
         ]);
-        // Drive the "gold" picker: write a colour into the row's input and
-        // fire its event, as a picked swatch does. Both gold nodes take the
-        // new colour, the other categories keep theirs, and the legend row
+        // Drive the "gold" square: write a colour into its input and fire
+        // the event, as a picked swatch does. Both gold nodes take the new
+        // colour, the other categories keep theirs, and the legend row
         // follows. The repaint rides the re-render, so wait for it.
         const goldSwatch = [...canvas.querySelectorAll<HTMLInputElement>("tbody input[type='color']")][2];
         goldSwatch.value = "#123456";

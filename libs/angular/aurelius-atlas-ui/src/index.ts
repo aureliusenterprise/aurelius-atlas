@@ -6,6 +6,7 @@ export * from "./lib/badge/badge.component";
 export * from "./lib/breadcrumbs/breadcrumbs.component";
 export * from "./lib/card/card.component";
 export * from "./lib/classification-chip/classification-chip.component";
+export * from "./lib/color-square/color-square.component";
 export * from "./lib/dark-mode/dark-mode.component";
 export * from "./lib/dark-mode/dark-mode.service";
 export * from "./lib/details-card-section/details-card-section.component";

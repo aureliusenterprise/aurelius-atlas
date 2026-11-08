@@ -8,9 +8,10 @@
 > repository: check the archive's topmost number and the sibling `specs/*/design.md`
 > files for the largest `DD-NNN` in use before taking the next.
 
-| Id      | Title                                                           |
-| ------- | --------------------------------------------------------------- |
-| DD-420. | The colour view is plain data, a pure join, and a native picker |
+| Id      | Title                                                                         |
+| ------- | ----------------------------------------------------------------------------- |
+| DD-420. | The colour view is plain data, a pure join, and a native picker               |
+| DD-421. | The colour picker becomes the lib's colour square, still on the native engine |
 
 ## Decisions
 
@@ -78,3 +79,43 @@ tab reads exactly as 7.22c shipped it, which its spec pins. The
 violation report writes, exactly where the legacy's three `@Input`s stood.
 Picks for a category a later document lacks are inert (the legend simply has
 no such row), so the override map never needs cleaning.
+
+### DD-421. The colour picker becomes the lib's colour square, still on the native engine
+
+- **Status:** Proposed
+- **Increment:** 7.22g
+- **Date:** 2026-11-08
+
+**Decision.** The picker is a shared dumb component, `ColorSquare` in
+`aurelius-atlas-ui` (UIC-32): `color` and `editable` inputs, a `label` for
+the accessible name, a `colorPicked` hex output. Its engine stays the
+native `<input type="color">` styled flat (DD-420's deviation stands —
+`ngx-color-picker` stays out); `editable=false` draws the bare square with
+no picker, the legacy's `enableColorPicker` off-state. The View tab's
+legend row and the Playground story both use it, and the View tab's own
+`.legend-swatch` CSS retires.
+
+**Reason.** The legacy shipped exactly this component
+(`ColorSquareComponent` in its `libs/components`, the clickable
+`color-box`): the port is parity, not a new abstraction. And a second call
+site arrived in one day — the View tab's square and the Playground story
+each hand-rolled the same 24px flat native input, which is the lib's own
+"every component ships a story" rule asking to be obeyed. A future
+heatmap — the producer this whole increment waits for — is the third
+consumer for free.
+
+**Alternatives.** (1) Keep the raw `<input type="color">` at each call
+site. It loses: the duplication is already real, and the legacy's square
+mode (a colour shown, not set) has no place to live on a raw input. (2)
+Port `ngx-color-picker` as the legacy's popover engine. It loses for the
+same reason DD-420 gave — an Angular 12-era dependency for a job the
+platform does natively — and a shared component removes the last argument
+the popover had (a place to put a hex field): the square owns the seam, so
+a richer engine is a swap inside one component later, not a rewrite at
+every call site.
+
+**Consequences.** The legend cell of the View tab and the Playground's
+legend rows read as one control; the square's look lives once, in the
+lib's stylesheet. The webapp's View-tab specs keep passing untouched —
+they query the `input[type='color']` inside the row, and it is still
+there, one level deeper. The component carries its own spec and stories.

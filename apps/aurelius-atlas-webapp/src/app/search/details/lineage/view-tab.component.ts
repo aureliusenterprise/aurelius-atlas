@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from "@an
 import { deriveCategoryLegend, type CategoryMap } from "aurelius-atlas-ui";
 import type { LineageModelMetadata } from "aurelius-atlas-data-access";
 
-import { SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
+import { ColorSquare, SortableTable, TableColumn, TableRow } from "aurelius-atlas-ui";
 
 import type { LineageEntity } from "./lineage-entities";
 import { mergeProperties } from "./lineage-entities";
@@ -28,7 +28,7 @@ import { LineagePropertyTable } from "./property-table.component";
 @Component({
     selector: "aurelius-atlas-webapp-lineage-view-tab",
     changeDetection: ChangeDetectionStrategy.OnPush,
-    imports: [LineagePropertyTable, SortableTable, TableColumn, TableRow],
+    imports: [ColorSquare, LineagePropertyTable, SortableTable, TableColumn, TableRow],
     template: `
         @if (view(); as drawn) {
             @if (drawn.name) {
@@ -51,9 +51,10 @@ import { LineagePropertyTable } from "./property-table.component";
                 </div>
             }
             <!-- UIC-31: the legacy's legend table, rendered only when a
-                 colour view exists (the legacy's *ngIf over the legend). The
-                 picker is a native colour input styled as the legacy's
-                 square (DD-420's zero-dependency deviation). -->
+                 colour view exists (the legacy's *ngIf over the legend).
+                 Each colour is the lib's clickable square (UIC-32) — the
+                 legacy's ColorSquareComponent, native-input engine per
+                 DD-421. -->
             @let legend = legendRows();
             @if (legend.length > 0) {
                 <div class="field">
@@ -68,12 +69,10 @@ import { LineagePropertyTable } from "./property-table.component";
                         <ng-template aurelius-atlas-ui-table-row let-row>
                             <th scope="row" class="truncate" [title]="row.category">{{ row.category }}</th>
                             <td class="legend-color">
-                                <input
-                                    type="color"
-                                    class="legend-swatch"
-                                    [value]="row.color"
-                                    [attr.aria-label]="row.category"
-                                    (input)="onPick(row.category, $event)"
+                                <aurelius-atlas-ui-color-square
+                                    [color]="row.color"
+                                    [label]="row.category"
+                                    (colorPicked)="onPick(row.category, $event)"
                                 />
                             </td>
                         </ng-template>
@@ -91,19 +90,10 @@ import { LineagePropertyTable } from "./property-table.component";
         }
         .legend-color {
             /* The legacy's view.component.scss: the square centred in its
-               narrow cell. */
+               narrow cell. The square itself is the lib's
+               aurelius-atlas-ui-color-square (UIC-32, DD-421). */
             text-align: center;
             vertical-align: middle;
-        }
-        .legend-swatch {
-            /* The legacy's color-square look (a flat square, no chrome), on
-               the native input. */
-            inline-size: 24px;
-            block-size: 24px;
-            padding: 0;
-            border: 1px solid var(--bulma-grey-light, #dbdbdb);
-            background: none;
-            cursor: pointer;
         }
     `,
 })
@@ -144,9 +134,8 @@ export class LineageViewTab {
     protected readonly categoryHint = "The name of the category";
     protected readonly colorHint = "Concepts in the view with this color belong to the corresponding category";
 
-    /** A swatch changed (UIC-31): hand the picked hex to the caller. */
-    protected onPick(category: string, event: Event): void {
-        const value = (event.target as HTMLInputElement).value;
-        this.colorPicked.emit({ category, color: value });
+    /** A square's picker answered (UIC-31): hand the picked hex to the caller. */
+    protected onPick(category: string, color: string): void {
+        this.colorPicked.emit({ category, color });
     }
 }

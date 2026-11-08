@@ -2,7 +2,8 @@
 
 - **Status:** proposed
 - **Pull request:** —
-- **Records:** UIC-30, UIC-31; DD-420. Amends nothing: UIC-29's canvas keeps
+- **Records:** UIC-30, UIC-31, UIC-32; DD-420, DD-421. Amends nothing:
+  UIC-29's canvas keeps
   its words and gains two inputs, and the colour-by deferral rows of 7.22b
   and 7.22c are rewritten by this slice (their tables' only rows that change
   — see Deviations). Relies on UIC-29 and DD-419 (7.22f, the shared canvas),
@@ -50,10 +51,12 @@ Delivered here:
   through the shared state (the legacy's `updateLegendColor`).
 - The two signals and the pick seam on `LineageModelState` (the app's single
   owner, DD-415), and the shell's pass-through to the canvas.
+- The `ColorSquare` component in `aurelius-atlas-ui` (UIC-32, DD-421): the
+  legacy's clickable colour square, its picker on the native engine.
 - The stories: a bucketed chain with palette colours, one with a picked
-  override, and a playground whose legend rows hold native colour pickers —
-  the same input the View tab ships — so a reviewer repaints a category and
-  watches the canvas.
+  override, and a playground whose legend rows hold the lib's colour
+  squares — the same square the View tab ships — so a reviewer repaints a
+  category and watches the canvas.
 
 Explicitly not delivered here:
 
@@ -72,7 +75,8 @@ Two new rules.
 | Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | UIC-30 | The `ModelViewer` canvas takes two more dumb inputs (DD-420): `categories` (concept id → category name, the legacy's `bucketMapping`) and `categoryColors` (category name → hex, the legend edits), both null by default — with no `categories` the drawing is unchanged, which is the state every legacy page except model-compare lived in. A `deriveCategoryLegend(categories, categoryColors)` join answers each distinct category, in first-seen order, with its picked colour or the next colour of the twelve-colour literal palette (the `google-palette` deviation, DD-420). A node fills its category's legend colour instead of its class fill, and a connection strokes it instead of black — the legacy's `colorMapping ?? class` precedence, and its view-id-first, concept-second lookup chain on both (`modelview-node.service.ts`, `modelview-connection.service.ts`). The markers and dashes (LDG-36) and the state strokes (LDG-17/LDG-18) are untouched. The join is exported so the drawer renders the same legend the canvas paints with. |
-| UIC-31 | The View tab (LDG-24, widened) shows the legacy's Color legend table — the `modelview2.modelBrowser.view.colorLegend` label over a Category/Color table, one row per legend entry — only when a colour view exists (the legacy rendered it under its `legend$` guard). Each row's colour is a picker (the legacy's `ColorSquareComponent`, ported as a native colour input — DD-420's zero-dependency deviation); picking emits `{category, color}` (the legacy's `updateLegendColor`). The app wires it: `LineageModelState` owns the `categories` (null until a host supplies them, the legacy's host-fed posture) and the picked `categoryColors`, the drawer writes the pick, the viewer shell passes both maps to the canvas, and every element in the category repaints while the panel stays open. The picks are session-only.                                                                                                                                                                                                                           |
+| UIC-31 | The View tab (LDG-24, widened) shows the legacy's Color legend table — the `modelview2.modelBrowser.view.colorLegend` label over a Category/Color table, one row per legend entry — only when a colour view exists (the legacy rendered it under its `legend$` guard). Each row's colour is a picker (the lib's `ColorSquare`, UIC-32 — the legacy's `ColorSquareComponent`); picking emits `{category, color}` (the legacy's `updateLegendColor`). The app wires it: `LineageModelState` owns the `categories` (null until a host supplies them, the legacy's host-fed posture) and the picked `categoryColors`, the drawer writes the pick, the viewer shell passes both maps to the canvas, and every element in the category repaints while the panel stays open. The picks are session-only.                                                                                                                                                                                                                                                               |
+| UIC-32 | `ColorSquare` is a dumb `aurelius-atlas-ui` component (DD-421): `color` and `editable` inputs, a `label` for the accessible name, and a `colorPicked` hex output. Its engine is the native `<input type="color">` styled flat (DD-420's deviation stands); `editable=false` draws the bare square with no picker, the legacy's `enableColorPicker` off-state. It owns no service and no state — the caller owns the colour, as everywhere in the lib. The View tab's legend row and the Playground story are its call sites.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 
 ## Aurelius origin
 
@@ -82,10 +86,11 @@ two reactive joins), `shapes/node/modelview-node.service.ts` and
 `colorMapping ?? inline ?? class` precedence and the view-id/concept lookup
 chain), `model-browser/view/view.component.{ts,html}` (the legend table, its
 config, and `updateLegendColor`), `libs/components/src/lib/color-square/`
-(the picker), and the `colorLegend` dictionary leaf. The stores collapse into
-two plain signals and one pure function (DD-420); the node/connection
-precedence and lookup chain are kept as written; the picker is the native
-input. The legacy's dead parts are not ported because they were dead: the
+(the picker, ported as `ColorSquare` — DD-421), and the `colorLegend`
+dictionary leaf. The stores collapse into two plain signals and one pure
+function (DD-420); the node/connection precedence and lookup chain are kept
+as written; the picker's engine is the native input. The legacy's dead
+parts are not ported because they were dead: the
 selection tab's `selectedEntityColor$` and its `updateLegendColor` copy,
 `getBucketById`, the `isCreating*` flags, and the picker's
 `enableColorPicker`/`position` inputs had no live call sites.
@@ -100,8 +105,10 @@ renderer, each deliberate:
   the list is that family's classic twelve. A thirteenth category wraps to
   the first colour — the legacy generated more.
 - The picker is a native `<input type="color">` styled as the legacy square,
-  not `ngx-color-picker` (DD-420). Same job (pick a hex), zero dependency;
-  the browser's own picker replaces the vendored popup.
+  not `ngx-color-picker` (DD-420, and inside `ColorSquare` since DD-421).
+  Same job (pick a hex), zero dependency; the browser's own picker replaces
+  the vendored popup. The square itself is the shared component the legacy's
+  `ColorSquareComponent` was (UIC-32).
 - The three reactive stores become two signals plus `deriveCategoryLegend`
   (DD-420). The canvas stays dumb (UIC-29's rule): the caller owns the data,
   the join runs wherever it is read. The legacy's known pick-wiping fragility
@@ -128,9 +135,14 @@ renderer, each deliberate:
       node fills and the connection strokes with their legend colours, a
       picked colour repaints its whole category (UIC-31's canvas half), and
       the view-id/concept chain holds on the DOM.
+    - `color-square.component.spec.ts` (new) — the square (UIC-32): the
+      native input drawn with the current colour, a pick emitting its hex,
+      the read-only mode drawing a bare square and emitting nothing, the
+      caller's label reaching the accessible name. Stories: Default and
+      ReadOnly.
     - The stories: CategoryColors (three buckets, palette colours pinned in
       `play`), CategoryColorsCustom (a picked override), and Playground
-      (the join pinned in `play`, then the "gold" row's picker driven: both
+      (the join pinned in `play`, then the "gold" row's square driven: both
       gold nodes take the picked colour and the row follows, the other
       categories keep theirs).
 - Vitest (webapp, `aurelius-atlas-webapp`):
