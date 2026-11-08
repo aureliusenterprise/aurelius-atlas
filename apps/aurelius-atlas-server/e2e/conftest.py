@@ -12,6 +12,7 @@ import httpx2 as httpx
 import pytest
 import pytest_asyncio
 from aurelius_atlas_server_client import AtlasClient
+from cleanup import Created, remove, warn_left
 from testcontainers.compose import DockerCompose
 
 PROJECT = Path(__file__).resolve().parents[1]
@@ -103,11 +104,31 @@ def reader_token() -> UserToken:
     return UserToken("aurelius-reader", "DEV_USER_READER_PASSWORD")
 
 
-@pytest_asyncio.fixture(loop_scope="function")
-async def client(server: str, user_token: UserToken) -> AsyncIterator[httpx.AsyncClient]:
-    """A client for the running server over HTTPS as the dev writer, verifying it against the dev CA."""
-    async with httpx.AsyncClient(
+@pytest.fixture(scope="session")
+def created(server: str, user_token: UserToken) -> Iterator[Created]:
+    """What the session's requests create on the dev store; deleted and purged at its end (ECU-01..04, DD-368).
+
+    The writer's clients record into it. What cannot be removed is reported as a warning, not a failure.
+    """
+    found = Created()
+    yield found
+    with httpx.Client(
         base_url=server, verify=ssl.create_default_context(cafile=CA_FILE), timeout=TIMEOUT, auth=Bearer(user_token)
+    ) as client:
+        warn_left(remove(client, found))
+
+
+@pytest_asyncio.fixture(loop_scope="function")
+async def client(server: str, user_token: UserToken, created: Created) -> AsyncIterator[httpx.AsyncClient]:
+    """A client for the running server over HTTPS as the dev writer, verifying it against the dev CA; what it
+    creates is removed at the session's end.
+    """  # noqa: D205 - one sentence
+    async with httpx.AsyncClient(
+        base_url=server,
+        verify=ssl.create_default_context(cafile=CA_FILE),
+        timeout=TIMEOUT,
+        auth=Bearer(user_token),
+        event_hooks={"response": [created.record]},
     ) as client:
         yield client
 
@@ -126,12 +147,15 @@ async def anonymous(server: str) -> AsyncIterator[httpx.AsyncClient]:
 # opened on — aclose then schedules on a closed loop ("Event loop is closed").
 # On the function loop, the client, its requests, and aclose share one loop.
 @pytest_asyncio.fixture(loop_scope="function")
-async def api(server: str, user_token: UserToken) -> AsyncIterator[AtlasClient]:
+async def api(server: str, user_token: UserToken, created: Created) -> AsyncIterator[AtlasClient]:
     """The typed Atlas client for the running server over HTTPS (CL-11), as the dev writer (CL-03, AUT-02).
 
-    The fixture builds the httpx pool and closes it (CL-02).
+    The fixture builds the httpx pool and closes it (CL-02); what it creates is removed at the session's end.
     """
     async with httpx.AsyncClient(
-        base_url=server, verify=ssl.create_default_context(cafile=CA_FILE), timeout=TIMEOUT
+        base_url=server,
+        verify=ssl.create_default_context(cafile=CA_FILE),
+        timeout=TIMEOUT,
+        event_hooks={"response": [created.record]},
     ) as http:
         yield AtlasClient(http, user_token)

@@ -2,7 +2,8 @@ name: aurelius-atlas-dev-observability
 
 services:
     otel-collector:
-        image: dhi.io/opentelemetry-collector:0-debian13-contrib
+        # Pinned to 0.164: 0.165.0 refuses the prometheus exporter's send_native_histogram key.
+        image: dhi.io/opentelemetry-collector:0.164-debian13-contrib
         # Memory caps (CI capacity): the e2e fan-out runs this stack inside
         # the CI runner's dind daemon on a shared node; generous for dev.
         mem_limit: 512m

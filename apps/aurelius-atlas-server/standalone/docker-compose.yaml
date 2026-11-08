@@ -1,14 +1,64 @@
-# The server alone, with the Atlas dashboards, behind one nginx entry (see README.md):
+# The server with the Atlas dashboards and the Aurelius Atlas webapp, behind one nginx entry (see README.md):
+#   https://localhost:9000/         the webapp
 #   https://localhost:9000/atlas2/  the server and its dashboards
-#   https://localhost:9000/auth/    the stack's own Keycloak, with the dev realm
-# The store is the dev Elasticsearch; secrets come from the server's and the dev Keycloak's .env.
+#   https://localhost:9000/auth/    the stack's own Keycloak, with the demo realm and its users
+# The store is the stack's own Elasticsearch, apart from the dev store the e2e suites write to; `down -v`
+# empties it. Secrets, the demo users' passwords among them, come from the server's and the dev Keycloak's .env.
 # SAMPLE_ZIP names an Atlas export ZIP in data/atlas-sample/ to import once the server is up;
 # empty, or a name no file has, imports nothing.
 name: aurelius-atlas-standalone
 
 x-certs: &certs ../certs:/certs:ro
+x-elasticsearch-image: &elasticsearch-image dhi.io/elasticsearch:9.5-debian13
+x-webapp-image: &webapp-image ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
 
 services:
+    # The image has no data directory, so Docker creates the volumes' mount points owned by root; this one-shot
+    # step hands them to Elasticsearch's uid 1000, as in dev/elasticsearch.
+    elasticsearch-volume-init:
+        image: *elasticsearch-image
+        user: "0"
+        entrypoint: ["chown", "1000:1000", "/usr/share/elasticsearch/data", "/usr/share/elasticsearch/snapshots"]
+        restart: "no"
+        volumes:
+            - elasticsearch-data:/usr/share/elasticsearch/data
+            - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
+
+    # The stack's store: dev/elasticsearch's configuration and certificate, its own volumes, no published port.
+    elasticsearch:
+        image: *elasticsearch-image
+        mem_limit: 2g
+        depends_on:
+            elasticsearch-volume-init:
+                condition: service_completed_successfully
+        environment:
+            ES_JAVA_OPTS: -Xms1g -Xmx1g -javaagent:/agent/coredump-noop.jar
+            # The server's password is the elastic user's here, so the two cannot differ.
+            ELASTIC_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "printf 'GET /_cluster/health HTTP/1.1\\r\\nHost: localhost\\r\\nAuthorization: Basic %s\\r\\nConnection: close\\r\\n\\r\\n' \"$$(printf 'elastic:%s' \"$$ELASTIC_PASSWORD\" | base64 -w0)\" | timeout 5 openssl s_client -quiet -verify_return_error -CAfile config/tls/ca.pem -connect localhost:9200 2>/dev/null | grep -qE '\"status\":\"(green|yellow)\"'",
+                ]
+            interval: 10s
+            timeout: 10s
+            retries: 30
+            start_period: 30s
+        volumes:
+            - elasticsearch-data:/usr/share/elasticsearch/data
+            - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
+            - ../../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
+            - ../../../dev/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+            - ../../../dev/elasticsearch/certs:/usr/share/elasticsearch/config/tls:ro
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+            nofile:
+                soft: 65536
+                hard: 65536
+
     proxy:
         image: dhi.io/nginx:1.30-alpine3.24
         ports:
@@ -16,10 +66,6 @@ services:
         volumes:
             - *certs
             - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-        networks:
-            default: {}
-            # The server, in this container's network, reaches the store as `elasticsearch` on it.
-            aurelius-atlas-dev-elasticsearch-network: {}
         depends_on:
             - keycloak
 
@@ -38,10 +84,10 @@ services:
             KC_HEALTH_ENABLED: "true"
             KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
             KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
-            # The dev realm's placeholders.
-            DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
-            DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
-            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The demo realm's placeholders (keycloak/demo.json).
+            DEMO_USER_ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:?}
+            DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:?}
+            DEMO_USER_SCIENTIST_PASSWORD: ${DEMO_USER_SCIENTIST_PASSWORD:?}
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             JAVA_OPTS: -Xms256m -Xmx512m -Dkeycloak.migration.replace-placeholders=true
         healthcheck:
@@ -55,7 +101,9 @@ services:
             retries: 30
             start_period: 120s
         volumes:
-            - ../../../dev/keycloak/import:/opt/keycloak/data/import:ro
+            - ./keycloak:/opt/keycloak/data/import:ro
+            # The demo realm's login theme (keycloak/demo.json's loginTheme).
+            - ./keycloak-themes/aurelius:/opt/keycloak/themes/aurelius:ro
 
     aurelius-atlas-server:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
@@ -63,6 +111,8 @@ services:
         network_mode: service:proxy
         depends_on:
             keycloak:
+                condition: service_healthy
+            elasticsearch:
                 condition: service_healthy
         environment:
             AURELIUS_ATLAS_SERVER_ROOT_PATH: /atlas2
@@ -77,13 +127,40 @@ services:
             # Propagation by the task worker after the request, as Atlas's default; false propagates in it (DD-081).
             AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_SERVER_AUTH_REALM: demo
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
             AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
         volumes:
             - *certs
 
-    # One shot: waits for the server, signs in as the dev writer and posts SAMPLE_ZIP to admin/import, all
+    # One shot: fills the webapp image's nginx template for this stack into a volume, as the chart's init
+    # container does (DD-262); a placeholder left fails it.
+    webapp-config:
+        image: *webapp-image
+        user: "0"
+        entrypoint: ["/bin/sh", "/standalone/resolve-nginx.sh"]
+        restart: "no"
+        volumes:
+            - ./webapp/resolve-nginx.sh:/standalone/resolve-nginx.sh:ro
+            - webapp-nginx-conf:/out
+
+    # The webapp's own nginx serves only the webapp, in a container of its own: the proxy in front routes to
+    # it by name and sends /api/ to the server itself. It signs in to the demo realm through the public client
+    # aurelius.
+    aurelius-atlas-webapp:
+        image: *webapp-image
+        depends_on:
+            webapp-config:
+                condition: service_completed_successfully
+            aurelius-atlas-server:
+                condition: service_started
+        volumes:
+            - webapp-nginx-conf:/etc/nginx/conf.d:ro
+            - ./webapp/config.json:/usr/share/nginx/html/config.json:ro
+            - ../../aurelius-atlas-webapp/certs:/certs:ro
+
+    # One shot: waits for the server, signs in as the demo user atlas and posts SAMPLE_ZIP to admin/import, all
     # through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
     sample-import:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
@@ -94,9 +171,9 @@ services:
         restart: "no"
         environment:
             ATLAS_URL: https://localhost:9000/atlas2
-            TOKEN_URL: https://localhost:9000/auth/realms/master/protocol/openid-connect/token
-            ATLAS_USERNAME: aurelius-writer
-            ATLAS_PASSWORD: ${DEV_USER_WRITER_PASSWORD:-}
+            TOKEN_URL: https://localhost:9000/auth/realms/demo/protocol/openid-connect/token
+            ATLAS_USERNAME: atlas
+            ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:-}
             CA_FILE: /certs/ca.pem
             SAMPLE_DIR: /sample
             SAMPLE_ZIP: ${SAMPLE_ZIP:-}
@@ -107,6 +184,7 @@ services:
             - ./import_sample.py:/standalone/import_sample.py:ro
             - ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
 
-networks:
-    aurelius-atlas-dev-elasticsearch-network:
-        external: true
+volumes:
+    elasticsearch-data:
+    elasticsearch-snapshots:
+    webapp-nginx-conf:
