@@ -11,6 +11,8 @@ sed \
     -e 's|${AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME}|aurelius-atlas-server|g' \
     -e 's|${AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER}|127.0.0.11|g' \
     -e 's|${AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS}||g' \
+    -e 's|${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM}|https://aurelius-atlas-lineage-model:21002|g' \
+    -e 's|${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME}|aurelius-atlas-lineage-model|g' \
     -e 's|${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM}|https://otel-collector:4318|g' \
     -e 's|${AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME}|otel-collector|g' \
     -e 's|${AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT}|127.0.0.1:4317|g' \
