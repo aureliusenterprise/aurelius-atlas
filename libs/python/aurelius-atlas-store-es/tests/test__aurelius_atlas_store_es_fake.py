@@ -365,3 +365,57 @@ async def test__composite_aggregations_page_through_the_key_combinations() -> No
         "after_key": {"type": "y", "flag": None},
     }
     assert last["aggregations"]["c"] == {"buckets": []}
+
+
+async def test__an_index_is_read_by_its_alias_with_its_settings_and_mappings() -> None:
+    """``indices.get`` of an alias answers the index behind it, as created; its ``body`` is the response."""
+    fake = FakeClient()
+    mappings = {"properties": {"guid": {"type": "keyword"}}}
+    await fake.indices.create(
+        index="docs-000001", aliases={"docs": {}}, mappings=mappings, settings={"index.mapping.x": False}
+    )
+    await fake.indices.create(index="other-000001", aliases={"other": {}})
+
+    by_alias = await fake.indices.get(index="docs")
+    by_pattern = await fake.indices.get(index="*-000001")
+
+    assert by_alias.body == {
+        "docs-000001": {"aliases": {"docs": {}}, "settings": {"index.mapping.x": False}, "mappings": mappings}
+    }
+    assert sorted(by_pattern) == ["docs-000001", "other-000001"]
+
+
+async def test__a_reindex_copies_every_document_with_new_versions() -> None:
+    """``reindex`` writes each source as stored into the destination, ``op_type`` honoured."""
+    fake = FakeClient()
+    await fake.index(index="old", id="a", document={"size": 1})
+    await fake.index(index="old", id="b", document={"size": 2})
+    await fake.index(index="new", id="b", document={"size": 9})
+
+    created = await fake.reindex(source={"index": "old"}, dest={"index": "fresh"}, refresh=True)
+
+    assert created == {"total": 2, "created": 2, "failures": []}
+    assert (await fake.get(index="fresh", id="a"))["_source"] == {"size": 1}
+    assert (await fake.get(index="fresh", id="a"))["_seq_no"] > (await fake.get(index="old", id="b"))["_seq_no"]
+    with pytest.raises(ConflictError):
+        await fake.reindex(source={"index": "old"}, dest={"index": "new", "op_type": "create"})
+
+
+async def test__aliases_move_in_one_change_and_go_with_a_dropped_index() -> None:
+    """``update_aliases`` removes then adds; deleting an index drops its settings, mappings and aliases."""
+    fake = FakeClient()
+    await fake.indices.create(index="docs-000001", aliases={"docs": {}}, mappings={"properties": {}})
+    await fake.indices.create(index="docs-000002", mappings={"properties": {}})
+
+    moved = await fake.indices.update_aliases(
+        actions=[
+            {"remove": {"index": "docs-000001", "alias": "docs"}},
+            {"add": {"index": "docs-000002", "alias": "docs", "is_write_index": True}},
+        ]
+    )
+    await fake.indices.delete(index="docs-000002")
+
+    assert moved == {"acknowledged": True}
+    assert "docs" not in fake.aliases
+    assert "docs-000002" not in fake.index_mappings
+    assert "docs-000001" in fake.index_mappings

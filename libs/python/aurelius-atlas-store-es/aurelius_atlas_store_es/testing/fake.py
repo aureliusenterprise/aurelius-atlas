@@ -445,7 +445,7 @@ class FakeClient:
         """Copy every document of ``source``'s index into ``dest``'s, its source as stored, with new versions."""
         del refresh
         copied = 0
-        for document_id, (document, _) in list(self._index_of(source["index"]).items()):
+        for document_id, (document, _) in self._index_of(source["index"]).items():
             await self.index(index=dest["index"], id=document_id, document=document, op_type=dest.get("op_type"))
             copied += 1
         return {"total": copied, "created": copied, "failures": []}
