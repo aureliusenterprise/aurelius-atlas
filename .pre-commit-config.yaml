@@ -37,7 +37,7 @@ repos:
             additional_dependencies:
                 - prettier@3.9.10
                 - prettier-plugin-sort-json@4.2.0
-                - prettier-plugin-toml@2.0.6
+                - prettier-plugin-toml@4.1.0
 
     # ESLint runs from the workspace's node_modules: the project configs need the Nx
     # plugin presets, angular-eslint, eslint-plugin-storybook and the Nx project graph,
@@ -52,7 +52,7 @@ repos:
             exclude: ^package-lock\.json$
 
     - repo: https://github.com/astral-sh/ruff-pre-commit
-      rev: v0.17.1
+      rev: v0.17.3
       hooks:
           - id: ruff
             name: Check for Python linting errors
@@ -70,7 +70,7 @@ repos:
             require_serial: true
 
     - repo: https://github.com/igorshubovych/markdownlint-cli
-      rev: v0.48.0
+      rev: v0.50.0
       hooks:
           - id: markdownlint
             name: Check for Markdown linting errors
