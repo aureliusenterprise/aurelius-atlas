@@ -6703,15 +6703,73 @@ supply it again.</p>
 </tr>
 <tr>
 <td>Licence</td>
-<td>Apache 2.0 or Elastic License 2.0 only</td>
+<td>Free commercial use, and hosting allowed while customers don't reach the database</td>
 </tr>
 </tbody>
 </table>
 <p>A worker re-embeds an entity whenever it changes.</p>
 <h2 id="the-licence-filter">The licence filter<a class="headerlink" href="#the-licence-filter" title="Permanent link">&para;</a></h2>
-<p>Ten databases with vector search pass the filter, ArcadeDB the only graph database among them.
-Eight well-known options fail it, FalkorDB among them. The licences were read from each project's
-repository licence file on GitHub on 2026-11-07.</p>
+<p>A database passes when its licence allows free commercial use and hosting Aurelius Atlas on it, as
+long as customers reach Aurelius Atlas and not the database itself: the terms Elasticsearch has under
+the Elastic License 2.0. Open-source licences pass, the permissive ones and the copyleft ones alike;
+source-available licences pass when their limit is on offering the database itself.</p>
+<table>
+<thead>
+<tr>
+<th>Licence</th>
+<th>Free commercial use</th>
+<th>Hosting Aurelius Atlas on it</th>
+<th>Passes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Apache 2.0, MIT, BSD-3-Clause, PostgreSQL</td>
+<td>Yes</td>
+<td>Yes, keeping the notices</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Elastic License 2.0</td>
+<td>Yes</td>
+<td>Yes, while customers have no access to "any substantial set of the features or functionality" of the database</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>AGPLv3</td>
+<td>Yes</td>
+<td>Yes. Changes to the database's own code go to its users as source; run unmodified, nothing is owed</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>GPLv3</td>
+<td>Yes</td>
+<td>Yes. Shipping the database, in the Helm chart for example, comes with an offer of its source; Aurelius Atlas's own code is not affected</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Redis Source Available License 2.0</td>
+<td>Yes</td>
+<td>Its limit has no "substantial set" qualifier: no making "the functionality of the Software" available as a service. Redis 8 can be taken under AGPLv3</td>
+<td>Unclear</td>
+</tr>
+<tr>
+<td>Server Side Public License v1</td>
+<td>Yes</td>
+<td>Its section 13 includes "enabling third parties to interact with the functionality of the Program remotely", and asks then for the whole service's source</td>
+<td>Unclear</td>
+</tr>
+<tr>
+<td>Business Source Licence 1.1 (Memgraph)</td>
+<td>Only internal use</td>
+<td>No: the grant is for "internal business purposes", without distribution to third parties or database-as-a-service; each version turns Apache 2.0 after four years</td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>The licences were read from each project's repository licence file on GitHub, on 2026-11-07 and
+again on 2026-11-09 for the ones this filter now lets through. This is a reading of the licence
+texts, not legal advice.</p>
 <table>
 <thead>
 <tr>
@@ -6724,7 +6782,7 @@ repository licence file on GitHub on 2026-11-07.</p>
 <tr>
 <td><a href="https://github.com/elastic/elasticsearch">Elasticsearch</a></td>
 <td>AGPLv3, SSPL or Elastic License 2.0 (choice)</td>
-<td>Yes, under Elastic License 2.0</td>
+<td>Yes, under ELv2 or AGPLv3</td>
 </tr>
 <tr>
 <td><a href="https://github.com/opensearch-project/OpenSearch">OpenSearch</a> and its <a href="https://github.com/opensearch-project/k-NN">k-NN plugin</a></td>
@@ -6767,8 +6825,33 @@ repository licence file on GitHub on 2026-11-07.</p>
 <td>Yes</td>
 </tr>
 <tr>
+<td><a href="https://github.com/pgvector/pgvector">pgvector</a> and PostgreSQL</td>
+<td>PostgreSQL Licence</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><a href="https://github.com/weaviate/weaviate">Weaviate</a></td>
+<td>BSD-3-Clause; its enterprise features under their own licence</td>
+<td>Yes, without those features</td>
+</tr>
+<tr>
+<td><a href="https://github.com/redis/redis">Redis</a> 8</td>
+<td>RSALv2, SSPL or AGPLv3 (choice)</td>
+<td>Yes, under AGPLv3</td>
+</tr>
+<tr>
+<td><a href="https://github.com/valkey-io/valkey-search">Valkey Search</a></td>
+<td>BSD-3-Clause</td>
+<td>Yes</td>
+</tr>
+<tr>
 <td><a href="https://github.com/ArcadeData/arcadedb">ArcadeDB</a> (graph)</td>
 <td>Apache 2.0</td>
+<td>Yes</td>
+</tr>
+<tr>
+<td><a href="https://github.com/neo4j/neo4j">Neo4j</a> Community (graph)</td>
+<td>GPLv3</td>
 <td>Yes</td>
 </tr>
 <tr>
@@ -6789,27 +6872,12 @@ repository licence file on GitHub on 2026-11-07.</p>
 <tr>
 <td><a href="https://github.com/apache/age">Apache AGE</a> (graph)</td>
 <td>Apache 2.0, an extension of PostgreSQL</td>
-<td>Only with PostgreSQL</td>
+<td>Yes, with PostgreSQL</td>
 </tr>
 <tr>
 <td><a href="https://github.com/FalkorDB/FalkorDB">FalkorDB</a> (graph)</td>
 <td>Server Side Public License v1</td>
-<td>No</td>
-</tr>
-<tr>
-<td><a href="https://github.com/pgvector/pgvector">pgvector</a> and PostgreSQL</td>
-<td>PostgreSQL Licence</td>
-<td>No: permissive, but not Apache 2.0</td>
-</tr>
-<tr>
-<td><a href="https://github.com/weaviate/weaviate">Weaviate</a></td>
-<td>BSD-3-Clause and the Weaviate Licence</td>
-<td>No</td>
-</tr>
-<tr>
-<td><a href="https://github.com/neo4j/neo4j">Neo4j</a> Community (graph)</td>
-<td>GPLv3</td>
-<td>No</td>
+<td>Unclear</td>
 </tr>
 <tr>
 <td><a href="https://github.com/memgraph/memgraph">Memgraph</a> (graph)</td>
@@ -6817,19 +6885,9 @@ repository licence file on GitHub on 2026-11-07.</p>
 <td>No</td>
 </tr>
 <tr>
-<td><a href="https://github.com/redis/redis">Redis</a> 8</td>
-<td>RSALv2, SSPL or AGPLv3</td>
-<td>No</td>
-</tr>
-<tr>
-<td><a href="https://github.com/valkey-io/valkey-search">Valkey Search</a></td>
-<td>BSD-3-Clause</td>
-<td>No</td>
-</tr>
-<tr>
 <td><a href="https://github.com/kuzudb/kuzu">Kùzu</a> (graph)</td>
-<td>MIT, and the repository is archived</td>
-<td>No</td>
+<td>MIT</td>
+<td>Licence yes; archived</td>
 </tr>
 </tbody>
 </table>
@@ -6843,7 +6901,14 @@ limit. Customers reach the Atlas REST API and the webapp, and the server builds 
 their calls: no route passes Elasticsearch's API or query DSL through. Elastic's licence FAQ names
 this case, Elasticsearch as the backend of one's own SaaS product, as allowed. Exposing
 Elasticsearch to customers, or passing its query DSL through nearly unchanged, would not be. The
-vector search and chat endpoints keep to Aurelius's own requests for that reason.</p>
+vector search and chat endpoints keep to Aurelius's own requests for that reason, and so would any
+other database in the table.</p>
+<p>FalkorDB stays unclear because the Server Side Public License words its limit more broadly than the
+Elastic License. A hosted Aurelius Atlas whose chat runs on FalkorDB's graph queries could count as
+"enabling third parties to interact with the functionality" of FalkorDB. The price of being wrong is
+high: the source of every program used to run the service, under the same licence. MongoDB reads its
+own SSPL as not covering an application built on the database, but that reading is not part of the
+licence. It needs a legal review, or a commercial FalkorDB licence, before it is used.</p>
 <h2 id="comparison">Comparison<a class="headerlink" href="#comparison" title="Permanent link">&para;</a></h2>
 <p>Only Elasticsearch and OpenSearch cover hybrid search, filters, facets and the Atlas store in one
 database. The feature descriptions are from memory of each product's documentation, not checked
@@ -6948,9 +7013,49 @@ for this page; check a feature before relying on it.</p>
 <td>No server in the open-source version</td>
 <td>A library inside the server</td>
 </tr>
+<tr>
+<td>PostgreSQL + pgvector</td>
+<td>Replaces the store</td>
+<td><code>tsvector</code> full-text, no BM25, plus HNSW vectors</td>
+<td><code>GROUP BY</code> counts only</td>
+<td>New store; re-port every query; AGE adds Cypher</td>
+<td>One PostgreSQL</td>
+</tr>
+<tr>
+<td>Weaviate</td>
+<td>Second store, vectors only</td>
+<td>BM25 and vectors, fused</td>
+<td>Aggregate queries by property</td>
+<td>Same as Qdrant</td>
+<td>One extra service</td>
+</tr>
+<tr>
+<td>Redis 8</td>
+<td>Second store, vectors only</td>
+<td>Full-text and vector in one query</td>
+<td><code>FT.AGGREGATE</code> group-by</td>
+<td>Same as Qdrant</td>
+<td>In memory</td>
+</tr>
+<tr>
+<td>Valkey Search</td>
+<td>Second store, vectors only</td>
+<td>Vector search with tag filters</td>
+<td>No</td>
+<td>Same as Qdrant</td>
+<td>Valkey module, in memory</td>
+</tr>
+<tr>
+<td>Neo4j Community</td>
+<td>Replaces the store</td>
+<td>Lucene full-text plus vector index</td>
+<td>Cypher <code>count</code> grouping only</td>
+<td>New store; re-port every query</td>
+<td>One Java server, no clustering</td>
+</tr>
 </tbody>
 </table>
-<p>FalkorDB fails the licence filter and is listed for comparison only. All of them can filter during
+<p>FalkorDB's licence is unclear for a hosted Aurelius Atlas, see above. All of them can filter during
 the vector search. Built-in LLM support differs:</p>
 <ul>
 <li>Elasticsearch has the <code>semantic_text</code> field and inference endpoints that call an embedding model.</li>
@@ -6979,11 +7084,18 @@ the vector search. Built-in LLM support differs:</p>
   new query language and operating model.</li>
 <li><strong>Apache Solr 9: Apache Atlas's own index.</strong> It has kNN and strong facets, but switching would
   undo the move to Elasticsearch and gain nothing over it.</li>
-<li><strong>ArcadeDB: the graph candidate that passes.</strong> Graph, document, full-text and vector indexes in
-  one server; the only graph database that could be one store. Its facets are <code>GROUP BY</code> queries,
+<li><strong>ArcadeDB: the strongest graph candidate.</strong> Graph, document, full-text and vector indexes in
+  one server, under Apache 2.0. Its facets are <code>GROUP BY</code> queries,
   not search aggregations.</li>
-<li><strong>FalkorDB: built for GraphRAG, but fails the licence filter.</strong> Its Server Side Public License v1
-  is neither Apache 2.0 nor the Elastic License. As a graph database it also brings the costs below.</li>
+<li><strong>Neo4j Community: the best-known graph database.</strong> Full-text and vector indexes beside the
+  graph, under GPLv3, which asks nothing of Aurelius Atlas's own code. Community has no clustering.
+  Like ArcadeDB, its facets are <code>count</code> queries, and it brings the costs below.</li>
+<li><strong>PostgreSQL with pgvector and Apache AGE: one well-known server.</strong> Vectors, full-text and a
+  Cypher graph in PostgreSQL, but no BM25 ranking and no search facets.</li>
+<li><strong>FalkorDB: built for GraphRAG, licence unclear.</strong> Its Server Side Public License v1 needs a legal
+  review for a hosted Aurelius Atlas. As a graph database it also brings the costs below.</li>
+<li><strong>Weaviate, Redis 8 and Valkey Search: second stores.</strong> The same sync cost as Qdrant, with no gain
+  over it here.</li>
 <li><strong>Cassandra, Chroma and LanceDB: not a fit.</strong> Cassandra lacks full-text ranking and facets, Chroma
   suits prototypes, and LanceDB is a library with no open-source server.</li>
 </ul>
