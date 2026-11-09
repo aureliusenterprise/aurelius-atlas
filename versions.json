@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "fix-webapp-sonar-sweep",
+    "title": "fix-webapp-sonar-sweep",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
