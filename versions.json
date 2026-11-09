@@ -10,6 +10,11 @@
     "aliases": []
   },
   {
+    "version": "fix-scan-sonar-full-refresh",
+    "title": "fix-scan-sonar-full-refresh",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
