@@ -44,40 +44,55 @@ supply it again.
 | Graph context for the chat   | A hit's relationships, lineage and breadcrumb chain                                |
 | One source of truth          | No second copy of entities and access rights                                       |
 | Operations                   | Fits the dev stack, the standalone stack and the Helm chart (ADR 057)              |
-| Licence                      | Apache 2.0 or Elastic License 2.0 only                                             |
+| Licence                      | Free commercial use, and hosting allowed while customers don't reach the database  |
 
 A worker re-embeds an entity whenever it changes.
 
 ## The licence filter
 
-Ten databases with vector search pass the filter, ArcadeDB the only graph database among them.
-Eight well-known options fail it, FalkorDB among them. The licences were read from each project's
-repository licence file on GitHub on 2026-11-07.
+A database passes when its licence allows free commercial use and hosting Aurelius Atlas on it, as
+long as customers reach Aurelius Atlas and not the database itself: the terms Elasticsearch has under
+the Elastic License 2.0. Open-source licences pass, the permissive ones and the copyleft ones alike;
+source-available licences pass when their limit is on offering the database itself.
 
-| Database                                                                                                                         | Licence                                      | Passes                             |
-| -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ---------------------------------- |
-| [Elasticsearch](https://github.com/elastic/elasticsearch)                                                                        | AGPLv3, SSPL or Elastic License 2.0 (choice) | Yes, under Elastic License 2.0     |
-| [OpenSearch](https://github.com/opensearch-project/OpenSearch) and its [k-NN plugin](https://github.com/opensearch-project/k-NN) | Apache 2.0                                   | Yes                                |
-| [Qdrant](https://github.com/qdrant/qdrant)                                                                                       | Apache 2.0                                   | Yes                                |
-| [Milvus](https://github.com/milvus-io/milvus)                                                                                    | Apache 2.0                                   | Yes                                |
-| [Vespa](https://github.com/vespa-engine/vespa)                                                                                   | Apache 2.0                                   | Yes                                |
-| [Apache Solr](https://github.com/apache/solr)                                                                                    | Apache 2.0                                   | Yes                                |
-| [Apache Cassandra](https://github.com/apache/cassandra) 5                                                                        | Apache 2.0                                   | Yes                                |
-| [Chroma](https://github.com/chroma-core/chroma)                                                                                  | Apache 2.0                                   | Yes                                |
-| [LanceDB](https://github.com/lancedb/lancedb)                                                                                    | Apache 2.0                                   | Yes                                |
-| [ArcadeDB](https://github.com/ArcadeData/arcadedb) (graph)                                                                       | Apache 2.0                                   | Yes                                |
-| [NebulaGraph](https://github.com/vesoft-inc/nebula) (graph)                                                                      | Apache 2.0                                   | Yes, but no vector search known    |
-| [Apache HugeGraph](https://github.com/apache/hugegraph) (graph)                                                                  | Apache 2.0                                   | Yes, but limited vector search     |
-| [JanusGraph](https://github.com/JanusGraph/janusgraph) (graph)                                                                   | Apache 2.0 (code), CC-BY-4.0 (docs)          | Yes, but no vector search          |
-| [Apache AGE](https://github.com/apache/age) (graph)                                                                              | Apache 2.0, an extension of PostgreSQL       | Only with PostgreSQL               |
-| [FalkorDB](https://github.com/FalkorDB/FalkorDB) (graph)                                                                         | Server Side Public License v1                | No                                 |
-| [pgvector](https://github.com/pgvector/pgvector) and PostgreSQL                                                                  | PostgreSQL Licence                           | No: permissive, but not Apache 2.0 |
-| [Weaviate](https://github.com/weaviate/weaviate)                                                                                 | BSD-3-Clause and the Weaviate Licence        | No                                 |
-| [Neo4j](https://github.com/neo4j/neo4j) Community (graph)                                                                        | GPLv3                                        | No                                 |
-| [Memgraph](https://github.com/memgraph/memgraph) (graph)                                                                         | Business Source Licence 1.1                  | No                                 |
-| [Redis](https://github.com/redis/redis) 8                                                                                        | RSALv2, SSPL or AGPLv3                       | No                                 |
-| [Valkey Search](https://github.com/valkey-io/valkey-search)                                                                      | BSD-3-Clause                                 | No                                 |
-| [Kùzu](https://github.com/kuzudb/kuzu) (graph)                                                                                   | MIT, and the repository is archived          | No                                 |
+| Licence                                   | Free commercial use | Hosting Aurelius Atlas on it                                                                                                                                      | Passes  |
+| ----------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| Apache 2.0, MIT, BSD-3-Clause, PostgreSQL | Yes                 | Yes, keeping the notices                                                                                                                                          | Yes     |
+| Elastic License 2.0                       | Yes                 | Yes, while customers have no access to "any substantial set of the features or functionality" of the database                                                     | Yes     |
+| AGPLv3                                    | Yes                 | Yes. Changes to the database's own code go to its users as source; run unmodified, nothing is owed                                                                | Yes     |
+| GPLv3                                     | Yes                 | Yes. Shipping the database, in the Helm chart for example, comes with an offer of its source; Aurelius Atlas's own code is not affected                           | Yes     |
+| Redis Source Available License 2.0        | Yes                 | Its limit has no "substantial set" qualifier: no making "the functionality of the Software" available as a service. Redis 8 can be taken under AGPLv3             | Unclear |
+| Server Side Public License v1             | Yes                 | Its section 13 includes "enabling third parties to interact with the functionality of the Program remotely", and asks then for the whole service's source         | Unclear |
+| Business Source Licence 1.1 (Memgraph)    | Only internal use   | No: the grant is for "internal business purposes", without distribution to third parties or database-as-a-service; each version turns Apache 2.0 after four years | No      |
+
+The licences were read from each project's repository licence file on GitHub, on 2026-11-07 and
+again on 2026-11-09 for the ones this filter now lets through. This is a reading of the licence
+texts, not legal advice.
+
+| Database                                                                                                                         | Licence                                                       | Passes                          |
+| -------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ------------------------------- |
+| [Elasticsearch](https://github.com/elastic/elasticsearch)                                                                        | AGPLv3, SSPL or Elastic License 2.0 (choice)                  | Yes, under ELv2 or AGPLv3       |
+| [OpenSearch](https://github.com/opensearch-project/OpenSearch) and its [k-NN plugin](https://github.com/opensearch-project/k-NN) | Apache 2.0                                                    | Yes                             |
+| [Qdrant](https://github.com/qdrant/qdrant)                                                                                       | Apache 2.0                                                    | Yes                             |
+| [Milvus](https://github.com/milvus-io/milvus)                                                                                    | Apache 2.0                                                    | Yes                             |
+| [Vespa](https://github.com/vespa-engine/vespa)                                                                                   | Apache 2.0                                                    | Yes                             |
+| [Apache Solr](https://github.com/apache/solr)                                                                                    | Apache 2.0                                                    | Yes                             |
+| [Apache Cassandra](https://github.com/apache/cassandra) 5                                                                        | Apache 2.0                                                    | Yes                             |
+| [Chroma](https://github.com/chroma-core/chroma)                                                                                  | Apache 2.0                                                    | Yes                             |
+| [LanceDB](https://github.com/lancedb/lancedb)                                                                                    | Apache 2.0                                                    | Yes                             |
+| [pgvector](https://github.com/pgvector/pgvector) and PostgreSQL                                                                  | PostgreSQL Licence                                            | Yes                             |
+| [Weaviate](https://github.com/weaviate/weaviate)                                                                                 | BSD-3-Clause; its enterprise features under their own licence | Yes, without those features     |
+| [Redis](https://github.com/redis/redis) 8                                                                                        | RSALv2, SSPL or AGPLv3 (choice)                               | Yes, under AGPLv3               |
+| [Valkey Search](https://github.com/valkey-io/valkey-search)                                                                      | BSD-3-Clause                                                  | Yes                             |
+| [ArcadeDB](https://github.com/ArcadeData/arcadedb) (graph)                                                                       | Apache 2.0                                                    | Yes                             |
+| [Neo4j](https://github.com/neo4j/neo4j) Community (graph)                                                                        | GPLv3                                                         | Yes                             |
+| [NebulaGraph](https://github.com/vesoft-inc/nebula) (graph)                                                                      | Apache 2.0                                                    | Yes, but no vector search known |
+| [Apache HugeGraph](https://github.com/apache/hugegraph) (graph)                                                                  | Apache 2.0                                                    | Yes, but limited vector search  |
+| [JanusGraph](https://github.com/JanusGraph/janusgraph) (graph)                                                                   | Apache 2.0 (code), CC-BY-4.0 (docs)                           | Yes, but no vector search       |
+| [Apache AGE](https://github.com/apache/age) (graph)                                                                              | Apache 2.0, an extension of PostgreSQL                        | Yes, with PostgreSQL            |
+| [FalkorDB](https://github.com/FalkorDB/FalkorDB) (graph)                                                                         | Server Side Public License v1                                 | Unclear                         |
+| [Memgraph](https://github.com/memgraph/memgraph) (graph)                                                                         | Business Source Licence 1.1                                   | No                              |
+| [Kùzu](https://github.com/kuzudb/kuzu) (graph)                                                                                   | MIT                                                           | Licence yes; archived           |
 
 Some Elasticsearch code is licensed solely under the Elastic License 2.0. That licence is
 source-available, not OSI open source. It allows free use, also commercially, with three limits: no
@@ -90,7 +105,15 @@ limit. Customers reach the Atlas REST API and the webapp, and the server builds 
 their calls: no route passes Elasticsearch's API or query DSL through. Elastic's licence FAQ names
 this case, Elasticsearch as the backend of one's own SaaS product, as allowed. Exposing
 Elasticsearch to customers, or passing its query DSL through nearly unchanged, would not be. The
-vector search and chat endpoints keep to Aurelius's own requests for that reason.
+vector search and chat endpoints keep to Aurelius's own requests for that reason, and so would any
+other database in the table.
+
+FalkorDB stays unclear because the Server Side Public License words its limit more broadly than the
+Elastic License. A hosted Aurelius Atlas whose chat runs on FalkorDB's graph queries could count as
+"enabling third parties to interact with the functionality" of FalkorDB. The price of being wrong is
+high: the source of every program used to run the service, under the same licence. MongoDB reads its
+own SSPL as not covering an application built on the database, but that reading is not part of the
+licence. It needs a legal review, or a commercial FalkorDB licence, before it is used.
 
 ## Comparison
 
@@ -98,21 +121,26 @@ Only Elasticsearch and OpenSearch cover hybrid search, filters, facets and the A
 database. The feature descriptions are from memory of each product's documentation, not checked
 for this page; check a feature before relying on it.
 
-| Database           | Role for Aurelius          | Text + vector hybrid               | Facets on the hits             | Change to Aurelius Atlas                   | Footprint                         |
-| ------------------ | -------------------------- | ---------------------------------- | ------------------------------ | ------------------------------------------ | --------------------------------- |
-| Elasticsearch 9.5  | Stays the one store        | BM25 and kNN in one query          | Full aggregations, as today    | Mapping fields, embedding step, chat route | Already running                   |
-| OpenSearch 3       | Replaces the store         | Hybrid query, score normalisation  | Full aggregations              | Port store and client; re-index            | Same as Elasticsearch             |
-| Qdrant             | Second store, vectors only | Dense plus sparse vectors, fused   | Facet counts on keyword fields | Sync every write and access rule           | One extra service, light          |
-| Milvus             | Second store, vectors only | Dense plus BM25 sparse, fused      | No                             | Same as Qdrant                             | Heavy: etcd and object storage    |
-| Vespa              | Replaces the store         | Strongest: multi-phase ranking     | Grouping                       | New store and query language               | Config server plus content nodes  |
-| Apache Solr 9      | Replaces the store         | kNN plus BM25, boolean or rerank   | Facets, strong                 | New store; re-port search and facets       | Solr plus ZooKeeper in cloud mode |
-| ArcadeDB (graph)   | Replaces the store         | Lucene full-text plus HNSW vectors | `GROUP BY` counts only         | New store; re-port every query             | One Java server, multi-model      |
-| FalkorDB (graph)   | Replaces the store         | Full-text and vector indexes       | Cypher `count` grouping only   | New store; re-port search and lineage      | Redis module, graph in memory     |
-| Apache Cassandra 5 | Replaces the store         | No BM25 ranking                    | No                             | New store without full-text search         | Cluster of nodes, heavy           |
-| Chroma             | Second store, prototype    | Vector plus document text match    | No                             | Same as Qdrant                             | Light, single node                |
-| LanceDB            | Embedded library           | Vector plus full-text index        | No                             | No server in the open-source version       | A library inside the server       |
+| Database              | Role for Aurelius          | Text + vector hybrid                             | Facets on the hits             | Change to Aurelius Atlas                        | Footprint                         |
+| --------------------- | -------------------------- | ------------------------------------------------ | ------------------------------ | ----------------------------------------------- | --------------------------------- |
+| Elasticsearch 9.5     | Stays the one store        | BM25 and kNN in one query                        | Full aggregations, as today    | Mapping fields, embedding step, chat route      | Already running                   |
+| OpenSearch 3          | Replaces the store         | Hybrid query, score normalisation                | Full aggregations              | Port store and client; re-index                 | Same as Elasticsearch             |
+| Qdrant                | Second store, vectors only | Dense plus sparse vectors, fused                 | Facet counts on keyword fields | Sync every write and access rule                | One extra service, light          |
+| Milvus                | Second store, vectors only | Dense plus BM25 sparse, fused                    | No                             | Same as Qdrant                                  | Heavy: etcd and object storage    |
+| Vespa                 | Replaces the store         | Strongest: multi-phase ranking                   | Grouping                       | New store and query language                    | Config server plus content nodes  |
+| Apache Solr 9         | Replaces the store         | kNN plus BM25, boolean or rerank                 | Facets, strong                 | New store; re-port search and facets            | Solr plus ZooKeeper in cloud mode |
+| ArcadeDB (graph)      | Replaces the store         | Lucene full-text plus HNSW vectors               | `GROUP BY` counts only         | New store; re-port every query                  | One Java server, multi-model      |
+| FalkorDB (graph)      | Replaces the store         | Full-text and vector indexes                     | Cypher `count` grouping only   | New store; re-port search and lineage           | Redis module, graph in memory     |
+| Apache Cassandra 5    | Replaces the store         | No BM25 ranking                                  | No                             | New store without full-text search              | Cluster of nodes, heavy           |
+| Chroma                | Second store, prototype    | Vector plus document text match                  | No                             | Same as Qdrant                                  | Light, single node                |
+| LanceDB               | Embedded library           | Vector plus full-text index                      | No                             | No server in the open-source version            | A library inside the server       |
+| PostgreSQL + pgvector | Replaces the store         | `tsvector` full-text, no BM25, plus HNSW vectors | `GROUP BY` counts only         | New store; re-port every query; AGE adds Cypher | One PostgreSQL                    |
+| Weaviate              | Second store, vectors only | BM25 and vectors, fused                          | Aggregate queries by property  | Same as Qdrant                                  | One extra service                 |
+| Redis 8               | Second store, vectors only | Full-text and vector in one query                | `FT.AGGREGATE` group-by        | Same as Qdrant                                  | In memory                         |
+| Valkey Search         | Second store, vectors only | Vector search with tag filters                   | No                             | Same as Qdrant                                  | Valkey module, in memory          |
+| Neo4j Community       | Replaces the store         | Lucene full-text plus vector index               | Cypher `count` grouping only   | New store; re-port every query                  | One Java server, no clustering    |
 
-FalkorDB fails the licence filter and is listed for comparison only. All of them can filter during
+FalkorDB's licence is unclear for a hosted Aurelius Atlas, see above. All of them can filter during
 the vector search. Built-in LLM support differs:
 
 - Elasticsearch has the `semantic_text` field and inference endpoints that call an embedding model.
@@ -141,11 +169,18 @@ the vector search. Built-in LLM support differs:
   new query language and operating model.
 - **Apache Solr 9: Apache Atlas's own index.** It has kNN and strong facets, but switching would
   undo the move to Elasticsearch and gain nothing over it.
-- **ArcadeDB: the graph candidate that passes.** Graph, document, full-text and vector indexes in
-  one server; the only graph database that could be one store. Its facets are `GROUP BY` queries,
+- **ArcadeDB: the strongest graph candidate.** Graph, document, full-text and vector indexes in
+  one server, under Apache 2.0. Its facets are `GROUP BY` queries,
   not search aggregations.
-- **FalkorDB: built for GraphRAG, but fails the licence filter.** Its Server Side Public License v1
-  is neither Apache 2.0 nor the Elastic License. As a graph database it also brings the costs below.
+- **Neo4j Community: the best-known graph database.** Full-text and vector indexes beside the
+  graph, under GPLv3, which asks nothing of Aurelius Atlas's own code. Community has no clustering.
+  Like ArcadeDB, its facets are `count` queries, and it brings the costs below.
+- **PostgreSQL with pgvector and Apache AGE: one well-known server.** Vectors, full-text and a
+  Cypher graph in PostgreSQL, but no BM25 ranking and no search facets.
+- **FalkorDB: built for GraphRAG, licence unclear.** Its Server Side Public License v1 needs a legal
+  review for a hosted Aurelius Atlas. As a graph database it also brings the costs below.
+- **Weaviate, Redis 8 and Valkey Search: second stores.** The same sync cost as Qdrant, with no gain
+  over it here.
 - **Cassandra, Chroma and LanceDB: not a fit.** Cassandra lacks full-text ranking and facets, Chroma
   suits prototypes, and LanceDB is a library with no open-source server.
 
