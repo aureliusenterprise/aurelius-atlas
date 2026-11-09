@@ -7349,6 +7349,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The kebab style is what the webapp's own locations use; the underscore is the legacy proxy's accident, not a contract, and a second browser origin would widen the CSP and the Keycloak allowed origins</td>
 <td>7.22a</td>
 </tr>
+<tr>
+<td>DV-143</td>
+<td>Search UI</td>
+<td>The Aurelius product's facet sidebar self-facets (a facet's own field is excluded from its counts, so every value keeps its count) and every facet is an interactive checkbox over the App Search query object</td>
+<td>The sidebar's facet counts narrow with the type selection (QSR-03) and only the <code>__typeName</code> facet is a checkbox; <code>__state</code>, <code>Asset.owner</code>, and <code>ServiceType</code> render read-only, with seen type values kept visible at their last count (SDX-04..07, DD-426)</td>
+<td>Atlas quick search counts the entities its query matches, and the non-type facets have no quick-search parameter, so a click there could send nothing (DD-426); the seen set keeps the legacy "values stay listed" feel within the shipped contract</td>
+<td>7.4b</td>
+</tr>
 </tbody>
 </table>
 
