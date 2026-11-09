@@ -1,0 +1,18 @@
+# Spike 11.1 only (libs/python/aurelius-atlas-core/specs/11-1-hugegraph-spike): a HugeGraph 1.7.0 server on
+# RocksDB, on loopback. Not part of any stack; the upstream image, as dhi.io has none (HGS-10).
+name: aurelius-atlas-spike-hugegraph
+
+services:
+    hugegraph:
+        image: hugegraph/hugegraph:1.7.0
+        ports:
+            - "127.0.0.1:18080:8080"
+        volumes:
+            - hugegraph-data:/hugegraph-server/rocksdb-data
+        healthcheck:
+            test: ["CMD-SHELL", "curl -fs http://localhost:8080/versions >/dev/null"]
+            interval: 10s
+            retries: 30
+
+volumes:
+    hugegraph-data:
