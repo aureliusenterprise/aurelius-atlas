@@ -83,9 +83,9 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.button.is-success[aria-label='Search']")!.click();
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/atlas/v2/search/basic");
+        const request = httpMock.expectOne("/api/atlas/v2/search/quick");
         expect(request.request.body).toMatchObject({ query: "genomic", limit: 10, offset: 0 });
-        request.flush({ entities: [], approximateCount: 0 });
+        request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
 
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "genomic" } });
         // The store is the layout's component provider (SRH-02) — the element
@@ -106,9 +106,9 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.delete")!.click();
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/atlas/v2/search/basic");
+        const request = httpMock.expectOne("/api/atlas/v2/search/quick");
         expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "" });
-        request.flush({ entities: [], approximateCount: 0 });
+        request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: null } });
         expect(fixture.debugElement.injector.get(SearchState).queryText()).toBe("");
     });

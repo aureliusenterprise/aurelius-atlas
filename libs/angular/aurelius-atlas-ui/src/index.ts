@@ -13,6 +13,7 @@ export * from "./lib/details-card-section/details-card-section.component";
 export * from "./lib/details-navigation/details-navigation.component";
 export * from "./lib/drawer/drawer.component";
 export * from "./lib/entity-card/entity-card.component";
+export * from "./lib/facet-list/facet-list.component";
 export * from "./lib/header/header.component";
 export * from "./lib/hero/hero.component";
 export * from "./lib/holdable/holdable.directive";

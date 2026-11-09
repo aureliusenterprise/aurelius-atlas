@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, effect, inject } from "@angular/cor
 import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
 import { AtlasEntityHeader } from "aurelius-atlas-data-access";
-import { EntityCard, InfiniteScrollContainer } from "aurelius-atlas-ui";
+import { EntityCard, FacetList, InfiniteScrollContainer } from "aurelius-atlas-ui";
 import { map } from "rxjs";
 
 import { nameDisplay } from "../meta/type-display";
@@ -10,10 +10,12 @@ import { typeIcon } from "../meta/type-icons";
 import { SearchState } from "../search-state";
 
 /**
- * The results screen (SRH-02..07): the legacy `results.component` as the
- * Aurelius shape — a one-third filter column (the shell, SRH-07: the legacy
- * empty state; facets are 7.4b) and a results box with the count, the
- * infinite-scroll card list, and the no-results card.
+ * The results screen (SRH-02..07, SDX-03..05): the legacy
+ * `results.component` as the Aurelius shape — a one-third filter column
+ * (7.4a's shell, SRH-07, now filled by the facet sidebar, SDX-03) and a
+ * results box with the count, the infinite-scroll card list, and the
+ * no-results card. Every facet the answer carries renders (the store's
+ * `facets`, SDX-02); with none the column keeps the legacy empty state.
  *
  * The URL's `?query=` is the screen's whole address (SRH-02, DD-219): on
  * arrival and on every query-parameter change the store's search follows
@@ -26,7 +28,7 @@ import { SearchState } from "../search-state";
  * the guid, routing is the app's (DD-154).
  */
 @Component({
-    imports: [EntityCard, InfiniteScrollContainer],
+    imports: [EntityCard, FacetList, InfiniteScrollContainer],
     selector: "aurelius-atlas-webapp-search-results",
     templateUrl: "./results.component.html",
     styleUrl: "./results.component.scss",
@@ -36,6 +38,12 @@ export class Results {
     protected readonly search = inject(SearchState);
 
     private readonly router = inject(Router);
+
+    /** The facet-list component's show-more labels (UIC-34, DD-136's caller-supplied rule). */
+    protected readonly showMoreLabel = $localize`:@@search.components.filter.facet.showMore:Show more`;
+
+    /** The show-less label (UIC-34). */
+    protected readonly showLessLabel = $localize`:@@search.components.filter.facet.showLess:Show less`;
 
     /** The count header's word ("results" / "resultaten", SRH-05). */
     protected readonly resultsWord = $localize`:@@search.results.results:results`;
@@ -86,6 +94,15 @@ export class Results {
      */
     protected openDetails(guid: string): void {
         void this.router.navigate(["/search/details", guid]);
+    }
+
+    /**
+     * A checkbox of the type facet (SDX-04, UIC-34): the store toggles the
+     * selection and re-runs the search at page one.
+     * @param event the emitted wire value and new state
+     */
+    protected onFacetToggled(event: { value: string; checked: boolean }): void {
+        this.search.toggleType(event.value, event.checked);
     }
 
     /**

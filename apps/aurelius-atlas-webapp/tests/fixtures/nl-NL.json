@@ -394,7 +394,11 @@
                     "showLess": "Minder weergeven",
                     "showMore": "Meer weergeven"
                 },
-                "notAvailable": "Geen filters beschikbaar."
+                "notAvailable": "Geen filters beschikbaar.",
+                "owner": "Eigenaar",
+                "serviceType": "Servicetype",
+                "state": "Status",
+                "type": "Type"
             },
             "infiniteScrollContainer": {
                 "loadNextPage": "Volgende pagina laden..."

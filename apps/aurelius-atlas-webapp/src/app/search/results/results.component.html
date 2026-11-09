@@ -4,14 +4,27 @@
      the container, the filter column is gone with it). -->
 @if (search.hasResults()) {
     <div class="columns">
-        <!-- The filter column: the shell (SRH-07). Facets arrive with 7.4b. -->
+        <!-- The filter column (SRH-07): 7.4a's shell, filled by the facet
+             sidebar (SDX-03). Every facet the answer carries renders; with
+             none the column keeps the legacy #noFilters twin. -->
         <aside class="column is-one-third">
             <div class="box filter-box">
-                <!-- The legacy filter component's #noFilters: a content
-                     paragraph, italic and centered ("No filters available"). -->
-                <div class="content">
-                    <p class="is-italic has-text-centered no-filters">{{ noFilters }}</p>
-                </div>
+                @for (facet of search.facets(); track facet.key) {
+                    <aurelius-atlas-ui-facet-list
+                        [title]="facet.title"
+                        [items]="facet.items"
+                        [selectable]="facet.selectable"
+                        [showMoreLabel]="showMoreLabel"
+                        [showLessLabel]="showLessLabel"
+                        (toggled)="onFacetToggled($event)"
+                    />
+                } @empty {
+                    <!-- The legacy filter component's #noFilters: a content
+                         paragraph, italic and centered ("No filters available"). -->
+                    <div class="content">
+                        <p class="is-italic has-text-centered no-filters">{{ noFilters }}</p>
+                    </div>
+                }
             </div>
         </aside>
         <div class="column results-column">
