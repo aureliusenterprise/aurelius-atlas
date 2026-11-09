@@ -1,6 +1,6 @@
 # 9.5e The standalone stack's sign-in theme
 
-- **Status:** in review
+- **Status:** done
 - **Pull request:** [#291](https://github.com/aureliusenterprise/aurelius-atlas/pull/291)
 - **Records:** DD-414; relies on DD-366 (the demo realm), DD-148 and DD-152 (the webapp's brand, 7.12)
 
