@@ -240,14 +240,15 @@ describe("ShellHeader", () => {
     it("ends the Keycloak session on Logout (SHC-05)", () => {
         const { logout } = setup();
         const compiled = render();
-        // The legacy Logout is `a role="button" .navbar-item` (DD-153).
-        const anchor = [...compiled.querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
+        // Logout is a native <button> (SHC-05, DD-428): keyboard works
+        // without handlers, so none are asserted here.
+        const button = [...compiled.querySelectorAll<HTMLButtonElement>("button.navbar-item")].find((item) =>
             item.textContent?.includes("Logout"),
         );
 
-        expect(anchor?.getAttribute("role")).toBe("button");
+        expect(button?.getAttribute("type")).toBe("button");
 
-        anchor?.click();
+        button?.click();
 
         expect(logout).toHaveBeenCalledOnce();
     });
@@ -271,11 +272,11 @@ describe("ShellHeader", () => {
         });
 
         const compiled = render();
-        const anchor = [...compiled.querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
+        const button = [...compiled.querySelectorAll<HTMLButtonElement>("button.navbar-item")].find((item) =>
             item.textContent?.includes("Logout"),
         );
 
-        expect(() => anchor?.click()).not.toThrow();
+        expect(() => button?.click()).not.toThrow();
         expect(keycloak.logout).toHaveBeenCalledOnce();
         await new Promise((resolve) => setTimeout(resolve, 10));
     });

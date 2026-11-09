@@ -116,6 +116,6 @@ export class AlertsPanel {
      */
     protected close(): void {
         this.active.set(false);
-        this.router.navigate([{ outlets: { drawer: null } }]);
+        void this.router.navigate([{ outlets: { drawer: null } }]);
     }
 }

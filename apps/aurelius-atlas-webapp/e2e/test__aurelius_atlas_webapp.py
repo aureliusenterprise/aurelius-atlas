@@ -516,7 +516,7 @@ def test__burger_menu_opens_the_dropdown_with_the_logout_entry(authenticated: Pa
     burger = authenticated.locator(".navbar-burger")
     burger.click()
 
-    logout = authenticated.locator(".navbar-dropdown a.navbar-item", has_text="Logout")
+    logout = authenticated.locator(".navbar-dropdown button.navbar-item", has_text="Logout")
     expect(logout).to_be_visible()
 
 

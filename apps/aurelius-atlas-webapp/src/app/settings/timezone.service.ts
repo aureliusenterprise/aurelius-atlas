@@ -4,7 +4,7 @@ import { persisted, Persisted, readPreference, TIMEZONE_KEY } from "./user-prefe
 
 /**
  * The time zone owner (SPL-07, DD-160): the display zone for dates, stored
- * in the browser. `null` means "no choice made" — Angular's `DATE_PIPE_DEFAULT_TIMEZONE`
+ * in the browser. `null` means "no choice made" — Angular's `DATE_PIPE_DEFAULT_OPTIONS`
  * provider (the replacement of the removed `DATE_TIME_ZONE`) then falls back to the system zone, the app's behaviour before
  * the setting existed. The ids come from the server's session
  * (`GET /atlas/admin/session`, ADM-05); the store keeps any IANA id.
@@ -22,7 +22,7 @@ export class TimezoneService {
 
     /**
      * Store the chosen zone id (`null` restores the system default). A
-     * change applies on the next reload — the `DATE_PIPE_DEFAULT_TIMEZONE`
+     * change applies on the next reload — the `DATE_PIPE_DEFAULT_OPTIONS`
      * provider is
      * read at bootstrap (DD-161, SPL-07).
      * @param timezone the IANA zone id, or `null`

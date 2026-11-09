@@ -20,7 +20,7 @@ export interface PngChunk {
 }
 
 /** The eight-byte PNG signature, as a binary string. */
-const PNG_SIG = String.fromCharCode(137, 80, 78, 71, 13, 10, 26, 10);
+const PNG_SIG = String.fromCodePoint(137, 80, 78, 71, 13, 10, 26, 10);
 
 /** Raised when the bytes handed to {@link splitChunk} are not a PNG. */
 export class PngSignatureError extends Error {
@@ -52,7 +52,9 @@ for (let n = 0; n < 256; n++) {
 export function crc32(s: string): number {
     let crc = 0 ^ -1;
     for (let i = 0; i < s.length; i++) {
-        crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ s.charCodeAt(i)) & 0xff];
+        // The string is binary (every code point one byte, ≤ 0xff), so
+        // codePointAt reads exactly what charCodeAt would.
+        crc = (crc >>> 8) ^ CRC_TABLE[(crc ^ (s.codePointAt(i) ?? 0)) & 0xff];
     }
     return (crc ^ -1) >>> 0;
 }
@@ -65,7 +67,7 @@ function itos(value: number, size: number): string {
         bytes[i] = rest & 0xff;
         rest = rest >> 8;
     }
-    return bytes.map((byte) => String.fromCharCode(byte)).join("");
+    return bytes.map((byte) => String.fromCodePoint(byte)).join("");
 }
 
 /** A big-endian binary string as an unsigned number (legacy `stoi`). */
@@ -74,14 +76,14 @@ function stoi(s: string): number {
     for (let i = 0; i < s.length; i++) {
         // `<<` keeps the result signed; the legacy's `unpack('N')` is
         // unsigned, so the top bit must not become a minus sign.
-        value = ((value << 8) | (s.charCodeAt(i) & 0xff)) >>> 0;
+        value = ((value << 8) | ((s.codePointAt(i) ?? 0) & 0xff)) >>> 0;
     }
     return value;
 }
 
 /** Whether the bytes start with the PNG signature. */
 export function isPng(s: string): boolean {
-    return s.slice(0, PNG_SIG.length) === PNG_SIG;
+    return s.startsWith(PNG_SIG);
 }
 
 /**
@@ -100,7 +102,7 @@ export function createChunk(type: string, data: string): PngChunk {
  * @throws {PngSignatureError} when the bytes carry no PNG signature
  */
 export function splitChunk(s: string): PngChunk[] {
-    if (!isPng(s.slice(0, PNG_SIG.length))) {
+    if (!isPng(s)) {
         throw new PngSignatureError();
     }
     let rest = s.slice(PNG_SIG.length);
@@ -144,7 +146,7 @@ export function joinChunk(chunks: readonly PngChunk[]): string {
 export function addTextMetadata(png: string, metadata: Readonly<Record<string, string>>): string {
     const chunks = splitChunk(png);
     const iend = chunks.pop();
-    if (iend === undefined || iend.type !== "IEND") {
+    if (iend?.type !== "IEND") {
         throw new PngSignatureError();
     }
     for (const [keyword, value] of Object.entries(metadata)) {
@@ -160,11 +162,11 @@ export function addTextMetadata(png: string, metadata: Readonly<Record<string, s
 /** A byte array as a binary string (the save flow hands canvas bytes over). */
 export function bytesToBinaryString(bytes: Uint8Array): string {
     // Chunked apply: a string built char-by-char over megabytes would be
-    // quadratic; fromCharCode per slice keeps it linear.
+    // quadratic; fromCodePoint per slice keeps it linear.
     const parts: string[] = [];
     const slice = 8192;
     for (let i = 0; i < bytes.length; i += slice) {
-        parts.push(String.fromCharCode(...bytes.subarray(i, i + slice)));
+        parts.push(String.fromCodePoint(...bytes.subarray(i, i + slice)));
     }
     return parts.join("");
 }
@@ -173,7 +175,7 @@ export function bytesToBinaryString(bytes: Uint8Array): string {
 export function binaryStringToBytes(s: string): Uint8Array<ArrayBuffer> {
     const bytes = new Uint8Array(s.length);
     for (let i = 0; i < s.length; i++) {
-        bytes[i] = s.charCodeAt(i) & 0xff;
+        bytes[i] = (s.codePointAt(i) ?? 0) & 0xff;
     }
     return bytes;
 }

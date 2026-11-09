@@ -25,13 +25,14 @@
 
     <div class="settings-section">
         <!-- Language: full-page navigation, not a stored setting (SPL-06, SHC-04). The
-             links are not a form control, so the group carries the heading
-             through aria-labelledby (DD-169). -->
+             links are not a form control, so the native fieldset carries the
+             heading through aria-labelledby (DD-169, the ALR-11 fieldset
+             pattern — S6809-clean; the scss resets the UA box). -->
         <p class="label" id="settings-language-heading">
             <!-- Language. -->
             <span i18n="@@shell.settings.language">Language</span>
         </p>
-        <div class="buttons has-addons" role="group" aria-labelledby="settings-language-heading">
+        <fieldset class="buttons has-addons settings-language-group" aria-labelledby="settings-language-heading">
             @for (locale of settings.locale.locales; track locale) {
                 <a
                     class="button is-small"
@@ -42,7 +43,7 @@
                     >{{ locale }}</a
                 >
             }
-        </div>
+        </fieldset>
         <p class="help">
             <!-- Switching language reloads the page in that language. -->
             <span i18n="@@shell.settings.languageHint">Switching language reloads the page in that language.</span>
@@ -50,7 +51,7 @@
     </div>
 
     <div class="settings-section">
-        <!-- Time zone: DATE_PIPE_DEFAULT_TIMEZONE on reload, ADM-05 list (SPL-07). -->
+        <!-- Time zone: DATE_PIPE_DEFAULT_OPTIONS on reload, ADM-05 list (SPL-07). -->
         <label class="label" for="settings-timezone">
             <!-- Time zone. -->
             <span i18n="@@shell.settings.timezone">Time zone</span>

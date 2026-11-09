@@ -193,14 +193,13 @@ export class SearchState {
      * included (its `query = ''` default is what lists everything, DD-221);
      * a text the store has already run re-runs nothing — the hero's submit
      * ran it, and the same-URL navigation is a no-op.
-     * @param query the URL's query, `null` when the parameter is absent
+     * @param query the URL's query, empty when the parameter is absent
      */
-    applyUrl(query: string | null): void {
-        const text = query ?? "";
-        if (text === this.queryText() && this.searched) {
+    applyUrl(query = ""): void {
+        if (query === this.queryText() && this.searched) {
             return;
         }
-        this.queryText.set(text);
+        this.queryText.set(query);
         this.restart(true);
     }
 
@@ -262,6 +261,21 @@ export class SearchState {
     }
 
     /**
+     * The `typeName` wire field for the current session (SRC-03): the
+     * comma-joined selection when it has values; the every-entity marker
+     * when the query is empty and nothing is selected (QSR-01 makes the
+     * bare URL answer, DD-221); absent for a plain query.
+     * @param selection the session type selection
+     * @param query the current query text
+     */
+    private typeNameFor(selection: readonly string[], query: string): string | null {
+        if (selection.length > 0) {
+            return selection.join(",");
+        }
+        return query ? null : ALL_ENTITY_TYPES;
+    }
+
+    /**
      * Run the current search's next page (SDX-01). An empty query with no
      * selection searches `_ALL_ENTITY_TYPES` — the every-entity marker
      * (SRC-03), the demo resolver's list-everything default (DD-221); the
@@ -275,9 +289,8 @@ export class SearchState {
             return;
         }
         this.searched = true;
-        const selection = this.typeSelection();
+        const typeName = this.typeNameFor(this.typeSelection(), this.queryText());
         const query = this.queryText();
-        const typeName = selection.length > 0 ? selection.join(",") : query ? null : ALL_ENTITY_TYPES;
         this.loading.set(true);
         const parameters: QuickSearchParameters = {
             query: query ?? "",
