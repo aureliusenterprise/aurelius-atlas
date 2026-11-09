@@ -22,6 +22,14 @@ _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MILLISECOND = timedelta(milliseconds=1)
 
 
+class StoredEmbedding(AtlasModel):
+    """An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434)."""
+
+    vector: list[float]
+    model: str
+    source_hash: str
+
+
 class StoredEntity(AtlasModel):
     """One document of the entity index; ``write_id`` names the write that last wrote it (DD-046)."""
 
@@ -48,6 +56,8 @@ class StoredEntity(AtlasModel):
     search: dict[str, Any] | None = None
     """The search fields, written by the store (DD-088)."""
     write_id: str | None = None
+    embedding: StoredEmbedding | None = None
+    """The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435)."""
 
     @classmethod
     def of(cls, entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: str | None) -> Self:

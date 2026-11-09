@@ -1,4 +1,4 @@
-"""The standalone stack's embedder (EMB-11, 11.2).
+"""The standalone stack's embedder (EMB-11, 11.2) and the server embedding through it (VEC-11, 11.3).
 
 The compose file is read as written: the service, its certificate, and what it does not have.
 """
@@ -51,3 +51,13 @@ def test__no_service_of_the_stack_waits_for_the_embedder(services: dict[str, Any
     """The stack starts as without it."""
     for name, service in services.items():
         assert "embedder" not in (service.get("depends_on") or {}), name
+
+
+@pytest.mark.covers(rules=["VEC-11"])
+def test__the_server_embeds_through_the_stack_s_embedder(services: dict[str, Any]) -> None:
+    """Its URL on the stack network, trusting the stack's CA; the server does not wait for it."""
+    server = services["aurelius-atlas-server"]
+
+    assert server["environment"]["AURELIUS_ATLAS_SERVER_EMBEDDING_URL"] == "https://embedder:21004"
+    assert server["environment"]["AURELIUS_ATLAS_SERVER_EMBEDDING_CA_FILE"] == "/certs/ca.pem"
+    assert "embedder" not in server["depends_on"]

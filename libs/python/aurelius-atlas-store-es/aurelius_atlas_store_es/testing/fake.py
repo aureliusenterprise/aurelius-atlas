@@ -27,6 +27,15 @@ def _conflict() -> ConflictError:
     return ConflictError("version_conflict_engine_exception", response_meta(409), {"status": 409})
 
 
+class FakeResponse(dict[str, Any]):
+    """A response whose ``body`` is the response itself, as the client's ``ObjectApiResponse`` has one."""
+
+    @property
+    def body(self) -> dict[str, Any]:
+        """The response's JSON."""
+        return self
+
+
 class FakeCluster:
     """The ``cluster`` namespace of the fake client."""
 
@@ -58,9 +67,10 @@ class FakeIndices:
         settings: dict[str, Any] | None = None,
         **_mappings: object,
     ) -> dict[str, Any]:
-        """Create ``index`` with ``aliases``; its settings are kept, its mappings accepted and ignored."""
+        """Create ``index`` with ``aliases``; its settings and mappings are kept as given, not applied."""
         self._client.documents.setdefault(index, {})
         self._client.index_settings[index] = dict(settings or {})
+        self._client.index_mappings[index] = dict(_mappings.get("mappings") or {})  # type: ignore[call-overload]
         for alias in aliases or {}:
             self._client.aliases[alias] = index
         return {"acknowledged": True, "index": index}
@@ -81,12 +91,31 @@ class FakeIndices:
         self._client.refreshes.append(index)
         return {"_shards": {"failed": 0}}
 
-    async def get(self, *, index: str, **_options: object) -> dict[str, Any]:
-        """The created indices matching ``index`` (comma-separated, wildcards), by name, with their aliases."""
-        return {
-            name: {"aliases": {alias: {} for alias, target in self._client.aliases.items() if target == name}}
-            for name in self._client.matching(index)
-        }
+    async def get(self, *, index: str, **_options: object) -> FakeResponse:
+        """The created indices matching ``index`` (comma-separated, wildcards, or an alias), by name, with their
+        aliases and the settings and mappings they were created with.
+        """  # noqa: D205 - one sentence
+        names = [self._client.aliases[index]] if index in self._client.aliases else self._client.matching(index)
+        return FakeResponse(
+            {
+                name: {
+                    "aliases": {alias: {} for alias, target in self._client.aliases.items() if target == name},
+                    "settings": self._client.index_settings.get(name, {}),
+                    "mappings": self._client.index_mappings.get(name, {}),
+                }
+                for name in names
+            }
+        )
+
+    async def update_aliases(self, *, actions: list[dict[str, Any]]) -> dict[str, Any]:
+        """Apply ``remove`` and ``add`` actions in order, as one change."""
+        for action in actions:
+            ((kind, target),) = action.items()
+            if kind == "remove":
+                self._client.aliases.pop(target["alias"], None)
+            else:
+                self._client.aliases[target["alias"]] = target["index"]
+        return {"acknowledged": True}
 
     async def delete(self, *, index: str) -> dict[str, Any]:
         """Delete the named indices, their documents, settings and aliases; Elasticsearch refuses wildcards here."""
@@ -225,6 +254,8 @@ class FakeClient:
         self.mapping_updates: list[str] = []
         self.settings_updates: list[str] = []
         self.index_settings: dict[str, dict[str, Any]] = {}
+        self.index_mappings: dict[str, dict[str, Any]] = {}
+        """The mappings each index was created with, by its name."""
         """The settings of each created index, by its name: those it was created with, then each update's."""
         self.seq_no = -1
         self.refreshes: list[str] = []
@@ -240,6 +271,7 @@ class FakeClient:
         """Remove an index with its documents, settings and aliases."""
         del self.documents[name]
         self.index_settings.pop(name, None)
+        self.index_mappings.pop(name, None)
         for alias in [alias for alias, target in self.aliases.items() if target == name]:
             del self.aliases[alias]
 
@@ -406,6 +438,17 @@ class FakeClient:
                 for name, spec in aggs.items()
             }
         return response
+
+    async def reindex(
+        self, *, source: dict[str, Any], dest: dict[str, Any], refresh: bool | None = None, **_options: object
+    ) -> dict[str, Any]:
+        """Copy every document of ``source``'s index into ``dest``'s, its source as stored, with new versions."""
+        del refresh
+        copied = 0
+        for document_id, (document, _) in list(self._index_of(source["index"]).items()):
+            await self.index(index=dest["index"], id=document_id, document=document, op_type=dest.get("op_type"))
+            copied += 1
+        return {"total": copied, "created": copied, "failures": []}
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
         """Answer like ``_count`` for a ``match_all`` or ``term`` query."""
