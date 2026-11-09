@@ -8,9 +8,9 @@
     "name": "Playwright Browsers",
     "options": {
         "version": {
-            "default": "1.64.0",
+            "default": "1.64.1",
             "description": "Playwright version whose browsers to install. Keep in sync with the playwright package in uv.lock; the CI image build overrides this.",
-            "proposals": ["1.64.0", "latest"],
+            "proposals": ["1.64.1", "latest"],
             "type": "string"
         }
     },
