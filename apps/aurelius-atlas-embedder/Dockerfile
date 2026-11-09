@@ -45,7 +45,8 @@ ENV AURELIUS_ATLAS_EMBEDDER_TLS_CA_FILE=""
 WORKDIR /application
 
 COPY --chown=root:root --chmod=0755 --from=build-image /build ./
-COPY --chown=root:root --chmod=0644 --from=model /model /model
+# 0755, not 0644: BuildKit 0.34 applies --chmod to the directory too, and nonroot must be able to enter it.
+COPY --chown=root:root --chmod=0755 --from=model /model /model
 
 USER nonroot
 
