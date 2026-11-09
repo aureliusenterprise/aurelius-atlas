@@ -7,3 +7,15 @@
 .aurelius-bell-icon {
     transform-origin: top center;
 }
+
+/*
+ * Logout is a native <button> (SHC-05, DD-428, superseding DD-153's anchor
+ * clause). Bulma's `button` reset and the shared `navbar-item`/`navbar-link`
+ * rules carry its ink, plate and hover chain; the one thing they cannot
+ * reach is the UA sheet's centred text on buttons, so the dropdown item
+ * sits left like its anchor siblings.
+ */
+.navbar-dropdown button.navbar-item {
+    text-align: inherit;
+    width: 100%;
+}

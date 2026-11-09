@@ -233,6 +233,9 @@ Pinned by `test__accent_ramp_matches_the_demo`.
 
 ### DD-153. The mobile burger chrome: grey burger, blended dropdowns, legacy logout anchor
 
+- **Status:** Accepted (the logout-anchor clause superseded by
+  [DD-428](../7-23-sonar-findings/design.md#dd-428-logout-is-a-native-button-and-the-language-group-a-fieldset-native-elements-over-aria-roles))
+
 **Decision.** The brand carries the legacy theme's mobile navbar on Bulma
 1: `--bulma-navbar-burger-color: #4a4a4a` with the burger **channels** set
 black (the hover/active plate composes them at 10 %/20 % alpha — 0.9.4's

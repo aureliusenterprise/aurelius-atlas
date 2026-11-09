@@ -1,5 +1,5 @@
 import { provideHttpClient, withInterceptors, withXhr } from "@angular/common/http";
-import { DATE_PIPE_DEFAULT_TIMEZONE, ViewportScroller } from "@angular/common";
+import { DATE_PIPE_DEFAULT_OPTIONS, ViewportScroller } from "@angular/common";
 import {
     ApplicationConfig,
     ErrorHandler,
@@ -173,11 +173,15 @@ export async function initialize(): Promise<ApplicationConfig> {
                       provideAppInitializer(() => ingestAuth.attach(inject(Keycloak))),
                   ]
                 : []),
-            // The display time zone (SPL-07): the stored choice, null = the
+            // The display time zone (SPL-07): the stored choice, unset = the
             // system default. DatePipe formats against it (the token replaces
-            // the legacy DATE_TIME_ZONE, removed in Angular 22); changing it
-            // takes effect on reload, which the settings panel states.
-            { provide: DATE_PIPE_DEFAULT_TIMEZONE, useFactory: () => TimezoneService.storedTimezone() },
+            // the legacy DATE_TIME_ZONE, removed in Angular 22; the options
+            // token supersedes DATE_PIPE_DEFAULT_TIMEZONE); changing it takes
+            // effect on reload, which the settings panel states.
+            {
+                provide: DATE_PIPE_DEFAULT_OPTIONS,
+                useFactory: () => ({ timezone: TimezoneService.storedTimezone() ?? undefined }),
+            },
             // The REST client composes every URL from this base — the Aurelius
             // deployment-proxy coupling is not ported (APC-01, DD-139).
             provideApiBaseUrl(config.apiBaseUrl),

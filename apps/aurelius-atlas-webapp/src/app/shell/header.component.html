@@ -83,22 +83,19 @@
                 <!-- Account-security: the Keycloak account console. -->
                 <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
                 <hr class="navbar-divider" />
-                <!-- NOSONAR S125: a DD-153 decision note, not commented-out code.
-                     Logout is an anchor by legacy form: the dropdown's ink chain
-                     styles anchors, and a native button element keeps the browser's
-                     centered text and picks up the dropdown item's white plate on
-                     mobile (DD-153). Enter/Space is the keyboard path below. -->
-                <!-- NOSONAR S6851: the anchor form is the DD-153 decision; Enter/Space is the keyboard path, as role=button prescribes. -->
-                <a
-                    class="navbar-item"
-                    role="button"
-                    tabindex="0"
+                <!-- Logout is a native button (SHC-05, DD-428, superseding
+                     DD-153's anchor clause): the shared navbar-link class
+                     rides the dropdown's ink chain, the scss drops the UA's
+                     centred text, and the native element brings its own
+                     keyboard path — no ARIA role, no key handlers. -->
+                <button
+                    type="button"
+                    class="navbar-item navbar-link is-arrowless"
                     (click)="logout()"
-                    (keydown.enter)="logout()"
-                    (keydown.space)="$event.preventDefault(); logout()"
                     i18n="@@shell.header.logout"
-                    >Logout</a
                 >
+                    Logout
+                </button>
             </div>
         </div>
     </ng-container>

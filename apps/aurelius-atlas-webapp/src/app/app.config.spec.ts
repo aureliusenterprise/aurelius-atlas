@@ -20,7 +20,7 @@
  */
 import { HttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { DATE_PIPE_DEFAULT_TIMEZONE, ViewportScroller } from "@angular/common";
+import { DATE_PIPE_DEFAULT_OPTIONS, ViewportScroller } from "@angular/common";
 import { ApplicationConfig, Provider } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { API_BASE_URL, LINEAGE_MODEL_BASE_URL } from "aurelius-atlas-data-access";
@@ -198,16 +198,16 @@ describe("app providers (7.3)", () => {
 
     it("provides the date-pipe time zone from the store (SPL-07)", async () => {
         await bootstrap(makeKeycloakStub());
-        // Nothing stored: null, which makes DatePipe use the system zone —
-        // the app's behaviour before the setting existed.
-        expect(TestBed.inject(DATE_PIPE_DEFAULT_TIMEZONE)).toBeNull();
+        // Nothing stored: no zone on the options, which makes DatePipe use
+        // the system zone — the app's behaviour before the setting existed.
+        expect(TestBed.inject(DATE_PIPE_DEFAULT_OPTIONS)?.timezone).toBeUndefined();
 
         localStorage.setItem(TIMEZONE_KEY, JSON.stringify("Europe/Amsterdam"));
         try {
             TestBed.resetTestingModule();
             await bootstrap(makeKeycloakStub());
 
-            expect(TestBed.inject(DATE_PIPE_DEFAULT_TIMEZONE)).toBe("Europe/Amsterdam");
+            expect(TestBed.inject(DATE_PIPE_DEFAULT_OPTIONS)?.timezone).toBe("Europe/Amsterdam");
         } finally {
             localStorage.removeItem(TIMEZONE_KEY);
         }

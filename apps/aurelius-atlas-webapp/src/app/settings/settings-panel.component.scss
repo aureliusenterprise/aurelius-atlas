@@ -14,6 +14,15 @@
     margin-top: 1.5rem;
 }
 
+/* The language group is a native <fieldset> (SPL-06, DD-169, the ALR-11
+ * pattern): the UA sheet gives it inset padding and a min-width sized to
+ * its content — reset here so the Bulma bar sits like the old div. Bulma
+ * already drops its border (ALR-11's note). */
+.settings-language-group {
+    min-width: 0;
+    padding: 0;
+}
+
 .settings-section input[type="checkbox"] {
     width: 1.25rem;
     height: 1.25rem;

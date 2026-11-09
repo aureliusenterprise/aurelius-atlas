@@ -107,10 +107,9 @@ export class AlertsService {
         const newest = groups[0];
 
         if (
-            newest &&
-            newest.severity === alert.severity &&
-            newest.source === alert.source &&
-            newest.message === alert.message &&
+            newest?.severity === alert.severity &&
+            newest?.source === alert.source &&
+            newest?.message === alert.message &&
             now - newest.lastSeen <= GROUP_WINDOW_MS
         ) {
             // A merge is fresh news too: the burst grew, so the group is

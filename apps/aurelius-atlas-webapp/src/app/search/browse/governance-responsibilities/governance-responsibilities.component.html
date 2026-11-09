@@ -35,13 +35,13 @@
                         Search for the name or email address of the person you are looking for.
                     </p>
                 </div>
-                <nav class="level is-mobile">
+                <div class="level is-mobile">
                     <aurelius-atlas-ui-search-field
                         class="is-fullwidth"
                         [placeholder]="searchPlaceholder"
                         (querySubmitted)="onQuerySubmitted($event)"
                     ></aurelius-atlas-ui-search-field>
-                </nav>
+                </div>
             </div>
         </article>
         <article class="media">
@@ -59,14 +59,14 @@
                         Click the button below to see a list of all people with data governance responsibilities.
                     </p>
                 </div>
-                <nav class="level is-mobile">
+                <div class="level is-mobile">
                     <button type="button" class="button is-success" (click)="explore()">
                         <span class="icon is-small">
                             <fa-icon [icon]="faUser"></fa-icon>
                         </span>
                         <span>{{ exploreLabel }}</span>
                     </button>
-                </nav>
+                </div>
             </div>
         </article>
     </div>

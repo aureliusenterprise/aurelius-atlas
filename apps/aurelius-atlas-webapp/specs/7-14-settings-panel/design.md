@@ -462,7 +462,8 @@ edit). The light band is untouched (SHM-05 stays the light-mode chrome).
 
 ### DD-169. Settings headings are the controls' accessible names
 
-- **Status:** Accepted
+- **Status:** Accepted (the language `role="group"` clause superseded by
+  [DD-428](../7-23-sonar-findings/design.md#dd-428-logout-is-a-native-button-and-the-language-group-a-fieldset-native-elements-over-aria-roles))
 - **Increment:** 7.14
 - **Date:** 2026-10-21
 
