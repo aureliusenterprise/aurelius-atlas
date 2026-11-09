@@ -1,5 +1,7 @@
 # aurelius-atlas-parity
 
+[![SonarQube Cloud](<https://sonarcloud.io/images/project_badges/sonarcloud-light.svg>)](<https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-parity>)
+
 Parity scenarios for Aurelius Atlas: the scenario format, the runner and the comparison.
 
 ## Installation

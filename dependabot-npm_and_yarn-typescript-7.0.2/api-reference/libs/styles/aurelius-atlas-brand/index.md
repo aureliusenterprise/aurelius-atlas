@@ -1,5 +1,7 @@
 # aurelius-atlas-brand
 
+[![SonarQube Cloud](<https://sonarcloud.io/images/project_badges/sonarcloud-light.svg>)](<https://sonarcloud.io/summary/new_code?id=aurelius-atlas-brand>)
+
 This library provides the Aurelius brand styles and assets for use in Aurelius projects.
 
 ## Installation

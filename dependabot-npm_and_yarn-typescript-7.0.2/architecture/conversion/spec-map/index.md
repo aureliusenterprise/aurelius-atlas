@@ -59,8 +59,10 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.2 | Design system | `libs/angular/aurelius-atlas-ui` | UIC |
 | 7.3 | API client and auth wiring | `libs/angular/aurelius-atlas-data-access` + `apps/aurelius-atlas-webapp` | APC |
 | 7.4a | Search results | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SRH, UIC |
+| 7.4b | Search discovery: the facet sidebar | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SDX, UIC |
 | 7.5 | Browse landing page | `apps/aurelius-atlas-webapp` | BRW |
 | 7.6 | Entity details | `apps/aurelius-atlas-webapp` | DET |
+| 7.7a | Entity editor drawer | `apps/aurelius-atlas-webapp` | EDT |
 | 7.11 | Shell chrome | `apps/aurelius-atlas-webapp` | SHC |
 | 7.12 | Theme, branding and layout | `apps/aurelius-atlas-webapp` | SHM |
 | 7.13 | UI components: details set | `libs/angular/aurelius-atlas-ui` | UIC |
@@ -71,6 +73,10 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.18 | Collector ingest identity | `libs/python/aurelius-atlas-otel` + `dev/keycloak` + `dev/observability` | CIA |
 | 7.19 | Frontend failure UX | `apps/aurelius-atlas-webapp` | – (no new ids, DD-214) |
 | 7.20 | Details data spine | `apps/aurelius-atlas-webapp` | DET |
+| 7.21a | Details sections: the seven m4i pages | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | DET |
+| 7.21b | Details sections: the entity datasets walk | `apps/aurelius-atlas-webapp` | DET |
+| 7.21c | Details sections: producers, consumers, the process page | `apps/aurelius-atlas-webapp` | DET |
+| 7.23 | Webapp Sonar findings | `apps/aurelius-atlas-webapp` | – (no new ids, except CHT-112; DD-428) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |

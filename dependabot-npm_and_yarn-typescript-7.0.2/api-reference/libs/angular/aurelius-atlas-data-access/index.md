@@ -1,5 +1,7 @@
 # aurelius-atlas-data-access
 
+[![SonarQube Cloud](<https://sonarcloud.io/images/project_badges/sonarcloud-light.svg>)](<https://sonarcloud.io/summary/new_code?id=aurelius-atlas-data-access>)
+
 This library provides common utilities for API data access in Angular projects.
 
 ## API Documentation

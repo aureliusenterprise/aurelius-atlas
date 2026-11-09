@@ -1,5 +1,7 @@
 # aurelius-atlas-ui
 
+[![SonarQube Cloud](<https://sonarcloud.io/images/project_badges/sonarcloud-light.svg>)](<https://sonarcloud.io/summary/new_code?id=aurelius-atlas-ui>)
+
 This library provides common UI components for Angular projects.
 
 ## API Documentation
