@@ -59,6 +59,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.2 | Design system | `libs/angular/aurelius-atlas-ui` | UIC |
 | 7.3 | API client and auth wiring | `libs/angular/aurelius-atlas-data-access` + `apps/aurelius-atlas-webapp` | APC |
 | 7.4a | Search results | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SRH, UIC |
+| 7.4b | Search discovery: the facet sidebar | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SDX, UIC |
 | 7.5 | Browse landing page | `apps/aurelius-atlas-webapp` | BRW |
 | 7.6 | Entity details | `apps/aurelius-atlas-webapp` | DET |
 | 7.7a | Entity editor drawer | `apps/aurelius-atlas-webapp` | EDT |

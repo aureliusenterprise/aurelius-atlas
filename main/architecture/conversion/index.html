@@ -7006,9 +7006,16 @@ checks a PR must pass:</p>
 </tr>
 <tr>
 <td>7.4b</td>
-<td>Search discovery</td>
-<td>Facet sidebar (quick-search aggregations), typeahead suggestions, advanced filters — net-new UX with no legacy copy (SDX)</td>
+<td>Search discovery: the facet sidebar</td>
+<td>The filter column 7.4a shipped empty, filled by the quick-search facets: store swaps to <code>POST /search/quick</code> (one call answers page + counts), <code>facet-list</code> ui-lib component, the type facet filters and the rest render read-only (SDX-01..09, UIC-33..35; DD-424..427, DV-143)</td>
 <td>Aurelius <code>apps/atlas/src/app/search/components/{filter}</code> (App Search shape, redesigned)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.4c</td>
+<td>Search discovery: suggestions and advanced filters</td>
+<td>Typeahead over <code>GET /search/suggestions</code> and the advanced-filter UI — net-new UX with no legacy copy (the roadmap row's own wording), deferred from 7.4b's first cut</td>
+<td>— (net-new UX)</td>
 <td>planned</td>
 </tr>
 <tr>
