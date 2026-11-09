@@ -7163,35 +7163,35 @@ checks a PR must pass:</p>
 <td>Details sections: producers, consumers, and the process page</td>
 <td>The amended dataset row of 7.21a (Producers/Consumers seeded from the dataset's own <code>outputFromProcesses</code>/<code>inputToProcesses</code> ends, DD-382) and the eighth layout row <code>m4i_generic_process</code> (Systems/Inputs/Outputs, DD-383) (DET-32..34, DD-382..383)</td>
 <td>Aurelius <code>details/dataset/{producers,consumers}-cards</code>, <code>details/process/</code></td>
-<td>planned</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.22a</td>
 <td>Lineage diagram: the data path</td>
 <td>The browser's way to the 8.2 aux API: nginx <code>/lineage-model/</code> location, the optional <code>lineageModelBaseUrl</code> config key, the bearer token on the new prefix, the aux app's <code>auth_extra_audiences</code> join, <code>LineageModelService</code> with the typed <code>{model, metadata}</code> and the <code>204</code> as <code>null</code>, the dev/e2e chain (LDG-01..08, DD-384..387, DV-142)</td>
 <td>Aurelius <code>libs/atlas/api/src/lib/get-lineage-model</code>, the deployment proxy</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.22b</td>
 <td>Lineage diagram: the box and the renderer</td>
 <td>The details page's lineage box over 7.22a's client: the <code>m4i_dataset</code> box and its states (LDG-09/10), <code>parseAr3Model</code> (LDG-11), the SVG drawing of the view's nodes, connections and labels (LDG-12..15), d3 pan/zoom (LDG-16), selection (LDG-17), the opened entity highlighted (LDG-18) (LDG-09..18, DD-388..392)</td>
 <td>Aurelius <code>modelview2</code>, <code>lineage-model.component</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.22c</td>
 <td>Lineage diagram: the selection panel and quickview</td>
 <td>The click-to-select chrome: the quickview drawer with its Selection/Browse/View tabs, the merged properties table, the ModelExplorer indexes as signals (LDG-19..26, DD-393..396, DD-401)</td>
 <td>Aurelius <code>modelview2</code> (modelBrowser, quickview)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>7.22d</td>
 <td>Lineage diagram: the toolbar and PNG export</td>
 <td>The diagram toolbar (Browse, fullscreen, reset-zoom, save view as image with the metadata tEXt chunks) and the two layouts' stat/link return; the <code>modelview-convert</code> surface stays unported as dead (LDG-27..32, DD-397..400)</td>
 <td>Aurelius <code>modelview2</code> (toolbar, png-export), <code>modelview-convert</code> (dead)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>8.0</td>
