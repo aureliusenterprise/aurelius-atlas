@@ -1,7 +1,7 @@
 # 11.4 Search by meaning
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#305](https://github.com/aureliusenterprise/aurelius-atlas/pull/305)
 - **Records:** ADR 059 (Proposed); DD-440 to DD-443; relies on 11.3 (entity vectors, DD-434 to DD-439), 11.2
   (the embedder), DD-089, DD-093
 
