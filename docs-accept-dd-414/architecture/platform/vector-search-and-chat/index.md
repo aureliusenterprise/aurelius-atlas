@@ -10,7 +10,7 @@ Keep Elasticsearch 9.5 as the one store and add the vectors to it; no second dat
 
 This keeps [ADR 047](<https://aureliusenterprise.github.io/docs-accept-dd-414/architecture/adr/047-one-search-store-is-the-system-of-record/index.md>): one search store is the system of record, with no graph database beside it.
 
-- **Fallback:** OpenSearch, Apache 2.0, if the Elastic License 2.0 is ruled out, for example because Aurelius Atlas is offered as a hosted service to third parties. It has the closest query DSL, but moving to it migrates the store and the client.
+- **Fallback:** OpenSearch, Apache 2.0, if the Elastic License 2.0 is ruled out, for example because customers are to reach Elasticsearch itself. It has the closest query DSL, but moving to it migrates the store and the client.
 - **A dedicated vector database:** Qdrant is the strongest Apache 2.0 candidate, but it pays off only at many millions of vectors. Below that it adds a second store to keep in sync and a second copy of the access rules.
 - **A graph database instead of Elasticsearch,** FalkorDB or ArcadeDB, would lose search and facets or bring back a second store. The chat's graph context comes from the relationships index.
 
@@ -60,7 +60,9 @@ Ten databases with vector search pass the filter, ArcadeDB the only graph databa
 | [Valkey Search](<https://github.com/valkey-io/valkey-search>) | BSD-3-Clause | No |
 | [Kùzu](<https://github.com/kuzudb/kuzu>) (graph) | MIT, and the repository is archived | No |
 
-Some Elasticsearch code is licensed solely under the Elastic License 2.0. That licence is source-available, not OSI open source. It allows free use, also commercially, but forbids offering Elasticsearch to third parties as a hosted or managed service, and working around its licence-key checks.
+Some Elasticsearch code is licensed solely under the Elastic License 2.0. That licence is source-available, not OSI open source. It allows free use, also commercially, with three limits: no providing Elasticsearch to third parties "as a hosted or managed service, where the service provides users with access to any substantial set of the features or functionality of the software", no working around its licence-key checks, and no removing its notices.
+
+Aurelius Atlas offered as a hosted service, with Elasticsearch hosted behind it, stays within that limit. Customers reach the Atlas REST API and the webapp, and the server builds its own queries from their calls: no route passes Elasticsearch's API or query DSL through. Elastic's licence FAQ names this case, Elasticsearch as the backend of one's own SaaS product, as allowed. Exposing Elasticsearch to customers, or passing its query DSL through nearly unchanged, would not be. The vector search and chat endpoints keep to Aurelius's own requests for that reason.
 
 ## Comparison
 
@@ -90,7 +92,7 @@ FalkorDB fails the licence filter and is listed for comparison only. All of them
 
 ## The candidates in short
 
-- **Elasticsearch 9.5: recommended.** Entities, relationships, facets and audits already live there. A vector field on the entities index keeps one document per entity, one write path and one place where access filters apply. Its weak spot is the licence: fine for running Aurelius Atlas yourself or at a customer, not for a hosted service. Some ranking and ML features may need a paid tier.
+- **Elasticsearch 9.5: recommended.** Entities, relationships, facets and audits already live there. A vector field on the entities index keeps one document per entity, one write path and one place where access filters apply. Its licence allows running Aurelius Atlas yourself, at a customer or as a hosted service, as long as Elasticsearch stays behind the server. Some ranking and ML features may need a paid tier.
 - **OpenSearch 3: the fallback under Apache 2.0.** The same capabilities, plus ready-made RAG pipelines. It means porting `aurelius-atlas-store-es` to `opensearch-py`, re-indexing, and giving up Elasticsearch 9 features such as retrievers.
 - **Qdrant: the best dedicated vector database.** Fast, memory-efficient filtered vector search. The vectors would sit apart from the entities, so every write and access rule must reach it too, while facets and graph context still come from Elasticsearch. Worth it only at tens of millions of vectors.
 - **Milvus: built for billions of vectors.** The same split-store cost as Qdrant, with a heavier deployment.
@@ -149,7 +151,7 @@ As a rough size: 100,000 entities with 1,024-dimension float vectors take about 
 
 ## Open questions
 
-- Will Aurelius Atlas be offered as a hosted service to third parties? Then the Elastic License 2.0 rules out Elasticsearch, and OpenSearch is the choice.
+- Should customers ever reach Elasticsearch itself, for example its query DSL or Kibana? Then the Elastic License 2.0 rules out Elasticsearch, and OpenSearch is the choice. A hosted Aurelius Atlas with Elasticsearch behind the server is allowed.
 - Which hybrid ranking and inference features are in Elastic's free Basic tier at 9.5, especially the RRF and linear retrievers and `semantic_text` with an external model? Without them, the server combines a kNN and a BM25 clause in one query itself.
 - Which embedding model and LLM, and where do they run? A local model keeps catalogue metadata on site; a hosted API is simpler.
 - Which text makes up an entity's embedding: name, description, type, classifications, breadcrumb path, owner?
