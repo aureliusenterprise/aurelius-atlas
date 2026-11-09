@@ -10,7 +10,7 @@ Keep Elasticsearch 9.5 as the one store and add the vectors to it; no second dat
 
 This keeps [ADR 047](<https://aureliusenterprise.github.io/main/architecture/adr/047-one-search-store-is-the-system-of-record/index.md>): one search store is the system of record, with no graph database beside it.
 
-- **Fallback:** OpenSearch, Apache 2.0, if the Elastic License 2.0 is ruled out, for example because Aurelius Atlas is offered as a hosted service to third parties. It has the closest query DSL, but moving to it migrates the store and the client.
+- **Fallback:** OpenSearch, Apache 2.0, if the Elastic License 2.0 is ruled out, for example because customers are to reach Elasticsearch itself. It has the closest query DSL, but moving to it migrates the store and the client.
 - **A dedicated vector database:** Qdrant is the strongest Apache 2.0 candidate, but it pays off only at many millions of vectors. Below that it adds a second store to keep in sync and a second copy of the access rules.
 - **A graph database instead of Elasticsearch,** FalkorDB or ArcadeDB, would lose search and facets or bring back a second store. The chat's graph context comes from the relationships index.
 
@@ -27,17 +27,29 @@ The store holds Atlas's model in the indices `aurelius-atlas-entities`, `-relati
 | Graph context for the chat | A hit's relationships, lineage and breadcrumb chain |
 | One source of truth | No second copy of entities and access rights |
 | Operations | Fits the dev stack, the standalone stack and the Helm chart (ADR 057) |
-| Licence | Apache 2.0 or Elastic License 2.0 only |
+| Licence | Free commercial use, and hosting allowed while customers don't reach the database |
 
 A worker re-embeds an entity whenever it changes.
 
 ## The licence filter
 
-Ten databases with vector search pass the filter, ArcadeDB the only graph database among them. Eight well-known options fail it, FalkorDB among them. The licences were read from each project's repository licence file on GitHub on 2026-11-07.
+A database passes when its licence allows free commercial use and hosting Aurelius Atlas on it, as long as customers reach Aurelius Atlas and not the database itself: the terms Elasticsearch has under the Elastic License 2.0. Open-source licences pass, the permissive ones and the copyleft ones alike; source-available licences pass when their limit is on offering the database itself.
+
+| Licence | Free commercial use | Hosting Aurelius Atlas on it | Passes |
+| --- | --- | --- | --- |
+| Apache 2.0, MIT, BSD-3-Clause, PostgreSQL | Yes | Yes, keeping the notices | Yes |
+| Elastic License 2.0 | Yes | Yes, while customers have no access to "any substantial set of the features or functionality" of the database | Yes |
+| AGPLv3 | Yes | Yes. Changes to the database's own code go to its users as source; run unmodified, nothing is owed | Yes |
+| GPLv3 | Yes | Yes. Shipping the database, in the Helm chart for example, comes with an offer of its source; Aurelius Atlas's own code is not affected | Yes |
+| Redis Source Available License 2.0 | Yes | Its limit has no "substantial set" qualifier: no making "the functionality of the Software" available as a service. Redis 8 can be taken under AGPLv3 | Unclear |
+| Server Side Public License v1 | Yes | Its section 13 includes "enabling third parties to interact with the functionality of the Program remotely", and asks then for the whole service's source | Unclear |
+| Business Source Licence 1.1 (Memgraph) | Only internal use | No: the grant is for "internal business purposes", without distribution to third parties or database-as-a-service; each version turns Apache 2.0 after four years | No |
+
+The licences were read from each project's repository licence file on GitHub, on 2026-11-07 and again on 2026-11-09 for the ones this filter now lets through. This is a reading of the licence texts, not legal advice.
 
 | Database | Licence | Passes |
 | --- | --- | --- |
-| [Elasticsearch](<https://github.com/elastic/elasticsearch>) | AGPLv3, SSPL or Elastic License 2.0 (choice) | Yes, under Elastic License 2.0 |
+| [Elasticsearch](<https://github.com/elastic/elasticsearch>) | AGPLv3, SSPL or Elastic License 2.0 (choice) | Yes, under ELv2 or AGPLv3 |
 | [OpenSearch](<https://github.com/opensearch-project/OpenSearch>) and its [k-NN plugin](<https://github.com/opensearch-project/k-NN>) | Apache 2.0 | Yes |
 | [Qdrant](<https://github.com/qdrant/qdrant>) | Apache 2.0 | Yes |
 | [Milvus](<https://github.com/milvus-io/milvus>) | Apache 2.0 | Yes |
@@ -46,21 +58,25 @@ Ten databases with vector search pass the filter, ArcadeDB the only graph databa
 | [Apache Cassandra](<https://github.com/apache/cassandra>) 5 | Apache 2.0 | Yes |
 | [Chroma](<https://github.com/chroma-core/chroma>) | Apache 2.0 | Yes |
 | [LanceDB](<https://github.com/lancedb/lancedb>) | Apache 2.0 | Yes |
+| [pgvector](<https://github.com/pgvector/pgvector>) and PostgreSQL | PostgreSQL Licence | Yes |
+| [Weaviate](<https://github.com/weaviate/weaviate>) | BSD-3-Clause; its enterprise features under their own licence | Yes, without those features |
+| [Redis](<https://github.com/redis/redis>) 8 | RSALv2, SSPL or AGPLv3 (choice) | Yes, under AGPLv3 |
+| [Valkey Search](<https://github.com/valkey-io/valkey-search>) | BSD-3-Clause | Yes |
 | [ArcadeDB](<https://github.com/ArcadeData/arcadedb>) (graph) | Apache 2.0 | Yes |
+| [Neo4j](<https://github.com/neo4j/neo4j>) Community (graph) | GPLv3 | Yes |
 | [NebulaGraph](<https://github.com/vesoft-inc/nebula>) (graph) | Apache 2.0 | Yes, but no vector search known |
 | [Apache HugeGraph](<https://github.com/apache/hugegraph>) (graph) | Apache 2.0 | Yes, but limited vector search |
 | [JanusGraph](<https://github.com/JanusGraph/janusgraph>) (graph) | Apache 2.0 (code), CC-BY-4.0 (docs) | Yes, but no vector search |
-| [Apache AGE](<https://github.com/apache/age>) (graph) | Apache 2.0, an extension of PostgreSQL | Only with PostgreSQL |
-| [FalkorDB](<https://github.com/FalkorDB/FalkorDB>) (graph) | Server Side Public License v1 | No |
-| [pgvector](<https://github.com/pgvector/pgvector>) and PostgreSQL | PostgreSQL Licence | No: permissive, but not Apache 2.0 |
-| [Weaviate](<https://github.com/weaviate/weaviate>) | BSD-3-Clause and the Weaviate Licence | No |
-| [Neo4j](<https://github.com/neo4j/neo4j>) Community (graph) | GPLv3 | No |
+| [Apache AGE](<https://github.com/apache/age>) (graph) | Apache 2.0, an extension of PostgreSQL | Yes, with PostgreSQL |
+| [FalkorDB](<https://github.com/FalkorDB/FalkorDB>) (graph) | Server Side Public License v1 | Unclear |
 | [Memgraph](<https://github.com/memgraph/memgraph>) (graph) | Business Source Licence 1.1 | No |
-| [Redis](<https://github.com/redis/redis>) 8 | RSALv2, SSPL or AGPLv3 | No |
-| [Valkey Search](<https://github.com/valkey-io/valkey-search>) | BSD-3-Clause | No |
-| [Kùzu](<https://github.com/kuzudb/kuzu>) (graph) | MIT, and the repository is archived | No |
+| [Kùzu](<https://github.com/kuzudb/kuzu>) (graph) | MIT | Licence yes; archived |
 
-Some Elasticsearch code is licensed solely under the Elastic License 2.0. That licence is source-available, not OSI open source. It allows free use, also commercially, but forbids offering Elasticsearch to third parties as a hosted or managed service, and working around its licence-key checks.
+Some Elasticsearch code is licensed solely under the Elastic License 2.0. That licence is source-available, not OSI open source. It allows free use, also commercially, with three limits: no providing Elasticsearch to third parties "as a hosted or managed service, where the service provides users with access to any substantial set of the features or functionality of the software", no working around its licence-key checks, and no removing its notices.
+
+Aurelius Atlas offered as a hosted service, with Elasticsearch hosted behind it, stays within that limit. Customers reach the Atlas REST API and the webapp, and the server builds its own queries from their calls: no route passes Elasticsearch's API or query DSL through. Elastic's licence FAQ names this case, Elasticsearch as the backend of one's own SaaS product, as allowed. Exposing Elasticsearch to customers, or passing its query DSL through nearly unchanged, would not be. The vector search and chat endpoints keep to Aurelius's own requests for that reason, and so would any other database in the table.
+
+FalkorDB stays unclear because the Server Side Public License words its limit more broadly than the Elastic License. A hosted Aurelius Atlas whose chat runs on FalkorDB's graph queries could count as "enabling third parties to interact with the functionality" of FalkorDB. The price of being wrong is high: the source of every program used to run the service, under the same licence. MongoDB reads its own SSPL as not covering an application built on the database, but that reading is not part of the licence. It needs a legal review, or a commercial FalkorDB licence, before it is used.
 
 ## Comparison
 
@@ -79,8 +95,13 @@ Only Elasticsearch and OpenSearch cover hybrid search, filters, facets and the A
 | Apache Cassandra 5 | Replaces the store | No BM25 ranking | No | New store without full-text search | Cluster of nodes, heavy |
 | Chroma | Second store, prototype | Vector plus document text match | No | Same as Qdrant | Light, single node |
 | LanceDB | Embedded library | Vector plus full-text index | No | No server in the open-source version | A library inside the server |
+| PostgreSQL + pgvector | Replaces the store | `tsvector` full-text, no BM25, plus HNSW vectors | `GROUP BY` counts only | New store; re-port every query; AGE adds Cypher | One PostgreSQL |
+| Weaviate | Second store, vectors only | BM25 and vectors, fused | Aggregate queries by property | Same as Qdrant | One extra service |
+| Redis 8 | Second store, vectors only | Full-text and vector in one query | `FT.AGGREGATE` group-by | Same as Qdrant | In memory |
+| Valkey Search | Second store, vectors only | Vector search with tag filters | No | Same as Qdrant | Valkey module, in memory |
+| Neo4j Community | Replaces the store | Lucene full-text plus vector index | Cypher `count` grouping only | New store; re-port every query | One Java server, no clustering |
 
-FalkorDB fails the licence filter and is listed for comparison only. All of them can filter during the vector search. Built-in LLM support differs:
+FalkorDB's licence is unclear for a hosted Aurelius Atlas, see above. All of them can filter during the vector search. Built-in LLM support differs:
 
 - Elasticsearch has the `semantic_text` field and inference endpoints that call an embedding model.
 - OpenSearch has ML Commons connectors, RAG and conversational search pipelines, and agents.
@@ -90,14 +111,17 @@ FalkorDB fails the licence filter and is listed for comparison only. All of them
 
 ## The candidates in short
 
-- **Elasticsearch 9.5: recommended.** Entities, relationships, facets and audits already live there. A vector field on the entities index keeps one document per entity, one write path and one place where access filters apply. Its weak spot is the licence: fine for running Aurelius Atlas yourself or at a customer, not for a hosted service. Some ranking and ML features may need a paid tier.
+- **Elasticsearch 9.5: recommended.** Entities, relationships, facets and audits already live there. A vector field on the entities index keeps one document per entity, one write path and one place where access filters apply. Its licence allows running Aurelius Atlas yourself, at a customer or as a hosted service, as long as Elasticsearch stays behind the server. Some ranking and ML features may need a paid tier.
 - **OpenSearch 3: the fallback under Apache 2.0.** The same capabilities, plus ready-made RAG pipelines. It means porting `aurelius-atlas-store-es` to `opensearch-py`, re-indexing, and giving up Elasticsearch 9 features such as retrievers.
 - **Qdrant: the best dedicated vector database.** Fast, memory-efficient filtered vector search. The vectors would sit apart from the entities, so every write and access rule must reach it too, while facets and graph context still come from Elasticsearch. Worth it only at tens of millions of vectors.
 - **Milvus: built for billions of vectors.** The same split-store cost as Qdrant, with a heavier deployment.
 - **Vespa: the best ranking, the hardest to adopt.** A rewrite of the store and every search on a new query language and operating model.
 - **Apache Solr 9: Apache Atlas's own index.** It has kNN and strong facets, but switching would undo the move to Elasticsearch and gain nothing over it.
-- **ArcadeDB: the graph candidate that passes.** Graph, document, full-text and vector indexes in one server; the only graph database that could be one store. Its facets are `GROUP BY` queries, not search aggregations.
-- **FalkorDB: built for GraphRAG, but fails the licence filter.** Its Server Side Public License v1 is neither Apache 2.0 nor the Elastic License. As a graph database it also brings the costs below.
+- **ArcadeDB: the strongest graph candidate.** Graph, document, full-text and vector indexes in one server, under Apache 2.0. Its facets are `GROUP BY` queries, not search aggregations.
+- **Neo4j Community: the best-known graph database.** Full-text and vector indexes beside the graph, under GPLv3, which asks nothing of Aurelius Atlas's own code. Community has no clustering. Like ArcadeDB, its facets are `count` queries, and it brings the costs below.
+- **PostgreSQL with pgvector and Apache AGE: one well-known server.** Vectors, full-text and a Cypher graph in PostgreSQL, but no BM25 ranking and no search facets.
+- **FalkorDB: built for GraphRAG, licence unclear.** Its Server Side Public License v1 needs a legal review for a hosted Aurelius Atlas. As a graph database it also brings the costs below.
+- **Weaviate, Redis 8 and Valkey Search: second stores.** The same sync cost as Qdrant, with no gain over it here.
 - **Cassandra, Chroma and LanceDB: not a fit.** Cassandra lacks full-text ranking and facets, Chroma suits prototypes, and LanceDB is a library with no open-source server.
 
 ## A graph database instead of Elasticsearch
@@ -108,6 +132,18 @@ A graph database as the only store would lose search and facets, or bring back a
 - **A graph database plus a search index:** two stores to keep in sync, which ADR 047 ended.
 
 Either way, the store library and every increment built on it would be ported again.
+
+### FalkorDB as the only store
+
+FalkorDB as the only store, in place of Elasticsearch, costs more than it gives:
+
+- **Search and facets get weaker.** `search/basic`, `search/quick` and the facet counts (`aggregationMetrics`) are built on Elasticsearch's ranking and aggregations. FalkorDB has a full-text index and Cypher `count` grouping, but nothing like Elasticsearch's aggregations. The facet sidebar and DSL search would be rebuilt on a weaker engine.
+- **The whole store library is rewritten.** `aurelius-atlas-store-es` and every increment built on it assume Elasticsearch indices: entities, relationships, classifications, audits, the journal, unique values and typedefs. Moving means porting all of it again and checking parity again. It would also supersede [ADR 047](<https://aureliusenterprise.github.io/main/architecture/adr/047-one-search-store-is-the-system-of-record/index.md>).
+- **The graph lives in memory.** FalkorDB is a Redis module, so the whole graph has to fit in one node's RAM. A single graph is not sharded across nodes, which caps its size and sets its cost per node. Elasticsearch keeps its data on disk.
+- **Filtering during vector search may be weaker.** FalkorDB's vector query returns the top k nodes first, and Cypher filters them afterwards. With access rights and type filters, hits are lost after the top-k cut instead of being filtered before it. Elasticsearch filters inside the kNN search.
+- **It is younger.** FalkorDB grew out of RedisGraph in 2023, so it has a shorter track record and a smaller ecosystem than Elasticsearch.
+
+The points on sharding and on vector filtering are from memory of FalkorDB's documentation, not checked for this page.
 
 The chat does not need a graph database. A GraphRAG-style answer needs one or two hops around each hit, and the relationships index holds those edges. A graph database is clearly better only for deep traversals, such as lineage across many hops, which Elasticsearch answers with one round trip per hop. If those turn out too slow, the next step is a graph database as a read-only copy built from the relationships index, not a new store.
 
@@ -149,7 +185,7 @@ As a rough size: 100,000 entities with 1,024-dimension float vectors take about 
 
 ## Open questions
 
-- Will Aurelius Atlas be offered as a hosted service to third parties? Then the Elastic License 2.0 rules out Elasticsearch, and OpenSearch is the choice.
+- Should customers ever reach Elasticsearch itself, for example its query DSL or Kibana? Then the Elastic License 2.0 rules out Elasticsearch, and OpenSearch is the choice. A hosted Aurelius Atlas with Elasticsearch behind the server is allowed.
 - Which hybrid ranking and inference features are in Elastic's free Basic tier at 9.5, especially the RRF and linear retrievers and `semantic_text` with an external model? Without them, the server combines a kNN and a BM25 clause in one query itself.
 - Which embedding model and LLM, and where do they run? A local model keeps catalogue metadata on site; a hosted API is simpler.
 - Which text makes up an entity's embedding: name, description, type, classifications, breadcrumb path, owner?
