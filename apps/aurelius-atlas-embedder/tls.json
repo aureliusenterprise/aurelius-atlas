@@ -1,0 +1,5 @@
+{
+    "services": {
+        "aurelius-atlas-embedder": ["aurelius-atlas-embedder", "embedder", "localhost", "127.0.0.1"]
+    }
+}

@@ -160,6 +160,18 @@ services:
             - ./webapp/config.json:/usr/share/nginx/html/config.json:ro
             - ../../aurelius-atlas-webapp/certs:/certs:ro
 
+    # The embedding model (11.2, ADR 059): text in, its 384-dimension embedding out, on the CPU. Only the stack's
+    # network reaches it, as https://embedder:21004 with its own certificate; it checks no tokens, so it has no
+    # published port (DD-432). Nothing waits for it, and nothing calls it until the server embeds entities (11.3).
+    embedder:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-embedder:local
+        environment:
+            AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE: /certs/aurelius-atlas-embedder.pem
+            AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE: /certs/aurelius-atlas-embedder-key.pem
+            AURELIUS_ATLAS_EMBEDDER_TLS_CA_FILE: /certs/ca.pem
+        volumes:
+            - ../../aurelius-atlas-embedder/certs:/certs:ro
+
     # One shot: waits for the server, signs in as the demo user atlas and posts SAMPLE_ZIP to admin/import, all
     # through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
     sample-import:

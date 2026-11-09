@@ -176,6 +176,7 @@ nav:
                 - 056. Behaviour is proven by executed tests: architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate.md
                 - 057. The system ships as Helm charts: architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md
                 - 058. A new catalogue starts with the m4i types: architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md
+                - 059. The catalogue searches by meaning: architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md

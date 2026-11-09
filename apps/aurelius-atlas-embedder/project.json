@@ -1,0 +1,20 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-embedder",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_embedder",
+    "tags": [],
+    "targets": {
+        "serve": {
+            "continuous": true,
+            "dependsOn": [{ "target": "certgen" }],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Serve the embedder on https://localhost:21004; AURELIUS_ATLAS_EMBEDDER_MODEL_DIR names the model's directory"
+            },
+            "options": {
+                "command": "uv run python -m aurelius_atlas_embedder"
+            }
+        }
+    }
+}

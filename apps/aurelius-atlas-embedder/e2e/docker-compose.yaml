@@ -1,0 +1,17 @@
+name: aurelius-atlas-embedder-e2e
+
+services:
+    aurelius-atlas-embedder:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-embedder:local
+        environment:
+            AURELIUS_ATLAS_EMBEDDER_LOG_LEVEL: info
+            # HTTPS with this project's certificate (`nx certgen`); the
+            # healthcheck verifies it and reports healthy once the model has
+            # loaded (EMB-07), which `up --wait` waits for.
+            AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE: /certs/aurelius-atlas-embedder.pem
+            AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE: /certs/aurelius-atlas-embedder-key.pem
+            AURELIUS_ATLAS_EMBEDDER_TLS_CA_FILE: /certs/ca.pem
+        ports:
+            - 21004
+        volumes:
+            - ../certs:/certs:ro

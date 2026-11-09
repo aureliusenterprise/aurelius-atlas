@@ -45,8 +45,10 @@ serves both, as they share the realm. Keycloak's admin console is <https://local
 `KC_BOOTSTRAP_ADMIN_USERNAME`, in the realm `master`; its session doesn't sign you in to the dashboards. The
 certificate is the dev CA's, so the browser asks once, for `localhost:9000`.
 
-The images are `aurelius-atlas-server:local` and `aurelius-atlas-webapp:local`; `npx nx docker-build
-aurelius-atlas-server` and `npx nx docker-build aurelius-atlas-webapp` build them from the checkout.
+The images are `aurelius-atlas-server:local`, `aurelius-atlas-webapp:local` and
+`aurelius-atlas-embedder:local`; `npx nx docker-build` of `aurelius-atlas-server`, `aurelius-atlas-webapp` and
+`aurelius-atlas-embedder` builds them from the checkout. The embedder needs its own certificate too: `npx nx
+certgen aurelius-atlas-embedder`.
 
 ## A sample dataset
 
@@ -89,6 +91,9 @@ later.
   (`webapp/resolve-nginx.sh`, as the chart's init container does), and `webapp/config.json` points the webapp
   at the demo realm. The stack has no telemetry collector, so `/otel/` takes the webapp's pushes and drops
   them.
+- `embedder`: the embedding model of search by meaning (ADR 059), `https://embedder:21004` on the stack's network
+  with its own certificate. It checks no tokens, so it has no published port (DD-432); nothing waits for it, and
+  nothing calls it until the server embeds entities (11.3). See `apps/aurelius-atlas-embedder/README.md`.
 - The server and the sample import run in the proxy's network (`network_mode: service:proxy`). nginx reaches
   the server on `127.0.0.1:21000` and the webapp as `aurelius-atlas-webapp:8080`, and the server reaches
   Keycloak at `https://localhost:9000/auth`, the
