@@ -1,0 +1,5 @@
+@if (editable()) {
+    <input class="color-square" type="color" [value]="color()" [attr.aria-label]="label()" (input)="onInput($event)" />
+} @else {
+    <span class="color-square is-static" [style.background]="color()" [attr.title]="color()"></span>
+}

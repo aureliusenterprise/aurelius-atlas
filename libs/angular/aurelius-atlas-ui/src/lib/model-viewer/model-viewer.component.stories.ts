@@ -1,8 +1,11 @@
+import { computed, signal } from "@angular/core";
 import type { Meta, StoryObj } from "@storybook/angular";
-import { expect } from "storybook/test";
+import { expect, waitFor } from "storybook/test";
 
+import { ColorSquare } from "../color-square/color-square.component";
 import { ModelViewer } from "./model-viewer.component";
 import { AR3_ICON_TYPES, NO_RELATION_OPTIONS } from "./archimate-shapes";
+import { CATEGORY_PALETTE, deriveCategoryLegend } from "./category-colors";
 import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, Ar3ViewNode } from "./ar3-types";
 
 /**
@@ -13,6 +16,19 @@ import type { Ar3DiagramModel, Ar3RelationOptions, Ar3View, Ar3ViewConnection, A
  * wants to show, not a fetched document. Pan and zoom work here too: drag
  * and the wheel ride the canvas (LDG-16).
  */
+
+/**
+ * A palette colour as a browser reports it: a real browser serialises an
+ * inline `fill` back as `rgb(r, g, b)`, so a play pin compares against this
+ * form, not the hex the palette stores.
+ */
+function rgb(hex: string): string {
+    if (hex.startsWith("rgb")) {
+        return hex;
+    }
+    const n = parseInt(hex.slice(1), 16);
+    return `rgb(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255})`;
+}
 
 /** One placed node of a story fixture. */
 interface PlacedNode {
@@ -118,6 +134,8 @@ const template = `
         [view]="view"
         [selected]="selected"
         [highlightedGuid]="highlightedGuid"
+        [categories]="categories"
+        [categoryColors]="categoryColors"
         (conceptSelected)="onClick($event)"
     />
 </div>
@@ -132,6 +150,8 @@ const host = (args: Record<string, unknown>) => ({
         height: 300,
         selected: null,
         highlightedGuid: null,
+        categories: null,
+        categoryColors: null,
         ...args,
         onClick: (concept: string) => clicked.push(concept),
     },
@@ -436,3 +456,184 @@ export const AllTypes: Story = {
         await expect((canvasElement as HTMLElement).querySelectorAll("g.node")).toHaveLength(AR3_ICON_TYPES.length);
     },
 };
+
+/** The heat-map-ish chain the colour stories share: five datasets, three buckets. */
+const heatChain = diagram(
+    {
+        raw: { type: "lineage_dataset", x: 0, y: 60, name: "raw.events" },
+        stage: { type: "lineage_dataset", x: COL, y: 60, name: "stg.events" },
+        mart: { type: "lineage_dataset", x: COL * 2, y: 60, name: "mart.events" },
+        audit: { type: "lineage_dataset", x: COL, y: 220, name: "audit.log" },
+        report: { type: "lineage_dataset", x: COL * 2, y: 220, name: "report.daily" },
+    },
+    [
+        { type: "lineage_relation", source: "raw", target: "stage" },
+        { type: "lineage_relation", source: "stage", target: "mart" },
+        { type: "lineage_relation", source: "stage", target: "audit" },
+        { type: "lineage_relation", source: "mart", target: "report" },
+    ],
+);
+
+/** The colour view's buckets, keyed by the fixture's concept ids. */
+const heatCategories = { raw: "bronze", stage: "silver", mart: "gold", audit: "silver", report: "gold" };
+
+/**
+ * The colour view (UIC-30): the caller's categories replace the class fills
+ * with the legend's colours — each distinct category takes the next palette
+ * colour in first-seen order, exactly the legacy's `ColorViewService` join.
+ * A relation whose concept carries no category keeps its black stroke, as
+ * the canvas spec's connection test pins (UIC-30).
+ */
+export const CategoryColors: Story = {
+    args: { ...heatChain, categories: heatCategories, height: 360 } as Record<string, unknown>,
+    render: host,
+    play: async ({ canvasElement }) => {
+        const shapes = [...(canvasElement as HTMLElement).querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        await expect(shapes.map((shape) => shape.style.fill)).toEqual([
+            rgb(CATEGORY_PALETTE[0]),
+            rgb(CATEGORY_PALETTE[1]),
+            rgb(CATEGORY_PALETTE[2]),
+            rgb(CATEGORY_PALETTE[1]),
+            rgb(CATEGORY_PALETTE[2]),
+        ]);
+    },
+};
+
+/**
+ * A picked colour (UIC-31): the drawer's legend table writes an override and
+ * the whole category repaints with it — here "gold" was picked to green.
+ * The un-picked categories keep their palette colours.
+ */
+export const CategoryColorsCustom: Story = {
+    args: {
+        ...heatChain,
+        categories: heatCategories,
+        categoryColors: { gold: "#22aa44" },
+        height: 360,
+    } as Record<string, unknown>,
+    render: host,
+    play: async ({ canvasElement }) => {
+        const shapes = [...(canvasElement as HTMLElement).querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        await expect(shapes[2].style.fill).toBe(rgb("#22aa44"));
+        await expect(shapes[0].style.fill).toBe(rgb(CATEGORY_PALETTE[0]));
+    },
+};
+
+/**
+ * The playground: the colour view with live pickers, so a reviewer can
+ * repaint a category and watch the canvas. Each legend row under the canvas
+ * holds the lib's colour square (UIC-32) — the same control the app's View
+ * tab ships — and picking one writes an override, so the whole category
+ * repaints and the legend row follows. That is the join the app drives
+ * through the shared state (UIC-31, DD-420), here with the categories a
+ * host would supply. The picks are signals — the story host re-renders on a
+ * write the way the app's signal write repaints the drawer — and a story
+ * switch or a page reload resets them to the palette, as the app's picks
+ * die with the page (DD-420).
+ */
+const playground = {
+    render: () => {
+        // The picked overrides (DD-420): category name -> hex, empty at
+        // first so the palette answers, as the app's state does.
+        const categoryColors = signal<Record<string, string>>({});
+        return {
+            // The legend rows draw the lib's square — a render imports it
+            // through moduleMetadata, this Storybook's rule for stories
+            // with their own template.
+            moduleMetadata: { imports: [ColorSquare] },
+            props: {
+                ...heatChain,
+                height: 320,
+                categories: heatCategories,
+                categoryColors,
+                // One picked square (UIC-31, UIC-32): the square emits the
+                // hex; write the override, the canvas and the legend
+                // repaint through the join.
+                pick: (category: string, color: string) =>
+                    categoryColors.update((current) => ({ ...current, [category]: color })),
+                // The legend rows: each category with its current colour,
+                // the same join the canvas and the View tab read. Named
+                // legendRows, not legend — a story prop lands on the host
+                // context and must not shadow anything the reader owns.
+                legendRows: computed(() =>
+                    Object.entries(deriveCategoryLegend(heatCategories, categoryColors())).map(([category, color]) => ({
+                        category,
+                        color,
+                    })),
+                ),
+            },
+            template: `
+<div style="width: 760px">
+    <div style="height: 320px">
+        <aurelius-atlas-ui-model-viewer
+            [model]="model"
+            [view]="view"
+            [categories]="categories"
+            [categoryColors]="categoryColors()"
+        />
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Category</th>
+                <th>Colour</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (row of legendRows(); track row.category) {
+                <tr>
+                    <td>{{ row.category }}</td>
+                    <td>
+                        <aurelius-atlas-ui-color-square
+                            [color]="row.color"
+                            [label]="row.category"
+                            (colorPicked)="pick(row.category, $event)"
+                        />
+                        {{ row.color }}
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+`,
+        };
+    },
+    play: async ({ canvasElement }: { canvasElement: HTMLElement }) => {
+        const canvas = canvasElement as HTMLElement;
+        // The canvas draws the heat chain and the legend lists its three
+        // categories with their pickers. Then a pick is driven — the same
+        // control the app's View tab ships: write a colour, the category
+        // repaints, and the legend row follows.
+        await waitFor(() => expect(canvas.querySelectorAll("tbody tr")).toHaveLength(3));
+        const legendRow = (category: string) =>
+            [...canvas.querySelectorAll<HTMLTableRowElement>("tbody tr")]
+                .find((row) => row.cells[0].textContent?.trim() === category)
+                ?.cells[1].textContent?.trim() ?? "";
+        const fillAt = (index: number) =>
+            (canvas.querySelectorAll<SVGPathElement>("g.node path.node-shape")[index] as SVGPathElement).style.fill;
+        const bronze = legendRow("bronze").toLowerCase();
+        const silver = legendRow("silver").toLowerCase();
+        const gold = legendRow("gold").toLowerCase();
+        await expect([fillAt(0), fillAt(1), fillAt(2), fillAt(3), fillAt(4)]).toEqual([
+            rgb(bronze),
+            rgb(silver),
+            rgb(gold),
+            rgb(silver),
+            rgb(gold),
+        ]);
+        // Drive the "gold" square: write a colour into its input and fire
+        // the event, as a picked swatch does. Both gold nodes take the new
+        // colour, the other categories keep theirs, and the legend row
+        // follows. The repaint rides the re-render, so wait for it.
+        const goldSwatch = [...canvas.querySelectorAll<HTMLInputElement>("tbody input[type='color']")][2];
+        goldSwatch.value = "#123456";
+        goldSwatch.dispatchEvent(new Event("input", { bubbles: true }));
+        await waitFor(() => expect(fillAt(2)).toBe(rgb("#123456")));
+        await expect(fillAt(4)).toBe(rgb("#123456"));
+        await expect(fillAt(0)).toBe(rgb(bronze));
+        await expect(fillAt(1)).toBe(rgb(silver));
+        await expect(legendRow("gold").toLowerCase()).toContain("#123456");
+    },
+};
+export const Playground: Story = playground as unknown as Story;

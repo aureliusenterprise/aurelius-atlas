@@ -500,3 +500,55 @@ describe("ModelViewer over an archimate document (LDG-33..LDG-36, DD-418)", () =
         }
     });
 });
+
+describe("ModelViewer's colour view (UIC-30, DD-420)", () => {
+    it("UIC-30: no categories keeps the class fills and the black stroke", () => {
+        const { compiled } = setup(lineageModel());
+        const shapes = [...compiled.querySelectorAll<SVGPathElement>("path.node-shape")];
+        expect(shapes.map((shape) => shape.style.fill)).toEqual(["", "", ""]);
+        const paths = [...compiled.querySelectorAll<SVGPathElement>("path.connection-path")];
+        expect(paths.map((path) => path.style.stroke)).toEqual(["", ""]);
+    });
+
+    it("UIC-30: categories ink each element by its category's legend colour", () => {
+        const { created, compiled } = setup(lineageModel());
+        created.componentRef.setInput("categories", { [DATASET_ONE]: "gold", [PROCESS]: "silver", "rel-1": "gold" });
+        created.detectChanges();
+
+        // The first dataset's concept is DATASET_ONE; the second (ds-2) has
+        // no category and keeps its class fill (null binding, empty style).
+        const shapes = [...compiled.querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        expect(shapes[0].style.fill).toBe("#3366cc");
+        expect(shapes[1].style.fill).toBe("#dc3912");
+        expect(shapes[2].style.fill).toBe("");
+
+        // The connection mirror (the legacy's stroke): rel-1 rides gold, the
+        // untabled concept keeps the black class stroke.
+        const paths = [...compiled.querySelectorAll<SVGPathElement>("path.connection-path")];
+        expect(paths[0].style.stroke).toBe("#3366cc");
+        expect(paths[1].style.stroke).toBe("");
+    });
+
+    it("UIC-31: a picked category colour repaints its whole category", () => {
+        const { created, compiled } = setup(lineageModel());
+        created.componentRef.setInput("categories", { [DATASET_ONE]: "gold", "ds-2": "gold", [PROCESS]: "silver" });
+        created.componentRef.setInput("categoryColors", { gold: "#ff0000" });
+        created.detectChanges();
+
+        const shapes = [...compiled.querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        expect(shapes[0].style.fill).toBe("#ff0000");
+        expect(shapes[2].style.fill).toBe("#ff0000");
+        expect(shapes[1].style.fill).toBe("#dc3912");
+    });
+
+    it("UIC-30: the lookup answers the view id first and the concept second", () => {
+        // The legacy's node service reads viewNode.id then modelNode.id.
+        const { created, compiled } = setup(lineageModel());
+        created.componentRef.setInput("categories", { n2: "only-view-id", "ds-2": "only-concept" });
+        created.detectChanges();
+
+        const shapes = [...compiled.querySelectorAll<SVGPathElement>("g.node path.node-shape")];
+        expect(shapes[1].style.fill).toBe("#3366cc");
+        expect(shapes[2].style.fill).toBe("#dc3912");
+    });
+});

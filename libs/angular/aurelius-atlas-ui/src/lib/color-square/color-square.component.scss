@@ -1,0 +1,32 @@
+/* The legacy's color-box, ported: a flat square with a hairline edge
+   (color-square.component.scss: 1px lightgray, 1em, pointer). The native
+   colour input carries that look so the dependency-free engine stays
+   invisible (DD-421) — its swatch fills the square and its chrome goes. */
+.color-square {
+    inline-size: 24px;
+    block-size: 24px;
+    padding: 0;
+    border: 1px solid var(--bulma-grey-light, #dbdbdb);
+    background: none;
+    cursor: pointer;
+    vertical-align: middle;
+}
+
+/* The native input's inner swatch: fill the square, drop the chrome. */
+input.color-square::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+input.color-square::-webkit-color-swatch {
+    border: none;
+}
+
+input.color-square::-moz-color-swatch {
+    border: none;
+}
+
+/* editable=false: the bare square, not clickable (UIC-32). */
+.color-square.is-static {
+    display: inline-block;
+    cursor: default;
+}

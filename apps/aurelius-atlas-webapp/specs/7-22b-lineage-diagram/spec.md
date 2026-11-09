@@ -46,14 +46,14 @@ language, not the explorer. The rules:
 
 Explicitly not delivered here, with the increment that will:
 
-| Not delivered                                                        | Lands with | Why                                                                                                                                                                                |
-| -------------------------------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The quickview (browse, model search, selection panel, view info)     | 7.22c      | The panel is its own port over the ported UI set; selection lands here only as the visual state it needs                                                                           |
-| The toolbar (Browse/info/fullscreen/reset/save buttons) and PNG save | 7.22d      | The chrome rides the completed view; reset-zoom and fullscreen are the toolbar's commands (LDG-16 keeps them callable programmatically)                                            |
-| The stats entry, the navigation links, the nav order                 | 7.22d      | A stat and a link to a box come back together with the finished box (DD-383's rule, kept); the box renders without them because the anchor `#lineage-model` exists from this slice |
-| The Data governance addon in the selection panel                     | 7.8        | It queries governance quality, which stays deferred with 7.8 (DD-369)                                                                                                              |
-| The repository model path (branch/version fetch, the folder tree)    | —          | The legacy Atlas app never uses it (`shell.standalone`): a deviation this slice records (LDG's Deviations)                                                                         |
-| Colour-by (buckets, legend, palette editing)                         | —          | It serves the platform app's model compare; no details-page input feeds it (the legacy's `bucketMapping` input is dead on this page)                                               |
+| Not delivered                                                        | Lands with | Why                                                                                                                                                                                              |
+| -------------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| The quickview (browse, model search, selection panel, view info)     | 7.22c      | The panel is its own port over the ported UI set; selection lands here only as the visual state it needs                                                                                         |
+| The toolbar (Browse/info/fullscreen/reset/save buttons) and PNG save | 7.22d      | The chrome rides the completed view; reset-zoom and fullscreen are the toolbar's commands (LDG-16 keeps them callable programmatically)                                                          |
+| The stats entry, the navigation links, the nav order                 | 7.22d      | A stat and a link to a box come back together with the finished box (DD-383's rule, kept); the box renders without them because the anchor `#lineage-model` exists from this slice               |
+| The Data governance addon in the selection panel                     | 7.8        | It queries governance quality, which stays deferred with 7.8 (DD-369)                                                                                                                            |
+| The repository model path (branch/version fetch, the folder tree)    | —          | The legacy Atlas app never uses it (`shell.standalone`): a deviation this slice records (LDG's Deviations)                                                                                       |
+| Colour-by (buckets, legend, palette editing)                         | 7.22g      | Delivered after all: the reviewer asked for it (UIC-30/UIC-31, DD-420). No details-page producer ships — the host-supplied posture is the legacy's own, and today no input feeds it on this page |
 
 ## Semantics
 
