@@ -19,7 +19,11 @@ jobs:
 
         permissions:
             contents: read
-            packages: read
+            # The e2e tests build images and docker-build pushes its
+            # buildcache tags to ghcr.io; a read token fails those builds
+            # ("denied: installation not allowed to Write organization
+            # package", Scan runs Oct 28 / Nov 4) and skips the sonar job.
+            packages: write
 
         steps:
             - name: Checkout code
