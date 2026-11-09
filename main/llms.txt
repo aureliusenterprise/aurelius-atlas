@@ -106,6 +106,7 @@
 - [056\. Behaviour is proven by executed tests](<https://aureliusenterprise.github.io/main/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>)
 - [057\. The system ships as Helm charts](<https://aureliusenterprise.github.io/main/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>)
 - [058\. A new catalogue starts with the m4i types](<https://aureliusenterprise.github.io/main/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>)
+- [059\. The catalogue searches by meaning](<https://aureliusenterprise.github.io/main/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/main/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/main/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/index.md>)

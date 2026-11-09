@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/">
+        <link rel="prev" href="../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/">
       
       
         <link rel="next" href="./design-log/">
@@ -2093,6 +2093,8 @@
       
         
       
+        
+      
     
     
     
@@ -3730,6 +3732,33 @@
     
   
   058. A new catalogue starts with the m4i types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  059. The catalogue searches by meaning
 
     
   </span>
@@ -7535,6 +7564,34 @@ checks a PR must pass:</p>
 <td>11.1</td>
 <td>Spike: Apache HugeGraph as the store</td>
 <td>Whether HugeGraph, with HugeGraph-AI, can replace Elasticsearch behind the three store protocols: conditional writes, unique values, runtime schema, text ranking, facets by <code>groupCount()</code>, filtered kNN, backup (HGS-01..11); measured against Elasticsearch at up to 1,000,000 entities (HGS-20..26); ends in ADR 059, Proposed</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>11.2</td>
+<td>The embedding service</td>
+<td><code>apps/aurelius-atlas-embedder</code>: OpenAI-shaped <code>/v1/embeddings</code> with <code>input_type</code>, <code>/v1/models</code>, the probes; <code>intfloat/multilingual-e5-small</code> on ONNX Runtime, fetched at build at a pinned revision and checked; the standalone stack's <code>embedder</code>, unpublished (EMB-01..11, ADR 059, DD-429..433)</td>
+<td>none</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>11.3</td>
+<td>Entity vectors</td>
+<td>The server's embedding client and settings; a <code>dense_vector</code> on the entity documents; the indexer that embeds new and changed entities and backfills the rest</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>11.4</td>
+<td>Search by meaning</td>
+<td>Semantic, hybrid and similar-entity endpoints under <code>/api/aurelius/v1/</code>, with the quick search's filters and facets</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>11.5</td>
+<td>Search by meaning in the webapp</td>
+<td>A semantic or hybrid toggle on the search page; similar entities on the details page</td>
 <td>none</td>
 <td>planned</td>
 </tr>

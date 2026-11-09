@@ -66,6 +66,7 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [056](<https://aureliusenterprise.github.io/main/architecture/adr/056-behaviour-is-proven-by-executed-tests-not-by-a-trace-gate/index.md>) | Behaviour is proven by executed tests, not by a trace gate; the `covers` marker stays as a review convention. | Accepted |
 | [057](<https://aureliusenterprise.github.io/main/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>) | The system ships as Helm charts — one per component, one umbrella — that a deployment installs; the repository names the path, not the cluster. | Accepted |
 | [058](<https://aureliusenterprise.github.io/main/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>) | A new catalogue starts with the m4i data dictionary types, created at start-up after Atlas's own; an operator may turn this off. | Accepted |
+| [059](<https://aureliusenterprise.github.io/main/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/index.md>) | The catalogue searches by meaning: each entity's embedding, computed by a model that runs on site, kept in the one store; Aurelius endpoints of their own, Atlas's API unchanged. | Proposed |
 
 ## Why record decisions
 
