@@ -197,6 +197,30 @@ counts poorly. That leaves two options:
 
 Either way, the store library and every increment built on it would be ported again.
 
+### FalkorDB as the only store
+
+FalkorDB as the only store, in place of Elasticsearch, costs more than it gives:
+
+- **Search and facets get weaker.** `search/basic`, `search/quick` and the facet counts
+  (`aggregationMetrics`) are built on Elasticsearch's ranking and aggregations. FalkorDB has a
+  full-text index and Cypher `count` grouping, but nothing like Elasticsearch's aggregations. The
+  facet sidebar and DSL search would be rebuilt on a weaker engine.
+- **The whole store library is rewritten.** `aurelius-atlas-store-es` and every increment built on
+  it assume Elasticsearch indices: entities, relationships, classifications, audits, the journal,
+  unique values and typedefs. Moving means porting all of it again and checking parity again. It
+  would also supersede [ADR 047](../adr/047-one-search-store-is-the-system-of-record.md).
+- **The graph lives in memory.** FalkorDB is a Redis module, so the whole graph has to fit in one
+  node's RAM. A single graph is not sharded across nodes, which caps its size and sets its cost per
+  node. Elasticsearch keeps its data on disk.
+- **Filtering during vector search may be weaker.** FalkorDB's vector query returns the top k nodes
+  first, and Cypher filters them afterwards. With access rights and type filters, hits are lost after
+  the top-k cut instead of being filtered before it. Elasticsearch filters inside the kNN search.
+- **It is younger.** FalkorDB grew out of RedisGraph in 2023, so it has a shorter track record and a
+  smaller ecosystem than Elasticsearch.
+
+The points on sharding and on vector filtering are from memory of FalkorDB's documentation, not
+checked for this page.
+
 The chat does not need a graph database. A GraphRAG-style answer needs one or two hops around each
 hit, and the relationships index holds those edges. A graph database is clearly better only for
 deep traversals, such as lineage across many hops, which Elasticsearch answers with one round trip
