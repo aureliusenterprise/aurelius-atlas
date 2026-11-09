@@ -1,8 +1,8 @@
 # 11.1 Spike: Apache HugeGraph as the store
 
 - **Status:** planned
-- **Pull request:** this spec's; the spike's code stays on the branch `spike/hugegraph-backend` and is not
-  merged
+- **Pull request:** [#301](https://github.com/aureliusenterprise/aurelius-atlas/pull/301), the spec;
+  the spike's code stays on the branch `spike/hugegraph-backend` and is not merged
 - **Records:** relies on ADR 046, ADR 047, ADR 052, DD-043, DD-045 to DD-047, DD-061, DD-070, DD-088, DD-092,
   DD-093; ends with ADR 059, Proposed
 
