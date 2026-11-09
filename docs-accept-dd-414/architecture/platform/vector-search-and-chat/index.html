@@ -5173,6 +5173,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="A graph database instead of Elasticsearch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#falkordb-as-the-only-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FalkorDB as the only store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -6460,6 +6477,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="A graph database instead of Elasticsearch">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#falkordb-as-the-only-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        FalkorDB as the only store
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -7110,6 +7144,28 @@ counts poorly. That leaves two options:</p>
 <li><strong>A graph database plus a search index:</strong> two stores to keep in sync, which ADR 047 ended.</li>
 </ul>
 <p>Either way, the store library and every increment built on it would be ported again.</p>
+<h3 id="falkordb-as-the-only-store">FalkorDB as the only store<a class="headerlink" href="#falkordb-as-the-only-store" title="Permanent link">&para;</a></h3>
+<p>FalkorDB as the only store, in place of Elasticsearch, costs more than it gives:</p>
+<ul>
+<li><strong>Search and facets get weaker.</strong> <code>search/basic</code>, <code>search/quick</code> and the facet counts
+  (<code>aggregationMetrics</code>) are built on Elasticsearch's ranking and aggregations. FalkorDB has a
+  full-text index and Cypher <code>count</code> grouping, but nothing like Elasticsearch's aggregations. The
+  facet sidebar and DSL search would be rebuilt on a weaker engine.</li>
+<li><strong>The whole store library is rewritten.</strong> <code>aurelius-atlas-store-es</code> and every increment built on
+  it assume Elasticsearch indices: entities, relationships, classifications, audits, the journal,
+  unique values and typedefs. Moving means porting all of it again and checking parity again. It
+  would also supersede <a href="../../adr/047-one-search-store-is-the-system-of-record/">ADR 047</a>.</li>
+<li><strong>The graph lives in memory.</strong> FalkorDB is a Redis module, so the whole graph has to fit in one
+  node's RAM. A single graph is not sharded across nodes, which caps its size and sets its cost per
+  node. Elasticsearch keeps its data on disk.</li>
+<li><strong>Filtering during vector search may be weaker.</strong> FalkorDB's vector query returns the top k nodes
+  first, and Cypher filters them afterwards. With access rights and type filters, hits are lost after
+  the top-k cut instead of being filtered before it. Elasticsearch filters inside the kNN search.</li>
+<li><strong>It is younger.</strong> FalkorDB grew out of RedisGraph in 2023, so it has a shorter track record and a
+  smaller ecosystem than Elasticsearch.</li>
+</ul>
+<p>The points on sharding and on vector filtering are from memory of FalkorDB's documentation, not
+checked for this page.</p>
 <p>The chat does not need a graph database. A GraphRAG-style answer needs one or two hops around each
 hit, and the relationships index holds those edges. A graph database is clearly better only for
 deep traversals, such as lineage across many hops, which Elasticsearch answers with one round trip
