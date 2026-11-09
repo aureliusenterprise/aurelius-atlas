@@ -1,5 +1,7 @@
 # aurelius-atlas-trace
 
+[![SonarQube Cloud](<https://sonarcloud.io/images/project_badges/sonarcloud-light.svg>)](<https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-trace>)
+
 Traceability for Aurelius Atlas: the `covers` marker, the coverage check and the test report.
 
 ## Installation

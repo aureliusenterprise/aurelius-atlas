@@ -1,5 +1,7 @@
 # aurelius-atlas-typesystem
 
+[![SonarQube Cloud](<https://sonarcloud.io/images/project_badges/sonarcloud-light.svg>)](<https://sonarcloud.io/summary/new_code?id=aureliusenterprise_aurelius-atlas-typesystem>)
+
 The Atlas type system for Aurelius Atlas, without I/O (`DD-002` (the record: `specs/0-1-adopt-template/design.md`)): the type registry and the types that type definitions resolve to. Since increment `1.2` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-2-type-registry/spec.md`): the built-in, array, map, enum and struct types, attribute types and constraints. Since `1.3` (the spec: `libs/python/aurelius-atlas-typesystem/specs/1-3-type-hierarchies/spec.md`): entity and classification hierarchies, relationship and business metadata types. Since `2.1b` (the spec: `libs/python/aurelius-atlas-typesystem/specs/2-1-value-types/spec.md`): the value side of the built-in, enum, array and map types, as Atlas checks, normalises and compares attribute values. Since `2.1c` (the spec: `libs/python/aurelius-atlas-typesystem/specs/2-1-entity-validation/spec.md`): the same for structs, classifications (with their validity periods) and entities (with their relationship attributes).
 
 ```
