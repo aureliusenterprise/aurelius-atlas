@@ -14,6 +14,7 @@ dev = [
     "aurelius-atlas-data2model",
     "aurelius-atlas-data2model-client",
     "aurelius-atlas-dsl",
+    "aurelius-atlas-embedder",
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
     "aurelius-atlas-lineage-model-client",
@@ -98,6 +99,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-server-client]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-embedder]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-store-es]
 workspace = true
 
@@ -119,6 +123,7 @@ workspace = true
 [tool.uv.workspace]
 members = [
     "apps/aurelius-atlas-data2model",
+    "apps/aurelius-atlas-embedder",
     "apps/aurelius-atlas-lineage-model",
     "apps/aurelius-atlas-validate-entity",
     "apps/aurelius-atlas-server",
@@ -162,6 +167,10 @@ venvPath = "."
 # pytest's conftest dir lands on sys.path at collection; pyright needs the same
 # view for the app tests' helper-module imports (the 8.2 fake upstream, the 8.4
 # client recorders).
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-embedder/tests"]
+root = "apps/aurelius-atlas-embedder"
+
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-lineage-model/tests"]
 root = "apps/aurelius-atlas-lineage-model"
