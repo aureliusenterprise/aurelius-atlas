@@ -75,14 +75,22 @@ export class LineageModelTab {
 
     protected readonly filteredRelations = computed(() => this.filter(this.relations()));
 
-    /** The keyword filter (LDG-23): substring on name and type, case-insensitive. */
+    /**
+     * The keyword filter (LDG-23): substring on name and type, case-insensitive —
+     * plus a relation's ends (DD-404), the text the relationship row actually
+     * shows.
+     */
     private filter(rows: LineageEntity[]): LineageEntity[] {
         const keyword = (this.query() ?? "").trim().toLowerCase();
         if (keyword === "") {
             return rows;
         }
         return rows.filter(
-            (row) => row.name.toLowerCase().includes(keyword) || row.humanReadableType.toLowerCase().includes(keyword),
+            (row) =>
+                row.name.toLowerCase().includes(keyword) ||
+                row.humanReadableType.toLowerCase().includes(keyword) ||
+                row.sourceName.toLowerCase().includes(keyword) ||
+                row.targetName.toLowerCase().includes(keyword),
         );
     }
 }

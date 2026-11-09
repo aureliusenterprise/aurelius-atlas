@@ -22,7 +22,20 @@
  * {@link parseAr3Model} throws on a document without `ar3_model` (DD-389):
  * a producer that changes its contract fails loudly here, and the box renders
  * the failure as LDG-10's empty state.
+ *
+ * 7.22e added the relation options (LDG-36): an `ar3_Access` carries an
+ * `@accessType` and an `ar3_Association` an `@isDirected`, and the relation
+ * style needs both. Every other archimate relation types on the document as
+ * it stands (DD-418). Since DD-419 the shared canvas in `aurelius-atlas-ui`
+ * reads its own view types, and the option pair and the two concept-id rules
+ * (LDG-17) live with it — re-exported here, so every reader of this module
+ * keeps the same names.
  */
+
+import type { Ar3RelationOptions } from "aurelius-atlas-ui";
+
+export type { Ar3RelationOptions };
+export { connectionConceptId, nodeConceptId } from "aurelius-atlas-ui";
 
 /** A name/value property of a concept (`ar3_property`: the `get-properties.ts` map). */
 export interface Ar3Property {
@@ -62,6 +75,13 @@ export interface Ar3Relation {
     readonly description: string;
     /** The relation's properties (`ar3_properties.ar3_property[]`), in order (LDG-21). */
     readonly properties: readonly Ar3Property[];
+    /**
+     * The relation's styling options (LDG-36, the legacy's `options`):
+     * `accessType` is read only for `ar3_Access` and `isDirected` only for
+     * `ar3_Association` (the legacy's two `if` blocks in `parseRelation`),
+     * each empty when the document carries no value for it.
+     */
+    readonly options: Ar3RelationOptions;
 }
 
 /** One bendpoint of a view connection — a waypoint in model coordinates. */
@@ -118,6 +138,24 @@ export interface Ar3View {
     readonly connections: readonly Ar3ViewConnection[];
 }
 
+/**
+ * One node of the document's organization tree (DD-406): a folder (a label
+ * with children) or a leaf (a `@identifierRef` to a concept). The shipped
+ * producer emits one unlabeled root holding the "Other", "Relations", and
+ * "Views" folders (`extract.py`'s `_ar3_organizations`, the legacy's
+ * `to_JSON.format_organizations`); the legacy parser read the same shape
+ * into its `pathIndex`. The 7.22c parse skipped it (DD-395 kept the tree
+ * out); the Browse tab's navigation tree needs it again.
+ */
+export interface Ar3Organization {
+    /** The folder's `ar3_label[0].value` — empty for a leaf or the root. */
+    readonly label: string;
+    /** A leaf's referenced concept id (`@identifierRef`), null for a folder. */
+    readonly ref: string | null;
+    /** The folder's children, in document order — empty for a leaf. */
+    readonly children: readonly Ar3Organization[];
+}
+
 /** The parsed model: the elements, the relations, and the views. */
 export interface Ar3Model {
     /**
@@ -132,6 +170,8 @@ export interface Ar3Model {
     readonly relations: ReadonlyMap<string, Ar3Relation>;
     /** The views, in document order — the viewer draws the first (LDG-12). */
     readonly views: readonly Ar3View[];
+    /** The organization tree's roots (DD-406) — usually the one unlabeled root. */
+    readonly organizations: readonly Ar3Organization[];
 }
 
 /** One JSON object row, read by bracket access only (strict index rules). */
@@ -161,15 +201,24 @@ export function parseAr3Model(model: string): Ar3Model {
         })),
     );
     const relations = indexById(
-        rows(ar3, "ar3_relationships", "ar3_relationship").map((row) => ({
-            id: text(row["@identifier"]),
-            source: text(row["@source"]),
-            target: text(row["@target"]),
-            type: text(row["@xsi_type"]),
-            name: entryName(row["ar3_name"]),
-            description: entryText(row["ar3_documentation"]),
-            properties: properties(row),
-        })),
+        rows(ar3, "ar3_relationships", "ar3_relationship").map((row) => {
+            const type = text(row["@xsi_type"]);
+            return {
+                id: text(row["@identifier"]),
+                source: text(row["@source"]),
+                target: text(row["@target"]),
+                type,
+                name: entryName(row["ar3_name"]),
+                description: entryText(row["ar3_documentation"]),
+                properties: properties(row),
+                // The legacy's two `if` blocks (parse-relation.ts): each
+                // attribute is read only for its own relation type.
+                options: {
+                    accessType: type === "ar3_Access" ? text(row["@accessType"]) : "",
+                    isDirected: type === "ar3_Association" ? text(row["@isDirected"]) : "",
+                },
+            };
+        }),
     );
     const views = rows(ar3, "ar3_views", "ar3_diagrams")
         .flatMap((diagrams) => rowsOf(diagrams, "ar3_view"))
@@ -177,26 +226,24 @@ export function parseAr3Model(model: string): Ar3Model {
     // The legacy's info.name: the model's own name, with its fallback for a
     // document that carries none (parse-model.ts).
     const name = entryName(ar3["ar3_name"]);
+    const organizations = rowsOf(ar3, "ar3_organizations").map(parseOrganization);
 
-    return { name: name === "" ? "ArchiMate Model" : name, elements, relations, views };
+    return {
+        name: name === "" ? "ArchiMate Model" : name,
+        elements,
+        relations,
+        views,
+        organizations,
+    };
 }
 
-/**
- * Resolve a node's concept id for selection (LDG-17): the element it
- * references, else the node itself — the legacy's `ref ?? id`.
- * @param node the view node
- */
-export function nodeConceptId(node: Ar3ViewNode): string {
-    return node.ref ?? node.id;
-}
-
-/**
- * Resolve a connection's concept id for selection (LDG-17): the relation it
- * references, else the connection itself — the legacy's `ref ?? id`.
- * @param connection the view connection
- */
-export function connectionConceptId(connection: Ar3ViewConnection): string {
-    return connection.ref ?? connection.id;
+/** One `ar3_organizations` entry: folder (label + items) or leaf (a ref). */
+function parseOrganization(row: JsonRow): Ar3Organization {
+    return {
+        label: entryName(row["ar3_label"]),
+        ref: optionalText(row["@identifierRef"]),
+        children: rowsOf(row, "ar3_item").map(parseOrganization),
+    };
 }
 
 /**

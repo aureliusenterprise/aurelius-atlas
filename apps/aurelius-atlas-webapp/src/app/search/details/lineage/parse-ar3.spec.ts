@@ -51,6 +51,7 @@ describe("parseAr3Model (LDG-11)", () => {
                 name: "",
                 description: "",
                 properties: [],
+                options: { accessType: "", isDirected: "" },
             },
             {
                 id: "rel-2",
@@ -60,6 +61,7 @@ describe("parseAr3Model (LDG-11)", () => {
                 name: "",
                 description: "",
                 properties: [],
+                options: { accessType: "", isDirected: "" },
             },
         ]);
     });
@@ -250,6 +252,48 @@ describe("parseAr3Model (LDG-11)", () => {
         expect(parsed.views[0].properties).toEqual([{ name: "tag", value: "core" }]);
     });
 
+    it("LDG-36/DD-418: each option is read only for its own relation type", () => {
+        // The legacy's parseRelation reads @accessType only for ar3_Access
+        // and @isDirected only for ar3_Association; every other relation
+        // keeps both empty even when the document carries the attributes.
+        const document = {
+            ar3_model: {
+                ar3_relationships: {
+                    ar3_relationship: [
+                        {
+                            "@identifier": "acc",
+                            "@source": "e1",
+                            "@target": "e2",
+                            "@xsi_type": "ar3_Access",
+                            "@accessType": "ReadWrite",
+                            "@isDirected": "true",
+                        },
+                        {
+                            "@identifier": "assoc",
+                            "@source": "e1",
+                            "@target": "e2",
+                            "@xsi_type": "ar3_Association",
+                            "@accessType": "Read",
+                            "@isDirected": "false",
+                        },
+                        {
+                            "@identifier": "flow",
+                            "@source": "e1",
+                            "@target": "e2",
+                            "@xsi_type": "ar3_Flow",
+                            "@accessType": "Write",
+                            "@isDirected": "true",
+                        },
+                    ],
+                },
+            },
+        };
+        const parsed = parseAr3Model(JSON.stringify(document));
+        expect(parsed.relations.get("acc")?.options).toEqual({ accessType: "ReadWrite", isDirected: "" });
+        expect(parsed.relations.get("assoc")?.options).toEqual({ accessType: "", isDirected: "false" });
+        expect(parsed.relations.get("flow")?.options).toEqual({ accessType: "", isDirected: "" });
+    });
+
     it("LDG-11/DD-389: a document without ar3_model raises", () => {
         expect(() => parseAr3Model(JSON.stringify({ model: "not the shape" }))).toThrow(/ar3_model/);
         expect(() => parseAr3Model("not json at all")).toThrow();
@@ -264,5 +308,35 @@ describe("parseAr3Model (LDG-11)", () => {
         const standAlone = { ...view.nodes[0], ref: null };
         expect(nodeConceptId(standAlone)).toBe(view.nodes[0].id);
         expect(nodeElement(model, standAlone)).toBeUndefined();
+    });
+
+    it("DD-406: reads the organization tree — the unlabeled root and its folders", () => {
+        // The shipped producer emits one unlabeled root holding the Other /
+        // Relations / Views folders (extract.py's _ar3_organizations).
+        expect(model.organizations).toHaveLength(1);
+        const root = model.organizations[0];
+        expect(root.label).toBe("");
+        expect(root.ref).toBeNull();
+        expect(root.children.map((folder) => folder.label)).toEqual(["Other", "Relations", "Views"]);
+
+        const other = root.children[0];
+        expect(other.children.map((leaf) => leaf.ref)).toEqual([
+            "00000000-0000-4000-8000-000000000001",
+            "00000000-0000-4000-8000-000000000002",
+            "00000000-0000-4000-8000-000000000003",
+        ]);
+        expect(other.children[0].children).toEqual([]);
+        expect(root.children[1].children.map((leaf) => leaf.ref)).toEqual(["rel-1", "rel-2"]);
+        expect(root.children[2].children.map((leaf) => leaf.ref)).toEqual(["lineage_view"]);
+    });
+
+    it("DD-406: a document without organizations parses to an empty tree", () => {
+        // The 8.2 producer always writes the folders; a document that carries
+        // none (or any producer that drops the block) reads as no tree, and
+        // the Browse tab shows only the dropdown.
+        const document = JSON.parse(fixture.model) as Record<string, unknown>;
+        const ar3 = document["ar3_model"] as Record<string, unknown>;
+        delete ar3["ar3_organizations"];
+        expect(parseAr3Model(JSON.stringify(document)).organizations).toEqual([]);
     });
 });

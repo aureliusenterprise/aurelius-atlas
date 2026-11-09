@@ -170,3 +170,44 @@ feature from an entity without lineage.
 **Consequences.** The state machine has two visible resting states (empty,
 diagram), which the unit tests pin. If product later wants the 401 (a session
 gone) to read differently from a 204, that is a new LDG rule with its own DD.
+
+### DD-417. The drawing sits off the top-left corner by default
+
+- **Status:** Proposed
+- **Increment:** 7.22b
+- **Date:** 2026-11-08
+
+**Decision.** The bounds group (LDG-15) adds a fixed 20px to its
+`-minX/-minY` translate (`BOUNDS_INSET`, `lineage-shapes.ts`), so the model's
+top-left node starts 20px inside the drawing area instead of flush at its
+origin. Amends LDG-15. A deliberate deviation from the legacy, recorded in
+this spec's Deviations.
+
+**Reason.** A reader asked for the graph to be "offset slightly from the top
+corner by default". The legacy seats the model flush (`ModelviewService`: the
+group translates by exactly `-minX/-minY`), which puts the first node's 2px
+stroke and its label against the drawing's dashed edge — the corner reads as
+cropped rather than placed. 20px matches the control column's own inset (the
+legacy's `padding: 10px` doubled by the button row's margin, near enough) and
+is small enough to keep the layout's proportions at the 0.5 zoom floor.
+
+**Alternatives.** (1) Zoom-to-fit with padding on load (d3's
+`zoom.transform` to a fitted transform). It loses: the fit depends on the
+container's measured size, which the units and jsdom cannot pin, it moves the
+reader's zoom state before they touched it, and the saved PNG (LDG-29/LDG-30)
+captures the fitted transform — a bigger deviation than asked for. (2) CSS
+padding on the svg. It loses: the background rect (the legacy's
+`#modelview-background`) would no longer cover the padded band, and panning
+under the padding exposes it. (3) A one-off transform extra on the zoom
+group. It loses: `resetZoom()` restores the zoom group's identity (LDG-16)
+and the save serialises it, so the inset would vanish on reset and drift with
+the reader's pan; on the bounds group it composes with the zoom and survives
+both, as the legacy's own bounds shift does.
+
+**Consequences.** One constant and one subtraction in `boundsTransform()`;
+the LDG-15 test's expected literals gain the inset (`translate(20, 20)`,
+`translate(-980, -480)`), and a new test pins that the inset rides the bounds
+group — pan moves the zoom group, `resetZoom()` clears only the zoom group,
+the seating stays. The PNG the save produces gains the same 20px margin the
+screen shows, since the clone carries the group. The e2e pins no coordinates,
+so nothing downstream moves.

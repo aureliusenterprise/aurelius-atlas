@@ -68,6 +68,7 @@
             "defaultConfiguration": "production",
             "executor": "@angular/build:application",
             "options": {
+                "allowedCommonJsDependencies": ["html2canvas"],
                 "browser": "apps/aurelius-atlas-webapp/src/main.ts",
                 "inlineStyleLanguage": "scss",
                 "localize": ["en-US", "nl-NL"],

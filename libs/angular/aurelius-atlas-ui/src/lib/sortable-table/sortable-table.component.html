@@ -17,6 +17,21 @@
         >
     </p>
 } @else {
+    <!-- The pagination bar rides above the table, as the Aurelius
+         sortable-table-shell renders it (DD-412): the shell puts its
+         `pagination-template` nav in a `.field` before the table
+         container, and the shell is what every Aurelius table — the
+         plain `sortable-table` included, it wraps the shell — draws. -->
+    @if (paginatedTotal() > pageSize()) {
+        <div class="field">
+            <aurelius-atlas-ui-pagination
+                [pageIndex]="pageIndex()"
+                [pageSize]="pageSize()"
+                [totalItems]="paginatedTotal()"
+                (pageIndexChange)="onPageChanged($event)"
+            ></aurelius-atlas-ui-pagination>
+        </div>
+    }
     <!-- The Bulma table-container scrolls wide tables horizontally; it can clip
          dropdowns (bulma#1655), so the Aurelius `enableTableContainer` opt-out
          is kept. -->
@@ -76,14 +91,4 @@
             </tbody>
         </table>
     </div>
-    @if (paginatedTotal() > pageSize()) {
-        <div class="field">
-            <aurelius-atlas-ui-pagination
-                [pageIndex]="pageIndex()"
-                [pageSize]="pageSize()"
-                [totalItems]="paginatedTotal()"
-                (pageIndexChange)="onPageChanged($event)"
-            ></aurelius-atlas-ui-pagination>
-        </div>
-    }
 }

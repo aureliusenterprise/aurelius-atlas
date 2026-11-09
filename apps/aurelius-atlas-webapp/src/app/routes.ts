@@ -22,6 +22,31 @@ export function createEntityMatcher(segments: UrlSegment[]): UrlMatchResult | nu
     return second ? { consumed: [first, second], posParams: { type: second } } : { consumed: [first] };
 }
 
+/** The tabs the lineage quickview's route segment may name (DD-415). */
+const LINEAGE_TABS = new Set(["browse", "model", "view", "selection"]);
+
+/**
+ * The lineage quickview route's matcher (DD-415): it takes `lineage`,
+ * `lineage/<tab>`, and `lineage/selection/<concept>` in one config — the
+ * `createEntityMatcher` posture (DD-355): one config keeps the component
+ * across tab and selection changes, so switching tabs never rebuilds the
+ * drawer or replays its slide-in.
+ * @param segments the unclaimed segments of the `drawer` outlet
+ * @returns the consumed segments, with the tab and concept as posParams
+ */
+export function lineageDrawerMatcher(segments: UrlSegment[]): UrlMatchResult | null {
+    const [first, second, third] = segments;
+    if (first?.path !== "lineage") {
+        return null;
+    }
+    if (second?.path === "selection" && third !== undefined) {
+        return { consumed: [first, second, third], posParams: { tab: second, concept: third } };
+    }
+    if (second !== undefined && LINEAGE_TABS.has(second.path)) {
+        return { consumed: [first, second], posParams: { tab: second } };
+    }
+    return { consumed: [first] };
+}
 /**
  * The app-root guard (APC-05, DD-141): an unauthenticated visit redirects to the
  * Keycloak sign-in page and returns to the requested route afterwards. The legacy
@@ -117,6 +142,21 @@ export const routes: Routes = [
                 outlet: "drawer",
                 loadComponent: () => import("./search/editor/entity-editor.component").then((m) => m.EntityEditor),
                 data: { editorMode: "create" },
+            },
+            // The lineage quickview, the fourth route in the one `drawer`
+            // outlet (LDG-25, DD-415): the diagram's node click navigates to
+            // `(drawer:lineage:selection:<concept>)`, the tab strip
+            // re-navigates the tab segment, and dismissal navigates away —
+            // the editor's shape (DD-322), so the open panel rides the URL
+            // and a reload reopens it on the same tab. One matcher config
+            // for the tab and the concept (the DD-355 posture): switching
+            // tabs stays in the config, so the drawer never rebuilds or
+            // replays its slide-in.
+            {
+                matcher: lineageDrawerMatcher,
+                outlet: "drawer",
+                loadComponent: () =>
+                    import("./search/details/lineage/model-browser.component").then((m) => m.LineageModelBrowser),
             },
             // Fallback when no prior route is matched (SHL-05, as Aurelius's '**').
             // Aurelius: { path: '**', redirectTo: '' } — in the legacy app the chain

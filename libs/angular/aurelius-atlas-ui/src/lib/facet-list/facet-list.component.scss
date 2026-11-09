@@ -1,0 +1,28 @@
+/*
+ * The legacy facet and check-box styles (facet.component.scss,
+ * check-box.component.scss): the list gap, the label spacing, and the
+ * read-more link's blue underline — the legacy literal, ported as the
+ * breadcrumbs component ports its own (DD-150: the legacy look is the
+ * product look). The block host stacks the menus the way the legacy
+ * facet loop's siblings did (the component host is the loop's element).
+ */
+:host {
+    display: block;
+}
+
+.menu-label {
+    margin-bottom: 0.5rem;
+}
+
+ul {
+    margin-bottom: 0.5rem;
+}
+
+.label-text {
+    margin-left: 0.5rem;
+}
+
+.read-more {
+    color: blue;
+    text-decoration: underline;
+}

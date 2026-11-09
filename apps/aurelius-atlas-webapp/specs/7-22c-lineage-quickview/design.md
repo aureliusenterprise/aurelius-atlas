@@ -69,9 +69,13 @@ this slice's test (DD-389's planned consequence, now due).
 
 ### DD-395. The Browse tab drops the organization tree
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-406
 - **Increment:** 7.22c
 - **Date:** 2026-11-07
+
+> Superseded in the 7.22d reader-feedback round: the reader asked for the tree
+> as the place future diagrams and views hang, and the cheap nested-list shape
+> costs far less than this entry feared (DD-406).
 
 **Decision.** The Browse tab is the view dropdown only (LDG-23). The legacy's
 second part — the folder tree built from the model's `ar3_organizations` — is
@@ -154,3 +158,126 @@ both sources would prefer.
 the legacy source; the divergence note in LDG-26 records it. The key is unused
 until the Browse tab's dropdown labels land, so no shipped string is affected
 by the rename.
+
+### DD-410. The quickview's chrome is the legacy's: Details header, footer Close, legacy tab order
+
+- **Status:** Proposed
+- **Increment:** 7.22c
+- **Date:** 2026-11-07
+
+**Decision.** The drawer's header reads "Details" — the legacy quickview's
+default `name`, which `model-browser.component.html` never overrode — with the
+vendored key `search.details.components.navigation.details` (already carried by
+both catalogues). Its footer holds a Close button (the legacy footer's own),
+projected into the drawer's `drawer-footer` slot, dismissing through the same
+path as the head's close so the selection clears with the panel (DD-403). The
+tab order becomes Browse, Model, View, Selection — the legacy's `keyvalue`
+order over the tabs object (`preserveKeyOrder` returns 0), not the order the
+first cut guessed (LDG-19).
+
+**Reason.** The demo and the source agree: every legacy panel reads "Details"
+whichever concept opened it, and the tab strip is insertion-ordered. The first
+cut's model-name header and its selection-before-view order were both guesses
+that the reference contradicts; the screenshot round exists to close exactly
+this class of gap.
+
+**Alternatives.** Keep the model name as the header. It loses: what the
+product's own reference UI shows, and the model name adds nothing the Browse
+tab does not already say. Port the pin toggle too. It loses: a pinned panel is
+meaningless for an overlay whose dismissal deselects (DD-403), and the ui
+drawer has no pin state — recorded as a deviation.
+
+**Consequences.** The viewer stops binding the model name into the panel
+(the `title` input leaves the component — no caller needed it). The footer bar
+shows whenever the panel does, matching the legacy; the drawer's empty-foot
+hiding stays for the other drawers.
+
+### DD-411. The entities table draws the legacy's rows: icon Type cell, three-line relationship row
+
+- **Status:** Proposed
+- **Increment:** 7.22c
+- **Date:** 2026-11-07
+
+**Decision.** The quickview's entity table copies the legacy's row templates
+row for row. An element row is the narrow Type cell holding the archimate icon
+for the two lineage types (`lineage_dataset`/`lineage_process` — the only two
+the legacy's icon set names; every other type draws nothing, as the legacy's
+icon component did when its definitions had no entry) and the Name cell. A
+relationship row is one `colspan` cell with the legacy's three lines: the
+source end (icon + `<strong class="truncate">` name), the middle `<em>` line —
+the relation's name, else the verb its type carries (`Flows into`, the legacy
+`parse-relation.ts` table's `displayName` for `lineage_relation`), then the
+human-readable type in parentheses — and the target end. A relation entity
+gains `sourceType`/`targetType` so each end draws its own icon (LDG-19's
+index). The Type column keeps its `humanReadableType` sort key: the legacy
+sorted the raw `@xsi_type`; the shipped chain's one relation type makes the
+two orders identical, and the name keeps the header honest.
+
+**Reason.** The demo screenshot and the legacy source agree on this shape;
+DD-404's one-line `source → target` cell was a simplification the reference
+does not have. The demo's "Flows into (Data Lineage)" middle line is exactly
+what the shipped chain renders with the verb table — the earlier worry that
+the verb came from producer data was wrong: it is the parser's fixed table.
+
+**Alternatives.** Keep the single-line row. It loses: the icon-per-end and the
+middle line the reader sees in the demo. Sort by raw type as the legacy did.
+It loses nothing today but shows a header lie the moment a second type ships
+into a table — kept as the deviation it is.
+
+**Consequences.** The relation rows grow three lines tall; the tables page at
+five rows as the legacy's do. `lineage-metamodel.ts` gains `relationVerb` (the
+one-entry slice of the legacy's twelve-verb table — the rest stays with the
+explorer). DD-404's arrow row shape is superseded here.
+
+### DD-412. The Referencing views table is the legacy's Name / Description table
+
+- **Status:** Proposed
+- **Increment:** 7.22c
+- **Date:** 2026-11-07
+
+**Decision.** The Selection tab's Referencing views section becomes the
+legacy's own `viewsTableConfig` table: Name / Description headers (raw config
+strings, as the legacy's never-resolved translate pipe left them), the view
+name in a `<th scope="row">` cell, the documentation in the `<td>`, selectable
+at five rows per page, the drawn view the selected row, and a row click draws
+that view (the legacy's `selectView`). Re-clicking the selected row emits
+nothing — a deviation: the legacy's `deselectView` had a no-view state to
+return to and the shipped chain never has one (LDG-12's first-view default).
+
+**Reason.** The demo shows a wide view-name column and a wide description
+column with no Type cell — the entities table's shape is wrong there, and the
+legacy source has its own config for exactly this table.
+
+**Alternatives.** Reuse the entity table. It loses: the second column (a view
+row shows a "View" icon and no description — the demo proves that is not what
+the table is for).
+
+**Consequences.** The selection panel imports the shared table directly for
+this one section. The selected-row highlight follows the drawn view, so opening
+the panel from a view entity shows its row marked, as the demo's does.
+
+### DD-413. The shared table's pagination rides above the table, as the legacy shell's does
+
+- **Status:** Proposed
+- **Increment:** 7.22c
+- **Date:** 2026-11-07
+
+**Decision.** `aurelius-atlas-ui-sortable-table` renders its pagination bar
+above the table, not below. The legacy's `sortable-table-shell` puts the
+`pagination-template` nav in a `.field` before the table container, and the
+plain `sortable-table` wraps that shell — so every paginated legacy table, the
+quickview's included, shows the page row on top.
+
+**Reason.** The demo shows the page row above each quickview table. The shared
+component had it below — a port-time slip, not a decision: no design record
+and no legacy source put it there. The fix belongs in the shared component so
+every screen the legacy paginates matches, not only the drawer's.
+
+**Alternatives.** A display flag defaulting to below, flipped for the lineage
+tables. It loses: the only other callers (the three browse info modals) port
+legacy tables that had the page row above too — the flag would encode the slip
+as a default.
+
+**Consequences.** The info modals' tables move their page row up as well —
+verified parity, not churn: their legacy originals used the same shell. The
+ui suite's pagination tests read the DOM by class, so they stay green.

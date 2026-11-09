@@ -8,19 +8,41 @@ import { vi } from "vitest";
 import { SearchState } from "../search-state";
 import { Results } from "./results.component";
 
-const BASIC_SEARCH = "/api/atlas/v2/search/basic";
+const QUICK_SEARCH = "/api/atlas/v2/search/quick";
 
-/** A page of hits, named so the rows are identifiable. */
+/**
+ * A page of hits, named so the rows are identifiable, in the quick-search
+ * answer shape: nested under `searchResults`, with empty
+ * `aggregationMetrics` beside it (QSR-02) — no facets unless a test asks.
+ */
 function page(count: number, approximateCount: number) {
     return {
-        entities: Array.from({ length: count }, (_, i) => ({
-            guid: `g${i}`,
-            typeName: "DataSet",
-            displayText: `entity-${i}`,
-            attributes: { name: `attr-${i}` },
-        })),
-        approximateCount,
-        queryType: "BASIC",
+        searchResults: {
+            entities: Array.from({ length: count }, (_, i) => ({
+                guid: `g${i}`,
+                typeName: "DataSet",
+                displayText: `entity-${i}`,
+                attributes: { name: `attr-${i}` },
+            })),
+            approximateCount,
+            queryType: "BASIC",
+        },
+        aggregationMetrics: {},
+    };
+}
+
+/** A page carrying the m4i-shaped facets (SDX-02: results and facets, one answer). */
+function facetPage() {
+    return {
+        ...page(3, 3),
+        aggregationMetrics: {
+            __typeName: [
+                { name: "m4i_data_attribute", count: 75 },
+                { name: "m4i_data_domain", count: 9 },
+            ],
+            __state: [{ name: "ACTIVE", count: 84 }],
+            "Asset.owner": [],
+        },
     };
 }
 
@@ -54,7 +76,7 @@ function setup() {
         httpMock: TestBed.inject(HttpTestingController),
         compiled: fixture.nativeElement as HTMLElement,
         /** The arrival's list-everything request (the empty stream). */
-        arrival: () => TestBed.inject(HttpTestingController).expectOne(BASIC_SEARCH),
+        arrival: () => TestBed.inject(HttpTestingController).expectOne(QUICK_SEARCH),
     };
 }
 
@@ -67,7 +89,7 @@ function arrive(query: string, answer = page(3, 3)) {
     harness.arrival().flush(page(0, 0)); // the query-less arrival (DD-221)
     harness.queryParamMap.next(convertToParamMap({ query }));
     harness.fixture.detectChanges(); // the URL effect runs, the request fires
-    harness.httpMock.expectOne(BASIC_SEARCH).flush(answer);
+    harness.httpMock.expectOne(QUICK_SEARCH).flush(answer);
     harness.fixture.detectChanges();
     return harness;
 }
@@ -82,7 +104,7 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         harness.queryParamMap.next(convertToParamMap({ query: "genomic" }));
         harness.fixture.detectChanges(); // the URL effect runs the search
 
-        const request = harness.httpMock.expectOne(BASIC_SEARCH);
+        const request = harness.httpMock.expectOne(QUICK_SEARCH);
         expect(request.request.method).toBe("POST");
         expect(request.request.body).toMatchObject({ query: "genomic", limit: 10, offset: 0 });
         request.flush(page(1, 1));
@@ -94,7 +116,7 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         harness.queryParamMap.next(convertToParamMap({ query: "two" }));
         harness.fixture.detectChanges();
 
-        const request = harness.httpMock.expectOne(BASIC_SEARCH);
+        const request = harness.httpMock.expectOne(QUICK_SEARCH);
         expect(request.request.body).toMatchObject({ query: "two", offset: 0 });
         request.flush(page(1, 1));
     });
@@ -138,9 +160,12 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
     it("a hit whose type is in the icon map leads its badge with the icon (DET-26, DD-378)", () => {
         const hitPage = {
             ...page(1, 1),
-            entities: [
-                { guid: "g0", typeName: "m4i_dataset", displayText: "topic-x", attributes: { name: "topic-x" } },
-            ],
+            searchResults: {
+                ...page(1, 1).searchResults,
+                entities: [
+                    { guid: "g0", typeName: "m4i_dataset", displayText: "topic-x", attributes: { name: "topic-x" } },
+                ],
+            },
         };
         const { compiled } = arrive("topic", hitPage);
 
@@ -164,6 +189,40 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         expect(column).toBeTruthy();
         expect(normalize(column?.querySelector(".no-filters")?.textContent)).toBe("No filters available.");
         expect(column?.querySelector("input, button")).toBeFalsy();
+    });
+
+    it("the facet sidebar renders one menu per non-empty facet (SDX-02, SDX-03, SDX-05)", () => {
+        const { compiled } = arrive("data", facetPage());
+
+        const menus = compiled.querySelectorAll(".column.is-one-third aurelius-atlas-ui-facet-list");
+        expect(menus).toHaveLength(2); // Asset.owner (empty) dropped (SDX-03)
+        const labels = [...menus].map((menu) => normalize(menu.querySelector(".menu-label")?.textContent));
+        expect(labels).toEqual(["Type", "State"]);
+        // The count rides the row in parentheses (UIC-33); the label is the
+        // type's dictionary display name (SDX-08).
+        const typeRows = menus[0].querySelectorAll(".menu-list li .label-text");
+        expect(normalize(typeRows[0].textContent)).toBe("Data Attribute (75)");
+    });
+
+    it("the type facet is checkboxes and the others are plain text (SDX-04, SDX-05)", () => {
+        const { compiled } = arrive("data", facetPage());
+
+        const menus = compiled.querySelectorAll(".column.is-one-third aurelius-atlas-ui-facet-list");
+        // The type facet (first) carries real checkboxes; the state facet none.
+        expect(menus[0].querySelectorAll("input[type=checkbox]")).toHaveLength(2);
+        expect(menus[1].querySelector("input[type=checkbox]")).toBeFalsy();
+    });
+
+    it("ticking a type re-runs the search narrowed to it (SDX-04, UIC-34)", () => {
+        const harness = arrive("data", facetPage());
+
+        const box = harness.compiled.querySelector<HTMLInputElement>(".column.is-one-third input[type=checkbox]")!;
+        box.click(); // tick "m4i_data_attribute" (the first type row)
+        harness.fixture.detectChanges();
+
+        const request = harness.httpMock.expectOne(QUICK_SEARCH);
+        expect(request.request.body).toMatchObject({ query: "data", typeName: "m4i_data_attribute", offset: 0 });
+        request.flush(page(1, 1));
     });
 
     it("a zero answer renders the no-results pair: no cards, no count (SRH-06)", () => {
@@ -191,7 +250,7 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
 
         load.click();
 
-        const second = harness.httpMock.expectOne(BASIC_SEARCH);
+        const second = harness.httpMock.expectOne(QUICK_SEARCH);
         expect(second.request.body).toMatchObject({ query: "gene", offset: 10, limit: 10 });
         second.flush(page(10, 25));
         expect(harness.store.entries()).toHaveLength(20);

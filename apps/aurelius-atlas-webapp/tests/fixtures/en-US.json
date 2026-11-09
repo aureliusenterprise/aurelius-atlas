@@ -394,7 +394,11 @@
                     "showLess": "Show less",
                     "showMore": "Show more"
                 },
-                "notAvailable": "No filters available."
+                "notAvailable": "No filters available.",
+                "owner": "Owner",
+                "serviceType": "Service Type",
+                "state": "State",
+                "type": "Type"
             },
             "infiniteScrollContainer": {
                 "loadNextPage": "Load next page..."

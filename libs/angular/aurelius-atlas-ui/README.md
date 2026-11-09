@@ -19,6 +19,8 @@ Part of the template **spine**.
 - `DetailsNavigation` — sticky up-dropdown section menu, projected items (Aurelius details-navigation)
 - `EntityCard` — details-screen card: title link, type-name badge, content/quality
   slots, loading state (Aurelius details-card)
+- `FacetList` — search sidebar facet menu: labelled value rows with counts, checkbox
+  rows when selectable, five-row cap with show-more (Aurelius filter/facet/check-box)
 - `Header` — application header bar
 - `Hero` — page hero band with title, action slots, tab strip
 - `Modal` — overlay dialog (plain content, or card anatomy with confirm/cancel)
@@ -35,8 +37,8 @@ Part of the template **spine**.
 
 Every component ships a Storybook story (`.stories.ts`); the interactive ones
 (`Accordion`, `Breadcrumbs`, `ClassificationChip`, `DetailsNavigation`, `EntityCard`,
-`Modal`, `PropertiesItem`, `SearchField`, `SectionStats`, `Select`, `SortableTable`)
-also ship `play()` interaction tests. Shared chrome
+`FacetList`, `Modal`, `PropertiesItem`, `SearchField`, `SectionStats`, `Select`,
+`SortableTable`) also ship `play()` interaction tests. Shared chrome
 strings ("Previous", "Toggle content", …) are `i18n` units keyed by the legacy
 `components.*` dictionary paths; caller text is passed as content nodes.
 

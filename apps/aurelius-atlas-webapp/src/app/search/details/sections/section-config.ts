@@ -30,8 +30,12 @@ export interface SectionDef {
     readonly seedKeys: readonly string[];
 }
 
-/** Which count a stat shows: a section's seed count, or the properties rows. */
-export type StatSource = { kind: "section"; anchor: string } | { kind: "properties" };
+/**
+ * Which count a stat shows: a section's seed count, the properties rows,
+ * or the Lineage Model fetch state (LDG-32: "Available"/"Unavailable",
+ * blank while the call is pending — the legacy's shape, never a count).
+ */
+export type StatSource = { kind: "section"; anchor: string } | { kind: "properties" } | { kind: "lineage" };
 
 /** One stats-bar entry (DET-24 renders it; Data Quality stays out, DD-369). */
 export interface StatDef {
@@ -41,6 +45,13 @@ export interface StatDef {
     readonly anchor: string;
     /** Which count the stat shows. */
     readonly source: StatSource;
+    /**
+     * The value word when the lineage model has drawn (LDG-32, the
+     * `...available` key) — only the `lineage` kind carries the pair.
+     */
+    readonly available?: string;
+    /** The value word when it rests empty (the `...unavailable` key). */
+    readonly unavailable?: string;
 }
 
 /** One side-navigation entry (DET-25 renders the layout's set). */
@@ -88,11 +99,10 @@ export type M4iLayoutType =
 
 /**
  * The eight layouts, key for key the spec's table (DET-16, amended by 7.21c's
- * DET-32/DET-33 rows and 7.22b's LDG-09 box positions). The stats and
- * navigation list the rendered boxes only: every deferred section's stat and
- * link stays out (DD-369), and the lineage box's stat and nav link with them
- * until the toolbar slice returns them (DD-383, amended by LDG-09 — the box
- * itself renders from this slice, its `#lineage-model` anchor live).
+ * DET-32/DET-33 rows, 7.22b's LDG-09 box positions, and 7.22d's LDG-32
+ * lineage entries). The stats and navigation list the rendered boxes only:
+ * every deferred section's stat and link stays out (DD-369); the lineage
+ * box's pair returned with the finished box (DD-383's hold-out, ended).
  * Built once at load; `$localize` resolves per locale at compile time.
  */
 export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
@@ -309,8 +319,16 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-datasets",
                 source: { kind: "section", anchor: "related-datasets" },
             },
-            // DET-32: the legacy bar's Producers and Consumers counts (the
-            // lineage-model and Data Quality entries stay out, DD-369/DD-383).
+            // LDG-32 (DD-383's hold-out returns): the lineage entry reads
+            // the page's fetch state (DD-400), in the legacy slot before
+            // Producers. Data Quality stays out (DD-369).
+            {
+                label: $localize`:@@search.details.dataset.lineageModel:Lineage Model`,
+                anchor: "lineage-model",
+                source: { kind: "lineage" },
+                available: $localize`:@@search.details.dataset.available:Available`,
+                unavailable: $localize`:@@search.details.dataset.unavailable:Unavailable`,
+            },
             {
                 label: $localize`:@@search.details.dataset.producers:Producers`,
                 anchor: "related-producers",
@@ -335,8 +353,12 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.dataset.childDatasets:Child Datasets`,
                 anchor: "related-datasets",
             },
-            // DET-32: the two lineage links in the legacy positions (the
-            // deferred lineage-model link stays out, DD-383).
+            // LDG-32: the lineage link returns to the legacy slot (DD-383's
+            // hold-out ends with the finished box).
+            {
+                label: $localize`:@@search.details.dataset.lineageModel:Lineage Model`,
+                anchor: "lineage-model",
+            },
             {
                 label: $localize`:@@search.details.dataset.producers:Producers`,
                 anchor: "related-producers",
@@ -464,6 +486,15 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-systems",
                 source: { kind: "section", anchor: "related-systems" },
             },
+            // LDG-32: the lineage entry in the legacy slot before Inputs
+            // (the process pair's keys, DD-383's hold-out returns).
+            {
+                label: $localize`:@@search.details.process.lineageModel:Lineage Model`,
+                anchor: "lineage-model",
+                source: { kind: "lineage" },
+                available: $localize`:@@search.details.process.available:Available`,
+                unavailable: $localize`:@@search.details.process.unavailable:Unavailable`,
+            },
             {
                 label: $localize`:@@search.details.process.inputs:Inputs`,
                 anchor: "related-inputs",
@@ -484,10 +515,12 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
         nav: [
             { label: $localize`:@@search.details.process.description:Description`, anchor: "description-details" },
             { label: $localize`:@@search.details.process.systems:Systems`, anchor: "related-systems" },
-            // LDG-09: the Lineage Model box follows Systems (the legacy
-            // process page's order: systems, lineage, inputs, outputs).
-            // Its nav entry and stat wait for 7.22d (the DD-383 rule keeps
-            // them out while the box's chrome stays deferred).
+            // LDG-32: the lineage link in the legacy slot (the DD-383
+            // hold-out ends with the finished box).
+            {
+                label: $localize`:@@search.details.process.lineageModel:Lineage Model`,
+                anchor: "lineage-model",
+            },
             { label: $localize`:@@search.details.process.inputs:Inputs`, anchor: "related-inputs" },
             { label: $localize`:@@search.details.process.outputs:Outputs`, anchor: "related-outputs" },
             { label: $localize`:@@search.details.process.properties:Properties`, anchor: "properties-details" },
