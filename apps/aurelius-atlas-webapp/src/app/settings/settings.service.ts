@@ -14,7 +14,7 @@ import { TimezoneService } from "./timezone.service";
  * touching `localStorage`. Server-side persistence replaces an owner's
  * internals, not this surface.
  *
- * The bootstrap providers (the telemetry gate, `DATE_PIPE_DEFAULT_TIMEZONE`) read the
+ * The bootstrap providers (the telemetry gate, `DATE_PIPE_DEFAULT_OPTIONS`) read the
  * owners' static `stored*` seams, not the facade — DI is not up yet there.
  */
 @Injectable({ providedIn: "root" })

@@ -348,14 +348,25 @@ export class Details {
         (this.layout()?.stats ?? []).map((stat) => ({
             label: stat.label,
             target: stat.anchor,
-            count:
-                stat.source.kind === "properties"
-                    ? this.propertyCount()
-                    : stat.source.kind === "lineage"
-                      ? this.lineageWord(stat)
-                      : this.sections.countFor(stat.source.anchor),
+            count: this.statCount(stat),
         })),
     );
+
+    /**
+     * The count behind one stat (DET-24): the properties' own count, the
+     * lineage's word, or the section's rendered-entry count — picked by
+     * the stat's source kind.
+     * @param stat the layout's stat definition
+     */
+    private statCount(stat: StatDef): string | number {
+        if (stat.source.kind === "properties") {
+            return this.propertyCount();
+        }
+        if (stat.source.kind === "lineage") {
+            return this.lineageWord(stat);
+        }
+        return this.sections.countFor(stat.source.anchor);
+    }
 
     /**
      * The lineage stat's word (LDG-32): "Available" once a model drew,

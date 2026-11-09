@@ -332,7 +332,7 @@ describe("SearchState (SRH-02..06, SDX-01..07)", () => {
 
         // The results screen's effect fires on arrival with the URL's
         // (absent) query — the store's "" matches, so the explore survives.
-        store.applyUrl(null);
+        store.applyUrl();
         store.applyUrl("");
         httpMock.expectNone(QUICK_SEARCH);
         expect(store.typeSelection()).toEqual(["AtlasGlossary"]);
@@ -398,7 +398,7 @@ describe("SearchState (SRH-02..06, SDX-01..07)", () => {
         // Arriving at /search/results directly (a bookmark, a reload): the
         // legacy resolver ran on every arrival, its query='' default
         // included — the store's "" is not yet "already run".
-        store.applyUrl(null);
+        store.applyUrl();
 
         const request = httpMock.expectOne(QUICK_SEARCH);
         expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "" });

@@ -85,7 +85,7 @@ export class Results {
         // The resolver twin (SRH-02): the URL leads, the store follows —
         // on arrival and on every query-parameter change.
         const urlQuery = toSignal(inject(ActivatedRoute).queryParamMap.pipe(map((params) => params.get("query"))));
-        effect(() => this.search.applyUrl(urlQuery() ?? null));
+        effect(() => this.search.applyUrl(urlQuery() ?? undefined));
     }
 
     /**

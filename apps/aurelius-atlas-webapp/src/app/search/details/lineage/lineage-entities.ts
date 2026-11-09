@@ -218,8 +218,21 @@ export function mergeProperties(
             // The legacy renders the merged dictionary through the `keyvalue`
             // pipe, whose default comparator sorts by key — the table's default
             // order is therefore the names in code-unit order.
-            .sort((left, right) => (left.name < right.name ? -1 : left.name > right.name ? 1 : 0))
+            .sort((left, right) => compareNames(left.name, right.name))
     );
+}
+
+/**
+ * The `keyvalue` pipe's default key comparison (LDG-21): code-unit order,
+ * not a locale collation — `<`/`>` on the raw strings, the pipe's own rule.
+ * @param left the first name
+ * @param right the second name
+ */
+function compareNames(left: string, right: string): number {
+    if (left < right) {
+        return -1;
+    }
+    return left > right ? 1 : 0;
 }
 
 /**
@@ -238,5 +251,8 @@ function stringifyValue(value: unknown): string {
     if (typeof value === "object") {
         return JSON.stringify(value);
     }
-    return String(value);
+    // The JSON text: same characters as a plain cast for the numbers and
+    // booleans left here, and it never renders "[object Object]" were a
+    // shape to slip past the checks above.
+    return String(JSON.stringify(value));
 }

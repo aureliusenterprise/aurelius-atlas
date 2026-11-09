@@ -2,7 +2,7 @@
  * The time zone owner (SPL-07, SPL-10): stores the chosen IANA id, null
  * for "Browser default". The store is browser-scoped (DD-161); the
  * bootstrap read (`storedTimezone`) is the same synchronous read the
- * `DATE_PIPE_DEFAULT_TIMEZONE` provider factory performs, so the provider and the
+ * `DATE_PIPE_DEFAULT_OPTIONS` provider factory performs, so the provider and the
  * panel agree from the first frame.
  */
 import { TestBed } from "@angular/core/testing";

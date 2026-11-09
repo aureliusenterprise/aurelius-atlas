@@ -22,7 +22,7 @@ export const PAGE_SIZE_KEY = "aurelius-atlas.settings.pageSize";
 export const TELEMETRY_KEY = "aurelius-atlas.settings.telemetry";
 
 /**
- * Read a stored preference. The bootstrap gate (telemetry, `DATE_PIPE_DEFAULT_TIMEZONE`)
+ * Read a stored preference. The bootstrap gate (telemetry, `DATE_PIPE_DEFAULT_OPTIONS`)
  * reads through this before any service exists — `localStorage` is
  * synchronous, so a provider can branch on a setting (SPL-07, SPL-11).
  * @param key the storage key

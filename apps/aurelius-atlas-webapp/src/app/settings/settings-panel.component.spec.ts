@@ -139,7 +139,9 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(forText("settings-telemetry")).toBe("Usage telemetry");
         expect(compiled.querySelector<HTMLInputElement>("#settings-telemetry")?.type).toBe("checkbox");
 
-        const group = compiled.querySelector('[role="group"]');
+        const group = compiled.querySelector("fieldset[aria-labelledby]");
+
+        expect(group).toBeTruthy();
         const headingId = group?.getAttribute("aria-labelledby");
 
         expect(headingId).toBeTruthy();

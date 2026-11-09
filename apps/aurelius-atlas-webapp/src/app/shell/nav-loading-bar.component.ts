@@ -25,18 +25,20 @@ export class NavLoadingBar {
      * `NavigationEnd`, `NavigationError`, or `NavigationCancel` (a
      * guard's redirect ends navigation the same way).
      */
-    protected readonly isNavigating = toSignal(
-        inject(Router).events.pipe(
-            map((event) =>
-                event instanceof NavigationStart
-                    ? true
-                    : event instanceof NavigationEnd ||
-                        event instanceof NavigationError ||
-                        event instanceof NavigationCancel
-                      ? false
-                      : undefined,
-            ),
-        ),
-        { initialValue: false },
-    );
+    protected readonly isNavigating = toSignal(inject(Router).events.pipe(map(barState)), { initialValue: false });
+}
+
+/**
+ * The bar's state for one router event: `true` to show, `false` to hide,
+ * `undefined` for events the bar ignores (they keep the last state).
+ * @param event the router event
+ */
+function barState(event: object): boolean | undefined {
+    if (event instanceof NavigationStart) {
+        return true;
+    }
+    if (event instanceof NavigationEnd || event instanceof NavigationError || event instanceof NavigationCancel) {
+        return false;
+    }
+    return undefined;
 }

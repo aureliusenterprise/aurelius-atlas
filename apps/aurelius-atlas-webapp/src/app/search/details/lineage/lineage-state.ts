@@ -83,7 +83,7 @@ export class LineageModelState {
      * @param color the picked hex
      */
     setCategoryColor(category: string, color: string): void {
-        this.categoryColors.update((current) => ({ ...(current ?? {}), [category]: color }));
+        this.categoryColors.update((current) => ({ ...current, [category]: color }));
     }
 
     /**

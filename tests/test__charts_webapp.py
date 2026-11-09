@@ -9,6 +9,9 @@ twelve plus the 7.22a lineage-model pair, joined by the Secret-fed token);
 /config.json rendered from values for the SPA's bootstrap fetch.
 """
 
+import base64
+import hashlib
+import re
 from typing import Any
 
 import pytest
@@ -301,3 +304,24 @@ def test__image_digest_override_replaces_the_tag() -> None:
     expected = "ghcr.io/aureliusenterprise/aurelius-atlas-webapp@sha256:" + "0" * 63 + "6"
     assert container(deployment, "webapp")["image"] == expected
     assert _init(deployment, "resolve-nginx-config")["image"] == expected
+
+
+@pytest.mark.covers(rules=["CHT-112"])
+def test__csp_pins_the_theme_script_hash() -> None:
+    """Every nginx copy pins the inline theme script's current sha256 (7.23, DD-159).
+
+    The CSP allows the one inline script in ``src/index.html`` by hash, and
+    three files carry it (the app template, the chart's byte copy, the e2e
+    config). A hash that no longer matches the script's bytes blocks the
+    pre-render silently — the app boots, the theme flashes — so the pin is a
+    contract with the HTML, not a constant. The recipe is the one documented
+    beside the CSP header: sha256 over the script element's inner bytes.
+    """
+    html = (WEBAPP_CHART.parent / "src/index.html").read_text()
+    (inner,) = re.findall(r"<script>(.*?)</script>", html, re.DOTALL)
+    digest = "sha256-" + base64.b64encode(hashlib.sha256(inner.encode()).digest()).decode()
+
+    app = WEBAPP_CHART.parent
+    for name in ("nginx.conf.template", "helm/files/nginx.conf.template", "e2e/config/nginx.conf"):
+        config = (app / name).read_text()
+        assert f"'{digest}'" in config, f"{name} pins a stale theme-script hash"
