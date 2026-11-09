@@ -1,7 +1,7 @@
 # 11.2 The embedding service
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#303](https://github.com/aureliusenterprise/aurelius-atlas/pull/303)
 - **Records:** ADR 059 (Proposed); DD-429 to DD-433; relies on ADR 047, ADR 051, ADR 056, DD-366 (the demo
   realm's stack)
 
