@@ -72,7 +72,7 @@ jobs:
             # slow part of the build. devcontainers/ci can stage them under a
             # folder we cache, so an unchanged feature set installs once.
             - name: Cache dev container features
-              uses: actions/cache@v5
+              uses: actions/cache@v6
               with:
                   path: ${{ github.workspace }}/.devcontainer/.features-cache
                   key: features-cache-${{ hashFiles('.devcontainer/devcontainer.json', '.devcontainer/features/**', 'uv.lock') }}
