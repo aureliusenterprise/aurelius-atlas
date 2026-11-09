@@ -41,15 +41,15 @@ class EmbeddingClient:
         """The model the vectors are computed with."""
         return self._model
 
-    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
-        """One vector per text, in their order.
+    async def embed(self, texts: Sequence[str], input_type: str = "passage") -> list[list[float]]:
+        """One vector per text, in their order; a search's query is embedded as ``query`` (DD-443).
 
         Raises:
             EmbeddingError: The answer has another number of vectors, or vectors of other dimensions.
             httpx.HTTPError: The embedder could not be reached or refused the request.
         """
         response = await self._http.post(
-            self._url, json={"input": list(texts), "model": self._model, "input_type": "passage"}
+            self._url, json={"input": list(texts), "model": self._model, "input_type": input_type}
         )
         response.raise_for_status()
         data = sorted(response.json()["data"], key=lambda entry: entry["index"])

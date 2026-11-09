@@ -33,7 +33,7 @@ from aurelius_atlas_core.classification_search_processor import ClassificationSe
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.search_context import MARKER_END, SearchContext
 from aurelius_atlas_core.search_fields import BOOLEAN, KEYWORD, LABEL_DELIMITER, LONG, field_name
-from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test
+from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.term_search_processor import term_criterion
 
@@ -74,10 +74,21 @@ _DIGITS = re.compile(r"[+-]?\d+")
 class EntitySearchProcessor:
     """The entities of a search's context, paged; ``clock`` is now in epoch milliseconds, for named time ranges."""
 
-    def __init__(self, context: SearchContext, clock: Callable[[], int], facets: tuple[str, ...] = ()) -> None:
+    def __init__(
+        self,
+        context: SearchContext,
+        clock: Callable[[], int],
+        facets: tuple[str, ...] = (),
+        *,
+        vector: VectorQuery | None = None,
+        exclude_guids: frozenset[str] = frozenset(),
+    ) -> None:
+        """A processor of ``context``; with ``vector``, a search by meaning, ``exclude_guids`` left out (SBM-02)."""
         self._context = context
         self._clock = clock
         self._facets = facets
+        self._vector = vector
+        self._exclude_guids = exclude_guids
         self.facets: dict[str, list[tuple[str, int]]] = {}
         """The values of the search fields ``facets`` names over every matching entity, once executed (DD-093)."""
         self.result_count = -1
@@ -111,6 +122,8 @@ class EntitySearchProcessor:
             size=parameters.limit,
             text=self._context.text,
             facets=self._facets,
+            vector=self._vector,
+            exclude_guids=self._exclude_guids,
         )
 
     async def execute(self, store: EntityStore) -> list[StoredEntity]:

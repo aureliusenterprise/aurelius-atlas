@@ -84,6 +84,24 @@ class Group:
 type Filter = Criterion | Group
 
 
+MAX_NEAREST = 1_000
+"""The most entities a search by meaning answers, ``offset + limit`` (DD-441)."""
+
+
+@dataclass(frozen=True)
+class VectorQuery:
+    """The ``k`` entities nearest to ``vector``, scored by similarity times ``weight`` (SBM-02, SBM-03, DD-441)."""
+
+    vector: tuple[float, ...]
+    k: int
+    weight: float = 1.0
+
+    @property
+    def num_candidates(self) -> int:
+        """The candidates Elasticsearch's HNSW search looks at per shard: ten per entity asked, 100 to 10,000."""
+        return min(max(10 * self.k, 100), 10_000)
+
+
 @dataclass(frozen=True)
 class SearchQuery:
     """The entities of ``type_names`` (all for None), only ``ACTIVE`` ones with ``active_only``, matching ``filter``.
@@ -104,6 +122,11 @@ class SearchQuery:
     """Free text the entities must match, the best match first when no sort field is given (FTX-02, FTX-04)."""
     facets: tuple[str, ...] = ()
     """Search fields whose values to count over every matching entity (DD-093)."""
+    vector: VectorQuery | None = None
+    """The entities nearest to a vector, among those the rest selects; with ``text``, its matches too, scored by
+    the sum (SBM-02, SBM-03, DD-441, DD-442)."""
+    exclude_guids: frozenset[str] = frozenset()
+    """Entities never answered, as the one whose neighbours are searched (SBM-05)."""
 
 
 @dataclass(frozen=True)
