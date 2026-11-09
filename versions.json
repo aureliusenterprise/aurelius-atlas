@@ -63,5 +63,10 @@
     "version": "chore-remove-template-example-stack",
     "title": "chore-remove-template-example-stack",
     "aliases": []
+  },
+  {
+    "version": "chore-dependabot-batch",
+    "title": "chore-dependabot-batch",
+    "aliases": []
   }
 ]
