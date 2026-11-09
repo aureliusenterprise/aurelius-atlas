@@ -1,0 +1,52 @@
+<!--
+    The Bulma menu (UIC-33, the legacy facet.component.html): the label and
+    the list. The list slices at five values until the show-more link flips
+    the component's own flag (UIC-34, the legacy `slice: 0 : (showMore ?
+    1000 : 5)` — 1000 reads as "all" for a facet's cardinality).
+-->
+<div class="menu">
+    <p class="menu-label">{{ title() }}</p>
+    <ul class="menu-list">
+        @for (item of items().slice(0, showAll() ? undefined : visibleCount); track item.value) {
+            <li>
+                @if (selectable()) {
+                    <!-- The selectable row (UIC-34, the legacy check-box's
+                         label.checkbox): a real checkbox carries the tick,
+                         the change emits the wire value. -->
+                    <label class="checkbox">
+                        <input
+                            type="checkbox"
+                            [name]="item.value"
+                            [checked]="item.checked"
+                            (change)="onToggle(item, $event)"
+                        />
+                        <span class="label-text">
+                            <span>{{ item.label }}</span>
+                            @if (item.count !== undefined) {
+                                &nbsp;({{ item.count }})
+                            }
+                        </span>
+                    </label>
+                } @else {
+                    <!-- The read-only row (SDX-05): the same text, no
+                         checkbox — nothing to send. -->
+                    <span class="label-text">
+                        <span>{{ item.label }}</span>
+                        @if (item.count !== undefined) {
+                            &nbsp;({{ item.count }})
+                        }
+                    </span>
+                }
+            </li>
+        }
+        @if (items().length > visibleCount) {
+            <li>
+                <!-- The legacy read-more link (UIC-34): the caller's
+                     localised labels, the component's own open state. -->
+                <a href="#" class="read-more" (click)="$event.preventDefault(); toggleShowMore()">
+                    {{ showAll() ? showLessLabel() : showMoreLabel() }}
+                </a>
+            </li>
+        }
+    </ul>
+</div>

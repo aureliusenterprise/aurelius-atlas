@@ -1545,6 +1545,22 @@ The technical data governance model consists of the following types of entities:
         <source>No filters available.</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.filter.notAvailable</note>
       </trans-unit>
+      <trans-unit id="search.components.filter.owner" datatype="html">
+        <source>Owner</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.owner</note>
+      </trans-unit>
+      <trans-unit id="search.components.filter.serviceType" datatype="html">
+        <source>Service Type</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.serviceType</note>
+      </trans-unit>
+      <trans-unit id="search.components.filter.state" datatype="html">
+        <source>State</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.state</note>
+      </trans-unit>
+      <trans-unit id="search.components.filter.type" datatype="html">
+        <source>Type</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.filter.type</note>
+      </trans-unit>
       <trans-unit id="search.components.infiniteScrollContainer.loadNextPage" datatype="html">
         <source>Load next page...</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.infiniteScrollContainer.loadNextPage</note>

@@ -659,6 +659,87 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     expect(authenticated.locator(".results-count")).to_have_text(re.compile(r"3\s+resultaten"))
 
 
+def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The quick-search answer fills the facet sidebar; ticking a type narrows the list (SDX-02..08).
+
+    The 7.4b spine: one ``POST /api/atlas/v2/search/quick`` answers the hits and
+    the facets, so the sidebar renders a menu per non-empty facet in answer
+    order (SDX-02/03) — the type facet as checkboxes (SDX-04), ``__state`` as
+    read-only text (SDX-05). Ticking a type re-POSTs narrowed to it while the
+    seen-set keeps the other value visible with its last count (SDX-07,
+    DD-426); unticking broadens again. The hero's submit clears the tick
+    (SDX-06, DD-425). Two base-model types (``DataSet``, ``Process``, both
+    outside the name dictionary) keep the values raw and locale-stable; the
+    run token is the prefix the quick search appends ``*`` to (QSR-02), so a
+    single-word query matches this run's seeds alone. Namespaced and cleaned by
+    guid (DD-223's rule on the shared store).
+    """
+    run = secrets.token_hex(4)
+    prefix = f"zz{run}"
+    datasets = [f"{prefix}alpha", f"{prefix}beta"]
+    processes = [f"{prefix}proc"]
+    ds_guids = _seed_entities(authenticated, root_url, user_token, "DataSet", datasets)
+    proc_guids = _seed_entities(authenticated, root_url, user_token, "Process", processes)
+
+    try:
+        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={prefix}"))
+
+        # One answer feeds the list and the sidebar: three rows, and a menu per
+        # non-empty facet in answer order — type, state, service type (SDX-02).
+        expect(authenticated.locator(".result-row")).to_have_count(3)
+        facets = authenticated.locator(".column.is-one-third aurelius-atlas-ui-facet-list")
+        expect(facets).to_have_count(3)
+        expect(facets.locator(".menu-label")).to_have_text(["Type", "State", "Service Type"])
+
+        # The type facet lists both types with their counts (DataSet 2, Process
+        # 1, most first); the state and service-type facets read ACTIVE /
+        # atlas_core with no checkbox (SDX-05).
+        type_rows = facets.nth(0).locator(".menu-list li .label-text")
+        expect(type_rows).to_have_text(["DataSet (2)", "Process (1)"])
+        expect(facets.nth(0).locator("input[type=checkbox]")).to_have_count(2)
+        expect(facets.nth(1).locator("input[type=checkbox]")).to_have_count(0)
+        expect(facets.nth(1).locator(".menu-list li").first).to_have_text("ACTIVE (3)")
+        expect(facets.nth(2).locator("input[type=checkbox]")).to_have_count(0)
+        expect(facets.nth(2).locator(".menu-list li").first).to_have_text("atlas_core (3)")
+
+        # Ticking DataSet re-POSTs narrowed to it: the list drops to its two,
+        # and the seen-set keeps Process visible with its last count (SDX-04/07).
+        dataset_box = authenticated.locator('.column.is-one-third input[name="DataSet"]')
+        dataset_box.check()
+        expect(authenticated.locator(".result-row")).to_have_count(2)
+        expect(dataset_box).to_be_checked()
+        expect(facets.nth(0).locator("input[type=checkbox]")).to_have_count(2)
+
+        # Unticking broadens the list back to all three (SDX-04).
+        dataset_box.uncheck()
+        expect(authenticated.locator(".result-row")).to_have_count(3)
+
+        # Ticking again, then a hero submit: the selection clears and the tick
+        # goes with it (SDX-06, DD-425) — the list stays the broad three.
+        dataset_box.check()
+        expect(authenticated.locator(".result-row")).to_have_count(2)
+        field = authenticated.locator(".hero aurelius-atlas-ui-search-field input")
+        field.fill(prefix)
+        authenticated.locator(".hero aurelius-atlas-ui-search-field button.button.is-success").click()
+        expect(dataset_box).not_to_be_checked()
+        expect(authenticated.locator(".result-row")).to_have_count(3)
+
+        # SDX-08: the same sidebar in Dutch — the titles ride the bridge
+        # (nl-NL: Type, Status, Servicetype). The values stay raw (base-model names).
+        authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={prefix}"))
+        expect(authenticated.locator(".column.is-one-third .menu-label")).to_have_text(
+            ["Type", "Status", "Servicetype"]
+        )
+    finally:
+        for guid in [*ds_guids.values(), *proc_guids.values()]:
+            deleted = authenticated.request.delete(
+                urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+                params={"guid": guid},
+                headers={"authorization": f"Bearer {user_token}"},
+            )
+            assert deleted.status == 200, deleted.text()
+
+
 def test__details_screen_shows_a_seeded_entity(authenticated: Page, root_url: str, user_token: str) -> None:
     """A seeded entity opened at its details URL renders from the read (DET-14).
 

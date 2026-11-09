@@ -41,9 +41,9 @@ function setup(email = "ada@example.org") {
  * answer it empty.
  */
 function expectSearch(httpMock: HttpTestingController, body: Record<string, unknown>) {
-    const request = httpMock.expectOne((req) => req.url === "/api/atlas/v2/search/basic" && req.method === "POST");
+    const request = httpMock.expectOne((req) => req.url === "/api/atlas/v2/search/quick" && req.method === "POST");
     expect(request.request.body).toMatchObject(body);
-    request.flush({ entities: [], approximateCount: 0 });
+    request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
 }
 
 /** The card's explore button, found by its label (the field's submit shares the class). */
