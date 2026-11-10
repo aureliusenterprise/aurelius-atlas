@@ -209,6 +209,30 @@ describe("app providers (7.3)", () => {
         }
     });
 
+    it("sends API calls with the switch off: no tracer, no crash (SPL-11, DD-158)", async () => {
+        // The composed-app version of the gate-off pin: the real chain runs,
+        // and the OTLP interceptor — the outermost — finds no tracer. A
+        // required injection there threw NG0201 on every call and the
+        // reloaded app served nothing (found while wiring 7.26's chain test).
+        localStorage.setItem(TELEMETRY_KEY, JSON.stringify(false));
+        try {
+            await bootstrap(makeKeycloakStub());
+            const http = TestBed.inject(HttpClient);
+            const controller = TestBed.inject(HttpTestingController);
+            let answer: unknown;
+
+            http.get("/api/atlas/admin/status").subscribe({ next: (body) => (answer = body) });
+            await new Promise((resolve) => setTimeout(resolve));
+
+            const req = controller.expectOne("/api/atlas/admin/status");
+            expect(req.request.headers.has("traceparent")).toBe(false);
+            req.flush("ok");
+            expect(answer).toBe("ok");
+        } finally {
+            localStorage.removeItem(TELEMETRY_KEY);
+        }
+    });
+
     it("provides the date-pipe time zone from the store (SPL-07)", async () => {
         await bootstrap(makeKeycloakStub());
         // Nothing stored: no zone on the options, which makes DatePipe use

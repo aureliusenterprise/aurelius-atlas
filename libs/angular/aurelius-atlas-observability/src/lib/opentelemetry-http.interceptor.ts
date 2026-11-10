@@ -55,11 +55,29 @@ export function setSpanStatusFromEvent(
     }
 }
 
+/**
+ * Propagate W3C trace context on every outgoing call, and record the response
+ * on the client span.
+ *
+ * The tracer is an OPTIONAL injection, exactly like the app's own provider
+ * tokens (SPL-11, DD-158). An app that leaves telemetry off assembles no SDK
+ * providers at all, so the token is missing — and a required injection there
+ * throws NG0201 on the first call, which takes the whole app down: no request
+ * is ever sent. With no tracer the request passes through untracked: no span,
+ * no `traceparent`, no `X-Trace-Id`. That is DD-158's promise that an off
+ * browser sends nothing, and it is the only sane reading of a switch whose off
+ * state must leave the app working.
+ */
 export const aureliusOpenTelemetryHttpInterceptor: HttpInterceptorFn = (
     request: HttpRequest<unknown>,
     next: HttpHandlerFn,
 ): Observable<HttpEvent<unknown>> => {
-    const tracer = inject(AURELIUS_TRACER);
+    const tracer = inject(AURELIUS_TRACER, { optional: true });
+
+    if (!tracer) {
+        return next(request);
+    }
+
     const spanName = `${request.method} ${request.url}`;
     const span = tracer.startSpan(spanName, {
         kind: SpanKind.CLIENT,
