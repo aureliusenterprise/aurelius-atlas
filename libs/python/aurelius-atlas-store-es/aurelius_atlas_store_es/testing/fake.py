@@ -3,6 +3,7 @@
 import copy
 import fnmatch
 import json
+import math
 import re
 from decimal import Decimal
 from functools import cmp_to_key
@@ -25,6 +26,15 @@ def _not_found() -> NotFoundError:
 
 def _conflict() -> ConflictError:
     return ConflictError("version_conflict_engine_exception", response_meta(409), {"status": 409})
+
+
+class FakeResponse(dict[str, Any]):
+    """A response whose ``body`` is the response itself, as the client's ``ObjectApiResponse`` has one."""
+
+    @property
+    def body(self) -> dict[str, Any]:
+        """The response's JSON."""
+        return self
 
 
 class FakeCluster:
@@ -58,9 +68,10 @@ class FakeIndices:
         settings: dict[str, Any] | None = None,
         **_mappings: object,
     ) -> dict[str, Any]:
-        """Create ``index`` with ``aliases``; its settings are kept, its mappings accepted and ignored."""
+        """Create ``index`` with ``aliases``; its settings and mappings are kept as given, not applied."""
         self._client.documents.setdefault(index, {})
         self._client.index_settings[index] = dict(settings or {})
+        self._client.index_mappings[index] = dict(_mappings.get("mappings") or {})  # type: ignore[call-overload]
         for alias in aliases or {}:
             self._client.aliases[alias] = index
         return {"acknowledged": True, "index": index}
@@ -81,12 +92,31 @@ class FakeIndices:
         self._client.refreshes.append(index)
         return {"_shards": {"failed": 0}}
 
-    async def get(self, *, index: str, **_options: object) -> dict[str, Any]:
-        """The created indices matching ``index`` (comma-separated, wildcards), by name, with their aliases."""
-        return {
-            name: {"aliases": {alias: {} for alias, target in self._client.aliases.items() if target == name}}
-            for name in self._client.matching(index)
-        }
+    async def get(self, *, index: str, **_options: object) -> FakeResponse:
+        """The created indices matching ``index`` (comma-separated, wildcards, or an alias), by name, with their
+        aliases and the settings and mappings they were created with.
+        """  # noqa: D205 - one sentence
+        names = [self._client.aliases[index]] if index in self._client.aliases else self._client.matching(index)
+        return FakeResponse(
+            {
+                name: {
+                    "aliases": {alias: {} for alias, target in self._client.aliases.items() if target == name},
+                    "settings": self._client.index_settings.get(name, {}),
+                    "mappings": self._client.index_mappings.get(name, {}),
+                }
+                for name in names
+            }
+        )
+
+    async def update_aliases(self, *, actions: list[dict[str, Any]]) -> dict[str, Any]:
+        """Apply ``remove`` and ``add`` actions in order, as one change."""
+        for action in actions:
+            ((kind, target),) = action.items()
+            if kind == "remove":
+                self._client.aliases.pop(target["alias"], None)
+            else:
+                self._client.aliases[target["alias"]] = target["index"]
+        return {"acknowledged": True}
 
     async def delete(self, *, index: str) -> dict[str, Any]:
         """Delete the named indices, their documents, settings and aliases; Elasticsearch refuses wildcards here."""
@@ -225,6 +255,8 @@ class FakeClient:
         self.mapping_updates: list[str] = []
         self.settings_updates: list[str] = []
         self.index_settings: dict[str, dict[str, Any]] = {}
+        self.index_mappings: dict[str, dict[str, Any]] = {}
+        """The mappings each index was created with, by its name."""
         """The settings of each created index, by its name: those it was created with, then each update's."""
         self.seq_no = -1
         self.refreshes: list[str] = []
@@ -240,6 +272,7 @@ class FakeClient:
         """Remove an index with its documents, settings and aliases."""
         del self.documents[name]
         self.index_settings.pop(name, None)
+        self.index_mappings.pop(name, None)
         for alias in [alias for alias, target in self.aliases.items() if target == name]:
             del self.aliases[alias]
 
@@ -371,24 +404,31 @@ class FakeClient:
         track_total_hits: bool | None = None,
         track_scores: bool | None = None,
         aggs: dict[str, Any] | None = None,
+        knn: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Answer like ``_search`` with the documents matching the query, ``size`` of them from ``from_``.
 
         With ``sort``, hits are ordered by the sort fields (``_score`` among them) and carry their sort values; a
         plain direction stands a document without the field in with its id, an options object puts it last. Only
         hits after ``search_after`` are answered. The total counts every match; each hit has its ``_score``.
-        ``terms`` and ``composite`` aggregations count the values of every match.
+        ``terms`` and ``composite`` aggregations count the values of every match. A ``knn`` adds the ``k`` nearest
+        documents its ``filter`` matches, scored ``(1 + cosine) / 2`` times its ``boost``, to the query's matches,
+        the scores of both added; without a query only the nearest match.
         """
         _ = track_total_hits, track_scores
         order = [_sort_clause(clause) for clause in sort or []]
+        nearest = _nearest(self._index_of(index), knn)
         hits = []
         for document_id, (source, seq_no) in self._index_of(index).items():
-            score = _score(source, query)
+            matched = (knn is None or query is not None) and _matches(source, query, document_id)
+            score = (_score(source, query) if matched else 0.0) + nearest.get(document_id, 0.0)
             values = [
                 score if field == "_score" else _sort_value(source, field, document_id, options)
                 for field, options in order
             ]
-            if not _matches(source, query) or (search_after is not None and _compare(values, search_after, order) <= 0):
+            if not (matched or document_id in nearest) or (
+                search_after is not None and _compare(values, search_after, order) <= 0
+            ):
                 continue
             hit: dict[str, Any] = {"_id": document_id, "_source": source, "_score": score}
             if seq_no_primary_term:
@@ -406,6 +446,17 @@ class FakeClient:
                 for name, spec in aggs.items()
             }
         return response
+
+    async def reindex(
+        self, *, source: dict[str, Any], dest: dict[str, Any], refresh: bool | None = None, **_options: object
+    ) -> dict[str, Any]:
+        """Copy every document of ``source``'s index into ``dest``'s, its source as stored, with new versions."""
+        del refresh
+        copied = 0
+        for document_id, (document, _) in self._index_of(source["index"]).items():
+            await self.index(index=dest["index"], id=document_id, document=document, op_type=dest.get("op_type"))
+            copied += 1
+        return {"total": copied, "created": copied, "failures": []}
 
     async def count(self, *, index: str, query: dict[str, Any] | None = None) -> dict[str, Any]:
         """Answer like ``_count`` for a ``match_all`` or ``term`` query."""
@@ -427,22 +478,23 @@ def _read(body: bytes) -> dict[str, Any]:
     return json.loads(body, parse_float=Decimal)
 
 
-def _matches(source: dict[str, Any], query: dict[str, Any] | None) -> bool:
-    """Whether ``source`` matches a query: ``match_all``, ``match_none``, ``bool`` (``filter``, ``must``,
-    ``must_not``, ``should``), ``simple_query_string``, and single-field ``term``, ``terms``, ``range``,
-    ``prefix``, ``wildcard``, ``regexp`` (Python's, whole values or a ``.text`` sub-field's words) and ``exists``.
+def _matches(source: dict[str, Any], query: dict[str, Any] | None, document_id: str | None = None) -> bool:
+    """Whether ``source``, the document ``document_id``, matches a query: ``match_all``, ``match_none``, ``ids``,
+    ``bool`` (``filter``, ``must``, ``must_not``, ``should``), ``simple_query_string``, and single-field ``term``,
+    ``terms``, ``range``, ``prefix``, ``wildcard``, ``regexp`` (Python's, whole values or a ``.text`` sub-field's
+    words) and ``exists``.
     """  # noqa: D205 - one sentence
     if query is None or "match_all" in query:
         return True
-    if "match_none" in query:
-        return False
+    if "match_none" in query or "ids" in query:
+        return "ids" in query and document_id in query["ids"]["values"]
     if "bool" in query:
         clauses = query["bool"]
         should = clauses.get("should", [])
         return (
-            all(_matches(source, clause) for clause in clauses.get("filter", []) + clauses.get("must", []))
-            and not any(_matches(source, clause) for clause in clauses.get("must_not", []))
-            and (not should or any(_matches(source, clause) for clause in should))
+            all(_matches(source, clause, document_id) for clause in clauses.get("filter", []) + clauses.get("must", []))
+            and not any(_matches(source, clause, document_id) for clause in clauses.get("must_not", []))
+            and (not should or any(_matches(source, clause, document_id) for clause in should))
         )
     if "simple_query_string" in query:
         return _text_score(source, query["simple_query_string"]) > 0
@@ -481,6 +533,24 @@ def _regexp(source: dict[str, Any], field: str, options: dict[str, Any]) -> bool
     else:
         values = [value for value in _held(source, field) if isinstance(value, str)]
     return any(pattern.fullmatch(value) is not None for value in values)
+
+
+def _nearest(documents: dict[str, tuple[dict[str, Any], int]], knn: dict[str, Any] | None) -> dict[str, float]:
+    """The ``k`` documents nearest to a ``knn``'s vector among those its filter matches, by id, with their scores."""
+    if knn is None:
+        return {}
+    target = knn["query_vector"]
+    scored = []
+    for document_id, (source, _) in documents.items():
+        held = _held(source, knn["field"])
+        if not held or not _matches(source, knn.get("filter"), document_id):
+            continue
+        vector = [float(value) for value in held]
+        norms = math.sqrt(sum(a * a for a in vector)) * math.sqrt(sum(b * b for b in target))
+        cosine = sum(a * b for a, b in zip(vector, target, strict=True)) / norms if norms else 0.0
+        scored.append(((1 + cosine) / 2 * float(knn.get("boost", 1.0)), document_id))
+    scored.sort(key=lambda item: (-item[0], item[1]))
+    return {document_id: score for score, document_id in scored[: knn["k"]]}
 
 
 def _score(source: dict[str, Any], query: dict[str, Any] | None) -> float:

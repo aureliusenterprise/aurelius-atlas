@@ -16,6 +16,7 @@ from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
 from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
 from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.metrics_service import MetricsService
 from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
@@ -42,11 +43,22 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
+from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingWorker, embedding_http
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.metrics_scheduler import MetricsScheduler
 from aurelius_atlas_server.oidc_client import OidcClient
 from aurelius_atlas_server.request_context import RequestContextMiddleware
-from aurelius_atlas_server.routes import ADMIN, DISCOVERY, ENTITY, GLOSSARY, LINEAGE, LOGIN, RELATIONSHIP, TYPES
+from aurelius_atlas_server.routes import (
+    ADMIN,
+    DISCOVERY,
+    ENTITY,
+    GLOSSARY,
+    LINEAGE,
+    LOGIN,
+    RELATIONSHIP,
+    SEARCH_BY_MEANING,
+    TYPES,
+)
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.snapshot_watcher import SnapshotWatcher
@@ -133,10 +145,11 @@ def create_app(
         started = int(time.time() * 1000)
         _start(metrics_util)
         worker: TaskWorker | None = None
-        schedules: list[AuditAgingScheduler | MetricsScheduler | SnapshotWatcher] = []
+        schedules: list[AuditAgingScheduler | EmbeddingWorker | MetricsScheduler | SnapshotWatcher] = []
         await store.open()
         try:
-            entity_store = EntityStore(registry, ElasticsearchEntityDocuments(store.client))
+            documents = ElasticsearchEntityDocuments(store.client, embedding_dimensions=_dimensions(settings))
+            entity_store = EntityStore(registry, documents)
             await entity_store.prepare()
             entity_audits = ElasticsearchEntityAuditRepository(store.client)
             await entity_audits.prepare()
@@ -162,6 +175,7 @@ def create_app(
                 for scheduler in (
                     _audit_aging(settings, entity_store),
                     _metrics_schedule(app, settings, entity_store),
+                    _embedding_worker(app, settings, documents),
                     await _snapshots(settings, store),
                 )
                 if scheduler is not None
@@ -189,6 +203,7 @@ def create_app(
     app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
     app.state.store = store
     app.state.type_registry, app.state.metrics_util = registry, metrics_util
+    app.state.embedder = None  # the embeddings client, once embedding is on and the server has started (DD-443)
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
     _mount(app, settings)
 
@@ -233,7 +248,7 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
     # them all; the instrumentor below wraps this middleware.
     app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
     app.add_exception_handler(AtlasError, atlas_error_handler)
-    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN):
+    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN, SEARCH_BY_MEANING):
         app.include_router(router)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
@@ -350,6 +365,30 @@ async def _snapshots(settings: ServerSettings, store: ElasticsearchStore) -> Sna
     watcher.register(metrics.get_meter(NAME))
     watcher.start()
     return watcher
+
+
+def _dimensions(settings: ServerSettings) -> int | None:
+    """The dimensions the entity index maps vectors of: the configured ones when embedding is on (VEC-03, VEC-08)."""
+    return settings.embedding_dimensions if settings.embedding_url is not None else None
+
+
+def _embedding_worker(
+    app: FastAPI, settings: ServerSettings, documents: ElasticsearchEntityDocuments
+) -> EmbeddingWorker | None:
+    """The worker that embeds the store's entities, started when embedding is on; its client embeds the searches'
+    queries too, as ``app.state.embedder`` (VEC-07, VEC-08, DD-443).
+    """  # noqa: D205 - one sentence
+    if settings.embedding_url is None:
+        return None
+    http = embedding_http(settings.embedding_ca_file)
+    client = EmbeddingClient(
+        str(settings.embedding_url), settings.embedding_model, settings.embedding_dimensions, http=http
+    )
+    app.state.embedder = client
+    indexer = EntityEmbeddingIndexer(documents, client, batch_size=settings.embedding_batch_size)
+    worker = EmbeddingWorker(indexer, poll_seconds=settings.embedding_poll_seconds, http=http)
+    worker.start()
+    return worker
 
 
 def _task_worker(app: FastAPI, settings: ServerSettings, store: EntityStore) -> TaskWorker | None:

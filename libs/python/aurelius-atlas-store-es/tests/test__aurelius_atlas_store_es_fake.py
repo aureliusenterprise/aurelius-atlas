@@ -365,3 +365,80 @@ async def test__composite_aggregations_page_through_the_key_combinations() -> No
         "after_key": {"type": "y", "flag": None},
     }
     assert last["aggregations"]["c"] == {"buckets": []}
+
+
+async def test__an_index_is_read_by_its_alias_with_its_settings_and_mappings() -> None:
+    """``indices.get`` of an alias answers the index behind it, as created; its ``body`` is the response."""
+    fake = FakeClient()
+    mappings = {"properties": {"guid": {"type": "keyword"}}}
+    await fake.indices.create(
+        index="docs-000001", aliases={"docs": {}}, mappings=mappings, settings={"index.mapping.x": False}
+    )
+    await fake.indices.create(index="other-000001", aliases={"other": {}})
+
+    by_alias = await fake.indices.get(index="docs")
+    by_pattern = await fake.indices.get(index="*-000001")
+
+    assert by_alias.body == {
+        "docs-000001": {"aliases": {"docs": {}}, "settings": {"index.mapping.x": False}, "mappings": mappings}
+    }
+    assert sorted(by_pattern) == ["docs-000001", "other-000001"]
+
+
+async def test__a_reindex_copies_every_document_with_new_versions() -> None:
+    """``reindex`` writes each source as stored into the destination, ``op_type`` honoured."""
+    fake = FakeClient()
+    await fake.index(index="old", id="a", document={"size": 1})
+    await fake.index(index="old", id="b", document={"size": 2})
+    await fake.index(index="new", id="b", document={"size": 9})
+
+    created = await fake.reindex(source={"index": "old"}, dest={"index": "fresh"}, refresh=True)
+
+    assert created == {"total": 2, "created": 2, "failures": []}
+    assert (await fake.get(index="fresh", id="a"))["_source"] == {"size": 1}
+    assert (await fake.get(index="fresh", id="a"))["_seq_no"] > (await fake.get(index="old", id="b"))["_seq_no"]
+    with pytest.raises(ConflictError):
+        await fake.reindex(source={"index": "old"}, dest={"index": "new", "op_type": "create"})
+
+
+async def test__aliases_move_in_one_change_and_go_with_a_dropped_index() -> None:
+    """``update_aliases`` removes then adds; deleting an index drops its settings, mappings and aliases."""
+    fake = FakeClient()
+    await fake.indices.create(index="docs-000001", aliases={"docs": {}}, mappings={"properties": {}})
+    await fake.indices.create(index="docs-000002", mappings={"properties": {}})
+
+    moved = await fake.indices.update_aliases(
+        actions=[
+            {"remove": {"index": "docs-000001", "alias": "docs"}},
+            {"add": {"index": "docs-000002", "alias": "docs", "is_write_index": True}},
+        ]
+    )
+    await fake.indices.delete(index="docs-000002")
+
+    assert moved == {"acknowledged": True}
+    assert "docs" not in fake.aliases
+    assert "docs-000002" not in fake.index_mappings
+    assert "docs-000001" in fake.index_mappings
+
+
+async def test__a_knn_search_answers_the_nearest_its_filter_allows_and_adds_the_query_s_matches() -> None:
+    """``knn`` alone: the ``k`` nearest the filter matches, ``(1 + cos) / 2`` times ``boost``; with a query, its
+    matches join and the scores add; ``ids`` selects by document id.
+    """  # noqa: D205 - one sentence
+    fake = FakeClient()
+    for document_id, vector, kind in (("a", [1.0, 0.0], "x"), ("b", [0.0, 1.0], "x"), ("c", [1.0, 0.0], "y")):
+        await fake.index(index="docs", id=document_id, document={"kind": kind, "embedding": {"vector": vector}})
+    await fake.index(index="docs", id="d", document={"kind": "x"})
+    knn = {"field": "embedding.vector", "query_vector": [1.0, 0.0], "k": 2, "filter": {"term": {"kind": "x"}}}
+
+    alone = await fake.search(index="docs", knn=knn, sort=[{"_score": {"order": "desc"}}])
+    boosted = await fake.search(index="docs", knn=knn | {"boost": 10.0})
+    joined = await fake.search(index="docs", knn=knn, query={"ids": {"values": ["d"]}})
+    excluded = await fake.search(
+        index="docs", knn=knn | {"filter": {"bool": {"must_not": [{"ids": {"values": ["a"]}}]}}}
+    )
+
+    assert [(hit["_id"], hit["_score"]) for hit in alone["hits"]["hits"]] == [("a", 1.0), ("b", 0.5)]
+    assert {hit["_id"]: hit["_score"] for hit in boosted["hits"]["hits"]} == {"a": 10.0, "b": 5.0}
+    assert {hit["_id"] for hit in joined["hits"]["hits"]} == {"a", "b", "d"}
+    assert {hit["_id"] for hit in excluded["hits"]["hits"]} == {"b", "c"}

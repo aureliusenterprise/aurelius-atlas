@@ -16,6 +16,11 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   by the entity store's `task_listeners` and polling every `task_poll_seconds` (DD-080). Tests and the e2e
   server run with tasks disabled so responses show propagation at once (DD-081); `tests/test__*_tasks.py`
   turns them on and runs on the module loop, where the lifespan started the worker
+- `aurelius_atlas_server/embedding.py` — `EmbeddingClient` (an OpenAI-compatible `/v1/embeddings`, the
+  embedder of 11.2) and `EmbeddingWorker`: with `embedding_url` set, the lifespan maps the entities' vectors,
+  moving an entity index stored before to one that keeps vectors (DD-439), and the worker runs
+  `EntityEmbeddingIndexer` rounds every `embedding_poll_seconds` (VEC-07, DD-436). Unset, nothing changes
+  (VEC-08). `tests/test__aurelius_atlas_server_embedding.py` mocks the embedder's transport
 - `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts
   the store's snapshot policy and starts it; it logs failed runs and reports the gauge
   `aurelius_atlas.snapshot.last_success` (SNP-01 to SNP-03, 6.4e)

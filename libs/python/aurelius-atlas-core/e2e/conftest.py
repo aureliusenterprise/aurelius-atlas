@@ -55,13 +55,8 @@ async def entity_prefix(dev_store: ElasticsearchStore) -> AsyncGenerator[str]:
     """An alias prefix of its own for one test's entity indices, deleted with them afterwards."""
     prefix = f"aurelius-atlas-e2e-{uuid4().hex[:12]}"
     yield prefix
-    for name in (
-        "entities",
-        "unique-values",
-        "entity-journal",
-        "relationships",
-        "classifications",
-        "tasks",
-        "entity-audits",
-    ):
-        await dev_store.client.indices.delete(index=f"{prefix}-{name}-000001", ignore_unavailable=True)
+    # Every index of the prefix, by name: an entity index moved to a new generation is ``-000002`` (DD-439), and
+    # Elasticsearch refuses a delete by wildcard.
+    found = await dev_store.client.indices.get(index=f"{prefix}-*", allow_no_indices=True, ignore_unavailable=True)
+    for name in found.body:
+        await dev_store.client.indices.delete(index=name, ignore_unavailable=True)

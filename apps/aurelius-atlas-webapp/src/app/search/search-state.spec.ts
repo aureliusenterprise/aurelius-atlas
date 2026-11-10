@@ -430,3 +430,147 @@ describe("SearchState (SRH-02..06, SDX-01..07)", () => {
         expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", source: "search" }));
     });
 });
+
+/** The search by meaning's endpoint (SBW-01, SBM-01). */
+const SEMANTIC_SEARCH = "/api/aurelius/v1/search/semantic";
+
+describe("SearchState by meaning (SBW-03..SBW-06)", () => {
+    it("Meaning posts a semantic search with the quick search's parameters (SBW-03)", () => {
+        const { store, httpMock } = setup();
+        store.setMode("semantic");
+
+        store.run("customer address");
+
+        const request = httpMock.expectOne(SEMANTIC_SEARCH);
+        expect(request.request.method).toBe("POST");
+        expect(request.request.body).toEqual({
+            query: "customer address",
+            limit: 10,
+            offset: 0,
+            excludeDeletedEntities: true,
+            includeSubTypes: true,
+            mode: "semantic",
+        });
+        request.flush(page(0, 3, 3, typeMetrics([["m4i_data_entity", 3]])));
+        expect(store.entries()).toHaveLength(3);
+        expect(store.facets()[0].items.map((item) => item.value)).toEqual(["m4i_data_entity"]);
+        httpMock.verify();
+    });
+
+    it("Both posts a hybrid search with the type selection (SBW-03)", () => {
+        const { store, httpMock } = setup();
+        store.setMode("hybrid");
+        store.run("employee");
+        httpMock.expectOne(SEMANTIC_SEARCH).flush(page(0, 1, 1, typeMetrics([["DataSet", 1]])));
+
+        store.toggleType("DataSet", true);
+
+        const request = httpMock.expectOne(SEMANTIC_SEARCH);
+        expect(request.request.body).toMatchObject({ query: "employee", typeName: "DataSet", mode: "hybrid" });
+        httpMock.verify();
+    });
+
+    it("an empty query lists by quick search whatever the mode (SBW-03)", () => {
+        const { store, httpMock } = setup();
+        store.setMode("semantic");
+
+        store.run(null);
+
+        expect(httpMock.expectOne(QUICK_SEARCH).request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES" });
+        expect(store.byMeaning()).toBe(false);
+        httpMock.verify();
+    });
+
+    it("by meaning a full page asks for the next and the header counts what is shown (SBW-04)", () => {
+        const { store, httpMock } = setup();
+        store.setMode("semantic");
+        store.run("orders");
+        httpMock.expectOne(SEMANTIC_SEARCH).flush(page(0, 10, 10));
+
+        expect(store.allLoaded()).toBe(false);
+        expect(store.shownCount()).toBe(10);
+        store.nextPage();
+        const next = httpMock.expectOne(SEMANTIC_SEARCH);
+        expect(next.request.body).toMatchObject({ offset: 10, limit: 10 });
+        next.flush(page(10, 4, 14));
+
+        expect(store.shownCount()).toBe(14);
+        expect(store.allLoaded()).toBe(true);
+        store.nextPage();
+        httpMock.verify();
+    });
+
+    it("by meaning the list ends at 1,000 entities (SBW-04)", () => {
+        const { store, httpMock } = setup();
+        store.setMode("semantic");
+        store.run("orders");
+
+        for (let offset = 0; offset < 1000; offset += 10) {
+            httpMock.expectOne(SEMANTIC_SEARCH).flush(page(offset, 10, offset + 10));
+            store.nextPage();
+        }
+
+        expect(store.entries()).toHaveLength(1000);
+        expect(store.allLoaded()).toBe(true);
+        httpMock.verify();
+    });
+
+    it("another mode restarts a search with a query at page one, the selection kept (SBW-05)", () => {
+        const { store, httpMock } = setup();
+        store.run("orders");
+        httpMock.expectOne(QUICK_SEARCH).flush(page(0, 10, 30, typeMetrics([["DataSet", 30]])));
+        store.toggleType("DataSet", true);
+        httpMock.expectOne(QUICK_SEARCH).flush(page(0, 10, 30));
+
+        store.setMode("hybrid");
+
+        const request = httpMock.expectOne(SEMANTIC_SEARCH);
+        expect(request.request.body).toMatchObject({ offset: 0, typeName: "DataSet", mode: "hybrid" });
+        expect(store.entries()).toEqual([]);
+        store.setMode("hybrid");
+        httpMock.verify();
+    });
+
+    it("a mode chosen without a query searches nothing until a query comes (SBW-05)", () => {
+        const { store, httpMock } = setup();
+
+        store.setMode("semantic");
+
+        httpMock.verify();
+        expect(store.mode()).toBe("semantic");
+    });
+
+    it("a server without search by meaning says so and searches by words again (SBW-06)", () => {
+        const { store, httpMock } = setup();
+        const alerts = TestBed.inject(AlertsService);
+        const add = vi.spyOn(alerts, "add");
+        store.setMode("semantic");
+        store.run("orders");
+
+        httpMock
+            .expectOne(SEMANTIC_SEARCH)
+            .flush({ errorCode: "AURELIUS-404-00-001", errorMessage: "off" }, { status: 404, statusText: "Not Found" });
+
+        expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: "warning", source: "search" }));
+        expect(store.mode()).toBe("words");
+        expect(httpMock.expectOne(QUICK_SEARCH).request.body).toMatchObject({ query: "orders" });
+        httpMock.verify();
+    });
+
+    it("any other failure by meaning is the failed page's alert, the mode kept (SBW-06)", () => {
+        const { store, httpMock } = setup();
+        const alerts = TestBed.inject(AlertsService);
+        const add = vi.spyOn(alerts, "add");
+        store.setMode("semantic");
+        store.run("orders");
+
+        httpMock
+            .expectOne(SEMANTIC_SEARCH)
+            .flush({ errorCode: "AURELIUS-503-00-001" }, { status: 503, statusText: "Down" });
+
+        expect(add).toHaveBeenCalledWith(expect.objectContaining({ severity: "error", source: "search" }));
+        expect(store.mode()).toBe("semantic");
+        expect(store.loading()).toBe(false);
+        httpMock.verify();
+    });
+});

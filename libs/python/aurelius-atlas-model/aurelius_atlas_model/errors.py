@@ -460,6 +460,10 @@ class AtlasErrorCode(Enum):
     )
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")
     INTERNAL_ERROR = (500, "ATLAS-500-00-001", "Internal server error {0}")
+    # Aurelius's own, for its endpoints beside Atlas's: none of Atlas's answers them (SBM-05, SBM-06, DD-440).
+    EMBEDDING_OFF = (404, "AURELIUS-404-00-001", "Search by meaning is off: no embedding service is configured")
+    NO_EMBEDDING = (409, "AURELIUS-409-00-001", "Entity {0} has no embedding yet")
+    EMBEDDER_UNAVAILABLE = (503, "AURELIUS-503-00-001", "The embedding service could not embed the query: {0}")
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK = (
         409,
         "ATLAS-500-00-006",
