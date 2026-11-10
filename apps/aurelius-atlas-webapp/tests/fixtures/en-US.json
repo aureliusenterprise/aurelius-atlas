@@ -644,6 +644,12 @@
                     "description": "The name of the entity type",
                     "displayName": "Type name"
                 }
+            },
+            "similar": {
+                "title": "Similar entities",
+                "notYet": "This entity is not analysed yet. Try again in a moment.",
+                "none": "No similar entities found.",
+                "failed": "Similar entities could not be loaded."
             }
         },
         "editEntity": {
@@ -652,7 +658,8 @@
         "results": {
             "anotherQuery": "Please, try to make another query.",
             "noResults": "No results found",
-            "results": "results"
+            "results": "results",
+            "closestMatches": "closest matches"
         },
         "services": {
             "appSearchResults": {
@@ -676,6 +683,13 @@
             "typeDefs": {
                 "retrieve": "Retrieving the type definitions"
             }
+        },
+        "mode": {
+            "label": "Search by",
+            "words": "Words",
+            "meaning": "Meaning",
+            "both": "Both",
+            "unavailable": "Search by meaning is not available on this server"
         }
     },
     "sourcetype": "Source",

@@ -1,5 +1,6 @@
 """``TypedefDocument`` and ``EntityDocuments`` in memory, for unit tests that need no Elasticsearch."""
 
+import math
 from collections import Counter
 from collections.abc import Collection, Mapping, Sequence
 from typing import Any
@@ -293,24 +294,32 @@ class MemoryEntityDocuments:
         ]
 
     async def search(self, query: SearchQuery) -> SearchHits:
-        """The query evaluated over every entity's search fields; free text as ``text_matches`` reads it (DD-089)."""
+        """The query evaluated over every entity's search fields; free text as ``text_matches`` reads it (DD-089).
+
+        A vector selects the ``k`` nearest entities with an embedding, scored as Elasticsearch scores cosine,
+        ``(1 + cos) / 2``, times the weight; with free text, its matches join them and the scores add (DD-442).
+        """
         scores: dict[str, float] = {}
         found = []
         matching: list[dict[str, object]] = []
+        nearest = self._nearest(query)
         for source, _ in self.entities.values():
             fields: dict[str, object] = source.get("search") or {}  # type: ignore[assignment]
-            if not selects(query, fields):
-                continue
             entity = StoredEntity.model_validate(source)
-            if query.text is not None:
-                scores[entity.guid] = text_matches(query.text.text, fields, query.text.fields)
-                if not scores[entity.guid]:
-                    continue
+            if entity.guid in query.exclude_guids or not selects(query, fields):
+                continue
+            text = 0.0 if query.text is None else text_matches(query.text.text, fields, query.text.fields)
+            if query.vector is not None and entity.guid not in nearest and not text:
+                continue
+            if query.vector is None and query.text is not None and not text:
+                continue
+            if query.text is not None or query.vector is not None:
+                scores[entity.guid] = text + nearest.get(entity.guid, 0.0)
             found.append(entity)
             matching.append(fields)
         for name in reversed(query.tie_break):
             found.sort(key=lambda entity, field=name: _sort_key(entity, field))
-        if query.sort_field is not None:
+        if query.sort_field is not None and query.vector is None:
             present = [entity for entity in found if _sort_key(entity, query.sort_field)[0] == 0]
             absent = [entity for entity in found if _sort_key(entity, query.sort_field)[0] != 0]
             present.sort(
@@ -318,7 +327,7 @@ class MemoryEntityDocuments:
                 reverse=query.descending,
             )
             found = present + absent
-        elif query.text is not None:
+        elif query.text is not None or query.vector is not None:
             found.sort(key=lambda entity: scores[entity.guid], reverse=True)
         page = found[query.offset : query.offset + query.size]
         facets = facet_counts(matching, query.facets)
@@ -333,6 +342,22 @@ class MemoryEntityDocuments:
             if embeddable(entity.type_name) and (entity.embedding is None or entity.embedding.model != model):
                 found.append(VersionedEntity(entity, version))
         return found[:limit]
+
+    def _nearest(self, query: SearchQuery) -> dict[str, float]:
+        """The ``k`` selected entities nearest to the query's vector, by GUID, with their weighted scores."""
+        if query.vector is None:
+            return {}
+        target = query.vector.vector
+        scored = []
+        for source, _ in self.entities.values():
+            fields: dict[str, object] = source.get("search") or {}  # type: ignore[assignment]
+            entity = StoredEntity.model_validate(source)
+            if entity.embedding is None or entity.guid in query.exclude_guids or not selects(query, fields):
+                continue
+            similarity = _cosine(entity.embedding.vector, target)
+            scored.append(((1 + similarity) / 2 * query.vector.weight, entity.guid))
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        return {guid: score for score, guid in scored[: query.vector.k]}
 
     async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
         """Each field's words as ``field_terms`` reads them over every entity (DD-094)."""
@@ -393,3 +418,10 @@ def _sort_key(entity: StoredEntity, name: str, *, largest: bool = False) -> tupl
     if isinstance(value, list):
         value = (max(value) if largest else min(value)) if value else None
     return (1, "") if value is None else (0, value)
+
+
+def _cosine(left: Sequence[float], right: Sequence[float]) -> float:
+    """The cosine similarity of two vectors; 0 for a vector of length 0."""
+    dot = sum(a * b for a, b in zip(left, right, strict=True))
+    norms = math.sqrt(sum(a * a for a in left)) * math.sqrt(sum(b * b for b in right))
+    return dot / norms if norms else 0.0

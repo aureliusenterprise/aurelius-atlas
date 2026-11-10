@@ -1,0 +1,40 @@
+<!-- The Similar entities box (SBW-07, DD-446): no box at all on a server
+     without search by meaning. -->
+@if (state().kind !== "off") {
+    <section id="similar-entities" class="box aurelius-details-similar">
+        <h4 class="title is-4">{{ title }}</h4>
+        @switch (state().kind) {
+            @case ("loading") {
+                <progress class="progress is-small is-info" max="100"></progress>
+            }
+            @case ("found") {
+                <!-- Three across on a desktop, two on a tablet, one on a phone,
+                     as the card sections (DET-22, DD-377). -->
+                <div class="columns is-multiline">
+                    @for (entity of found(); track entity.guid) {
+                        <div class="column is-half-tablet is-one-third-desktop">
+                            <aurelius-atlas-ui-entity-card
+                                [guid]="entity.guid ?? undefined"
+                                [name]="nameOf(entity)"
+                                [typeName]="typeOf(entity.typeName)"
+                                [typeIcon]="iconOf(entity.typeName)?.icon"
+                                [typeIconClass]="iconOf(entity.typeName)?.classIcon"
+                                [showQuality]="false"
+                                (entityClicked)="entityClicked.emit($event)"
+                            />
+                        </div>
+                    }
+                </div>
+            }
+            @case ("notYet") {
+                <p class="is-italic aurelius-similar-note">{{ notYet }}</p>
+            }
+            @case ("none") {
+                <p class="is-italic aurelius-similar-note">{{ none }}</p>
+            }
+            @case ("failed") {
+                <p class="is-italic aurelius-similar-note">{{ failed }}</p>
+            }
+        }
+    </section>
+}

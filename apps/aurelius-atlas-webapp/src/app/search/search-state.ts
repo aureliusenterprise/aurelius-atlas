@@ -1,10 +1,14 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import { Injectable, computed, inject, signal } from "@angular/core";
 import {
     AtlasAggregationEntry,
     AtlasEntityHeader,
+    AtlasQuickSearchResult,
     QuickSearchParameters,
+    SearchByMeaningService,
     SearchService,
 } from "aurelius-atlas-data-access";
+import { Observable } from "rxjs";
 import { FacetItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../alerts/alerts.service";
@@ -29,6 +33,18 @@ const FACET_TITLES: Record<string, string> = {
     "Asset.owner": $localize`:@@search.components.filter.owner:Owner`,
     ServiceType: $localize`:@@search.components.filter.serviceType:Service Type`,
 };
+
+/**
+ * How the search field searches (SBW-02, DD-444): by the query's words, a
+ * quick search; by its meaning; or by both, the hybrid search by meaning.
+ */
+export type SearchMode = "words" | "semantic" | "hybrid";
+
+/** The most entities a search by meaning answers (DD-441, DD-445). */
+const MAX_NEAREST = 1000;
+
+/** The server's code for a server without search by meaning (SBM-06). */
+const EMBEDDING_OFF = "AURELIUS-404-00-001";
 
 /** One sidebar facet as the results screen renders it (SDX-03). */
 export type FacetView = {
@@ -76,6 +92,8 @@ type TypeRow = {
 export class SearchState {
     private readonly search = inject(SearchService);
 
+    private readonly meaning = inject(SearchByMeaningService);
+
     private readonly alerts = inject(AlertsService);
 
     /** The legacy `pageSize` (the results store's 10). */
@@ -86,6 +104,24 @@ export class SearchState {
 
     /** The server's count of the current search (`approximateCount`, SRC-09). */
     readonly approximateCount = signal(0);
+
+    /**
+     * The session's search mode (SBW-02, DD-444): kept when the query
+     * changes, never in the URL.
+     */
+    readonly mode = signal<SearchMode>("words");
+
+    /**
+     * Whether the list is a search by meaning (SBW-03): Meaning or Both,
+     * with a query — an empty query lists as before, whatever the mode.
+     */
+    readonly byMeaning = computed(() => this.mode() !== "words" && this.queryText().trim() !== "");
+
+    /** The header's count (SBW-04, DD-445): the entities shown by meaning, the server's count by words. */
+    readonly shownCount = computed(() => (this.byMeaning() ? this.entries().length : this.approximateCount()));
+
+    /** The last page came back full: by meaning, the sign there is more (SBW-04, DD-445). */
+    private readonly lastPageFull = signal(true);
 
     /** A page is in flight — the container's spinner (SRH-04). */
     readonly loading = signal(false);
@@ -149,8 +185,20 @@ export class SearchState {
         return views;
     });
 
-    /** Every entity of the search is listed (the legacy equality, SRH-04). */
-    readonly allLoaded = computed(() => !this.loading() && this.entries().length >= this.approximateCount());
+    /**
+     * Every entity of the search is listed (the legacy equality, SRH-04); by
+     * meaning, once a page came back short or 1,000 are shown, as a search
+     * by meaning counts what it was asked for (SBW-04, DD-445).
+     */
+    readonly allLoaded = computed(() => {
+        if (this.loading()) {
+            return false;
+        }
+        if (this.byMeaning()) {
+            return !this.lastPageFull() || this.entries().length >= MAX_NEAREST;
+        }
+        return this.entries().length >= this.approximateCount();
+    });
 
     /** Cards render (SRH-05). */
     readonly hasResults = computed(() => this.entries().length > 0);
@@ -232,6 +280,22 @@ export class SearchState {
     }
 
     /**
+     * The hero's mode switch (SBW-02, SBW-05): a new mode restarts a search
+     * that has a query at its first page, the type selection kept; without
+     * a query there is nothing to search differently.
+     * @param mode the chosen mode
+     */
+    setMode(mode: SearchMode): void {
+        if (mode === this.mode()) {
+            return;
+        }
+        this.mode.set(mode);
+        if (this.queryText().trim() !== "") {
+            this.restart(true);
+        }
+    }
+
+    /**
      * Ask for the next page (SRH-04): the container's sentinel or button,
      * guarded against a flight and against the end of the list.
      */
@@ -252,6 +316,7 @@ export class SearchState {
     private restart(resetFacets: boolean): void {
         this.entries.set([]);
         this.approximateCount.set(0);
+        this.lastPageFull.set(true);
         this.offset = 0;
         if (resetFacets) {
             this.typeRows.set([]);
@@ -300,18 +365,24 @@ export class SearchState {
             excludeDeletedEntities: true,
             includeSubTypes: true,
         };
-        this.search.quickSearch(parameters).subscribe({
+        const byMeaning = this.byMeaning();
+        this.page(parameters, byMeaning).subscribe({
             next: (result) => {
                 const found = result.searchResults;
                 this.approximateCount.set(found?.approximateCount ?? 0);
                 const entities = found?.entities ?? [];
                 this.entries.update((entries) => [...entries, ...entities]);
+                this.lastPageFull.set(entities.length >= SearchState.PAGE_SIZE);
                 this.offset += SearchState.PAGE_SIZE;
                 this.applyFacets(result.aggregationMetrics ?? {});
                 this.loading.set(false);
             },
-            error: () => {
+            error: (error: unknown) => {
                 this.loading.set(false);
+                if (byMeaning && isEmbeddingOff(error)) {
+                    this.meaningUnavailable();
+                    return;
+                }
                 this.alerts.add({
                     severity: "error",
                     // The legacy pipeline's quiet task line ("…loading a page
@@ -321,6 +392,35 @@ export class SearchState {
                 });
             },
         });
+    }
+
+    /**
+     * One page of the current search (SBW-03): a search by meaning in
+     * Meaning and Both — `semantic` and `hybrid` — with the quick search's
+     * own parameters, else the quick search.
+     * @param parameters the page's quick search parameters
+     * @param byMeaning whether the page is a search by meaning
+     */
+    private page(parameters: QuickSearchParameters, byMeaning: boolean): Observable<AtlasQuickSearchResult> {
+        if (!byMeaning) {
+            return this.search.quickSearch(parameters);
+        }
+        const mode = this.mode() === "hybrid" ? "hybrid" : "semantic";
+        return this.meaning.search({ ...parameters, mode });
+    }
+
+    /**
+     * A server without search by meaning (SBW-06): say so, turn the switch
+     * back to Words and search again by the query's words.
+     */
+    private meaningUnavailable(): void {
+        this.alerts.add({
+            severity: "warning",
+            message: $localize`:@@search.mode.unavailable:Search by meaning is not available on this server`,
+            source: "search",
+        });
+        this.mode.set("words");
+        this.restart(true);
     }
 
     /**
@@ -346,4 +446,17 @@ export class SearchState {
                 .map(([key, entries]) => ({ key, entries })),
         );
     }
+}
+
+/**
+ * Whether a failed request is the server's answer that it has no search by
+ * meaning (SBM-06): a 404 carrying `AURELIUS-404-00-001`.
+ * @param error what the request failed with
+ */
+function isEmbeddingOff(error: unknown): boolean {
+    return (
+        error instanceof HttpErrorResponse &&
+        error.status === 404 &&
+        (error.error as { errorCode?: string } | null)?.errorCode === EMBEDDING_OFF
+    );
 }

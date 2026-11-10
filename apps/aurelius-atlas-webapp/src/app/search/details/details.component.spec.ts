@@ -1,14 +1,14 @@
 import { ViewportScroller } from "@angular/common";
-import { provideHttpClient } from "@angular/common/http";
+import { HttpErrorResponse, provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter, type UrlTree } from "@angular/router";
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
-import { Subject } from "rxjs";
+import { Subject, throwError } from "rxjs";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
-import type { AtlasEntity, AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
+import { SearchByMeaningService, type AtlasEntity, type AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 
 import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json";
@@ -18,6 +18,9 @@ import { APP_CONFIG } from "../../tokens";
 import { EntitySaved } from "../editor/entity-saved";
 
 import { Details } from "./details.component";
+
+/** What a server without search by meaning answers (SBM-06). */
+const EMBEDDING_OFF = new HttpErrorResponse({ status: 404, error: { errorCode: "AURELIUS-404-00-001" } });
 
 /**
  * The details screen on its data spine (DET-08..DET-13, 7.20): the route's
@@ -78,6 +81,9 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
                 provide: Keycloak,
                 useValue: { hasResourceRole: (role: string) => atlasWrite && role === "atlas-write" },
             },
+            // The Similar entities box asks a server without search by meaning,
+            // so it renders nothing: its own spec covers it (SBW-07).
+            { provide: SearchByMeaningService, useValue: { similar: () => throwError(() => EMBEDDING_OFF) } },
         ],
     });
     const fixture = TestBed.createComponent(Details);

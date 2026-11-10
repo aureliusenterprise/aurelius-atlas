@@ -1,6 +1,6 @@
 # 11.3 Entity vectors
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#304](https://github.com/aureliusenterprise/aurelius-atlas/pull/304)
 - **Records:** ADR 059 (Proposed); DD-434 to DD-439; relies on 11.2 (the embedder, DD-429 to DD-433), DD-043,
   DD-046, DD-047, DD-088

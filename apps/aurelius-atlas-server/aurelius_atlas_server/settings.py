@@ -141,6 +141,9 @@ class ServerSettings(StoreAccessSettings):
     embedding_poll_seconds: float = Field(default=10.0, gt=0)
     """How often the indexer looks for entities without a current embedding (VEC-07, DD-436)."""
 
+    hybrid_vector_weight: float = Field(default=10.0, ge=0)
+    """What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442)."""
+
     import_folder: Path | None = None
     """The one folder ``admin/importfile`` reads export ZIPs from; none refuses every file (IMS-06, DV-125)."""
 
