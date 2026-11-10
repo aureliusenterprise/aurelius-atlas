@@ -12,10 +12,11 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faXmark } from "@fortawesome/free-solid-svg-icons";
-import { map } from "rxjs";
+import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { map, Subscription } from "rxjs";
 
 import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
+import { type EntityValidationResponse, type GovQualityItem, ValidateEntityService } from "aurelius-atlas-data-access";
 
 import { nameDisplay } from "../meta/type-display";
 import { canWriteEntities } from "./can-write-entities";
@@ -43,6 +44,15 @@ type EnumRow = { value: string };
 /** One model slot: the value a field of any kind holds (DD-354). */
 type EditorValue = string | number | boolean | string[] | null;
 
+/** The description pair (DET-10, DD-320): the product treats the two keys as
+ * one description, so a governance card of one names a control of the other —
+ * the legacy's types carry `definition`, this catalogue's carry `description`
+ * (EDT-24: the mock's `definition` card banners the `description` control). */
+const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
+    description: ["description", "definition"],
+    definition: ["definition", "description"],
+};
+
 /**
  * The entity editor drawer (EDT-01..EDT-08, DD-322): the routed panel in the
  * `drawer` aux outlet beside the settings and alerts panels (the AlertsPanel
@@ -61,6 +71,11 @@ type EditorValue = string | number | boolean | string[] | null;
  * merges the form onto the entity, POSTs it, then replaces the
  * classifications through the one PUT (EDT-06, DD-326), and lands on the
  * entity's details screen.
+ *
+ * Since 7.24 the drawer also carries the governance banner (EDT-23/EDT-24,
+ * DD-436): the draft rides the validate-entity aux API on open and after
+ * every change debounced 200 ms, and each response card renders its verdict
+ * lines under the control its key names — failures swallow quietly.
  */
 @Component({
     imports: [
@@ -84,11 +99,23 @@ export class EntityEditor {
 
     private readonly router = inject(Router);
 
+    private readonly validateEntity = inject(ValidateEntityService);
+
     /** The drawer's open state — true for the panel's whole life (EDT-01). */
     readonly active = signal(true);
 
     /** Whether a Save was attempted — shows the notification (EDT-07). */
     protected readonly saveAttempted = signal(false);
+
+    /** The governance cards of the last validation, by key (EDT-23/EDT-24). */
+    private readonly validation = signal<EntityValidationResponse | null>(null);
+
+    /** The in-flight validation (a new draft drops it — the guard, EDT-23). */
+    private validationPending: Subscription | null = null;
+
+    /** Whether the open-time validation fired — only the first round is
+     * undebounced, the legacy's entityDetails-vs-valueChanges split. */
+    private validatedOpen = false;
 
     /** Whether the notification's X hid it — until the next Save (DD-331). */
     protected readonly notificationDismissed = signal(false);
@@ -305,6 +332,12 @@ export class EntityEditor {
     /** The multi row's delete icon. */
     protected readonly faXmark = faXmark;
 
+    /** The banner line's verdict icons (EDT-24, the legacy's pair). */
+    protected readonly faCheckCircle = faCheckCircle;
+
+    /** The banner line's warning icon (EDT-24). */
+    protected readonly faExclamationTriangle = faExclamationTriangle;
+
     protected readonly nameRequired = $localize`:@@search.components.editor.attribute.nameRequired:Name is required.`;
 
     /** The markdown field's tab pair and placeholder (EDT-20, DD-353): the
@@ -441,6 +474,79 @@ export class EntityEditor {
                 this.activeSuggestion.set(0);
             }
         });
+
+        // The governance validation (EDT-23, DD-436): the draft rides the
+        // validate-entity aux API when the form opens — the legacy's
+        // entityDetails merge, immediate — and after every change debounced
+        // 200 ms — the legacy's valueChanges.debounceTime(200). The re-run's
+        // cleanup unsubscribes the in-flight request, so an older answer can
+        // never land (the generation guard, DET-08's sibling). A failed call
+        // renders no lines and alerts nothing (the quiet swallow, the
+        // legacy's catchError-to-empty): the validation is advisory while a
+        // record is drafted, and the drawer stays usable.
+        effect((onCleanup) => {
+            if (!this.formVisible()) {
+                return;
+            }
+            // The draft's sources, read so any change re-fires (EDT-23).
+            const entity = this.state.entity();
+            const fields = this.fields();
+            const values = this.values();
+            const relationshipFields = this.relationshipFields();
+            const relationshipValues = this.relationshipValues();
+            if (!entity?.typeName) {
+                // Nothing to validate yet (the failed read, the bare create).
+                this.validation.set(null);
+
+                return;
+            }
+            const draft = () =>
+                mergeRelationshipsOntoEntity(
+                    mergeOntoEntity(entity, fields, values as Record<string, unknown>),
+                    relationshipFields,
+                    relationshipValues,
+                );
+            if (!this.validatedOpen) {
+                this.validatedOpen = true;
+                this.validateDraft(draft);
+
+                return;
+            }
+            const timer = setTimeout(() => this.validateDraft(draft), 200);
+            onCleanup(() => clearTimeout(timer));
+        });
+    }
+
+    /** One validation round (EDT-23): the draft rides the aux API (EDT-21);
+     * its answer replaces the cards, a failure clears them (DD-436 — the
+     * quiet swallow, no alert). The in-flight subscription rides a field so
+     * the effect's cleanup can drop it — the last draft wins. */
+    private validateDraft(draft: () => Parameters<ValidateEntityService["validateEntity"]>[0]): void {
+        this.validationPending?.unsubscribe();
+        this.validationPending = this.validateEntity.validateEntity(draft()).subscribe({
+            next: (cards) => {
+                this.validationPending = null;
+                this.validation.set(cards);
+            },
+            error: () => {
+                this.validationPending = null;
+                this.validation.set(null);
+            },
+        });
+    }
+
+    /** The card's items for a rendered control (EDT-24): a control with no
+     * card of its key renders nothing, and a card with no control of its key
+     * renders nowhere — the mock answers four keys for every entity, the
+     * drawer's controls come from the entity's type. The description pair
+     * answers both keys ({@link GOV_CARD_KEYS}), the legacy's own mapping. */
+    protected validationItems(name: string): readonly GovQualityItem[] {
+        const cards = this.validation();
+        if (!cards) {
+            return [];
+        }
+
+        return (GOV_CARD_KEYS[name] ?? [name]).flatMap((key) => cards[key]?.items ?? []);
     }
 
     /** A fresh signal form over {@link values}, with the current field set's

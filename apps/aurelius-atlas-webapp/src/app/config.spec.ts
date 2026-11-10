@@ -91,6 +91,22 @@ describe("parseAppConfig", () => {
     it("throws when lineageModelBaseUrl is present but empty (LDG-07)", () => {
         expect(() => parseAppConfig({ ...valid, lineageModelBaseUrl: "" })).toThrow(/"lineageModelBaseUrl"/);
     });
+
+    it("keeps validateEntityBaseUrl absent when the config omits it (EDT-22)", () => {
+        // The client's own /validate-entity default is what the app runs on,
+        // so the parsed config must not invent a key (DD-387's rule, DD-435).
+        expect("validateEntityBaseUrl" in parseAppConfig(valid)).toBe(false);
+    });
+
+    it("keeps an explicit validateEntityBaseUrl (EDT-22)", () => {
+        expect(parseAppConfig({ ...valid, validateEntityBaseUrl: "/aux/validate" }).validateEntityBaseUrl).toBe(
+            "/aux/validate",
+        );
+    });
+
+    it("throws when validateEntityBaseUrl is present but empty (EDT-22)", () => {
+        expect(() => parseAppConfig({ ...valid, validateEntityBaseUrl: "" })).toThrow(/"validateEntityBaseUrl"/);
+    });
 });
 
 describe("metricsUrl", () => {

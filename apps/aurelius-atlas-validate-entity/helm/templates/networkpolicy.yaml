@@ -1,0 +1,34 @@
+{{/*
+The validate-entity ingress allow (7.24, EDT-22, DD-435; the CHT-66 shape,
+LDG-06's sibling). Before 7.24 nothing dialed this API in-cluster — its chart
+rendered no policy at all (CHT-66's second half: a policy that opened it would
+pin a caller that does not exist). The webapp's nginx now dials it: the
+editor's governance banner reaches the API through the `/validate-entity/`
+location, the same data path the webapp's chart pins for /api/ (DD-142).
+Peers join by pod labels (CHT-70): chart name + release instance, never a
+Service name. The probe surface is exempt by CNI design (CHT-71).
+*/}}
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+    name: {{ printf "%s-ingress" (include "atlas-validate-entity.fullname" .) }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-validate-entity.labels" . | nindent 8 }}
+spec:
+    podSelector:
+        matchLabels:
+            {{- include "atlas-validate-entity.selectorLabels" . | nindent 12 }}
+    policyTypes:
+        - Ingress
+    ingress:
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ default "atlas-webapp" .Values.networkPolicy.peers.webapp | quote }}
+                            app.kubernetes.io/instance: {{ .Release.Name | quote }}
+            ports:
+                -   port: {{ int .Values.port }}
+                    protocol: TCP
+{{- end }}

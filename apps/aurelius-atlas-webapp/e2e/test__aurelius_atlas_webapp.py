@@ -1258,6 +1258,107 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
+@pytest.mark.covers(rules=["DET-35", "DET-36"])
+def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The field page's rules box, stat, and link over a seeded rule (DET-35, DET-36).
+
+    The 7.24 field layout on real data: the third box (``#related-rules``) seeds
+    from the field's own ``dataQuality`` relationship end (DD-434), so a seeded
+    ``m4i_data_quality`` rule lands there as one resolved card at the box count.
+    The stats bar gains the Data Quality Rules stat in the legacy place — after
+    Child Fields, before Properties — carrying the DET-24 section count (DET-36),
+    and the side navigation gains its link. The field's empty Child Fields end
+    renders its box at zero count, as every DET-17 section does. The rule's edge
+    is a separate near-real-time record the read searches, so the scenario waits
+    it before opening the screen (the CLS-12 race, the mini-graph idiom).
+    Self-cleaned by the purge helper, gained the ``m4i_data_quality`` type (DD-223).
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+    field_guid = guids["field"]
+    rule_name = f"zz{run}rule"
+
+    rule = authenticated.request.post(
+        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+        data=json.dumps(
+            {
+                "entities": [
+                    {
+                        "typeName": "m4i_data_quality",
+                        "guid": "-0",
+                        "attributes": {
+                            "qualifiedName": rule_name,
+                            "name": rule_name,
+                            # `id` is a mandatory INT attribute of the rule type.
+                            "id": int(run[:6], 16),
+                            "ruleDescription": "The field must carry a value.",
+                        },
+                        "relationshipAttributes": {"fields": [{"guid": field_guid, "typeName": "m4i_field"}]},
+                    }
+                ]
+            }
+        ),
+        headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+    )
+    assert rule.status == 200, rule.text()
+    rule_guid = rule.json()["guidAssignments"]["-0"]
+
+    try:
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            field_guid,
+            predicate=lambda entity: _active_edge(entity, "dataQuality", rule_guid),
+        )
+
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{field_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}field")
+
+        # DET-35: the rules box at its seeded count, the rule as one resolved card.
+        section = authenticated.locator("#related-rules")
+        expect(section).to_be_visible()
+        expect(section.locator(".aurelius-card-section-count")).to_contain_text("1 result(s)")
+        expect(section.locator("aurelius-atlas-ui-entity-card")).to_have_count(1)
+        expect(section).to_contain_text(rule_name)
+
+        # DET-35: the empty Child Fields end renders its box at zero count.
+        children = authenticated.locator("#related-fields")
+        expect(children).to_be_visible()
+        expect(children.locator(".aurelius-card-section-count")).to_contain_text("0 result(s)")
+        expect(children.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
+
+        # DET-36: the rules stat in the legacy place, its value the section
+        # count (the legacy's `dqscorecnt_overall` stand-in, DD-434).
+        rules_stat = authenticated.locator(
+            ".aurelius-details-stats .level-item", has=authenticated.locator('p.heading a[href="#related-rules"]')
+        )
+        expect(rules_stat).to_have_count(1)
+        expect(rules_stat.locator("p.title")).to_have_text("1")
+        stats = [
+            item.locator("p.heading a").inner_text().strip().casefold()
+            for item in authenticated.locator(".aurelius-details-stats .level-item").all()
+        ]
+        assert stats == ["data attributes", "child fields", "data quality rules", "properties"]
+
+        # DET-36: the side navigation gained the matching link.
+        nav_link = authenticated.locator(".aurelius-details-nav .menu-list a", has_text="Data Quality Rules")
+        expect(nav_link).to_have_count(1)
+    finally:
+        for type_name in [
+            "m4i_data_quality",
+            "m4i_data_entity",
+            "m4i_data_attribute",
+            "m4i_data_domain",
+            "m4i_field",
+            "m4i_system",
+            "m4i_generic_process",
+            "m4i_dataset",
+            "m4i_person",
+        ]:
+            _purge_type(authenticated, root_url, user_token, type_name)
+
+
 def test__business_explore_lists_glossary_entities_without_a_url_query(
     authenticated: Page, root_url: str, user_token: str
 ) -> None:
@@ -1797,6 +1898,92 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         if created is not None:
             _delete_entity(authenticated, root_url, user_token, created)
         _delete_entity(authenticated, root_url, user_token, volume_guid)
+
+
+@pytest.mark.covers(rules=["EDT-24"])
+def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The drawer validates the draft and paints the mock's verdict lines (EDT-23, EDT-24).
+
+    The 7.24 editor over the deployed aux API: opening the drawer posts the
+    draft to ``/validate-entity/`` through the webapp's own nginx (EDT-22), and
+    the mock's four cards (VE-02, DV-67) come back. The drawer renders one line
+    per card whose key names a rendered control (EDT-24): the DataSet editor
+    carries ``name`` and the description key, so two lines appear — under Name
+    and under Description — with the success icon for compliant "1" (the
+    warning-icon case is specced at the component). The cards whose keys name no
+    control the DataSet has (``dataEntity``, ``domainLead``) render nowhere.
+    Self-cleaned by the entity delete.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}govbanner"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+        drawer = authenticated.locator(".aurelius-drawer")
+
+        # The open round renders the lines without any edit (EDT-23's trigger).
+        lines = drawer.locator("[data-gov-line]")
+        expect(lines).to_have_count(2)
+        expect(lines.nth(0)).to_have_text("This entity has a name")
+        expect(lines.nth(0).locator(".icon.has-text-success")).to_have_count(1)
+        expect(lines.nth(1)).to_have_text("This entity has a definition")
+
+        # The two cards the DataSet drawer has no control for (dataEntity,
+        # domainLead) render nowhere — which the exact count of 2 and the two
+        # verdict texts above already pin.
+
+        # Each line sits under its own control (EDT-24's keying).
+        name_field = drawer.locator(".aurelius-editor-field", has=authenticated.locator("#editor-name"))
+        expect(name_field.locator("[data-gov-line]")).to_have_count(1)
+        definition_field = drawer.locator(
+            ".aurelius-editor-field", has=authenticated.locator("textarea#editor-description")
+        )
+        expect(definition_field.locator("[data-gov-line]")).to_have_count(1)
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
+@pytest.mark.covers(rules=["EDT-23"])
+def test__an_aborted_validation_leaves_the_drawer_usable(authenticated: Page, root_url: str, user_token: str) -> None:
+    """A validation call that never answers keeps the drawer whole (EDT-23).
+
+    The quiet swallow over the deployed stack: ``page.route`` aborts the
+    ``/validate-entity/`` request, so the browser gets no answer at all (the
+    aux API down, the network gone). The editor renders no lines, raises no
+    alert (the legacy's ``catchError`` to empty, DD-436), and the drawer stays
+    fully usable — the seeded value reads back and a save still lands. This
+    proves the banner is advisory: an aux API failure never interrupts the edit.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}abortgov"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    authenticated.route("**/validate-entity/", lambda route: route.abort())
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+        drawer = authenticated.locator(".aurelius-drawer")
+        expect(authenticated.locator("#editor-name")).to_have_value(name)
+
+        # No lines, no alert: the aborted call renders nothing and says
+        # nothing. The settle is the window a live call needs to answer, so
+        # the zero count below pins the abort, not a race.
+        authenticated.wait_for_timeout(400)
+        expect(drawer.locator("[data-gov-line]")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(0)
+
+        # The drawer stays usable: an edit saves through the normal path.
+        authenticated.locator("textarea#editor-description").fill("Saved despite the failed validation.")
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
+        expect(authenticated.locator(".aurelius-details-description")).to_have_text(
+            "Saved despite the failed validation."
+        )
+    finally:
+        authenticated.unroute("**/validate-entity/")
+        _delete_entity(authenticated, root_url, user_token, guid)
 
 
 def test__the_reader_sees_no_editor_affordances(reader_authenticated: Page, root_url: str) -> None:

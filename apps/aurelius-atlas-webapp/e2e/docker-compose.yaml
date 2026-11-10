@@ -24,9 +24,12 @@ services:
             # The /lineage-model/ proxy's chain rides this stack (7.22a,
             # LDG-08): the aux app's healthcheck gates the webapp's start, and
             # the aux app gates on data2model below — so when nginx serves, the
-            # chain is up. No host publish: the tests reach it through the
+            # chain is up. The /validate-entity/ twin joined with 7.24
+            # (EDT-22). No host publish: the tests reach it through the
             # proxy, which is the path under test (LDG-06).
             aurelius-atlas-lineage-model:
+                condition: service_healthy
+            aurelius-atlas-validate-entity:
                 condition: service_healthy
         networks:
             - default
@@ -105,6 +108,42 @@ services:
             # The Atlas server answers as `aurelius-atlas-server` here — the
             # name in its certificate, the alias its service declares.
             - atlas
+            - observability
+        volumes:
+            - ../certs:/certs:ro
+
+    # The 8.3 validate-entity API behind the nginx /validate-entity/ location
+    # (7.24, EDT-22, DD-435): the editor's governance banner validates through
+    # this path. The audience is the browser client `aurelius` by design
+    # (AUX-04, DV-75): the endpoint is the browser's from begin to end, the
+    # app forwards nothing, so no extra-audiences join (unlike the lineage
+    # app's DD-385 pair).
+    aurelius-atlas-validate-entity:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-validate-entity:local
+        environment:
+            # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
+            # environment; the aux app names carry their own prefixes but the
+            # values are this stack's (the ingest secret is the shared dev one).
+            AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CERT_FILE: /certs/aurelius-atlas-validate-entity.pem
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_KEY_FILE: /certs/aurelius-atlas-validate-entity-key.pem
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CA_FILE: /certs/ca.pem
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: master
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /certs/ca.pem
+            # The per-service OTLP leg (DD-196): mint at the TLS :8443 issuer,
+            # export to the collector's :4319 over the observability network.
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_ID: otel-validate-entity
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CA_FILE: /certs/ca.pem
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
+        extra_hosts:
+            - keycloak.localhost:host-gateway
+        networks:
+            - default
             - observability
         volumes:
             - ../certs:/certs:ro

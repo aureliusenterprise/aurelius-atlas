@@ -103,6 +103,12 @@ LDG-06, DD-384). */}}
 {{- include "atlas-webapp.siblingService" (dict "name" "atlas-lineage-model" "release" .Release.Name "override" .Values.lineageModel.service) -}}
 {{- end -}}
 
+{{/* The validate-entity Service this nginx proxies /validate-entity/ to
+(7.24, EDT-22, DD-435 — the LDG-06 sibling). */}}
+{{- define "atlas-webapp.validateEntityService" -}}
+{{- include "atlas-webapp.siblingService" (dict "name" "atlas-validate-entity" "release" .Release.Name "override" .Values.validateEntity.service) -}}
+{{- end -}}
+
 {{/*
 The Secret carrying the trust root (key: ca.crt) this nginx pins as a TLS
 client (CHT-25, DD-259): explicit value wins, else the chain's CA named by the
