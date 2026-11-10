@@ -220,30 +220,9 @@
                     @if (showError(field) && field.kind !== "enum") {
                         <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
                     }
-                    <!-- The governance banner lines (EDT-24, DD-446): one per
-                         item of the validation card that names this control —
-                         the icon by `compliant.raw` ("1"/"0"), then the
-                         verdict text, at the legacy's small size. No card of
-                         the key, no lines. -->
-                    @for (item of validationItems(field.name); track item.id.raw) {
-                        <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
-                            <span class="icon-text">
-                                <span
-                                    class="icon"
-                                    [class.has-text-warning]="item.compliant.raw === '0'"
-                                    [class.has-text-success]="item.compliant.raw === '1'"
-                                >
-                                    @if (item.compliant.raw === "0") {
-                                        <fa-icon [icon]="faExclamationTriangle"></fa-icon>
-                                    }
-                                    @if (item.compliant.raw === "1") {
-                                        <fa-icon [icon]="faCheckCircle"></fa-icon>
-                                    }
-                                </span>
-                                <span>{{ item.result.raw }}</span>
-                            </span>
-                        </p>
-                    }
+                    <!-- The governance banner lines under the control (EDT-24,
+                         DD-446), rendered by the one template below. -->
+                    <ng-container *ngTemplateOutlet="govLines; context: { fieldName: field.name }"></ng-container>
                 </div>
             }
 
@@ -275,28 +254,10 @@
                     @if (relationshipErrorShown(field)) {
                         <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
                     }
-                    <!-- The governance banner lines, the same rule as the
-                         plain controls (EDT-24): a card naming a picker
-                         renders under it. -->
-                    @for (item of validationItems(field.name); track item.id.raw) {
-                        <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
-                            <span class="icon-text">
-                                <span
-                                    class="icon"
-                                    [class.has-text-warning]="item.compliant.raw === '0'"
-                                    [class.has-text-success]="item.compliant.raw === '1'"
-                                >
-                                    @if (item.compliant.raw === "0") {
-                                        <fa-icon [icon]="faExclamationTriangle"></fa-icon>
-                                    }
-                                    @if (item.compliant.raw === "1") {
-                                        <fa-icon [icon]="faCheckCircle"></fa-icon>
-                                    }
-                                </span>
-                                <span>{{ item.result.raw }}</span>
-                            </span>
-                        </p>
-                    }
+                    <!-- The governance banner lines under the picker, the same
+                         rule as the plain controls (EDT-24), rendered by the
+                         one template below. -->
+                    <ng-container *ngTemplateOutlet="govLines; context: { fieldName: field.name }"></ng-container>
                 </div>
             }
 
@@ -400,4 +361,31 @@
             </div>
         </form>
     }
+
+    <!-- The governance banner lines (EDT-24, DD-446): one per item of the
+         validation card that names the control — the icon by `compliant.raw`
+         ("1"/"0"), then the verdict text, at the legacy's small size. No card
+         of the key, no lines. The one template under every control and every
+         picker alike (each renders it through ngTemplateOutlet). -->
+    <ng-template #govLines let-fieldName="fieldName">
+        @for (item of validationItems(fieldName); track item.id.raw) {
+            <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
+                <span class="icon-text">
+                    <span
+                        class="icon"
+                        [class.has-text-warning]="item.compliant.raw === '0'"
+                        [class.has-text-success]="item.compliant.raw === '1'"
+                    >
+                        @if (item.compliant.raw === "0") {
+                            <fa-icon [icon]="faExclamationTriangle"></fa-icon>
+                        }
+                        @if (item.compliant.raw === "1") {
+                            <fa-icon [icon]="faCheckCircle"></fa-icon>
+                        }
+                    </span>
+                    <span>{{ item.result.raw }}</span>
+                </span>
+            </p>
+        }
+    </ng-template>
 </aurelius-atlas-ui-drawer>

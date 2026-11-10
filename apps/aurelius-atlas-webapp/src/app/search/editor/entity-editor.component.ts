@@ -9,6 +9,7 @@ import {
     untracked,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { NgTemplateOutlet } from "@angular/common";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
 import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
@@ -86,6 +87,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
         FormField,
         Holdable,
         MarkdownEditor,
+        NgTemplateOutlet,
         Select,
     ],
     providers: [EditorState],
