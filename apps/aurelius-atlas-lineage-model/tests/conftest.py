@@ -1,43 +1,33 @@
 """Fixtures for the app tests: settings, a fake Keycloak issuer, a fake upstream.
 
 The fake issuer is the 8.0 auth library's test double (AUX-01..05 are tested at
-home, in ``aurelius-atlas-auth``). The fake upstream is the Atlas lineage feed
-and the data2model ``/extract`` the app proxies to (DD-200): a ``MockTransport``
-recording every request and answering from a handler each test sets.
+home, in ``aurelius-atlas-auth``), in its own module ``fake_issuer``; the fake
+upstream is the Atlas lineage feed and the data2model ``/extract`` the app
+proxies to (DD-200): a ``MockTransport`` recording every request and answering
+from a handler each test sets, in its own module ``fake_upstream``. Helpers live
+in modules of their own because the trace check collects ``tests/`` and ``e2e/``
+in one run and same-named ``conftest`` modules collide on ``sys.path``.
 """
 
 from __future__ import annotations
 
-import json
 import os
-import time
 from collections.abc import AsyncIterator, Callable, Iterator
-from typing import Any
 
 import httpx2 as httpx
-import jwt
 import pytest
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
 from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_lineage_model import LineageModelSettings, create_app
 from aurelius_atlas_lineage_model.settings import ENV_PREFIX
 from aurelius_atlas_server_client.client import AtlasClient
-from cryptography.hazmat.primitives.asymmetric import rsa
+from fake_issuer import AUDIENCE, ISSUER, REALM, issuer_client, make_token
 from fake_upstream import FakeUpstream
 from fastapi import FastAPI
-from jwt.algorithms import RSAAlgorithm
 from pydantic import HttpUrl
 
-ISSUER = "http://issuer.test"
-REALM = "master"
-BASE_URL = f"{ISSUER}/realms/{REALM}"
-KID = "test-key"
-AUDIENCE = "aurelius-atlas-lineage-model"
 ATLAS = "http://atlas.test"
 DATA2MODEL = "http://data2model.test"
-
-private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-public_key = private_key.public_key()
 
 
 @pytest.fixture(autouse=True)
@@ -54,45 +44,6 @@ def _clean_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     for name in list(os.environ):
         if name.startswith(ENV_PREFIX):
             monkeypatch.delenv(name, raising=False)
-
-
-def _jwk() -> dict[str, Any]:
-    jwk = json.loads(RSAAlgorithm.to_jwk(public_key))
-    jwk["kid"] = KID
-    jwk["alg"] = "RS256"
-    jwk["use"] = "sig"
-    return jwk
-
-
-def issuer_client() -> httpx.Client:
-    """An HTTP client answering discovery and JWKS like Keycloak."""
-    jwk = _jwk()
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        if request.url.path.endswith("/.well-known/openid-configuration"):
-            return httpx.Response(200, json={"jwks_uri": f"{BASE_URL}/protocol/openid-connect/certs"})
-        if request.url.path.endswith("/certs"):
-            return httpx.Response(200, json={"keys": [jwk]})
-        return httpx.Response(404)
-
-    return httpx.Client(transport=httpx.MockTransport(handler))
-
-
-def make_token(
-    *,
-    audience: str | list[str] | None = AUDIENCE,
-    azp: str | None = AUDIENCE,
-    issuer: str = BASE_URL,
-    expires_in: int = 60,
-) -> str:
-    """Mint an RS256 token as the fake issuer would, with the given claims."""
-    now = int(time.time())
-    claims: dict[str, Any] = {"iss": issuer, "iat": now, "exp": now + expires_in, "sub": "user-1", "nbf": now - 1}
-    if audience is not None:
-        claims["aud"] = audience
-    if azp is not None:
-        claims["azp"] = azp
-    return jwt.encode(claims, private_key, algorithm="RS256", headers={"kid": KID})
 
 
 @pytest.fixture

@@ -27,6 +27,11 @@ path; the key lets a deployment point it elsewhere. */ -}}
 {{- with $cfg.lineageModelBaseUrl -}}
 {{- $configJson = set $configJson "lineageModelBaseUrl" . -}}
 {{- end -}}
+{{- /* Optional key (7.24, EDT-22, DD-435): the same rule for the editor's
+governance banner's aux API. */ -}}
+{{- with $cfg.validateEntityBaseUrl -}}
+{{- $configJson = set $configJson "validateEntityBaseUrl" . -}}
+{{- end -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:

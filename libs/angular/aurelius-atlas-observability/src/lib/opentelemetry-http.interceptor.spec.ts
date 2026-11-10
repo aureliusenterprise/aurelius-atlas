@@ -492,4 +492,55 @@ describe("OpenTelemetry HTTP Interceptor", () => {
             expect(result.headers.has("X-Trace-Id")).toBe(false);
         });
     });
+
+    // The state of an app that leaves the telemetry gate off (SPL-11, DD-158):
+    // `provideAureliusOpenTelemetry` never ran, so the injector holds no
+    // AURELIUS_TRACER. The interceptor must pass calls through — a required
+    // injection here threw NG0201 on the first call and took the app down.
+    describe("Without the tracer provider (gate off, SPL-11, DD-158)", () => {
+        beforeEach(() => {
+            TestBed.resetTestingModule();
+            TestBed.configureTestingModule({
+                providers: [
+                    provideHttpClient(withInterceptors([aureliusOpenTelemetryHttpInterceptor])),
+                    provideHttpClientTesting(),
+                ],
+            });
+
+            httpClient = TestBed.inject(HttpClient);
+            httpMock = TestBed.inject(HttpTestingController);
+        });
+
+        it("sends the call untracked instead of throwing", () =>
+            new Promise<void>((done, fail) => {
+                httpClient.get("/api/gate-off").subscribe({
+                    next: (data) => {
+                        expect(data).toEqual({ ok: true });
+                        done();
+                    },
+                    error: fail,
+                });
+
+                const req = httpMock.expectOne("/api/gate-off");
+                // DD-158: an off browser sends nothing — not even trace headers.
+                expect(req.request.headers.has("traceparent")).toBe(false);
+                expect(req.request.headers.has("X-Trace-Id")).toBe(false);
+                req.flush({ ok: true });
+            }));
+
+        it("leaves the error path to the rest of the chain", () =>
+            new Promise<void>((done, fail) => {
+                httpClient.get("/api/gate-off-error").subscribe({
+                    next: () => {
+                        fail(new Error("Should have failed"));
+                    },
+                    error: (error) => {
+                        expect(error.status).toBe(500);
+                        done();
+                    },
+                });
+
+                httpMock.expectOne("/api/gate-off-error").flush({}, { status: 500, statusText: "Server Error" });
+            }));
+    });
 });

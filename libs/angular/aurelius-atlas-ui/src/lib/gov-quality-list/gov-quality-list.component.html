@@ -1,0 +1,49 @@
+<!--
+    The governance-quality column (UIC-38): the warning icon with the count
+    and a hover dropdown of rows; the green check when all is compliant;
+    the spinner while the caller fetches — the legacy states, verbatim.
+-->
+@if (loading()) {
+    <span class="tag is-white aurelius-gov-quality-loading">
+        <span class="loader"></span>
+    </span>
+} @else if (nonCompliant().length > 0) {
+    <div class="dropdown is-hoverable is-right is-up">
+        <div class="dropdown-trigger">
+            <span class="icon-text is-size-7 aurelius-gov-quality-trigger">
+                <span class="icon has-text-warning">
+                    <fa-icon [icon]="faExclamationTriangle" size="sm"></fa-icon>
+                </span>
+                <span>{{ nonCompliant().length }}x</span>
+            </span>
+        </div>
+        <div class="dropdown-menu" id="non-compliant" role="menu">
+            <div class="dropdown-content">
+                @for (row of nonCompliant(); track $index) {
+                    <div class="dropdown-item">
+                        <div class="media">
+                            <div class="media-left">
+                                <span class="icon is-small has-text-warning">
+                                    <fa-icon [icon]="faExclamationTriangle" size="sm"></fa-icon>
+                                </span>
+                            </div>
+                            <div class="media-content">
+                                <div class="content">
+                                    <h6 class="title is-6">{{ row.message }}</h6>
+                                    <p>{{ row.detail }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (!$last) {
+                        <hr class="dropdown-separator" />
+                    }
+                }
+            </div>
+        </div>
+    </div>
+} @else {
+    <span class="icon has-text-success aurelius-gov-quality-success">
+        <fa-icon [icon]="faCheckCircle" size="sm"></fa-icon>
+    </span>
+}

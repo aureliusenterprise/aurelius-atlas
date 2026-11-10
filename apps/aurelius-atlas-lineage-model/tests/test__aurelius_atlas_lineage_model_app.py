@@ -16,7 +16,7 @@ from aurelius_atlas_data2model_client.client import Data2ModelClient
 from aurelius_atlas_lineage_model.app import create_app
 from aurelius_atlas_lineage_model.globals import FAST_FAIL_ATLAS, FAST_FAIL_D2M, UPSTREAM_TIMEOUT_SECONDS
 from aurelius_atlas_server_client.client import AtlasClient
-from conftest import AUDIENCE, issuer_client
+from fake_issuer import AUDIENCE, issuer_client
 from fake_upstream import FakeUpstream
 from fastapi import FastAPI
 from httpx2 import ASGITransport, AsyncClient

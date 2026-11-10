@@ -75,6 +75,17 @@ export interface AppConfig {
      * proxy is not ported, DD-139).
      */
     readonly lineageModelBaseUrl?: string;
+
+    /**
+     * Base URL that the validate-entity auxiliary API is reachable under,
+     * same-origin (e.g. `/validate-entity`) — the editor's governance banner
+     * data path (7.24, EDT-22). Provided to `aurelius-atlas-data-access` via
+     * the `VALIDATE_ENTITY_BASE_URL` token; the client's own default is the
+     * same path, so the key is optional and only a deployment that moves the
+     * aux API off the webapp's nginx sets it (the legacy's `validate_entity`
+     * deployment-proxy path is not ported, DV-144).
+     */
+    readonly validateEntityBaseUrl?: string;
 }
 
 /**
@@ -122,6 +133,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         appVersion,
         atlasClientId,
         lineageModelBaseUrl,
+        validateEntityBaseUrl,
     } = value as Partial<AppConfig>;
 
     if (typeof keycloak !== "object" || keycloak === null) {
@@ -149,6 +161,10 @@ export function parseAppConfig(value: unknown): AppConfig {
         requireString("lineageModelBaseUrl", lineageModelBaseUrl);
     }
 
+    if (validateEntityBaseUrl !== undefined) {
+        requireString("validateEntityBaseUrl", validateEntityBaseUrl);
+    }
+
     const requireYear = (name: string, field: unknown): number => {
         if (typeof field !== "number" || !Number.isInteger(field)) {
             throw new TypeError(`Invalid app config: "${name}" must be an integer year.`);
@@ -169,6 +185,7 @@ export function parseAppConfig(value: unknown): AppConfig {
         appVersion: requireString("appVersion", appVersion),
         ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
         ...(lineageModelBaseUrl ? { lineageModelBaseUrl } : {}),
+        ...(validateEntityBaseUrl ? { validateEntityBaseUrl } : {}),
         atlasClientId: atlasClientId ?? DEFAULT_ATLAS_CLIENT_ID,
     };
 }
