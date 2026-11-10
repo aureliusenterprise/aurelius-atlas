@@ -32,7 +32,9 @@
                 <!-- The count header inside the box, the legacy
                      `h6.title.is-6` (results.component.html). -->
                 <h6 class="title is-6 results-count">
-                    {{ search.approximateCount() }} <span>{{ resultsWord }}</span>
+                    <!-- By meaning the count is of the entities shown, as closest
+                         matches: a search by meaning has no total (SBW-04, DD-445). -->
+                    {{ search.shownCount() }} <span>{{ search.byMeaning() ? closestWord : resultsWord }}</span>
                 </h6>
                 <!-- The scroll owner is the container, not the box (the
                      legacy split: the box is the 80vh flex column, the
