@@ -6,7 +6,7 @@ import { QualityBadge } from "./quality-badge.component";
 /**
  * The card's data-quality badge (UIC-39): the pie beside the percent, the
  * legacy rule card's `dqscore` line. It is the `entity-card`
- * `[card-quality]` content once 7.25 turns the quality column on (DD-437).
+ * `[card-quality]` content once 7.25 turns the quality column on (DD-447).
  */
 const meta: Meta<QualityBadge> = {
     component: QualityBadge,

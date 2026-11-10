@@ -3,7 +3,7 @@
 - **Status:** in review
 - **Pull request:** — (this increment's PR)
 - **Records:** DET-35..36 (the field row of DET-16, amended into DET-24/DET-25),
-  EDT-21..24, UIC-36..39; adds DD-434..438 (here) and DV-144 to
+  EDT-21..24, UIC-36..39; adds DD-444..448 (here) and DV-144 to
   [deviations](../../../../docs/architecture/conversion/deviations.md) in the
   implementation PR; relies on DET-17..22/DD-368 (the section machinery),
   DD-369 (this slice closes its field-box and editor rows, the rest stands),
@@ -45,7 +45,7 @@ Delivered here:
 - the four **dumb quality components** the 7.25 return needs (UIC-36..39):
   `data-quality-pie`, `quality-dimension-list`, `gov-quality-list`,
   `quality-badge`. They ship with stories and unit tests only, before their
-  data exists (DD-437).
+  data exists (DD-447).
 
 Explicitly not delivered here, with the increment that will:
 
@@ -87,7 +87,7 @@ cited by path so a reviewer can compare:
   DET-35 ports: its query ran against the App Search `data_quality` index with
   the filter `fieldguid: [entityId]` and the sorts `name`,
   `dataqualityruledimension`, `dqscore`. The seed source and the two score
-  sorts change (DD-434, the not-delivered table), the box does not.
+  sorts change (DD-444, the not-delivered table), the box does not.
 - `apps/atlas/src/app/search/details/field/field-details.component.html` — the
   `#related-rules` box between `#data-quality` and `#gov-quality`, and the
   stats pair (`search.details.field.dataQualityRules` between Child Fields and
@@ -106,7 +106,7 @@ cited by path so a reviewer can compare:
 - `apps/atlas/src/app/search/components/data-quality-pie/**`,
   `data-quality-list/**`, `cards/components/governance-quality-list/**`, and
   the `dqscore` badge column in `cards/*/[type]-details-card.component.html` —
-  the render UIC-36..39 rebuild as dumb components (DD-437).
+  the render UIC-36..39 rebuild as dumb components (DD-447).
 - `apps/atlas/proxy.conf.json` (`/validate_entity` → the legacy Flask app on
   `:7200`) — what EDT-22's location replaces.
 
@@ -118,10 +118,10 @@ Aurelius product:
 - **DV-144** (joins `deviations.md` in the implementation PR): the legacy
   serves the API at `validate_entity` (an underscore path of its deployment
   proxy); Aurelius Atlas serves it at `/validate-entity/` behind the webapp's
-  own nginx, beside `/api/`, `/otel/`, and `/lineage-model/` (DD-435, the
+  own nginx, beside `/api/`, `/otel/`, and `/lineage-model/` (DD-445, the
   DV-142 sibling).
 - the rule box reads the field's `dataQuality` relationship end, not the
-  App Search `data_quality` index (DET-35, DD-434). That index surface is
+  App Search `data_quality` index (DET-35, DD-444). That index surface is
   already retired by ADR 054, so this is that decision's consequence, not a
   new one. The card columns the legacy filled from the rule documents
   (`dataqualityruledimension`, `dqscore`) come from the rule entity itself,

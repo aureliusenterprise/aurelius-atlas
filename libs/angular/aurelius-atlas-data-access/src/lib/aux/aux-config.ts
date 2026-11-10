@@ -33,7 +33,7 @@ export function provideLineageModelBaseUrl(baseUrl: string): EnvironmentProvider
  * own token and never from `API_BASE_URL` (DD-387's rule, every aux API).
  * Consuming apps provide this from their runtime configuration (see
  * {@link provideValidateEntityBaseUrl}); it defaults to the webapp's nginx
- * location of the same name when not provided (DD-435 — the DV-142 sibling:
+ * location of the same name when not provided (DD-445 — the DV-142 sibling:
  * the legacy's `validate_entity` deployment-proxy path is not ported).
  */
 export const VALIDATE_ENTITY_BASE_URL = new InjectionToken<string>("VALIDATE_ENTITY_BASE_URL", {

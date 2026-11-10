@@ -173,7 +173,7 @@ describe("app providers (7.3)", () => {
         expect(TestBed.inject(LINEAGE_MODEL_BASE_URL)).toBe("/aux/lineage");
     });
 
-    it("leaves the validate-entity default when the config omits the key (EDT-22, DD-435)", async () => {
+    it("leaves the validate-entity default when the config omits the key (EDT-22, DD-445)", async () => {
         await bootstrap(makeKeycloakStub());
         expect(TestBed.inject(VALIDATE_ENTITY_BASE_URL)).toBe("/validate-entity");
     });

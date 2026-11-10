@@ -73,7 +73,7 @@ describe("Section config (DET-16)", () => {
             ["related-entities", ["childEntity"]],
         ]);
         expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]]]);
-        // DET-35 (7.24, DD-434): the field's own `dataQuality` end seeds the
+        // DET-35 (7.24, DD-444): the field's own `dataQuality` end seeds the
         // rules box, the legacy `#related-rules` place.
         expect(shape("m4i_field")).toEqual([
             ["related-attributes", ["attributes"]],

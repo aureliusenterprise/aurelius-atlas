@@ -199,7 +199,7 @@ export async function initialize(): Promise<ApplicationConfig> {
             // key when set, the client's `/lineage-model` default when not —
             // the token is provided only for the override.
             ...(config.lineageModelBaseUrl ? [provideLineageModelBaseUrl(config.lineageModelBaseUrl)] : []),
-            // The validate-entity client's own base (7.24, EDT-22, DD-435):
+            // The validate-entity client's own base (7.24, EDT-22, DD-445):
             // the config key when set, the client's `/validate-entity` default
             // when not — the token is provided only for the override.
             ...(config.validateEntityBaseUrl ? [provideValidateEntityBaseUrl(config.validateEntityBaseUrl)] : []),

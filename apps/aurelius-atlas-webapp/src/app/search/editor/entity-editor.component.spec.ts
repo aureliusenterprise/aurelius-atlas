@@ -1097,7 +1097,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         );
     });
 
-    // The governance banner (EDT-23/EDT-24, DD-436). The helper `arrive`
+    // The governance banner (EDT-23/EDT-24, DD-446). The helper `arrive`
     // already settles the open round, so the debounce/line specs ride it and
     // drive only the change under test; the trigger specs flush the reads by
     // hand to watch the first round fire.
@@ -1151,7 +1151,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         httpMock.expectOne(VALIDATE_URL).flush({ errorCode: "ATLAS-500" }, { status: 500, statusText: "Server Error" });
         fixture.detectChanges();
 
-        // The quiet swallow (DD-436): no lines, no alert, the drawer intact.
+        // The quiet swallow (DD-446): no lines, no alert, the drawer intact.
         expect(compiled.querySelectorAll("[data-gov-line]")).toHaveLength(0);
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(false);
         expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
@@ -1198,7 +1198,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         // The mock answers four cards (VE-02); the DataSet drawer renders
         // controls for two of them — the `definition` card names the
         // description key (the pair, DD-320). The unanswered-for keys
-        // (`dataEntity`, `domainLead`) render nowhere (DD-436).
+        // (`dataEntity`, `domainLead`) render nowhere (DD-446).
         const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
         expect(lines).toHaveLength(2);
         // The DOM order is the form's (EDT-03's rank): the name control's

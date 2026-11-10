@@ -7,7 +7,7 @@ import { GovQualityList, GovQualityRow } from "./gov-quality-list.component";
  * The card's governance-quality column (UIC-38): a warning with the
  * non-compliant count and a hover dropdown of rows, a green check when all
  * pass, a spinner while the caller fetches. 7.25 wires it into the entity
- * cards' quality column (DD-437).
+ * cards' quality column (DD-447).
  */
 const meta: Meta<GovQualityList> = {
     component: GovQualityList,

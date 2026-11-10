@@ -7,7 +7,7 @@ import { QualityDimensionList, QualityDimensionRow } from "./quality-dimension-l
  * The data-quality dimension rows (UIC-37): a pie, a percent, the
  * dimension, and the count per row — the legacy list above the details
  * fold. The caller selects the dimensions it carries; the empty set shows
- * the placeholder. 7.25 wires it when the scores return (DD-437).
+ * the placeholder. 7.25 wires it when the scores return (DD-447).
  */
 const meta: Meta<QualityDimensionList> = {
     component: QualityDimensionList,

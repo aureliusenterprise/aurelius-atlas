@@ -85,7 +85,7 @@ describe("ValidateEntityService", () => {
         expect(service).toBeTruthy();
     });
 
-    it("defaults the base URL to /validate-entity (EDT-22, DD-435)", () => {
+    it("defaults the base URL to /validate-entity (EDT-22, DD-445)", () => {
         expect(TestBed.inject(VALIDATE_ENTITY_BASE_URL)).toBe("/validate-entity");
     });
 

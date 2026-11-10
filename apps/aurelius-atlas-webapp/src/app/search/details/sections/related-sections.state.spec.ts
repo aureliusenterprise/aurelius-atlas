@@ -348,7 +348,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
     });
 });
 
-describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-434)", () => {
+describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
     /** The field layout, with the DET-35 `related-rules` section. */
     const FIELD_LAYOUT = LAYOUTS.m4i_field;
 

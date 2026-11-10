@@ -94,7 +94,7 @@ describe("parseAppConfig", () => {
 
     it("keeps validateEntityBaseUrl absent when the config omits it (EDT-22)", () => {
         // The client's own /validate-entity default is what the app runs on,
-        // so the parsed config must not invent a key (DD-387's rule, DD-435).
+        // so the parsed config must not invent a key (DD-387's rule, DD-445).
         expect("validateEntityBaseUrl" in parseAppConfig(valid)).toBe(false);
     });
 

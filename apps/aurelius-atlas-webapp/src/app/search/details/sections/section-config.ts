@@ -246,7 +246,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 seedKeys: ["childField"],
             },
             // DET-35 (7.24): the field's own `dataQuality` relationship end seeds
-            // the rules box (DD-434). The legacy read the App Search
+            // the rules box (DD-444). The legacy read the App Search
             // `data_quality` index instead; the score box (`#data-quality`)
             // stays out with its `dqscore_*` source, per DD-369.
             {
@@ -268,7 +268,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             },
             // DET-36 (7.24): the rules stat in the legacy place. The legacy
             // showed its `dqscorecnt_overall` here; the value is now the
-            // DET-24 section count (DD-434). The score stat
+            // DET-24 section count (DD-444). The score stat
             // (`search.details.field.dataQuality`) stays out per DD-369.
             {
                 label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`,

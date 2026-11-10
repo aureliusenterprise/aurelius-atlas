@@ -1263,7 +1263,7 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
     """The field page's rules box, stat, and link over a seeded rule (DET-35, DET-36).
 
     The 7.24 field layout on real data: the third box (``#related-rules``) seeds
-    from the field's own ``dataQuality`` relationship end (DD-434), so a seeded
+    from the field's own ``dataQuality`` relationship end (DD-444), so a seeded
     ``m4i_data_quality`` rule lands there as one resolved card at the box count.
     The stats bar gains the Data Quality Rules stat in the legacy place — after
     Child Fields, before Properties — carrying the DET-24 section count (DET-36),
@@ -1329,7 +1329,7 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
         expect(children.locator("aurelius-atlas-ui-entity-card")).to_have_count(0)
 
         # DET-36: the rules stat in the legacy place, its value the section
-        # count (the legacy's `dqscorecnt_overall` stand-in, DD-434).
+        # count (the legacy's `dqscorecnt_overall` stand-in, DD-444).
         rules_stat = authenticated.locator(
             ".aurelius-details-stats .level-item", has=authenticated.locator('p.heading a[href="#related-rules"]')
         )
@@ -1952,7 +1952,7 @@ def test__an_aborted_validation_leaves_the_drawer_usable(authenticated: Page, ro
     The quiet swallow over the deployed stack: ``page.route`` aborts the
     ``/validate-entity/`` request, so the browser gets no answer at all (the
     aux API down, the network gone). The editor renders no lines, raises no
-    alert (the legacy's ``catchError`` to empty, DD-436), and the drawer stays
+    alert (the legacy's ``catchError`` to empty, DD-446), and the drawer stays
     fully usable — the seeded value reads back and a save still lands. This
     proves the banner is advisory: an aux API failure never interrupts the edit.
     """

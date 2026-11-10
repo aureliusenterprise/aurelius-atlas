@@ -4,12 +4,12 @@ import { PercentPipe } from "@angular/common";
 import { DataQualityPie } from "../data-quality-pie/data-quality-pie.component";
 
 /**
- * The card's data-quality badge (UIC-39, DD-437): the legacy rule card's
+ * The card's data-quality badge (UIC-39, DD-447): the legacy rule card's
  * `dqscore` line — the UIC-36 pie beside the score as a percent to one
  * decimal at most (the legacy's `percent: '1.0-1'`). It is the quality-column content: `entity-card`'s
  * `[card-quality]` projection slot (7.13's `showQuality`) holds it once a
  * later slice turns the column on (7.25). Until then it ships dumb with a
- * story (DD-437).
+ * story (DD-447).
  *
  * The score is the 0..1 raw, as the legacy read `dqscore.raw`: the pipe
  * prints it and the pie gets the legacy's `* 100`.

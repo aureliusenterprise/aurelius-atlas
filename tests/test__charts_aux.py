@@ -240,7 +240,7 @@ def test__data2model_admits_only_lineage_model() -> None:
 
 @pytest.mark.covers(rules=["EDT-22"])
 def test__validate_entity_admits_the_webapp() -> None:
-    """21003 accepts the webapp join only (7.24, EDT-22, DD-435).
+    """21003 accepts the webapp join only (7.24, EDT-22, DD-445).
 
     Since 7.24 the webapp's nginx dials this API — the `/validate-entity/`
     location, the editor's governance banner data path. Before it, nothing
@@ -259,7 +259,7 @@ def test__validate_entity_admits_the_webapp() -> None:
 
 @pytest.mark.covers(rules=["EDT-22"])
 def test__validate_entity_admits_the_browser_client() -> None:
-    """The chart verifies the browser client's own audience (7.24, DD-435).
+    """The chart verifies the browser client's own audience (7.24, DD-445).
 
     The editor calls the API with the user's token through nginx, so the
     audience is `aurelius` itself — the endpoint is the browser's from begin

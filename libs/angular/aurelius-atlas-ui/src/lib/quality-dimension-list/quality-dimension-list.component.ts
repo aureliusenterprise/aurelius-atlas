@@ -14,7 +14,7 @@ export interface QualityDimensionRow {
 }
 
 /**
- * The data-quality dimension rows (UIC-37, DD-437): the legacy
+ * The data-quality dimension rows (UIC-37, DD-447): the legacy
  * `models4insight-data-quality-list`, rebuilt dumb — one row per dimension
  * with the UIC-36 pie, the score as a percent to one decimal at most (the
  * legacy's `percent: '1.0-1'`), the dimension word, and the count. The legacy read the five `dqscore_<dimension>` /

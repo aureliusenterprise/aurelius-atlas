@@ -24,7 +24,7 @@ TEST_VALUES = (WEBAPP_CHART / "tests/values.test.yaml",)
 # The seventeen placeholder names the template contract fixes (CHT-25; the
 # listener leaf paths join DD-270's pair; HSTS_HEADER joined with CHT-99;
 # the lineage-model pair with 7.22a's LDG-06, DD-384; the validate-entity
-# pair with 7.24's EDT-22, DD-435).
+# pair with 7.24's EDT-22, DD-445).
 PLACEHOLDERS = [
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_HSTS_HEADER",
@@ -140,7 +140,7 @@ def test__init_container_resolves_the_seventeen_placeholders(webapp_docs: list[d
         assert f"s|\\${{{name}}}|${{{name}}}|g" in script, name
     assert "exit 1" in script  # the unresolved-placeholder guard
     # The init's env is exactly the seventeen names (CHT-25, DD-270, DD-384,
-    # DD-435).
+    # DD-445).
     assert sorted(env_map(init)) == sorted(PLACEHOLDERS)
 
 

@@ -73,7 +73,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * entity's details screen.
  *
  * Since 7.24 the drawer also carries the governance banner (EDT-23/EDT-24,
- * DD-436): the draft rides the validate-entity aux API on open and after
+ * DD-446): the draft rides the validate-entity aux API on open and after
  * every change debounced 200 ms, and each response card renders its verdict
  * lines under the control its key names — failures swallow quietly.
  */
@@ -475,7 +475,7 @@ export class EntityEditor {
             }
         });
 
-        // The governance validation (EDT-23, DD-436): the draft rides the
+        // The governance validation (EDT-23, DD-446): the draft rides the
         // validate-entity aux API when the form opens — the legacy's
         // entityDetails merge, immediate — and after every change debounced
         // 200 ms — the legacy's valueChanges.debounceTime(200). The re-run's
@@ -518,7 +518,7 @@ export class EntityEditor {
     }
 
     /** One validation round (EDT-23): the draft rides the aux API (EDT-21);
-     * its answer replaces the cards, a failure clears them (DD-436 — the
+     * its answer replaces the cards, a failure clears them (DD-446 — the
      * quiet swallow, no alert). The in-flight subscription rides a field so
      * the effect's cleanup can drop it — the last draft wins. */
     private validateDraft(draft: () => Parameters<ValidateEntityService["validateEntity"]>[0]): void {

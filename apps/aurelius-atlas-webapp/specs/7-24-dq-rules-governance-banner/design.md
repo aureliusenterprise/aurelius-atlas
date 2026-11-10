@@ -7,7 +7,7 @@ is a new entry that supersedes the old one.
 
 ## Entries
 
-### DD-434. The rules box seeds from the relationship end, not a quality index
+### DD-444. The rules box seeds from the relationship end, not a quality index
 
 - **Status:** Proposed
 - **Increment:** 7.24
@@ -42,7 +42,7 @@ no new component, no new request shape. When 7.25 brings the scores back, the
 score stat, the sort list, and the card badge column arrive through their own
 entries, and this box does not change.
 
-### DD-435. The browser reaches validate-entity as 7.22a reaches lineage-model
+### DD-445. The browser reaches validate-entity as 7.22a reaches lineage-model
 
 - **Status:** Proposed
 - **Increment:** 7.24
@@ -84,7 +84,7 @@ the lineage pair (DD-294's URL shape), and the umbrella's ingress allow gains
 the webapp → validate-entity leg (CHT-60..73's additive rule). `connect-src
 'self'` already covers the same-origin path, so the CSP does not change.
 
-### DD-436. The banner swallows failures and matches cards to controls by key
+### DD-446. The banner swallows failures and matches cards to controls by key
 
 - **Status:** Proposed
 - **Increment:** 7.24
@@ -119,7 +119,7 @@ component (the editor-state pattern, DD-330's neighbours): one signal for the
 answer, one counter for the generation. 7.25's verdicts arrive on the same
 channel unchanged, so this entry holds for real data too.
 
-### DD-437. The quality components ship dumb, with stories only
+### DD-447. The quality components ship dumb, with stories only
 
 - **Status:** Proposed
 - **Increment:** 7.24
@@ -152,7 +152,7 @@ pre-existing and adds only the source and the rule ids. The pie's stylesheet
 rides the styles pipeline (the webapp styles builder), so the stories prove
 theme compatibility now, not there.
 
-### DD-438. The standalone resolver points the validate-entity pair at the service name
+### DD-448. The standalone resolver points the validate-entity pair at the service name
 
 - **Status:** Proposed
 - **Increment:** 7.24
@@ -165,7 +165,7 @@ and its `webapp/config.json` sets no `validateEntityBaseUrl`, so the browser
 calls the default `/validate-entity/` path and the editor's banner simply
 stays empty (EDT-23's quiet swallow).
 
-**Reason.** DD-435 added the pair to the webapp's nginx template, and SWA-02
+**Reason.** DD-445 added the pair to the webapp's nginx template, and SWA-02
 tests that the resolver covers every placeholder the template carries. This is
 DD-422's exact shape, which 7.22a recorded for the lineage pair: the resolver
 learns the pair, the value matches the chart's default (the service name and

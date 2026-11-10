@@ -6,7 +6,7 @@ import { DataQualityPie } from "./data-quality-pie.component";
 /**
  * The data-quality score circle (UIC-36): a green arc over a red ring, the
  * percent in the tooltip. The caller scales a 0..1 score into the 0..100
- * value. 7.25 wires it into the score boxes and the card badges (DD-437).
+ * value. 7.25 wires it into the score boxes and the card badges (DD-447).
  */
 const meta: Meta<DataQualityPie> = {
     component: DataQualityPie,

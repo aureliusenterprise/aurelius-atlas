@@ -96,7 +96,7 @@ export class ValidateEntityService {
      * URL is `{baseUrl}/` with the entity as the JSON body and no query
      * string. A `200` answers the typed cards; a `4xx`, `5xx`, or unreachable
      * API stays on the error channel with its body — this client interprets
-     * nothing; the editor swallows quietly (EDT-23, DD-436).
+     * nothing; the editor swallows quietly (EDT-23, DD-446).
      * @param entity the draft entity, as the editor form holds it
      * @returns the governance cards, one per aspect key
      */

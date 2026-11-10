@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, HostBinding, input } from "@angular/core";
 
 /**
- * The data-quality score circle (UIC-36, DD-437): the legacy
+ * The data-quality score circle (UIC-36, DD-447): the legacy
  * `models4insight-data-quality-pie`, rebuilt dumb — a green arc over a red
  * ring, sized in pixels, with the percent as the host's tooltip. It knows
  * nothing of `dqscore_*` documents: the caller turns its score into the
@@ -13,7 +13,7 @@ import { ChangeDetectionStrategy, Component, HostBinding, input } from "@angular
  * the `@property --p` registration is what lets the sweep animate. 7.25
  * wires the pies into the details pages' score boxes and the card badges
  * (UIC-39 projects this component); until then the stories are its screen
- * (DD-437 — dumb components ship with stories, not placeholder chrome).
+ * (DD-447 — dumb components ship with stories, not placeholder chrome).
  */
 @Component({
     selector: "aurelius-atlas-ui-data-quality-pie",

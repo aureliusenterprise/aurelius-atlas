@@ -11,13 +11,13 @@ export interface GovQualityRow {
 }
 
 /**
- * The card's governance-quality column (UIC-38, DD-437): the legacy
+ * The card's governance-quality column (UIC-38, DD-447): the legacy
  * `models4insight-governance-quality-list`, rebuilt dumb. A warning icon
  * with the non-compliant count and a hover dropdown of the rows (the
  * message as the heading, the evaluated value as the line); no rows, the
  * green check; the caller still fetching, the spinner tag. The legacy's
  * infinite-scroll container is not ported — the caller hands over the
- * rows it holds, and the dropdown lists them (DD-437's plain data).
+ * rows it holds, and the dropdown lists them (DD-447's plain data).
  */
 @Component({
     selector: "aurelius-atlas-ui-gov-quality-list",
