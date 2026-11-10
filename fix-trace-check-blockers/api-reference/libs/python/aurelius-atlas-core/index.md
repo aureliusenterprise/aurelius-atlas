@@ -1114,6 +1114,9 @@ Classes:
 - **`ElasticsearchEntityDocuments`** –
 
   `EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
+- **`EmbeddingDimensionsError`** –
+
+  The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438).
 - **`EntityDocuments`** –
 
   Where `EntityStore` keeps entities, reservations and its journal.
@@ -1177,10 +1180,14 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`KEEP_SOURCE_VECTORS`** –
+
+  The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and
 - **`KEYWORD_LIMIT`** –
 
   `ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
 - **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]]`) –
+- **`LOGGER`** –
 - **`REFERRING_PAGE`** –
 
   How many referring entities one search page holds (DD-057).
@@ -1200,8 +1207,6 @@ Attributes:
 
   The alias of the unique value reservations (DD-045).
 - **`WRITE_REFRESH`** –
-
-  Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
 
 ### CLASSIFICATION\_INDEX
 
@@ -1323,6 +1328,14 @@ JOURNAL_PAGE = 1000
 
 How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
 
+### KEEP\_SOURCE\_VECTORS
+
+```
+KEEP_SOURCE_VECTORS = {'index.mapping.exclude_source_vectors': False}
+```
+
+The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and every read returns it. Elasticsearch 9.5's default rewrites the source of every document of an index that maps a vector (VEC-03, VEC-04, DD-434). Static: only an index's creation sets it.
+
 ### KEYWORD\_LIMIT
 
 ```
@@ -1339,6 +1352,12 @@ LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification |
     LinkedKind.CLASSIFICATION: StoredClassification,
     LinkedKind.TASK: StoredTask,
 }
+```
+
+### LOGGER
+
+```
+LOGGER = logging.getLogger(__name__)
 ```
 
 ### REFERRING\_PAGE
@@ -1417,8 +1436,6 @@ The alias of the unique value reservations (DD-045).
 WRITE_REFRESH = 'true'
 ```
 
-Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own, and no write waits for the index's next scheduled refresh.
-
 ### Linked
 
 ```
@@ -1430,7 +1447,9 @@ A document an entity lists: a relationship or a classification instance.
 ### ElasticsearchEntityDocuments
 
 ```
-ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PREFIX)
+ElasticsearchEntityDocuments(
+    client: AsyncElasticsearch, prefix: str = INDEX_PREFIX, *, embedding_dimensions: int | None = None
+)
 ```
 
 `EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
@@ -1506,6 +1525,9 @@ Methods:
 - **`type_counts`** –
 
   A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
+- **`without_embedding`** –
+
+  The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1630,7 +1652,7 @@ prepare() -> None
 
 Create each index behind its alias unless it exists (ENS-01).
 
-An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02).
+An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity index keeps each document's source as written beside its vector: a new one is created so, and an existing one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
 
 #### put\_journal
 
@@ -1696,7 +1718,7 @@ search(query: SearchQuery) -> SearchHits
 
 Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 
-Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093).
+Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093). A vector is a `knn` search with the same filters inside it, so they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).
 
 #### terms
 
@@ -1714,6 +1736,14 @@ type_counts() -> list[TypeCount]
 
 A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 
+#### without\_embedding
+
+```
+without_embedding(model: str, limit: int) -> list[VersionedEntity]
+```
+
+The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
+
 #### write
 
 ```
@@ -1727,6 +1757,33 @@ write(
 One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
 
 DD-047, DD-056, DD-062, DD-071.
+
+### EmbeddingDimensionsError
+
+```
+EmbeddingDimensionsError(mapped: int, configured: int)
+```
+
+Bases: `RuntimeError`
+
+The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438).
+
+Attributes:
+
+- **`configured`** –
+- **`mapped`** –
+
+#### configured
+
+```
+configured = configured
+```
+
+#### mapped
+
+```
+mapped = mapped
+```
 
 ### EntityDocuments
 
@@ -1805,6 +1862,9 @@ Methods:
 - **`type_counts`** –
 
   How many entities there are of each type, state and shell flag, as of now (MET-02).
+- **`without_embedding`** –
+
+  Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1992,6 +2052,14 @@ type_counts() -> list[TypeCount]
 ```
 
 How many entities there are of each type, state and shell flag, as of now (MET-02).
+
+#### without\_embedding
+
+```
+without_embedding(model: str, limit: int) -> list[VersionedEntity]
+```
+
+Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
 
 #### write
 
@@ -2358,6 +2426,9 @@ What `EntityGraphMapper` and `GraphHelper` keep on an entity's vertex: the GUID,
 
 Classes:
 
+- **`StoredEmbedding`** –
+
+  An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434).
 - **`StoredEntity`** –
 
   One document of the entity index; `write_id` names the write that last wrote it (DD-046).
@@ -2367,6 +2438,36 @@ Functions:
 - **`stored_attributes`** –
 
   Attribute values keyed by qualified name; names the type does not have are left out (DD-043).
+
+### StoredEmbedding
+
+Bases: `AtlasModel`
+
+An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434).
+
+Attributes:
+
+- **`model`** (`str`) –
+- **`source_hash`** (`str`) –
+- **`vector`** (`list[float]`) –
+
+#### model
+
+```
+model: str
+```
+
+#### source\_hash
+
+```
+source_hash: str
+```
+
+#### vector
+
+```
+vector: list[float]
+```
 
 ### StoredEntity
 
@@ -2405,6 +2506,9 @@ Attributes:
 - **`create_time`** (`int`) –
 - **`created_by`** (`str | None`) –
 - **`custom_attributes`** (`dict[str, str] | None`) –
+- **`embedding`** (`StoredEmbedding | None`) –
+
+  The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435).
 - **`guid`** (`str`) –
 - **`home_id`** (`str | None`) –
 - **`is_incomplete`** (`bool`) –
@@ -2454,6 +2558,14 @@ created_by: str | None = None
 ```
 custom_attributes: dict[str, str] | None = None
 ```
+
+#### embedding
+
+```
+embedding: StoredEmbedding | None = None
+```
+
+The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435).
 
 #### guid
 
