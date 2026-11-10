@@ -1,0 +1,11 @@
+<!--
+    The card quality badge (UIC-39): the pie beside the percent, the legacy
+    rule card's dqscore line. The dimension word is the card's own copy,
+    not the badge's (DD-447's plain contract).
+-->
+<p class="quality-dimension aurelius-quality-badge">
+    <span class="icon is-small">
+        <aurelius-atlas-ui-data-quality-pie [value]="pieValue"></aurelius-atlas-ui-data-quality-pie>
+    </span>
+    <span class="quality-score">{{ score() | percent: "1.0-1" }}</span>
+</p>

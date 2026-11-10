@@ -238,16 +238,40 @@ def test__data2model_admits_only_lineage_model() -> None:
     assert policy_peers_by_port(docs, "atlas-data2model-ingress") == {21001: {"atlas-lineage-model"}}
 
 
-@pytest.mark.covers(rules=["CHT-66"])
-def test__validate_entity_renders_no_policies() -> None:
-    """Nothing in the system dials it, so no allow is rendered (CHT-66).
+@pytest.mark.covers(rules=["EDT-22"])
+def test__validate_entity_admits_the_webapp() -> None:
+    """21003 accepts the webapp join only (7.24, EDT-22, DD-445).
 
-    A policy here would be a lie about a caller that does not exist; the
-    chart renders zero NetworkPolicy even with the default-on gate.
+    Since 7.24 the webapp's nginx dials this API — the `/validate-entity/`
+    location, the editor's governance banner data path. Before it, nothing
+    dialed the port and the chart rendered no policy (CHT-66's second half,
+    LDG-06's sibling).
     """
     chart = AUX_CHARTS["validate-entity"]
     docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
-    assert names(docs, "NetworkPolicy") == set()
+    policy = find(docs, "NetworkPolicy", "atlas-validate-entity-ingress")
+    assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-validate-entity")
+    assert policy_peers_by_port(docs, "atlas-validate-entity-ingress") == {21003: {"atlas-webapp"}}
+
+    off = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=("networkPolicy.enabled=false",))
+    assert names(off, "NetworkPolicy") == set()
+
+
+@pytest.mark.covers(rules=["EDT-22"])
+def test__validate_entity_admits_the_browser_client() -> None:
+    """The chart verifies the browser client's own audience (7.24, DD-445).
+
+    The editor calls the API with the user's token through nginx, so the
+    audience is `aurelius` itself — the endpoint is the browser's from begin
+    to end (AUX-04, DV-75). Unlike the lineage app's DD-385 pair, no extra-
+    audiences join: the app forwards nothing and keeps no own client identity
+    at the boundary.
+    """
+    chart = AUX_CHARTS["validate-entity"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    assert env_value(envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE") == "aurelius"
+    assert "AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_EXTRA_AUDIENCES" not in envs
 
 
 @pytest.mark.covers(rules=["LDG-06"])

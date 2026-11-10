@@ -17,6 +17,7 @@ export * from "./lib/atlas/atlas-typedef";
 export * from "./lib/aurelius/search-by-meaning.service";
 export * from "./lib/aux/aux-config";
 export * from "./lib/aux/lineage-model.service";
+export * from "./lib/aux/validate-entity.service";
 export * from "./lib/atlas/glossary.service";
 export * from "./lib/atlas/lineage.service";
 export * from "./lib/atlas/relationship.service";
