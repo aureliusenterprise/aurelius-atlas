@@ -3,7 +3,7 @@
 - **Status:** in review
 - **Pull request:** — (this increment's PR)
 - **Records:** DET-35..36 (the field row of DET-16, amended into DET-24/DET-25),
-  EDT-21..24, UIC-36..39; adds DD-434..437 (here) and DV-144 to
+  EDT-21..24, UIC-36..39; adds DD-434..438 (here) and DV-144 to
   [deviations](../../../../docs/architecture/conversion/deviations.md) in the
   implementation PR; relies on DET-17..22/DD-368 (the section machinery),
   DD-369 (this slice closes its field-box and editor rows, the rest stands),

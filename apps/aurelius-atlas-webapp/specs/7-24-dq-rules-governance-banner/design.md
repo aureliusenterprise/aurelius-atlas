@@ -151,3 +151,36 @@ that entry was written to prevent.
 pre-existing and adds only the source and the rule ids. The pie's stylesheet
 rides the styles pipeline (the webapp styles builder), so the stories prove
 theme compatibility now, not there.
+
+### DD-438. The standalone resolver points the validate-entity pair at the service name
+
+- **Status:** Proposed
+- **Increment:** 7.24
+- **Date:** 2026-11-10
+
+**Decision.** The standalone stack's `resolve-nginx.sh` fills the two new
+placeholders with `https://aurelius-atlas-validate-entity:21003` and
+`aurelius-atlas-validate-entity`. The stack runs no validate-entity container,
+and its `webapp/config.json` sets no `validateEntityBaseUrl`, so the browser
+calls the default `/validate-entity/` path and the editor's banner simply
+stays empty (EDT-23's quiet swallow).
+
+**Reason.** DD-435 added the pair to the webapp's nginx template, and SWA-02
+tests that the resolver covers every placeholder the template carries. This is
+DD-422's exact shape, which 7.22a recorded for the lineage pair: the resolver
+learns the pair, the value matches the chart's default (the service name and
+`DEFAULT_PORT` 21003), and an nginx variable `proxy_pass` resolves lazily, so
+the dead upstream fails one request per validation and never stops the
+container from serving. The standalone editor opens without banner lines, the
+same posture DD-422 chose for the lineage diagram.
+
+**Alternatives.** DD-422's, unchanged: the server does not serve
+`/validate-entity/` (an aux API, ADR 055), so filling the pair with the
+server's own upstream sends every validation to a wrong peer, and a standalone
+copy of the template without the pair loses because the image ships one
+template and SWA-02 reads that one.
+
+**Consequences.** The chart, dev, and standalone each fill the pair and SWA-02
+stays the gate that says so. A future increment that runs the aux API in the
+standalone stack adds the service and its audience without a resolver change
+beyond the value (DD-422's rule, restated).
