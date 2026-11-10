@@ -131,6 +131,10 @@ services:
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
             AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
+            # Entities embedded in the background through the stack's embedder (11.3); the server does not wait
+            # for it, and an entity index stored before moves once to one that keeps vectors (DD-439).
+            AURELIUS_ATLAS_SERVER_EMBEDDING_URL: https://embedder:21004
+            AURELIUS_ATLAS_SERVER_EMBEDDING_CA_FILE: /certs/ca.pem
         volumes:
             - *certs
 

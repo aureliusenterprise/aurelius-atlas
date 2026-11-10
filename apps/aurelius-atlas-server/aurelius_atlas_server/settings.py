@@ -122,6 +122,25 @@ class ServerSettings(StoreAccessSettings):
     task_poll_seconds: float = Field(default=10.0, gt=0)
     """How often the worker looks for tasks other processes recorded or left behind (DD-080)."""
 
+    embedding_url: HttpUrl | None = None
+    """The base of an OpenAI-compatible embeddings API, as the embedder of 11.2 serves one; unset, embedding is
+    off: no vectors are mapped or computed (VEC-08, ADR 059)."""
+
+    embedding_model: str = "intfloat/multilingual-e5-small"
+    """The model the embeddings are computed with, sent with every request and recorded with each embedding."""
+
+    embedding_dimensions: int = Field(default=384, gt=0)
+    """The model's vectors' dimensions, as the entity index maps them (VEC-03, DD-438)."""
+
+    embedding_ca_file: FilePath | None = None
+    """PEM CA verifying the embedder's TLS; unset uses the system trust store."""
+
+    embedding_batch_size: int = Field(default=32, gt=0, le=256)
+    """Entities per page of the indexer and per request to the embedder, which takes 256 at most (EMB-01)."""
+
+    embedding_poll_seconds: float = Field(default=10.0, gt=0)
+    """How often the indexer looks for entities without a current embedding (VEC-07, DD-436)."""
+
     import_folder: Path | None = None
     """The one folder ``admin/importfile`` reads export ZIPs from; none refuses every file (IMS-06, DV-125)."""
 

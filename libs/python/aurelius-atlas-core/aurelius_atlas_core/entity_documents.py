@@ -4,6 +4,7 @@ The I/O behind ``EntityStore``: reads in real time, conditional writes, create-o
 Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep their digits (DD-039).
 """
 
+import logging
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
@@ -16,6 +17,13 @@ from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
+from aurelius_atlas_core.entity_embedding import (
+    EMBEDDING_FIELD,
+    INTERNAL_PREFIX,
+    MODEL_FIELD,
+    embedding_mapping,
+    with_current_embedding,
+)
 from aurelius_atlas_core.free_text import TERM_COUNT, TextQuery
 from aurelius_atlas_core.search_fields import KEYWORD, KINDS, TEXT
 from aurelius_atlas_core.search_query import (
@@ -34,6 +42,8 @@ from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, DocumentVersion
+
+LOGGER = logging.getLogger(__name__)
 
 INDEX_PREFIX = "aurelius-atlas"
 """The prefix of the three aliases; tests give their own."""
@@ -70,6 +80,11 @@ JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
 
 WRITE_REFRESH = "true"
+
+KEEP_SOURCE_VECTORS = {"index.mapping.exclude_source_vectors": False}
+"""The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and
+every read returns it. Elasticsearch 9.5's default rewrites the source of every document of an index that maps a
+vector (VEC-03, VEC-04, DD-434). Static: only an index's creation sets it."""
 """Every write's ``refresh`` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
 returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own,
 and no write waits for the index's next scheduled refresh."""
@@ -125,6 +140,19 @@ in the typed fields of ``search``, which the dynamic templates map by their kind
 
 ENTITY_FIELD_LIMIT = 100_000
 """``index.mapping.total_fields.limit`` of the entity index: a field per searchable attribute (DD-088)."""
+
+
+class EmbeddingDimensionsError(RuntimeError):
+    """The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438)."""
+
+    def __init__(self, mapped: int, configured: int) -> None:
+        """The error for an index of ``mapped`` dimensions, configured for ``configured``."""
+        super().__init__(
+            f"The entity index maps vectors of {mapped} dimensions, the embedding is configured for {configured}: "
+            "a model of other dimensions needs a new entity index (DD-438)"
+        )
+        self.mapped = mapped
+        self.configured = configured
 
 
 @dataclass(frozen=True)
@@ -383,12 +411,33 @@ class EntityDocuments(Protocol):
         """The classification instances of these types, or of every type for None, as of now (DD-090)."""
         ...
 
+    async def without_embedding(self, model: str, limit: int) -> list[VersionedEntity]:
+        """Up to ``limit`` entities without an embedding of ``model``, internal types left out (VEC-06, DD-436)."""
+        ...
+
+
+def _keeps_source_vectors(settings: dict[str, Any]) -> bool:
+    """Whether an index's settings, flat or nested as Elasticsearch answers them, keep the source of vectors."""
+    flat = settings.get("index.mapping.exclude_source_vectors")
+    nested = settings.get("index", {}).get("mapping", {}).get("exclude_source_vectors")
+    return str(flat if flat is not None else nested).lower() == "false"
+
+
+def _next_generation(index: str) -> str:
+    """The index after ``index`` behind its alias: ``…-000001`` is followed by ``…-000002``."""
+    stem, _, number = index.rpartition("-")
+    return f"{stem}-{int(number) + 1:06d}"
+
 
 class ElasticsearchEntityDocuments:
     """``EntityDocuments`` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046)."""
 
-    def __init__(self, client: AsyncElasticsearch, prefix: str = INDEX_PREFIX) -> None:
+    def __init__(
+        self, client: AsyncElasticsearch, prefix: str = INDEX_PREFIX, *, embedding_dimensions: int | None = None
+    ) -> None:
+        """The documents behind the aliases of ``prefix``; with ``embedding_dimensions``, the entities' vectors."""
         self._client = client
+        self._embedding_dimensions = embedding_dimensions
         self._entities = f"{prefix}-entities"
         self._unique_values = f"{prefix}-unique-values"
         self._journal = f"{prefix}-entity-journal"
@@ -403,10 +452,18 @@ class ElasticsearchEntityDocuments:
         """Create each index behind its alias unless it exists (ENS-01).
 
         An existing entity index gets the fields it lacks mapped, as ``references`` (EDL-10); mapped ones stay.
-        Every existing index gets the settings of a new one, as its replicas (IDX-02).
+        Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity
+        index keeps each document's source as written beside its vector: a new one is created so, and an existing
+        one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
         """
+        entity_mapping = ENTITY_MAPPING
+        if self._embedding_dimensions is not None:
+            entity_mapping = ENTITY_MAPPING | {
+                "properties": ENTITY_MAPPING["properties"]
+                | {EMBEDDING_FIELD: embedding_mapping(self._embedding_dimensions)}
+            }
         mappings = {
-            self._entities: ENTITY_MAPPING,
+            self._entities: entity_mapping,
             self._unique_values: {"dynamic": False, "properties": {"guid": _KEYWORD, "writeId": _KEYWORD}},
             self._journal: {"dynamic": False, "properties": {"leaseUntil": {"type": "long"}}},
             self._linked[LinkedKind.RELATIONSHIP]: RELATIONSHIP_MAPPING,
@@ -416,14 +473,17 @@ class ElasticsearchEntityDocuments:
         limit = {"index.mapping.total_fields.limit": ENTITY_FIELD_LIMIT}
         for alias, mapping in mappings.items():
             settings = INDEX_SETTINGS | limit if alias == self._entities else INDEX_SETTINGS
+            vectors = alias == self._entities and self._embedding_dimensions is not None
             if not await self._client.indices.exists_alias(name=alias):
                 await self._client.indices.create(
                     index=f"{alias}-000001",
                     aliases={alias: {"is_write_index": True}},
                     mappings=mapping,
-                    settings=settings,
+                    settings=settings | KEEP_SOURCE_VECTORS if vectors else settings,
                 )
                 continue
+            if vectors:
+                await self._keep_source_vectors(mapping, settings)
             if alias == self._entities:
                 await self._client.indices.put_mapping(
                     index=alias, properties=mapping["properties"], dynamic_templates=mapping["dynamic_templates"]
@@ -460,7 +520,8 @@ class ElasticsearchEntityDocuments:
         ]
         groups += [(self._linked[kind], write.written, write.removed, kind) for kind, write in (linked or {}).items()]
         for index, documents, removals, group_kind in groups:
-            for document, version in documents:
+            for written, version in documents:
+                document = with_current_embedding(written) if group_kind is None else written
                 action: dict[str, Any] = {"_index": index, "_id": document.guid}
                 if version is None:
                     lines.append(codec.dumps({"create": action}))
@@ -728,6 +789,69 @@ class ElasticsearchEntityDocuments:
             if len(hits) < CLASSIFICATION_PAGE:
                 return found
             after = hits[-1]["sort"]
+
+    async def _keep_source_vectors(self, mapping: dict[str, Any], settings: dict[str, Any]) -> None:
+        """Make the entity index one that keeps its documents' source beside their vectors (VEC-03, DD-439).
+
+        An index created so is checked for its vectors' dimensions; one created without it moves to a new
+        generation, as its setting cannot change.
+
+        Raises:
+            EmbeddingDimensionsError: The index maps vectors of other dimensions than the configured ones.
+        """
+        response = await self._client.indices.get(index=self._entities)
+        ((name, index),) = response.body.items()
+        if not _keeps_source_vectors(index.get("settings", {})):
+            await self._move_to_new_generation(name, mapping, settings)
+            return
+        mapped = index.get("mappings", {}).get("properties", {}).get(EMBEDDING_FIELD, {}).get("properties", {})
+        dims = mapped.get("vector", {}).get("dims")
+        if dims is not None and dims != self._embedding_dimensions:
+            raise EmbeddingDimensionsError(dims, self._embedding_dimensions or 0)
+
+    async def _move_to_new_generation(self, old: str, mapping: dict[str, Any], settings: dict[str, Any]) -> None:
+        """Copy the entity index into the next generation that keeps its sources, then point the alias at it.
+
+        ``_reindex`` copies each document's source as written (DD-039). It runs while this process starts, before
+        it writes; another process writing meanwhile would lose its write (DD-439).
+
+        Raises:
+            RuntimeError: The new generation does not hold every document of the old one.
+        """
+        new = _next_generation(old)
+        LOGGER.warning("Moving %s to %s, which keeps its documents' source beside their vectors (DD-439)", old, new)
+        await self._client.indices.create(index=new, mappings=mapping, settings=settings | KEEP_SOURCE_VECTORS)
+        await self._client.reindex(
+            source={"index": old}, dest={"index": new, "op_type": "create"}, refresh=True, wait_for_completion=True
+        )
+        copied, held = [int((await self._client.count(index=index))["count"]) for index in (new, old)]
+        if copied != held:
+            message = f"{new} holds {copied} of the {held} entities of {old}; {old} stays the entity index"
+            raise RuntimeError(message)
+        await self._client.indices.update_aliases(
+            actions=[
+                {"remove": {"index": old, "alias": self._entities}},
+                {"add": {"index": new, "alias": self._entities, "is_write_index": True}},
+            ]
+        )
+        await self._client.indices.delete(index=old)
+        LOGGER.warning("Moved %d entities to %s", copied, new)
+
+    async def without_embedding(self, model: str, limit: int) -> list[VersionedEntity]:
+        """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06, DD-436)."""
+        response = await self._client.search(
+            index=self._entities,
+            size=limit,
+            query={"bool": {"must_not": [{"term": {MODEL_FIELD: model}}, {"prefix": {"typeName": INTERNAL_PREFIX}}]}},
+            sort=[{"guid": "asc"}],
+            seq_no_primary_term=True,
+        )
+        return [
+            VersionedEntity(
+                StoredEntity.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"])
+            )
+            for hit in response["hits"]["hits"]
+        ]
 
     async def search(self, query: SearchQuery) -> SearchHits:
         """Answer the query as a ``bool`` query of the search fields (DD-089): writes refresh (ENS-11).

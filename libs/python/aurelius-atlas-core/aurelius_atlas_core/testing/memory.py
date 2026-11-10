@@ -21,6 +21,7 @@ from aurelius_atlas_core.entity_documents import (
     VersionedEntity,
     WriteResult,
 )
+from aurelius_atlas_core.entity_embedding import embeddable, with_current_embedding
 from aurelius_atlas_core.free_text import field_terms, text_matches
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery, facet_counts, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
@@ -142,7 +143,8 @@ class MemoryEntityDocuments:
         groups += [(self.linked[kind], write.written, write.removed, kind) for kind, write in (linked or {}).items()]
         for documents, written, gone, kind in groups:
             for document, version in written:
-                results.append(self._put(documents, document.guid, document.to_json(), version, kind=kind))
+                kept = with_current_embedding(document) if isinstance(document, StoredEntity) else document
+                results.append(self._put(documents, kept.guid, kept.to_json(), version, kind=kind))
             for guid, version in gone:
                 results.append(self._put(documents, guid, None, version, kind=kind))
         if self.crash_after_write:
@@ -321,6 +323,16 @@ class MemoryEntityDocuments:
         page = found[query.offset : query.offset + query.size]
         facets = facet_counts(matching, query.facets)
         return SearchHits(page, len(found), [scores.get(entity.guid, 0.0) for entity in page], facets)
+
+    async def without_embedding(self, model: str, limit: int) -> list[VersionedEntity]:
+        """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06)."""
+        found = []
+        for guid in sorted(self.entities):
+            source, version = self.entities[guid]
+            entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
+            if embeddable(entity.type_name) and (entity.embedding is None or entity.embedding.model != model):
+                found.append(VersionedEntity(entity, version))
+        return found[:limit]
 
     async def terms(self, fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]:
         """Each field's words as ``field_terms`` reads them over every entity (DD-094)."""
