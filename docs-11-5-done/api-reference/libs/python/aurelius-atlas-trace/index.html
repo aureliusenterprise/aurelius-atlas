@@ -14842,12 +14842,17 @@ imported, so it is left out: a function no test calls has 0%, not a share for it
   </span>
 
 <a href="#aurelius_atlas_trace.rules.PRUNE_DIRECTORIES" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">PRUNE_DIRECTORIES</span> <span class="o">=</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">({</span><span class="s1">'.git'</span><span class="p">,</span> <span class="s1">'.venv'</span><span class="p">,</span> <span class="s1">'.tox'</span><span class="p">,</span> <span class="s1">'node_modules'</span><span class="p">,</span> <span class="s1">'__pycache__'</span><span class="p">,</span> <span class="s1">'dist'</span><span class="p">,</span> <span class="s1">'site'</span><span class="p">,</span> <span class="s1">'coverage'</span><span class="p">})</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">PRUNE_DIRECTORIES</span> <span class="o">=</span> <span class="n"><span title="frozenset">frozenset</span></span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">".git"</span><span class="p">,</span> <span class="s2">".venv"</span><span class="p">,</span> <span class="s2">".tox"</span><span class="p">,</span> <span class="s2">"node_modules"</span><span class="p">,</span> <span class="s2">"__pycache__"</span><span class="p">,</span> <span class="s2">"dist"</span><span class="p">,</span> <span class="s2">"site"</span><span class="p">,</span> <span class="s2">"coverage"</span><span class="p">,</span> <span class="s2">"tmp"</span><span class="p">}</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>Project directories the search for specifications never enters.</p>
+<p>The scratch tree (<code>tmp/</code>, where local spikes and merge sandboxes live) holds
+stale copies of whole spec trees; entering it reports rules that no live spec
+has (the 7.24 trace run's DTM-08 conflict came from a copy under <code>tmp/</code>).</p>
 
     </div>
 

@@ -7389,6 +7389,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>7.4b</td>
 </tr>
 <tr>
+<td>DV-144</td>
+<td>Webapp</td>
+<td>The validate-entity API reaches the browser at the underscore path <code>validate_entity</code>, rewritten to the legacy Flask app by a deployment proxy (<code>:7200</code>)</td>
+<td>The webapp's nginx serves it same-origin at <code>/validate-entity/</code>, beside <code>/api/</code>, <code>/otel/</code>, and <code>/lineage-model/</code>, TLS-verified like the API upstream (EDT-22, DD-445)</td>
+<td>The kebab style is what the webapp's own locations use; the underscore is the legacy proxy's accident, not a contract (the DV-142 sibling)</td>
+<td>7.24</td>
+</tr>
+<tr>
 <td>DV-145</td>
 <td>Webapp</td>
 <td>The Atlas 2.4.0 browser client never resends a failed call: a lost connection surfaces as a failed request</td>
