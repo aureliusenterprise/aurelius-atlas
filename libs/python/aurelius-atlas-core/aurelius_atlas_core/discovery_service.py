@@ -5,7 +5,7 @@ Atlas's ``EntityDiscoveryService.searchWithParameters`` and ``searchWithSearchCo
 ``searchUsingFullTextQuery`` (DD-091), the quick search of 4.2b, and DSL search (4.4a).
 """
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from typing import Any
 
 from aurelius_atlas_model.discovery import (
@@ -35,7 +35,7 @@ from aurelius_atlas_core.free_text import TextQuery, basic_query, has_tokenize_c
 from aurelius_atlas_core.search_aggregator import SearchAggregator
 from aurelius_atlas_core.search_context import SearchContext, encode_marker
 from aurelius_atlas_core.search_fields import vertex_property
-from aurelius_atlas_core.search_query import SearchQuery
+from aurelius_atlas_core.search_query import MAX_NEAREST, SearchQuery, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.user_profile_service import UserProfileService
 
@@ -95,8 +95,46 @@ class EntityDiscoveryService:
         result, counts = await self._search_with_search_context(search, tuple(aggregator.fields.values()))
         return AtlasQuickSearchResult(search_results=result, aggregation_metrics=aggregator.aggregated_metrics(counts))
 
+    async def search_by_meaning(
+        self,
+        parameters: QuickSearchParameters,
+        vector: Sequence[float],
+        *,
+        hybrid: bool = False,
+        weight: float = 1.0,
+        exclude_guids: frozenset[str] = frozenset(),
+    ) -> AtlasQuickSearchResult:
+        """A quick search by meaning: the ``offset + limit`` entities nearest to ``vector`` among those the type,
+        state and filters allow; ``hybrid`` adds quick search's text matches, the vector's score times ``weight``
+        (SBM-02, SBM-03, SBM-05, DD-441, DD-442).
+
+        Raises:
+            AtlasError: ``BAD_REQUEST`` for more than ``MAX_NEAREST`` entities; as ``search_with_parameters``.
+        """  # noqa: D205 - one sentence
+        limit, offset = normalized(parameters.limit, parameters.offset)
+        if offset + limit > MAX_NEAREST:
+            raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"offset + limit may not exceed {MAX_NEAREST}")
+        query = parameters.query
+        if hybrid and query and not has_tokenize_char(query):
+            query = f"{query}*"
+        search = parameters.model_copy(
+            update={"query": query if hybrid else None, "limit": limit, "offset": offset}
+        ).search_parameters()
+        aggregator = SearchAggregator(self._store.registry)
+        nearest = VectorQuery(tuple(vector), offset + limit, weight)
+        result, counts = await self._search_with_search_context(
+            search, tuple(aggregator.fields.values()), vector=nearest, exclude_guids=exclude_guids
+        )
+        result.query_text = parameters.query
+        return AtlasQuickSearchResult(search_results=result, aggregation_metrics=aggregator.aggregated_metrics(counts))
+
     async def _search_with_search_context(
-        self, parameters: SearchParameters, facets: tuple[str, ...]
+        self,
+        parameters: SearchParameters,
+        facets: tuple[str, ...],
+        *,
+        vector: VectorQuery | None = None,
+        exclude_guids: frozenset[str] = frozenset(),
     ) -> tuple[AtlasSearchResult, dict[str, list[tuple[str, int]]]]:
         """``searchWithSearchContext``: the answer to the parameters, and the counts of ``facets`` (DD-093).
 
@@ -106,7 +144,8 @@ class EntityDiscoveryService:
         """
         context = SearchContext(parameters, self._store.registry)
         if (
-            not context.entity_types
+            vector is None
+            and not context.entity_types
             and context.classification_mode is None
             and context.text is None
             and not parameters.term_name
@@ -116,7 +155,7 @@ class EntityDiscoveryService:
             query_type=AtlasQueryType.BASIC, query_text=parameters.query, search_parameters=parameters
         )
         parameters.limit, parameters.offset = normalized(parameters.limit, parameters.offset)
-        processor = EntitySearchProcessor(context, self._store.now, facets)
+        processor = EntitySearchProcessor(context, self._store.now, facets, vector=vector, exclude_guids=exclude_guids)
         found = await processor.execute(self._store)
         result.approximate_count = processor.result_count
         result.next_marker = encode_marker(parameters, processor.next_offset)

@@ -419,3 +419,26 @@ async def test__aliases_move_in_one_change_and_go_with_a_dropped_index() -> None
     assert "docs" not in fake.aliases
     assert "docs-000002" not in fake.index_mappings
     assert "docs-000001" in fake.index_mappings
+
+
+async def test__a_knn_search_answers_the_nearest_its_filter_allows_and_adds_the_query_s_matches() -> None:
+    """``knn`` alone: the ``k`` nearest the filter matches, ``(1 + cos) / 2`` times ``boost``; with a query, its
+    matches join and the scores add; ``ids`` selects by document id.
+    """  # noqa: D205 - one sentence
+    fake = FakeClient()
+    for document_id, vector, kind in (("a", [1.0, 0.0], "x"), ("b", [0.0, 1.0], "x"), ("c", [1.0, 0.0], "y")):
+        await fake.index(index="docs", id=document_id, document={"kind": kind, "embedding": {"vector": vector}})
+    await fake.index(index="docs", id="d", document={"kind": "x"})
+    knn = {"field": "embedding.vector", "query_vector": [1.0, 0.0], "k": 2, "filter": {"term": {"kind": "x"}}}
+
+    alone = await fake.search(index="docs", knn=knn, sort=[{"_score": {"order": "desc"}}])
+    boosted = await fake.search(index="docs", knn=knn | {"boost": 10.0})
+    joined = await fake.search(index="docs", knn=knn, query={"ids": {"values": ["d"]}})
+    excluded = await fake.search(
+        index="docs", knn=knn | {"filter": {"bool": {"must_not": [{"ids": {"values": ["a"]}}]}}}
+    )
+
+    assert [(hit["_id"], hit["_score"]) for hit in alone["hits"]["hits"]] == [("a", 1.0), ("b", 0.5)]
+    assert {hit["_id"]: hit["_score"] for hit in boosted["hits"]["hits"]} == {"a": 10.0, "b": 5.0}
+    assert {hit["_id"] for hit in joined["hits"]["hits"]} == {"a", "b", "d"}
+    assert {hit["_id"] for hit in excluded["hits"]["hits"]} == {"b", "c"}

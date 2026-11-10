@@ -21,6 +21,7 @@ from aurelius_atlas_core.entity_embedding import (
     EMBEDDING_FIELD,
     INTERNAL_PREFIX,
     MODEL_FIELD,
+    VECTOR_FIELD,
     embedding_mapping,
     with_current_embedding,
 )
@@ -857,7 +858,8 @@ class ElasticsearchEntityDocuments:
         """Answer the query as a ``bool`` query of the search fields (DD-089): writes refresh (ENS-11).
 
         Free text is a scored ``simple_query_string`` over the text sub-fields (DD-092); facets are ``terms``
-        aggregations of the same query (DD-093).
+        aggregations of the same query (DD-093). A vector is a ``knn`` search with the same filters inside it, so
+        they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).
         """
         clauses: list[dict[str, Any]] = []
         if query.type_names is not None:
@@ -867,15 +869,28 @@ class ElasticsearchEntityDocuments:
         if query.filter is not None:
             clauses.append(_es_filter(query.filter))
         must = [] if query.text is None else [_es_text(query.text)]
+        excluded = [{"ids": {"values": sorted(query.exclude_guids)}}] if query.exclude_guids else []
         sort: list[dict[str, Any]] = []
-        if query.sort_field is not None:
+        if query.sort_field is not None and query.vector is None:
             sort.append(_es_sort(query.sort_field, descending=query.descending))
-        elif query.text is not None:
+        elif query.text is not None or query.vector is not None:
             sort.append({"_score": {"order": "desc"}})
         sort += [_es_sort(name, descending=False) for name in query.tie_break]
+        selected = {"bool": {"filter": clauses, "must": must, "must_not": excluded}}
+        knn = None
+        if query.vector is not None:
+            knn = {
+                "field": VECTOR_FIELD,
+                "query_vector": list(query.vector.vector),
+                "k": query.vector.k,
+                "num_candidates": query.vector.num_candidates,
+                "filter": {"bool": {"filter": clauses, "must_not": excluded}},
+                "boost": query.vector.weight,
+            }
         response = await self._client.search(
             index=self._entities,
-            query={"bool": {"filter": clauses, "must": must}},
+            query=None if knn is not None and query.text is None else selected,
+            knn=knn,
             sort=sort,
             from_=query.offset,
             size=query.size,
