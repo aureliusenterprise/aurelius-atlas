@@ -15,6 +15,11 @@
     "aliases": []
   },
   {
+    "version": "fix-otel-tracer-optional",
+    "title": "fix-otel-tracer-optional",
+    "aliases": []
+  },
+  {
     "version": "feat-7-24-dq-rules-governance-banner",
     "title": "feat-7-24-dq-rules-governance-banner",
     "aliases": []
