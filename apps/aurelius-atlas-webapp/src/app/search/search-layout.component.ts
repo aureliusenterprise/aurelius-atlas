@@ -5,7 +5,7 @@ import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Hero, SearchField } from "aurelius-atlas-ui";
 
 import { canWriteEntities } from "./editor/can-write-entities";
-import { SearchState } from "./search-state";
+import { SearchMode, SearchState } from "./search-state";
 
 /**
  * The search subtree's chrome (SRH-01, DD-218): the legacy
@@ -53,6 +53,16 @@ export class SearchLayout {
     /** The `+`'s accessible name — the catalogue's create label (EDT-11). */
     protected readonly createLabel = $localize`:@@search.createEntity.newEntity:Create new entity`;
 
+    /** The mode switch's group label (SBW-02). */
+    protected readonly modeLabel = $localize`:@@search.mode.label:Search by`;
+
+    /** The mode switch's buttons, in order (SBW-02, DD-444): Words, the default, Meaning, Both. */
+    protected readonly modes: readonly { readonly mode: SearchMode; readonly label: string }[] = [
+        { mode: "words", label: $localize`:@@search.mode.words:Words` },
+        { mode: "semantic", label: $localize`:@@search.mode.meaning:Meaning` },
+        { mode: "hybrid", label: $localize`:@@search.mode.both:Both` },
+    ];
+
     /**
      * The hero field's submit (SRH-01, SRH-08): run the search, carry the
      * text in the URL (DD-219). The results screen's URL effect sees the
@@ -70,6 +80,15 @@ export class SearchLayout {
      * The hero's `+` was clicked (EDT-01, DD-322): open the create-mode
      * editor drawer — the `drawer` aux outlet carries `create`.
      */
+    /**
+     * A mode button (SBW-02, SBW-05): the store restarts a search that has a
+     * query; the route stays.
+     * @param mode the chosen mode
+     */
+    protected onModeSelected(mode: SearchMode): void {
+        this.search.setMode(mode);
+    }
+
     protected openCreate(): void {
         void this.router.navigate([{ outlets: { drawer: ["create"] } }]);
     }

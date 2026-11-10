@@ -35,6 +35,24 @@
                 </div>
             }
         </div>
+        <!-- How the field searches (SBW-02, DD-444): by its words, its
+             meaning, or both; the session's choice, not the URL's. A row of
+             its own under the field, so the field and the create button
+             keep the title row's width. -->
+        <div class="buttons has-addons are-small aurelius-search-mode" role="group" [attr.aria-label]="modeLabel">
+            @for (option of modes; track option.mode) {
+                <button
+                    type="button"
+                    class="button"
+                    [class.is-info]="search.mode() === option.mode"
+                    [class.is-selected]="search.mode() === option.mode"
+                    [attr.aria-pressed]="search.mode() === option.mode"
+                    (click)="onModeSelected(option.mode)"
+                >
+                    {{ option.label }}
+                </button>
+            }
+        </div>
     </ng-container>
 </aurelius-atlas-ui-hero>
 <!-- The routed screens' inset (DD-150, owned here per DD-218): the legacy
