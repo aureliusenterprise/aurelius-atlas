@@ -7396,6 +7396,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The kebab style is what the webapp's own locations use; the underscore is the legacy proxy's accident, not a contract (the DV-142 sibling)</td>
 <td>7.24</td>
 </tr>
+<tr>
+<td>DV-145</td>
+<td>Webapp</td>
+<td>The Atlas 2.4.0 browser client never resends a failed call: a lost connection surfaces as a failed request</td>
+<td>The webapp resends an idempotent call (GET/HEAD/OPTIONS/PUT/DELETE) once when the failure means a dead connection (status 0, 502/503/504); POST never resends (APC-12, DD-449)</td>
+<td>A pooled keep-alive socket closed by the server mid-write (uvicorn's 5 s default against the dev proxy's pool) reads as a status-0 error on a call that was never executed; one quiet resend turns it into a success, and POST is where a resend cannot be proven safe</td>
+<td>7.26</td>
+</tr>
 </tbody>
 </table>
 
