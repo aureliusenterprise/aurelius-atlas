@@ -29,6 +29,7 @@ import Keycloak, { type KeycloakInitOptions } from "keycloak-js";
 import { AppConfig, parseAppConfig } from "./config";
 import { alertsErrorHandlerFactory } from "./alerts/alerts-error-handler";
 import { alertsHttpInterceptor } from "./alerts/alerts-http.interceptor";
+import { retryHttpInterceptor } from "./http/retry-http.interceptor";
 import { routes } from "./routes";
 import { TelemetryService } from "./settings/telemetry.service";
 import { TimezoneService } from "./settings/timezone.service";
@@ -221,13 +222,17 @@ export async function initialize(): Promise<ApplicationConfig> {
             // browser and server spans join one trace (ADR 016); the bearer
             // interceptor adds the Keycloak token to /api (APC-06); the alerts
             // reporter watches /api responses and records 5xx/network failures
-            // as alerts, re-throwing untouched (ALR-05, DD-173).
+            // as alerts, re-throwing untouched (ALR-05, DD-173); the retry
+            // interceptor sits innermost (APC-13, DD-449) and resends an
+            // idempotent call once when its connection dies (APC-12), so the
+            // reporter and the tracer see only the outcome after the retry.
             provideHttpClient(
                 withXhr(),
                 withInterceptors([
                     aureliusOpenTelemetryHttpInterceptor,
                     includeBearerTokenInterceptor,
                     alertsHttpInterceptor,
+                    retryHttpInterceptor,
                 ]),
             ),
             // The validated config is provided so feature slices read it from DI

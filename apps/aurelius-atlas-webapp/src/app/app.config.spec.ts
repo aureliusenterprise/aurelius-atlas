@@ -30,6 +30,7 @@ import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
+import { AlertsService } from "./alerts/alerts.service";
 import {
     bearerTokenConfig,
     initialize,
@@ -249,6 +250,59 @@ describe("app providers (7.3)", () => {
         expect(req.request.headers.has("Authorization")).toBe(false);
         expect(keycloak.updateToken).not.toHaveBeenCalled();
         req.flush({});
+    });
+
+    // These ride the default telemetry gate (on): the SDK providers are
+    // lazy, and the tracer token the OTel interceptor injects only exists
+    // inside the gate — with it off, any HttpClient call throws NG0201
+    // (the gate-off pin above checks the token list, never a call). The
+    // zoneless app has no fakeAsync (it needs zone.js/testing), so the
+    // retry's 150 ms wait rides vitest fake timers; the async advance also
+    // flushes the bearer interceptor's token microtasks (APC-06).
+    it("the retry sits inside the alerts chain, so a saved call never reaches the drawer (APC-12, APC-13)", async () => {
+        await bootstrap(makeKeycloakStub());
+        const http = TestBed.inject(HttpClient);
+        const controller = TestBed.inject(HttpTestingController);
+        const alerts = TestBed.inject(AlertsService);
+        let answer: unknown;
+
+        vi.useFakeTimers();
+        try {
+            http.get("/api/atlas/v2/types/typedefs").subscribe((body) => (answer = body));
+            await vi.advanceTimersByTimeAsync(1);
+            controller
+                .expectOne("/api/atlas/v2/types/typedefs")
+                .flush(null, { status: 0, statusText: "Unknown Error" });
+            await vi.advanceTimersByTimeAsync(150);
+            controller.expectOne("/api/atlas/v2/types/typedefs").flush({ entityDefs: [] });
+        } finally {
+            vi.useRealTimers();
+        }
+
+        expect(answer).toEqual({ entityDefs: [] });
+        expect(alerts.alerts()).toHaveLength(0);
+    });
+
+    it("the reporter still alerts when the retry fails too (APC-13, ALR-05)", async () => {
+        await bootstrap(makeKeycloakStub());
+        const http = TestBed.inject(HttpClient);
+        const controller = TestBed.inject(HttpTestingController);
+        const alerts = TestBed.inject(AlertsService);
+
+        vi.useFakeTimers();
+        try {
+            http.get("/api/atlas/admin/status").subscribe({ error: () => undefined });
+            await vi.advanceTimersByTimeAsync(1);
+            controller.expectOne("/api/atlas/admin/status").flush(null, { status: 0, statusText: "Unknown Error" });
+            await vi.advanceTimersByTimeAsync(150);
+            controller.expectOne("/api/atlas/admin/status").flush(null, { status: 0, statusText: "Unknown Error" });
+            await vi.advanceTimersByTimeAsync(200);
+        } finally {
+            vi.useRealTimers();
+        }
+
+        expect(alerts.alerts()).toHaveLength(1);
+        expect(alerts.alerts()[0].message).toBe("Request failed: GET /api/atlas/admin/status no response");
     });
 
     it("ships no hand-written updateToken scheduler (APC-07)", () => {
