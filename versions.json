@@ -10,11 +10,6 @@
     "aliases": []
   },
   {
-    "version": "fix-otel-tracer-optional",
-    "title": "fix-otel-tracer-optional",
-    "aliases": []
-  },
-  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
