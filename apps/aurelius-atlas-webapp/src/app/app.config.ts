@@ -140,10 +140,12 @@ export async function initialize(): Promise<ApplicationConfig> {
             // The chain records first, then delegates: SHL-14 is untouched.
             { provide: ErrorHandler, useFactory: alertsErrorHandlerFactory },
             // The telemetry gate (SPL-11, DD-158): the stored switch decides
-            // at bootstrap. Off = no providers at all — the interceptor falls
-            // back to the no-op global tracer; TelemetryService's optional
-            // token injections return null exactly then. On = the SDK is
-            // assembled as before (SHL-14).
+            // at bootstrap. Off = no providers at all — the OTLP interceptor
+            // finds no tracer and passes calls through untracked (an
+            // unprovided token must stay an optional injection there, or the
+            // first call throws NG0201); TelemetryService's optional token
+            // injections return null exactly then. On = the SDK is assembled
+            // as before (SHL-14).
             ...(TelemetryService.storedEnabled()
                 ? [
                       provideAureliusOpenTelemetry({
