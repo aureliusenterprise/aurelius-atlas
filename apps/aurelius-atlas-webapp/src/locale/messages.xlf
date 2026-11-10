@@ -2389,6 +2389,46 @@ The technical data governance model consists of the following types of entities:
         <source>Version</source>
         <note priority="1" from="description">Aurelius dictionary key: version</note>
       </trans-unit>
+      <trans-unit id="search.mode.label" datatype="html">
+        <source>Search by</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.label</note>
+      </trans-unit>
+      <trans-unit id="search.mode.words" datatype="html">
+        <source>Words</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.words</note>
+      </trans-unit>
+      <trans-unit id="search.mode.meaning" datatype="html">
+        <source>Meaning</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.meaning</note>
+      </trans-unit>
+      <trans-unit id="search.mode.both" datatype="html">
+        <source>Both</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.both</note>
+      </trans-unit>
+      <trans-unit id="search.mode.unavailable" datatype="html">
+        <source>Search by meaning is not available on this server</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.results.closestMatches" datatype="html">
+        <source>closest matches</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.results.closestMatches</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.title" datatype="html">
+        <source>Similar entities</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.notYet" datatype="html">
+        <source>This entity is not analysed yet. Try again in a moment.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.notYet</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.none" datatype="html">
+        <source>No similar entities found.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.none</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.failed" datatype="html">
+        <source>Similar entities could not be loaded.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.failed</note>
+      </trans-unit>
     </body>
   </file>
 </xliff>

@@ -212,6 +212,10 @@
     }
 }
 
+<!-- The Similar entities box (SBW-07, DD-446): every type, after the card
+     sections; it renders nothing on a server without search by meaning. -->
+<aurelius-atlas-webapp-similar-entities [guid]="guid()" (entityClicked)="onCardClick($event)" />
+
 <aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
     <ng-container header>
         <h3 class="title is-3 aurelius-details-properties-title">{{ propertiesTitle() }}</h3>

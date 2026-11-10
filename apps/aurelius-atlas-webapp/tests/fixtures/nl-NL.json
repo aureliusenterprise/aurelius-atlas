@@ -644,6 +644,12 @@
                     "description": "De naam van het entiteittype",
                     "displayName": "Typenaam"
                 }
+            },
+            "similar": {
+                "title": "Vergelijkbare entiteiten",
+                "notYet": "Deze entiteit is nog niet geanalyseerd. Probeer het zo meteen opnieuw.",
+                "none": "Geen vergelijkbare entiteiten gevonden.",
+                "failed": "Vergelijkbare entiteiten konden niet worden geladen."
             }
         },
         "editEntity": {
@@ -652,7 +658,8 @@
         "results": {
             "anotherQuery": "Probeer een andere zoekopdracht.",
             "noResults": "Geen resultaten gevonden",
-            "results": "resultaten"
+            "results": "resultaten",
+            "closestMatches": "best passende resultaten"
         },
         "services": {
             "appSearchResults": {
@@ -676,6 +683,13 @@
             "typeDefs": {
                 "retrieve": "Typedefinities worden opgehaald"
             }
+        },
+        "mode": {
+            "label": "Zoeken op",
+            "words": "Woorden",
+            "meaning": "Betekenis",
+            "both": "Beide",
+            "unavailable": "Zoeken op betekenis is op deze server niet beschikbaar"
         }
     },
     "sourcetype": "Bron",
