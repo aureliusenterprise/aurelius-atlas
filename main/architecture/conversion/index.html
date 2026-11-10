@@ -7239,6 +7239,27 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.24</td>
+<td>Data quality rules and the governance banner</td>
+<td>The field page's Data Quality Rules box seeded from the field's own <code>dataQuality</code> end with its stat and link back in legacy order (DET-35/36, closing DD-369's <code>#related-rules</code> row), the editor's governance banner over the 8.3 mock at <code>/validate-entity/</code> (EDT-21..24, DD-445, DV-144), and the four dumb quality components the 7.25 return needs (UIC-36..39, DD-444/446/447)</td>
+<td>Aurelius <code>details/field/data-quality-cards</code>, <code>editor/{services/entity-validate,components/gov-quality-display}</code>, <code>search/components/{data-quality-pie,data-quality-list}</code>, <code>cards/{data-quality,gov-quality}</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.25</td>
+<td>Quality scores and compliance</td>
+<td>The scores return: the DQ score stats and pies on the layouts, the DQ and dimension sorts, the card quality badges, the Governance Quality Rules box, the compliant/non-compliant cards, the quickview addon, and the search-side DQ list (the rest of DD-369's hold-out, over UIC-36..39)</td>
+<td>Aurelius <code>details/**</code> (score boxes), <code>details/gov-quality/**</code>, quickview addon</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>7.26</td>
+<td>HTTP retry: the dead-connection resend</td>
+<td>The browser resends an idempotent call once when its connection dies rather than its answer (APC-12/13, DD-449, DV-145): the editor-drawer field race (uvicorn's 5 s keep-alive close against the dev proxy's pooled socket) becomes invisible, and proxy restarts with it</td>
+<td>– (Aurelius client never resends)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
