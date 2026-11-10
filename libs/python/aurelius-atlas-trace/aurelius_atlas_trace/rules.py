@@ -17,8 +17,15 @@ SPEC_FILE_NAME = "spec.md"
 INCREMENT_DIR_PATTERN = re.compile(r"(\d+)-(\d+)([a-z]?)(?:-[a-z0-9-]+)?")
 """The name of an increment directory: ``N-M-slug``, the minor carrying an optional letter (``7-4a-search``)."""
 
-PRUNE_DIRECTORIES = frozenset({".git", ".venv", ".tox", "node_modules", "__pycache__", "dist", "site", "coverage"})
-"""Project directories the search for specifications never enters."""
+PRUNE_DIRECTORIES = frozenset(
+    {".git", ".venv", ".tox", "node_modules", "__pycache__", "dist", "site", "coverage", "tmp"}
+)
+"""Project directories the search for specifications never enters.
+
+The scratch tree (``tmp/``, where local spikes and merge sandboxes live) holds
+stale copies of whole spec trees; entering it reports rules that no live spec
+has (the 7.24 trace run's DTM-08 conflict came from a copy under ``tmp/``).
+"""
 
 _RULE_ROW_PATTERN = re.compile(rf"^\|\s*({RULE_ID_PATTERN.pattern})\s*\|")
 
