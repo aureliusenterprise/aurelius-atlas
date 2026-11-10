@@ -20688,7 +20688,8 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
 
         <p>Answer the query as a <code>bool</code> query of the search fields (DD-089): writes refresh (ENS-11).</p>
 <p>Free text is a scored <code>simple_query_string</code> over the text sub-fields (DD-092); facets are <code>terms</code>
-aggregations of the same query (DD-093).</p>
+aggregations of the same query (DD-093). A vector is a <code>knn</code> search with the same filters inside it, so
+they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).</p>
 
 
     </div>
