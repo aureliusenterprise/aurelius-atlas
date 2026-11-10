@@ -6635,8 +6635,10 @@ later.</p>
   at the demo realm. The stack has no telemetry collector, so <code>/otel/</code> takes the webapp's pushes and drops
   them.</li>
 <li><code>embedder</code>: the embedding model of search by meaning (ADR 059), <code>https://embedder:21004</code> on the stack's network
-  with its own certificate. It checks no tokens, so it has no published port (DD-432); nothing waits for it, and
-  nothing calls it until the server embeds entities (11.3). See <code>apps/aurelius-atlas-embedder/README.md</code>.</li>
+  with its own certificate. It checks no tokens, so it has no published port (DD-432), and nothing waits for it.
+  The server embeds every entity through it in the background (11.3): new and changed ones within its poll
+  interval, and those stored before at the first start. That start first moves the entity index to one that keeps
+  vectors, <code>aurelius-atlas-entities-000002</code>, once (DD-439). See <code>apps/aurelius-atlas-embedder/README.md</code>.</li>
 <li>The server and the sample import run in the proxy's network (<code>network_mode: service:proxy</code>). nginx reaches
   the server on <code>127.0.0.1:21000</code> and the webapp as <code>aurelius-atlas-webapp:8080</code>, and the server reaches
   Keycloak at <code>https://localhost:9000/auth</code>, the
