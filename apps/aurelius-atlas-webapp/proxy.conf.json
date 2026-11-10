@@ -16,5 +16,12 @@
         },
         "secure": true,
         "target": "https://localhost:4318"
+    },
+    "/validate-entity": {
+        "pathRewrite": {
+            "^/validate-entity": ""
+        },
+        "secure": true,
+        "target": "https://localhost:21003"
     }
 }

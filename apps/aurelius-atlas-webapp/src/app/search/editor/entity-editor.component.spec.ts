@@ -41,6 +41,7 @@ class DrawerTestHost {}
 const ENTITY_URL = "/api/atlas/v2/entity/guid/";
 const TYPEDEFS_URL = "/api/atlas/v2/types/typedefs";
 const ENTITY_POST_URL = "/api/atlas/v2/entity";
+const VALIDATE_URL = "/validate-entity/";
 
 /** The edit-mode entity: a DataSet with the Asset/Referenceable fields. */
 const ANSWER: AtlasEntityWithExtInfo = {
@@ -184,10 +185,51 @@ function setup({
     return { fixture, compiled, httpMock: TestBed.inject(HttpTestingController), paramMap };
 }
 
+/** One governance item of the deployed 8.3 mock document (VE-02, DV-67). */
+function govItem(key: string, result: string, compliant: "0" | "1") {
+    return {
+        result: { raw: result },
+        dataqualitytype: { raw: "attribute" },
+        usedattributes: { raw: [key] },
+        name: { raw: `Attribute - ${key}` },
+        compliant: { raw: compliant },
+        _meta: { engine: "atlas-dev-gov-quality", score: 1, id: `doc-${key}` },
+        id: { raw: `doc-${key}` },
+    };
+}
+
+/** The deployed mock's four cards (EDT-21/EDT-24, VE-02): the drawer renders
+ * the two whose keys name one of its controls (name, definition/description). */
+const VALIDATION = {
+    dataEntity: { items: [govItem("dataEntity", "This entity is missing a dataEntity", "0")], isNonCompliant: true },
+    definition: { items: [govItem("definition", "This entity has a definition", "1")], isNonCompliant: false },
+    domainLead: { items: [govItem("domainLead", "This entity is missing a domainLead", "0")], isNonCompliant: true },
+    name: { items: [govItem("name", "This entity has a name", "1")], isNonCompliant: false },
+};
+
+/** Answer every validate-entity call in flight (EDT-23): the open round fires
+ * as soon as the form is visible, so the helpers settle it like any other
+ * read. With no call pending it matches nothing (bare create, the failed
+ * read), so the helpers stay honest about the request's absence. */
+function flushValidation(httpMock: HttpTestingController, body = VALIDATION): void {
+    for (const request of httpMock.match((req) => req.url === VALIDATE_URL)) {
+        request.flush(body);
+    }
+}
+
 /** Flush the typedefs read (every mode makes it) and settle. */
-function arriveTypeDefs(fixture: { detectChanges: () => void }, httpMock: HttpTestingController, body = TYPEDEFS) {
+function arriveTypeDefs(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    body = TYPEDEFS,
+    validate = true,
+) {
     httpMock.expectOne(TYPEDEFS_URL).flush(body);
     fixture.detectChanges();
+    if (validate) {
+        flushValidation(httpMock);
+        fixture.detectChanges();
+    }
 }
 
 /** Flush both reads (edit mode) and settle the drawer. */
@@ -196,10 +238,15 @@ function arrive(
     httpMock: HttpTestingController,
     body = ANSWER,
     typedefs = TYPEDEFS,
+    validate = true,
 ) {
-    arriveTypeDefs(fixture, httpMock, typedefs);
+    arriveTypeDefs(fixture, httpMock, typedefs, validate);
     httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(body);
     fixture.detectChanges();
+    if (validate) {
+        flushValidation(httpMock);
+        fixture.detectChanges();
+    }
 }
 
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
@@ -215,7 +262,7 @@ function holdDirective(fixture: ComponentFixture<EntityEditor>): Holdable {
 
 describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
     it("fetches its own entity and the typedefs on arrival (EDT-02, EDT-04)", () => {
-        const { httpMock } = setup();
+        const { fixture, httpMock } = setup();
 
         const entityRequest = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
         expect(entityRequest.request.method).toBe("GET");
@@ -223,6 +270,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(typedefsRequest.request.method).toBe("GET");
         typedefsRequest.flush(TYPEDEFS);
         entityRequest.flush(ANSWER);
+        fixture.detectChanges();
+        flushValidation(httpMock); // the open round the visible form fires (EDT-23)
     });
 
     it("alerts and keeps the empty drawer on a failed entity read (EDT-02)", () => {
@@ -547,6 +596,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         // and the drawer would replay its slide-in), now showing the form.
         expect(compiled.querySelector(".aurelius-drawer-panel")).toBe(panel);
         expect(compiled.querySelector("form")).toBeTruthy();
+        flushValidation(http); // the open round the visible form fires (EDT-23)
         http.verify();
     });
 
@@ -1045,5 +1095,160 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(normalize(create.compiled.querySelector(".aurelius-drawer-title")?.textContent)).toBe(
             "Create new entity",
         );
+    });
+
+    // The governance banner (EDT-23/EDT-24, DD-446). The helper `arrive`
+    // already settles the open round, so the debounce/line specs ride it and
+    // drive only the change under test; the trigger specs flush the reads by
+    // hand to watch the first round fire.
+    it("validates the merged draft when the form opens (EDT-23)", () => {
+        const { fixture, httpMock } = setup();
+        arriveTypeDefs(fixture, httpMock);
+        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        fixture.detectChanges();
+
+        const validation = httpMock.expectOne(VALIDATE_URL);
+        expect(validation.request.method).toBe("POST");
+        // The body is the merged draft (EDT-21's payload): the read's entity
+        // with the form's seeded values written back — the legacy's
+        // opened-entity merge, not the raw read or the save wrapper.
+        const draft = validation.request.body as { typeName: string; attributes: Record<string, unknown> };
+        expect(draft.typeName).toBe("DataSet");
+        expect(draft.attributes["name"]).toBe("genomic_variants");
+        expect(draft.attributes["description"]).toBe("Curated variant calls.");
+        validation.flush(VALIDATION);
+    });
+
+    it("a change re-validates once, debounced 200 ms (EDT-23)", () => {
+        vi.useFakeTimers();
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        expect(httpMock.match((request) => request.url === VALIDATE_URL)).toHaveLength(0); // the open round settled
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "renamed_variants";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+
+        vi.advanceTimersByTime(100);
+        expect(httpMock.match((request) => request.url === VALIDATE_URL)).toHaveLength(0); // not yet
+        vi.advanceTimersByTime(120);
+        const pending = httpMock.match((request) => request.url === VALIDATE_URL);
+        expect(pending).toHaveLength(1);
+        const draft = pending[0].request.body as { attributes: Record<string, unknown> };
+        expect(draft.attributes["name"]).toBe("renamed_variants"); // the draft, not the opened entity
+        pending[0].flush(VALIDATION);
+        vi.useRealTimers();
+    });
+
+    it("a failed validation renders no lines, alerts nothing, and keeps the drawer usable (EDT-23)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arriveTypeDefs(fixture, httpMock);
+        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        fixture.detectChanges();
+        vi.spyOn(TestBed.inject(Router), "navigate"); // the save's navigation, as every save spec stubs it
+
+        httpMock.expectOne(VALIDATE_URL).flush({ errorCode: "ATLAS-500" }, { status: 500, statusText: "Server Error" });
+        fixture.detectChanges();
+
+        // The quiet swallow (DD-446): no lines, no alert, the drawer intact.
+        expect(compiled.querySelectorAll("[data-gov-line]")).toHaveLength(0);
+        expect(TestBed.inject(AlertsService).hasAlerts()).toBe(false);
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+
+        // And the form still saves (the drawer stays usable).
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+    });
+
+    it("a newer draft drops the in-flight validation (EDT-23: the generation guard)", () => {
+        vi.useFakeTimers();
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "first-edit";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        vi.advanceTimersByTime(250);
+        const stale = httpMock.expectOne(VALIDATE_URL);
+
+        // The next change while the first is still unanswered: the older call
+        // is dropped, and its answer can never land.
+        nameInput.value = "second-edit";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        vi.advanceTimersByTime(250);
+        expect(stale.cancelled).toBe(true);
+        const fresh = httpMock.expectOne(VALIDATE_URL);
+        expect((fresh.request.body as { attributes: Record<string, unknown> }).attributes["name"]).toBe("second-edit");
+        expect(() => stale.flush(VALIDATION)).toThrow(); // the superseded answer cannot overwrite
+
+        fresh.flush(VALIDATION);
+        fixture.detectChanges();
+        expect(compiled.querySelectorAll("[data-gov-line]")).toHaveLength(2); // the fresh answer renders
+        vi.useRealTimers();
+    });
+
+    it("renders one banner line per card that names a control, nothing for the rest (EDT-24)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        // The mock answers four cards (VE-02); the DataSet drawer renders
+        // controls for two of them — the `definition` card names the
+        // description key (the pair, DD-320). The unanswered-for keys
+        // (`dataEntity`, `domainLead`) render nowhere (DD-446).
+        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
+        expect(lines).toHaveLength(2);
+        // The DOM order is the form's (EDT-03's rank): the name control's
+        // line first, the description control's after it.
+        expect(lines.map((line) => normalize(line.textContent))).toEqual([
+            "This entity has a name",
+            "This entity has a definition",
+        ]);
+
+        // The lines sit under their own control, at the legacy's small size,
+        // with the success icon (compliant "1") in Bulma's icon seat.
+        const nameLine = lines.find((line) => line.closest(".aurelius-editor-field")?.querySelector("#editor-name"));
+        expect(normalize(nameLine?.textContent)).toBe("This entity has a name");
+        expect(nameLine?.classList.contains("is-size-7")).toBe(true);
+        expect(nameLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
+        const definitionLine = lines.find((line) =>
+            line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-description"),
+        );
+        expect(normalize(definitionLine?.textContent)).toBe("This entity has a definition");
+        expect(definitionLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
+    });
+
+    it("a non-compliant card paints the warning icon (EDT-24)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arriveTypeDefs(fixture, httpMock);
+        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        fixture.detectChanges();
+
+        httpMock.expectOne(VALIDATE_URL).flush({
+            name: { items: [govItem("name", "This entity is missing a name", "0")], isNonCompliant: true },
+        });
+        fixture.detectChanges();
+
+        const line = compiled.querySelector<HTMLElement>("[data-gov-line]")!;
+        expect(normalize(line.textContent)).toBe("This entity is missing a name");
+        expect(line.querySelector(".icon.has-text-warning svg")).toBeTruthy();
+        expect(line.querySelector(".icon.has-text-success")).toBeNull();
+    });
+
+    it("a create draft is validated too, with the seeded type (EDT-23)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock);
+
+        // The banner rides the create form as well: the open round answered
+        // the mock's cards, and the two rendered controls carry their lines —
+        // the mock's verdicts name the keys, not the drafted values (EDT-24).
+        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
+        expect(lines.map((line) => normalize(line.textContent))).toEqual([
+            "This entity has a name",
+            "This entity has a definition",
+        ]);
     });
 });

@@ -105,6 +105,10 @@
                     "target": "docker-build"
                 },
                 {
+                    "projects": ["aurelius-atlas-validate-entity"],
+                    "target": "docker-build"
+                },
+                {
                     "projects": [
                         "aurelius-atlas-dev-keycloak",
                         "aurelius-atlas-dev-observability",
@@ -162,6 +166,10 @@
                 },
                 {
                     "projects": ["aurelius-atlas-lineage-model", "aurelius-atlas-data2model"],
+                    "target": "serve"
+                },
+                {
+                    "projects": ["aurelius-atlas-validate-entity"],
                     "target": "serve"
                 }
             ],

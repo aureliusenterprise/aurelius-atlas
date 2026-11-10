@@ -1,6 +1,7 @@
 # The validate-entity chart — its runtime contract (CHT-02).
 # apps/aurelius-atlas-validate-entity: FastAPI, prefix AURELIUS_ATLAS_VALIDATE_ENTITY_,
-# port 21003. Verifies Keycloak bearer tokens (audience aurelius-atlas-validate-entity)
+# port 21003. Verifies Keycloak bearer tokens (audience aurelius — the browser
+# client, since 7.24: the webapp's editor calls it through its nginx, DD-435)
 # and exports OTLP with its own ingest identity. Shares the service shape with
 # data2model and lineage-model by design — each chart owns its templates
 # (DD-290).
@@ -97,7 +98,12 @@ telemetry:
     port: 4319
 
 config:
-    AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius-atlas-validate-entity
+    # The endpoint is the browser's from begin to end (7.24, DD-435): the
+    # webapp's editor calls it with the user's own token through nginx, so the
+    # verifier takes the browser client's audience — the dev .env's value, the
+    # e2e compose's value, AUX-04. No extra-audiences join: the app forwards
+    # nothing, its own client identity earns nothing (DV-75).
+    AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius
     AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info
     AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CERT_FILE: /etc/aurelius-atlas/tls/tls.crt
@@ -108,6 +114,14 @@ config:
 
 secretRefs: []
 extraEnv: []
+
+# Network segmentation (7.24, EDT-22, DD-435): the ingress allow for this
+# Service — the webapp only (its /validate-entity/ proxy). peers.<peer>
+# renames a peer's pods for a diverging deployment.
+networkPolicy:
+    enabled: true
+    peers:
+        webapp: ""
 
 nodeSelector: {}
 tolerations: []

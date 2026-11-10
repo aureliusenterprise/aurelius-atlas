@@ -245,6 +245,15 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 title: $localize`:@@search.details.field.fieldsCards.title:Child Fields`,
                 seedKeys: ["childField"],
             },
+            // DET-35 (7.24): the field's own `dataQuality` relationship end seeds
+            // the rules box (DD-444). The legacy read the App Search
+            // `data_quality` index instead; the score box (`#data-quality`)
+            // stays out with its `dqscore_*` source, per DD-369.
+            {
+                anchor: "related-rules",
+                title: $localize`:@@search.details.field.dataQualityCards.title:Data Quality Rules`,
+                seedKeys: ["dataQuality"],
+            },
         ],
         stats: [
             {
@@ -256,6 +265,15 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 label: $localize`:@@search.details.field.childFields:Child Fields`,
                 anchor: "related-fields",
                 source: { kind: "section", anchor: "related-fields" },
+            },
+            // DET-36 (7.24): the rules stat in the legacy place. The legacy
+            // showed its `dqscorecnt_overall` here; the value is now the
+            // DET-24 section count (DD-444). The score stat
+            // (`search.details.field.dataQuality`) stays out per DD-369.
+            {
+                label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`,
+                anchor: "related-rules",
+                source: { kind: "section", anchor: "related-rules" },
             },
             {
                 label: $localize`:@@search.details.field.properties:Properties`,
@@ -271,6 +289,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-attributes",
             },
             { label: $localize`:@@search.details.field.childFields:Child Fields`, anchor: "related-fields" },
+            { label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`, anchor: "related-rules" },
             { label: $localize`:@@search.details.field.properties:Properties`, anchor: "properties-details" },
         ],
     },

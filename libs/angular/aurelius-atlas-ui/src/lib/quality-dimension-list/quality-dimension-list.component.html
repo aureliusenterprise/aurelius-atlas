@@ -1,0 +1,26 @@
+<!--
+    The dimension rows (UIC-37): a pie, the percent, the dimension word,
+    and the count in parentheses, per row — the legacy list's shape. The
+    empty list is the italic placeholder (the legacy `notAvailable`
+    branch).
+-->
+@if (dimensions().length > 0) {
+    <div class="field is-grouped is-grouped-multiline">
+        @for (row of dimensions(); track row.dimension) {
+            <div class="control">
+                <p class="quality-dimension">
+                    <span class="icon is-small">
+                        <aurelius-atlas-ui-data-quality-pie
+                            [value]="pieValue(row)"
+                        ></aurelius-atlas-ui-data-quality-pie>
+                    </span>
+                    <span class="quality-score"
+                        >{{ row.score | percent: "1.0-1" }}&nbsp;{{ row.dimension }}&nbsp;({{ row.count }})</span
+                    >
+                </p>
+            </div>
+        }
+    </div>
+} @else if (notAvailable()) {
+    <p class="is-italic has-text-centered aurelius-quality-not-available">{{ notAvailable() }}</p>
+}

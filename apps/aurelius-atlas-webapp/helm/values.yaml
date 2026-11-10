@@ -71,9 +71,10 @@ initResources:
 dnsResolver: ""
 
 # The upstreams the nginx template names (placeholders _API_UPSTREAM,
-# _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME, and the
-# _LINEAGE_MODEL pair of 7.22a). "" defaults in 10.3: server/collector/
-# lineage-model service DNS in this namespace. _NAME is the
+# _API_UPSTREAM_NAME, _OTEL_UPSTREAM, _OTEL_UPSTREAM_NAME, the
+# _LINEAGE_MODEL pair of 7.22a, and the _VALIDATE_ENTITY pair of 7.24).
+# "" defaults in 10.3: server/collector/lineage-model/validate-entity
+# service DNS in this namespace. _NAME is the
 # proxy_ssl_name — it must match the upstream certificate's SAN (DD-286).
 nginx:
     apiUpstream: ""
@@ -82,6 +83,8 @@ nginx:
     otelUpstreamName: ""
     lineageModelUpstream: ""
     lineageModelUpstreamName: ""
+    validateEntityUpstream: ""
+    validateEntityUpstreamName: ""
     # Override for the edge exporter's endpoint — the template's
     # _OTLP_ENDPOINT, nginx's own edge-span leg (DD-239). "" derives
     # https://<collector>:<collector.legacyGrpcPort> (CHT-25). The SPA's
@@ -125,6 +128,10 @@ config:
     # same value without the key; it is spelled here so a deployment that moves
     # the aux API off this nginx changes one value.
     lineageModelBaseUrl: /lineage-model
+    # The validate-entity API's base URL as the browser sees it (7.24, EDT-22,
+    # DD-435): the same-origin path this chart's nginx proxies, the editor's
+    # governance banner's data path. The same override rule as the lineage key.
+    validateEntityBaseUrl: /validate-entity
     keycloak:
         clientId: aurelius
         url: ""
@@ -156,6 +163,11 @@ server:
 lineageModel:
     service: ""
     port: 21002
+# The validate-entity API this nginx proxies /validate-entity/ to (7.24,
+# EDT-22, DD-435): the editor's governance banner data path (EDT-21).
+validateEntity:
+    service: ""
+    port: 21003
 collector:
     service: ""
     # The browser leg (OTLP/HTTP + OIDC) — the /otel/ proxy's upstream

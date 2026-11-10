@@ -73,9 +73,12 @@ describe("Section config (DET-16)", () => {
             ["related-entities", ["childEntity"]],
         ]);
         expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]]]);
+        // DET-35 (7.24, DD-444): the field's own `dataQuality` end seeds the
+        // rules box, the legacy `#related-rules` place.
         expect(shape("m4i_field")).toEqual([
             ["related-attributes", ["attributes"]],
             ["related-fields", ["childField"]],
+            ["related-rules", ["dataQuality"]],
         ]);
         expect(shape("m4i_dataset")).toEqual([
             ["related-fields", ["fields"]],
@@ -154,6 +157,23 @@ describe("Section config (DET-16)", () => {
             "lineage-model",
             "related-inputs",
             "related-outputs",
+            "properties-details",
+        ]);
+
+        // DET-36 (7.24): the rules stat returns in the legacy place — after
+        // Child Fields, before Properties — and the score stat stays out
+        // (DD-369: `data-quality` names it, and it is absent).
+        expect(labels("m4i_field")).toEqual([
+            "related-attributes",
+            "related-fields",
+            "related-rules",
+            "properties-details",
+        ]);
+        expect(nav("m4i_field")).toEqual([
+            "description-details",
+            "related-attributes",
+            "related-fields",
+            "related-rules",
             "properties-details",
         ]);
     });

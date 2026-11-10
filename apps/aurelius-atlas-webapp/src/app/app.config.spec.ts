@@ -23,7 +23,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { DATE_PIPE_DEFAULT_OPTIONS, ViewportScroller } from "@angular/common";
 import { ApplicationConfig, Provider } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { API_BASE_URL, LINEAGE_MODEL_BASE_URL } from "aurelius-atlas-data-access";
+import { API_BASE_URL, LINEAGE_MODEL_BASE_URL, VALIDATE_ENTITY_BASE_URL } from "aurelius-atlas-data-access";
 import { AURELIUS_METER_PROVIDER, AURELIUS_WEB_TRACER_PROVIDER } from "aurelius-atlas-observability";
 import Keycloak from "keycloak-js";
 import { INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG } from "keycloak-angular";
@@ -120,13 +120,15 @@ describe("app providers (7.3)", () => {
         });
     });
 
-    it("bearerTokenConfig covers /api and /lineage-model calls only (APC-06, LDG-05)", () => {
-        expect(bearerTokenConfig).toHaveLength(2);
-        const [api, lineageModel] = bearerTokenConfig;
+    it("bearerTokenConfig covers /api, /lineage-model and /validate-entity calls only (APC-06, LDG-05, EDT-22)", () => {
+        expect(bearerTokenConfig).toHaveLength(3);
+        const [api, lineageModel, validateEntity] = bearerTokenConfig;
         expect(api.urlPattern.test("/api/atlas/admin/version")).toBe(true);
         expect(api.urlPattern.test("/api/atlas/v2/types/typedefs")).toBe(true);
         expect(lineageModel.urlPattern.test("/lineage-model/?guid=g-1")).toBe(true);
         expect(lineageModel.urlPattern.test("/api/atlas/admin/version")).toBe(false);
+        expect(validateEntity.urlPattern.test("/validate-entity/")).toBe(true);
+        expect(validateEntity.urlPattern.test("/api/atlas/admin/version")).toBe(false);
         expect(api.urlPattern.test("/otel/v1/traces")).toBe(false);
         expect(api.urlPattern.test("/config.json")).toBe(false);
     });
@@ -170,6 +172,16 @@ describe("app providers (7.3)", () => {
     it("provides the lineage-model base URL from the runtime config (LDG-07)", async () => {
         await bootstrap(makeKeycloakStub(), { ...configPayload, lineageModelBaseUrl: "/aux/lineage" });
         expect(TestBed.inject(LINEAGE_MODEL_BASE_URL)).toBe("/aux/lineage");
+    });
+
+    it("leaves the validate-entity default when the config omits the key (EDT-22, DD-445)", async () => {
+        await bootstrap(makeKeycloakStub());
+        expect(TestBed.inject(VALIDATE_ENTITY_BASE_URL)).toBe("/validate-entity");
+    });
+
+    it("provides the validate-entity base URL from the runtime config (EDT-22)", async () => {
+        await bootstrap(makeKeycloakStub(), { ...configPayload, validateEntityBaseUrl: "/aux/validate" });
+        expect(TestBed.inject(VALIDATE_ENTITY_BASE_URL)).toBe("/aux/validate");
     });
 
     it("assembles the SDK providers when telemetry is on, the default (SPL-11)", async () => {

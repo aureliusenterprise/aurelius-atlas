@@ -4,8 +4,9 @@ The shape the spec pins: a TLS listener on 8080 behind the Gateway (the
 Gateway's BackendTLSPolicy dials it, DD-270) with HTTPS probes and a
 chart-issued leaf; the nginx config shipped as a byte-copy chart asset
 resolved at pod start by an init container (DD-262) — Helm never renders a
-placeholder; the CHT-25 placeholders computed by the chart (fourteen, the
-twelve plus the 7.22a lineage-model pair, joined by the Secret-fed token);
+placeholder; the CHT-25 placeholders computed by the chart (seventeen, the
+fifteen plus the 7.24 validate-entity pair — 7.22a's lineage pair among them,
+joined by the Secret-fed token);
 /config.json rendered from values for the SPA's bootstrap fetch.
 """
 
@@ -20,9 +21,10 @@ from conftest import WEBAPP_CHART, container, env_map, env_value, find, helm_ren
 
 TEST_VALUES = (WEBAPP_CHART / "tests/values.test.yaml",)
 
-# The fifteen placeholder names the template contract fixes (CHT-25; the
+# The seventeen placeholder names the template contract fixes (CHT-25; the
 # listener leaf paths join DD-270's pair; HSTS_HEADER joined with CHT-99;
-# the lineage-model pair with 7.22a's LDG-06, DD-384).
+# the lineage-model pair with 7.22a's LDG-06, DD-384; the validate-entity
+# pair with 7.24's EDT-22, DD-445).
 PLACEHOLDERS = [
     "AURELIUS_ATLAS_WEBAPP_API_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_HSTS_HEADER",
@@ -31,6 +33,8 @@ PLACEHOLDERS = [
     "AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS",
     "AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME",
+    "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM",
+    "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME",
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM",
     "AURELIUS_ATLAS_WEBAPP_OTEL_UPSTREAM_NAME",
     "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT",
@@ -123,7 +127,7 @@ def test__configmap_ships_the_raw_template(webapp_docs: list[dict[str, Any]]) ->
 
 
 @pytest.mark.covers(rules=["CHT-24"])
-def test__init_container_resolves_the_fifteen_placeholders(webapp_docs: list[dict[str, Any]]) -> None:
+def test__init_container_resolves_the_seventeen_placeholders(webapp_docs: list[dict[str, Any]]) -> None:
     """resolve-nginx-config: same image, sed per name, fail-loud guard."""
     init = _init(find(webapp_docs, "Deployment", "atlas-webapp"), "resolve-nginx-config")
     image_app = container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")
@@ -135,7 +139,8 @@ def test__init_container_resolves_the_fifteen_placeholders(webapp_docs: list[dic
         # the shell expansion of the env var.
         assert f"s|\\${{{name}}}|${{{name}}}|g" in script, name
     assert "exit 1" in script  # the unresolved-placeholder guard
-    # The init's env is exactly the fifteen names (CHT-25, DD-270, DD-384).
+    # The init's env is exactly the seventeen names (CHT-25, DD-270, DD-384,
+    # DD-445).
     assert sorted(env_map(init)) == sorted(PLACEHOLDERS)
 
 
@@ -157,6 +162,14 @@ def test__placeholder_values_are_chart_joins(webapp_docs: list[dict[str, Any]]) 
     assert (
         env_value(envs, "AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME")
         == "atlas-lineage-model.atlas.svc.cluster.local"
+    )
+    assert (
+        env_value(envs, "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM")
+        == "https://atlas-validate-entity.atlas.svc.cluster.local:21003"
+    )
+    assert (
+        env_value(envs, "AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME")
+        == "atlas-validate-entity.atlas.svc.cluster.local"
     )
     assert (
         env_value(envs, "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT")
@@ -210,6 +223,7 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     assert config["otelExporterUrl"] == "/otel/v1/traces"
     assert config["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324
     assert config["lineageModelBaseUrl"] == "/lineage-model"  # 7.22a, LDG-07
+    assert config["validateEntityBaseUrl"] == "/validate-entity"  # 7.24, EDT-22
     mounts = {
         m["mountPath"]: m for m in container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")["volumeMounts"]
     }
@@ -275,6 +289,25 @@ def test__lineage_model_location_proxies_and_verifies(webapp_docs: list[dict[str
     assert "proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME};" in body
     assert "limit_req zone=atlas_lineage_model burst=100 nodelay;" in body
     assert "limit_req_zone $atlas_api_limit_addr zone=atlas_lineage_model:10m rate=600r/m;" in template
+
+
+@pytest.mark.covers(rules=["EDT-22"])
+def test__validate_entity_location_proxies_and_verifies(webapp_docs: list[dict[str, Any]]) -> None:
+    """/validate-entity/ proxies to the aux API with the CA verified (7.24, EDT-22).
+
+    The fourth location beside /api/, /otel/ and /lineage-model/: the prefix is
+    stripped (the aux API serves its route at its root, DV-144), the upstream
+    carries user bearer tokens so its certificate is verified with the name
+    pinned (DD-142's posture), and it buckets like the browser legs beside it.
+    """
+    template = find(webapp_docs, "ConfigMap", "atlas-webapp-nginx")["data"]["nginx.conf.template"]
+    body = template.split("location /validate-entity/ {")[1].split("\n    }")[0]
+    assert "rewrite ^/validate-entity(/.*)$ $1 break;" in body
+    assert "proxy_pass $validate_entity_upstream;" in body
+    assert "proxy_ssl_verify on;" in body
+    assert "proxy_ssl_name ${AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME};" in body
+    assert "limit_req zone=atlas_validate_entity burst=100 nodelay;" in body
+    assert "limit_req_zone $atlas_api_limit_addr zone=atlas_validate_entity:10m rate=600r/m;" in template
 
 
 @pytest.mark.covers(rules=["CHT-100"])

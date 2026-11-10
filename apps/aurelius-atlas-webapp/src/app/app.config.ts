@@ -9,7 +9,11 @@ import {
     provideZonelessChangeDetection,
 } from "@angular/core";
 import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from "@angular/router";
-import { provideApiBaseUrl, provideLineageModelBaseUrl } from "aurelius-atlas-data-access";
+import {
+    provideApiBaseUrl,
+    provideLineageModelBaseUrl,
+    provideValidateEntityBaseUrl,
+} from "aurelius-atlas-data-access";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
 import {
@@ -78,13 +82,19 @@ export function keycloakInitOptions(): KeycloakInitOptions {
 
 /**
  * The bearer-token interceptor config (APC-06, DD-004): the token rides every
- * same-origin `/api` call — the Atlas API — and every `/lineage-model` call,
- * the aux API's data path since 7.22a (LDG-05). Nothing else. Since 6.1a the
- * server verifies it (AUT-02); it was sent from day one (DD-141). The aux API
- * verifies it too (LM-08) and forwards it upstream unchanged (LM-04); the
- * verifier accepts the browser client through its extra-audience join (DD-385).
+ * same-origin `/api` call — the Atlas API — every `/lineage-model` call, the
+ * aux API's data path since 7.22a (LDG-05), and every `/validate-entity` call,
+ * the editor's governance path since 7.24 (EDT-22). Nothing else. Since 6.1a
+ * the server verifies it (AUT-02); it was sent from day one (DD-141). The aux
+ * APIs verify it too (LM-08, VE-03) and forward it upstream unchanged (LM-04);
+ * the verifier accepts the browser client through its extra-audience join
+ * (DD-385).
  */
-export const bearerTokenConfig = [{ urlPattern: /^.*\/api\/.*$/ }, { urlPattern: /^.*\/lineage-model\/.*$/ }];
+export const bearerTokenConfig = [
+    { urlPattern: /^.*\/api\/.*$/ },
+    { urlPattern: /^.*\/lineage-model\/.*$/ },
+    { urlPattern: /^.*\/validate-entity\/.*$/ },
+];
 
 /**
  * The height of the fixed navbar in px, the gap an anchor jump must clear
@@ -192,6 +202,10 @@ export async function initialize(): Promise<ApplicationConfig> {
             // key when set, the client's `/lineage-model` default when not —
             // the token is provided only for the override.
             ...(config.lineageModelBaseUrl ? [provideLineageModelBaseUrl(config.lineageModelBaseUrl)] : []),
+            // The validate-entity client's own base (7.24, EDT-22, DD-445):
+            // the config key when set, the client's `/validate-entity` default
+            // when not — the token is provided only for the override.
+            ...(config.validateEntityBaseUrl ? [provideValidateEntityBaseUrl(config.validateEntityBaseUrl)] : []),
             // check-sso + silent-SSO: an existing SSO session signs in without a
             // click; the root guard (routes.ts) redirects everyone else (APC-05).
             provideKeycloak({
