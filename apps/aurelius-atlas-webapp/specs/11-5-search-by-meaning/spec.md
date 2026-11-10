@@ -1,7 +1,7 @@
 # 11.5 Search by meaning in the webapp
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#309](https://github.com/aureliusenterprise/aurelius-atlas/pull/309)
 - **Records:** ADR 059 (Proposed); DD-444 to DD-447; relies on 11.4 (the endpoints, SBM-01 to SBM-08,
   DD-440), 7.4b (the facet sidebar, DD-424 to DD-427), 7.4a (the results store, DD-219), DD-388 (the lineage
   box's pattern)
