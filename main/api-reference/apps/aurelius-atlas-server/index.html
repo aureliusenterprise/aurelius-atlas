@@ -1670,6 +1670,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.hybrid_vector_weight" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hybrid_vector_weight
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.import_folder" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8452,6 +8463,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.hybrid_vector_weight" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hybrid_vector_weight
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.import_folder" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9856,6 +9878,12 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Embedding Poll Seconds"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"hybrid_vector_weight"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mf">10.0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Hybrid Vector Weight"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"import_folder"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
 <span class="w">        </span><span class="p">{</span>
@@ -10423,6 +10451,15 @@ Elasticsearch settings; it does not start without its store.</p>
   
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.embedding_poll_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.embedding_poll_seconds">embedding_poll_seconds</a></code>
+                (<code><span title="float">float</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            hybrid_vector_weight
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.hybrid_vector_weight)" href="./#aurelius_atlas_server.settings.ServerSettings.hybrid_vector_weight">hybrid_vector_weight</a></code>
                 (<code><span title="float">float</span></code>)
             </li>
             <li>
@@ -11905,6 +11942,30 @@ limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).</p>
         <p>Whether responses carry <code>Strict-Transport-Security</code> (SRV-08, DD-236). The image ships True; the dev
 arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the
 plaintext dev surfaces (ADR 039's named relaxations).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.hybrid_vector_weight" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">hybrid_vector_weight</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.hybrid_vector_weight" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">hybrid_vector_weight</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">10.0</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442).</p>
 
     </div>
 

@@ -227,6 +227,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Embedding Poll Seconds",
 >       "type": "number"
 >     },
+>     "hybrid_vector_weight": {
+>       "default": 10.0,
+>       "minimum": 0,
+>       "title": "Hybrid Vector Weight",
+>       "type": "number"
+>     },
 >     "import_folder": {
 >       "anyOf": [
 >         {
@@ -578,6 +584,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `embedding_ca_file` (`FilePath | None`)
 > - `embedding_batch_size` (`int`)
 > - `embedding_poll_seconds` (`float`)
+> - `hybrid_vector_weight` (`float`)
 > - `import_folder` (`Path | None`)
 > - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
@@ -975,6 +982,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Whether responses carry `Strict-Transport-Security` (SRV-08, DD-236). The image ships True; the dev arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the plaintext dev surfaces (ADR 039's named relaxations).
+>
+> ### hybrid\_vector\_weight
+>
+> ```
+> hybrid_vector_weight: float = 10.0
+> ```
+>
+> What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442).
 >
 > ### import\_folder
 >
