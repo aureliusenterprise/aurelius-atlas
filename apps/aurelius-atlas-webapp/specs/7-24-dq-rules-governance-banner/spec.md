@@ -1,7 +1,7 @@
 # 7.24 Data quality rules and the governance banner
 
-- **Status:** proposed
-- **Pull request:** —
+- **Status:** in review
+- **Pull request:** — (this increment's PR)
 - **Records:** DET-35..36 (the field row of DET-16, amended into DET-24/DET-25),
   EDT-21..24, UIC-36..39; adds DD-434..437 (here) and DV-144 to
   [deviations](../../../../docs/architecture/conversion/deviations.md) in the

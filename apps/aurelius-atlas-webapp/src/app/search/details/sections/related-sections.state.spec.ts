@@ -347,3 +347,46 @@ describe("Related sections store (DET-17..DET-22)", () => {
         httpMock.verify();
     });
 });
+
+describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-434)", () => {
+    /** The field layout, with the DET-35 `related-rules` section. */
+    const FIELD_LAYOUT = LAYOUTS.m4i_field;
+
+    /** An opened `m4i_field` whose `dataQuality` end seeds the given rules. */
+    function openedField(seed: Record<string, unknown>[]): AtlasEntity {
+        return {
+            guid: "field-1",
+            typeName: "m4i_field",
+            attributes: { name: "field-1" },
+            relationshipAttributes: { dataQuality: seed },
+        };
+    }
+
+    function rule(guid: string, displayText: string): Record<string, unknown> {
+        return { guid, displayText, typeName: "m4i_data_quality", name: displayText };
+    }
+
+    it("seeds the rules box from the field's own dataQuality end (DET-35)", () => {
+        const { store, httpMock } = setup();
+        store.seed(openedField([rule("r1", "Not null"), { displayText: "No guid" }]), FIELD_LAYOUT);
+
+        const rules = store.views().find((view) => view.anchor === "related-rules");
+        expect(rules?.count).toBe(1); // the guidless end drops, as every DET-17 section
+        expect(store.countFor("related-rules")).toBe(1); // the DET-36 stat's value
+        flushAll(httpMock);
+        const after = store.views().find((view) => view.anchor === "related-rules");
+        expect(after?.cards.map((card) => card.guid)).toEqual(["r1"]);
+        httpMock.verify();
+    });
+
+    it("a field with an empty end renders the box at its zero count, no request (DET-35, DET-17's zero case)", () => {
+        const { store, httpMock } = setup();
+        store.seed(openedField([]), FIELD_LAYOUT);
+
+        const rules = store.views().find((view) => view.anchor === "related-rules");
+        expect(rules?.count).toBe(0);
+        expect(store.countFor("related-rules")).toBe(0); // the stat reads its zero, in legacy place
+        expect(bulkRequests(httpMock)).toEqual([]); // a zero view sends nothing
+        httpMock.verify();
+    });
+});
