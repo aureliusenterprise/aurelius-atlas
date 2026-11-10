@@ -5,11 +5,6 @@
     "aliases": []
   },
   {
-    "version": "fix-7-26-http-retry",
-    "title": "fix-7-26-http-retry",
-    "aliases": []
-  },
-  {
     "version": "fix-trace-check-blockers",
     "title": "fix-trace-check-blockers",
     "aliases": []
