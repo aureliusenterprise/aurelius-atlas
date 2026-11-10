@@ -70,8 +70,9 @@ def test__read_rules_reads_a_letter_suffix_directory(tmp_path: Path) -> None:
 
 @pytest.mark.covers("aurelius_atlas_trace.rules.read_rules", rules=["TRC-08"])
 def test__read_rules_skips_pruned_directories(tmp_path: Path) -> None:
-    """Vendored trees are never searched."""
+    """Vendored and scratch trees are never searched."""
     write_spec(tmp_path / "node_modules" / "pkg" / "specs" / "9-9-vendored", "spec.md", "| VEN-01 | Hidden |\n")
+    write_spec(tmp_path / "tmp" / "spike" / "specs" / "9-8-scratch", "spec.md", "| SCR-01 | Hidden |\n")
     write_spec(tmp_path / "specs" / "9-9-real", "spec.md", "| REA-01 | Found |\n")
 
     assert sorted(read_rules([tmp_path], Increment(0, 2))) == ["REA-01"]
