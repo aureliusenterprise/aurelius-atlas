@@ -7241,7 +7241,7 @@ checks a PR must pass:</p>
 <tr>
 <td>7.24</td>
 <td>Data quality rules and the governance banner</td>
-<td>The field page's Data Quality Rules box seeded from the field's own <code>dataQuality</code> end with its stat and link back in legacy order (DET-35/36, closing DD-369's <code>#related-rules</code> row), the editor's governance banner over the 8.3 mock at <code>/validate-entity/</code> (EDT-21..24, DD-435, DV-144), and the four dumb quality components the 7.25 return needs (UIC-36..39, DD-434/436/437)</td>
+<td>The field page's Data Quality Rules box seeded from the field's own <code>dataQuality</code> end with its stat and link back in legacy order (DET-35/36, closing DD-369's <code>#related-rules</code> row), the editor's governance banner over the 8.3 mock at <code>/validate-entity/</code> (EDT-21..24, DD-445, DV-144), and the four dumb quality components the 7.25 return needs (UIC-36..39, DD-444/446/447)</td>
 <td>Aurelius <code>details/field/data-quality-cards</code>, <code>editor/{services/entity-validate,components/gov-quality-display}</code>, <code>search/components/{data-quality-pie,data-quality-list}</code>, <code>cards/{data-quality,gov-quality}</code></td>
 <td>in progress</td>
 </tr>
@@ -7586,14 +7586,14 @@ checks a PR must pass:</p>
 <td>The embedding service</td>
 <td><code>apps/aurelius-atlas-embedder</code>: OpenAI-shaped <code>/v1/embeddings</code> with <code>input_type</code>, <code>/v1/models</code>, the probes; <code>intfloat/multilingual-e5-small</code> on ONNX Runtime, fetched at build at a pinned revision and checked; the standalone stack's <code>embedder</code>, unpublished (EMB-01..11, ADR 059, DD-429..433)</td>
 <td>none</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>11.3</td>
 <td>Entity vectors</td>
-<td>The server's embedding client and settings; a <code>dense_vector</code> on the entity documents; the indexer that embeds new and changed entities and backfills the rest</td>
+<td>Each entity's embedding on its document, in an entity index that keeps sources as written (an older one moves once); the text and its hash, checked at every write; the indexer that embeds new, changed and stored entities; the server's settings, client and worker; the standalone server embedding through <code>embedder</code> (VEC-01..11, DD-434..439)</td>
 <td>none</td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>11.4</td>

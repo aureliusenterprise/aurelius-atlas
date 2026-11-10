@@ -175,6 +175,58 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Task Poll Seconds",
 >       "type": "number"
 >     },
+>     "embedding_url": {
+>       "anyOf": [
+>         {
+>           "format": "uri",
+>           "maxLength": 2083,
+>           "minLength": 1,
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Embedding Url"
+>     },
+>     "embedding_model": {
+>       "default": "intfloat/multilingual-e5-small",
+>       "title": "Embedding Model",
+>       "type": "string"
+>     },
+>     "embedding_dimensions": {
+>       "default": 384,
+>       "exclusiveMinimum": 0,
+>       "title": "Embedding Dimensions",
+>       "type": "integer"
+>     },
+>     "embedding_ca_file": {
+>       "anyOf": [
+>         {
+>           "format": "file-path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Embedding Ca File"
+>     },
+>     "embedding_batch_size": {
+>       "default": 32,
+>       "exclusiveMinimum": 0,
+>       "maximum": 256,
+>       "title": "Embedding Batch Size",
+>       "type": "integer"
+>     },
+>     "embedding_poll_seconds": {
+>       "default": 10.0,
+>       "exclusiveMinimum": 0,
+>       "title": "Embedding Poll Seconds",
+>       "type": "number"
+>     },
 >     "import_folder": {
 >       "anyOf": [
 >         {
@@ -520,6 +572,12 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `delete_type_override` (`bool`)
 > - `tasks_enabled` (`bool`)
 > - `task_poll_seconds` (`float`)
+> - `embedding_url` (`HttpUrl | None`)
+> - `embedding_model` (`str`)
+> - `embedding_dimensions` (`int`)
+> - `embedding_ca_file` (`FilePath | None`)
+> - `embedding_batch_size` (`int`)
+> - `embedding_poll_seconds` (`float`)
 > - `import_folder` (`Path | None`)
 > - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
@@ -845,6 +903,54 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > User for the store.
+>
+> ### embedding\_batch\_size
+>
+> ```
+> embedding_batch_size: int = 32
+> ```
+>
+> Entities per page of the indexer and per request to the embedder, which takes 256 at most (EMB-01).
+>
+> ### embedding\_ca\_file
+>
+> ```
+> embedding_ca_file: FilePath | None = None
+> ```
+>
+> PEM CA verifying the embedder's TLS; unset uses the system trust store.
+>
+> ### embedding\_dimensions
+>
+> ```
+> embedding_dimensions: int = 384
+> ```
+>
+> The model's vectors' dimensions, as the entity index maps them (VEC-03, DD-438).
+>
+> ### embedding\_model
+>
+> ```
+> embedding_model: str = 'intfloat/multilingual-e5-small'
+> ```
+>
+> The model the embeddings are computed with, sent with every request and recorded with each embedding.
+>
+> ### embedding\_poll\_seconds
+>
+> ```
+> embedding_poll_seconds: float = 10.0
+> ```
+>
+> How often the indexer looks for entities without a current embedding (VEC-07, DD-436).
+>
+> ### embedding\_url
+>
+> ```
+> embedding_url: HttpUrl | None = None
+> ```
+>
+> The base of an OpenAI-compatible embeddings API, as the embedder of 11.2 serves one; unset, embedding is off: no vectors are mapped or computed (VEC-08, ADR 059).
 >
 > ### forwarded\_allow\_ips
 >
