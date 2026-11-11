@@ -14,9 +14,8 @@ were refused there).
 from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 
-# VEV-02; CL-40.
 class GovernanceVerdict(BaseModel):
-    """One ACTIVE governance rule's answer about the draft (VEV-02).
+    """One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).
 
     ``compliant`` is a JSON boolean — 12.6's verdict, not the mock's string flag — and
     ``message`` is the verdict line the engine carries: the rule's own sentence for its
@@ -38,9 +37,8 @@ class GovernanceVerdict(BaseModel):
     message: str = Field(description="The line to show: the rule's own sentence, or the kind's reason.")
 
 
-# VEV-03; CL-40.
 class UnreadRule(BaseModel):
-    """A rule the vocabulary cannot read — recorded, never executed (VEV-03, DV-146)."""
+    """A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146)."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid", frozen=True)
 
@@ -51,9 +49,8 @@ class UnreadRule(BaseModel):
     error: str = Field(description="Why the vocabulary cannot read it, e.g. a stored expression rule.")
 
 
-# VEV-02/03; CL-40; DD-498.
 class ValidationResponse(BaseModel):
-    """The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones."""
+    """The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498)."""
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid", frozen=True)
 

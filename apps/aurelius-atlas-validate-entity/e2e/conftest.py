@@ -209,7 +209,7 @@ def stack(keycloak: DockerCompose, elasticsearch: DockerCompose, settings: Setti
         yield f"https://localhost:{port}"
 
 
-@pytest.fixture()
+@pytest.fixture
 def token(keycloak: DockerCompose, settings: Settings) -> str:
     """A caller bearer token for the app, minted as the dev writer (the browser's identity).
 
