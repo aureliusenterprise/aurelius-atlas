@@ -64,9 +64,9 @@
                 />
             </div>
         </div>
-        <!-- The kind Select (EDT-25, EDT-31): the served vocabulary's
-                 order, each row labelled by its human name — the raw engine
-                 name never shows. The plain dropdown, EDT-04's shape. -->
+        <!-- The kind Select (EDT-25, EDT-31): each row labelled by its human
+                 name and ordered by that label — the raw engine name never
+                 shows. The plain dropdown, EDT-04's shape. -->
         <div class="field aurelius-editor-field aurelius-quality-kind" data-field="dqcheckkind">
             <aurelius-atlas-ui-select
                 [options]="kindRows()"
@@ -169,14 +169,16 @@
                 {{ activeLabel }}
             </label>
         </div>
-        <!-- The threshold pair (EDT-32, DD-481): a range slider beside an
-                 editable number, side by side. Both ride the served bounds
-                 (QRE-01) at step 0.05 and one value (the number's text);
-                 editing either moves both. An empty number rests the slider
-                 at the engine's default 1.0 (EDT-27's empty rule). -->
+        <!-- The threshold pair (EDT-32, DD-481): a range slider beside a
+                 percentage field, side by side. The stored threshold is the
+                 engine's 0..1 ratio (QRE-01); the number reads it as a
+                 percent and carries a % sign, so the box shows the current
+                 percentage and never sits empty (the default reads 100%).
+                 The slider rides the served bounds (QRE-01) at step 0.05.
+                 One value backs both, so editing either moves the other. -->
         <div class="field aurelius-editor-field aurelius-quality-threshold" data-field="threshold">
             <label class="label" for="editor-threshold">{{ thresholdLabel }}</label>
-            <div class="control aurelius-quality-threshold-pair">
+            <div class="aurelius-quality-threshold-pair">
                 <input
                     type="range"
                     class="aurelius-quality-threshold-slider"
@@ -188,16 +190,18 @@
                     [value]="thresholdSliderValue()"
                     (input)="thresholdChanged($any($event.target).value)"
                 />
-                <input
-                    type="number"
-                    class="input aurelius-editor-text"
-                    id="editor-threshold"
-                    [attr.min]="thresholdMin()"
-                    [attr.max]="thresholdMax()"
-                    step="0.05"
-                    [value]="values().threshold"
-                    (input)="thresholdChanged($any($event.target).value)"
-                />
+                <div class="control has-icons-right aurelius-quality-threshold-number">
+                    <input
+                        type="text"
+                        inputmode="decimal"
+                        class="input aurelius-editor-text"
+                        id="editor-threshold"
+                        [value]="thresholdPercentValue()"
+                        (input)="thresholdPercentChanged($any($event.target).value)"
+                        (blur)="thresholdBoxBlurred()"
+                    />
+                    <span class="icon is-small aurelius-quality-threshold-percent" aria-hidden="true">%</span>
+                </div>
             </div>
         </div>
     </div>

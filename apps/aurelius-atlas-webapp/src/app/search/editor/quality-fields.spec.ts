@@ -198,21 +198,21 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         kindsRequest.flush(KINDS);
         fixture.detectChanges();
 
-        // The kind Select carries the resource's order, each row labelled by
-        // its EDT-31 human name — the raw engine name never shows; the
-        // shared fields stand above it (EDT-27).
+        // The kind Select orders its rows by the EDT-31 human label, not the
+        // resource's order — the raw engine name never shows (an unmapped
+        // kind sorts by its raw name); the shared fields stand above (EDT-27).
         const kindOptions = [
             ...((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLSelectElement>(
                 ".aurelius-quality-kind select",
             )[0]?.options ?? []),
         ].map((option) => option.textContent?.trim());
         expect(kindOptions.slice(1)).toEqual([
-            "Values from a set",
-            "Not empty",
             "Convertible type",
-            "Within a range",
             "MYSTERY_CHECK", // EDT-31's fallback: a name the catalogues lack
+            "Not empty",
             "Row filled",
+            "Values from a set",
+            "Within a range",
         ]);
         expect((fixture.nativeElement as HTMLElement).querySelector("#editor-name")).toBeTruthy();
         expect((fixture.nativeElement as HTMLElement).querySelector("#editor-ruleDescription")).toBeTruthy();
@@ -352,7 +352,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         typeInto(fixture, "#editor-name", "total_not_null");
         typeInto(fixture, "#editor-ruleDescription", "The field must carry a value.");
         typeInto(fixture, "#editor-dqcolumn", "total");
-        typeInto(fixture, "#editor-threshold", "0.9");
+        typeInto(fixture, "#editor-threshold", "90");
 
         // The full minimal body (EDT-27): the shared fields, active,
         // threshold, the kind, and its one parameter. `qualifiedName` and
@@ -385,11 +385,15 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         typeInto(fixture, "#editor-dqcolumn", "total");
 
         expect(host.child().draftAttributes()["threshold"]).toBe(1.0);
-        // EDT-32: the empty number rests the slider at the same 1.0.
+        // EDT-32: the empty threshold rests the slider at the engine's 1.0,
+        // and the percentage box names that default rather than sitting empty.
         expect(sliderValue(fixture)).toBe("1");
+        expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>("#editor-threshold")?.value).toBe(
+            "100",
+        );
     });
 
-    it("a slider move fills the number and a typed number moves the slider (EDT-32)", () => {
+    it("a slider move fills the percent box and a typed percent moves the slider (EDT-32)", () => {
         const { fixture, host } = setupCreate();
         arrive(fixture);
 
@@ -397,21 +401,31 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         const slider = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
             "#editor-threshold-slider",
         )!;
+        const box = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>("#editor-threshold")!;
         expect(slider.getAttribute("min")).toBe("0");
         expect(slider.getAttribute("max")).toBe("1");
 
-        // Dragging the slider fills the number (one value, both move).
+        // Dragging the slider fills the box with the same threshold, as a
+        // percentage (one value, both move; the stored value stays the ratio).
         slider.value = "0.75";
         slider.dispatchEvent(new Event("input"));
         fixture.detectChanges();
-        expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>("#editor-threshold")?.value).toBe(
-            "0.75",
-        );
+        expect(box.value).toBe("75");
 
-        // Typing the number moves the slider.
-        typeInto(fixture, "#editor-threshold", "0.9");
+        // Typing a percentage moves the slider and stores the ratio.
+        typeInto(fixture, "#editor-threshold", "90");
         expect(sliderValue(fixture)).toBe("0.9");
         expect(host.child().draftAttributes()["threshold"]).toBe(0.9);
+
+        // A percentage outside the served bounds stores the nearer bound
+        // (the pair's shared clamp), and leaving the field shows it.
+        typeInto(fixture, "#editor-threshold", "150");
+        expect(host.child().draftAttributes()["threshold"]).toBe(1);
+        typeInto(fixture, "#editor-threshold", "-5");
+        expect(host.child().draftAttributes()["threshold"]).toBe(0);
+        box.dispatchEvent(new Event("blur"));
+        fixture.detectChanges();
+        expect(box.value).toBe("0");
     });
 
     it("active defaults checked on create and seeds from the entity on edit (EDT-27, EDT-29)", () => {
@@ -452,7 +466,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         expect(compiled.querySelector<HTMLInputElement>("#editor-ruleDescription")?.value).toBe(
             "The field must carry a value.",
         );
-        expect(compiled.querySelector<HTMLInputElement>("#editor-threshold")?.value).toBe("0.95");
+        expect(compiled.querySelector<HTMLInputElement>("#editor-threshold")?.value).toBe("95");
         expect(compiled.querySelector<HTMLInputElement>(".aurelius-quality-active input")?.checked).toBe(true);
     });
 

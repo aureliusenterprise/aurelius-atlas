@@ -123,7 +123,10 @@ needs a sweep, that is a scanner-side report (a later increment), not an editor 
 names and copy in the webapp's two catalogues (EDT-31), keyed by the engine's name through
 static `$localize` maps in the quality form. The kinds resource (QRE-01) still carries the
 engine's names only, and so do the stored attributes and the validate body. A kind the
-catalogue does not name falls back to its raw name with no description line.
+catalogue does not name falls back to its raw name with no description line. The kind
+picker orders its rows by the localized label (`localeCompare`), not the resource's order:
+the engine's names are storage-semantic, and a picker a person reads is a word list; the
+fallback raw name sorts among the human ones by its own letters.
 
 **Reason.** The names are UI copy, and the webapp is where copy lives and gets translated —
 the two catalogues already carry every other label on this screen, in both locales. Serving
@@ -152,18 +155,21 @@ tested (EDT-31) so the unmapped case is a known state, not a crash.
 - **Date:** 2026-11-12
 - **Supersedes:** none
 
-**Decision.** The threshold control is an HTML range input beside a number input, side by
-side (EDT-32). Both take their bounds from the served `thresholdMin`/`thresholdMax` (QRE-01),
-step 0.05; one value backs both, editing either moves the other. An empty number rests the
-slider at the engine's default (1.0) without writing the value. The pair sits in the form's
-field rhythm like any other field.
+**Decision.** The threshold control is an HTML range input beside a percentage field, side by side
+(EDT-32). The slider takes its bounds from the served `thresholdMin`/`thresholdMax` (QRE-01), step
+0.05; the field shows the current threshold as a percentage with a % sign, while the stored value
+stays the engine's 0..1 ratio. An untouched or cleared field shows the engine's default as 100, so
+the box names the live percentage rather than sitting empty. A typed percentage outside the served
+bounds stores the nearer bound — the same clamp the native slider applies to drags — and the field
+shows that bound once it is left. One value backs both, editing either moves the other. The pair
+sits in the form's field rhythm like any other field.
 
 **Reason.** A threshold is a ratio a person reasons about as a position ("nearly all rows"),
 and a slider answers that; but exact values (0.97) are typed, not dragged, so the number
 field stays first-class. The native pair needs no library and holds the served bounds, so a
-server that widens the range widens both controls with no webapp change. Resting the slider
-at 1.0 on an empty number keeps EDT-27's rule (empty means the engine's default) visible
-without storing a value the author never set.
+server that widens the range widens both controls with no webapp change. Resting the pair at
+the engine's default on an empty value keeps EDT-27's rule (empty means the engine's default)
+visible, in the unit a person reads: 100%.
 
 **Alternatives.**
 

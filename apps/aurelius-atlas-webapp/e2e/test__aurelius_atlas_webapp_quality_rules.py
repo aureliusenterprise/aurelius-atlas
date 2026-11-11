@@ -75,6 +75,28 @@ def _pick_field(authenticated: Page, field_name: str) -> None:
     expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
 
 
+def _drive_threshold_pair(authenticated: Page, rest: str) -> None:
+    """Drive the EDT-32 threshold pair from its resting value `rest`.
+
+    The box names the current percent; typing moves the slider; a percent
+    outside the served bounds stores the nearer bound, shown once the field
+    is left (the pair's shared clamp); dragging the slider fills the box with
+    the same threshold as a percent. Ends at 0.75.
+    """
+    expect(authenticated.locator("#editor-threshold")).to_have_value(rest)
+    authenticated.locator("#editor-threshold").fill("90")
+    expect(authenticated.locator("#editor-threshold-slider")).to_have_value("0.9")
+    authenticated.locator("#editor-threshold").fill("150")
+    authenticated.locator("#editor-threshold").blur()
+    expect(authenticated.locator("#editor-threshold")).to_have_value("100")
+    authenticated.locator("#editor-threshold").fill("-5")
+    authenticated.locator("#editor-threshold").blur()
+    expect(authenticated.locator("#editor-threshold")).to_have_value("0")
+    authenticated.locator("#editor-threshold").fill("90")
+    authenticated.locator("#editor-threshold-slider").fill("0.75")
+    expect(authenticated.locator("#editor-threshold")).to_have_value("75")
+
+
 @pytest.mark.covers(rules=["EDT-25", "EDT-26", "EDT-28", "EDT-30", "EDT-31", "EDT-32", "DET-35", "DET-38"])
 def test__the_generic_door_creates_a_rule(
     authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]
@@ -127,12 +149,9 @@ def test__the_generic_door_creates_a_rule(
         authenticated.locator("#editor-name").fill(rule_name)
         authenticated.locator("#editor-dqcolumn").fill("total")
 
-        # EDT-32: the threshold pair, one value. Typing the number moves the
-        # slider; dragging the slider fills the number.
-        authenticated.locator("#editor-threshold").fill("0.9")
-        expect(authenticated.locator("#editor-threshold-slider")).to_have_value("0.9")
-        authenticated.locator("#editor-threshold-slider").fill("0.75")
-        expect(authenticated.locator("#editor-threshold")).to_have_value("0.75")
+        # EDT-32: the threshold pair, one value — driven from the default 100
+        # (typing, clamping, dragging) and left at 0.75.
+        _drive_threshold_pair(authenticated, "100")
 
         # EDT-13: the `fields` picker takes the seeded field by hand.
         _pick_field(authenticated, f"zz{run}field")
@@ -265,7 +284,7 @@ def test__the_editor_edits_a_stored_rule(
         expect(authenticated.locator("#editor-name")).to_have_value(rule_name)
         expect(authenticated.locator(".aurelius-quality-dimension-value")).to_have_text("Completeness")
         expect(authenticated.locator("#editor-dqcolumn")).to_have_value("total")
-        expect(authenticated.locator("#editor-threshold")).to_have_value(re.compile(r"^1(\.0)?$"))
+        expect(authenticated.locator("#editor-threshold")).to_have_value("100")
         expect(authenticated.locator("#editor-threshold-slider")).to_have_value("1")
         active = authenticated.locator(".aurelius-quality-active input")
         expect(active).to_be_checked()
@@ -275,7 +294,13 @@ def test__the_editor_edits_a_stored_rule(
         # exactly what the form said.
         authenticated.locator("#editor-dqcolumn").fill("quantity")
         authenticated.locator("#editor-threshold-slider").fill("0.5")
-        expect(authenticated.locator("#editor-threshold")).to_have_value("0.5")
+        expect(authenticated.locator("#editor-threshold")).to_have_value("50")
+        # EDT-32's clamp again on the edit side: an over-bound percent rests
+        # at the bound, then the slider brings the pair back to 0.5.
+        authenticated.locator("#editor-threshold").fill("900")
+        authenticated.locator("#editor-threshold").blur()
+        expect(authenticated.locator("#editor-threshold")).to_have_value("100")
+        authenticated.locator("#editor-threshold-slider").fill("0.5")
         active.uncheck()
         drawer = authenticated.locator(".aurelius-drawer")
         with authenticated.expect_response(lambda r: _VALIDATE_URL in r.url) as checked:

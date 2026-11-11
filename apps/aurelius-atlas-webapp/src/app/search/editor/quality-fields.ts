@@ -191,6 +191,12 @@ export class QualityFields {
      * `values` or `columns`, never both). */
     protected readonly chipText = signal("");
 
+    /** The percentage field's raw typed text (EDT-32), kept beside the
+     * ratio so a half-typed value ("0", "9.") survives the next redraw.
+     * The slider and the seed clear it: then the field shows the current
+     * threshold read as a percentage. */
+    private readonly thresholdBox = signal("");
+
     /** The entity guid the values were seeded from (the seed runs once). */
     private seededFrom: string | null = null;
 
@@ -234,6 +240,7 @@ export class QualityFields {
                 }
             }
             const threshold = attributes["threshold"];
+            this.thresholdBox.set("");
             this.values.set({
                 name: typeof attributes["name"] === "string" ? (attributes["name"] as string) : "",
                 ruleDescription:
@@ -246,14 +253,17 @@ export class QualityFields {
         });
     }
 
-    /** The kind rows (EDT-25, EDT-31): the resource's order, each labelled
-     * by its human name — the raw engine name is never shown. Rebuilt per
-     * answer; the Select matches its value by identity. */
+    /** The kind rows (EDT-25, EDT-31): each labelled by its human name —
+     * the raw engine name is never shown — and ordered by that label, so
+     * the picker reads as a word list rather than the resource's internal
+     * order. Rebuilt per answer; the Select matches its value by identity. */
     protected readonly kindRows = computed<Row[]>(() =>
-        (this.vocabulary()?.kinds ?? []).map((kind) => ({
-            name: kind.name,
-            label: KIND_NAMES[kind.name] ?? kind.name,
-        })),
+        (this.vocabulary()?.kinds ?? [])
+            .map((kind) => ({
+                name: kind.name,
+                label: KIND_NAMES[kind.name] ?? kind.name,
+            }))
+            .sort((a, b) => a.label.localeCompare(b.label)),
     );
 
     /** The chosen kind's description line (EDT-31): shown between the kind
@@ -322,6 +332,22 @@ export class QualityFields {
         const value = Number.isNaN(parsed) ? 1.0 : parsed;
 
         return Math.min(Math.max(value, this.thresholdMin()), this.thresholdMax());
+    });
+
+    /** The percentage field's text (EDT-32): the typed text while it holds
+     * one, else the current threshold read as a percentage — an untouched
+     * or cleared field shows the resting default (EDT-27's empty rule) as
+     * 100, so the box names the live percentage and never sits empty. */
+    protected readonly thresholdPercentValue = computed(() => {
+        const typed = this.thresholdBox();
+        if (typed !== "") {
+            return typed;
+        }
+        const text = this.values().threshold.trim();
+        const parsed = text === "" ? Number.NaN : Number(text);
+        const ratio = Number.isNaN(parsed) ? 1.0 : parsed;
+
+        return String(Math.round(ratio * 10000) / 100);
     });
 
     /** Whether the kind is chosen (a required half of EDT-07's rule here). */
@@ -436,11 +462,39 @@ export class QualityFields {
         this.touch((current) => ({ ...current, active: checked }));
     }
 
-    /** The threshold field's text (EDT-27: 0..1, empty is the engine's 1.0).
-     * The slider and the number field both ride it (EDT-32: one value, both
-     * move). */
+    /** The slider's move (EDT-32): the dragged ratio becomes the value and
+     * the percentage field leaves its typed text to show it (one value,
+     * both move). */
     protected thresholdChanged(text: string): void {
+        this.thresholdBox.set("");
         this.touch((current) => ({ ...current, threshold: text }));
+    }
+
+    /** The percentage field's text (EDT-32): kept as typed for the field,
+     * stored as the engine's 0..1 ratio inside the served bounds (EDT-27:
+     * empty is the engine's default 1.0). A percentage outside them stores
+     * the nearer bound — the slider clamps natively to the same pair. */
+    protected thresholdPercentChanged(text: string): void {
+        this.thresholdBox.set(text);
+        const trimmed = text.trim();
+        const parsed = trimmed === "" ? Number.NaN : Number(trimmed);
+        const ratio = Number.isNaN(parsed) ? "" : String(this.clampRatio(parsed / 100));
+        this.touch((current) => ({ ...current, threshold: ratio }));
+    }
+
+    /** Leaving the percentage field (EDT-32): the box drops its typed text
+     * and re-renders the live threshold as a clean percentage — which also
+     * shows a clamped value as the bound it was clamped to (a typed "150"
+     * rests as "100"). A half-typed or unreadable text already rests the
+     * draft at the engine's default. */
+    protected thresholdBoxBlurred(): void {
+        this.thresholdBox.set("");
+    }
+
+    /** Pull a ratio into the served `thresholdMin`/`thresholdMax` (EDT-32,
+     * QRE-01): the one clamp both halves of the pair share. */
+    private clampRatio(value: number): number {
+        return Math.min(Math.max(value, this.thresholdMin()), this.thresholdMax());
     }
 
     /** A text/number parameter field's text (EDT-26). */
