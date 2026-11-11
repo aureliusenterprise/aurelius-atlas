@@ -684,12 +684,6 @@
                     "displayName": "Typenaam"
                 }
             },
-            "similar": {
-                "title": "Vergelijkbare entiteiten",
-                "notYet": "Deze entiteit is nog niet geanalyseerd. Probeer het zo meteen opnieuw.",
-                "none": "Geen vergelijkbare entiteiten gevonden.",
-                "failed": "Vergelijkbare entiteiten konden niet worden geladen."
-            },
             "rule": {
                 "description": "Beschrijving",
                 "fields": "Datavelden",

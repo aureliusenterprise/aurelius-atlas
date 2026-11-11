@@ -115,7 +115,7 @@ export class EntityEditor {
     private readonly qualityRule = inject(QualityRuleService);
 
     /** The quality form, once the quality-mode branch renders it (EDT-25,
-     * DD-475). The drawer owns the Save button, so it reads the child's
+     * DD-477). The drawer owns the Save button, so it reads the child's
      * validity and draft body and hands it the engine's verdict line. */
     private readonly qualityForm = viewChild(QualityFields);
 
@@ -202,10 +202,10 @@ export class EntityEditor {
     protected readonly relationshipValues = signal<ReadonlyMap<string, readonly RelationshipPick[]>>(new Map());
 
     /**
-     * Whether the form is the quality rule form (EDT-25, DD-475): the type is
+     * Whether the form is the quality rule form (EDT-25, DD-477): the type is
      * the rule type and the rule is a vocabulary one — create mode always,
      * edit mode when the entity names a `dqcheckkind`. A legacy rule without
-     * the kind stays in the generic form (EDT-29, DD-477): the quality form
+     * the kind stays in the generic form (EDT-29, DD-479): the quality form
      * offers only kinds, and converting one is a human act, not a rewrite.
      */
     protected readonly qualityMode = computed(
@@ -863,7 +863,7 @@ export class EntityEditor {
      * Save (EDT-06/07/16): invalid (a control, or a required picker with no
      * chip, EDT-17) bails marked-touched; valid merges the attributes and the
      * pickers' full lists onto the entity, and saves. The quality branch
-     * (EDT-28, DD-475) answers first: the draft rides the validate endpoint
+     * (EDT-28, DD-477) answers first: the draft rides the validate endpoint
      * before the POST, and the POST body is the minimal quality body (EDT-27).
      */
     protected save(): void {
@@ -896,7 +896,7 @@ export class EntityEditor {
     }
 
     /**
-     * The quality-mode Save (EDT-28, DD-474/DD-475): the draft's stored-rule
+     * The quality-mode Save (EDT-28, DD-476/DD-477): the draft's stored-rule
      * attributes ride 12.5's validate call first — a rule never saves
      * unchecked. `{valid: true}` continues with the EDT-06 save over the
      * minimal body (EDT-27) plus the pickers rendered by quality mode (the

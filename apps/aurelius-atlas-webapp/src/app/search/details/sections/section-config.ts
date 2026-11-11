@@ -295,7 +295,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             { label: $localize`:@@search.details.field.properties:Properties`, anchor: "properties-details" },
         ],
     },
-    // DET-38 (7.27, DD-480): the rule's own page. A rule is defined by the
+    // DET-38 (7.27, DD-482): the rule's own page. A rule is defined by the
     // fields it checks, so its page lists them the way every other page
     // lists what it relates to — the rule→field end the editor writes
     // (EDT-25's picker) seeds the box, and the field's rules box (DET-35)

@@ -3,6 +3,7 @@ import { DarkModeService, Mode } from "aurelius-atlas-ui";
 
 import { LocaleNavigation } from "./locale-navigation.service";
 import { PageSizeService } from "./page-size.service";
+import { SearchMode, SearchModeService } from "./search-mode.service";
 import { TelemetryService } from "./telemetry.service";
 import { TimezoneService } from "./timezone.service";
 
@@ -27,6 +28,8 @@ export class SettingsService {
 
     private readonly telemetryOwner = inject(TelemetryService);
 
+    private readonly searchModeOwner = inject(SearchModeService);
+
     /** The language owner: active locale, locales, locale hrefs (SPL-06). */
     readonly locale = inject(LocaleNavigation);
 
@@ -41,6 +44,9 @@ export class SettingsService {
 
     /** Whether telemetry is on (SPL-11). Read-only — writing goes through {@link setTelemetry}. */
     readonly telemetry = computed(() => this.telemetryOwner.enabled());
+
+    /** How the search field searches (SBX-01, DD-473). */
+    readonly searchMode = computed(() => this.searchModeOwner.mode());
 
     /**
      * Choose the theme (the Appearance radio), through its owner —
@@ -76,5 +82,13 @@ export class SettingsService {
      */
     setTelemetry(enabled: boolean): void {
         this.telemetryOwner.setEnabled(enabled);
+    }
+
+    /**
+     * Store how the search field searches (SBX-01, SBX-02).
+     * @param mode words, meaning or both
+     */
+    setSearchMode(mode: SearchMode): void {
+        this.searchModeOwner.set(mode);
     }
 }

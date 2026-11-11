@@ -7,7 +7,7 @@ entry that supersedes the old one.
 
 ## Entries
 
-### DD-473. The rule vocabulary travels to the browser as a server resource
+### DD-475. The rule vocabulary travels to the browser as a server resource
 
 - **Status:** Proposed
 - **Increment:** 12.5
@@ -39,7 +39,7 @@ and the unit test compares the answer with the map it renders.
 endpoint answers the vocabulary of the deployed server build, so a webapp and a server always
 come from one release, as they already do.
 
-### DD-474. Validation of a rule shape rides the engine's parser and answers 200
+### DD-476. Validation of a rule shape rides the engine's parser and answers 200
 
 - **Status:** Proposed
 - **Increment:** 12.5
@@ -65,7 +65,7 @@ error, and keeps the retries (7.26, APC-13) off a body this endpoint does not st
   code for "a rule of a shape we do not keep" (SRV-04's codes are type-system codes). The
   webapp would special-case one 400 code out of its alert flow.
 - Validation in the browser only: the form would duplicate the engine's rules and drift from it,
-  the failure DD-473 exists to close.
+  the failure DD-475 exists to close.
 
 **Consequences.** The endpoint's answer is this increment's own JSON contract (like DD-440's
 Aurelius codes). It is a checker, never a writer: a saved rule still rides EWR with

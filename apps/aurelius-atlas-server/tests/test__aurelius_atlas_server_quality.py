@@ -47,7 +47,7 @@ BROKEN_RULE: dict[str, Any] = {
 
 @pytest.mark.covers(f"{R}.quality_kinds", rules=["QRE-01"])
 async def test__the_kinds_answer_the_vocabulary_the_engine_holds(client: httpx.AsyncClient) -> None:
-    """Every ``KINDS`` entry, sorted, with the castable types and the threshold bounds (DD-473)."""
+    """Every ``KINDS`` entry, sorted, with the castable types and the threshold bounds (DD-475)."""
     response = await client.get(KINDS_PATH)
 
     assert response.status_code == 200
@@ -68,7 +68,7 @@ async def test__the_kinds_answer_the_vocabulary_the_engine_holds(client: httpx.A
 
 @pytest.mark.covers(f"{R}.validate_quality_rule", rules=["QRE-02"])
 async def test__a_rule_of_the_vocabulary_validates_with_its_kind_and_dimension(client: httpx.AsyncClient) -> None:
-    """The engine's parse decides: the answer names the kind and dimension it read (DD-474)."""
+    """The engine's parse decides: the answer names the kind and dimension it read (DD-476)."""
     response = await client.post(VALIDATE_PATH, json=VALID_RULE)
 
     assert response.status_code == 200
@@ -93,7 +93,7 @@ async def test__an_unreadable_rule_answers_the_engine_reason_as_200(client: http
     body = response.json()
     assert body["valid"] is False
     assert "COLUMN_IS_NICE" in body["reason"]
-    with pytest.raises(QualityRuleError, match="COLUMN_IS_NICE") as raised:  # the same text (DD-474)
+    with pytest.raises(QualityRuleError, match="COLUMN_IS_NICE") as raised:  # the same text (DD-476)
         rule_from_atlas_attributes(BROKEN_RULE)
     assert body["reason"] == str(raised.value)
 

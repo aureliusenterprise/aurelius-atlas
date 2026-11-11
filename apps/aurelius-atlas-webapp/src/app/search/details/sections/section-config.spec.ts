@@ -77,7 +77,7 @@ describe("Section config (DET-16)", () => {
             ["related-entities", ["childEntity"]],
         ]);
         expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]]]);
-        // DET-38 (7.27, DD-480): the rule's own page — the `fields` end the
+        // DET-38 (7.27, DD-482): the rule's own page — the `fields` end the
         // editor writes seeds its Fields box.
         expect(shape("m4i_data_quality")).toEqual([["related-fields", ["fields"]]]);
         // DET-35 (7.24, DD-444): the field's own `dataQuality` end seeds the
@@ -185,7 +185,7 @@ describe("Section config (DET-16)", () => {
             "properties-details",
         ]);
 
-        // DET-38 (7.27, DD-480): the rule page's Fields stat and nav entry,
+        // DET-38 (7.27, DD-482): the rule page's Fields stat and nav entry,
         // after the description and before the properties.
         expect(labels("m4i_data_quality")).toEqual(["related-fields", "properties-details"]);
         expect(nav("m4i_data_quality")).toEqual(["description-details", "related-fields", "properties-details"]);

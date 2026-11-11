@@ -2,11 +2,11 @@
 
 - **Status:** in progress
 - **Pull request:** — (this increment's PR)
-- **Records:** adds EDT-25..32, DET-38, and DD-475..481 (here), and DV-148 to
+- **Records:** adds EDT-25..32, DET-38, and DD-477..483 (here), and DV-148 to
   [deviations](../../../../docs/architecture/conversion/deviations.md) in the implementation
   PR; relies on EDT-01..12/DD-322..337 (the drawer), EDT-13..17/DD-338..341 (the relationship
   picker), DET-35/36/DD-444 (the field's rules box), APC/DD-140 (data-access HTTP),
-  DD-324/DD-330 (the write gate and the create route), QRE-01..04/DD-473/474 (12.5, the
+  DD-324/DD-330 (the write gate and the create route), QRE-01..04/DD-475/476 (12.5, the
   endpoints this rides), UIC-36..39 (7.24's dumb quality components, untouched here), and
   ADR 053/056.
 
@@ -27,18 +27,18 @@ Delivered here:
 - the drawer's **quality mode** (EDT-25..29): when the editor's type is `m4i_data_quality`, the
   form is the vocabulary, not the attribute list. A kind picker fed by 12.5's kinds resource
   drives parameter controls for that kind only, the dimension shows as the kind's own, and the
-  save validates through 12.5's validate endpoint before the entity POST (DD-475, DD-476).
+  save validates through 12.5's validate endpoint before the entity POST (DD-477, DD-478).
 - the **create and edit doors**, unchanged from the drawer's own (EDT-30's shape): the generic
   create `+` with `Data Quality` selectable in its type picker is the create door, and a rule's
   details page opens the same drawer to edit through the pencil, as every DET type does. A rule
   is an entity like any other, and it enters the editor the same way.
-- the rule form's **human vocabulary** (EDT-31, DD-478): the kind picker labels each kind with
+- the rule form's **human vocabulary** (EDT-31, DD-480): the kind picker labels each kind with
   its localized human name, picking one reveals the kind's one-line description above the
   dimension, and the dimension shows its localized name. The engine's names stay the stored
   values.
-- the **threshold slider** (EDT-32, DD-479): the threshold control is a range slider beside an
+- the **threshold slider** (EDT-32, DD-481): the threshold control is a range slider beside an
   editable number field, both 0..1 from the served bounds, editing either moves both.
-- the **rule's own details layout** (DET-38, DD-480): the `m4i_data_quality` layout row gives a
+- the **rule's own details layout** (DET-38, DD-482): the `m4i_data_quality` layout row gives a
   rule page a Fields box seeded from the rule's `fields` end, its stat and nav entry with it,
   like every other layout's relationship boxes.
 - the `QualityRuleService` client in `aurelius-atlas-data-access` for the two 12.5 routes (the
@@ -52,7 +52,7 @@ Explicitly not delivered here, with the increment that will:
 | Deleting a rule                               | 7.9               | The delete flow is 7.9's, for every type                          |
 | Editing `m4i_gov_data_quality` rules          | later             | The validate-entity backend is still the mock (DV-67)             |
 | Scores on the form (the rule's current score) | 7.25              | The scores surface is 7.25's (DD-369)                             |
-| A box-scoped create `+` on the rules box      | not planned       | The generic create door is the door; a rule is an entity (DD-481) |
+| A box-scoped create `+` on the rules box      | not planned       | The generic create door is the door; a rule is an entity (DD-483) |
 
 ## Semantics
 
@@ -64,12 +64,12 @@ contract are 12.5's (QRE-01/02) and 12.1's (DQ-01/07), cited here, never restate
 | EDT-25 | The drawer renders the quality form in place of the generic attribute form when its type is `m4i_data_quality` and the rule is a vocabulary one (EDT-29's seam): create mode always, edit mode when the entity names a `dqcheckkind`. The form is a kind Select over 12.5's `kinds` (each labelled by its EDT-31 human name, ordered as the answer orders them), the kind's dimension shown as read-only text (EDT-31's name), and one control per required and optional parameter of the chosen kind, in the order the resource lists them. Before the create mode's first pick the form shows the kind Select over the shared fields only. Kinds load once per drawer (the service caches); while they load the form shows the drawer's loading line. |
 | EDT-26 | A parameter control rides its stored attribute (patch `001-data_quality_vocabulary`): `column`→`dqcolumn`, `pattern`→`dqpattern`, `values`→`dqvalues` (chips), `columns`/`otherColumn`/`type`→ their `dq` names, `min`/`max`/`maxAgeHours`→ number, `minColumns`→ whole number. The editor writes no `dq` attribute the chosen kind does not name; a kind switch clears the parameters of the old kind (the same clear EDT-04's type switch does). The `type` control is a Select over the resource's `castableTypes`.                                                                                                                                                                                                                                  |
 | EDT-27 | The quality form carries the shared fields (name, description as EDT-03/EDT-11 has them), the `active` checkbox (the stored `active`, seeded from the entity, default checked on create), and the `threshold` control (EDT-32's slider-and-number pair, 0..1, empty means the engine's default 1.0). The form keeps the rule's other stored attributes out of the save body: quality-mode saves send name, description, `active`, `threshold`, the kind's `dq` parameters, and `dqcheckkind`.                                                                                                                                                                                                                                                           |
-| EDT-28 | The quality-mode Save calls 12.5's validate with the draft's stored-rule shape first (DD-474). `{valid: true}` continues with the EDT-06 save unchanged (the POST, the classifications diff, the landing on details). `{valid: false}` renders the `reason` as the drawer's error line (EDT-07's notification place) and does not POST; a later edit clears the line. A validate call that fails on transport or a non-2xx answers the same line with the generic "could not check" text — a rule never saves unchecked.                                                                                                                                                                                                                                |
-| EDT-29 | The quality form seeds from the entity like EDT-02 does: an existing rule opens with its kind, its parameters under the controls EDT-26 names, its `active` and `threshold`. A legacy rule (no `dqcheckkind`, the DQ-07 pair) opens in the generic form: the quality form offers only kinds, and the pair map is the engine's (DD-477). Its Save rides EDT-23's governance banner and EWR as before, unchecked — a legacy rule stays readable by the scanner through DQ-07, and its re-authoring into the vocabulary is a human choice into the kind form, not a forced rewrite. The `expression` attribute of such a rule passes through the save untouched (EDT-27's body rule applies to quality-mode saves only).                                   |
+| EDT-28 | The quality-mode Save calls 12.5's validate with the draft's stored-rule shape first (DD-476). `{valid: true}` continues with the EDT-06 save unchanged (the POST, the classifications diff, the landing on details). `{valid: false}` renders the `reason` as the drawer's error line (EDT-07's notification place) and does not POST; a later edit clears the line. A validate call that fails on transport or a non-2xx answers the same line with the generic "could not check" text — a rule never saves unchecked.                                                                                                                                                                                                                                |
+| EDT-29 | The quality form seeds from the entity like EDT-02 does: an existing rule opens with its kind, its parameters under the controls EDT-26 names, its `active` and `threshold`. A legacy rule (no `dqcheckkind`, the DQ-07 pair) opens in the generic form: the quality form offers only kinds, and the pair map is the engine's (DD-479). Its Save rides EDT-23's governance banner and EWR as before, unchecked — a legacy rule stays readable by the scanner through DQ-07, and its re-authoring into the vocabulary is a human choice into the kind form, not a forced rewrite. The `expression` attribute of such a rule passes through the save untouched (EDT-27's body rule applies to quality-mode saves only).                                   |
 | EDT-30 | `QualityRuleService.kinds()` answers the kinds resource and `validateRule(attributes)` the validate answer (QRE-01/02's shapes), through `API_BASE_URL` and the bearer interceptor (APC). The service is the only caller of the two routes; the drawer never fetches them itself. The kinds answer is cached in the service after its first success (EDT-25's "once").                                                                                                                                                                                                                                                                                                                                                                                  |
-| EDT-31 | The kind picker labels each kind with its localized human name (the catalogue's, the raw engine name never shown), and picking one shows the kind's localized one-line description as read-only text between the kind and the dimension; the dimension shows its localized name too. The stored value and the validate body keep the engine's names, and a kind the catalogue does not name falls back to its raw name with no description line. The human names and descriptions are webapp copy in both catalogues, not vocabulary served by the server (DD-478).                                                                                                                                                                                     |
-| EDT-32 | The threshold is a range slider beside a number field, side by side (DD-479): both span the served `thresholdMin`/`thresholdMax` at step 0.05, both hold one value, editing either moves the other, and the pair keeps the form's between-field rhythm like every other field. An empty number field rests the slider at the engine's default 1.0.                                                                                                                                                                                                                                                                                                                                                                                                      |
-| DET-38 | The `m4i_data_quality` layout row (DD-480) gives a rule's details page a Fields card section seeded from its `fields` relationship end (`#related-fields`, the same seed idiom as every DET-17 box), with its stats-bar count and side-nav entry after the description and before the properties. The rule page keeps the default description box and properties accordion.                                                                                                                                                                                                                                                                                                                                                                             |
+| EDT-31 | The kind picker labels each kind with its localized human name (the catalogue's, the raw engine name never shown), and picking one shows the kind's localized one-line description as read-only text between the kind and the dimension; the dimension shows its localized name too. The stored value and the validate body keep the engine's names, and a kind the catalogue does not name falls back to its raw name with no description line. The human names and descriptions are webapp copy in both catalogues, not vocabulary served by the server (DD-480).                                                                                                                                                                                     |
+| EDT-32 | The threshold is a range slider beside a number field, side by side (DD-481): both span the served `thresholdMin`/`thresholdMax` at step 0.05, both hold one value, editing either moves the other, and the pair keeps the form's between-field rhythm like every other field. An empty number field rests the slider at the engine's default 1.0.                                                                                                                                                                                                                                                                                                                                                                                                      |
+| DET-38 | The `m4i_data_quality` layout row (DD-482) gives a rule's details page a Fields card section seeded from its `fields` relationship end (`#related-fields`, the same seed idiom as every DET-17 box), with its stats-bar count and side-nav entry after the description and before the properties. The rule page keeps the default description box and properties accordion.                                                                                                                                                                                                                                                                                                                                                                             |
 
 ## Aurelius origin
 
@@ -86,7 +86,7 @@ cited by path:
   control is gone with DV-146's closed vocabulary.
 - `apps/atlas/proxy.conf.json` and the legacy create door — kept as it is: the generic create
   `+` and its type picker, with `Data Quality` as one of the selectable types (review call on
-  this PR, DD-481).
+  this PR, DD-483).
 
 ## Deviations
 
@@ -95,7 +95,7 @@ Against Apache Atlas: none, Atlas has no rule editor. Against the Aurelius produ
 
 - **DV-148**: the legacy rule editor is a hand-written form per quality type whose fields store
   free text (`ruleType`, a typed dimension, an `expression`). Aurelius Atlas renders the rule
-  form from the engine's vocabulary served by the server (DD-473): a kind picker, the chosen
+  form from the engine's vocabulary served by the server (DD-475): a kind picker, the chosen
   kind's parameters only, the dimension read-only from the kind, and no expression field
   (DV-146). The legacy's dictionary keys for the shared fields (`search.components.editor.govQuality.*`)
   carry over where a field survives.

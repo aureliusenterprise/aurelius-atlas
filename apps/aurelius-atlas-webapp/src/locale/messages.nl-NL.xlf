@@ -2752,26 +2752,6 @@ The technical data governance model consists of the following types of entities:
         <target>Eigenschappen</target>
         <note priority="1" from="description">Aurelius dictionary key: search.details.rule.properties</note>
       </trans-unit>
-      <trans-unit id="search.details.similar.failed" datatype="html">
-        <source>Similar entities could not be loaded.</source>
-        <target>Vergelijkbare entiteiten konden niet worden geladen.</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.failed</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.none" datatype="html">
-        <source>No similar entities found.</source>
-        <target>Geen vergelijkbare entiteiten gevonden.</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.none</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.notYet" datatype="html">
-        <source>This entity is not analysed yet. Try again in a moment.</source>
-        <target>Deze entiteit is nog niet geanalyseerd. Probeer het zo meteen opnieuw.</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.notYet</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.title" datatype="html">
-        <source>Similar entities</source>
-        <target>Vergelijkbare entiteiten</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.title</note>
-      </trans-unit>
       <trans-unit id="search.details.system.collections" datatype="html">
         <source>Collections</source>
         <target>Collecties</target>

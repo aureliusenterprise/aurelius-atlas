@@ -7,7 +7,7 @@ entry that supersedes the old one.
 
 ## Entries
 
-### DD-475. The quality form is a mode of the one drawer, not a second editor
+### DD-477. The quality form is a mode of the one drawer, not a second editor
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -44,7 +44,7 @@ the create route carries it (DD-330), the edit read answers it.
 be tested as a pair with the generic one (the spec's Acceptance names both cases in the same
 file).
 
-### DD-476. The form's fields come from the served vocabulary, not the typedefs
+### DD-478. The form's fields come from the served vocabulary, not the typedefs
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -63,22 +63,22 @@ branch draws no control straight from an attribute def.
 `KindSpec`). A form drawn from the typedefs would show all twelve `dq` attributes for every
 kind. The kinds resource names required and optional per kind, so the form can only build a
 shape the engine parses. The service caches because the vocabulary is static per server build
-(DD-473) and every `+` in the app opens the same form.
+(DD-475) and every `+` in the app opens the same form.
 
 **Alternatives.**
 
 - One control per `dq` attribute with a kind-dependent disable: still twelve controls on screen,
-  and the "which ones are live" table lives in the browser — the mirror DD-473 closed.
+  and the "which ones are live" table lives in the browser — the mirror DD-475 closed.
 - The Angular signals-schema path the generic form uses (DD-354): the schema wants a static
   shape, and the quality form's shape changes with the kind, so the branch holds explicit
   `Field`s over a values record — the pattern EDT-15's picker values already use.
 
 **Consequences.** A kind added to the engine appears in the form with no webapp change (the
 parameter names map through EDT-26's table; a name outside it renders as text). The webapp's
-dependency on the server's vocabulary is the same release's (as DD-473's consequence says), so
+dependency on the server's vocabulary is the same release's (as DD-475's consequence says), so
 no version skew needs handling.
 
-### DD-477. A rule saves unchecked only when the quality form does not own it
+### DD-479. A rule saves unchecked only when the quality form does not own it
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -112,7 +112,7 @@ its old pair attributes ride the untouched pass-through, so the engine's parser 
 as a vocabulary rule (the `dqcheckkind` branch wins, `atlas.py`). If the pair population ever
 needs a sweep, that is a scanner-side report (a later increment), not an editor feature.
 
-### DD-478. The human vocabulary copy rides the webapp catalogue
+### DD-480. The human vocabulary copy rides the webapp catalogue
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -128,7 +128,7 @@ catalogue does not name falls back to its raw name with no description line.
 **Reason.** The names are UI copy, and the webapp is where copy lives and gets translated —
 the two catalogues already carry every other label on this screen, in both locales. Serving
 them from the vocabulary would push display strings through an API designed for storage
-semantics (DD-473's own line: the resource answers the engine's shape), and would still
+semantics (DD-475's own line: the resource answers the engine's shape), and would still
 need a second round to translate them, since `$localize` cannot translate a string that only
 exists at runtime. The static maps keyed by kind name are the only shape that keeps the
 translation gate (`i18n-completeness.spec.ts`) honest.
@@ -145,7 +145,7 @@ translation gate (`i18n-completeness.spec.ts`) honest.
 until the catalogues name it — a translation task, not a deployment blocker. The fallback is
 tested (EDT-31) so the unmapped case is a known state, not a crash.
 
-### DD-479. The threshold is a slider beside an editable number
+### DD-481. The threshold is a slider beside an editable number
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -175,7 +175,7 @@ without storing a value the author never set.
 spacing rule needed to reach across the quality component's boundary (the `+` sibling rule
 in the drawer's styles). Storybook and unit tests cover both drag and type paths.
 
-### DD-480. A rule's page is a layout row with a Fields box
+### DD-482. A rule's page is a layout row with a Fields box
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -202,7 +202,7 @@ box behaviour (search, sort, paging, the read gate) for free, and the rule→fie
 editor writes (EDT-26's save body carries `fields`) is the same edge the field page's rules
 box (DET-35) reads from the other side.
 
-### DD-481. Rules enter through the generic doors (DET-37 withdrawn)
+### DD-483. Rules enter through the generic doors (DET-37 withdrawn)
 
 - **Status:** Proposed
 - **Increment:** 7.27

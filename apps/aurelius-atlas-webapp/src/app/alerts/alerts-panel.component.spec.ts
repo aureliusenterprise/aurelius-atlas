@@ -153,6 +153,6 @@ describe("AlertsPanel (ALR-01, ALR-06, ALR-07)", () => {
         // panel flips its state and navigates the outlet away.
         compiled.querySelector(".aurelius-drawer-head .delete")?.dispatchEvent(new MouseEvent("click"));
 
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }], { queryParamsHandling: "preserve" });
     });
 });

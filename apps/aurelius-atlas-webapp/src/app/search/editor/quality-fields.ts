@@ -19,7 +19,7 @@ type ParamKind = "text" | "chips" | "number" | "integer" | "type";
  * The parameter table (EDT-26): the engine's parameter name, the control it
  * rides, and the label the vocabulary patch's attribute definition carries
  * (`001-data_quality_vocabulary.json`). A parameter the table does not name
- * renders as text (DD-476's consequence): a kind added to the engine appears
+ * renders as text (DD-478's consequence): a kind added to the engine appears
  * in the form with no webapp change.
  */
 const PARAMS: Readonly<Record<string, { kind: ParamKind; label: string; stored: string }>> = {
@@ -36,7 +36,7 @@ const PARAMS: Readonly<Record<string, { kind: ParamKind; label: string; stored: 
 };
 
 /**
- * The human name of each check kind (EDT-31, DD-478): webapp copy in both
+ * The human name of each check kind (EDT-31, DD-480): webapp copy in both
  * catalogues, keyed by the engine's name. A kind the table does not name
  * falls back to its raw name (a new engine kind still renders, untranslated).
  * The stored value and the validate body keep the engine's names.
@@ -116,18 +116,18 @@ export function storedCheckKind(entity: AtlasEntity | null): string {
 }
 
 /**
- * The quality rule form (EDT-25..EDT-27/29, DD-475/DD-476): the drawer's
+ * The quality rule form (EDT-25..EDT-27/29, DD-477/DD-478): the drawer's
  * branch for `m4i_data_quality`. It replaces the generic attribute form —
  * the field set would draw all twelve `dq` attributes for every kind and
  * accept a shape the engine rejects (DQS-08). The kind list, the dimension,
  * and the parameter set come from the served vocabulary (QRE-01 through
  * {@link QualityRuleService}, the only caller of the route); the typedefs
- * draw nothing here (DD-476). The editor drawer owns the Save button: this
+ * draw nothing here (DD-478). The editor drawer owns the Save button: this
  * component answers {@link valid} and {@link draftAttributes}, and renders
  * the engine's verdict line the drawer hands it (EDT-28).
  *
  * The values ride one signal record and plain handlers, not the signals
- * schema (DD-476): the field set changes with every kind switch, which a
+ * schema (DD-478): the field set changes with every kind switch, which a
  * static schema cannot express. The Save's required rule (EDT-07's, shared):
  * a name, a kind, and every required parameter of that kind.
  */
@@ -305,7 +305,7 @@ export class QualityFields {
         return DIMENSION_NAMES[dimension] ?? dimension;
     });
 
-    /** The slider's low bound (EDT-32, DD-479): the served
+    /** The slider's low bound (EDT-32, DD-481): the served
      * `thresholdMin` (QRE-01), 0 before the vocabulary loads. */
     protected readonly thresholdMin = computed(() => this.vocabulary()?.thresholdMin ?? 0);
 
@@ -586,7 +586,7 @@ export class QualityFields {
     }
 
     /** The parameter row: the table's entry, or a text row for a parameter
-     * the table never saw (DD-476's consequence: a new kind still renders). */
+     * the table never saw (DD-478's consequence: a new kind still renders). */
     private paramFieldOf(name: string, required: boolean): QualityParamField {
         const known = PARAMS[name];
 

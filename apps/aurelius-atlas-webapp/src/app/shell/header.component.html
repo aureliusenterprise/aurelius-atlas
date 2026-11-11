@@ -37,12 +37,15 @@
              URL, so the locale switch's reload keeps it. RouterLinkActive
              keys `is-active` off the drawer segment, so the gear is lit
              while the panel is open; the link then targets the URL it is
-             on, and the router cancels that same-URL navigation — a no-op. -->
+             on, and the router cancels that same-URL navigation — a no-op.
+             The link keeps the URL's query, so the search shown behind the
+             drawer stays (SBX-04). -->
         <a
             class="navbar-item"
             i18n-aria-label="@@shell.header.settings"
             aria-label="Settings"
             [routerLink]="[{ outlets: { drawer: ['settings'] } }]"
+            queryParamsHandling="preserve"
             routerLinkActive="is-active"
         >
             <span class="icon">
@@ -63,6 +66,7 @@
             i18n-aria-label="@@shell.header.alerts"
             aria-label="Alerts"
             [routerLink]="[{ outlets: { drawer: ['alerts'] } }]"
+            queryParamsHandling="preserve"
             routerLinkActive="is-active"
         >
             <aurelius-atlas-ui-badge [visible]="alerts.hasUnread()" [severity]="alerts.topUnreadSeverity()">

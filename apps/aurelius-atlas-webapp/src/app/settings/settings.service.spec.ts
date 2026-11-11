@@ -8,6 +8,7 @@ import { TestBed } from "@angular/core/testing";
 import { DarkModeService } from "aurelius-atlas-ui";
 
 import { PageSizeService } from "./page-size.service";
+import { SearchModeService } from "./search-mode.service";
 import { SettingsService } from "./settings.service";
 import { TelemetryService } from "./telemetry.service";
 import { TimezoneService } from "./timezone.service";
@@ -66,6 +67,15 @@ describe("SettingsService facade (SPL-10)", () => {
         expect(TestBed.inject(PageSizeService).pageSize()).toBe(20);
     });
 
+    it("setSearchMode drives SearchModeService (SPL-10, SBX-01)", () => {
+        const settings = facade();
+
+        settings.setSearchMode("semantic");
+
+        expect(settings.searchMode()).toBe("semantic");
+        expect(TestBed.inject(SearchModeService).mode()).toBe("semantic");
+    });
+
     it("setTelemetry drives TelemetryService (SPL-10, SPL-11)", () => {
         const settings = facade();
         const telemetry = TestBed.inject(TelemetryService);
@@ -83,10 +93,12 @@ describe("SettingsService facade (SPL-10)", () => {
         settings.setTimezone("Asia/Tokyo");
         settings.setPageSize(50);
         settings.setTelemetry(false);
+        settings.setSearchMode("hybrid");
 
         // Every write landed in an owner's key — the facade adds none.
         expect(Object.keys(localStorage).sort()).toEqual([
             "aurelius-atlas.settings.pageSize",
+            "aurelius-atlas.settings.searchMode",
             "aurelius-atlas.settings.telemetry",
             "aurelius-atlas.settings.timezone",
             "data-theme",

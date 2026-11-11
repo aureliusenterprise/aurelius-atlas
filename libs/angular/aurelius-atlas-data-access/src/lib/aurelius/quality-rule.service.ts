@@ -37,7 +37,7 @@ export type QualityRuleValidation = {
 };
 
 /**
- * The client of Aurelius's rule vocabulary (EDT-30, QRE-01/02, DD-473): the two 12.5
+ * The client of Aurelius's rule vocabulary (EDT-30, QRE-01/02, DD-475): the two 12.5
  * routes under `/aurelius/v1/quality`, behind the same {@link API_BASE_URL} and
  * authentication as every other call (APC). The drawer's quality mode never fetches
  * them itself; this service is the only caller, and it caches the kinds answer after
@@ -70,7 +70,7 @@ export class QualityRuleService {
 
     /**
      * A draft rule's stored attributes through the server's parser (EDT-28, QRE-02,
-     * DD-474). Both answers arrive as 200: `{valid: true}` names the kind and dimension
+     * DD-476). Both answers arrive as 200: `{valid: true}` names the kind and dimension
      * the engine read, `{valid: false}` carries its reason.
      * @param attributes the rule as the store keeps it (the `dq` names, DQ-01)
      * @returns the validate answer

@@ -1,4 +1,4 @@
-"""The rule vocabulary endpoints under ``/api/aurelius/v1/quality`` (QRE-01 to QRE-05, DD-473/474).
+"""The rule vocabulary endpoints under ``/api/aurelius/v1/quality`` (QRE-01 to QRE-05, DD-475/476).
 
 The editor (7.27) renders its rule form from these answers: the kinds resource is the engine's
 vocabulary (12.1's ``KINDS``), and the validate call is the engine's own parser over a stored-rule
@@ -29,7 +29,7 @@ NOT_AN_OBJECT = "The rule to validate must be a JSON object"
 
 @QUALITY.get("/kinds")
 async def quality_kinds() -> AtlasJSONResponse:
-    """The closed rule vocabulary of the deployed engine (QRE-01, DD-473).
+    """The closed rule vocabulary of the deployed engine (QRE-01, DD-475).
 
     One entry per check kind sorted by name, with its dimension, its required and optional
     parameters, and its reason line, beside the castable types and the threshold bounds. The
@@ -57,7 +57,7 @@ async def quality_kinds() -> AtlasJSONResponse:
 
 @QUALITY.post("/rules/validate")
 async def validate_quality_rule(body: Body) -> AtlasJSONResponse:
-    """A stored-rule shape through the engine's parser (QRE-02/03, DD-474).
+    """A stored-rule shape through the engine's parser (QRE-02/03, DD-476).
 
     A rule the vocabulary reads answers ``{valid, kind, dimension}``; one it cannot read answers
     ``{valid, reason}`` with the engine's own text. Both are 200: an unreadable rule is the

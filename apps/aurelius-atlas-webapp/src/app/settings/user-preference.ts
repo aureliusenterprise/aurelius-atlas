@@ -21,6 +21,9 @@ export const PAGE_SIZE_KEY = "aurelius-atlas.settings.pageSize";
 /** The telemetry switch SPL-11 stores. */
 export const TELEMETRY_KEY = "aurelius-atlas.settings.telemetry";
 
+/** The search mode: how the search field searches (SBX-01, DD-473). */
+export const SEARCH_MODE_KEY = "aurelius-atlas.settings.searchMode";
+
 /**
  * Read a stored preference. The bootstrap gate (telemetry, `DATE_PIPE_DEFAULT_OPTIONS`)
  * reads through this before any service exists — `localStorage` is

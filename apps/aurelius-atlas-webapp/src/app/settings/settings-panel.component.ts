@@ -6,6 +6,7 @@ import { Drawer, Mode, Select } from "aurelius-atlas-ui";
 
 import { APP_CONFIG } from "../tokens";
 import { PAGE_SIZES } from "./page-size.service";
+import { SearchMode } from "./search-mode.service";
 import { SettingsService } from "./settings.service";
 
 /** A row of the Appearance select — the ui-lib Select's row shape (DD-164). */
@@ -40,6 +41,16 @@ export class SettingsPanel {
     private readonly router = inject(Router);
 
     protected readonly pageSizes = PAGE_SIZES;
+
+    /** The Search by section's heading (SBX-01). */
+    protected readonly searchModeLabel = $localize`:@@search.mode.label:Search by`;
+
+    /** The Search by buttons, in order (SBX-01, DD-473): Words, the default, Meaning, Both. */
+    protected readonly searchModes: readonly { readonly mode: SearchMode; readonly label: string }[] = [
+        { mode: "words", label: $localize`:@@search.mode.words:Words` },
+        { mode: "semantic", label: $localize`:@@search.mode.meaning:Meaning` },
+        { mode: "hybrid", label: $localize`:@@search.mode.both:Both` },
+    ];
 
     /**
      * The drawer's open state, two-way bound to the ui-lib drawer. True
@@ -106,7 +117,8 @@ export class SettingsPanel {
      */
     protected close(): void {
         this.active.set(false);
-        void this.router.navigate([{ outlets: { drawer: null } }]);
+        // The URL's query stays, and with it the search behind the drawer (SBX-04).
+        void this.router.navigate([{ outlets: { drawer: null } }], { queryParamsHandling: "preserve" });
     }
 
     /**

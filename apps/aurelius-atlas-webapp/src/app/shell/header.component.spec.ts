@@ -102,6 +102,18 @@ describe("ShellHeader", () => {
         expect(gear?.classList.contains("is-active")).toBe(false);
     });
 
+    it("the gear and the bell keep the URL's query, the search behind the drawer (SBX-04)", async () => {
+        const fixture = TestBed.createComponent(ShellHeader);
+        await TestBed.inject(Router).navigateByUrl("/?query=employee");
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const href = (label: string) =>
+            compiled.querySelector(`a.navbar-item[aria-label="${label}"]`)?.getAttribute("href");
+
+        expect(href("Settings")).toBe("/(drawer:settings)?query=employee");
+        expect(href("Alerts")).toBe("/(drawer:alerts)?query=employee");
+    });
+
     it("lights the gear while the drawer route is open (SPL-01, DD-167)", async () => {
         // RouterLinkActive keys `is-active` off the drawer segment: with
         // the settings outlet in the URL, the gear carries Bulma's

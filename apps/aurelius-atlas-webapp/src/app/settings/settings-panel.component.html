@@ -51,6 +51,26 @@
     </div>
 
     <div class="settings-section">
+        <!-- Search by: how the search field searches (SBX-01, DD-473), the
+             Language group's shape; a stored setting the results screen
+             follows at once (SBX-02). -->
+        <p class="label" id="settings-search-mode-heading">{{ searchModeLabel }}</p>
+        <fieldset class="buttons has-addons settings-search-mode" aria-labelledby="settings-search-mode-heading">
+            @for (option of searchModes; track option.mode) {
+                <button
+                    type="button"
+                    class="button is-small"
+                    [class.is-selected]="option.mode === settings.searchMode()"
+                    [attr.aria-pressed]="option.mode === settings.searchMode()"
+                    (click)="settings.setSearchMode(option.mode)"
+                >
+                    {{ option.label }}
+                </button>
+            }
+        </fieldset>
+    </div>
+
+    <div class="settings-section">
         <!-- Time zone: DATE_PIPE_DEFAULT_OPTIONS on reload, ADM-05 list (SPL-07). -->
         <label class="label" for="settings-timezone">
             <!-- Time zone. -->
