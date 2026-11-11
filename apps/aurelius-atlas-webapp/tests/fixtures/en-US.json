@@ -339,7 +339,38 @@
                     "checkKind": "Check kind",
                     "couldNotCheck": "The rule could not be checked against the server. Try again.",
                     "kindsFailed": "The rule kinds could not be loaded.",
-                    "threshold": "Threshold"
+                    "threshold": "Threshold",
+                    "kind": {
+                        "COLUMN_COMPOSITE_UNIQUE": "Composite unique",
+                        "COLUMN_EQUALS_COLUMN_RATIO": "Columns match",
+                        "COLUMN_IN_SET": "Values from a set",
+                        "COLUMN_MATCHES_REGEX": "Matches a pattern",
+                        "COLUMN_NOT_NULL_RATIO": "Not empty",
+                        "COLUMN_TYPE_CASTABLE": "Convertible type",
+                        "COLUMN_UNIQUE_RATIO": "No duplicates",
+                        "COLUMN_WITHIN_RANGE": "Within a range",
+                        "ROW_FRESHNESS_MAX_AGE": "Fresh rows",
+                        "ROW_NOT_EMPTY": "Row filled"
+                    },
+                    "kindDescription": {
+                        "COLUMN_COMPOSITE_UNIQUE": "The chosen columns together never repeat across rows.",
+                        "COLUMN_EQUALS_COLUMN_RATIO": "Two columns hold the same value in at least part of the rows.",
+                        "COLUMN_IN_SET": "Every value comes from the list you set.",
+                        "COLUMN_MATCHES_REGEX": "Every value follows the text pattern you set.",
+                        "COLUMN_NOT_NULL_RATIO": "One column carries a value in at least part of the rows.",
+                        "COLUMN_TYPE_CASTABLE": "Every value converts to the type you set.",
+                        "COLUMN_UNIQUE_RATIO": "One column's values repeat no more than the share you set.",
+                        "COLUMN_WITHIN_RANGE": "Every value sits between the minimum and the maximum.",
+                        "ROW_FRESHNESS_MAX_AGE": "Rows were written no longer ago than the age you set.",
+                        "ROW_NOT_EMPTY": "Every row carries all of the chosen columns."
+                    },
+                    "dimension": {
+                        "ACCURACY": "Accuracy",
+                        "COMPLETENESS": "Completeness",
+                        "TIMELINESS": "Timeliness",
+                        "UNIQUENESS": "Uniqueness",
+                        "VALIDITY": "Validity"
+                    }
                 },
                 "historyPlaceholder": "History",
                 "person": {
@@ -658,6 +689,14 @@
                 "notYet": "This entity is not analysed yet. Try again in a moment.",
                 "none": "No similar entities found.",
                 "failed": "Similar entities could not be loaded."
+            },
+            "rule": {
+                "description": "Description",
+                "fields": "Fields",
+                "fieldsCards": {
+                    "title": "Fields"
+                },
+                "properties": "Properties"
             }
         },
         "editEntity": {

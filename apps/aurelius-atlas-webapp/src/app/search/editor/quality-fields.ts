@@ -35,6 +35,55 @@ const PARAMS: Readonly<Record<string, { kind: ParamKind; label: string; stored: 
     minColumns: { kind: "integer", label: "Min Columns", stored: "dqminColumns" },
 };
 
+/**
+ * The human name of each check kind (EDT-31, DD-478): webapp copy in both
+ * catalogues, keyed by the engine's name. A kind the table does not name
+ * falls back to its raw name (a new engine kind still renders, untranslated).
+ * The stored value and the validate body keep the engine's names.
+ */
+const KIND_NAMES: Readonly<Record<string, string>> = {
+    COLUMN_COMPOSITE_UNIQUE: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_COMPOSITE_UNIQUE:Composite unique`,
+    COLUMN_EQUALS_COLUMN_RATIO: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_EQUALS_COLUMN_RATIO:Columns match`,
+    COLUMN_IN_SET: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_IN_SET:Values from a set`,
+    COLUMN_MATCHES_REGEX: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_MATCHES_REGEX:Matches a pattern`,
+    COLUMN_NOT_NULL_RATIO: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_NOT_NULL_RATIO:Not empty`,
+    COLUMN_TYPE_CASTABLE: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_TYPE_CASTABLE:Convertible type`,
+    COLUMN_UNIQUE_RATIO: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_UNIQUE_RATIO:No duplicates`,
+    COLUMN_WITHIN_RANGE: $localize`:@@search.components.editor.dataQualityRule.kind.COLUMN_WITHIN_RANGE:Within a range`,
+    ROW_FRESHNESS_MAX_AGE: $localize`:@@search.components.editor.dataQualityRule.kind.ROW_FRESHNESS_MAX_AGE:Fresh rows`,
+    ROW_NOT_EMPTY: $localize`:@@search.components.editor.dataQualityRule.kind.ROW_NOT_EMPTY:Row filled`,
+};
+
+/**
+ * The one-line description of each check kind (EDT-31): what the check
+ * looks for, in plain words, shown when the kind is picked. A kind the
+ * table does not name shows no line.
+ */
+const KIND_DESCRIPTIONS: Readonly<Record<string, string>> = {
+    COLUMN_COMPOSITE_UNIQUE: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_COMPOSITE_UNIQUE:The chosen columns together never repeat across rows.`,
+    COLUMN_EQUALS_COLUMN_RATIO: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_EQUALS_COLUMN_RATIO:Two columns hold the same value in at least part of the rows.`,
+    COLUMN_IN_SET: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_IN_SET:Every value comes from the list you set.`,
+    COLUMN_MATCHES_REGEX: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_MATCHES_REGEX:Every value follows the text pattern you set.`,
+    COLUMN_NOT_NULL_RATIO: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_NOT_NULL_RATIO:One column carries a value in at least part of the rows.`,
+    COLUMN_TYPE_CASTABLE: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_TYPE_CASTABLE:Every value converts to the type you set.`,
+    COLUMN_UNIQUE_RATIO: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_UNIQUE_RATIO:One column's values repeat no more than the share you set.`,
+    COLUMN_WITHIN_RANGE: $localize`:@@search.components.editor.dataQualityRule.kindDescription.COLUMN_WITHIN_RANGE:Every value sits between the minimum and the maximum.`,
+    ROW_FRESHNESS_MAX_AGE: $localize`:@@search.components.editor.dataQualityRule.kindDescription.ROW_FRESHNESS_MAX_AGE:Rows were written no longer ago than the age you set.`,
+    ROW_NOT_EMPTY: $localize`:@@search.components.editor.dataQualityRule.kindDescription.ROW_NOT_EMPTY:Every row carries all of the chosen columns.`,
+};
+
+/**
+ * The human name of each dimension (EDT-31): the same copy rule as the
+ * kinds, keyed by the engine's name, raw name as the fallback.
+ */
+const DIMENSION_NAMES: Readonly<Record<string, string>> = {
+    ACCURACY: $localize`:@@search.components.editor.dataQualityRule.dimension.ACCURACY:Accuracy`,
+    COMPLETENESS: $localize`:@@search.components.editor.dataQualityRule.dimension.COMPLETENESS:Completeness`,
+    TIMELINESS: $localize`:@@search.components.editor.dataQualityRule.dimension.TIMELINESS:Timeliness`,
+    UNIQUENESS: $localize`:@@search.components.editor.dataQualityRule.dimension.UNIQUENESS:Uniqueness`,
+    VALIDITY: $localize`:@@search.components.editor.dataQualityRule.dimension.VALIDITY:Validity`,
+};
+
 /** One parameter row for the template: the engine's name and its rendering. */
 export type QualityParamField = {
     readonly name: string;
@@ -197,11 +246,19 @@ export class QualityFields {
         });
     }
 
-    /** The kind rows (EDT-25): the resource's order, each labelled by its
-     * name. Rebuilt per answer; the Select matches its value by identity. */
+    /** The kind rows (EDT-25, EDT-31): the resource's order, each labelled
+     * by its human name — the raw engine name is never shown. Rebuilt per
+     * answer; the Select matches its value by identity. */
     protected readonly kindRows = computed<Row[]>(() =>
-        (this.vocabulary()?.kinds ?? []).map((kind) => ({ name: kind.name, label: kind.name })),
+        (this.vocabulary()?.kinds ?? []).map((kind) => ({
+            name: kind.name,
+            label: KIND_NAMES[kind.name] ?? kind.name,
+        })),
     );
+
+    /** The chosen kind's description line (EDT-31): shown between the kind
+     * and the dimension, empty for a kind the catalogue does not name. */
+    protected readonly kindDescription = computed<string>(() => KIND_DESCRIPTIONS[this.values().kind] ?? "");
 
     /** The kind Select's selected row, off the values (identity match). */
     protected readonly kindSelected = computed<Row | null>(
@@ -240,8 +297,32 @@ export class QualityFields {
         return this.typeRows().find((row) => row.name === text) ?? null;
     });
 
-    /** The read-only dimension line (EDT-25): the kind's own dimension. */
-    protected readonly dimensionText = computed(() => this.selectedKind()?.dimension ?? "");
+    /** The read-only dimension line (EDT-25, EDT-31): the kind's own
+     * dimension, in its human name (raw engine name as the fallback). */
+    protected readonly dimensionText = computed(() => {
+        const dimension = this.selectedKind()?.dimension ?? "";
+
+        return DIMENSION_NAMES[dimension] ?? dimension;
+    });
+
+    /** The slider's low bound (EDT-32, DD-479): the served
+     * `thresholdMin` (QRE-01), 0 before the vocabulary loads. */
+    protected readonly thresholdMin = computed(() => this.vocabulary()?.thresholdMin ?? 0);
+
+    /** The slider's high bound (EDT-32): the served `thresholdMax`, 1
+     * before the vocabulary loads. */
+    protected readonly thresholdMax = computed(() => this.vocabulary()?.thresholdMax ?? 1);
+
+    /** The slider's position (EDT-32): the typed threshold, or the engine's
+     * default 1.0 while the number field is empty — the resting place the
+     * default shows without writing a value (EDT-27's empty rule). */
+    protected readonly thresholdSliderValue = computed(() => {
+        const text = this.values().threshold.trim();
+        const parsed = text === "" ? Number.NaN : Number(text);
+        const value = Number.isNaN(parsed) ? 1.0 : parsed;
+
+        return Math.min(Math.max(value, this.thresholdMin()), this.thresholdMax());
+    });
 
     /** Whether the kind is chosen (a required half of EDT-07's rule here). */
     protected readonly kindMissing = computed(() => this.values().kind === "");
@@ -355,7 +436,9 @@ export class QualityFields {
         this.touch((current) => ({ ...current, active: checked }));
     }
 
-    /** The threshold field's text (EDT-27: 0..1, empty is the engine's 1.0). */
+    /** The threshold field's text (EDT-27: 0..1, empty is the engine's 1.0).
+     * The slider and the number field both ride it (EDT-32: one value, both
+     * move). */
     protected thresholdChanged(text: string): void {
         this.touch((current) => ({ ...current, threshold: text }));
     }

@@ -89,11 +89,6 @@ export interface SectionView {
     descending: boolean;
     /** The visible page of the filtered, sorted cards (DET-22). */
     cards: SectionCard[];
-    /**
-     * The box header's create door (DET-37): the type the `+` opens the
-     * create drawer for, from the layout row. Absent means no `+`.
-     */
-    createAction?: { type: string };
 }
 
 /** The sort select's options (DET-21): Relevance (the seed order) and Name. */
@@ -416,7 +411,6 @@ export class RelatedSectionsState {
             sortOptions: SORT_OPTIONS,
             descending: record.descending,
             cards: sorted.slice(0, record.shown),
-            ...(record.def.create !== undefined ? { createAction: record.def.create } : {}),
         };
     }
 

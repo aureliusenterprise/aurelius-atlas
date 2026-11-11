@@ -1262,7 +1262,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 });
 
 /* ------------------------------------------------------------------ */
-/* The quality-mode drawer (EDT-25, EDT-28, EDT-29, DET-37).            */
+/* The quality-mode drawer (EDT-25, EDT-28, EDT-29).                    */
 /* ------------------------------------------------------------------ */
 
 const KINDS_URL = "/api/aurelius/v1/quality/kinds";
@@ -1273,14 +1273,14 @@ const QUALITY_KINDS = {
     kinds: [
         {
             name: "COLUMN_NOT_NULL_RATIO",
-            dimension: "completeness",
+            dimension: "COMPLETENESS",
             required: ["column"],
             optional: [],
             reason: "The column carries a value.",
         },
         {
             name: "ROW_NOT_EMPTY",
-            dimension: "completeness",
+            dimension: "COMPLETENESS",
             required: ["columns"],
             optional: ["minColumns"],
             reason: "The row carries its columns.",
@@ -1387,7 +1387,7 @@ function typeRuleName(compiled: HTMLElement, fixture: { detectChanges: () => voi
     fixture.detectChanges();
 }
 
-describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, DET-37)", () => {
+describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
     it("opens a vocabulary rule in the quality form, not the attribute list (EDT-25, EDT-29)", () => {
         const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
         arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
@@ -1454,7 +1454,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, DET-37)", () => {
             active: true,
             threshold: 0.95,
         });
-        validate.flush({ valid: true, kind: "COLUMN_NOT_NULL_RATIO", dimension: "completeness" });
+        validate.flush({ valid: true, kind: "COLUMN_NOT_NULL_RATIO", dimension: "COMPLETENESS" });
         fixture.detectChanges();
 
         // The EDT-06 save rides: the minimal body (no foreign dqpattern,
@@ -1535,23 +1535,5 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, DET-37)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
             "This entity can't be saved because one or more required fields are missing.",
         );
-    });
-
-    it("the rules box's + preselects the open field in the fields picker (DET-37)", () => {
-        const { fixture, compiled, httpMock } = setup({
-            create: true,
-            createType: "m4i_data_quality",
-            query: { dqField: "f9", dqFieldLabel: "total" },
-        });
-        arriveTypeDefs(fixture, httpMock, QUALITY_TYPEDEFS);
-        httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
-        fixture.detectChanges();
-
-        // The create route carries the type fixed (DD-330, no picker round)
-        // and the seed pick rides the fields picker as one chip (EDT-13's
-        // pick shape, DET-37).
-        const picker = compiled.querySelector<HTMLElement>(".aurelius-editor-relationship");
-        expect(picker?.getAttribute("data-field")).toBe("fields");
-        expect(picker?.querySelector(".aurelius-relationship-chip")?.textContent).toContain("total");
     });
 });

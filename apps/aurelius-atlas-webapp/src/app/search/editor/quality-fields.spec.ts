@@ -1,11 +1,11 @@
 /**
- * The quality rule form (EDT-25..EDT-27/29): the vocabulary-driven branch of
- * the editor drawer. The specs ride the drawer's idiom — the real http client
- * through HttpTestingController — over a test host that drives the component's
- * inputs and reads its `valid()` / `draftAttributes()` answers the Save uses.
- * The drawer's own wiring (the mode seam, the validate-before-save) is specced
- * at `entity-editor.component.spec.ts` (EDT-28/29); the service and its cache
- * at the data-access lib (EDT-30).
+ * The quality rule form (EDT-25..EDT-27/29, EDT-31/32): the vocabulary-driven
+ * branch of the editor drawer. The specs ride the drawer's idiom — the real
+ * http client through HttpTestingController — over a test host that drives the
+ * component's inputs and reads its `valid()` / `draftAttributes()` answers the
+ * Save uses. The drawer's own wiring (the mode seam, the validate-before-save)
+ * is specced at `entity-editor.component.spec.ts` (EDT-28/29); the service and
+ * its cache at the data-access lib (EDT-30).
  */
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -19,40 +19,50 @@ import { QualityFields, QUALITY_FIELDS_RELATIONSHIP, QUALITY_TYPE_NAME, storedCh
 const KINDS_URL = "/api/aurelius/v1/quality/kinds";
 
 /** The served vocabulary (QRE-01's shape, a subset of the engine's ten): the
- * kinds resource's own order and its sorted required/optional per kind. */
+ * kinds resource's own order, its sorted required/optional per kind, and the
+ * engine's own dimension names (the form localizes them for display only).
+ * `MYSTERY_CHECK` stands for a kind the catalogues do not name yet (EDT-31's
+ * fallback). */
 const KINDS: QualityKinds = {
     kinds: [
         {
             name: "COLUMN_IN_SET",
-            dimension: "validity",
+            dimension: "VALIDITY",
             required: ["column", "values"],
             optional: [],
             reason: "The column holds only the allowed values.",
         },
         {
             name: "COLUMN_NOT_NULL_RATIO",
-            dimension: "completeness",
+            dimension: "COMPLETENESS",
             required: ["column"],
             optional: [],
             reason: "The column carries a value.",
         },
         {
             name: "COLUMN_TYPE_CASTABLE",
-            dimension: "validity",
+            dimension: "VALIDITY",
             required: ["column", "type"],
             optional: [],
             reason: "The column casts to the type.",
         },
         {
             name: "COLUMN_WITHIN_RANGE",
-            dimension: "accuracy",
+            dimension: "ACCURACY",
             required: ["column", "max", "min"],
             optional: [],
             reason: "The column stays within the range.",
         },
         {
+            name: "MYSTERY_CHECK",
+            dimension: "VALIDITY",
+            required: [],
+            optional: [],
+            reason: "A kind newer than the catalogues.",
+        },
+        {
             name: "ROW_NOT_EMPTY",
-            dimension: "completeness",
+            dimension: "COMPLETENESS",
             required: ["columns"],
             optional: ["minColumns"],
             reason: "The row carries its columns.",
@@ -157,7 +167,12 @@ function textOf(fixture: ComponentFixture<unknown>, selector: string): string | 
     return element?.textContent?.replace(/\s+/g, " ").trim() ?? null;
 }
 
-describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
+/** The threshold slider's current position (EDT-32). */
+function sliderValue(fixture: ComponentFixture<unknown>): string | undefined {
+    return (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>("#editor-threshold-slider")?.value;
+}
+
+describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () => {
     function setupCreate(): {
         fixture: ComponentFixture<CreateHost>;
         host: CreateHost;
@@ -184,18 +199,20 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
         fixture.detectChanges();
 
         // The kind Select carries the resource's order, each row labelled by
-        // its name; the shared fields stand above it (EDT-27).
+        // its EDT-31 human name — the raw engine name never shows; the
+        // shared fields stand above it (EDT-27).
         const kindOptions = [
             ...((fixture.nativeElement as HTMLElement).querySelectorAll<HTMLSelectElement>(
                 ".aurelius-quality-kind select",
             )[0]?.options ?? []),
         ].map((option) => option.textContent?.trim());
         expect(kindOptions.slice(1)).toEqual([
-            "COLUMN_IN_SET",
-            "COLUMN_NOT_NULL_RATIO",
-            "COLUMN_TYPE_CASTABLE",
-            "COLUMN_WITHIN_RANGE",
-            "ROW_NOT_EMPTY",
+            "Values from a set",
+            "Not empty",
+            "Convertible type",
+            "Within a range",
+            "MYSTERY_CHECK", // EDT-31's fallback: a name the catalogues lack
+            "Row filled",
         ]);
         expect((fixture.nativeElement as HTMLElement).querySelector("#editor-name")).toBeTruthy();
         expect((fixture.nativeElement as HTMLElement).querySelector("#editor-ruleDescription")).toBeTruthy();
@@ -221,7 +238,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
         const { fixture } = setupCreate();
         arrive(fixture);
 
-        pickOption(fixture, ".aurelius-quality-kind", "ROW_NOT_EMPTY");
+        pickOption(fixture, ".aurelius-quality-kind", "Row filled"); // ROW_NOT_EMPTY (EDT-31)
 
         // ROW_NOT_EMPTY: columns (required) then minColumns (optional) — the
         // other kinds' parameters never appear.
@@ -232,15 +249,20 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
         expect(fields[0]?.querySelector(".aurelius-quality-chips-box")).toBeTruthy(); // chips control
         expect(fields[1]?.querySelector("input[type='number'][step='1']")).toBeTruthy(); // whole number
 
-        // The dimension line is the kind's own, read-only (EDT-25).
-        expect(textOf(fixture, ".aurelius-quality-dimension-value")).toBe("completeness");
+        // The dimension line is the kind's own, read-only and localized
+        // (EDT-25, EDT-31).
+        expect(textOf(fixture, ".aurelius-quality-dimension-value")).toBe("Completeness");
+        // The kind's description line sits above the dimension (EDT-31).
+        expect(textOf(fixture, ".aurelius-quality-kind-description")).toBe(
+            "Every row carries all of the chosen columns.",
+        );
     });
 
     it("the type parameter rides a Select over the castable types (EDT-26)", () => {
         const { fixture, host } = setupCreate();
         arrive(fixture);
 
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_TYPE_CASTABLE");
+        pickOption(fixture, ".aurelius-quality-kind", "Convertible type");
         pickOption(fixture, ".aurelius-quality-param[data-field='dqtype']", "double");
         typeInto(fixture, "#editor-dqcolumn", "price");
         typeInto(fixture, "#editor-name", "price_is_int");
@@ -255,7 +277,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
     it("a chips box commits typed values on Enter and drops them on delete (EDT-26)", () => {
         const { fixture, host } = setupCreate();
         arrive(fixture);
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_IN_SET");
+        pickOption(fixture, ".aurelius-quality-kind", "Values from a set");
         typeInto(fixture, "#editor-name", "status_in_set");
         typeInto(fixture, "#editor-dqcolumn", "status");
 
@@ -302,13 +324,13 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
         const { fixture, host } = setupCreate();
         arrive(fixture);
 
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_WITHIN_RANGE");
+        pickOption(fixture, ".aurelius-quality-kind", "Within a range");
         typeInto(fixture, "#editor-dqcolumn", "total");
         typeInto(fixture, "#editor-dqmin", "0");
         typeInto(fixture, "#editor-dqmax", "100");
         typeInto(fixture, "#editor-name", "total_range");
 
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_NOT_NULL_RATIO");
+        pickOption(fixture, ".aurelius-quality-kind", "Not empty");
 
         // The range controls are gone and their values with them (EDT-26's
         // clear): the draft names only the new kind's `dq` parameter.
@@ -326,7 +348,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
     it("the save body names only the kind's parameters (EDT-26, EDT-27)", () => {
         const { fixture, host } = setupCreate();
         arrive(fixture);
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_NOT_NULL_RATIO");
+        pickOption(fixture, ".aurelius-quality-kind", "Not empty");
         typeInto(fixture, "#editor-name", "total_not_null");
         typeInto(fixture, "#editor-ruleDescription", "The field must carry a value.");
         typeInto(fixture, "#editor-dqcolumn", "total");
@@ -359,10 +381,37 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
         // store materializes an omitted optional double to 0.0 (EWR-09) and
         // that 0.0 would win the next read.
         typeInto(fixture, "#editor-name", "any_rule");
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_NOT_NULL_RATIO");
+        pickOption(fixture, ".aurelius-quality-kind", "Not empty");
         typeInto(fixture, "#editor-dqcolumn", "total");
 
         expect(host.child().draftAttributes()["threshold"]).toBe(1.0);
+        // EDT-32: the empty number rests the slider at the same 1.0.
+        expect(sliderValue(fixture)).toBe("1");
+    });
+
+    it("a slider move fills the number and a typed number moves the slider (EDT-32)", () => {
+        const { fixture, host } = setupCreate();
+        arrive(fixture);
+
+        // The pair side by side (DD-479): both ride the served bounds.
+        const slider = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+            "#editor-threshold-slider",
+        )!;
+        expect(slider.getAttribute("min")).toBe("0");
+        expect(slider.getAttribute("max")).toBe("1");
+
+        // Dragging the slider fills the number (one value, both move).
+        slider.value = "0.75";
+        slider.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        expect((fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>("#editor-threshold")?.value).toBe(
+            "0.75",
+        );
+
+        // Typing the number moves the slider.
+        typeInto(fixture, "#editor-threshold", "0.9");
+        expect(sliderValue(fixture)).toBe("0.9");
+        expect(host.child().draftAttributes()["threshold"]).toBe(0.9);
     });
 
     it("active defaults checked on create and seeds from the entity on edit (EDT-27, EDT-29)", () => {
@@ -385,8 +434,12 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
 
         const compiled = fixture.nativeElement as HTMLElement;
         // The kind seeds: its parameter controls and its own dimension line
-        // render (the Select's chosen row reads the same signal).
-        expect(textOf(fixture, ".aurelius-quality-dimension-value")).toBe("accuracy");
+        // render (the Select's chosen row reads the same signal), localized
+        // (EDT-31).
+        expect(textOf(fixture, ".aurelius-quality-dimension-value")).toBe("Accuracy");
+        expect(textOf(fixture, ".aurelius-quality-kind-description")).toBe(
+            "Every value sits between the minimum and the maximum.",
+        );
         // The kind's parameters seed under the EDT-26 controls; the foreign
         // stored attributes draw no control (EDT-26) and ride no draft.
         expect(compiled.querySelectorAll(".aurelius-quality-param").length).toBe(3);
@@ -437,13 +490,27 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
         expect(child.valid()).toBe(false); // nothing yet
         typeInto(fixture, "#editor-name", "total_range");
         expect(child.valid()).toBe(false); // no kind
-        pickOption(fixture, ".aurelius-quality-kind", "COLUMN_WITHIN_RANGE");
+        pickOption(fixture, ".aurelius-quality-kind", "Within a range");
         expect(child.valid()).toBe(false); // kind, no required parameters
         typeInto(fixture, "#editor-dqcolumn", "total");
         typeInto(fixture, "#editor-dqmax", "100");
         expect(child.valid()).toBe(false); // dqmin still empty
         typeInto(fixture, "#editor-dqmin", "0");
         expect(child.valid()).toBe(true);
+    });
+
+    it("a kind the catalogues do not name shows its raw name and no line (EDT-31)", () => {
+        const { fixture } = setupCreate();
+        arrive(fixture);
+
+        pickOption(fixture, ".aurelius-quality-kind", "MYSTERY_CHECK");
+
+        // The fallback state (DD-478's consequence): the raw name stands, no
+        // description line shows, and the dimension still localizes.
+        expect((fixture.nativeElement as HTMLElement).querySelector(".aurelius-quality-kind-description")).toBeFalsy();
+        expect(textOf(fixture, ".aurelius-quality-dimension-value")).toBe("Validity");
+        // The stored value keeps the engine's name (the draft, not the label).
+        expect(fixture.componentInstance.child().draftAttributes()["dqcheckkind"]).toBe("MYSTERY_CHECK");
     });
 
     it("the notification shows the engine line ahead of a save attempt, and hides on edit (EDT-28's display half)", () => {
@@ -468,7 +535,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29)", () => {
     });
 });
 
-describe("storedCheckKind + the type/relationship constants (EDT-25/29's seam, DET-37's target)", () => {
+describe("storedCheckKind + the type/relationship constants (EDT-25/29's seam)", () => {
     it("reads a vocabulary kind off the entity and nothing else", () => {
         expect(
             storedCheckKind({

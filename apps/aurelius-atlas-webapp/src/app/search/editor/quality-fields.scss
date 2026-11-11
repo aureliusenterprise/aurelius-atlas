@@ -79,3 +79,48 @@
 .aurelius-quality-dimension-value {
     word-break: break-word;
 }
+
+/* The kind's description line (EDT-31): the kind control's own help line,
+   not a field — close under the Select. The dimension that follows keeps
+   the between-field rhythm even with the line between them (the sibling
+   rule below restores what the line breaks). */
+.aurelius-quality-kind-description {
+    margin-top: 0.5rem;
+}
+
+.aurelius-quality-kind-description + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+/* The threshold pair (EDT-32, DD-479): the slider and the number field
+   side by side, one row. The slider takes the free width, the number
+   keeps a fixed column wide enough for the typed value; Bulma carries
+   the number input's own look. */
+.aurelius-quality-threshold-pair {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.aurelius-quality-threshold-pair .aurelius-quality-threshold-slider {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.aurelius-quality-threshold-pair .input {
+    flex: 0 0 7rem;
+    width: 7rem;
+}
+
+/* Narrow viewports (DD-336's rule): the pair stacks, the number full
+   width beneath the slider. */
+@media screen and (width <= 768px) {
+    .aurelius-quality-threshold-pair {
+        flex-wrap: wrap;
+    }
+
+    .aurelius-quality-threshold-pair .input {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}

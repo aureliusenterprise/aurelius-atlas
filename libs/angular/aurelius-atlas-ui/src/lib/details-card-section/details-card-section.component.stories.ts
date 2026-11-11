@@ -244,28 +244,3 @@ export const NextPage: Story = {
         await userEvent.click(button);
     },
 };
-
-/** The rules box shape (DET-37): the caller's create `+` rides the
- * `header-actions` slot beside the title — the part stays dumb, the
- * button, its gate, and its route belong to the caller. */
-export const HeaderAction: Story = {
-    render: () => ({
-        moduleMetadata: { imports: [DetailsCardSection, EntityCard] },
-        template: `<aurelius-atlas-ui-details-card-section [title]="'Data Quality Rules'" [count]="1" [sortOptions]="[]">
-    <button type="button" header-actions class="button is-small is-primary" aria-label="Create new entity">+</button>
-    <div class="column is-half-tablet is-one-third-desktop">
-        <aurelius-atlas-ui-entity-card
-            [guid]="'r1'"
-            [name]="'total_not_null'"
-            [typeName]="'m4i_data_quality'"
-            [showQuality]="false"
-        />
-    </div>
-</aurelius-atlas-ui-details-card-section>`,
-    }),
-    play: async ({ canvasElement }) => {
-        const canvas = within(canvasElement);
-        await expect(canvas.getByText("Data Quality Rules")).toBeVisible();
-        await expect(canvas.getByRole("button", { name: "Create new entity" })).toBeVisible();
-    },
-};

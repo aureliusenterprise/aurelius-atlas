@@ -1,18 +1,19 @@
 import { LAYOUTS, layoutForTypeName } from "./section-config";
 
 /**
- * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33): the eight
+ * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33): the nine
  * layouts key for key the spec's table — anchors, titles, seed keys, People
  * box flag, stats, and nav. The table itself is the fixture; these specs pin
  * the dispatch's lookup and the shapes one renderer depends on.
  */
 describe("Section config (DET-16)", () => {
-    it("holds exactly the eight m4i layouts (DET-16, DET-33)", () => {
+    it("holds exactly the nine m4i layouts (DET-16, DET-33, DET-38)", () => {
         expect(Object.keys(LAYOUTS).sort()).toEqual([
             "m4i_collection",
             "m4i_data_attribute",
             "m4i_data_domain",
             "m4i_data_entity",
+            "m4i_data_quality",
             "m4i_dataset",
             "m4i_field",
             "m4i_generic_process",
@@ -20,7 +21,7 @@ describe("Section config (DET-16)", () => {
         ]);
     });
 
-    it("maps each of the eight names to its layout (DET-15, DET-16)", () => {
+    it("maps each of the nine names to its layout (DET-15, DET-16)", () => {
         for (const name of Object.keys(LAYOUTS)) {
             expect(layoutForTypeName(name)).toBe(LAYOUTS[name as keyof typeof LAYOUTS]);
         }
@@ -48,22 +49,6 @@ describe("Section config (DET-16)", () => {
         }
     });
 
-    it("names the create door on the field's rules box only (DET-37)", () => {
-        // DET-37 (7.27): the rules box's header `+` opens the drawer at
-        // create with the rule type fixed — the layout row carries it.
-        const rules = LAYOUTS.m4i_field.sections.find((section) => section.anchor === "related-rules");
-        expect(rules?.create).toEqual({ type: "m4i_data_quality" });
-
-        // No other box offers a create door.
-        for (const layout of Object.values(LAYOUTS)) {
-            for (const section of layout.sections) {
-                if (section.anchor !== "related-rules") {
-                    expect(section.create, section.anchor).toBeUndefined();
-                }
-            }
-        }
-    });
-
     it("carries the spec table's People-box flag (DET-16, DET-23)", () => {
         // The legacy pages with a People box: domain, entity, attribute.
         // The field carries a steward end but its page has no box.
@@ -71,6 +56,9 @@ describe("Section config (DET-16)", () => {
         expect(LAYOUTS.m4i_data_entity.peopleBox).toBe(true);
         expect(LAYOUTS.m4i_data_attribute.peopleBox).toBe(true);
         expect(LAYOUTS.m4i_field.peopleBox).toBe(false);
+        // DET-38 (7.27): the rule page carries no People box (the legacy has
+        // no rule page at all — the anatomy is the generic one).
+        expect(LAYOUTS.m4i_data_quality.peopleBox).toBe(false);
         expect(LAYOUTS.m4i_dataset.peopleBox).toBe(false);
         expect(LAYOUTS.m4i_collection.peopleBox).toBe(false);
         expect(LAYOUTS.m4i_system.peopleBox).toBe(false);
@@ -89,6 +77,9 @@ describe("Section config (DET-16)", () => {
             ["related-entities", ["childEntity"]],
         ]);
         expect(shape("m4i_data_attribute")).toEqual([["related-fields", ["fields"]]]);
+        // DET-38 (7.27, DD-480): the rule's own page — the `fields` end the
+        // editor writes seeds its Fields box.
+        expect(shape("m4i_data_quality")).toEqual([["related-fields", ["fields"]]]);
         // DET-35 (7.24, DD-444): the field's own `dataQuality` end seeds the
         // rules box, the legacy `#related-rules` place.
         expect(shape("m4i_field")).toEqual([
@@ -131,6 +122,7 @@ describe("Section config (DET-16)", () => {
         expect(LAYOUTS.m4i_data_entity.lineageAfter).toBeUndefined();
         expect(LAYOUTS.m4i_data_attribute.lineageAfter).toBeUndefined();
         expect(LAYOUTS.m4i_field.lineageAfter).toBeUndefined();
+        expect(LAYOUTS.m4i_data_quality.lineageAfter).toBeUndefined();
         expect(LAYOUTS.m4i_collection.lineageAfter).toBeUndefined();
         expect(LAYOUTS.m4i_system.lineageAfter).toBeUndefined();
     });
@@ -192,6 +184,11 @@ describe("Section config (DET-16)", () => {
             "related-rules",
             "properties-details",
         ]);
+
+        // DET-38 (7.27, DD-480): the rule page's Fields stat and nav entry,
+        // after the description and before the properties.
+        expect(labels("m4i_data_quality")).toEqual(["related-fields", "properties-details"]);
+        expect(nav("m4i_data_quality")).toEqual(["description-details", "related-fields", "properties-details"]);
     });
 
     it("carries the lineage stat's kind and word pair (LDG-32)", () => {

@@ -8,6 +8,14 @@
     margin-top: 1.25rem;
 }
 
+/* The quality form's own between-field rhythm cannot reach out of its
+   component (its scss mirrors this rule inward); the drawer's cannot reach
+   over the element's boundary either. The first drawer field after the
+   quality form — the `fields` picker (EDT-25) — keeps the same rhythm. */
+aurelius-atlas-webapp-quality-fields + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
 /* The create-mode type field (EDT-04, DD-330): it stays above the form, so
    it keeps the between-field rhythm below it. */
 .aurelius-editor-picker {

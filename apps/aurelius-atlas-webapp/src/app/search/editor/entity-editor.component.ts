@@ -12,7 +12,7 @@ import {
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NgTemplateOutlet } from "@angular/common";
 import { disabled, Field, FieldTree, form, FormField, required, SchemaPathTree } from "@angular/forms/signals";
-import { ActivatedRoute, Router, convertToParamMap } from "@angular/router";
+import { ActivatedRoute, Router } from "@angular/router";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
@@ -157,29 +157,6 @@ export class EntityEditor {
      * first type pick. One matcher route now serves both URLs, so the mode
      * cannot come from the path anymore. */
     private readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
-
-    /** The create route's query params (DET-37): the open field the rules
-     * box's `+` seeds into the rule's `fields` picker. */
-    private readonly queryParams = toSignal(this.route.queryParamMap, { initialValue: convertToParamMap({}) });
-
-    /** The `fields` pick the rules box's `+` preselects (DET-37, EDT-13's
-     * pick shape): the field's guid and label off the create route's query. */
-    private readonly prefillField = computed<RelationshipPick[]>(() => {
-        const params = this.queryParams();
-        const guid = params.get("dqField");
-        if (typeof guid !== "string" || guid === "") {
-            return [];
-        }
-        const displayText = params.get("dqFieldLabel");
-
-        return [
-            {
-                guid,
-                typeName: "m4i_field",
-                ...(typeof displayText === "string" && displayText !== "" ? { displayText } : {}),
-            },
-        ];
-    });
 
     private readonly labels: EditorLabels = {
         name: $localize`:@@search.components.editor.attribute.name:Name*`,
@@ -507,13 +484,6 @@ export class EntityEditor {
                 const seeded = new Map(
                     Object.entries(seedRelationshipValues(this.state.entity() ?? {}, this.relationshipFields())),
                 );
-                // DET-37: the rules box's `+` seeds the rule's `fields` picker
-                // with the open field (EDT-13's pick shape), off the create
-                // route's query. A later pick or delete replaces it (EDT-14).
-                const prefill = this.prefillField();
-                if (prefill.length > 0 && seeded.has(QUALITY_FIELDS_RELATIONSHIP)) {
-                    seeded.set(QUALITY_FIELDS_RELATIONSHIP, prefill);
-                }
                 this.relationshipValues.set(seeded);
             }
         });

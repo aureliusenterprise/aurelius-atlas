@@ -1000,6 +1000,106 @@ The technical data governance model consists of the following types of entities:
         <source>The rule could not be checked against the server. Try again.</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.couldNotCheck</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.dimension.ACCURACY" datatype="html">
+        <source>Accuracy</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.dimension.ACCURACY</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.dimension.COMPLETENESS" datatype="html">
+        <source>Completeness</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.dimension.COMPLETENESS</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.dimension.TIMELINESS" datatype="html">
+        <source>Timeliness</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.dimension.TIMELINESS</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.dimension.UNIQUENESS" datatype="html">
+        <source>Uniqueness</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.dimension.UNIQUENESS</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.dimension.VALIDITY" datatype="html">
+        <source>Validity</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.dimension.VALIDITY</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_COMPOSITE_UNIQUE" datatype="html">
+        <source>Composite unique</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_COMPOSITE_UNIQUE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_EQUALS_COLUMN_RATIO" datatype="html">
+        <source>Columns match</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_EQUALS_COLUMN_RATIO</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_IN_SET" datatype="html">
+        <source>Values from a set</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_IN_SET</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_MATCHES_REGEX" datatype="html">
+        <source>Matches a pattern</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_MATCHES_REGEX</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_NOT_NULL_RATIO" datatype="html">
+        <source>Not empty</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_NOT_NULL_RATIO</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_TYPE_CASTABLE" datatype="html">
+        <source>Convertible type</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_TYPE_CASTABLE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_UNIQUE_RATIO" datatype="html">
+        <source>No duplicates</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_UNIQUE_RATIO</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.COLUMN_WITHIN_RANGE" datatype="html">
+        <source>Within a range</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.COLUMN_WITHIN_RANGE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.ROW_FRESHNESS_MAX_AGE" datatype="html">
+        <source>Fresh rows</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.ROW_FRESHNESS_MAX_AGE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kind.ROW_NOT_EMPTY" datatype="html">
+        <source>Row filled</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kind.ROW_NOT_EMPTY</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_COMPOSITE_UNIQUE" datatype="html">
+        <source>The chosen columns together never repeat across rows.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_COMPOSITE_UNIQUE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_EQUALS_COLUMN_RATIO" datatype="html">
+        <source>Two columns hold the same value in at least part of the rows.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_EQUALS_COLUMN_RATIO</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_IN_SET" datatype="html">
+        <source>Every value comes from the list you set.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_IN_SET</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_MATCHES_REGEX" datatype="html">
+        <source>Every value follows the text pattern you set.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_MATCHES_REGEX</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_NOT_NULL_RATIO" datatype="html">
+        <source>One column carries a value in at least part of the rows.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_NOT_NULL_RATIO</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_TYPE_CASTABLE" datatype="html">
+        <source>Every value converts to the type you set.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_TYPE_CASTABLE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_UNIQUE_RATIO" datatype="html">
+        <source>One column's values repeat no more than the share you set.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_UNIQUE_RATIO</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.COLUMN_WITHIN_RANGE" datatype="html">
+        <source>Every value sits between the minimum and the maximum.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.COLUMN_WITHIN_RANGE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.ROW_FRESHNESS_MAX_AGE" datatype="html">
+        <source>Rows were written no longer ago than the age you set.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.ROW_FRESHNESS_MAX_AGE</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindDescription.ROW_NOT_EMPTY" datatype="html">
+        <source>Every row carries all of the chosen columns.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindDescription.ROW_NOT_EMPTY</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.dataQualityRule.kindsFailed" datatype="html">
         <source>The rule kinds could not be loaded.</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindsFailed</note>
@@ -2072,6 +2172,22 @@ The technical data governance model consists of the following types of entities:
       <trans-unit id="search.details.process.unavailable" datatype="html">
         <source>Unavailable</source>
         <note priority="1" from="description">Aurelius dictionary key: search.details.process.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.details.rule.description" datatype="html">
+        <source>Description</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.rule.description</note>
+      </trans-unit>
+      <trans-unit id="search.details.rule.fields" datatype="html">
+        <source>Fields</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.rule.fields</note>
+      </trans-unit>
+      <trans-unit id="search.details.rule.fieldsCards.title" datatype="html">
+        <source>Fields</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.rule.fieldsCards.title</note>
+      </trans-unit>
+      <trans-unit id="search.details.rule.properties" datatype="html">
+        <source>Properties</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.rule.properties</note>
       </trans-unit>
       <trans-unit id="search.details.similar.failed" datatype="html">
         <source>Similar entities could not be loaded.</source>

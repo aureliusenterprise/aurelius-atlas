@@ -111,3 +111,123 @@ kind" (EDT-25/29's seam). A legacy rule converted through the kind form gains `d
 its old pair attributes ride the untouched pass-through, so the engine's parser still reads it
 as a vocabulary rule (the `dqcheckkind` branch wins, `atlas.py`). If the pair population ever
 needs a sweep, that is a scanner-side report (a later increment), not an editor feature.
+
+### DD-478. The human vocabulary copy rides the webapp catalogue
+
+- **Status:** Proposed
+- **Increment:** 7.27
+- **Date:** 2026-11-12
+- **Supersedes:** none
+
+**Decision.** The check kinds, their one-line descriptions, and the dimensions get human
+names and copy in the webapp's two catalogues (EDT-31), keyed by the engine's name through
+static `$localize` maps in the quality form. The kinds resource (QRE-01) still carries the
+engine's names only, and so do the stored attributes and the validate body. A kind the
+catalogue does not name falls back to its raw name with no description line.
+
+**Reason.** The names are UI copy, and the webapp is where copy lives and gets translated —
+the two catalogues already carry every other label on this screen, in both locales. Serving
+them from the vocabulary would push display strings through an API designed for storage
+semantics (DD-473's own line: the resource answers the engine's shape), and would still
+need a second round to translate them, since `$localize` cannot translate a string that only
+exists at runtime. The static maps keyed by kind name are the only shape that keeps the
+translation gate (`i18n-completeness.spec.ts`) honest.
+
+**Alternatives.**
+
+- `kindLabel`/`kindDescription` fields on the kinds resource. The server answers with English
+  UI strings, the catalogue gate cannot see them, and Dutch users get English — the split the
+  bridge exists to prevent.
+- Runtime dictionary files fetched beside the kinds. A third round-trip for strings the build
+  already knows, outside every other screen's i18n pattern.
+
+**Consequences.** A new engine kind shows in the form with its raw name and no description
+until the catalogues name it — a translation task, not a deployment blocker. The fallback is
+tested (EDT-31) so the unmapped case is a known state, not a crash.
+
+### DD-479. The threshold is a slider beside an editable number
+
+- **Status:** Proposed
+- **Increment:** 7.27
+- **Date:** 2026-11-12
+- **Supersedes:** none
+
+**Decision.** The threshold control is an HTML range input beside a number input, side by
+side (EDT-32). Both take their bounds from the served `thresholdMin`/`thresholdMax` (QRE-01),
+step 0.05; one value backs both, editing either moves the other. An empty number rests the
+slider at the engine's default (1.0) without writing the value. The pair sits in the form's
+field rhythm like any other field.
+
+**Reason.** A threshold is a ratio a person reasons about as a position ("nearly all rows"),
+and a slider answers that; but exact values (0.97) are typed, not dragged, so the number
+field stays first-class. The native pair needs no library and holds the served bounds, so a
+server that widens the range widens both controls with no webapp change. Resting the slider
+at 1.0 on an empty number keeps EDT-27's rule (empty means the engine's default) visible
+without storing a value the author never set.
+
+**Alternatives.**
+
+- Slider only. Precise values become impossible.
+- A styled slider component from the UI library. The native range is reachable, keyboard-
+  operable, and restyled in plain CSS — the pair is two inputs, not a design-system moment.
+
+**Consequences.** The form's threshold row is the only side-by-side pair, so the drawer's
+spacing rule needed to reach across the quality component's boundary (the `+` sibling rule
+in the drawer's styles). Storybook and unit tests cover both drag and type paths.
+
+### DD-480. A rule's page is a layout row with a Fields box
+
+- **Status:** Proposed
+- **Increment:** 7.27
+- **Date:** 2026-11-12
+- **Supersedes:** none
+
+**Decision.** `m4i_data_quality` gets a row in the details layout table (DET-38): a Fields
+card section seeded from the rule's `fields` relationship end, with the usual stat and
+side-nav entry, riding the same generic box machinery every DET-17 box uses. The rest of the
+page is the default anatomy (description box, properties accordion).
+
+**Reason.** A rule is defined by the fields it checks, and every other page already answers
+"what does this relate to?" with a box (DET-17). Showing a rule without its fields asks the
+user to open the editor to learn what the rule covers. The layout table is exactly the seam
+for this (DD-359's design): adding a type's page is adding a row, no new component.
+
+**Alternatives.**
+
+- No row (the generic fallback page). The rule page then shows properties only, and the
+  fields — the rule's whole point — are hidden inside one attribute cell.
+
+**Consequences.** The section-config table tests gain the ninth row. The box inherits every
+box behaviour (search, sort, paging, the read gate) for free, and the rule→field edge the
+editor writes (EDT-26's save body carries `fields`) is the same edge the field page's rules
+box (DET-35) reads from the other side.
+
+### DD-481. Rules enter through the generic doors (DET-37 withdrawn)
+
+- **Status:** Proposed
+- **Increment:** 7.27
+- **Date:** 2026-11-12
+- **Supersedes:** none
+
+**Decision.** There is no box-scoped create `+` on the field's rules box (the earlier DET-37
+is withdrawn before merge, on review). A rule is created through the generic create door —
+the hero `+` and its type picker, with `Data Quality` as one of the selectable types — and
+edited through the pencil on the rule's own details page, exactly like every other entity.
+The `dqField` prefill query parameters, the box-header action, and the card-section header
+slot it used are removed with it.
+
+**Reason.** Review call on this PR: "rules are just different types of entities after all."
+A second create door for one type forks the write path (two routes to prove, two prefill
+shapes to keep honest) for a shortcut the generic door already covers in one extra pick.
+The drawer's create route (DD-330's) is per-type and uniform; the box stays a pure reader,
+which is what every other box is.
+
+**Alternatives.**
+
+- The box `+` with the field prefill (DET-37 as first specced). Kept as the recorded
+  alternative: it saves one select and one picker-add on the create path, and costs a
+  type-unique door, a prefill contract, and a slot in a dumb UI component.
+
+**Consequences.** The e2e creates its rule through the generic door and picks the field in
+the relationship picker by hand. If a future increment re-proposes a shortcut, it supersedes
+this entry rather than re-adding the button.

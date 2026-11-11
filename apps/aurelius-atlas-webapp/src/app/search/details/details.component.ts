@@ -4,7 +4,7 @@ import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import type { AtlasEntity } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
-import { faPenToSquare, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
 
 import {
@@ -120,12 +120,6 @@ export class Details {
 
     /** The pencil's accessible name — the drawer's edit title (EDT-11). */
     protected readonly editTitle = $localize`:@@search.editEntity.editEntity:Edit entity`;
-
-    /** The rules box's `+` icon (DET-37) — the hero's create-plus idiom. */
-    protected readonly faPlus = faPlus;
-
-    /** The `+`'s accessible name — the catalogue's create label (DET-37, EDT-11's key). */
-    protected readonly createLabel = $localize`:@@search.createEntity.newEntity:Create new entity`;
 
     /** The entity address (DET-01): the route's `guid` parameter. */
     protected readonly guid = toSignal(this.route.paramMap.pipe(map((params) => params.get("guid") ?? "")), {
@@ -436,19 +430,6 @@ export class Details {
      */
     protected edit(): void {
         void this.router.navigate([{ outlets: { drawer: ["edit", this.guid()] } }]);
-    }
-
-    /**
-     * A box header's `+` was clicked (DET-37): open the editor drawer at
-     * create with the layout row's type fixed (DD-330's route, no type
-     * picker round), and name this entity for the drawer's seeded
-     * relationship (EDT-13's pick shape) through the query parameters.
-     * @param type the type to create, from the layout row
-     */
-    protected createFromBox(type: string): void {
-        void this.router.navigate([{ outlets: { drawer: ["create", type] } }], {
-            queryParams: { dqField: this.guid(), dqFieldLabel: this.title() },
-        });
     }
 
     /**

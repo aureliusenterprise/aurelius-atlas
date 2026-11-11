@@ -159,22 +159,6 @@
                 (sortChange)="onSectionSort(view, $event)"
                 (nextPage)="onSectionPage(view)"
             >
-                <!-- The box's create `+` (DET-37): the layout row names the
-                     type, the same atlas-write gate as the pencil. The
-                     part's `header-actions` slot draws it beside the title. -->
-                @if (canWrite() && view.createAction) {
-                    <button
-                        type="button"
-                        header-actions
-                        class="button is-small is-info aurelius-details-create-rule"
-                        [attr.aria-label]="createLabel"
-                        (click)="createFromBox(view.createAction.type)"
-                    >
-                        <span class="icon is-small">
-                            <fa-icon aria-hidden="true" [icon]="faPlus"></fa-icon>
-                        </span>
-                    </button>
-                }
                 @for (card of view.cards; track card.guid) {
                     <!-- The column rides Bulma's sizing helpers: three
                              across on a desktop at most, two on a tablet,

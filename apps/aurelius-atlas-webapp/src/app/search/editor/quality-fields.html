@@ -64,8 +64,9 @@
                 />
             </div>
         </div>
-        <!-- The kind Select (EDT-25): the served vocabulary's order, each
-                 row labelled by its name. The plain dropdown, EDT-04's shape. -->
+        <!-- The kind Select (EDT-25, EDT-31): the served vocabulary's
+                 order, each row labelled by its human name — the raw engine
+                 name never shows. The plain dropdown, EDT-04's shape. -->
         <div class="field aurelius-editor-field aurelius-quality-kind" data-field="dqcheckkind">
             <aurelius-atlas-ui-select
                 [options]="kindRows()"
@@ -77,9 +78,15 @@
             ></aurelius-atlas-ui-select>
         </div>
         @if (selectedKind()) {
-        <!-- The dimension (EDT-25): the kind's own, read-only — the
-                     legacy control typed it freely (DV-148); the engine
-                     derives it from the kind (DQ-01). -->
+        <!-- The kind's description (EDT-31): the catalogue's one-line
+                     plain-English read of the check, above the dimension.
+                     A kind the catalogue does not name shows no line. -->
+        @if (kindDescription()) {
+        <p class="help aurelius-quality-kind-description">{{ kindDescription() }}</p>
+        }
+        <!-- The dimension (EDT-25, EDT-31): the kind's own, read-only and
+                     localized — the legacy control typed it freely
+                     (DV-148); the engine derives it from the kind (DQ-01). -->
         <div class="field aurelius-editor-field aurelius-quality-dimension" data-field="dimension">
             <p class="label">{{ dimensionLabel }}</p>
             <p class="is-size-7 aurelius-quality-dimension-value">{{ dimensionText() }}</p>
@@ -162,15 +169,31 @@
                 {{ activeLabel }}
             </label>
         </div>
+        <!-- The threshold pair (EDT-32, DD-479): a range slider beside an
+                 editable number, side by side. Both ride the served bounds
+                 (QRE-01) at step 0.05 and one value (the number's text);
+                 editing either moves both. An empty number rests the slider
+                 at the engine's default 1.0 (EDT-27's empty rule). -->
         <div class="field aurelius-editor-field aurelius-quality-threshold" data-field="threshold">
             <label class="label" for="editor-threshold">{{ thresholdLabel }}</label>
-            <div class="control">
+            <div class="control aurelius-quality-threshold-pair">
+                <input
+                    type="range"
+                    class="aurelius-quality-threshold-slider"
+                    id="editor-threshold-slider"
+                    [attr.aria-label]="thresholdLabel"
+                    [attr.min]="thresholdMin()"
+                    [attr.max]="thresholdMax()"
+                    step="0.05"
+                    [value]="thresholdSliderValue()"
+                    (input)="thresholdChanged($any($event.target).value)"
+                />
                 <input
                     type="number"
                     class="input aurelius-editor-text"
                     id="editor-threshold"
-                    min="0"
-                    max="1"
+                    [attr.min]="thresholdMin()"
+                    [attr.max]="thresholdMax()"
                     step="0.05"
                     [value]="values().threshold"
                     (input)="thresholdChanged($any($event.target).value)"
