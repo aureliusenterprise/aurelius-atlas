@@ -67,6 +67,7 @@ New here? This is the whole set in one table. Read the records that govern the a
 | [057](<https://aureliusenterprise.github.io/docs-14-1-legacy-records/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>) | The system ships as Helm charts — one per component, one umbrella — that a deployment installs; the repository names the path, not the cluster. | Accepted |
 | [058](<https://aureliusenterprise.github.io/docs-14-1-legacy-records/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>) | A new catalogue starts with the m4i data dictionary types, created at start-up after Atlas's own; an operator may turn this off. | Accepted |
 | [059](<https://aureliusenterprise.github.io/docs-14-1-legacy-records/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/index.md>) | The catalogue searches by meaning: each entity's embedding, computed by a model that runs on site, kept in the one store; Aurelius endpoints of their own, Atlas's API unchanged. | Proposed |
+| [060](<https://aureliusenterprise.github.io/docs-14-1-legacy-records/architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/index.md>) | The original webapp's App Search API returns as a view over the one store, kept up to date by the server's tasks; no Enterprise Search, Kafka or Flink. | Accepted |
 
 ## Why record decisions
 

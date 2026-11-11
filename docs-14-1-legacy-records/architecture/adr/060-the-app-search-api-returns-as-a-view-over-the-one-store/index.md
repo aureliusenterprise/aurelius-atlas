@@ -1,6 +1,6 @@
 # 060\. The App Search API returns, as a view over the one store
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-10
 - **Deciders:** Aurelius Enterprise
 
