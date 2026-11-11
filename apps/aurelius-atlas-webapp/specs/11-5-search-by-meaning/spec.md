@@ -1,6 +1,6 @@
 # 11.5 Search by meaning in the webapp
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#309](https://github.com/aureliusenterprise/aurelius-atlas/pull/309)
 - **Records:** ADR 059 (Proposed); DD-444 to DD-447 (DD-444 and DD-446 superseded by DD-473 and DD-474,
   11.5b); relies on 11.4 (the endpoints, SBM-01 to SBM-08,
