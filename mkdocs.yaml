@@ -178,6 +178,7 @@ nav:
                 - 057. The system ships as Helm charts: architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md
                 - 058. A new catalogue starts with the m4i types: architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md
                 - 059. The catalogue searches by meaning: architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site.md
+                - 060. The App Search API returns: architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store.md
                 - 061. The governance banner answers live verdicts: architecture/adr/061-the-governance-banner-answers-live-verdicts.md
           - Conversion:
                 - architecture/conversion/index.md
