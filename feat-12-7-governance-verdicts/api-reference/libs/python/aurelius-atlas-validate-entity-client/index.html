@@ -7487,7 +7487,7 @@ were refused there).</p>
    (aurelius_atlas_validate_entity_client.models.GovernanceVerdict)" href="./#aurelius_atlas_validate_entity_client.models.GovernanceVerdict">GovernanceVerdict</a></code></b>
           –
           <div class="doc-md-description">
-            <p>One ACTIVE governance rule's answer about the draft (VEV-02).</p>
+            <p>One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -7499,7 +7499,7 @@ were refused there).</p>
    (aurelius_atlas_validate_entity_client.models.UnreadRule)" href="./#aurelius_atlas_validate_entity_client.models.UnreadRule">UnreadRule</a></code></b>
           –
           <div class="doc-md-description">
-            <p>A rule the vocabulary cannot read — recorded, never executed (VEV-03, DV-146).</p>
+            <p>A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146).</p>
           </div>
         </li>
         <li class="doc-section-item field-body">
@@ -7511,7 +7511,7 @@ were refused there).</p>
    (aurelius_atlas_validate_entity_client.models.ValidationResponse)" href="./#aurelius_atlas_validate_entity_client.models.ValidationResponse">ValidationResponse</a></code></b>
           –
           <div class="doc-md-description">
-            <p>The <code>POST /</code> answer: the verdicts of the ACTIVE rules, and the unread ones.</p>
+            <p>The <code>POST /</code> answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).</p>
           </div>
         </li>
     </ul>
@@ -7551,7 +7551,7 @@ were refused there).</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>One ACTIVE governance rule's answer about the draft (VEV-02).</p>
+        <p>One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).</p>
 <p><code>compliant</code> is a JSON boolean — 12.6's verdict, not the mock's string flag — and
 <code>message</code> is the verdict line the engine carries: the rule's own sentence for its
 verdict, the kind's reason when the rule stores none (GQ-06).</p>
@@ -7559,7 +7559,7 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ACTIVE governance rule's answer about the draft (VEV-02).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06)."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"ruleGuid"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The catalogue guid of the rule that answered."</span><span class="p">,</span>
@@ -7879,12 +7879,12 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>A rule the vocabulary cannot read — recorded, never executed (VEV-03, DV-146).</p>
+        <p>A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146).</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03, DV-146)."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03; CL-40; DV-146)."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"ruleGuid"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The catalogue guid of the unread rule."</span><span class="p">,</span>
@@ -8087,14 +8087,14 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
             <p class="doc doc-class-bases">
               Bases: <code><span title="pydantic.BaseModel">BaseModel</span></code></p>
 
-        <p>The <code>POST /</code> answer: the verdicts of the ACTIVE rules, and the unread ones.</p>
+        <p>The <code>POST /</code> answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).</p>
 
       <details><summary>Show JSON schema:</summary>
         <div class="codehilite"><pre><span></span><code><span class="p">{</span>
 <span class="w">  </span><span class="nt">"$defs"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"GovernanceVerdict"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ACTIVE governance rule's answer about the draft (VEV-02).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06)."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"ruleGuid"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The catalogue guid of the rule that answered."</span><span class="p">,</span>
@@ -8140,7 +8140,7 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"UnreadRule"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03, DV-146)."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03; CL-40; DV-146)."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="nt">"ruleGuid"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The catalogue guid of the unread rule."</span><span class="p">,</span>
@@ -8168,7 +8168,7 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"additionalProperties"</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498)."</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="nt">"verdicts"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"One verdict per ACTIVE rule the vocabulary could read (VEV-02)."</span><span class="p">,</span>

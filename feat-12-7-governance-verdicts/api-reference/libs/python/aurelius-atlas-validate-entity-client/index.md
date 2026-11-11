@@ -28,19 +28,19 @@ Classes:
 
 - **`GovernanceVerdict`** –
 
-  One ACTIVE governance rule's answer about the draft (VEV-02).
+  One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).
 - **`UnreadRule`** –
 
-  A rule the vocabulary cannot read — recorded, never executed (VEV-03, DV-146).
+  A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146).
 - **`ValidationResponse`** –
 
-  The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones.
+  The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).
 
 ### GovernanceVerdict
 
 Bases: `BaseModel`
 
-One ACTIVE governance rule's answer about the draft (VEV-02).
+One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).
 
 `compliant` is a JSON boolean — 12.6's verdict, not the mock's string flag — and `message` is the verdict line the engine carries: the rule's own sentence for its verdict, the kind's reason when the rule stores none (GQ-06).
 
@@ -49,7 +49,7 @@ One ACTIVE governance rule's answer about the draft (VEV-02).
 ```
 {
   "additionalProperties": false,
-  "description": "One ACTIVE governance rule's answer about the draft (VEV-02).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06).",
+  "description": "One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06).",
   "properties": {
     "ruleGuid": {
       "description": "The catalogue guid of the rule that answered.",
@@ -168,14 +168,14 @@ The rule's name, as the catalogue holds it.
 
 Bases: `BaseModel`
 
-A rule the vocabulary cannot read — recorded, never executed (VEV-03, DV-146).
+A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146).
 
 **Show JSON schema:**
 
 ```
 {
   "additionalProperties": false,
-  "description": "A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03, DV-146).",
+  "description": "A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03; CL-40; DV-146).",
   "properties": {
     "ruleGuid": {
       "description": "The catalogue guid of the unread rule.",
@@ -249,7 +249,7 @@ The rule's name, as the catalogue holds it.
 
 Bases: `BaseModel`
 
-The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones.
+The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).
 
 **Show JSON schema:**
 
@@ -258,7 +258,7 @@ The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones.
   "$defs": {
     "GovernanceVerdict": {
       "additionalProperties": false,
-      "description": "One ACTIVE governance rule's answer about the draft (VEV-02).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06).",
+      "description": "One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06).",
       "properties": {
         "ruleGuid": {
           "description": "The catalogue guid of the rule that answered.",
@@ -304,7 +304,7 @@ The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones.
     },
     "UnreadRule": {
       "additionalProperties": false,
-      "description": "A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03, DV-146).",
+      "description": "A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03; CL-40; DV-146).",
       "properties": {
         "ruleGuid": {
           "description": "The catalogue guid of the unread rule.",
@@ -332,7 +332,7 @@ The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones.
     }
   },
   "additionalProperties": false,
-  "description": "The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones.",
+  "description": "The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).",
   "properties": {
     "verdicts": {
       "description": "One verdict per ACTIVE rule the vocabulary could read (VEV-02).",
