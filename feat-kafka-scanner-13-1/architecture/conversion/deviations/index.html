@@ -7408,7 +7408,7 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-147</td>
 <td>Kafka scanning</td>
 <td>The legacy cluster scanner chose its source with one <code>SOURCE</code> variable, authenticated to the broker and the catalogue with an admin's username and password, listed every topic it found, spoke only TLS-plus-OAuth or nothing, and a broker it could not reach left it hanging; it retried each entity write singly</td>
-<td>Aurelius runs its own app (<code>aurelius-atlas-kafka-scanner</code>), signs as its own service identity through the catalogue server (KSC-09), filters topics by pattern (KSC-02), speaks PLAINTEXT or SSL with a CA (KSC-10), fails the run naming the bootstrap list when metadata does not answer (KSC-01), and writes once per scan (KSC-07). The broker holds no credentials by decision (DD-469); its machine identity lands with 13.2's prod chart</td>
+<td>Aurelius runs its own app (<code>aurelius-atlas-kafka-scanner</code>), signs as its own service identity through the catalogue server (KSC-09), filters topics by pattern (KSC-02), speaks the auth ladder (PLAINTEXT, SSL with a CA, SASL with PLAIN/SCRAM/OAUTHBEARER, KSC-10, DD-471 — the OAuth broker token rides the same mint the catalogue legs use), fails the run naming the bootstrap list when metadata does not answer (KSC-01), and writes once per scan (KSC-07)</td>
 <td>The legacy friction was the reason the job went unused; the capability was worth keeping and the friction was not (spec 13.1's Scope)</td>
 <td>13.1</td>
 </tr>
