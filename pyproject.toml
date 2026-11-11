@@ -15,6 +15,7 @@ dev = [
     "aurelius-atlas-data2model-client",
     "aurelius-atlas-dsl",
     "aurelius-atlas-embedder",
+    "aurelius-atlas-kafka-scanner",
     "aurelius-atlas-license-report",
     "aurelius-atlas-lineage-model",
     "aurelius-atlas-lineage-model-client",
@@ -86,6 +87,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-lineage-model-client]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-kafka-scanner]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-model]
 workspace = true
 
@@ -132,6 +136,7 @@ workspace = true
 members = [
     "apps/aurelius-atlas-data2model",
     "apps/aurelius-atlas-embedder",
+    "apps/aurelius-atlas-kafka-scanner",
     "apps/aurelius-atlas-lineage-model",
     "apps/aurelius-atlas-quality-scanner",
     "apps/aurelius-atlas-validate-entity",
@@ -204,6 +209,12 @@ root = "libs/python/aurelius-atlas-lineage-model-client"
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["libs/python/aurelius-atlas-validate-entity-client/tests"]
 root = "libs/python/aurelius-atlas-validate-entity-client"
+
+# The Kafka scanner's e2e imports its fixtures module-style (`from conftest import
+# ...`); the path keeps that import resolvable for pyright as pytest resolves it.
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-kafka-scanner/e2e"]
+root = "apps/aurelius-atlas-kafka-scanner"
 
 [[tool.pyright.executionEnvironments]]
 # e2e first: the suite imports its fixtures module-style (`from conftest import ...`)

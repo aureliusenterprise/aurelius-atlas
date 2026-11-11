@@ -1,0 +1,12 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-dev-kafka",
+    "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/noop-version-actions.ts"
+        }
+    },
+    "tags": [],
+    "targets": {}
+}
