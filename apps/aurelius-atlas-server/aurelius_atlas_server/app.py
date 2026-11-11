@@ -55,6 +55,7 @@ from aurelius_atlas_server.routes import (
     GLOSSARY,
     LINEAGE,
     LOGIN,
+    QUALITY,
     RELATIONSHIP,
     SEARCH_BY_MEANING,
     TYPES,
@@ -248,7 +249,7 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
     # them all; the instrumentor below wraps this middleware.
     app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
     app.add_exception_handler(AtlasError, atlas_error_handler)
-    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN, SEARCH_BY_MEANING):
+    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN, SEARCH_BY_MEANING, QUALITY):
         app.include_router(router)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)

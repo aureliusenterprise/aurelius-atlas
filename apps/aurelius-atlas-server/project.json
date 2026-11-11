@@ -9,6 +9,7 @@
         "aurelius-atlas-dev-observability",
         "aurelius-atlas-model",
         "aurelius-atlas-otel",
+        "aurelius-atlas-quality",
         "aurelius-atlas-store-es"
     ],
     "name": "aurelius-atlas-server",
