@@ -1116,10 +1116,14 @@ The name of an increment directory: `N-M-slug`, the minor carrying an optional l
 ### PRUNE\_DIRECTORIES
 
 ```
-PRUNE_DIRECTORIES = frozenset({'.git', '.venv', '.tox', 'node_modules', '__pycache__', 'dist', 'site', 'coverage'})
+PRUNE_DIRECTORIES = frozenset(
+    {".git", ".venv", ".tox", "node_modules", "__pycache__", "dist", "site", "coverage", "tmp"}
+)
 ```
 
 Project directories the search for specifications never enters.
+
+The scratch tree (`tmp/`, where local spikes and merge sandboxes live) holds stale copies of whole spec trees; entering it reports rules that no live spec has (the 7.24 trace run's DTM-08 conflict came from a copy under `tmp/`).
 
 ### SPEC\_FILE\_NAME
 
