@@ -333,6 +333,14 @@
                     "ruleType": "Rule type",
                     "ruleTypePlaceholder": "Rule type"
                 },
+                "dataQualityRule": {
+                    "active": "Active",
+                    "addValue": "Add a value...",
+                    "checkKind": "Check kind",
+                    "couldNotCheck": "The rule could not be checked against the server. Try again.",
+                    "kindsFailed": "The rule kinds could not be loaded.",
+                    "threshold": "Threshold"
+                },
                 "historyPlaceholder": "History",
                 "person": {
                     "dataOwnerAttributes": "Data owner attributes",

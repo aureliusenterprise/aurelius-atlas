@@ -17,7 +17,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, RouterOutlet, convertToParamMap, provideRouter } from "@angular/router";
 import { By } from "@angular/platform-browser";
 import Keycloak from "keycloak-js";
-import { Subject } from "rxjs";
+import { Subject, of } from "rxjs";
 
 import { Holdable } from "aurelius-atlas-ui";
 
@@ -155,7 +155,14 @@ function setup({
     create = false,
     createType = "",
     atlasWrite = true,
-}: { guid?: string; create?: boolean; createType?: string; atlasWrite?: boolean } = {}) {
+    query = {},
+}: {
+    guid?: string;
+    create?: boolean;
+    createType?: string;
+    atlasWrite?: boolean;
+    query?: Record<string, string>;
+} = {}) {
     const paramMap = new Subject<ParamMap>();
     TestBed.configureTestingModule({
         imports: [EntityEditor],
@@ -167,6 +174,7 @@ function setup({
                 provide: ActivatedRoute,
                 useValue: {
                     paramMap,
+                    queryParamMap: of(convertToParamMap(query)),
                     snapshot: { data: { editorMode: create ? "create" : "edit" } },
                 },
             },
@@ -1250,5 +1258,300 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
             "This entity has a name",
             "This entity has a definition",
         ]);
+    });
+});
+
+/* ------------------------------------------------------------------ */
+/* The quality-mode drawer (EDT-25, EDT-28, EDT-29, DET-37).            */
+/* ------------------------------------------------------------------ */
+
+const KINDS_URL = "/api/aurelius/v1/quality/kinds";
+const RULE_VALIDATE_URL = "/api/aurelius/v1/quality/rules/validate";
+
+/** The vocabulary answer the quality form draws (a subset of QRE-01's). */
+const QUALITY_KINDS = {
+    kinds: [
+        {
+            name: "COLUMN_NOT_NULL_RATIO",
+            dimension: "completeness",
+            required: ["column"],
+            optional: [],
+            reason: "The column carries a value.",
+        },
+        {
+            name: "ROW_NOT_EMPTY",
+            dimension: "completeness",
+            required: ["columns"],
+            optional: ["minColumns"],
+            reason: "The row carries its columns.",
+        },
+    ],
+    castableTypes: ["int"],
+    thresholdMin: 0,
+    thresholdMax: 1,
+};
+
+/** The typedefs the quality drawer reads: the rule type with its derived
+ * `fields` end (EDT-13's machinery) and the DataSet/Referenceable noise ends
+ * the quality mode must not draw (EDT-25). */
+const QUALITY_TYPEDEFS: AtlasTypesDef = {
+    entityDefs: [
+        {
+            name: "Referenceable",
+            attributeDefs: [{ name: "qualifiedName", typeName: "string", isUnique: true, isOptional: false }],
+        },
+        {
+            name: "Asset",
+            superTypes: ["Referenceable"],
+            attributeDefs: [
+                { name: "name", typeName: "string", isOptional: false },
+                { name: "description", typeName: "string" },
+            ],
+        },
+        { name: "DataSet", superTypes: ["Asset"] },
+        { name: "m4i_field", attributeDefs: [{ name: "name", typeName: "string" }] },
+        {
+            name: "m4i_referenceable",
+            superTypes: ["Referenceable"],
+            relationshipAttributeDefs: [{ name: "meanings", typeName: "array<m4i_field>", cardinality: "SET" }],
+        },
+        {
+            name: "m4i_data_quality",
+            superTypes: ["DataSet", "m4i_referenceable"],
+            attributeDefs: [{ name: "ruleDescription", typeName: "string" }],
+            relationshipAttributeDefs: [
+                {
+                    name: "fields",
+                    typeName: "array<m4i_field>",
+                    cardinality: "SET",
+                    relationshipTypeName: "m4i_data_quality_field_assignment",
+                },
+            ],
+        },
+    ],
+    classificationDefs: [],
+    enumDefs: [],
+    structDefs: [],
+    businessMetadataDefs: [],
+    relationshipDefs: [],
+};
+
+/** The stored vocabulary rule (EDT-29's seed source): a kind, its
+ * parameter, and foreign leftovers (EWR-09's materialized dqpattern). */
+const RULE_ANSWER: AtlasEntityWithExtInfo = {
+    entity: {
+        guid: "r-1",
+        typeName: "m4i_data_quality",
+        attributes: {
+            name: "total_not_null",
+            qualifiedName: "total_not_null@cluster",
+            id: 7,
+            dqcheckkind: "COLUMN_NOT_NULL_RATIO",
+            dqcolumn: "total",
+            dqpattern: "leftover",
+            active: true,
+            threshold: 0.95,
+        },
+        relationshipAttributes: {
+            fields: [{ guid: "f1", typeName: "m4i_field", displayText: "total", relationshipStatus: "ACTIVE" }],
+        },
+        classifications: [],
+    },
+    referredEntities: {},
+};
+
+/** The legacy rule (EDT-29): no kind — the generic form and no validate. */
+const LEGACY_RULE_ANSWER: AtlasEntityWithExtInfo = {
+    entity: {
+        guid: "r-2",
+        typeName: "m4i_data_quality",
+        attributes: {
+            name: "legacy_rule",
+            qualifiedName: "legacy_rule@cluster",
+            id: 9,
+            dataqualitytype: "pattern",
+            dataqualityoperator: "regularexpression",
+            expression: "^\\d+$",
+            description: "A pair rule the scanner still reads (DQ-07).",
+        },
+        classifications: [],
+    },
+    referredEntities: {},
+};
+
+/** Set the quality form's name input (the child's, EDT-27). */
+function typeRuleName(compiled: HTMLElement, fixture: { detectChanges: () => void }, value: string): void {
+    const input = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+    input.value = value;
+    input.dispatchEvent(new Event("input"));
+    fixture.detectChanges();
+}
+
+describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, DET-37)", () => {
+    it("opens a vocabulary rule in the quality form, not the attribute list (EDT-25, EDT-29)", () => {
+        const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        const kindsRequest = httpMock.expectOne(KINDS_URL);
+        kindsRequest.flush(QUALITY_KINDS);
+        fixture.detectChanges();
+
+        // The kind Select stands where the attribute list would; the generic
+        // description control (the markdown field, EDT-20) is gone (EDT-27).
+        expect(compiled.querySelector(".aurelius-quality-kind")).toBeTruthy();
+        expect(compiled.querySelector("textarea#editor-description")).toBeFalsy();
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("total_not_null");
+        // Only the `fields` picker renders — the DataSet/m4i_referenceable
+        // noise ends the derived typedefs carry stay out (EDT-25).
+        const pickers = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
+        expect(pickers.map((picker) => picker.getAttribute("data-field"))).toEqual(["fields"]);
+        expect(pickers[0]?.querySelector(".aurelius-relationship-chip")?.textContent).toContain("total");
+    });
+
+    it("opens a legacy rule in the generic form, unchecked (EDT-29)", () => {
+        const { fixture, compiled, httpMock } = setup({ guid: "r-2" });
+        arrive(fixture, httpMock, LEGACY_RULE_ANSWER, QUALITY_TYPEDEFS);
+
+        // No quality form, no kinds call; the pair attributes are not rendered
+        // as editable fields either — the expression rides the save untouched
+        // through the pass-through (EDT-29's last clause, proven at the save).
+        expect(compiled.querySelector(".aurelius-quality-kind")).toBeFalsy();
+        httpMock.expectNone(KINDS_URL);
+        expect(compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")?.value).toContain(
+            "A pair rule the scanner still reads (DQ-07).",
+        );
+
+        // Its Save is the EDT-06 path: no validate call, expression rides.
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        httpMock.expectNone(RULE_VALIDATE_URL);
+        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const posted = (post.request.body as { entity: { attributes: Record<string, unknown> } }).entity;
+        expect(posted.attributes["expression"]).toBe("^\\d+$");
+        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        expect(navigate).toHaveBeenCalled();
+    });
+
+    it("validates before the POST, and posts the minimal quality body (EDT-28, EDT-27)", () => {
+        const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
+        fixture.detectChanges();
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        // The validate call first (EDT-28): the draft's stored-rule shape.
+        const validate = httpMock.expectOne(RULE_VALIDATE_URL);
+        expect(validate.request.method).toBe("POST");
+        expect(validate.request.body).toMatchObject({
+            name: "total_not_null",
+            id: 7,
+            qualifiedName: "total_not_null@cluster",
+            dqcheckkind: "COLUMN_NOT_NULL_RATIO",
+            dqcolumn: "total",
+            active: true,
+            threshold: 0.95,
+        });
+        validate.flush({ valid: true, kind: "COLUMN_NOT_NULL_RATIO", dimension: "completeness" });
+        fixture.detectChanges();
+
+        // The EDT-06 save rides: the minimal body (no foreign dqpattern,
+        // EDT-27) plus the fields picker's full value (EDT-16).
+        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const posted = (
+            post.request.body as {
+                entity: { attributes: Record<string, unknown>; relationshipAttributes: Record<string, unknown> };
+            }
+        ).entity;
+        expect(posted.attributes["dqpattern"]).toBeUndefined();
+        expect(posted.attributes["dqcheckkind"]).toBe("COLUMN_NOT_NULL_RATIO");
+        expect(posted.relationshipAttributes["fields"]).toEqual([
+            {
+                guid: "f1",
+                typeName: "m4i_field",
+                displayText: "total",
+                relationshipType: "m4i_data_quality_field_assignment",
+                relationshipStatus: "ACTIVE",
+            },
+        ]);
+        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "r-1"], drawer: null } }]);
+    });
+
+    it("an engine refusal keeps the line and posts nothing (EDT-28)", () => {
+        const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
+        fixture.detectChanges();
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        httpMock.expectOne(RULE_VALIDATE_URL).flush({ valid: false, reason: "The rule needs a column." });
+        fixture.detectChanges();
+
+        // The reason rides the notification place (EDT-07's) and no POST fires.
+        expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
+            "The rule needs a column.",
+        );
+        httpMock.expectNone(ENTITY_POST_URL);
+
+        // A later edit clears the line (EDT-28); the next Save re-checks.
+        typeRuleName(compiled, fixture, "total_not_null_v2");
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeFalsy();
+        httpMock.verify();
+    });
+
+    it("a validate transport failure answers the generic line, unchecked never saves (EDT-28)", () => {
+        const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
+        fixture.detectChanges();
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        httpMock.expectOne(RULE_VALIDATE_URL).flush({}, { status: 502, statusText: "Bad Gateway" });
+        fixture.detectChanges();
+
+        expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
+            "The rule could not be checked against the server. Try again.",
+        );
+        httpMock.expectNone(ENTITY_POST_URL);
+        httpMock.verify();
+    });
+
+    it("an incomplete quality form bails before the call (EDT-28/EDT-07)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "m4i_data_quality" });
+        arriveTypeDefs(fixture, httpMock, QUALITY_TYPEDEFS);
+        httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
+        fixture.detectChanges();
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        httpMock.expectNone(RULE_VALIDATE_URL); // nothing drafted — nothing to check
+        expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
+            "This entity can't be saved because one or more required fields are missing.",
+        );
+    });
+
+    it("the rules box's + preselects the open field in the fields picker (DET-37)", () => {
+        const { fixture, compiled, httpMock } = setup({
+            create: true,
+            createType: "m4i_data_quality",
+            query: { dqField: "f9", dqFieldLabel: "total" },
+        });
+        arriveTypeDefs(fixture, httpMock, QUALITY_TYPEDEFS);
+        httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
+        fixture.detectChanges();
+
+        // The create route carries the type fixed (DD-330, no picker round)
+        // and the seed pick rides the fields picker as one chip (EDT-13's
+        // pick shape, DET-37).
+        const picker = compiled.querySelector<HTMLElement>(".aurelius-editor-relationship");
+        expect(picker?.getAttribute("data-field")).toBe("fields");
+        expect(picker?.querySelector(".aurelius-relationship-chip")?.textContent).toContain("total");
     });
 });

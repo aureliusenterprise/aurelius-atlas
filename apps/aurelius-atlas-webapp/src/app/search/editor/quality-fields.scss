@@ -1,0 +1,81 @@
+/*
+ * The quality rule form (EDT-25..EDT-27, DD-475/DD-476). The component keeps
+ * the drawer's class names so the shapes match, but Angular's component-scoped
+ * styles mean each rule must exist here too: the between-field rhythm, the
+ * notification's place at the top of the form, and the loading line's margin
+ * mirror `entity-editor.component.scss` on purpose — if the drawer's rhythm
+ * changes, this one follows. What is only the quality form's: the chips box
+ * (the classification box's anatomy, DD-335, without the suggestion panel —
+ * a value list, not a combobox) and the read-only dimension line.
+ */
+
+/* The between-field rhythm (EDT-03's, mirrored): the drawer's own rule cannot
+   reach across the component boundary. */
+.aurelius-editor-field + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+/* The required-fields notification (EDT-28 over EDT-07/DD-331): the top of
+   the form, the same place the generic form keeps it. Bulma carries the box
+   and its delete. */
+.aurelius-editor-notification {
+    margin-bottom: 1.5rem;
+}
+
+.aurelius-editor-loading {
+    margin-bottom: 0.75rem;
+}
+
+/* The chips box (EDT-26): the bordered box every list control in this drawer
+   wears (the classification box's and the picker's anatomy, DD-335/DD-341),
+   built from the same Bulma control vars. */
+.aurelius-quality-chips-box {
+    align-items: center;
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-l));
+    border: var(--bulma-control-border-width) solid var(--bulma-border);
+    border-radius: var(--bulma-control-radius);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--bulma-control-size);
+    gap: 0.375rem;
+    min-height: var(--bulma-control-height);
+    padding: calc(0.5em - 1px) calc(0.75em - 1px);
+}
+
+.aurelius-quality-chips-box:focus-within {
+    border-color: hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    box-shadow: 0 0 0 0.125em
+        hsla(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l), var(--bulma-focus-shadow-alpha));
+}
+
+/* The value input inside the box: the box owns the border and padding, so
+   the input is borderless, transparent and flush (DD-335's rule). */
+.aurelius-quality-chips-box .aurelius-quality-chips-input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: hsl(var(--bulma-text-h), var(--bulma-text-s), var(--bulma-text-strong-l));
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    outline: none;
+    padding: 0;
+}
+
+/* The chip inside the box: the box's flex gap spaces them, so the chip drops
+   its own margin (DD-335's rule again). */
+.aurelius-quality-chips-box .aurelius-quality-chip {
+    flex: 0 0 auto;
+}
+
+/* Narrow viewports (DD-336's rule): the box lets the input claim a full line. */
+@media screen and (width <= 768px) {
+    .aurelius-quality-chips-box .aurelius-quality-chips-input {
+        flex-basis: 100%;
+    }
+}
+
+/* The read-only dimension (EDT-25): the kind's own, the static type text's
+   shape (EDT-04's edit-mode type line), not a control. */
+.aurelius-quality-dimension-value {
+    word-break: break-word;
+}

@@ -14,6 +14,7 @@ export * from "./lib/atlas/atlas-relationship";
 export * from "./lib/atlas/atlas-search";
 export * from "./lib/atlas/atlas-tasks";
 export * from "./lib/atlas/atlas-typedef";
+export * from "./lib/aurelius/quality-rule.service";
 export * from "./lib/aurelius/search-by-meaning.service";
 export * from "./lib/aux/aux-config";
 export * from "./lib/aux/lineage-model.service";

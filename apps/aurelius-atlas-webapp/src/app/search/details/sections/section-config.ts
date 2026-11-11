@@ -28,6 +28,13 @@ export interface SectionDef {
     readonly title: string;
     /** The `relationshipAttributes` keys whose entries seed the section. */
     readonly seedKeys: readonly string[];
+    /**
+     * The box header's create door (DET-37): when set, the box shows a `+`
+     * under the same atlas-write gate as the pencil, opening the editor's
+     * create-mode drawer with the type fixed (DD-330's route, no type
+     * picker). Only the field's rules box names one.
+     */
+    readonly create?: { readonly type: string };
 }
 
 /**
@@ -253,6 +260,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-rules",
                 title: $localize`:@@search.details.field.dataQualityCards.title:Data Quality Rules`,
                 seedKeys: ["dataQuality"],
+                // DET-37 (7.27): the box's `+` opens the drawer at create
+                // with the rule type fixed — the box-scoped create door.
+                create: { type: "m4i_data_quality" },
             },
         ],
         stats: [

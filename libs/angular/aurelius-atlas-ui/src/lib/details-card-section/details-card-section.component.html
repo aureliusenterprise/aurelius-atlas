@@ -18,6 +18,11 @@
                 >
             </h6>
         </div>
+        <!-- The caller's header actions (DET-37): a named slot beside the
+             title, empty for every section that projects nothing. The
+             rules box's create `+` rides it; the part stays dumb — the
+             button, its gate, and its route belong to the caller. -->
+        <ng-content select="[header-actions]"></ng-content>
     </div>
     <div class="level-right">
         <div class="field has-addons aurelius-card-section-controls">

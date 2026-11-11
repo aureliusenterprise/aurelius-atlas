@@ -333,6 +333,14 @@
                     "ruleType": "Regeltype",
                     "ruleTypePlaceholder": "Regeltype"
                 },
+                "dataQualityRule": {
+                    "active": "Actief",
+                    "addValue": "Voeg een waarde toe...",
+                    "checkKind": "Controlesoort",
+                    "couldNotCheck": "De regel kon niet worden gecontroleerd bij de server. Probeer het opnieuw.",
+                    "kindsFailed": "De regelsoorten konden niet worden geladen.",
+                    "threshold": "Drempelwaarde"
+                },
                 "historyPlaceholder": "Geschiedenis",
                 "person": {
                     "dataOwnerAttributes": "Data Eigenaar Attributen",

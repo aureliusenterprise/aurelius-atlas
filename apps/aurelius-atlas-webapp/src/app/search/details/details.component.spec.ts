@@ -1246,7 +1246,55 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         fixture.detectChanges();
         expect(statValue()).toBe("Available");
     });
+
+    it("the field's rules box carries the create `+` (DET-37)", () => {
+        const { fixture, compiled, httpMock } = setup("field-1");
+        arriveSections(fixture, httpMock, m4iField());
+
+        const plus = compiled.querySelector<HTMLButtonElement>("#related-rules button.aurelius-details-create-rule");
+        expect(plus).toBeTruthy();
+        expect(plus?.getAttribute("aria-label")).toBe("Create new entity");
+        expect(plus?.querySelector("fa-icon")).toBeTruthy();
+        // The other boxes of the layout carry no door (DET-37: rules only).
+        expect(compiled.querySelector("#related-attributes button.aurelius-details-create-rule")).toBeNull();
+        expect(compiled.querySelector("#related-fields button.aurelius-details-create-rule")).toBeNull();
+    });
+
+    it("the create `+` hides without the atlas-write grant (DET-37, EDT-08's gate)", () => {
+        const { fixture, compiled, httpMock } = setup("field-1", { atlasWrite: false });
+        arriveSections(fixture, httpMock, m4iField());
+
+        expect(compiled.querySelector("button.aurelius-details-create-rule")).toBeNull();
+    });
+
+    it("the create `+` opens the drawer at create with the rule type and the field (DET-37)", () => {
+        const { fixture, compiled, httpMock } = setup("field-1");
+        arriveSections(fixture, httpMock, m4iField());
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLButtonElement>("#related-rules button.aurelius-details-create-rule")!.click();
+
+        // DD-330's route with the type fixed (no picker round); the query
+        // names the open field for the drawer's seeded `fields` pick.
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "m4i_data_quality"] } }], {
+            queryParams: { dqField: "field-1", dqFieldLabel: "total" },
+        });
+    });
 });
+
+/** The field body: the DET-35 rules box seeds empty, the `+` rides the layout. */
+function m4iField(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+    return {
+        entity: {
+            guid: "field-1",
+            typeName: "m4i_field",
+            attributes: { name: "total", qualifiedName: "total@cluster" },
+            relationshipAttributes: {},
+            ...overrides,
+        },
+        referredEntities: {},
+    };
+}
 
 /**
  * Deliver the guid change's read: the first request already arrived via

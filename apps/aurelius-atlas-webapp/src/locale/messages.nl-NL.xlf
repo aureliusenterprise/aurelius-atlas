@@ -1233,6 +1233,36 @@ The technical data governance model consists of the following types of entities:
         <target>Relatie selecteren...</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.relationshipsInput.selectPlaceholder</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.active" datatype="html">
+        <source>Active</source>
+        <target>Actief</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.active</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.addValue" datatype="html">
+        <source>Add a value...</source>
+        <target>Voeg een waarde toe...</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.addValue</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.checkKind" datatype="html">
+        <source>Check kind</source>
+        <target>Controlesoort</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.checkKind</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.couldNotCheck" datatype="html">
+        <source>The rule could not be checked against the server. Try again.</source>
+        <target>De regel kon niet worden gecontroleerd bij de server. Probeer het opnieuw.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.couldNotCheck</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.kindsFailed" datatype="html">
+        <source>The rule kinds could not be loaded.</source>
+        <target>De regelsoorten konden niet worden geladen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.kindsFailed</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.dataQualityRule.threshold" datatype="html">
+        <source>Threshold</source>
+        <target>Drempelwaarde</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.threshold</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.dataset.childDataset" datatype="html">
         <source>Child datasets</source>
         <target>Onderliggende Datasets</target>
@@ -2577,6 +2607,26 @@ The technical data governance model consists of the following types of entities:
         <target>Niet van toepassing</target>
         <note priority="1" from="description">Aurelius dictionary key: search.details.process.unavailable</note>
       </trans-unit>
+      <trans-unit id="search.details.similar.failed" datatype="html">
+        <source>Similar entities could not be loaded.</source>
+        <target>Vergelijkbare entiteiten konden niet worden geladen.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.failed</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.none" datatype="html">
+        <source>No similar entities found.</source>
+        <target>Geen vergelijkbare entiteiten gevonden.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.none</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.notYet" datatype="html">
+        <source>This entity is not analysed yet. Try again in a moment.</source>
+        <target>Deze entiteit is nog niet geanalyseerd. Probeer het zo meteen opnieuw.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.notYet</note>
+      </trans-unit>
+      <trans-unit id="search.details.similar.title" datatype="html">
+        <source>Similar entities</source>
+        <target>Vergelijkbare entiteiten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.title</note>
+      </trans-unit>
       <trans-unit id="search.details.system.collections" datatype="html">
         <source>Collections</source>
         <target>Collecties</target>
@@ -2697,10 +2747,40 @@ The technical data governance model consists of the following types of entities:
         <target>Entiteit bewerken</target>
         <note priority="1" from="description">Aurelius dictionary key: search.editEntity.editEntity</note>
       </trans-unit>
+      <trans-unit id="search.mode.both" datatype="html">
+        <source>Both</source>
+        <target>Beide</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.both</note>
+      </trans-unit>
+      <trans-unit id="search.mode.label" datatype="html">
+        <source>Search by</source>
+        <target>Zoeken op</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.label</note>
+      </trans-unit>
+      <trans-unit id="search.mode.meaning" datatype="html">
+        <source>Meaning</source>
+        <target>Betekenis</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.meaning</note>
+      </trans-unit>
+      <trans-unit id="search.mode.unavailable" datatype="html">
+        <source>Search by meaning is not available on this server</source>
+        <target>Zoeken op betekenis is op deze server niet beschikbaar</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.unavailable</note>
+      </trans-unit>
+      <trans-unit id="search.mode.words" datatype="html">
+        <source>Words</source>
+        <target>Woorden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.mode.words</note>
+      </trans-unit>
       <trans-unit id="search.results.anotherQuery" datatype="html">
         <source>Please, try to make another query.</source>
         <target>Probeer een andere zoekopdracht.</target>
         <note priority="1" from="description">Aurelius dictionary key: search.results.anotherQuery</note>
+      </trans-unit>
+      <trans-unit id="search.results.closestMatches" datatype="html">
+        <source>closest matches</source>
+        <target>best passende resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.results.closestMatches</note>
       </trans-unit>
       <trans-unit id="search.results.noResults" datatype="html">
         <source>No results found</source>
@@ -3001,56 +3081,6 @@ The technical data governance model consists of the following types of entities:
         <source>Version</source>
         <target>Versie</target>
         <note priority="1" from="description">Aurelius dictionary key: version</note>
-      </trans-unit>
-      <trans-unit id="search.mode.label" datatype="html">
-        <source>Search by</source>
-        <target>Zoeken op</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.mode.label</note>
-      </trans-unit>
-      <trans-unit id="search.mode.words" datatype="html">
-        <source>Words</source>
-        <target>Woorden</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.mode.words</note>
-      </trans-unit>
-      <trans-unit id="search.mode.meaning" datatype="html">
-        <source>Meaning</source>
-        <target>Betekenis</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.mode.meaning</note>
-      </trans-unit>
-      <trans-unit id="search.mode.both" datatype="html">
-        <source>Both</source>
-        <target>Beide</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.mode.both</note>
-      </trans-unit>
-      <trans-unit id="search.mode.unavailable" datatype="html">
-        <source>Search by meaning is not available on this server</source>
-        <target>Zoeken op betekenis is op deze server niet beschikbaar</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.mode.unavailable</note>
-      </trans-unit>
-      <trans-unit id="search.results.closestMatches" datatype="html">
-        <source>closest matches</source>
-        <target>best passende resultaten</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.results.closestMatches</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.title" datatype="html">
-        <source>Similar entities</source>
-        <target>Vergelijkbare entiteiten</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.title</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.notYet" datatype="html">
-        <source>This entity is not analysed yet. Try again in a moment.</source>
-        <target>Deze entiteit is nog niet geanalyseerd. Probeer het zo meteen opnieuw.</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.notYet</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.none" datatype="html">
-        <source>No similar entities found.</source>
-        <target>Geen vergelijkbare entiteiten gevonden.</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.none</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.failed" datatype="html">
-        <source>Similar entities could not be loaded.</source>
-        <target>Vergelijkbare entiteiten konden niet worden geladen.</target>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.failed</note>
       </trans-unit>
     </body>
   </file>

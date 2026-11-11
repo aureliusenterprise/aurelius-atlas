@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, EventEmitter } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 
@@ -17,6 +17,21 @@ import { CardSortOption, DetailsCardSection } from "./details-card-section.compo
 })
 class ProjectHost {
     readonly options: CardSortOption[] = [{ key: "relevance", label: "Relevance" }];
+}
+
+/** A host projecting one header action — the rules box's create `+` (DET-37). */
+@Component({
+    selector: "aurelius-atlas-ui-card-action-host",
+    imports: [DetailsCardSection],
+    template: `
+        <aurelius-atlas-ui-details-card-section [title]="'Data Quality Rules'">
+            <button type="button" header-actions class="aurelius-test-header-action" (click)="added.emit()">Add</button>
+            <div class="column">one</div>
+        </aurelius-atlas-ui-details-card-section>
+    `,
+})
+class HeaderActionHost {
+    readonly added = new EventEmitter<void>();
 }
 
 describe("DetailsCardSection", () => {
@@ -144,6 +159,28 @@ describe("DetailsCardSection", () => {
         withCards.detectChanges();
 
         expect(withCards.nativeElement.querySelectorAll(".aurelius-card-section-grid .column")).toHaveLength(2);
+    });
+
+    it("projects a caller header action beside the title (DET-37)", () => {
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({ imports: [HeaderActionHost] });
+        const withAction = TestBed.createComponent(HeaderActionHost);
+        withAction.detectChanges();
+
+        const action: HTMLButtonElement = withAction.nativeElement.querySelector(
+            ".level-left button.aurelius-test-header-action",
+        );
+        expect(action).toBeTruthy();
+        expect(action.textContent?.trim()).toBe("Add");
+
+        let clicks = 0;
+        withAction.componentInstance.added.subscribe(() => clicks++);
+        action.click();
+        expect(clicks).toBe(1);
+    });
+
+    it("renders no header action when the caller projects none (DET-37)", () => {
+        expect(fixture.nativeElement.querySelector(".level-left button")).toBeNull();
     });
 
     it("emits nextPage from the scroll button while more remain (UIC-27, DET-22)", () => {

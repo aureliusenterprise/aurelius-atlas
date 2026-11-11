@@ -1,0 +1,182 @@
+<!--
+  The quality rule form (EDT-25..EDT-27/29, DD-475/DD-476): the drawer's
+  branch for `m4i_data_quality`. The vocabulary drives it (QRE-01 through
+  QualityRuleService): the kind Select, the kind's own dimension as read-only
+  text, one control per parameter of the chosen kind, and the shared fields
+  (EDT-27). The drawer's Save button stays the drawer's; this form answers
+  validity and the draft's attributes, and carries the engine's verdict line
+  in the notification place the generic form uses (EDT-28, EDT-07's spot).
+
+  i18n ids are the catalogue bridge keys (DV-148: the surviving legacy
+  `govQuality.*` keys carry over; the new ones are
+  `search.components.editor.dataQualityRule.*`). Strings bound into component
+  inputs live in TypeScript as $localize (BRW-02), so only plain text carries
+  markers here.
+-->
+<div class="aurelius-editor-quality">
+    @if (kindsState() === "loading") {
+    <output class="help aurelius-editor-loading">{{ loadingLabel() }}</output>
+    } @else if (kindsState() === "failed") {
+    <p class="help is-danger aurelius-quality-kinds-failed">{{ kindsFailedLine }}</p>
+    } @else {
+    <!-- Plain container, not a form: the drawer wraps the field set in
+             its own form element (nested forms are invalid HTML), and this
+             branch's controls carry plain handlers (DD-476's explicit-Field
+             note) — validity is the component's `valid()`, EDT-28's engine
+             call the drawer's. -->
+    <div class="aurelius-editor-form aurelius-quality-form">
+        <!-- The notification (EDT-28/EDT-07): the engine's verdict line
+                 leads — a refused save keeps it until an edit clears it
+                 (EDT-28) or the X hides it (DD-331's rule, the drawer's).
+                 With no verdict, a Save over an incomplete form says what is
+                 missing, the generic form's own line. -->
+        @if (notificationShown()) {
+        <div class="notification is-warning is-light aurelius-editor-notification" role="alert">
+            <button type="button" class="delete" [attr.aria-label]="closeLabel" (click)="dismissed.emit()"></button>
+            {{ notificationLine() }}
+        </div>
+        }
+        <div class="field aurelius-editor-field aurelius-quality-name" data-field="name">
+            <label class="label" for="editor-name">
+                {{ nameLabelStripped() }}
+                <span class="has-text-danger">*</span>
+            </label>
+            <div class="control">
+                <input
+                    type="text"
+                    class="input aurelius-editor-text"
+                    id="editor-name"
+                    [value]="values().name"
+                    required
+                    (input)="nameChanged($any($event.target).value)"
+                />
+            </div>
+        </div>
+        <div class="field aurelius-editor-field aurelius-quality-description" data-field="ruleDescription">
+            <label class="label" for="editor-ruleDescription">{{ ruleDescriptionLabel }}</label>
+            <div class="control">
+                <input
+                    type="text"
+                    class="input aurelius-editor-text"
+                    id="editor-ruleDescription"
+                    [value]="values().ruleDescription"
+                    (input)="ruleDescriptionChanged($any($event.target).value)"
+                />
+            </div>
+        </div>
+        <!-- The kind Select (EDT-25): the served vocabulary's order, each
+                 row labelled by its name. The plain dropdown, EDT-04's shape. -->
+        <div class="field aurelius-editor-field aurelius-quality-kind" data-field="dqcheckkind">
+            <aurelius-atlas-ui-select
+                [options]="kindRows()"
+                displayField="label"
+                [label]="kindLabel"
+                [value]="kindSelected()"
+                [searchVisible]="false"
+                (valueChange)="kindPicked($event)"
+            ></aurelius-atlas-ui-select>
+        </div>
+        @if (selectedKind()) {
+        <!-- The dimension (EDT-25): the kind's own, read-only — the
+                     legacy control typed it freely (DV-148); the engine
+                     derives it from the kind (DQ-01). -->
+        <div class="field aurelius-editor-field aurelius-quality-dimension" data-field="dimension">
+            <p class="label">{{ dimensionLabel }}</p>
+            <p class="is-size-7 aurelius-quality-dimension-value">{{ dimensionText() }}</p>
+        </div>
+        <!-- The chosen kind's parameters (EDT-25/26), required then
+                     optional, in the resource's order. -->
+        @for (field of paramFields(); track field.name) {
+        <div class="field aurelius-editor-field aurelius-quality-param" [attr.data-field]="field.stored">
+            @if (field.kind === "chips") {
+            <p class="label" [id]="'editor-' + field.stored + '-label'">
+                {{ field.label }} @if (field.required) {
+                <span class="has-text-danger">*</span>
+                }
+            </p>
+            <!-- The chips box (EDT-26): the classification
+                                 box's anatomy (DD-335) minus the suggestions
+                                 — a typed value commits on Enter, the chips
+                                 carry the value list. -->
+            <div class="control aurelius-quality-chips-box">
+                @for (value of chipsOf(field.name); track value; let i = $index) {
+                <aurelius-atlas-ui-classification-chip
+                    class="aurelius-quality-chip"
+                    [label]="value"
+                    [deletable]="true"
+                    [deleteLabel]="deleteLabel"
+                    (remove)="removeChip(field.name, i)"
+                ></aurelius-atlas-ui-classification-chip>
+                }
+                <input
+                    type="text"
+                    class="aurelius-quality-chips-input"
+                    [id]="'editor-' + field.stored"
+                    [value]="chipText()"
+                    [attr.placeholder]="addValueLabel"
+                    [attr.aria-labelledby]="'editor-' + field.stored + '-label'"
+                    autocomplete="off"
+                    (input)="chipTextChanged($any($event.target).value)"
+                    (keyup.enter)="addChip(field.name)"
+                />
+            </div>
+            } @else if (field.kind === "type") {
+            <aurelius-atlas-ui-select
+                [options]="typeRows()"
+                displayField="label"
+                [label]="field.label"
+                [value]="typeSelected()"
+                [searchVisible]="false"
+                (valueChange)="typePicked($event)"
+            ></aurelius-atlas-ui-select>
+            } @else {
+            <label class="label" [for]="'editor-' + field.stored">
+                {{ field.label }} @if (field.required) {
+                <span class="has-text-danger">*</span>
+                }
+            </label>
+            <div class="control">
+                <input
+                    [type]="field.kind === 'number' || field.kind === 'integer' ? 'number' : 'text'"
+                    class="input aurelius-editor-text"
+                    [attr.step]="field.kind === 'integer' ? '1' : null"
+                    [attr.min]="field.kind === 'integer' ? '1' : null"
+                    [id]="'editor-' + field.stored"
+                    [value]="paramText(field.name)"
+                    (input)="paramChanged(field.name, $any($event.target).value)"
+                />
+            </div>
+            }
+        </div>
+        } }
+        <!-- The shared pair below the parameters (EDT-27): the active
+                 checkbox (Bulma's anatomy, EDT-03's shape) and the threshold
+                 (the engine's ratio bounds, QRE-01). -->
+        <div class="field aurelius-editor-field aurelius-quality-active" data-field="active">
+            <label class="checkbox aurelius-editor-checkbox">
+                <input
+                    type="checkbox"
+                    [checked]="values().active"
+                    (change)="activeChanged($any($event.target).checked)"
+                />
+                {{ activeLabel }}
+            </label>
+        </div>
+        <div class="field aurelius-editor-field aurelius-quality-threshold" data-field="threshold">
+            <label class="label" for="editor-threshold">{{ thresholdLabel }}</label>
+            <div class="control">
+                <input
+                    type="number"
+                    class="input aurelius-editor-text"
+                    id="editor-threshold"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    [value]="values().threshold"
+                    (input)="thresholdChanged($any($event.target).value)"
+                />
+            </div>
+        </div>
+    </div>
+    }
+</div>

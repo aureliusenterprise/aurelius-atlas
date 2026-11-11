@@ -48,6 +48,22 @@ describe("Section config (DET-16)", () => {
         }
     });
 
+    it("names the create door on the field's rules box only (DET-37)", () => {
+        // DET-37 (7.27): the rules box's header `+` opens the drawer at
+        // create with the rule type fixed — the layout row carries it.
+        const rules = LAYOUTS.m4i_field.sections.find((section) => section.anchor === "related-rules");
+        expect(rules?.create).toEqual({ type: "m4i_data_quality" });
+
+        // No other box offers a create door.
+        for (const layout of Object.values(LAYOUTS)) {
+            for (const section of layout.sections) {
+                if (section.anchor !== "related-rules") {
+                    expect(section.create, section.anchor).toBeUndefined();
+                }
+            }
+        }
+    });
+
     it("carries the spec table's People-box flag (DET-16, DET-23)", () => {
         // The legacy pages with a People box: domain, entity, attribute.
         // The field carries a steward end but its page has no box.

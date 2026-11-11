@@ -373,6 +373,8 @@ describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
         const rules = store.views().find((view) => view.anchor === "related-rules");
         expect(rules?.count).toBe(1); // the guidless end drops, as every DET-17 section
         expect(store.countFor("related-rules")).toBe(1); // the DET-36 stat's value
+        // DET-37 (7.27): the view carries the layout row's create door.
+        expect(rules?.createAction).toEqual({ type: "m4i_data_quality" });
         flushAll(httpMock);
         const after = store.views().find((view) => view.anchor === "related-rules");
         expect(after?.cards.map((card) => card.guid)).toEqual(["r1"]);
