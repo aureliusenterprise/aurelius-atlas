@@ -96,6 +96,12 @@ Attributes:
 - **`SCORE_TYPE_NAME`** –
 
   The document type a scanner writes for one rule's score over one dataset.
+- **`THRESHOLD_MAX`** –
+
+  The highest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
+- **`THRESHOLD_MIN`** –
+
+  The lowest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
 
 ### ATLAS\_TO\_KIND
 
@@ -173,6 +179,22 @@ SCORE_TYPE_NAME = 'm4i_dq_score'
 
 The document type a scanner writes for one rule's score over one dataset.
 
+### THRESHOLD\_MAX
+
+```
+THRESHOLD_MAX = 1.0
+```
+
+The highest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
+
+### THRESHOLD\_MIN
+
+```
+THRESHOLD_MIN = 0.0
+```
+
+The lowest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
+
 ### \_\_all\_\_
 
 ```
@@ -182,6 +204,8 @@ __all__ = [
     "KINDS",
     "RULE_TYPE_NAME",
     "SCORE_TYPE_NAME",
+    "THRESHOLD_MAX",
+    "THRESHOLD_MIN",
     "CheckKind",
     "Dimension",
     "DimensionScore",
@@ -864,6 +888,12 @@ Attributes:
 
   The type names a :attr:`CheckKind.COLUMN_TYPE_CASTABLE` rule may name. :mod:`.checks` maps them to casts.
 - **`KINDS`** (`Mapping[CheckKind, KindSpec]`) –
+- **`THRESHOLD_MAX`** –
+
+  The highest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
+- **`THRESHOLD_MIN`** –
+
+  The lowest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
 
 ### CASTABLE\_TYPES
 
@@ -909,6 +939,22 @@ KINDS: Mapping[CheckKind, KindSpec] = {
     ),
 }
 ```
+
+### THRESHOLD\_MAX
+
+```
+THRESHOLD_MAX = 1.0
+```
+
+The highest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
+
+### THRESHOLD\_MIN
+
+```
+THRESHOLD_MIN = 0.0
+```
+
+The lowest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01).
 
 ### CheckKind
 

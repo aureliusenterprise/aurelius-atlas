@@ -7318,6 +7318,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.27</td>
+<td>Rules editor</td>
+<td>The editor drawer's quality mode: the rule form renders from 12.5's vocabulary (a kind picker, the chosen kind's parameters only, the dimension read-only from the kind, EDT-25..27), a save validates the shape through the server's parser before it posts (EDT-28), a legacy pair rule keeps the generic form and its stored check rides along untouched (EDT-29/30), the kinds and dimensions read in human words with a threshold slider beside the number (EDT-31/32), a rule enters through the generic doors like any entity (DD-496), and the rule's page lists its fields (DET-38, DD-477/DD-491..497)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/components/editor/{gov-quality,editors-by-type}</code> (DV-148)</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
@@ -7708,6 +7715,13 @@ checks a PR must pass:</p>
 <td>The contract every scanner source reader obeys: the scan keeps reading through the reader seam, the operator configuration names every source, a refusal skips its dataset, a credential stays a secret, the reader cuts its own row budget, and each suite proves one real scan against a disposable instance of its source (DQS-11..16, DD-459, DV-146). The choice of database stays open; the first source lands with its own answers</td>
 <td>– (net-new)</td>
 <td>planned</td>
+</tr>
+<tr>
+<td>12.5</td>
+<td>The rule vocabulary endpoint</td>
+<td><code>GET /api/aurelius/v1/quality/kinds</code> serves the engine's closed vocabulary (the kinds, their dimensions, parameters and reason lines) and <code>POST /api/aurelius/v1/quality/rules/validate</code> checks a stored-rule shape through the engine's parser, answering 200 with the engine's own reason (QRE-01..05, DD-475/476). The rules editor (7.27) renders its form from these answers</td>
+<td>– (the legacy editor kept its rule form's fields in the browser, DV-146)</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>12.4a</td>
