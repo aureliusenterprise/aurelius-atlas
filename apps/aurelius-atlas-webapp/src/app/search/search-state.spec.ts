@@ -5,6 +5,7 @@ import { AtlasAggregationEntry, AtlasEntityHeader, AtlasSearchResult } from "aur
 import { vi } from "vitest";
 
 import { AlertsService } from "../alerts/alerts.service";
+import { SearchMode, SearchModeService } from "../settings/search-mode.service";
 import { SearchState } from "./search-state";
 
 /** The endpoint the store posts to (SDX-01, QSR-01, APC-11). */
@@ -434,10 +435,19 @@ describe("SearchState (SRH-02..06, SDX-01..07)", () => {
 /** The search by meaning's endpoint (SBW-01, SBM-01). */
 const SEMANTIC_SEARCH = "/api/aurelius/v1/search/semantic";
 
-describe("SearchState by meaning (SBW-03..SBW-06)", () => {
+/** Store a mode as the settings panel does (SBX-01, SBX-02). */
+function chooseMode(mode: SearchMode): void {
+    TestBed.inject(SearchModeService).set(mode);
+}
+
+describe("SearchState by meaning (SBW-03..SBW-06, SBX-02)", () => {
+    // The mode is a stored setting: every test starts, and leaves, with Words.
+    beforeEach(() => localStorage.clear());
+    afterEach(() => localStorage.clear());
+
     it("Meaning posts a semantic search with the quick search's parameters (SBW-03)", () => {
         const { store, httpMock } = setup();
-        store.setMode("semantic");
+        chooseMode("semantic");
 
         store.run("customer address");
 
@@ -459,7 +469,7 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
 
     it("Both posts a hybrid search with the type selection (SBW-03)", () => {
         const { store, httpMock } = setup();
-        store.setMode("hybrid");
+        chooseMode("hybrid");
         store.run("employee");
         httpMock.expectOne(SEMANTIC_SEARCH).flush(page(0, 1, 1, typeMetrics([["DataSet", 1]])));
 
@@ -472,7 +482,7 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
 
     it("an empty query lists by quick search whatever the mode (SBW-03)", () => {
         const { store, httpMock } = setup();
-        store.setMode("semantic");
+        chooseMode("semantic");
 
         store.run(null);
 
@@ -483,7 +493,7 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
 
     it("by meaning a full page asks for the next and the header counts what is shown (SBW-04)", () => {
         const { store, httpMock } = setup();
-        store.setMode("semantic");
+        chooseMode("semantic");
         store.run("orders");
         httpMock.expectOne(SEMANTIC_SEARCH).flush(page(0, 10, 10));
 
@@ -502,7 +512,7 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
 
     it("by meaning the list ends at 1,000 entities (SBW-04)", () => {
         const { store, httpMock } = setup();
-        store.setMode("semantic");
+        chooseMode("semantic");
         store.run("orders");
 
         for (let offset = 0; offset < 1000; offset += 10) {
@@ -515,26 +525,26 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
         httpMock.verify();
     });
 
-    it("another mode restarts a search with a query at page one, the selection kept (SBW-05)", () => {
+    it("a mode stored in the settings restarts a search with a query at page one, the selection kept (SBX-02)", () => {
         const { store, httpMock } = setup();
         store.run("orders");
         httpMock.expectOne(QUICK_SEARCH).flush(page(0, 10, 30, typeMetrics([["DataSet", 30]])));
         store.toggleType("DataSet", true);
         httpMock.expectOne(QUICK_SEARCH).flush(page(0, 10, 30));
 
-        store.setMode("hybrid");
+        chooseMode("hybrid");
 
         const request = httpMock.expectOne(SEMANTIC_SEARCH);
         expect(request.request.body).toMatchObject({ offset: 0, typeName: "DataSet", mode: "hybrid" });
         expect(store.entries()).toEqual([]);
-        store.setMode("hybrid");
+        chooseMode("hybrid");
         httpMock.verify();
     });
 
-    it("a mode chosen without a query searches nothing until a query comes (SBW-05)", () => {
+    it("a mode stored without a query searches nothing until a query comes (SBX-02)", () => {
         const { store, httpMock } = setup();
 
-        store.setMode("semantic");
+        chooseMode("semantic");
 
         httpMock.verify();
         expect(store.mode()).toBe("semantic");
@@ -544,7 +554,7 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
         const { store, httpMock } = setup();
         const alerts = TestBed.inject(AlertsService);
         const add = vi.spyOn(alerts, "add");
-        store.setMode("semantic");
+        chooseMode("semantic");
         store.run("orders");
 
         httpMock
@@ -561,7 +571,7 @@ describe("SearchState by meaning (SBW-03..SBW-06)", () => {
         const { store, httpMock } = setup();
         const alerts = TestBed.inject(AlertsService);
         const add = vi.spyOn(alerts, "add");
-        store.setMode("semantic");
+        chooseMode("semantic");
         store.run("orders");
 
         httpMock

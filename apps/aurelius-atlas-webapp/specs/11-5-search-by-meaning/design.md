@@ -8,7 +8,7 @@ is never edited except its status line, and a changed decision is a new entry th
 
 ### DD-444. The search mode is the session's choice, under the field, not in the URL
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-473 (11.5b)
 - **Increment:** 11.5
 - **Date:** 2026-11-10
 - **Supersedes:** none
@@ -53,7 +53,7 @@ answers at most 1,000 (DD-441).
 
 ### DD-446. Similar entities is a box of its own on every details page, after the card sections
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-474 (11.5b)
 - **Increment:** 11.5
 - **Date:** 2026-11-10
 - **Supersedes:** none

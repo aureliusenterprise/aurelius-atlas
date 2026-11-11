@@ -1,5 +1,6 @@
 import { HttpErrorResponse } from "@angular/common/http";
 import { Injectable, computed, inject, signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import {
     AtlasAggregationEntry,
     AtlasEntityHeader,
@@ -12,6 +13,7 @@ import { Observable } from "rxjs";
 import { FacetItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../alerts/alerts.service";
+import { SearchMode, SearchModeService } from "../settings/search-mode.service";
 import { nameDisplay } from "./meta/type-display";
 
 /** Atlas's every-entity type marker (SRC-03): what an empty query searches. */
@@ -33,12 +35,6 @@ const FACET_TITLES: Record<string, string> = {
     "Asset.owner": $localize`:@@search.components.filter.owner:Owner`,
     ServiceType: $localize`:@@search.components.filter.serviceType:Service Type`,
 };
-
-/**
- * How the search field searches (SBW-02, DD-444): by the query's words, a
- * quick search; by its meaning; or by both, the hybrid search by meaning.
- */
-export type SearchMode = "words" | "semantic" | "hybrid";
 
 /** The most entities a search by meaning answers (DD-441, DD-445). */
 const MAX_NEAREST = 1000;
@@ -94,6 +90,8 @@ export class SearchState {
 
     private readonly meaning = inject(SearchByMeaningService);
 
+    private readonly searchMode = inject(SearchModeService);
+
     private readonly alerts = inject(AlertsService);
 
     /** The legacy `pageSize` (the results store's 10). */
@@ -106,10 +104,10 @@ export class SearchState {
     readonly approximateCount = signal(0);
 
     /**
-     * The session's search mode (SBW-02, DD-444): kept when the query
-     * changes, never in the URL.
+     * How the search field searches (SBX-01, DD-473): the stored setting
+     * the settings panel writes, never in the URL.
      */
-    readonly mode = signal<SearchMode>("words");
+    readonly mode = this.searchMode.mode;
 
     /**
      * Whether the list is a search by meaning (SBW-03): Meaning or Both,
@@ -279,18 +277,20 @@ export class SearchState {
         this.restart(false);
     }
 
+    constructor() {
+        // A mode chosen in the settings panel searches the shown query again
+        // (SBX-02); the store ends with the search subtree, and so does this.
+        this.searchMode.changed.pipe(takeUntilDestroyed()).subscribe((mode) => this.modeChanged(mode));
+    }
+
     /**
-     * The hero's mode switch (SBW-02, SBW-05): a new mode restarts a search
-     * that has a query at its first page, the type selection kept; without
-     * a query there is nothing to search differently.
-     * @param mode the chosen mode
+     * A new mode from the settings (SBX-02, SBW-05): a search that has a
+     * query restarts at its first page, the type selection kept; without a
+     * query there is nothing to search differently.
+     * @param mode the stored mode
      */
-    setMode(mode: SearchMode): void {
-        if (mode === this.mode()) {
-            return;
-        }
-        this.mode.set(mode);
-        if (this.queryText().trim() !== "") {
+    private modeChanged(mode: SearchMode): void {
+        if (mode === this.mode() && this.queryText().trim() !== "") {
             this.restart(true);
         }
     }
@@ -410,8 +410,8 @@ export class SearchState {
     }
 
     /**
-     * A server without search by meaning (SBW-06): say so, turn the switch
-     * back to Words and search again by the query's words.
+     * A server without search by meaning (SBW-06): say so and store Words,
+     * whose change searches again by the query's words (SBX-02).
      */
     private meaningUnavailable(): void {
         this.alerts.add({
@@ -419,8 +419,8 @@ export class SearchState {
             message: $localize`:@@search.mode.unavailable:Search by meaning is not available on this server`,
             source: "search",
         });
-        this.mode.set("words");
-        this.restart(true);
+        // Stored as Words: the setting's change searches again (SBX-02).
+        this.searchMode.set("words");
     }
 
     /**
