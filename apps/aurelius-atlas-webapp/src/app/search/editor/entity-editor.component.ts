@@ -7,6 +7,7 @@ import {
     Injector,
     signal,
     untracked,
+    viewChild,
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NgTemplateOutlet } from "@angular/common";
@@ -17,7 +18,13 @@ import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free
 import { map, Subscription } from "rxjs";
 
 import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
-import { type EntityValidationResponse, type GovQualityItem, ValidateEntityService } from "aurelius-atlas-data-access";
+import {
+    QualityRuleService,
+    type AtlasEntity,
+    type EntityValidationResponse,
+    type GovQualityItem,
+    ValidateEntityService,
+} from "aurelius-atlas-data-access";
 
 import { nameDisplay } from "../meta/type-display";
 import { canWriteEntities } from "./can-write-entities";
@@ -35,6 +42,7 @@ import {
     seedRelationshipValues,
     toFormValues,
 } from "./form-fields";
+import { QualityFields, QUALITY_FIELDS_RELATIONSHIP, QUALITY_TYPE_NAME, storedCheckKind } from "./quality-fields";
 
 /** A picker row for the ui-lib {@link Select} (its `displayField` is `label`). */
 type PickerRow = { name: string; label: string };
@@ -88,6 +96,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
         Holdable,
         MarkdownEditor,
         NgTemplateOutlet,
+        QualityFields,
         Select,
     ],
     providers: [EditorState],
@@ -102,6 +111,13 @@ export class EntityEditor {
     private readonly router = inject(Router);
 
     private readonly validateEntity = inject(ValidateEntityService);
+
+    private readonly qualityRule = inject(QualityRuleService);
+
+    /** The quality form, once the quality-mode branch renders it (EDT-25,
+     * DD-477). The drawer owns the Save button, so it reads the child's
+     * validity and draft body and hands it the engine's verdict line. */
+    private readonly qualityForm = viewChild(QualityFields);
 
     /** The drawer's open state — true for the panel's whole life (EDT-01). */
     readonly active = signal(true);
@@ -184,6 +200,31 @@ export class EntityEditor {
      * ride their own signal, not the form model: a picker's value is a chip
      * list the save merges separately (EDT-16), not an attribute field. */
     protected readonly relationshipValues = signal<ReadonlyMap<string, readonly RelationshipPick[]>>(new Map());
+
+    /**
+     * Whether the form is the quality rule form (EDT-25, DD-477): the type is
+     * the rule type and the rule is a vocabulary one — create mode always,
+     * edit mode when the entity names a `dqcheckkind`. A legacy rule without
+     * the kind stays in the generic form (EDT-29, DD-492): the quality form
+     * offers only kinds, and converting one is a human act, not a rewrite.
+     */
+    protected readonly qualityMode = computed(
+        () =>
+            this.state.typeName() === QUALITY_TYPE_NAME &&
+            (this.isCreate || storedCheckKind(this.state.entity()) !== ""),
+    );
+
+    /**
+     * The pickers the template renders: the whole relationship set, or (in
+     * quality mode, EDT-25) the rule's own `fields` end alone — the derived
+     * typedefs also carry the DataSet/Referenceable lineage ends, which the
+     * rule form has no business editing.
+     */
+    protected readonly renderedRelationshipFields = computed(() => {
+        const all = this.relationshipFields();
+
+        return this.qualityMode() ? all.filter((field) => field.name === QUALITY_FIELDS_RELATIONSHIP) : all;
+    });
 
     /** The picker rows for the ui-lib Select (EDT-04). The Select's `options`
      * input is a mutable array, so the map yields a fresh one (not readonly). */
@@ -440,11 +481,10 @@ export class EntityEditor {
                 // no tracking either — the signature above already names the
                 // field set (DD-354).
                 untracked(() => this.form.set(this.newForm()));
-                this.relationshipValues.set(
-                    new Map(
-                        Object.entries(seedRelationshipValues(this.state.entity() ?? {}, this.relationshipFields())),
-                    ),
+                const seeded = new Map(
+                    Object.entries(seedRelationshipValues(this.state.entity() ?? {}, this.relationshipFields())),
                 );
+                this.relationshipValues.set(seeded);
             }
         });
 
@@ -807,21 +847,34 @@ export class EntityEditor {
         return this.relationshipFields().some((field) => this.relationshipInvalid(field));
     }
 
-    /** Whether the required-fields notification shows (EDT-07/EDT-17). */
+    /** Whether the required-fields notification shows (EDT-07/EDT-17). The
+     * quality form carries its own notification (EDT-28: the engine's line
+     * leads there), so the drawer's stands down in quality mode. */
     protected notificationShown(): boolean {
         return (
-            this.saveAttempted() && (this.formInvalid() || this.relationshipsMissing()) && !this.notificationDismissed()
+            !this.qualityMode() &&
+            this.saveAttempted() &&
+            (this.formInvalid() || this.relationshipsMissing()) &&
+            !this.notificationDismissed()
         );
     }
 
     /**
      * Save (EDT-06/07/16): invalid (a control, or a required picker with no
      * chip, EDT-17) bails marked-touched; valid merges the attributes and the
-     * pickers' full lists onto the entity, and saves.
+     * pickers' full lists onto the entity, and saves. The quality branch
+     * (EDT-28, DD-477) answers first: the draft rides the validate endpoint
+     * before the POST, and the POST body is the minimal quality body (EDT-27).
      */
     protected save(): void {
         this.saveAttempted.set(true);
         this.notificationDismissed.set(false);
+        const qualityForm = this.qualityForm();
+        if (this.qualityMode() && qualityForm) {
+            this.saveQualityRule(qualityForm);
+
+            return;
+        }
         const formState = this.form()();
         if (formState.invalid() || this.relationshipsMissing()) {
             formState.markAsTouched();
@@ -840,6 +893,46 @@ export class EntityEditor {
         );
 
         this.state.save(withRelationships, entity.guid ?? "");
+    }
+
+    /**
+     * The quality-mode Save (EDT-28, DD-476/DD-477): the draft's stored-rule
+     * attributes ride 12.5's validate call first — a rule never saves
+     * unchecked. `{valid: true}` continues with the EDT-06 save over the
+     * minimal body (EDT-27) plus the pickers rendered by quality mode (the
+     * `fields` end); `{valid: false}` answers the engine's reason in the
+     * child's notification line and does not POST (a later edit clears it,
+     * EDT-28); a transport or non-2xx failure answers the generic "could not
+     * check" line instead. The form's own completeness (name, kind, the
+     * kind's required parameters — EDT-07's rule in quality mode) bails
+     * before the call: an incomplete draft has nothing to check.
+     */
+    private saveQualityRule(qualityForm: QualityFields): void {
+        qualityForm.clearEngineError();
+        if (!qualityForm.valid()) {
+            return;
+        }
+        const entity = this.state.entity();
+        if (!entity?.typeName) {
+            return;
+        }
+        const attributes = qualityForm.draftAttributes();
+        const draft: AtlasEntity = { ...entity, attributes };
+        const withRelationships = mergeRelationshipsOntoEntity(
+            draft,
+            this.renderedRelationshipFields(),
+            this.relationshipValues(),
+        );
+        this.qualityRule.validateRule(attributes).subscribe({
+            next: (answer) => {
+                if (answer.valid) {
+                    this.state.save(withRelationships, entity.guid ?? "");
+                } else {
+                    qualityForm.showEngineReason(answer.reason ?? "");
+                }
+            },
+            error: () => qualityForm.showTransportFailure(),
+        });
     }
 
     /**

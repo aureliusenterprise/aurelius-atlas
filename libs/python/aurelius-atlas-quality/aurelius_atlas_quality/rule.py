@@ -53,8 +53,10 @@ class CheckKind(StrEnum):
 CASTABLE_TYPES: frozenset[str] = frozenset({"int", "integer", "long", "float", "double", "date", "datetime"})
 """The type names a :attr:`CheckKind.COLUMN_TYPE_CASTABLE` rule may name. :mod:`.checks` maps them to casts."""
 
-_RATIO_FLOOR = 0.0
-_RATIO_CEILING = 1.0
+THRESHOLD_MIN = 0.0
+"""The lowest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01)."""
+THRESHOLD_MAX = 1.0
+"""The highest threshold a rule may name (DQ-02). Served to the editor with the vocabulary (QRE-01)."""
 
 
 @dataclass(frozen=True)
@@ -196,7 +198,7 @@ def _threshold_of(blob: Mapping[str, Any]) -> float:
         threshold = float(raw)
     except TypeError, ValueError:
         raise QualityRuleError(_THRESHOLD_NOT_NUMBER_ERROR.format(threshold=raw)) from None
-    if not _RATIO_FLOOR <= threshold <= _RATIO_CEILING:
+    if not THRESHOLD_MIN <= threshold <= THRESHOLD_MAX:
         raise QualityRuleError(_THRESHOLD_NOT_RATIO_ERROR.format(threshold=threshold))
     return threshold
 

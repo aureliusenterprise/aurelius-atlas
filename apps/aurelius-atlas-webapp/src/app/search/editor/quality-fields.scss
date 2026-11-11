@@ -1,0 +1,155 @@
+/*
+ * The quality rule form (EDT-25..EDT-27, DD-477/DD-491). The component keeps
+ * the drawer's class names so the shapes match, but Angular's component-scoped
+ * styles mean each rule must exist here too: the between-field rhythm, the
+ * notification's place at the top of the form, and the loading line's margin
+ * mirror `entity-editor.component.scss` on purpose — if the drawer's rhythm
+ * changes, this one follows. What is only the quality form's: the chips box
+ * (the classification box's anatomy, DD-335, without the suggestion panel —
+ * a value list, not a combobox) and the read-only dimension line.
+ */
+
+/* The between-field rhythm (EDT-03's, mirrored): the drawer's own rule cannot
+   reach across the component boundary. */
+.aurelius-editor-field + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+/* The required-fields notification (EDT-28 over EDT-07/DD-331): the top of
+   the form, the same place the generic form keeps it. Bulma carries the box
+   and its delete. */
+.aurelius-editor-notification {
+    margin-bottom: 1.5rem;
+}
+
+.aurelius-editor-loading {
+    margin-bottom: 0.75rem;
+}
+
+/* The chips box (EDT-26): the bordered box every list control in this drawer
+   wears (the classification box's and the picker's anatomy, DD-335/DD-341),
+   built from the same Bulma control vars. */
+.aurelius-quality-chips-box {
+    align-items: center;
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-l));
+    border: var(--bulma-control-border-width) solid var(--bulma-border);
+    border-radius: var(--bulma-control-radius);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: var(--bulma-control-size);
+    gap: 0.375rem;
+    min-height: var(--bulma-control-height);
+    padding: calc(0.5em - 1px) calc(0.75em - 1px);
+}
+
+.aurelius-quality-chips-box:focus-within {
+    border-color: hsl(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l));
+    box-shadow: 0 0 0 0.125em
+        hsla(var(--bulma-focus-h), var(--bulma-focus-s), var(--bulma-focus-l), var(--bulma-focus-shadow-alpha));
+}
+
+/* The value input inside the box: the box owns the border and padding, so
+   the input is borderless, transparent and flush (DD-335's rule). */
+.aurelius-quality-chips-box .aurelius-quality-chips-input {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: hsl(var(--bulma-text-h), var(--bulma-text-s), var(--bulma-text-strong-l));
+    flex: 1 1 8rem;
+    min-width: 8rem;
+    outline: none;
+    padding: 0;
+}
+
+/* The chip inside the box: the box's flex gap spaces them, so the chip drops
+   its own margin (DD-335's rule again). */
+.aurelius-quality-chips-box .aurelius-quality-chip {
+    flex: 0 0 auto;
+}
+
+/* Narrow viewports (DD-336's rule): the box lets the input claim a full line. */
+@media screen and (width <= 768px) {
+    .aurelius-quality-chips-box .aurelius-quality-chips-input {
+        flex-basis: 100%;
+    }
+}
+
+/* The read-only dimension (EDT-25): the kind's own, the static type text's
+   shape (EDT-04's edit-mode type line), not a control. */
+.aurelius-quality-dimension-value {
+    word-break: break-word;
+}
+
+/* The kind's description line (EDT-31): the kind control's own help line,
+   not a field — close under the Select. The dimension that follows keeps
+   the between-field rhythm even with the line between them (the sibling
+   rule below restores what the line breaks). */
+.aurelius-quality-kind-description {
+    margin-top: 0.5rem;
+}
+
+.aurelius-quality-kind-description + .aurelius-editor-field {
+    margin-top: 1.25rem;
+}
+
+/* The threshold pair (EDT-32, DD-494): the slider and the percentage
+   field side by side, one row inside the field's width — the pair never
+   reaches wider than the other controls. The slider takes the free
+   width; the percentage column is fixed at the three digits it holds
+   plus the % icon (Bulma's has-icons-right slot, is-right anchoring it
+   inside the input's right edge). */
+.aurelius-quality-threshold-pair {
+    align-items: center;
+    display: flex;
+    gap: 0.75rem;
+}
+
+.aurelius-quality-threshold-pair .aurelius-quality-threshold-slider {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.aurelius-quality-threshold-pair .aurelius-quality-threshold-number {
+    flex: 0 0 5.5rem;
+    width: 5.5rem;
+}
+
+.aurelius-quality-threshold-number .input {
+    width: 100%;
+}
+
+/* The % sign inside the field (the has-icons-right slot): Bulma's icon
+   palette, restated at a specificity that holds here — greyed at rest,
+   Bulma's hover grey, and Bulma's focus colour while the field holds
+   focus, the behaviour every other icon control in the drawer has.
+   Bulma also sizes the slot to the bare input height and hangs it from
+   the control's top, which lifts the glyph a few pixels over the
+   input's text; the full control height centres the % on the text's
+   line. These selectors out-specify Bulma's
+   `.control.has-icons-right .icon`, whose height would otherwise win. */
+.control.aurelius-quality-threshold-number > .aurelius-quality-threshold-percent {
+    color: var(--bulma-input-icon-color);
+    font-size: 0.875rem;
+    height: 100%;
+}
+
+.control.aurelius-quality-threshold-number:hover > .aurelius-quality-threshold-percent {
+    color: var(--bulma-input-icon-hover-color);
+}
+
+.control.aurelius-quality-threshold-number:focus-within > .aurelius-quality-threshold-percent {
+    color: var(--bulma-input-icon-focus-color);
+}
+
+/* Narrow viewports (DD-336's rule): the pair stacks, the number full
+   width beneath the slider. */
+@media screen and (width <= 768px) {
+    .aurelius-quality-threshold-pair {
+        flex-wrap: wrap;
+    }
+
+    .aurelius-quality-threshold-pair .aurelius-quality-threshold-number {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}

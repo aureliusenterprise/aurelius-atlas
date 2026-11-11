@@ -3,7 +3,7 @@ import os
 import re
 import ssl
 import time
-from collections.abc import Generator
+from collections.abc import Callable, Generator
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -493,7 +493,37 @@ def ingest_token() -> str:
 
 
 @pytest.fixture
-def user_token(keycloak: DockerCompose, settings: Settings) -> str:
+def fresh_user_token(keycloak: DockerCompose, settings: Settings) -> Callable[[], str]:
+    """A factory that mints a brand-new user access token on each call.
+
+    The dev realm mints 60s tokens (the ``user_token`` note): a long test —
+    a full UI flow followed by API waits — outlives the one minted at its
+    start, and its later calls answer 401. A caller that spans minutes takes
+    this and calls it before each API stretch; the one-shot tests stay on
+    ``user_token``.
+    """
+    _ = keycloak
+
+    def mint() -> str:
+        body = urlencode(
+            {
+                "grant_type": "password",
+                "client_id": "aurelius",
+                "username": settings.username,
+                "password": settings.password.get_secret_value(),
+            }
+        ).encode()
+        request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # https constant issuer
+        context = ssl.create_default_context(cafile=str(CA_FILE))
+
+        with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
+            return json.load(response)["access_token"]
+
+    return mint
+
+
+@pytest.fixture
+def user_token(fresh_user_token: Callable[[], str]) -> str:
     """A real user access token minted by the e2e Keycloak (DD-193, CIA-01/02).
 
     The password grant for the dev sign-in user (the same ``aurelius`` client
@@ -504,22 +534,10 @@ def user_token(keycloak: DockerCompose, settings: Settings) -> str:
 
     Function-scoped on purpose: the dev realm mints 60s tokens, and the
     suite runs each test once per browser (~7 minutes total) — a session-
-    scoped token is stale for the last browser.
+    scoped token is stale for the last browser. A test whose own flow runs
+    past the minute mints fresh through ``fresh_user_token`` instead.
     """
-    _ = keycloak
-    body = urlencode(
-        {
-            "grant_type": "password",
-            "client_id": "aurelius",
-            "username": settings.username,
-            "password": settings.password.get_secret_value(),
-        }
-    ).encode()
-    request = Request(f"{KEYCLOAK_ISSUER}/protocol/openid-connect/token", data=body, method="POST")  # noqa: S310  # https constant issuer
-    context = ssl.create_default_context(cafile=str(CA_FILE))
-
-    with urlopen(request, context=context) as response:  # noqa: S310  # https constant issuer, CA-verified
-        return json.load(response)["access_token"]
+    return fresh_user_token()
 
 
 @pytest.fixture

@@ -86,24 +86,26 @@ export interface TypeLayout {
     readonly lineageAfter?: string;
 }
 
-/** The layout key: one of the eight m4i catalogue types. */
+/** The layout key: one of the nine m4i catalogue types. */
 export type M4iLayoutType =
     | "m4i_data_domain"
     | "m4i_data_entity"
     | "m4i_data_attribute"
     | "m4i_field"
+    | "m4i_data_quality"
     | "m4i_dataset"
     | "m4i_collection"
     | "m4i_system"
     | "m4i_generic_process";
 
 /**
- * The eight layouts, key for key the spec's table (DET-16, amended by 7.21c's
- * DET-32/DET-33 rows, 7.22b's LDG-09 box positions, and 7.22d's LDG-32
- * lineage entries). The stats and navigation list the rendered boxes only:
- * every deferred section's stat and link stays out (DD-369); the lineage
- * box's pair returned with the finished box (DD-383's hold-out, ended).
- * Built once at load; `$localize` resolves per locale at compile time.
+ * The nine layouts, key for key the spec's table (DET-16, amended by 7.21c's
+ * DET-32/DET-33 rows, 7.22b's LDG-09 box positions, 7.22d's LDG-32 lineage
+ * entries, and 7.27's DET-38 rule row). The stats and navigation list the
+ * rendered boxes only: every deferred section's stat and link stays out
+ * (DD-369); the lineage box's pair returned with the finished box (DD-383's
+ * hold-out, ended). Built once at load; `$localize` resolves per locale at
+ * compile time.
  */
 export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
     m4i_data_domain: {
@@ -291,6 +293,44 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             { label: $localize`:@@search.details.field.childFields:Child Fields`, anchor: "related-fields" },
             { label: $localize`:@@search.details.field.dataQualityRules:Data Quality Rules`, anchor: "related-rules" },
             { label: $localize`:@@search.details.field.properties:Properties`, anchor: "properties-details" },
+        ],
+    },
+    // DET-38 (7.27, DD-495): the rule's own page. A rule is defined by the
+    // fields it checks, so its page lists them the way every other page
+    // lists what it relates to — the rule→field end the editor writes
+    // (EDT-25's picker) seeds the box, and the field's rules box (DET-35)
+    // reads the same edge from the other side.
+    m4i_data_quality: {
+        descriptionTitle: $localize`:@@search.details.rule.description:Description`,
+        peopleBox: false,
+        peopleTitle: "",
+        sections: [
+            {
+                anchor: "related-fields",
+                title: $localize`:@@search.details.rule.fieldsCards.title:Fields`,
+                seedKeys: ["fields"],
+            },
+        ],
+        stats: [
+            {
+                label: $localize`:@@search.details.rule.fields:Fields`,
+                anchor: "related-fields",
+                source: { kind: "section", anchor: "related-fields" },
+            },
+            {
+                label: $localize`:@@search.details.rule.properties:Properties`,
+                anchor: "properties-details",
+                source: { kind: "properties" },
+            },
+        ],
+        propertiesTitle: $localize`:@@search.details.rule.properties:Properties`,
+        nav: [
+            {
+                label: $localize`:@@search.details.rule.description:Description`,
+                anchor: "description-details",
+            },
+            { label: $localize`:@@search.details.rule.fields:Fields`, anchor: "related-fields" },
+            { label: $localize`:@@search.details.rule.properties:Properties`, anchor: "properties-details" },
         ],
     },
     m4i_dataset: {
