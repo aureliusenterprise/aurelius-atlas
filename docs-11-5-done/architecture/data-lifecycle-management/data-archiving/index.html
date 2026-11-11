@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -6691,6 +6720,18 @@ increment 6.4d. A store that arrives without a row here fails the lifetimes suit
 <td>unbounded, disposable</td>
 <td>—</td>
 <td><code>dev/observability:grafana-data</code></td>
+</tr>
+<tr>
+<td>Messages on the dev broker (topics, offsets)</td>
+<td>unbounded, disposable</td>
+<td>—</td>
+<td><code>dev/kafka:kafka-data</code></td>
+</tr>
+<tr>
+<td>The dev cluster's metadata (the KRaft log)</td>
+<td>unbounded, disposable</td>
+<td>—</td>
+<td><code>dev/kafka:kafka-kraft</code></td>
 </tr>
 <tr>
 <td>Snapshots of the store (chart; none in dev)</td>

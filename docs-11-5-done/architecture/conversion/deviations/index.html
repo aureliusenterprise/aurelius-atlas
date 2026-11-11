@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -7403,6 +7432,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The webapp resends an idempotent call (GET/HEAD/OPTIONS/PUT/DELETE) once when the failure means a dead connection (status 0, 502/503/504); POST never resends (APC-12, DD-449)</td>
 <td>A pooled keep-alive socket closed by the server mid-write (uvicorn's 5 s default against the dev proxy's pool) reads as a status-0 error on a call that was never executed; one quiet resend turns it into a success, and POST is where a resend cannot be proven safe</td>
 <td>7.26</td>
+</tr>
+<tr>
+<td>DV-146</td>
+<td>Data quality</td>
+<td>A legacy quality rule carries its check as a <code>dataqualitytype</code>/<code>dataqualityoperator</code> pair, and the Flink rule type stores its check as a Python expression the Flink job evaluates</td>
+<td>A rule is data from a closed vocabulary: one of ten check kinds with named parameters, parsed and validated before it runs; the four corpus pairs read through a map, and a pair outside it — the expression case — raises for the scanner to record as ERROR (DQ-01, DQ-02, DQ-07, DD-451, DD-454)</td>
+<td>Nothing in the store is ever executed: an evaluated expression string is code with the scanner's privileges, invisible to review and testing; the ten kinds cover every rule the sample corpus and the 7.24 rules box carry</td>
+<td>12.1</td>
+</tr>
+<tr>
+<td>DV-147</td>
+<td>Kafka scanning</td>
+<td>The legacy cluster scanner chose its source with one <code>SOURCE</code> variable, authenticated to the broker and the catalogue with an admin's username and password, listed every topic it found, spoke only TLS-plus-OAuth or nothing, and a broker it could not reach left it hanging; it retried each entity write singly</td>
+<td>Aurelius runs its own app (<code>aurelius-atlas-kafka-scanner</code>), signs as its own service identity through the catalogue server (KSC-09), filters topics by pattern (KSC-02), speaks the auth ladder (PLAINTEXT, SSL with a CA, SASL with PLAIN/SCRAM/OAUTHBEARER, KSC-10, DD-471 — the OAuth broker token rides the same mint the catalogue legs use), fails the run naming the bootstrap list when metadata does not answer (KSC-01), and writes once per scan (KSC-07)</td>
+<td>The legacy friction was the reason the job went unused; the capability was worth keeping and the friction was not (spec 13.1's Scope)</td>
+<td>13.1</td>
 </tr>
 </tbody>
 </table>

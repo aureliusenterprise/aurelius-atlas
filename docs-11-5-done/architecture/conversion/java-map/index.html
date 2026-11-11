@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -7009,6 +7038,12 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>— (the Aurelius app's <code>editor/services/entity-validate</code>, <code>editor/components/gov-quality-display</code>, and <code>details/field/data-quality-cards</code> — the trigger, the verdict lines, the rules box; its App Search reads replaced by the <code>dataQuality</code> end, DV-144)</td>
 <td><code>aurelius-atlas-webapp</code> (<code>search/editor/entity-editor.component</code>, <code>search/details/sections/section-config.ts</code>, DET-35/36, EDT-23/24)</td>
 <td>7.24</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius legacy app's <code>apps/m4i-data-dictionary-io</code> <code>sources/kafka/</code> — the cluster scanner: topic list, subject and sniffed schemas, the qualified-name rule, per-entity retry; its admin-password auth and unbounded hang replaced by a service identity and a metadata timeout, DD-465..472)</td>
+<td><code>aurelius-atlas-kafka-scanner</code> (<code>cluster.py</code>, <code>registry.py</code>, <code>fields.py</code>, <code>graph.py</code>, <code>scan.py</code>, KSC-01..10)</td>
+<td>13.1</td>
 <td>in progress</td>
 </tr>
 </tbody>
