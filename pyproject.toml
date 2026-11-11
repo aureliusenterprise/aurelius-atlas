@@ -21,6 +21,8 @@ dev = [
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
+    "aurelius-atlas-quality",
+    "aurelius-atlas-quality-scanner",
     "aurelius-atlas-server",
     "aurelius-atlas-server-client",
     "aurelius-atlas-store-es[testing]",
@@ -93,6 +95,12 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-parity]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-quality]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-quality-scanner]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-server]
 workspace = true
 
@@ -125,6 +133,7 @@ members = [
     "apps/aurelius-atlas-data2model",
     "apps/aurelius-atlas-embedder",
     "apps/aurelius-atlas-lineage-model",
+    "apps/aurelius-atlas-quality-scanner",
     "apps/aurelius-atlas-validate-entity",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
@@ -135,6 +144,7 @@ members = [
     "libs/python/aurelius-atlas-model",
     "libs/python/aurelius-atlas-otel",
     "libs/python/aurelius-atlas-parity",
+    "libs/python/aurelius-atlas-quality",
     "libs/python/aurelius-atlas-server-client",
     "libs/python/aurelius-atlas-store-es",
     "libs/python/aurelius-atlas-trace",
@@ -195,6 +205,12 @@ root = "libs/python/aurelius-atlas-lineage-model-client"
 extraPaths = ["libs/python/aurelius-atlas-validate-entity-client/tests"]
 root = "libs/python/aurelius-atlas-validate-entity-client"
 
+[[tool.pyright.executionEnvironments]]
+# e2e first: the suite imports its fixtures module-style (`from conftest import ...`)
+# and conftest exists in both dirs; tests/ only needs the path for `fake_catalogue`.
+extraPaths = ["apps/aurelius-atlas-quality-scanner/e2e", "apps/aurelius-atlas-quality-scanner/tests"]
+root = "apps/aurelius-atlas-quality-scanner"
+
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "module"
 asyncio_mode = "auto"
@@ -235,7 +251,7 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 "**/conftest.py" = ["INP001"]
 # The chart-contract harness shells out to `helm` and asserts on rendered YAML;
 # the assert/subprocess safety codes are the harness's shape, not a hazard.
-"**/test__*.py" = ["INP001", "S101", "PLR0913", "PLR2004"]
+"**/test__*.py" = ["INP001", "S101", "PLR0913", "PLR0917", "PLR2004"]
 "tests/conftest.py" = ["INP001", "S101", "S603", "S607"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 # The digest guard is a CLI script: print is its output contract and the

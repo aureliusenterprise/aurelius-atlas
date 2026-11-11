@@ -1,0 +1,146 @@
+{
+    "patches": [
+        {
+            "action": "ADD_ATTRIBUTE",
+            "applyToVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The check kind of the rule, from the closed vocabulary of the quality engine (DQ-01).",
+                    "displayName": "Check Kind",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqcheckkind",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The column a single-column check measures.",
+                    "displayName": "Column",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqcolumn",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The regular expression a COLUMN_MATCHES_REGEX rule requires.",
+                    "displayName": "Pattern",
+                    "isIndexable": false,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqpattern",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SET",
+                    "description": "The allowed values a COLUMN_IN_SET rule accepts, as text on both sides.",
+                    "displayName": "Values",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqvalues",
+                    "searchWeight": 1,
+                    "typeName": "array<string>"
+                },
+                {
+                    "cardinality": "SET",
+                    "description": "The columns a row check measures: ROW_NOT_EMPTY or COLUMN_COMPOSITE_UNIQUE.",
+                    "displayName": "Columns",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqcolumns",
+                    "searchWeight": 1,
+                    "typeName": "array<string>"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The other column a COLUMN_EQUALS_COLUMN_RATIO rule compares with.",
+                    "displayName": "Other Column",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqotherColumn",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The type a COLUMN_TYPE_CASTABLE rule names, from the engine's castable types.",
+                    "displayName": "Type",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqtype",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The lowest value a COLUMN_WITHIN_RANGE rule accepts.",
+                    "displayName": "Minimum",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqmin",
+                    "searchWeight": 1,
+                    "typeName": "double"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The highest value a COLUMN_WITHIN_RANGE rule accepts.",
+                    "displayName": "Maximum",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqmax",
+                    "searchWeight": 1,
+                    "typeName": "double"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The oldest age in hours a ROW_FRESHNESS_MAX_AGE rule accepts.",
+                    "displayName": "Max Age Hours",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqmaxAgeHours",
+                    "searchWeight": 1,
+                    "typeName": "double"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The filled columns a ROW_NOT_EMPTY row must carry.",
+                    "displayName": "Min Columns",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqminColumns",
+                    "searchWeight": 1,
+                    "typeName": "int"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The score the rule must reach to pass, a share from 0 to 1 (DQ-01).",
+                    "displayName": "Threshold",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "threshold",
+                    "searchWeight": 1,
+                    "typeName": "double"
+                }
+            ],
+            "description": "Add the closed-vocabulary rule attributes to m4i_data_quality: a stored rule names its check kind and parameters as data (12.2, DD-457).",
+            "id": "TYPEDEF_PATCH_M4I_0011_001",
+            "typeName": "m4i_data_quality",
+            "updateToVersion": "1.1"
+        }
+    ]
+}
