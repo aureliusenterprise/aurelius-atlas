@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/">
+        <link rel="prev" href="../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/">
       
       
         <link rel="next" href="./design-log/">
@@ -2124,6 +2124,8 @@
       
         
       
+        
+      
     
     
     
@@ -3788,6 +3790,33 @@
     
   
   059. The catalogue searches by meaning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  060. The App Search API returns
 
     
   </span>
@@ -7698,6 +7727,55 @@ checks a PR must pass:</p>
 <td>13.2</td>
 <td>The Kafka scanner chart and schedule</td>
 <td>The Helm chart, the CronJob, the prod realm join, and the broker's machine identity decision</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.1</td>
+<td>The legacy search documents: records and rules</td>
+<td>ADR 060; the original Aurelius Atlas's three App Search engines for the sample catalogue as fixtures; the rules of their documents, over the catalogue's state, and the differences of the fixtures from it (LAS-01..13, DD-484..486)</td>
+<td>Aurelius <code>m4i-flink-tasks</code> (<code>synchronize_app_search</code>, <code>get_rules</code>), <code>m4i-atlas-post-install</code> (<code>propagate_quality</code>, <code>connect_datasets_with_entities</code>)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>14.2</td>
+<td>The derived documents</td>
+<td>Breadcrumbs, derived relations, source type and the never-filled fields on the entity documents, for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..07)</td>
+<td><code>synchronize_app_search/event_handlers/entity_created</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.3</td>
+<td>The derived documents kept up to date</td>
+<td>Server tasks that recompute the documents a change affects: names, definitions, deletes, relations (LAS-08..10, DD-486)</td>
+<td><code>synchronize_app_search/event_handlers/{attribute_changed,entity_deleted,relationship_audit}</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.4</td>
+<td>The App Search API: <code>/elastic</code></td>
+<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does (ADR 060)</td>
+<td>Aurelius <code>libs/atlas/api/src/lib/elastic</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.5</td>
+<td>The App Search API: <code>/data_quality</code></td>
+<td>The <code>atlas-dev-quality</code> results over 12.2's <code>m4i_dq_score</code> entities, and the score roll-up on the documents (LAS-11, LAS-12)</td>
+<td><code>propagate_quality</code>; Aurelius <code>data-quality-search.service</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.6</td>
+<td>The App Search API: <code>/gov_quality</code></td>
+<td>The governance rules judged for every entity of their type, the verdicts on the entity documents, and <code>atlas-dev-gov-quality</code> (LAS-13)</td>
+<td><code>m4i-governance-data-quality</code>, <code>get_rules</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.7</td>
+<td>The derived documents in the embedding</td>
+<td>The breadcrumb and derived relations join the text an entity's embedding is made of (ADR 059)</td>
 <td>none</td>
 <td>planned</td>
 </tr>
