@@ -17,6 +17,14 @@ from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
+from aurelius_atlas_core.app_search_document import (
+    APP_SEARCH_FIELD,
+    M4I_PREFIX,
+    SOURCE_HASH_FIELD,
+    WITHOUT_DOCUMENT,
+    app_search_mapping,
+    with_current_app_search,
+)
 from aurelius_atlas_core.entity_embedding import (
     EMBEDDING_FIELD,
     INTERNAL_PREFIX,
@@ -130,13 +138,15 @@ ENTITY_MAPPING: dict[str, Any] = {
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
         "search": {"type": "object", "dynamic": True, "subobjects": False},
+        APP_SEARCH_FIELD: app_search_mapping(),
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
     ],
 }
 """System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
-in the typed fields of ``search``, which the dynamic templates map by their kind (DD-043, DD-057, DD-088).
+in the typed fields of ``search``, which the dynamic templates map by their kind (DD-043, DD-057, DD-088); the App
+Search document's fields, by name (ASD-02).
 """
 
 ENTITY_FIELD_LIMIT = 100_000
@@ -416,6 +426,10 @@ class EntityDocuments(Protocol):
         """Up to ``limit`` entities without an embedding of ``model``, internal types left out (VEC-06, DD-436)."""
         ...
 
+    async def without_app_search(self, limit: int) -> list[VersionedEntity]:
+        """Up to ``limit`` entities that should have an App Search document and have none (ASD-04)."""
+        ...
+
 
 def _keeps_source_vectors(settings: dict[str, Any]) -> bool:
     """Whether an index's settings, flat or nested as Elasticsearch answers them, keep the source of vectors."""
@@ -522,7 +536,7 @@ class ElasticsearchEntityDocuments:
         groups += [(self._linked[kind], write.written, write.removed, kind) for kind, write in (linked or {}).items()]
         for index, documents, removals, group_kind in groups:
             for written, version in documents:
-                document = with_current_embedding(written) if group_kind is None else written
+                document = with_current_app_search(with_current_embedding(written)) if group_kind is None else written
                 action: dict[str, Any] = {"_index": index, "_id": document.guid}
                 if version is None:
                     lines.append(codec.dumps({"create": action}))
@@ -844,6 +858,30 @@ class ElasticsearchEntityDocuments:
             index=self._entities,
             size=limit,
             query={"bool": {"must_not": [{"term": {MODEL_FIELD: model}}, {"prefix": {"typeName": INTERNAL_PREFIX}}]}},
+            sort=[{"guid": "asc"}],
+            seq_no_primary_term=True,
+        )
+        return [
+            VersionedEntity(
+                StoredEntity.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"])
+            )
+            for hit in response["hits"]["hits"]
+        ]
+
+    async def without_app_search(self, limit: int) -> list[VersionedEntity]:
+        """The active entities of m4i types with a document that have none, by GUID (LAS-01, ASD-04, DD-500)."""
+        response = await self._client.search(
+            index=self._entities,
+            size=limit,
+            query={
+                "bool": {
+                    "filter": [{"term": {"state": ACTIVE}}, {"prefix": {"typeName": M4I_PREFIX}}],
+                    "must_not": [
+                        {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
+                        {"exists": {"field": SOURCE_HASH_FIELD}},
+                    ],
+                }
+            },
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )
