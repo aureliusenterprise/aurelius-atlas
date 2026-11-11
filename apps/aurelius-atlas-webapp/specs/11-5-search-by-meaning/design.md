@@ -4,9 +4,12 @@ The `DD-NNN` entries of the increment specified in [`spec.md`](./spec.md). The
 [rules](../../../../docs/architecture/conversion/design-log.md#rules) of the design log apply: an accepted entry
 is never edited except its status line, and a changed decision is a new entry that supersedes the old one.
 
+Until 2026-11-11 these entries were numbered DD-444 to DD-447, the numbers 7.24 had already claimed in a
+parallel branch; they are renumbered DD-478 to DD-481, and their content is unchanged.
+
 ## Entries
 
-### DD-444. The search mode is the session's choice, under the field, not in the URL
+### DD-478. The search mode is the session's choice, under the field, not in the URL
 
 - **Status:** Superseded by DD-473 (11.5b)
 - **Increment:** 11.5
@@ -29,7 +32,7 @@ where a menu would hide two.
 
 **Consequences.** A shared link opens in Words until its reader switches.
 
-### DD-445. In the meaning modes, a full page asks for the next one, and the header counts what is shown
+### DD-479. In the meaning modes, a full page asks for the next one, and the header counts what is shown
 
 - **Status:** Proposed
 - **Increment:** 11.5
@@ -51,7 +54,7 @@ answers at most 1,000 (DD-441).
 
 **Consequences.** The facets count over the entities loaded so far, and grow as the list does.
 
-### DD-446. Similar entities is a box of its own on every details page, after the card sections
+### DD-480. Similar entities is a box of its own on every details page, after the card sections
 
 - **Status:** Superseded by DD-474 (11.5b)
 - **Increment:** 11.5
@@ -74,7 +77,7 @@ grid (DD-377). A box that cannot work on a server leaves no empty frame.
 **Consequences.** The box asks once per details page; an entity not yet embedded shows a note until the next
 visit.
 
-### DD-447. The client of Aurelius's own endpoints is a service of its own in the data-access library
+### DD-481. The client of Aurelius's own endpoints is a service of its own in the data-access library
 
 - **Status:** Proposed
 - **Increment:** 11.5

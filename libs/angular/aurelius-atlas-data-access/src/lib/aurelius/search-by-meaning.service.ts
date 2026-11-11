@@ -24,7 +24,7 @@ export type SimilarEntitiesQuery = {
 };
 
 /**
- * The client of Aurelius's searches by meaning (SBW-01, DD-447): the server's
+ * The client of Aurelius's searches by meaning (SBW-01, DD-481): the server's
  * own endpoints under `/aurelius/v1`, beside Atlas's, behind the same
  * {@link API_BASE_URL} and authentication. Both answer as quick search
  * does, so a caller shows them as it shows quick search (DD-440).

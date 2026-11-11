@@ -44,7 +44,7 @@ the create route carries it (DD-330), the edit read answers it.
 be tested as a pair with the generic one (the spec's Acceptance names both cases in the same
 file).
 
-### DD-478. The form's fields come from the served vocabulary, not the typedefs
+### DD-491. The form's fields come from the served vocabulary, not the typedefs
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -78,7 +78,7 @@ parameter names map through EDT-26's table; a name outside it renders as text). 
 dependency on the server's vocabulary is the same release's (as DD-475's consequence says), so
 no version skew needs handling.
 
-### DD-479. A rule saves unchecked only when the quality form does not own it
+### DD-492. A rule saves unchecked only when the quality form does not own it
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -112,7 +112,7 @@ its old pair attributes ride the untouched pass-through, so the engine's parser 
 as a vocabulary rule (the `dqcheckkind` branch wins, `atlas.py`). If the pair population ever
 needs a sweep, that is a scanner-side report (a later increment), not an editor feature.
 
-### DD-480. The human vocabulary copy rides the webapp catalogue
+### DD-493. The human vocabulary copy rides the webapp catalogue
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -148,7 +148,7 @@ translation gate (`i18n-completeness.spec.ts`) honest.
 until the catalogues name it — a translation task, not a deployment blocker. The fallback is
 tested (EDT-31) so the unmapped case is a known state, not a crash.
 
-### DD-481. The threshold is a slider beside an editable number
+### DD-494. The threshold is a slider beside an editable number
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -184,7 +184,7 @@ fixed at the three digits plus the % icon, and the icon rides Bulma's `is-right`
 sits inside the input's edge rather than past it. Storybook and unit tests cover both drag
 and type paths.
 
-### DD-482. A rule's page is a layout row with a Fields box
+### DD-495. A rule's page is a layout row with a Fields box
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -211,7 +211,7 @@ box behaviour (search, sort, paging, the read gate) for free, and the rule→fie
 editor writes (EDT-26's save body carries `fields`) is the same edge the field page's rules
 box (DET-35) reads from the other side.
 
-### DD-483. Rules enter through the generic doors (DET-37 withdrawn)
+### DD-496. Rules enter through the generic doors (DET-37 withdrawn)
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -241,7 +241,7 @@ which is what every other box is.
 the relationship picker by hand. If a future increment re-proposes a shortcut, it supersedes
 this entry rather than re-adding the button.
 
-### DD-484. The entity-type picker sorts by its localized label
+### DD-497. The entity-type picker sorts by its localized label
 
 - **Status:** Proposed
 - **Increment:** 7.27
@@ -251,7 +251,7 @@ this entry rather than re-adding the button.
 **Decision.** The editor's create-mode entity-type picker (7.7a's EDT-04) orders its rows by
 the label each row shows — the display alias else the dictionary display name — with
 `localeCompare`, not by the raw type name the legacy sorted (`type-select.component.ts:31`).
-The same rule 7.27 set for the rule-kind picker (DD-480): a picker a person reads is a word
+The same rule 7.27 set for the rule-kind picker (DD-493): a picker a person reads is a word
 list. EDT-04 amended in place; the picker's exclusions and labels are unchanged.
 
 **Reason.** The legacy's raw-name order served the dictionary, not the reader: shipped names

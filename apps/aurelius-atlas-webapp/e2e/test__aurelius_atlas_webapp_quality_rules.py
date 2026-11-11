@@ -1,6 +1,6 @@
 """E2E: the 7.27 rules editor — the create/edit circle of a vocabulary rule.
 
-A rule is an entity like any other (DD-483): the generic create door opens
+A rule is an entity like any other (DD-496): the generic create door opens
 the drawer, ``Data Quality`` rides its type picker, and the pencil on the
 rule's page edits it. The drawer builds the form from the server's
 vocabulary, named in human words (EDT-31) with the threshold as a slider
@@ -46,7 +46,7 @@ _VALIDATE_URL = "/api/aurelius/v1/quality/rules/validate"
 
 
 def _open_quality_create(authenticated: Page, root_url: str) -> Locator:
-    """Open the generic create door and pick Data Quality (DD-483).
+    """Open the generic create door and pick Data Quality (DD-496).
 
     The hero `+`, the type from the picker, DD-330's create route — returns
     the drawer.
@@ -103,7 +103,7 @@ def test__the_generic_door_creates_a_rule(
 ) -> None:
     """Data Quality rides the generic door and its Save checks first, then lands (EDT-25/26/28/30/31/32).
 
-    A rule enters like every other entity (DD-483): the hero `+`, ``Data
+    A rule enters like every other entity (DD-496): the hero `+`, ``Data
     Quality`` from the type picker, DD-330's route — and the field's rules
     box carries no door of its own. The form is built from the server's
     vocabulary (EDT-30) and speaks in human words (EDT-31): the kind row
@@ -121,13 +121,13 @@ def test__the_generic_door_creates_a_rule(
     field_guid = guids["field"]
 
     try:
-        # DD-483: the field page's rules box carries no create button at all
+        # DD-496: the field page's rules box carries no create button at all
         # — the generic door below is the door.
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{field_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}field")
         expect(authenticated.locator("button.aurelius-details-create-rule")).to_have_count(0)
 
-        # EDT-25/DD-483: the generic create door with Data Quality chosen.
+        # EDT-25/DD-496: the generic create door with Data Quality chosen.
         drawer = _open_quality_create(authenticated, root_url)
 
         # EDT-30/EDT-25/EDT-31: the vocabulary form arrives from the

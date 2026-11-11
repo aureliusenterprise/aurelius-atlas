@@ -113,7 +113,7 @@ export class EditorState {
      * `translate.instant(entityDef.name)` (`type-select.component.ts:116`);
      * the store ships no typedef `displayName`, so the label is the
      * `nameDisplay` of the name — raw for a type the dictionary never saw
-     * (DD-379). The order is the labels' (DD-484): a picker a person reads
+     * (DD-379). The order is the labels' (DD-497): a picker a person reads
      * is a word list, so the rows sort by the text they show, not by the
      * raw names the legacy sorted (`type-select.component.ts:31`).
      */

@@ -1,5 +1,5 @@
 <!--
-  The quality rule form (EDT-25..EDT-27/29, DD-477/DD-478): the drawer's
+  The quality rule form (EDT-25..EDT-27/29, DD-477/DD-491): the drawer's
   branch for `m4i_data_quality`. The vocabulary drives it (QRE-01 through
   QualityRuleService): the kind Select, the kind's own dimension as read-only
   text, one control per parameter of the chosen kind, and the shared fields
@@ -21,7 +21,7 @@
     } @else {
     <!-- Plain container, not a form: the drawer wraps the field set in
              its own form element (nested forms are invalid HTML), and this
-             branch's controls carry plain handlers (DD-478's explicit-Field
+             branch's controls carry plain handlers (DD-491's explicit-Field
              note) — validity is the component's `valid()`, EDT-28's engine
              call the drawer's. -->
     <div class="aurelius-editor-form aurelius-quality-form">
@@ -169,7 +169,7 @@
                 {{ activeLabel }}
             </label>
         </div>
-        <!-- The threshold pair (EDT-32, DD-481): a range slider beside a
+        <!-- The threshold pair (EDT-32, DD-494): a range slider beside a
                  percentage field, side by side. The stored threshold is the
                  engine's 0..1 ratio (QRE-01); the number reads it as a
                  percent and carries a % sign, so the box shows the current

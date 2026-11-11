@@ -79,7 +79,7 @@ const TYPEDEFS: AtlasTypesDef = {
             ],
         },
         { name: "DataSet", superTypes: ["Asset"], attributeDefs: [] },
-        // The displayName option stands for an alias: DD-484 sorts the picker
+        // The displayName option stands for an alias: DD-497 sorts the picker
         // by the label shown, so this row lands under "B", not under "P".
         { name: "Process", superTypes: ["Asset"], attributeDefs: [], options: { displayName: "Business Process" } },
         { name: "AtlasGlossary", attributeDefs: [] },
@@ -445,7 +445,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         const options = [...(select?.querySelectorAll("option") ?? [])].map((option) => option.textContent);
         // The placeholder row is the hidden option; the data rows are the
         // picker list — no AtlasGlossary, no __ — ordered by the label shown
-        // (DD-484): "Business Process" sorts from its alias, not its raw name.
+        // (DD-497): "Business Process" sorts from its alias, not its raw name.
         const dataRows = [...(select?.querySelectorAll("option") ?? [])]
             .filter((option) => !option.hasAttribute("hidden"))
             .map((option) => option.textContent);

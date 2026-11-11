@@ -1,5 +1,5 @@
 /*
- * The quality rule form (EDT-25..EDT-27, DD-477/DD-478). The component keeps
+ * The quality rule form (EDT-25..EDT-27, DD-477/DD-491). The component keeps
  * the drawer's class names so the shapes match, but Angular's component-scoped
  * styles mean each rule must exist here too: the between-field rhythm, the
  * notification's place at the top of the form, and the loading line's margin
@@ -92,7 +92,7 @@
     margin-top: 1.25rem;
 }
 
-/* The threshold pair (EDT-32, DD-481): the slider and the percentage
+/* The threshold pair (EDT-32, DD-494): the slider and the percentage
    field side by side, one row inside the field's width — the pair never
    reaches wider than the other controls. The slider takes the free
    width; the percentage column is fixed at the three digits it holds

@@ -2,7 +2,7 @@
 
 - **Status:** done
 - **Pull request:** [#309](https://github.com/aureliusenterprise/aurelius-atlas/pull/309)
-- **Records:** ADR 059 (Proposed); DD-444 to DD-447 (DD-444 and DD-446 superseded by DD-473 and DD-474,
+- **Records:** ADR 059 (Proposed); DD-478 to DD-481 (DD-478 and DD-480 superseded by DD-473 and DD-474,
   11.5b); relies on 11.4 (the endpoints, SBM-01 to SBM-08,
   DD-440), 7.4b (the facet sidebar, DD-424 to DD-427), 7.4a (the results store, DD-219), DD-388 (the lineage
   box's pattern)

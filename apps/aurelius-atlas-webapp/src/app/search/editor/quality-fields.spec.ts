@@ -397,7 +397,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         const { fixture, host } = setupCreate();
         arrive(fixture);
 
-        // The pair side by side (DD-481): both ride the served bounds.
+        // The pair side by side (DD-494): both ride the served bounds.
         const slider = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
             "#editor-threshold-slider",
         )!;
@@ -519,7 +519,7 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
 
         pickOption(fixture, ".aurelius-quality-kind", "MYSTERY_CHECK");
 
-        // The fallback state (DD-480's consequence): the raw name stands, no
+        // The fallback state (DD-493's consequence): the raw name stands, no
         // description line shows, and the dimension still localizes.
         expect((fixture.nativeElement as HTMLElement).querySelector(".aurelius-quality-kind-description")).toBeFalsy();
         expect(textOf(fixture, ".aurelius-quality-dimension-value")).toBe("Validity");

@@ -205,7 +205,7 @@ export class EntityEditor {
      * Whether the form is the quality rule form (EDT-25, DD-477): the type is
      * the rule type and the rule is a vocabulary one — create mode always,
      * edit mode when the entity names a `dqcheckkind`. A legacy rule without
-     * the kind stays in the generic form (EDT-29, DD-479): the quality form
+     * the kind stays in the generic form (EDT-29, DD-492): the quality form
      * offers only kinds, and converting one is a human act, not a rewrite.
      */
     protected readonly qualityMode = computed(
