@@ -17,8 +17,8 @@ and writes the whole tree in one bulk request. A re-scan updates the same
 entities in place; it never duplicates and never deletes a removed topic.
 
 The [spec](specs/13-1-kafka-cluster-scanner/spec.md) states the KSC-01..10
-rules. The Helm chart, the schedule, and broker machine identity land with the
-planned [13.2](../../docs/architecture/conversion/index.md).
+rules. The Helm chart and the schedule land with the planned
+[13.2](../../docs/architecture/conversion/index.md).
 
 ## Scan
 
@@ -35,7 +35,11 @@ metadata, or a refused write (KSC-01).
 
 ## Configuration
 
-Every key carries the `AURELIUS_ATLAS_KAFKA_SCANNER_` prefix. The required one:
+Every key carries the `AURELIUS_ATLAS_KAFKA_SCANNER_` prefix and has a
+command-line flag (`--system-name`, `--security-protocol`, …): the flag beats
+the environment, and `--help` lists them all. The secret keys have no
+advertised flag — they are environment settings, so a secret never lands in a
+shell history or a process listing (DD-472). The required one:
 
 | Key             | Meaning                                                                                     |
 | --------------- | ------------------------------------------------------------------------------------------- |
@@ -52,6 +56,17 @@ standing for any run of characters, default `*`, KSC-02), `SNIFF_MESSAGES`,
 legacy job had none, KSC-01), `REGISTRY_TIMEOUT_SECONDS`, `CA_FILE` (the CA that
 verifies the server, the issuer, the broker, and the Registry, KSC-10), and the
 optional `OTEL_*` block for OTLP export.
+
+The broker auth ladder (KSC-10, DD-471) rides four more keys. The settings
+validator refuses a half-filled ladder, so a mis-set run fails at start instead
+of silently speaking the wrong protocol:
+
+| Key                                                  | Meaning                                                                                                                          |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `SECURITY_PROTOCOL`                                  | `PLAINTEXT` (default), `SSL`, `SASL_PLAINTEXT`, or `SASL_SSL` — what the broker's listener answers                               |
+| `SASL_MECHANISM`                                     | with a SASL protocol: `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`, or `OAUTHBEARER`                                                |
+| `SASL_USERNAME`/`_PASSWORD`                          | the principal and secret for `PLAIN` and the `SCRAM-*` mechanisms                                                                |
+| `SASL_OAUTH_TOKEN_URL`/`_CLIENT_ID`/`_CLIENT_SECRET` | the issuer trio for `OAUTHBEARER`: the job mints the broker token with the same client-credentials source the catalogue legs use |
 
 ## Run in dev
 

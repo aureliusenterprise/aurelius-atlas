@@ -9,14 +9,28 @@ live in the root `AGENTS.md`.
 The job is a CLI, not a service: one process per scan, no HTTP router, no port
 (KSC-01).
 
-- `aurelius_atlas_kafka_scanner/settings.py` — `ScannerSettings`
+- `aurelius_atlas_kafka_scanner/settings.py` — `ScannerSettings`, the CLI
+  itself (DD-472): a `CliSettingsSource` first, so every key has a flag and
+  the flag beats the environment; `--help` prints; secrets are
+  `CliSuppress`ed, which hides their flag from help but does not reject it —
+  deployments keep secrets in the environment (DD-465..472 records the gap).
   (`AURELIUS_ATLAS_KAFKA_SCANNER_` prefix, frozen; `client_secret` required,
-  the rest defaulted; the OTLP trio stands or falls together)
+  the rest defaulted; the OTLP trio stands or falls together; the broker
+  auth ladder — `security_protocol` × `sasl_mechanism` × its credentials —
+  is validated as a whole, KSC-10.) The CLI parses only when `__main__.py`
+  passes `_cli_parse_args=`, so pytest's own argv never reaches it; a
+  malformed flag raises `SettingsError` (`cli_exit_on_error=False`), which
+  `run` maps to exit 1 like any configuration error.
 - `aurelius_atlas_kafka_scanner/cluster.py` — the broker door
   (`KafkaCluster`): the external topic list, the cluster id, the newest record
   of one topic (KSC-02, KSC-05, KSC-10). A broker that answers no metadata
   raises `BrokerUnreachableError` naming the bootstrap list — the run fails,
-  it never hangs (KSC-01).
+  it never hangs (KSC-01). `broker_config` builds the kafka-python client
+  config for one of the four security protocols; `OAUTHBEARER` rides an
+  `OAuthTokenProvider` wrapping the minted token, and a refused mint raises
+  `BrokerAuthError` (DD-471). A wrong SASL secret surfaces from the admin
+  client's constructor as a `KafkaTimeoutError`, which is a `KafkaError` —
+  the same `BrokerUnreachableError` path covers it.
 - `aurelius_atlas_kafka_scanner/registry.py` — the Schema Registry door
   (`SchemaRegistry`): a subject's latest schema and a schema by id (KSC-04,
   KSC-05). It takes a `transport` seam the tests inject.
@@ -31,11 +45,13 @@ The job is a CLI, not a service: one process per scan, no HTTP router, no port
   bulk write (KSC-01, KSC-07..09). The `ScanDoor` protocol is the seam the
   e2e suite wraps to record what a run wrote. Testable with fakes; no
   Keycloak, no broker, no store.
-- `aurelius_atlas_kafka_scanner/__main__.py` — the CLI: settings, the
-  client-credentials token (KSC-09), optional telemetry, one scan, the exit
-  code. `build_client` is the seam the e2e suite drives in-process.
+- `aurelius_atlas_kafka_scanner/__main__.py` — the CLI: the settings model
+  _is_ the parser (no argparse, DD-472), the client-credentials token
+  (KSC-09), the OAUTHBEARER broker token when the ladder names it (KSC-10),
+  optional telemetry, one scan, the exit code. `build_client` is the seam the
+  e2e suite drives in-process.
 - `specs/13-1-kafka-cluster-scanner/` — the semantics spec and this
-  increment's `design.md` (DD-465..469)
+  increment's `design.md` (DD-465..472)
 - `tests/` — unit tests on fake doors (a fake broker, a fake Registry
   transport, a recording client): the qualified-name rule, the parsers, the
   wire id, the notices, the dry-run, the temp-guid bulk shape.
@@ -76,14 +92,20 @@ deviation and needs a `deviations.md` row, not a silent edit.
   service client means editing that list too. The prod-side join lands with
   13.2's chart work.
 - `dev/kafka` — the broker and Registry the scan reads in dev and in e2e:
-  loopback-pinned PLAINTEXT ports 29092/28081, no credentials (DD-469).
-  Its `README.md` carries the removal checklist.
+  loopback-pinned ports 29092 (PLAINTEXT, no credentials, DD-469), 29095
+  (SASL_PLAINTEXT with SCRAM-SHA-512, DD-471) and 28081 (Registry). The
+  SCRAM pair in `dev/kafka/.env` is mirrored in this app's `.env` (as
+  `AURELIUS_ATLAS_KAFKA_SCANNER_SASL_USERNAME`/`_PASSWORD`) so the e2e suite
+  authenticates against it: keep the two pairs equal when either changes,
+  and re-encrypt both `.env.enc` files. Its `README.md` carries the removal
+  checklist.
 - `.env` / `.env.enc` — dev defaults; re-run
   `nx encrypt aurelius-atlas-kafka-scanner` after changing `.env` (CI
   regenerates the plaintext from the `.env.enc`). The e2e vars the server
   image and the keycloak compose read carry their own names
   (`AURELIUS_ATLAS_SERVER_*`, bare `KAFKA_SCANNER_CLIENT_SECRET`
-  passthrough) because Nx injects this `.env` into the task.
+  passthrough) because Nx injects this `.env` into the task. The dev SASL
+  credentials mirror `dev/kafka/.env` — see the `dev/kafka` bullet above.
 - `tls.json` — the server's certificate SANs only: the job is a client and
   verifies the server and the issuer with `CA_FILE`. The broker and Registry
   are PLAINTEXT and need no certificate material (DD-469).
@@ -107,5 +129,6 @@ unwire), the scanner client and service-account user in
 `KAFKA_SCANNER_CLIENT_SECRET` passthrough in `dev/keycloak/docker-compose.yaml`,
 the scanner entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES`, the `kafka`
 entry in `tests/test__dev_stack.py`'s `DEV_COMPOSES`, the mkdocs nav entry,
-and the 13.1 roadmap rows. The `m4i_dataset`/`m4i_field` models stay — the
-webapp reads them.
+and the 13.1 roadmap rows. Drop the mirrored SASL pair from this app's
+`.env`/`.env.enc` with the stack (`dev/kafka`'s own README unwires its side).
+The `m4i_dataset`/`m4i_field` models stay — the webapp reads them.

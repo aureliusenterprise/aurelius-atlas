@@ -2,16 +2,18 @@
 
 The door's socket side is proved against the real broker in ``e2e/``; here the rules that are
 pure functions get their own pairs, and the failure path runs against a fake admin client that
-raises what ``kafka-python-ng`` raises when no bootstrap server answers.
+raises what ``kafka-python`` raises when no bootstrap server answers.
 """
 
 import re
 
 import pytest
 from aurelius_atlas_kafka_scanner.cluster import (
+    BrokerAuthError,
     BrokerUnreachableError,
     KafkaCluster,
-    common_config,
+    OAuthTokenProvider,
+    broker_config,
     compile_patterns,
     is_internal,
     matches_any,
@@ -69,15 +71,65 @@ def test_a_wildcard_pattern_escapes_regex_text() -> None:
     assert not matches_any("ordersXv2", patterns)
 
 
-@pytest.mark.covers("aurelius_atlas_kafka_scanner.cluster.common_config", rules=["KSC-10"])
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.cluster.broker_config", rules=["KSC-10"])
 def test_the_ca_setting_reaches_the_client_config() -> None:
     """With CA_FILE set, the config verifies a TLS broker's hostname against it (KSC-10)."""
-    plain = common_config(BOOTSTRAP, None, 10_000)
+    plain = broker_config(BOOTSTRAP)
     assert "ssl_cafile" not in plain
-    assert plain == {"bootstrap_servers": BOOTSTRAP, "request_timeout_ms": 10_000}
-    secure = common_config(BOOTSTRAP, "/certs/ca.pem", 5_000)
+    assert plain == {"bootstrap_servers": BOOTSTRAP, "request_timeout_ms": 10_000, "security_protocol": "PLAINTEXT"}
+    secure = broker_config(BOOTSTRAP, ca_file="/certs/ca.pem", request_timeout_ms=5_000)
     assert secure.get("ssl_cafile") == "/certs/ca.pem"
     assert secure.get("ssl_check_hostname") is True
+
+
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.cluster.broker_config", rules=["KSC-10"])
+def test_a_sasl_mechanism_rides_the_config_with_its_credentials() -> None:
+    """PLAIN and SCRAM carry the principal and secret; the library spells SCRAM's with its plain keys (KSC-10)."""
+    scram = broker_config(
+        BOOTSTRAP,
+        security_protocol="SASL_PLAINTEXT",
+        sasl_mechanism="SCRAM-SHA-512",
+        sasl_username="scanner",
+        sasl_password="s3cret",  # noqa: S106 - a test secret
+    )
+    assert scram.get("security_protocol") == "SASL_PLAINTEXT"
+    assert scram.get("sasl_mechanism") == "SCRAM-SHA-512"
+    assert scram.get("sasl_plain_username") == "scanner"
+    assert scram.get("sasl_plain_password") == "s3cret"
+
+
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.cluster.broker_config", rules=["KSC-10"])
+def test_oauthbearer_rides_the_config_as_a_provider() -> None:
+    """The mint reaches the config wrapped: the library demands a provider, never the mint (KSC-10)."""
+
+    class _Mint:
+        def bearer(self) -> str | None:
+            return "bearer-token"
+
+    oauth = broker_config(
+        BOOTSTRAP,
+        security_protocol="SASL_SSL",
+        sasl_mechanism="OAUTHBEARER",
+        oauth_source=_Mint(),  # pyright: ignore[reportArgumentType] - the seam needs only bearer()
+    )
+    provider = oauth.get("sasl_oauth_token_provider")
+    assert isinstance(provider, OAuthTokenProvider)
+    assert provider.token() == "bearer-token"
+
+
+class _RefusingMint:
+    """A token source whose issuer says no."""
+
+    def bearer(self) -> str | None:
+        return None
+
+
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.cluster.OAuthTokenProvider.token", rules=["KSC-01", "KSC-10"])
+def test_a_refused_mint_refuses_the_broker_too() -> None:
+    """The scan never speaks anonymously to the broker: a refused mint raises (KSC-01, KSC-10)."""
+    provider = OAuthTokenProvider(_RefusingMint())  # pyright: ignore[reportArgumentType] - the seam needs only bearer()
+    with pytest.raises(BrokerAuthError, match="anonymously"):
+        provider.token()
 
 
 class _RaisingAdmin:
@@ -114,9 +166,9 @@ class _AnsweringAdmin:
 
     def describe_topics(self) -> list[dict[str, object]]:
         return [
-            {"topic": "orders", "partitions": [{"partition": 0}, {"partition": 1}]},
-            {"topic": "__consumer_offsets", "partitions": [{"partition": 0}]},
-            {"topic": "payments", "partitions": [{"partition": 0}]},
+            {"name": "orders", "partitions": [{"partition_index": 0}, {"partition_index": 1}]},
+            {"name": "__consumer_offsets", "partitions": [{"partition_index": 0}]},
+            {"name": "payments", "partitions": [{"partition_index": 0}]},
         ]
 
     def describe_cluster(self) -> dict[str, object]:

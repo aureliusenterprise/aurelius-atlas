@@ -450,7 +450,7 @@ dependencies = [
     { name = "aurelius-atlas-server-client" },
     { name = "avro" },
     { name = "httpx2" },
-    { name = "kafka-python-ng" },
+    { name = "kafka-python" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
 ]
@@ -462,7 +462,7 @@ requires-dist = [
     { name = "aurelius-atlas-server-client", editable = "libs/python/aurelius-atlas-server-client" },
     { name = "avro", specifier = ">=1.12.0" },
     { name = "httpx2", specifier = ">=2.0.0" },
-    { name = "kafka-python-ng", specifier = ">=2.2.0" },
+    { name = "kafka-python", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = ">=2.14.2" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
 ]
@@ -1500,12 +1500,12 @@ wheels = [
 ]
 
 [[package]]
-name = "kafka-python-ng"
-version = "2.2.3"
+name = "kafka-python"
+version = "3.0.13"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ce/04/1d65bdf3f0103a08710e226b851de4b357ac702f1cadabf6128bab7518a7/kafka_python_ng-2.2.3.tar.gz", hash = "sha256:f79f28e10ade9b5a9860b2ec15b7cc8dc510d5702f5a399430478cff5f93a05a", size = 330644, upload-time = "2024-10-02T16:56:58.639Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/8f/7820b53ea017d615645cd29f5e73edf940906d20682b2b12506052a8a09b/kafka_python-3.0.13.tar.gz", hash = "sha256:27161a9f5e0620eb6ec88324e0b3bd16e86d85d204bd29f8b5e8da351f6d11d0", size = 512677, upload-time = "2026-11-06T01:33:25.702Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0f/61/22e778f642465a157c449782300d8817ebbc106794a8a7ebe88cbb846b05/kafka_python_ng-2.2.3-py2.py3-none-any.whl", hash = "sha256:adc6e82147c441ca4ae1f22e291fc08efab0d10971cbd4aa1481d2ffa38e9480", size = 232824, upload-time = "2024-10-02T16:56:56.932Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/0a/b265b1243161b9777ea2fc28822f6f29a958299f9e19f6494098a0d02c5b/kafka_python-3.0.13-py3-none-any.whl", hash = "sha256:a415f1d0bf3c890aef37de6d6f7aa5f1f2d41aad320e8f8ce97b284c6a287b9d", size = 614308, upload-time = "2026-11-06T01:33:27.379Z" },
 ]
 
 [[package]]

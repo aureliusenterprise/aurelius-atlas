@@ -9,7 +9,7 @@ is a new entry that supersedes the old one.
 
 ### DD-465. The broker door is `kafka-python-ng`, and the Registry door is plain HTTP
 
-- **Status:** Proposed
+- **Status:** Proposed (the library clause is superseded by DD-470; the Registry clause stands)
 - **Increment:** 13.1
 - **Date:** 2026-11-10
 
@@ -146,7 +146,7 @@ as everything else (KSC-03).
 
 ### DD-469. The dev broker stays PLAINTEXT on loopback; the catalogue identity carries the scan
 
-- **Status:** Proposed
+- **Status:** Proposed (superseded by DD-471)
 - **Increment:** 13.1
 - **Date:** 2026-11-10
 
@@ -179,3 +179,125 @@ implemented and unit-tested (KSC-10) — a SASL broker needs a door change, not 
 owns when. `dev/kafka` ships no metrics-puller sidecar yet: the realm has no `otel-kafka` client,
 and adding one belongs with the prod identity round the chart increment takes. The loopback pins
 join the root contract suite (`tests/test__dev_stack.py`) so a widened bind fails CI.
+
+### DD-470. The broker door is upstream `kafka-python` 3.x, not the `ng` fork
+
+- **Status:** Proposed
+- **Increment:** 13.1
+- **Date:** 2026-11-11
+- **Supersedes:** DD-465 (its library clause)
+
+**Decision.** The broker door (DD-465) speaks the revived upstream `kafka-python` at 3.x.
+The `kafka-python-ng` fork named there is gone from the dependency list; the Registry clause
+of DD-465 stands as written.
+
+**Reason.** The fork is archived on GitHub: its last release (2.2.3, October 2024) stops at
+Python 3.12, and this workspace runs 3.14 (an archived broker door cannot follow the image).
+The upstream project answers again — 3.0.13 shipped November 2026, is classified through
+Python 3.14, and its wheel is `py3-none-any`, pure Python like the fork, so the musl image
+still installs it with `--only-binary :all:`. DD-465 chose the fork over `confluent-kafka`
+because that library has no musl wheel; the same reason picks the revived upstream now.
+
+**Alternatives.** Stay on the fork: an archived dependency, untested on the workspace's own
+Python, carrying a security-fix debt with no maintainer. `confluent-kafka`: still undeployable
+here (DD-465's reason stands). `aiokafka`: still no admin surface (DD-465's reason stands).
+
+**Consequences.** The 3.x API differs from the fork where the door touches it, and the door
+follows: `describe_topics` answers each topic under `name` (the fork said `topic`) and each
+partition under `partition_index` (the fork said `partition`); the SASL plumbing moved from
+`kafka.conn`/`kafka.sasl` to `kafka.net`/`kafka.net.sasl`; an OAUTHBEARER provider must be an
+instance of `kafka.net.sasl.oauth.AbstractTokenProvider`, where the fork accepted any object
+with a `token()` method. Both distributions ship the same top-level `kafka` package, so the
+machine must hold exactly one: an environment that carried the fork was uninstalled before the
+upstream went in, because a side-by-side install merges the two trees into a broken module.
+
+### DD-471. The broker door speaks an auth ladder; the dev broker rides it
+
+- **Status:** Proposed
+- **Increment:** 13.1
+- **Date:** 2026-11-11
+- **Supersedes:** DD-469
+
+**Decision.** The broker door speaks the four security protocols Kafka names — `PLAINTEXT`,
+`SSL`, `SASL_PLAINTEXT`, `SASL_SSL` — over the settings `SECURITY_PROTOCOL`, `SSL` with a CA
+file (`CA_FILE`, KSC-10), and SASL over either with `PLAIN`, `SCRAM-SHA-256`, `SCRAM-SHA-512`,
+or `OAUTHBEARER` (`SASL_MECHANISM` and its credentials, KSC-10). The settings validator is the
+ladder's gate: a SASL protocol without a mechanism, a mechanism without a SASL protocol, a
+password mechanism without its principal and secret, and `OAUTHBEARER` without its issuer trio
+are each a configuration error (KSC-01). `OAUTHBEARER` rides the same client-credentials mint
+the catalogue and the OTLP legs ride (`aurelius_atlas_otel.ClientCredentialsTokenSource`),
+wrapped in the provider library DD-470 demands; a refused mint fails the run rather than
+speaking anonymously. `GSSAPI` is out of the ladder: a Kerberos client the image does not ship,
+and no Aurelius deployment asks for it. `dev/kafka` grows a second host listener,
+`SASL_PLAINTEXT` with `SCRAM-SHA-512`, and a one-shot `sasl-init` service that writes the dev
+SCRAM user into the cluster; the plain listener stays, so the dev default scan stays
+credentialless. The e2e suite scans over the SASL listener with SCRAM (a dry run: metadata and
+the sniff both ride the authenticated connection) and proves a refused secret is the same
+run-level failure as a silent broker.
+
+**Reason.** Customer clusters typically answer an authenticated listener — often `SASL_SSL`
+with `OAUTHBEARER` against the same Keycloak the platform already runs (the user's own
+deployment pattern, and KSC-10's open clause in this spec). DD-469's reasoning that a broker
+that demands credentials is a 13.2 decision left the door unable to answer the deployments
+the job actually meets; the seam it deferred is the ladder, and a listener no test rides is
+the drift DD-469 itself feared. The SCRAM listener — not OAuth — is the dev stand-in because
+it needs no issuer plumbing on the broker: the Kafka broker verifies SCRAM against its own
+cluster metadata, while an `OAUTHBEARER` listener wants a JWKS or introspection endpoint wired
+into the broker config, which belongs with the prod chart's identity round (13.2). The mint
+seam itself is unit-proved here (the provider's token and its refusal), and the e2e rides
+SCRAM: the ladder's read leg runs on a live broker either way.
+
+**Alternatives.** Defer the whole ladder to 13.2 (DD-469): rejected above. Full OAUTHBEARER on
+the dev broker: the broker needs the issuer's public key material and a listener config per
+mechanism; that plumbing is the prod chart's own decision, and carrying it in dev now would
+make the dev stack a second copy of prod's identity story. OPA or Ranger authorization on the
+broker: out of scope — the scan reads metadata and message tails; its write path is already
+authorised as its own service identity (KSC-09).
+
+**Consequences.** The door carries a wider constructor (the transport, its mechanism, its
+credentials) — one keyword each, and the scan passes them straight from the settings. The
+`KafkaCluster` door maps a refused credential to the same `BrokerUnreachableError` it raises
+for a silent broker: `kafka-python` refuses both inside the bootstrap, and the run cannot —
+and must not — tell them apart (KSC-01). The SCRAM credentials are dev-only values mirrored
+in `apps/aurelius-atlas-kafka-scanner/.env` (SOPS, like every dev secret); the e2e conftest
+reads them from there and nowhere else. Telemetry's OTLP leg (DD-196) is unchanged. The prod
+chart (13.2) inherits the settings and chooses the rung.
+
+### DD-472. The settings model is the CLI
+
+- **Status:** Proposed
+- **Increment:** 13.1
+- **Date:** 2026-11-11
+
+**Decision.** One pydantic-settings model carries every setting and the run's flags, and its
+CLI source parses the command line over the environment: `--dry-run` / `--no-dry-run`,
+repeatable `--topic`, and a kebab-case flag for every other key (`--system-name`,
+`--security-protocol`, …). The hand-written `argparse` parser goes. A malformed flag and a
+malformed environment value are both configuration errors that exit 1 (KSC-01). The secret
+fields (`CLIENT_SECRET`, `SASL_PASSWORD`, `SASL_OAUTH_CLIENT_SECRET`, `OTEL_CLIENT_SECRET`)
+carry `CliSuppress`, so `--help` never advertises them: the documented interface is the knobs,
+not the secrets.
+
+**Reason.** The increment shipped a second argument parser next to the settings model, and
+the two could drift: a new setting was half the work from being a flag and fully invisible
+when it was not made one. pydantic-settings gives every field its flag for free, with the
+same validation as the environment path. Precedence lands where an operator expects: flag
+over environment (the source order puts the CLI first). The CLI parses only when the caller
+hands it the arguments (`_cli_parse_args`), so a test process never reads its own pytest
+arguments as scanner flags. `cli_exit_on_error=False` turns a malformed flag into the same
+`SettingsError` family as a bad setting, which `run()` already maps to exit 1 — the tool never
+exits 2 from argparse's own error path.
+
+**Alternatives.** Keep the two parsers in step: drift, and the flags exist only for the two
+settings the parser named. Typer or Click: another dependency for what the settings model
+already does, and neither reads the environment for free. A `--client-secret` flag: a secret
+in every process list and shell history, for a key an operator sets in the environment anyway
+in every deployment (SOPS, K8s secret) — `CliSuppress` keeps it out of the documented surface.
+
+**Consequences.** `--help` lists every knob with the field's own docstring as help text, so
+the configuration table of the app README stays true by construction. `CliSuppress` hides a
+field's flag from `--help` (proved by a test that reads the help text); the library's
+suppression does not reject such a flag if typed by hand, and the flag still resolves over
+the environment — the deployment story (secrets through the environment, always) keeps the
+gap harmless, and it is recorded here rather than papered over. The scan's flags ride settings
+fields (`dry_run`, `topic`), so `run_scan`'s keyword seam is unchanged.

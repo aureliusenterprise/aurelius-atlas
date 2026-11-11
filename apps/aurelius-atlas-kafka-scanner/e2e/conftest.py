@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     client_secret: SecretStr
     """The secret of the scanner's own service client — the realm import's value."""
 
+    sasl_username: str
+    """The SCRAM principal of the dev broker's SASL listener (KSC-10): the mirrored
+    value of dev/kafka's KAFKA_SASL_USER, injected by Nx from the project .env."""
+
+    sasl_password: SecretStr
+    """The secret of ``sasl_username`` — dev/kafka's KAFKA_SASL_SECRET, mirrored."""
+
     model_config = SettingsConfigDict(
         # Same prefix as the application's settings: the project .env Nx injects into the
         # e2e task carries prefixed names.
@@ -238,6 +245,26 @@ def scanner_settings(server: str, settings: Settings, keycloak: DockerCompose, k
         ca_file=str(CA_FILE),
         bootstrap_servers=f"localhost:{broker_port}",
         schema_registry_url=cast("HttpUrl", f"http://localhost:{registry_port}"),
+    )
+
+
+@pytest.fixture(scope="session")
+def sasl_settings(scanner_settings: ScannerSettings, settings: Settings, kafka: DockerCompose) -> ScannerSettings:
+    """The scan's settings on the broker's SASL listener: the same scan over SCRAM (KSC-10).
+
+    The dev broker's second host listener answers SASL_PLAINTEXT with SCRAM-SHA-512
+    (dev/kafka, DD-469's dev stand-in for auth'd customer clusters); the credentials are the
+    mirrored dev values the project environment carries.
+    """
+    sasl_port = kafka.get_service_port("broker", 9095)
+    return scanner_settings.model_copy(
+        update={
+            "bootstrap_servers": f"localhost:{sasl_port}",
+            "security_protocol": "SASL_PLAINTEXT",
+            "sasl_mechanism": "SCRAM-SHA-512",
+            "sasl_username": settings.sasl_username,
+            "sasl_password": settings.sasl_password,
+        },
     )
 
 

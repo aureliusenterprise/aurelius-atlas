@@ -13,12 +13,13 @@ and hard-deletes the entities it wrote (DD-223); nothing here restarts the store
 
 import asyncio
 import json
+import re
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
 
 import pytest
-from aurelius_atlas_kafka_scanner.cluster import KafkaCluster
+from aurelius_atlas_kafka_scanner.cluster import BrokerUnreachableError, KafkaCluster
 from aurelius_atlas_kafka_scanner.graph import dataset_qualified_name, join_qualified, qualified_component
 from aurelius_atlas_kafka_scanner.registry import SchemaRegistry
 from aurelius_atlas_kafka_scanner.scan import ScanDoor, ScanReport, run_scan
@@ -112,6 +113,10 @@ async def _scan(
         settings.bootstrap_servers,
         ca_file=settings.ca_file,
         admin_request_timeout_ms=settings.admin_request_timeout_ms,
+        security_protocol=settings.security_protocol,
+        sasl_mechanism=settings.sasl_mechanism,
+        sasl_username=settings.sasl_username,
+        sasl_password=settings.sasl_password.get_secret_value() if settings.sasl_password else None,
     )
     registry = SchemaRegistry(str(settings.schema_registry_url), ca_file=None)
     try:
@@ -366,3 +371,61 @@ async def test__a_dry_run_writes_nothing(
 
     qn = _qualified(run_cluster_id, run_token, orders)
     assert await _found(writer, "m4i_dataset", qn) is None
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_kafka_scanner.scan.run_scan",
+    "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.external_topics",
+    "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.newest_record",
+    "aurelius_atlas_kafka_scanner.cluster.broker_config",
+    rules=["KSC-10"],
+)
+async def test__a_scan_over_scram_reads_the_same_broker(
+    scanner: AtlasClient,
+    topics: Callable[[str], str],
+    produce: Callable[[str, bytes], None],
+    cleanup: Seeded,
+    run_token: str,
+    sasl_settings: ScannerSettings,
+) -> None:
+    """The SASL listener answers the whole read the plain one does (KSC-10): SCRAM in, scan out.
+
+    A dry run over the broker's SASL_PLAINTEXT listener: the door authenticates with the
+    SCRAM-SHA-512 principal, the metadata read and the record sniff both ride that connection,
+    and the run-namespaced pattern admits exactly the run's topics — the ladder's read leg on
+    a live broker, no fake between the job and the listener. Nothing is written (KSC-08).
+    """
+    orders = topics("orders")
+    produce(orders, json.dumps({"sku": "abc"}).encode())
+    settings = sasl_settings.model_copy(update={"topics": f"zz{run_token}*"})
+    report = await _scan(scanner, settings, cleanup, dry_run=True)
+    assert report.topics_written == 1
+    assert report.topics_fieldless == 0  # the sniff read the record over the SASL connection
+    assert report.entities
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.external_topics",
+    rules=["KSC-01", "KSC-10"],
+)
+def test__a_wrong_secret_fails_the_run_naming_the_bootstrap_list(
+    sasl_settings: ScannerSettings,
+) -> None:
+    """A refused credential is a dead broker as far as the run cares (KSC-01, KSC-10): exit-path failure.
+
+    The door cannot separate a listener that refuses it from one that never answers: the same
+    BrokerUnreachableError, naming the bootstrap list, is what the CLI answers with exit 1.
+    """
+    cluster = KafkaCluster(
+        sasl_settings.bootstrap_servers,
+        security_protocol="SASL_PLAINTEXT",
+        sasl_mechanism="SCRAM-SHA-512",
+        sasl_username=sasl_settings.sasl_username or "",
+        sasl_password="not-the-secret",  # noqa: S106 - a deliberately wrong dev secret
+        admin_request_timeout_ms=5_000,
+    )
+    try:
+        with pytest.raises(BrokerUnreachableError, match=re.escape(sasl_settings.bootstrap_servers)):
+            cluster.external_topics()
+    finally:
+        cluster.close()

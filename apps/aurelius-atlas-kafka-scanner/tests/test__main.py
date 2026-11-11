@@ -1,19 +1,26 @@
-"""The CLI: the arguments, and the exit codes of the failures the run answers itself (KSC-01, KSC-09)."""
+"""The CLI: the exit codes of the failures the run answers itself (KSC-01, KSC-08, KSC-09)."""
 
 import pytest
-from aurelius_atlas_kafka_scanner.__main__ import EXIT_FAILURE, EXIT_OK, MINT_REFUSAL, _tokens, parse_args, run
+from aurelius_atlas_kafka_scanner.__main__ import EXIT_FAILURE, EXIT_OK, MINT_REFUSAL, _tokens, run
 
 NO_DOOR = "a run without settings must not open a door"
 
 
-@pytest.mark.covers("aurelius_atlas_kafka_scanner.__main__.parse_args", rules=["KSC-08"])
-def test_the_cli_takes_a_dry_run_and_repeatable_topics() -> None:
-    """--dry-run and --topic (repeatable) are the whole interface (KSC-08)."""
-    args = parse_args(["--dry-run", "--topic", "orders", "--topic", "events-*"])
-    assert args.dry_run is True
-    assert args.topics == ["orders", "events-*"]
-    assert parse_args([]).dry_run is False
-    assert parse_args([]).topics is None
+@pytest.mark.covers("aurelius_atlas_kafka_scanner.__main__.run", rules=["KSC-01", "KSC-08"])
+def test_an_unknown_flag_fails_the_run_with_no_scan(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The settings model is the CLI: a flag it does not name is a configuration error, exit 1 (KSC-08).
+
+    The identity is complete here, so the flag alone is what the run refuses.
+    """
+
+    def never_open(
+        *_args: object, **_kwargs: object
+    ) -> None:  # pragma: no cover - the assertion is that this never runs
+        raise AssertionError(NO_DOOR)
+
+    monkeypatch.setenv("AURELIUS_ATLAS_KAFKA_SCANNER_CLIENT_SECRET", "anything")
+    monkeypatch.setattr("aurelius_atlas_kafka_scanner.__main__.KafkaCluster", never_open)
+    assert run(["--not-a-flag"]) == EXIT_FAILURE
 
 
 @pytest.mark.covers("aurelius_atlas_kafka_scanner.__main__.run", rules=["KSC-01", "KSC-09"])

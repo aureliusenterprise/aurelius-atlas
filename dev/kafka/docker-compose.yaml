@@ -2,24 +2,36 @@ name: aurelius-atlas-dev-kafka
 
 services:
     broker:
-        # KRaft single node, PLAINTEXT on loopback (13.1, DD-469): the scan
-        # reads this broker with its anonymous host listener, and the
-        # catalogue identity (the scanner's own client-credentials token)
-        # carries authorization. Broker machine identity (SASL/OAUTHBEARER or
-        # mTLS) arrives with its own decision when the prod chart brings a
-        # broker that demands one.
+        # KRaft single node, two client listeners (13.1, DD-469): the anonymous
+        # HOST listener the scan reads with when the cluster answers PLAINTEXT,
+        # and a SASL_PLAINTEXT listener carrying the SCRAM-SHA-512 user the
+        # sasl-init service below creates — the dev stand-in for the auth'd
+        # customer clusters (KSC-10). The catalogue identity (the scanner's own
+        # client-credentials token) carries authorization either way; OAUTHBEARER
+        # and TLS ride the same settings ladder and are proved through their
+        # seams in unit tests (the mint seam) until a dev issuer joins the broker.
         image: dhi.io/kafka:4.3-debian13
         environment:
             # KAFKA_* settings: the image entrypoint writes them into its own
-            # server.properties inside the container layer. Two client-facing
+            # server.properties inside the container layer. Three client-facing
             # listeners: INTERNAL serves the compose network (advertised as
             # broker:9092), HOST serves host tools (advertised as
-            # localhost:${KAFKA_BROKER_PORT}); CONTROLLER is the KRaft plane.
+            # localhost:${KAFKA_BROKER_PORT}), SASL serves host tools that
+            # authenticate (advertised as localhost:${KAFKA_SASL_PORT});
+            # CONTROLLER is the KRaft plane, plain like the inter-broker hop.
             KAFKA_BROKER_ID: "1"
             KAFKA_PROCESS_ROLES: broker,controller
-            KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,HOST://0.0.0.0:9094
-            KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:9092,HOST://localhost:${KAFKA_BROKER_PORT}
-            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT
+            KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,HOST://0.0.0.0:9094,SASL://0.0.0.0:9095
+            KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:9092,HOST://localhost:${KAFKA_BROKER_PORT},SASL://localhost:${KAFKA_SASL_PORT}
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT,SASL:SASL_PLAINTEXT
+            KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+            # The SASL listener's server-side login: the SCRAM handler, whose
+            # users live in the cluster metadata (the sasl-init service below
+            # writes this one) rather than in a JAAS user list, so the login
+            # line itself carries no secret. The name spells
+            # listener.name.sasl.scram-sha-512.sasl.jaas.config through the
+            # image's env mapping: _ a dot, ___ a hyphen.
+            KAFKA_LISTENER_NAME_SASL_SCRAM___SHA___512_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.scram.ScramLoginModule required;"
             KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
             KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
             KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
@@ -43,10 +55,33 @@ services:
             # for host tools (the scanner, tests/test__dev_stack.py guards
             # the bind). In-network consumers use broker:9092.
             - "127.0.0.1:${KAFKA_BROKER_PORT}:9094"
+            - "127.0.0.1:${KAFKA_SASL_PORT}:9095"
         restart: unless-stopped
         volumes:
             - kafka-data:/opt/kafka/logs
             - kafka-kraft:/tmp/kraft-combined-logs
+
+    sasl-init:
+        # The SCRAM principal the SASL listener authenticates (KSC-10): one
+        # shot once the broker is healthy, then it exits. The credentials are
+        # dev-only, shared with the scanner's .env so its e2e suite signs in
+        # with them (mirrored, never read from here).
+        image: dhi.io/kafka:4.3-debian13
+        depends_on:
+            broker:
+                condition: service_healthy
+        entrypoint: ["/opt/kafka/bin/kafka-configs.sh"]
+        command:
+            - --bootstrap-server
+            - broker:9092
+            - --alter
+            - --entity-type
+            - users
+            - --entity-name
+            - ${KAFKA_SASL_USER}
+            - --add-config
+            - SCRAM-SHA-512=[password=${KAFKA_SASL_SECRET}]
+        restart: "no"
 
     schema-registry:
         # The Avro/JSON schema door (KSC-05): the scanner reads subjects here

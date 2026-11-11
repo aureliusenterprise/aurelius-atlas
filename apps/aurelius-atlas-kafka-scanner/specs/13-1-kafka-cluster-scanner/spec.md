@@ -1,11 +1,12 @@
 # 13.1 The Kafka cluster scanner
 
 - **Status:** in review
-- **Pull request:** – (this increment's PR)
-- **Records:** adds KSC-01..10 and DD-465..469 (here); relies on DD-458 and DQS-10 (a service
-  identity of its own, 12.2), AUT-02/AUT-10 (azp audiences, scrubbed reads), DD-362 (the m4i
-  models load at boot), EWR-11 (a relationship end resolves by guid or unique attribute),
-  DD-223 (e2e rides the shared dev stack, never restarted), and ADR 051/052/056.
+- **Pull request:** #314
+- **Records:** adds KSC-01..10 and DD-465..472 (here; DD-470 supersedes DD-465's library
+  clause, DD-471 supersedes DD-469); relies on DD-458 and DQS-10 (a service identity of its
+  own, 12.2), AUT-02/AUT-10 (azp audiences, scrubbed reads), DD-362 (the m4i models load at
+  boot), EWR-11 (a relationship end resolves by guid or unique attribute), DD-223 (e2e rides
+  the shared dev stack, never restarted), and ADR 051/052/056.
 
 ## Scope
 
@@ -34,21 +35,21 @@ Delivered here:
 | `fields.py`   | the field tree: Avro, JSON schema, or an inferred payload shape        |
 | `graph.py`    | the field tree and topic list to catalogue entities                    |
 | `scan.py`     | one scan: the steps, the notices, the one bulk write                   |
-| `__main__.py` | the CLI: settings, the Keycloak token, telemetry, the exit code        |
+| `__main__.py` | the CLI: the run, the Keycloak token, telemetry, the exit code         |
 
-Also delivered: the dev Kafka stack `dev/kafka` (one KRaft broker and a Schema Registry, both
-loopback-pinned), the dev realm's `aurelius-atlas-kafka-scanner` service-account client, and the
-e2e proof against the dev stack.
+Also delivered: the dev Kafka stack `dev/kafka` (one KRaft broker with a plain and a
+SCRAM-authenticated host listener, and a Schema Registry, all loopback-pinned), the dev realm's
+`aurelius-atlas-kafka-scanner` service-account client, and the e2e proof against the dev stack.
 
 Explicitly not delivered, with the increment that will:
 
-| Not delivered                                             | Lands with | Why                                                                                                                 |
-| --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
-| The Helm chart, the CronJob schedule, the prod realm join | 13.2       | The chart track owns deployment (10.x's split); the app first                                                       |
-| SASL/OAUTHBEARER on the dev broker                        | 13.2       | The scan's identity is the catalogue's (DD-469); the prod edge brings broker machine identity with its own decision |
-| Confluent wire-format decoding of message bodies          | –          | The scan reads schemas, not rows; the sniff only needs the schema id (KSC-05)                                       |
-| Partitions, replicas, configs, consumer groups            | –          | The legacy scanner registered none of them; the tree is topics and fields                                           |
-| Lineage (a process per producer)                          | –          | The legacy scanner registered none; 7.21c reads whatever lands                                                      |
+| Not delivered                                             | Lands with | Why                                                                                                          |
+| --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| The Helm chart, the CronJob schedule, the prod realm join | 13.2       | The chart track owns deployment (10.x's split); the app first                                                |
+| An OAUTHBEARER listener on the dev broker                 | 13.2       | The broker's own identity round (its issuer wiring) is the prod chart's; the door's mint seam is proved here |
+| Confluent wire-format decoding of message bodies          | –          | The scan reads schemas, not rows; the sniff only needs the schema id (KSC-05)                                |
+| Partitions, replicas, configs, consumer groups            | –          | The legacy scanner registered none of them; the tree is topics and fields                                    |
+| Lineage (a process per producer)                          | –          | The legacy scanner registered none; 7.21c reads whatever lands                                               |
 
 ## Semantics
 
@@ -65,28 +66,29 @@ cited, not restated.
 | KSC-05 | A topic with no Registry subject is read from its own messages. The job reads the topic assigned at its log end — no consumer group, so a scan leaves no offsets behind — rewinds to the last `sniff_messages` offsets (default 100), and takes the first record that answers. A record that starts with the wire-format magic byte `0x00` names a schema id in its next four bytes (big-endian): the Registry's answer for that id is the topic's schema, through KSC-04's parsers. A record that is a JSON object is inferred: each key is one field, typed `string`/`integer`/`number`/`boolean`/`object`/`array`/`null`, an object's keys nested under it. A topic that answers no record, no known schema, or no JSON object keeps no fields and gets a notice — the dataset is still registered (KSC-03). |
 | KSC-06 | A field carries a `fieldType` string and hangs under its dataset (`datasets` end), or under its parent field (`parentField` end) when nested. The Avro parser renders composite types as the legacy scanner did: `array<inner>`, `map<value>`, a union as `a \| b`, a named type by its name; a nested record becomes child fields under the field, an array's item a child named `<field>_item`, a map's value a child named `<field>_value`. The JSON-schema parser walks `properties` (a `$ref` resolves through `$defs`, `anyOf` renders as `a \| b`, `oneOf` as `a ^ b`, `allOf` as `a & b`), and nests an object, an array of objects, and each `$ref`'d definition the same way.                                                                                                                         |
 | KSC-07 | The scan writes one bulk request per run: the System, one Collection, one Dataset per topic, and every field, each new entity under a request-local temporary guid, with the ends riding `relationshipAttributes` through those temp guids (the webapp suite's idiom, EWR-11). A re-scan is idempotent: an entity the store already holds by its unique qualified name updates in place, no entity duplicates, and an unchanged tree is skipped whole (EWR-08). A removed topic's dataset stays as it is — the scan registers what is, never what was.                                                                                                                                                                                                                                                          |
-| KSC-08 | `--dry-run` runs the whole read and writes nothing; it prints one line per entity the run would write, and every notice. `--topic` (repeatable) limits the scan to named topics, matched like `TOPICS` (KSC-02); a broker that lacks a named one is a notice, not a failure.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| KSC-08 | The settings model is the CLI (DD-472): every key has a flag, parsed over the environment. `--dry-run` runs the whole read and writes nothing; it prints one line per entity the run would write, and every notice. `--topic` (repeatable) limits the scan to named topics, matched like `TOPICS` (KSC-02); a broker that lacks a named one is a notice, not a failure. A malformed flag or setting is a configuration error (KSC-01); the secret keys carry no advertised flag.                                                                                                                                                                                                                                                                                                                                |
 | KSC-09 | The job authenticates to the catalogue as its own service identity: client credentials of the `aurelius-atlas-kafka-scanner` confidential client (DD-458's pattern), whose token the server accepts for read and write. All catalogue traffic goes through `aurelius-atlas-server-client` — the job never touches the store directly, so auth and audits behave like any client's. A refused mint is a run-level failure (KSC-01): the scan does not speak anonymously.                                                                                                                                                                                                                                                                                                                                         |
-| KSC-10 | The broker door speaks PLAINTEXT or SSL to the bootstrap list; with `CA_FILE` set, the broker's and the Registry's certificates are verified against it. Telemetry rides the same OTLP ingest client the quality scanner uses (DD-196). The scan holds no broker credentials, by decision (DD-469): its reads are the dev broker's anonymous PLAINTEXT listener, and a broker that demands machine identity gets its own decision with the prod chart.                                                                                                                                                                                                                                                                                                                                                          |
+| KSC-10 | The broker door speaks the auth ladder (DD-471): `PLAINTEXT`, `SSL` (with `CA_FILE` verifying the broker's and the Registry's certificates), and `SASL_PLAINTEXT`/`SASL_SSL` with `PLAIN`, `SCRAM-SHA-256/512`, or `OAUTHBEARER` (`SECURITY_PROTOCOL` with `SASL_MECHANISM` and its credentials — the settings validator refuses a protocol without its mechanism and a mechanism without its credentials). `OAUTHBEARER` mints its broker token with the same client-credentials source the catalogue legs use; a refused mint fails the run — the scan speaks anonymously to neither. A refused credential is a run-level failure naming the bootstrap list, like a silent broker (KSC-01). Telemetry rides the same OTLP ingest client the quality scanner uses (DD-196).                                    |
 
 ## Ported from
 
 Aurelius `apps/m4i-data-dictionary-io` (`sources/kafka/`, ~630 lines). The legacy job chose the
 source with `SOURCE=kafka`, authenticated with an admin's username and password, read every topic,
 and retried each entity write singly; Aurelius runs its own app, signs as its own service identity,
-filters by pattern, and writes once per scan (DD-465..469). No Java class is involved.
+filters by pattern, speaks an auth ladder, and writes once per scan (DD-465..472). No Java class is
+involved.
 
 ## Acceptance
 
-| Ids    | Proven by                                                                                                         |
-| ------ | ----------------------------------------------------------------------------------------------------------------- |
-| KSC-01 | `tests/test__scan.py` (a completed scan with a field-less notice; a dead broker fails the run)                    |
-| KSC-02 | `tests/test__cluster.py` (the internal filter, the patterns, the dead-broker message)                             |
-| KSC-03 | `tests/test__graph.py` (the qualified-name rule, the tree, the cluster-id fallback)                               |
-| KSC-04 | `tests/test__registry.py`, `tests/test__fields.py` (subject naming, the two kinds, the move to sniff)             |
-| KSC-05 | `tests/test__fields.py`, `tests/test__scan.py` (the magic byte and id, the JSON inference, the field-less notice) |
-| KSC-06 | `tests/test__fields.py` (Avro and JSON-schema trees: renders, `_item`, `_value`, nesting)                         |
-| KSC-07 | `tests/test__graph.py` (temp guids and ends), `e2e/` (a re-scan: one dataset, updated in place)                   |
-| KSC-08 | `tests/test__scan.py` (dry-run writes nothing; the topic filter and its missing-topic notice)                     |
-| KSC-09 | `e2e/` against the dev stack (the scanner's own token writes the tree, and it reads back)                         |
-| KSC-10 | `tests/test__cluster.py` (the SSL/CA settings reach the door), `e2e/` (the scan reads the real broker)            |
+| Ids    | Proven by                                                                                                                                                                                                                                      |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| KSC-01 | `tests/test__scan.py` (a completed scan with a field-less notice; a dead broker fails the run)                                                                                                                                                 |
+| KSC-02 | `tests/test__cluster.py` (the internal filter, the patterns, the dead-broker message)                                                                                                                                                          |
+| KSC-03 | `tests/test__graph.py` (the qualified-name rule, the tree, the cluster-id fallback)                                                                                                                                                            |
+| KSC-04 | `tests/test__registry.py`, `tests/test__fields.py` (subject naming, the two kinds, the move to sniff)                                                                                                                                          |
+| KSC-05 | `tests/test__fields.py`, `tests/test__scan.py` (the magic byte and id, the JSON inference, the field-less notice)                                                                                                                              |
+| KSC-06 | `tests/test__fields.py` (Avro and JSON-schema trees: renders, `_item`, `_value`, nesting)                                                                                                                                                      |
+| KSC-07 | `tests/test__graph.py` (temp guids and ends), `e2e/` (a re-scan: one dataset, updated in place)                                                                                                                                                |
+| KSC-08 | `tests/test__settings.py` (the flags over the environment, suppressed secrets out of the help), `tests/test__scan.py` (dry-run writes nothing; the topic filter and its missing-topic notice), `tests/test__main.py` (an unknown flag exits 1) |
+| KSC-09 | `e2e/` against the dev stack (the scanner's own token writes the tree, and it reads back)                                                                                                                                                      |
+| KSC-10 | `tests/test__cluster.py` (the config shapes: CA, SCRAM, the OAuth provider and its refusal; the ladder validator in `tests/test__settings.py`), `e2e/` (the scan reads the real broker plain and over SCRAM; a wrong secret fails the run)     |

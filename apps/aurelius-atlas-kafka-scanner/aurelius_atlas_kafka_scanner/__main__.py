@@ -1,13 +1,14 @@
-"""The CLI: settings, the Keycloak token, telemetry, one scan, the exit code (13.1, KSC-01, KSC-08, KSC-09).
+"""The CLI: settings, the Keycloak tokens, telemetry, one scan, the exit code (13.1, KSC-01, KSC-08..10).
 
 The job runs one scan as one process and exits: 0 for a completed scan — a topic whose fields
 cannot be read is data with a notice, not a failure — and 1 for a run-level failure: a bad
 configuration, a refused token, a broker that answers no metadata, a refused write (KSC-01). The
 catalogue door is ``aurelius-atlas-server-client``, and the job signs in as its own service
-identity (KSC-09, DD-458's pattern). The broker doors close before the exit, whatever happened.
+identity (KSC-09, DD-458's pattern). The settings model is the CLI itself: pydantic-settings
+parses the flags onto the fields (DD-470), so there is no second argument parser. The broker
+door closes before the exit, whatever happened.
 """
 
-import argparse
 import asyncio
 import logging
 import ssl
@@ -18,6 +19,7 @@ import httpx2 as httpx
 from aurelius_atlas_otel import ClientCredentialsTokenSource, build_otlp_pipeline, setup_telemetry
 from aurelius_atlas_server_client import AtlasClient
 from pydantic import ValidationError
+from pydantic_settings import SettingsError
 
 from aurelius_atlas_kafka_scanner.cluster import KafkaCluster
 from aurelius_atlas_kafka_scanner.registry import SchemaRegistry
@@ -40,20 +42,20 @@ MINT_REFUSAL = "the token endpoint refused the job's credentials: no scan runs w
 """The refused mint: the job's own identity is required, so the run fails (KSC-01, KSC-09)."""
 
 
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    """The CLI's arguments: what to limit the scan to, and whether to write (KSC-08)."""
-    parser = argparse.ArgumentParser(
-        prog=SERVICE_NAME, description="Run one scan of a Kafka cluster into the catalogue."
+def _broker_oauth_source(settings: ScannerSettings) -> ClientCredentialsTokenSource | None:
+    """The mint the broker's OAUTHBEARER listener accepts, or ``None`` when the door needs none (KSC-10).
+
+    The same client-credentials source the catalogue and the OTLP legs ride: the trio is the
+    settings validator's job to demand (KSC-10); this only wires it.
+    """
+    if settings.sasl_mechanism != "OAUTHBEARER" or settings.sasl_oauth_token_url is None:
+        return None
+    return ClientCredentialsTokenSource(
+        str(settings.sasl_oauth_token_url),
+        settings.sasl_oauth_client_id or "",
+        settings.sasl_oauth_client_secret.get_secret_value() if settings.sasl_oauth_client_secret else "",
+        ca_file=settings.ca_file,
     )
-    parser.add_argument("--dry-run", action="store_true", help="read everything and print the tree, write nothing")
-    parser.add_argument(
-        "--topic",
-        action="append",
-        dest="topics",
-        metavar="PATTERN",
-        help="limit the scan to topics matching this pattern (repeatable)",
-    )
-    return parser.parse_args(argv)
 
 
 def _tokens(source: ClientCredentialsTokenSource) -> Callable[[], str]:
@@ -105,7 +107,7 @@ def _setup_telemetry(settings: ScannerSettings) -> None:
     setup_telemetry(SERVICE_NAME, "0.1.0", pipeline=pipeline)
 
 
-async def _scan(args: argparse.Namespace, settings: ScannerSettings) -> int:
+async def _scan(settings: ScannerSettings) -> int:
     """Run one scan on the three doors, printing what it did; answer the exit code (KSC-01, KSC-08)."""
     cluster = KafkaCluster(
         settings.bootstrap_servers,
@@ -113,6 +115,11 @@ async def _scan(args: argparse.Namespace, settings: ScannerSettings) -> int:
         admin_request_timeout_ms=settings.admin_request_timeout_ms,
         poll_timeout_seconds=settings.poll_timeout_seconds,
         sniff_messages=settings.sniff_messages,
+        security_protocol=settings.security_protocol,
+        sasl_mechanism=settings.sasl_mechanism,
+        sasl_username=settings.sasl_username,
+        sasl_password=settings.sasl_password.get_secret_value() if settings.sasl_password else None,
+        oauth_source=_broker_oauth_source(settings),
     )
     registry = SchemaRegistry(
         str(settings.schema_registry_url) if settings.schema_registry_url else None,
@@ -126,8 +133,8 @@ async def _scan(args: argparse.Namespace, settings: ScannerSettings) -> int:
             registry,
             client.entity,
             settings,
-            topic_filter=args.topics,
-            dry_run=args.dry_run,
+            topic_filter=settings.topic,
+            dry_run=settings.dry_run,
         )
     finally:
         await registry.close()
@@ -135,10 +142,10 @@ async def _scan(args: argparse.Namespace, settings: ScannerSettings) -> int:
         await http.aclose()
     for notice in report.notices:
         print(notice)  # noqa: T201 - command output
-    if args.dry_run:
+    if settings.dry_run:
         for line in dry_run_lines(report):
             print(f"would store {line}")  # noqa: T201 - command output (KSC-08)
-    print(scan_line(report, dry_run=args.dry_run))  # noqa: T201 - command output
+    print(scan_line(report, dry_run=settings.dry_run))  # noqa: T201 - command output
     return EXIT_OK
 
 
@@ -146,20 +153,21 @@ def run(argv: Sequence[str] | None = None) -> int:
     """Read settings, run one scan, answer the exit code (KSC-01).
 
     A settings error is a run-level failure: there is no scan to run without an identity or a
-    broker to ask. A door error raised out of :func:`~aurelius_atlas_kafka_scanner.scan.run_scan`
-    is the same — a silent broker, a refused write — and reaches here as an exception the caller
-    sees in the log.
+    broker to ask. The settings model is the CLI: the flags it names (``--dry-run``, ``--topic``,
+    KSC-08) parse onto its fields through the pydantic-settings CLI source, over the environment
+    (DD-470); a malformed flag or a malformed setting is a configuration error and answers 1.
+    A door error raised out of :func:`~aurelius_atlas_kafka_scanner.scan.run_scan` is the same — a
+    silent broker, a refused write — and reaches here as an exception the caller sees in the log.
     """
-    args = parse_args(argv)
     try:
-        settings = ScannerSettings()  # pyright: ignore[reportCallIssue] - read from the environment
-    except ValidationError as cause:
+        settings = ScannerSettings(_cli_parse_args=list(sys.argv[1:] if argv is None else argv))  # pyright: ignore[reportCallIssue] - the settings read the environment
+    except (ValidationError, SettingsError) as cause:
         print(f"configuration error: {cause}", file=sys.stderr)  # noqa: T201 - command output
         return EXIT_FAILURE
     logging.basicConfig(level=settings.log_level.upper())
     _setup_telemetry(settings)
     try:
-        return asyncio.run(_scan(args, settings))
+        return asyncio.run(_scan(settings))
     except Exception:
         logging.getLogger(SERVICE_NAME).exception("the scan failed")
         return EXIT_FAILURE

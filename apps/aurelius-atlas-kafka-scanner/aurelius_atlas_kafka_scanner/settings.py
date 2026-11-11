@@ -1,9 +1,24 @@
-"""The app's settings, read once at start from the environment (13.1, KSC-02, KSC-03, KSC-09, KSC-10)."""
+"""The app's settings, read once at start from the environment and the command line (13.1, KSC-02, KSC-03, KSC-08..10).
+
+One model carries every setting and the run's two flags (KSC-08): environment variables under
+:data:`ENV_PREFIX` first, command-line arguments over them, both through pydantic-settings' CLI
+source — there is no second argument parser to keep in step with the fields (DD-470). Secrets
+are environment settings like the rest, and the CLI does not advertise a flag for them
+(:data:`~pydantic_settings.CliSuppress`): ``--help`` names the knobs an operator is meant to
+turn, and a secret is not one of them.
+"""
 
 from typing import Literal, Self
 
-from pydantic import HttpUrl, SecretStr, field_validator, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
+from pydantic_settings import (
+    BaseSettings,
+    CliSettingsSource,
+    CliSuppress,
+    CliToggleFlag,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 ENV_PREFIX = "AURELIUS_ATLAS_KAFKA_SCANNER_"
 """Every setting is an environment variable with this prefix, so other projects' variables never set it."""
@@ -43,11 +58,50 @@ DEFAULT_REGISTRY_TIMEOUT_SECONDS = 10.0
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels the app's logging accepts."""
 
+type SecurityProtocol = Literal["PLAINTEXT", "SSL", "SASL_PLAINTEXT", "SASL_SSL"]
+"""The four transports the broker door speaks (KSC-10), spelled as Kafka spells them."""
+
+type SaslMechanism = Literal["PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512", "OAUTHBEARER"]
+"""The SASL mechanisms the door carries (KSC-10). ``GSSAPI`` is deliberately out: it needs a
+Kerberos client the image does not ship, and no Aurelius deployment asks for it (DD-469)."""
+
 
 class ScannerSettings(BaseSettings):
-    """Where the broker and its Registry are, who the job signs in as, what it scans, and what bounds it."""
+    """Where the broker and its Registry are, how the job authenticates, what it scans, and what bounds it."""
 
-    model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra="ignore")
+    model_config = SettingsConfigDict(
+        env_prefix=ENV_PREFIX,
+        frozen=True,
+        extra="ignore",
+        cli_prog_name="aurelius-atlas-kafka-scanner",
+        cli_kebab_case=True,
+        cli_hide_none_type=True,
+        cli_avoid_json=True,
+        cli_exit_on_error=False,
+    )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Command line over environment over dotenv (DD-470): an explicit flag beats ambient config.
+
+        The CLI source parses only what the caller hands it (``_cli_parse_args``): built without
+        that, the settings read environment alone, so a test process never parses its own
+        pytest arguments as scanner flags.
+        """
+        return (
+            CliSettingsSource(settings_cls),
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+        )
 
     log_level: LogLevel = "info"
     """The lowest level of log record the job emits."""
@@ -61,8 +115,18 @@ class ScannerSettings(BaseSettings):
     client_id: str = DEFAULT_CLIENT_ID
     """The confidential client the job signs in as (KSC-09, DD-458's pattern)."""
 
-    client_secret: SecretStr
-    """The secret of ``client_id``; there is no default — a scan without an identity does not run."""
+    client_secret: CliSuppress[SecretStr]
+    """The secret of ``client_id``; there is no default — a scan without an identity does not run.
+    Suppressed from ``--help`` (DD-470): the documented interface stays the knobs, not the secrets."""
+
+    dry_run: CliToggleFlag[bool] = Field(default=False, description="read everything and print the tree, write nothing")
+    """``--dry-run`` / ``--no-dry-run`` (KSC-08): the whole read, no write."""
+
+    topic: list[str] | None = Field(
+        default=None, description="limit the scan to topics matching this pattern (repeatable)"
+    )
+    """``--topic`` repeated (KSC-08): the patterns that limit this run, matched like
+    :attr:`topics` (KSC-02). Unset scans what :attr:`topics` admits."""
 
     ca_file: str | None = None
     """PEM CA verifying the server's, the issuer's, the broker's and the Registry's TLS; unset uses
@@ -71,6 +135,30 @@ class ScannerSettings(BaseSettings):
     bootstrap_servers: str = DEFAULT_BOOTSTRAP_SERVERS
     """The broker's bootstrap list, comma-separated as Kafka writes it (KSC-10). The door fails the
     run naming this list when none of it answers (KSC-02)."""
+
+    security_protocol: SecurityProtocol = "PLAINTEXT"
+    """How the broker doors reach the bootstrap list (KSC-10): plain, TLS, or SASL over either.
+    The dev broker answers PLAINTEXT and SASL_PLAINTEXT; a customer cluster typically answers
+    SASL_SSL with OAUTHBEARER (DD-469)."""
+
+    sasl_mechanism: SaslMechanism | None = None
+    """The SASL mechanism the broker's listener names (KSC-10); required with a SASL protocol,
+    refused without one."""
+
+    sasl_username: str | None = None
+    """The SASL principal for ``PLAIN`` and the ``SCRAM-*`` mechanisms (KSC-10)."""
+
+    sasl_password: CliSuppress[SecretStr | None] = None
+    """The secret of ``sasl_username`` — suppressed from ``--help``, like the catalogue secret."""
+
+    sasl_oauth_token_url: HttpUrl | None = None
+    """The issuer the broker accepts tokens from; the head of the OAUTHBEARER trio (KSC-10)."""
+
+    sasl_oauth_client_id: str | None = None
+    """The client the job mints the broker token as, with ``sasl_oauth_token_url``."""
+
+    sasl_oauth_client_secret: CliSuppress[SecretStr | None] = None
+    """The secret of ``sasl_oauth_client_id`` — suppressed from ``--help``."""
 
     schema_registry_url: HttpUrl | None = None
     """The Schema Registry to ask for a topic's subject; unset means every topic is sniffed (KSC-04)."""
@@ -100,8 +188,8 @@ class ScannerSettings(BaseSettings):
     otel_client_id: str | None = None
     """The OTLP ingest client id, with ``otel_token_url``."""
 
-    otel_client_secret: SecretStr | None = None
-    """The secret of ``otel_client_id``."""
+    otel_client_secret: CliSuppress[SecretStr | None] = None
+    """The secret of ``otel_client_id`` — suppressed from ``--help``."""
 
     otel_endpoint: str | None = None
     """The OTLP endpoint telemetry is exported to; unset keeps telemetry off."""
@@ -122,4 +210,33 @@ class ScannerSettings(BaseSettings):
         if any(trio) and not all(trio):
             msg = f"{ENV_PREFIX}OTEL_ENDPOINT, _TOKEN_URL and _CLIENT_ID stand together"
             raise ValueError(msg)
+        return self
+
+    @model_validator(mode="after")
+    def _check_broker_auth(self) -> Self:
+        """The broker's auth settings stand as one ladder (KSC-10, DD-469).
+
+        A SASL protocol names a mechanism; a mechanism rides a SASL protocol. ``PLAIN`` and the
+        ``SCRAM-*`` mechanisms carry a username and its secret; ``OAUTHBEARER`` carries the
+        issuer trio the job mints the broker token with. Plain or TLS brokers carry neither.
+        """
+        sasl = self.security_protocol.startswith("SASL_")
+        if sasl and self.sasl_mechanism is None:
+            msg = f"{ENV_PREFIX}SECURITY_PROTOCOL={self.security_protocol} names no {ENV_PREFIX}SASL_MECHANISM"
+            raise ValueError(msg)
+        if not sasl and self.sasl_mechanism is not None:
+            msg = f"{ENV_PREFIX}SASL_MECHANISM rides a SASL_ SECURITY_PROTOCOL, not {self.security_protocol}"
+            raise ValueError(msg)
+        needs_creds = self.sasl_username is None or self.sasl_password is None
+        if self.sasl_mechanism in ("PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512") and needs_creds:
+            msg = f"{ENV_PREFIX}SASL_MECHANISM={self.sasl_mechanism} needs {ENV_PREFIX}SASL_USERNAME and _PASSWORD"
+            raise ValueError(msg)
+        if self.sasl_mechanism == "OAUTHBEARER":
+            trio = (self.sasl_oauth_token_url, self.sasl_oauth_client_id, self.sasl_oauth_client_secret)
+            if not all(trio):
+                msg = (
+                    f"{ENV_PREFIX}SASL_MECHANISM=OAUTHBEARER needs {ENV_PREFIX}SASL_OAUTH_TOKEN_URL,"
+                    f" _CLIENT_ID and _CLIENT_SECRET"
+                )
+                raise ValueError(msg)
         return self
