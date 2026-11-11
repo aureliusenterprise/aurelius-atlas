@@ -333,6 +333,45 @@
                     "ruleType": "Regeltype",
                     "ruleTypePlaceholder": "Regeltype"
                 },
+                "dataQualityRule": {
+                    "active": "Actief",
+                    "addValue": "Voeg een waarde toe...",
+                    "checkKind": "Controlesoort",
+                    "couldNotCheck": "De regel kon niet worden gecontroleerd bij de server. Probeer het opnieuw.",
+                    "kindsFailed": "De regelsoorten konden niet worden geladen.",
+                    "threshold": "Drempelwaarde",
+                    "kind": {
+                        "COLUMN_COMPOSITE_UNIQUE": "Samen uniek",
+                        "COLUMN_EQUALS_COLUMN_RATIO": "Gelijke velden",
+                        "COLUMN_IN_SET": "Waarden uit een lijst",
+                        "COLUMN_MATCHES_REGEX": "Volgt een patroon",
+                        "COLUMN_NOT_NULL_RATIO": "Niet leeg",
+                        "COLUMN_TYPE_CASTABLE": "Omzetbaar type",
+                        "COLUMN_UNIQUE_RATIO": "Geen duplicaten",
+                        "COLUMN_WITHIN_RANGE": "Binnen een bereik",
+                        "ROW_FRESHNESS_MAX_AGE": "Verse rijen",
+                        "ROW_NOT_EMPTY": "Rij gevuld"
+                    },
+                    "kindDescription": {
+                        "COLUMN_COMPOSITE_UNIQUE": "De gekozen velden herhalen zich samen niet tussen de rijen.",
+                        "COLUMN_EQUALS_COLUMN_RATIO": "Twee velden bevatten in minstens een deel van de rijen dezelfde waarde.",
+                        "COLUMN_IN_SET": "Elke waarde komt uit de lijst die u instelt.",
+                        "COLUMN_MATCHES_REGEX": "Elke waarde volgt het tekstpatroon dat u instelt.",
+                        "COLUMN_NOT_NULL_RATIO": "Eén veld bevat in minstens een deel van de rijen een waarde.",
+                        "COLUMN_TYPE_CASTABLE": "Elke waarde laat zich omzetten naar het type dat u instelt.",
+                        "COLUMN_UNIQUE_RATIO": "De waarden van één veld herhalen zich niet vaker dan het deel dat u instelt.",
+                        "COLUMN_WITHIN_RANGE": "Elke waarde ligt tussen het minimum en het maximum.",
+                        "ROW_FRESHNESS_MAX_AGE": "Rijen zijn niet langer geleden geschreven dan de leeftijd die u instelt.",
+                        "ROW_NOT_EMPTY": "Elke rij bevat alle gekozen velden."
+                    },
+                    "dimension": {
+                        "ACCURACY": "Nauwkeurigheid",
+                        "COMPLETENESS": "Volledigheid",
+                        "TIMELINESS": "Tijdigheid",
+                        "UNIQUENESS": "Uniciteit",
+                        "VALIDITY": "Geldigheid"
+                    }
+                },
                 "historyPlaceholder": "Geschiedenis",
                 "person": {
                     "dataOwnerAttributes": "Data Eigenaar Attributen",
@@ -644,6 +683,14 @@
                     "description": "De naam van het entiteittype",
                     "displayName": "Typenaam"
                 }
+            },
+            "rule": {
+                "description": "Beschrijving",
+                "fields": "Datavelden",
+                "fieldsCards": {
+                    "title": "Datavelden"
+                },
+                "properties": "Eigenschappen"
             }
         },
         "editEntity": {
