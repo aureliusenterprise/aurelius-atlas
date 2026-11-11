@@ -44,6 +44,10 @@ services:
             # ${ATLAS_SERVER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here, as the ingest clients' secret above does.
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The Kafka cluster scanner's service client (13.1, DD-469): its
+            # ${KAFKA_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            KAFKA_SCANNER_CLIENT_SECRET: ${KAFKA_SCANNER_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.

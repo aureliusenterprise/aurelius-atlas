@@ -1,0 +1,89 @@
+name: aurelius-atlas-dev-kafka
+
+services:
+    broker:
+        # KRaft single node, PLAINTEXT on loopback (13.1, DD-469): the scan
+        # reads this broker with its anonymous host listener, and the
+        # catalogue identity (the scanner's own client-credentials token)
+        # carries authorization. Broker machine identity (SASL/OAUTHBEARER or
+        # mTLS) arrives with its own decision when the prod chart brings a
+        # broker that demands one.
+        image: dhi.io/kafka:4.3-debian13
+        environment:
+            # KAFKA_* settings: the image entrypoint writes them into its own
+            # server.properties inside the container layer. Two client-facing
+            # listeners: INTERNAL serves the compose network (advertised as
+            # broker:9092), HOST serves host tools (advertised as
+            # localhost:${KAFKA_BROKER_PORT}); CONTROLLER is the KRaft plane.
+            KAFKA_BROKER_ID: "1"
+            KAFKA_PROCESS_ROLES: broker,controller
+            KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,HOST://0.0.0.0:9094
+            KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:9092,HOST://localhost:${KAFKA_BROKER_PORT}
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT
+            KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+            KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+            KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
+            KAFKA_LOG_DIRS: /opt/kafka/logs
+            KAFKA_NUM_PARTITIONS: "3"
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+            KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+            KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+            KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+            KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+        healthcheck:
+            # Healthy means the broker answers metadata over the INTERNAL
+            # listener: the same door the scanner's admin client walks.
+            test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --list --bootstrap-server broker:9092 || exit 1"]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 30s
+        ports:
+            # Loopback-pinned (CHT-101): the host publish is the dev contract
+            # for host tools (the scanner, tests/test__dev_stack.py guards
+            # the bind). In-network consumers use broker:9092.
+            - "127.0.0.1:${KAFKA_BROKER_PORT}:9094"
+        restart: unless-stopped
+        volumes:
+            - kafka-data:/opt/kafka/logs
+            - kafka-kraft:/tmp/kraft-combined-logs
+
+    schema-registry:
+        # The Avro/JSON schema door (KSC-05): the scanner reads subjects here
+        # before it sniffs a topic's own messages. PLAINTEXT kafkastore to the
+        # INTERNAL listener; schemas are metadata, not secrets, in dev.
+        image: confluentinc/cp-schema-registry:8.2.1
+        depends_on:
+            broker:
+                condition: service_healthy
+        environment:
+            SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://broker:9092"
+            SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
+            SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+        healthcheck:
+            test:
+                [
+                    "CMD",
+                    "curl",
+                    "--output",
+                    "/dev/null",
+                    "--silent",
+                    "--head",
+                    "--fail",
+                    "http://schema-registry:8081/subjects",
+                ]
+            interval: 30s
+            timeout: 10s
+            retries: 10
+        ports:
+            # Loopback-pinned (CHT-101), as the broker's publish above.
+            - "127.0.0.1:${SCHEMA_REGISTRY_PORT}:8081"
+        restart: unless-stopped
+
+networks:
+    default:
+        name: aurelius-atlas-dev-kafka-network
+
+volumes:
+    kafka-data:
+    kafka-kraft:
