@@ -118,7 +118,7 @@ async def test__the_m4i_types_load_after_atlas_models_and_once(tmp_path: Path) -
     assert dataset is not None
     assert {"DataSet", "m4i_referenceable"} <= set(dataset.all_super_types)
     assert (first.failed_files, again.failed_files) == ([], [])
-    assert told == 1
+    assert told == 3  # the two model files and the patch file each change the store once
     assert len(changes.told) == told
 
 

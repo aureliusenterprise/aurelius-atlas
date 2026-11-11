@@ -66,6 +66,14 @@ def test__the_edge_span_rides_the_browser_trace_to_the_server(page: Page, root_u
     )
     assert response.status == 200
 
+    # Poll until the WHOLE trace is in Tempo, not just its first half. The edge
+    # (nginx) and server spans leave through separate exporters on separate
+    # batch timers, so the server's span can land a poll cycle after the edge's;
+    # asserting the stitch the moment the edge appeared was the firefox flake on
+    # main (runs 42855123885, 42849996292, 42770487349). The asserts below run
+    # only once the stitch exists, or against the last fetch at the deadline.
+    edge: tuple[dict[str, str], dict] | None = None
+    server_parented = False
     deadline = time.monotonic() + 60
     while time.monotonic() < deadline:
         fetched = page.request.get(
@@ -74,39 +82,41 @@ def test__the_edge_span_rides_the_browser_trace_to_the_server(page: Page, root_u
         )
         if fetched.status == 200:
             pairs = _spans_of(fetched.text())
-            edge = next(
+            found = next(
                 ((resource, span) for resource, span in pairs if resource.get("service.name") == EDGE_SERVICE),
                 None,
             )
-            if edge is None:
-                time.sleep(1)
-                continue
-
-            _resource, span = edge
-            attrs = _attrs(span)
-
-            assert _hex(span.get("parentSpanId", "")) == parent_id, (
-                f"edge span parent is {span.get('parentSpanId')!r}, not the minted {parent_id!r}"
-                " — propagate did not extract"
-            )
-            assert attrs.get("http.method") == "GET"
-            assert attrs.get("http.target") == "/api/atlas/admin/status"
-            assert str(attrs.get("http.status_code")) == "200"
-            assert attrs.get("http.route") == "/api/"
-            assert attrs.get("net.sock.peer.addr"), "edge span carries no client address"
-
-            # The seam (ETR-01's other half): the server's request span is
-            # this span's child — the edge span id rode the injected
-            # traceparent into the ASGI instrumentation.
-            server_parented = any(
-                _hex(span.get("spanId", "")) == _hex(child.get("parentSpanId", ""))
-                for child in (s for r, s in pairs if r.get("service.name") == SERVER_SERVICE)
-            )
-            assert server_parented, "the server's request span is not a child of the edge span"
-            return
+            if found is not None:
+                edge = found
+                # The seam (ETR-01's other half): the server's request span is
+                # this span's child — the edge span id rode the injected
+                # traceparent into the ASGI instrumentation.
+                server_parented = any(
+                    _hex(found[1].get("spanId", "")) == _hex(child.get("parentSpanId", ""))
+                    for child in (s for r, s in pairs if r.get("service.name") == SERVER_SERVICE)
+                )
+                if server_parented:
+                    break
         time.sleep(1)
 
-    pytest.fail(f"Tempo never showed the edge span for trace {trace_id} — exporter leg, module load, or sampling")
+    if edge is None:
+        pytest.fail(f"Tempo never showed the edge span for trace {trace_id} — exporter leg, module load, or sampling")
+    assert server_parented, (
+        f"trace {trace_id}: the edge span arrived but no server span became its child within 60s — "
+        "propagate did not inject, or the server leg never exported"
+    )
+
+    _resource, span = edge
+    attrs = _attrs(span)
+
+    assert _hex(span.get("parentSpanId", "")) == parent_id, (
+        f"edge span parent is {span.get('parentSpanId')!r}, not the minted {parent_id!r} — propagate did not extract"
+    )
+    assert attrs.get("http.method") == "GET"
+    assert attrs.get("http.target") == "/api/atlas/admin/status"
+    assert str(attrs.get("http.status_code")) == "200"
+    assert attrs.get("http.route") == "/api/"
+    assert attrs.get("net.sock.peer.addr"), "edge span carries no client address"
 
 
 @pytest.mark.covers(rules=["ETR-03"])

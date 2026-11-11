@@ -44,6 +44,14 @@ services:
             # ${ATLAS_SERVER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here, as the ingest clients' secret above does.
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The quality scanner's service client (12.2, DD-458): its
+            # ${QUALITY_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            QUALITY_SCANNER_CLIENT_SECRET: ${QUALITY_SCANNER_CLIENT_SECRET:?}
+            # The Kafka cluster scanner's service client (13.1, DD-469): its
+            # ${KAFKA_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            KAFKA_SCANNER_CLIENT_SECRET: ${KAFKA_SCANNER_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.
@@ -129,14 +137,7 @@ services:
         entrypoint: ["/bin/sh", "-c"]
         command:
             - >-
-                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) &&
-                install -m 600 /certs/postgres.pem $$d/server.pem &&
-                install -m 600 /certs/postgres-key.pem $$d/server-key.pem &&
-                exec docker-entrypoint.sh
-                -c ssl=on
-                -c ssl_cert_file=$$d/server.pem
-                -c ssl_key_file=$$d/server-key.pem
-                -c hba_file=/conf/pg_hba.conf
+                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) && install -m 600 /certs/postgres.pem $$d/server.pem && install -m 600 /certs/postgres-key.pem $$d/server-key.pem && exec docker-entrypoint.sh -c ssl=on -c ssl_cert_file=$$d/server.pem -c ssl_key_file=$$d/server-key.pem -c hba_file=/conf/pg_hba.conf
         stop_signal: SIGINT
         # Explicit tmpfs for the certificate copy: the image's own /tmp is
         # not writable by the server user on every host (Shape A's warm

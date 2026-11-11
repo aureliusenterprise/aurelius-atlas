@@ -24,6 +24,8 @@ increment 6.4d. A store that arrives without a row here fails the lifetimes suit
 | Traces                                                 | 7 days                   | Tempo's retention jobs        | `dev/observability:tempo-data`      |
 | Alert state history                                    | 30 days                  | Grafana's annotation cleanup  | `dev/observability:grafana-data`    |
 | Grafana's users and preferences                        | unbounded, disposable    | —                             | `dev/observability:grafana-data`    |
+| Messages on the dev broker (topics, offsets)           | unbounded, disposable    | —                             | `dev/kafka:kafka-data`              |
+| The dev cluster's metadata (the KRaft log)             | unbounded, disposable    | —                             | `dev/kafka:kafka-kraft`             |
 | Snapshots of the store (chart; none in dev)            | 7 days, the newest 24    | the snapshot retention        | `dev/elasticsearch:snapshots`       |
 
 The store column names the dev volume. On a cluster each is the persistent volume of the same

@@ -11,7 +11,7 @@ from collections.abc import AsyncIterator, Callable
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_server_client import AtlasClient
-from playwright.async_api import Browser, Response, async_playwright
+from playwright.async_api import Browser, Page, Response, async_playwright
 
 SESSION = "/api/atlas/admin/session"
 USERNAME = "aurelius-writer"
@@ -35,6 +35,22 @@ async def browser() -> AsyncIterator[Browser]:
         browser = await playwright.chromium.launch()
         yield browser
         await browser.close()
+
+
+async def _rest_at_the_sign_in_page(page: Page) -> None:
+    """Poll until the browser rests at the Keycloak sign-in page, within 30 seconds.
+
+    The sign-out ends there through hops the test does not control (v3 stops at /n/login.jsp first) and the
+    dashboard's own in-flight requests abort navigations on the way (ERR_ABORTED), which fails a
+    ``wait_for_url`` waiting for one of those events even though the browser lands correctly. Polling the
+    URL ignores the aborts and counts only the address the browser finally rests at.
+    """
+    deadline = time.monotonic() + 30.0
+    while time.monotonic() < deadline:
+        if SIGN_IN_PAGE.search(page.url):
+            return
+        await asyncio.sleep(0.25)
+    pytest.fail(f"the sign-out never reached the sign-in page: the browser rests at {page.url}")
 
 
 # The browser fixture lives on the module loop, so the test runs there too.
@@ -75,7 +91,7 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
     # The dashboard's own requests may navigate the page at the same moment, which aborts a goto; leave by the
     # page's location instead and wait for where the sign-out ends.
     await page.evaluate("window.location.assign('/logout.html')")
-    await page.wait_for_url(SIGN_IN_PAGE, timeout=30_000)
+    await _rest_at_the_sign_in_page(page)
     await context.close()
 
 
