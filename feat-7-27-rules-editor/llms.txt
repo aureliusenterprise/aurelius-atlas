@@ -108,6 +108,7 @@
 - [057\. The system ships as Helm charts](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>)
 - [058\. A new catalogue starts with the m4i types](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>)
 - [059\. The catalogue searches by meaning](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/index.md>)
+- [060\. The App Search API returns](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/conversion/design-log/index.md>)

@@ -262,6 +262,9 @@
         <loc>https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/feat-7-27-rules-editor/architecture/adr/template/</loc>
       </url>
       <url>
