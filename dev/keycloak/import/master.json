@@ -1569,6 +1569,32 @@
             "webOrigins": []
         },
         {
+            "authorizationServicesEnabled": false,
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-quality-scanner",
+            "consentRequired": false,
+            "defaultClientScopes": ["basic", "profile", "roles"],
+            "description": "The quality scanner's own service identity (12.2, DD-458): its client-credentials token, accepted by azp (AUT-02), names the job in every catalogue read and score write. Its service account holds atlas-read and atlas-write on aurelius-atlas-server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas-quality-scanner",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${QUALITY_SCANNER_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
+        },
+        {
             "alwaysDisplayInConsole": false,
             "attributes": {
                 "post.logout.redirect.uris": "+",
@@ -2658,6 +2684,15 @@
             "realmRoles": ["default-roles-master"],
             "serviceAccountClientId": "aurelius-atlas-kafka-scanner",
             "username": "service-account-aurelius-atlas-kafka-scanner"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write"]
+            },
+            "enabled": true,
+            "realmRoles": ["default-roles-master"],
+            "serviceAccountClientId": "aurelius-atlas-quality-scanner",
+            "username": "service-account-aurelius-atlas-quality-scanner"
         }
     ],
     "verifiableCredentialsEnabled": false,

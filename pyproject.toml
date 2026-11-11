@@ -22,6 +22,8 @@ dev = [
     "aurelius-atlas-model",
     "aurelius-atlas-otel",
     "aurelius-atlas-parity",
+    "aurelius-atlas-quality",
+    "aurelius-atlas-quality-scanner",
     "aurelius-atlas-server",
     "aurelius-atlas-server-client",
     "aurelius-atlas-store-es[testing]",
@@ -97,6 +99,12 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-parity]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-quality]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-quality-scanner]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-server]
 workspace = true
 
@@ -130,6 +138,7 @@ members = [
     "apps/aurelius-atlas-embedder",
     "apps/aurelius-atlas-kafka-scanner",
     "apps/aurelius-atlas-lineage-model",
+    "apps/aurelius-atlas-quality-scanner",
     "apps/aurelius-atlas-validate-entity",
     "apps/aurelius-atlas-server",
     "libs/python/aurelius-atlas-auth",
@@ -140,6 +149,7 @@ members = [
     "libs/python/aurelius-atlas-model",
     "libs/python/aurelius-atlas-otel",
     "libs/python/aurelius-atlas-parity",
+    "libs/python/aurelius-atlas-quality",
     "libs/python/aurelius-atlas-server-client",
     "libs/python/aurelius-atlas-store-es",
     "libs/python/aurelius-atlas-trace",
@@ -205,6 +215,12 @@ root = "libs/python/aurelius-atlas-validate-entity-client"
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-kafka-scanner/e2e"]
 root = "apps/aurelius-atlas-kafka-scanner"
+
+[[tool.pyright.executionEnvironments]]
+# e2e first: the suite imports its fixtures module-style (`from conftest import ...`)
+# and conftest exists in both dirs; tests/ only needs the path for `fake_catalogue`.
+extraPaths = ["apps/aurelius-atlas-quality-scanner/e2e", "apps/aurelius-atlas-quality-scanner/tests"]
+root = "apps/aurelius-atlas-quality-scanner"
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "module"

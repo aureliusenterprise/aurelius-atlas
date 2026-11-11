@@ -1,0 +1,80 @@
+name: aurelius-atlas-quality-scanner-e2e
+
+# The scanner is a batch CLI, not a service: the suite runs it in-process
+# against this stack's real Atlas server. There is therefore no scanner
+# service here — only the catalogue the job speaks to, the same server the
+# webapp e2e stack stands up (its env list mirrors that stack verbatim, with
+# the scanner's audience joined). The store and the collector ride the dev
+# networks; Keycloak is reached on the host.
+services:
+    atlas-server:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        networks:
+            atlas:
+                # The alias is the name in the server certificate; the compose
+                # service name stays atlas-server.
+                aliases:
+                    - aurelius-atlas-server
+            # The dev telemetry stack (started by conftest first): the collector
+            # answers as `otel-collector` here — the name in its certificate.
+            # Its publishes are loopback-pinned (CIA-03), so service DNS is the
+            # only path.
+            observability: {}
+        ports:
+            # Fixed host port, loopback-pinned (CIA-03): the suite's client and
+            # the server's own image healthcheck speak to it there. 21005 is
+            # this stack's; the serve port 21000 and the server suite's 21001
+            # stay free.
+            - 127.0.0.1:21005:21000
+        environment:
+            # ${VAR:?} guards: Nx injects the scanner's .env into the e2e task
+            # environment; a missing value fails the compose start loudly.
+            AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
+            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
+            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
+            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # HSTS off in e2e (DD-236): as in the other e2e stacks, localhost
+            # must not pin the dev names to HTTPS.
+            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
+            # OTLP ingest identity (7.18, DD-196): the per-service mint at the
+            # TLS :8443 issuer, exported to the collector's :4319 over the
+            # observability network.
+            AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
+            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
+            # Authentication (6.1a, DD-250): tokens of the dev realm, verified
+            # against the same :8443 listener. Both identities of this suite
+            # are accepted (AUT-02, DQS-10): the seeding writer's `aurelius`
+            # token and the scanner's own client-credentials token, whose azp
+            # joins the audiences here (DD-458).
+            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius", "aurelius-atlas-quality-scanner"]'
+            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
+            # Export every second in test containers (DD-225); mirrors the
+            # other e2e stacks.
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
+        extra_hosts:
+            # The mint target and the token issuer: the dev Keycloak's :8443
+            # listener, published loopback-wide on this machine.
+            - keycloak.localhost:host-gateway
+        volumes:
+            - ../certs:/certs:ro
+
+networks:
+    # The dev Elasticsearch stack (started by the e2e target's up dependency,
+    # and by conftest as a guard): the server reaches the store as
+    # `elasticsearch` on this network.
+    atlas:
+        name: aurelius-atlas-dev-elasticsearch-network
+        external: true
+    # The dev telemetry stack (dev/observability): the server's OTLP export
+    # reaches the collector on it.
+    observability:
+        name: aurelius-atlas-dev-observability-network
+        external: true
