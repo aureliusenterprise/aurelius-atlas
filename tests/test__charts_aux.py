@@ -7,6 +7,7 @@ upstream URLs are joins to the co-deployed Services (DD-294's second finding:
 settings.py requires both with no defaults).
 """
 
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -272,6 +273,45 @@ def test__validate_entity_admits_the_browser_client() -> None:
     envs = env_map(_app(docs))
     assert env_value(envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE") == "aurelius"
     assert "AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_EXTRA_AUDIENCES" not in envs
+
+
+@pytest.mark.covers(rules=["CHT-113", "VEV-04"])
+def test__validate_entity_catalogue_leg_joins_server_secret_and_issuer(tmp_path: Path) -> None:
+    """The 12.7 rules leg renders as joins (CHT-113, VEV-04, DD-499).
+
+    SERVER_BASE_URL points at the co-deployed server's Service (CHT-28's
+    shape); TOKEN_URL rides the issuer's realm token endpoint (the CHT-41/
+    DD-265 join the OTLP leg makes, the realm the CHT-74 fact); the secret is
+    the <release>-validate-entity-client the master realm's import resolves
+    (CHT-109's two-ends-of-one-client pattern). credentialSecrets.
+    validateEntityClient brings your own.
+    """
+    chart = AUX_CHARTS["validate-entity"]
+    docs = helm_render(chart, value_files=(chart / "tests/values.test.yaml",))
+    envs = env_map(_app(docs))
+    assert env_value(envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL") == "https://atlas-server:21000"
+    assert (
+        env_value(envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL")
+        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+    )
+    join = envs["AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "atlas-validate-entity-client", "key": "client-secret"}
+
+    # The realm fact retargets both the mint URL and the import consumer (CHT-74).
+    master = helm_render(chart, value_files=(chart / "tests/values.test.yaml",), sets=("global.realm=master",))
+    master_envs = env_map(_app(master))
+    assert (
+        env_value(master_envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL")
+        == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"
+    )
+
+    # The bring-your-own path (CHT-109's twin): a named Secret wins verbatim.
+    values = tmp_path / "leg.yaml"
+    values.write_text("credentialSecrets:\n    validateEntityClient: my-leg-secret\n")
+    docs = helm_render(chart, value_files=(*(chart / "tests/values.test.yaml",), values))
+    envs = env_map(_app(docs))
+    join = envs["AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "my-leg-secret", "key": "client-secret"}
 
 
 @pytest.mark.covers(rules=["LDG-06"])

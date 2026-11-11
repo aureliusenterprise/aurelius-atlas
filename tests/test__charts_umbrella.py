@@ -110,6 +110,8 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         "atlas-otel-clients": set(OTEL_CLIENT_IDS),  # CHT-88: realm-shaped keys
         "atlas-grafana-oauth": {"client-secret"},  # CHT-83: feeds the realm import and Grafana
         "atlas-server-client": {"client-secret"},  # CHT-109: the realm import and the server's auth join
+        # CHT-113 (12.7): the app's rules leg joins it; the master import too.
+        "atlas-validate-entity-client": {"client-secret"},
     }
     assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
@@ -117,7 +119,7 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         assert set(secrets[name]["data"]) == keys, name
     # Generated credentials are 32 random chars (b64 >= 44); the usernames are
     # short values by design, so only the secret-bearing keys are length-checked.
-    for name in ("atlas-elasticsearch", "atlas-otel-clients", "atlas-server-client"):
+    for name in ("atlas-elasticsearch", "atlas-otel-clients", "atlas-server-client", "atlas-validate-entity-client"):
         assert all(len(v) >= 44 for v in secrets[name]["data"].values()), name
     for name in ("atlas-keycloak-admin", "atlas-keycloak-database"):
         assert len(secrets[name]["data"]["password"]) >= 44, name
@@ -145,6 +147,9 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
     # CHT-109/110: master's asset carries the server client too (since
     # 6.1a/DD-250), so its credential rides both realms.
     assert set(master_secrets["atlas-server-client"]["data"]) == {"client-secret"}
+    # CHT-113: the validate-entity credential rides both realms too — master
+    # for its import placeholder, the prod realm for the app's Deployment join.
+    assert set(master_secrets["atlas-validate-entity-client"]["data"]) == {"client-secret"}
 
 
 @pytest.mark.covers(rules=["CHT-88"])
@@ -276,7 +281,13 @@ def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.example"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
-    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    # 12.7 (VEV-04): the validate-entity app's own client joins the audiences —
+    # the pair the e2e stacks carry. The prod realm mints no such token until
+    # 12.3 joins the client, so the entry is inert there.
+    assert set(json.loads(env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES"))) == {
+        "aurelius",
+        "aurelius-atlas-validate-entity",
+    }
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
     join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "atlas-server-client", "key": "client-secret"}
@@ -288,6 +299,78 @@ def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[
     # The credential itself: one Secret, 32 random chars (CHT-19's pattern).
     secret = find(umbrella_docs, "Secret", "atlas-server-client")
     assert len(base64.b64decode(secret["data"]["client-secret"])) == 32
+
+
+@pytest.mark.covers(rules=["CHT-113"])
+def test__validate_entity_client_secret_gates_on_consumers() -> None:
+    """<release>-validate-entity-client generates for either consumer (CHT-113, 12.7).
+
+    The master realm's import placeholder and the app's Deployment join read
+    the one Secret (CHT-109's two-consumer shape). The import consumer is
+    master-only — the prod realm's client join lands with 12.3 — so with the
+    app disabled the credential follows the realm, and with both consumers
+    gone nothing generates (CHT-80's unused-credential rule). A supplied value
+    wins verbatim.
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-validate-entity.enabled=false",),
+    )
+    assert "atlas-validate-entity-client" not in names(docs, "Secret")  # prod realm: no import consumer
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-validate-entity.enabled=false", "atlas-keycloak.realm.name=master"),
+    )
+    assert "atlas-validate-entity-client" in names(docs, "Secret")  # master's import alone
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-validate-entity.enabled=false", "atlas-keycloak.enabled=false"),
+    )
+    assert "atlas-validate-entity-client" not in names(docs, "Secret")
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("secrets.validateEntityClient.clientSecret=supplied-ve",),
+    )
+    secret = find(docs, "Secret", "atlas-validate-entity-client")
+    assert secret["data"]["client-secret"] == "c3VwcGxpZWQtdmU="  # b64("supplied-ve")
+
+
+@pytest.mark.covers(rules=["CHT-113", "VEV-04"])
+def test__the_master_realm_closes_the_validate_entity_leg() -> None:
+    """The composed master render closes the loop: app join == import env == Secret.
+
+    12.7's deployed leg, end to end (DD-499): the app mints the client the
+    realm import resolved from the same Secret, against the co-deployed
+    server's Service — and the server answers that client's audience.
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("global.realm=master",),
+    )
+    app_envs = env_map(container(find(docs, "Deployment", "atlas-validate-entity"), "validate-entity"))
+    assert env_value(app_envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL") == "https://atlas-server:21000"
+    assert (
+        env_value(app_envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL")
+        == "https://keycloak.atlas.example/realms/master/protocol/openid-connect/token"
+    )
+    join = app_envs["AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert join == {"name": "atlas-validate-entity-client", "key": "client-secret"}
+
+    kc_envs = env_map(container(find(docs, "StatefulSet", "atlas-keycloak"), "keycloak"))
+    assert kc_envs["VALIDATE_ENTITY_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == join
+
+    server_envs = env_map(container(find(docs, "Deployment", "atlas-server"), "server"))
+    assert "aurelius-atlas-validate-entity" in json.loads(
+        env_value(server_envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES")
+    )
 
 
 @pytest.mark.covers(rules=["CHT-19"])

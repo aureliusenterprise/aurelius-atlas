@@ -15,10 +15,17 @@ from pydantic import ValidationError
 from ve_recorder import Recorder
 
 ANSWER: dict[str, object] = {
-    "dataEntity": {"items": [], "isNonCompliant": True},
-    "definition": {"items": [], "isNonCompliant": False},
-    "domainLead": {"items": [], "isNonCompliant": True},
-    "name": {"items": [], "isNonCompliant": False},
+    "verdicts": [
+        {
+            "ruleGuid": "rule-1",
+            "ruleName": "Name present",
+            "attribute": "name",
+            "dimension": "COMPLETENESS",
+            "compliant": True,
+            "message": "This entity has a name",
+        }
+    ],
+    "unreadRules": [],
 }
 ERROR_BODY = {"errorCode": "ATLAS-401-00-001", "errorMessage": "no credential"}
 
@@ -44,7 +51,7 @@ async def test__with_token_shares_the_pool_and_speaks_with_the_new_token(
 
     answer = await owner.with_token("browser-token").validate({"guid": "e-1"})
 
-    assert answer.name.is_non_compliant is False
+    assert answer.verdicts[0].compliant is True
     assert recorder.sent().headers["authorization"] == "Bearer browser-token"
     await tracked_client_http.aclose()
 
@@ -90,18 +97,19 @@ async def test__the_pool_is_the_builders_to_close(recorder: Recorder) -> None:
 @pytest.mark.covers(
     "aurelius_atlas_validate_entity_client.client.ValidateEntityClient.validate", rules=["CL-40", "CL-03"]
 )
-async def test__validate_posts_the_entity_and_parses_the_cards(recorder: Recorder) -> None:
-    """``POST /``: the entity as a plain mapping (the mock never reads it, VE-01), the cards parsed (VE-02)."""
+async def test__validate_posts_the_entity_and_parses_the_verdicts(recorder: Recorder) -> None:
+    """``POST /``: the draft as a plain mapping (only its attributes are read, VEV-01), the verdicts parsed (CL-40)."""
     recorder.answer(200, ANSWER)
 
-    answer = await _client(recorder).validate({"guid": "e-1", "typeName": "Dataset"})
+    answer = await _client(recorder).validate({"guid": "e-1", "typeName": "Dataset", "attributes": {}})
 
     sent = recorder.sent()
     assert (sent.method, sent.url.path) == ("POST", "/")
-    assert json.loads(sent.content) == {"guid": "e-1", "typeName": "Dataset"}
+    assert json.loads(sent.content) == {"guid": "e-1", "typeName": "Dataset", "attributes": {}}
     assert sent.headers["authorization"] == "Bearer tok"
     assert isinstance(answer, ValidationResponse)
-    assert answer.data_entity.is_non_compliant is True
+    assert answer.verdicts[0].rule_guid == "rule-1"
+    assert answer.verdicts[0].message == "This entity has a name"
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity_client.client.ValidateEntityClient.validate", rules=["CL-04"])

@@ -8,65 +8,34 @@ describe("ValidateEntityService", () => {
     let service: ValidateEntityService;
     let httpMock: HttpTestingController;
 
-    // The deployed 8.3 mock document (VE-02, DV-67): the four cards, verbatim
-    // as aurelius_atlas_validate_entity.mock.MOCK_VALIDATION answers them.
+    // The verdict document of 12.7 (VEV-02/VEV-03): the flat array and the
+    // unread rules, as the app's engine answers them over the corpus rules.
     const response: EntityValidationResponse = {
-        dataEntity: {
-            items: [
-                {
-                    result: { raw: "This entity is missing a dataEntity" },
-                    dataqualitytype: { raw: "attribute" },
-                    usedattributes: { raw: ["dataEntity"] },
-                    name: { raw: "Attribute - dataEntity" },
-                    compliant: { raw: "0" },
-                    _meta: { engine: "atlas-dev-gov-quality", score: 1, id: "doc-6290d9e0dd895e02b897451f" },
-                    id: { raw: "doc-6290d9e0dd895e02b897451f" },
-                },
-            ],
-            isNonCompliant: true,
-        },
-        definition: {
-            items: [
-                {
-                    result: { raw: "This entity has a definition" },
-                    dataqualitytype: { raw: "attribute" },
-                    usedattributes: { raw: ["definition"] },
-                    name: { raw: "Attribute - definition" },
-                    compliant: { raw: "1" },
-                    _meta: { engine: "atlas-dev-gov-quality", score: 1, id: "doc-6290d9dedd895e197b974510" },
-                    id: { raw: "doc-6290d9dedd895e197b974510" },
-                },
-            ],
-            isNonCompliant: false,
-        },
-        domainLead: {
-            items: [
-                {
-                    result: { raw: "This entity is missing a domainLead" },
-                    dataqualitytype: { raw: "attribute" },
-                    usedattributes: { raw: ["domainLead"] },
-                    name: { raw: "Attribute - domainLead" },
-                    compliant: { raw: "0" },
-                    _meta: { engine: "atlas-dev-gov-quality", score: 1, id: "doc-6290d9e0dd895e02b8974528" },
-                    id: { raw: "doc-6290d9e0dd895e02b8974528" },
-                },
-            ],
-            isNonCompliant: true,
-        },
-        name: {
-            items: [
-                {
-                    result: { raw: "This entity has a name" },
-                    dataqualitytype: { raw: "attribute" },
-                    usedattributes: { raw: ["name"] },
-                    name: { raw: "Attribute - name" },
-                    compliant: { raw: "1" },
-                    _meta: { engine: "atlas-dev-gov-quality", score: 1, id: "doc-6290d9dedd895e197b974507" },
-                    id: { raw: "doc-6290d9dedd895e197b974507" },
-                },
-            ],
-            isNonCompliant: false,
-        },
+        verdicts: [
+            {
+                ruleGuid: "rule-dataset-name",
+                ruleName: "Dataset name required",
+                attribute: "name",
+                dimension: "COMPLETENESS",
+                compliant: true,
+                message: "This dataset has a name",
+            },
+            {
+                ruleGuid: "rule-dataset-fields",
+                ruleName: "Dataset fields required",
+                attribute: "schematicFields",
+                dimension: "COMPLETENESS",
+                compliant: false,
+                message: "This dataset should have at least one field",
+            },
+        ],
+        unreadRules: [
+            {
+                ruleGuid: "rule-expression",
+                ruleName: "A stored expression",
+                error: "a stored expression rule needs re-authoring (DV-146)",
+            },
+        ],
     };
 
     const draft = { typeName: "m4i_dataset", attributes: { name: "tb1" } };
@@ -89,11 +58,11 @@ describe("ValidateEntityService", () => {
         expect(TestBed.inject(VALIDATE_ENTITY_BASE_URL)).toBe("/validate-entity");
     });
 
-    it("validateEntity posts the draft to the root with no query string (EDT-21, VE-01)", () =>
+    it("validateEntity posts the draft to the root with no query string (EDT-21, VEV-01)", () =>
         new Promise<void>((done, fail) => {
             service.validateEntity(draft).subscribe({
-                next: (cards) => {
-                    expect(cards).toEqual(response);
+                next: (answer) => {
+                    expect(answer).toEqual(response);
                     done();
                 },
                 error: fail,
@@ -105,18 +74,20 @@ describe("ValidateEntityService", () => {
             req.flush(response);
         }));
 
-    it("validateEntity reads the 200 as the typed cards (EDT-21, VE-02)", () =>
+    it("validateEntity reads the 200 as the typed verdicts (EDT-21, VEV-02/VEV-03)", () =>
         new Promise<void>((done, fail) => {
             service.validateEntity(draft).subscribe({
-                next: (cards) => {
-                    expect(Object.keys(cards).sort()).toEqual(["dataEntity", "definition", "domainLead", "name"]);
-                    const dataEntity = cards["dataEntity"];
-                    expect(dataEntity.isNonCompliant).toBe(true);
-                    expect(dataEntity.items[0].compliant.raw).toBe("0");
-                    expect(dataEntity.items[0].result.raw).toBe("This entity is missing a dataEntity");
-                    expect(dataEntity.items[0]._meta.engine).toBe("atlas-dev-gov-quality");
-                    expect(cards["name"].isNonCompliant).toBe(false);
-                    expect(cards["name"].items[0].compliant.raw).toBe("1");
+                next: (answer) => {
+                    expect(answer.verdicts).toHaveLength(2);
+                    const [name, fields] = answer.verdicts;
+                    expect(name.ruleGuid).toBe("rule-dataset-name");
+                    expect(name.compliant).toBe(true);
+                    expect(name.message).toBe("This dataset has a name");
+                    expect(fields.attribute).toBe("schematicFields");
+                    expect(fields.compliant).toBe(false);
+                    expect(answer.unreadRules).toHaveLength(1);
+                    expect(answer.unreadRules[0].ruleGuid).toBe("rule-expression");
+                    expect(answer.unreadRules[0].error).toContain("DV-146");
                     done();
                 },
                 error: fail,

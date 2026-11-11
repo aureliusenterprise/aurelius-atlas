@@ -362,28 +362,29 @@
         </form>
     }
 
-    <!-- The governance banner lines (EDT-24, DD-446): one per item of the
-         validation card that names the control — the icon by `compliant.raw`
-         ("1"/"0"), then the verdict text, at the legacy's small size. No card
-         of the key, no lines. The one template under every control and every
-         picker alike (each renders it through ngTemplateOutlet). -->
+    <!-- The governance banner lines (EDT-24 as amended by 12.7, DD-446/DD-498):
+         one per verdict measuring the control — the icon by the boolean
+         `compliant`, then the verdict's message, at the legacy's small size.
+         No verdict of the key, no lines; `unreadRules` renders none. The one
+         template under every control and every picker alike (each renders it
+         through ngTemplateOutlet). -->
     <ng-template #govLines let-fieldName="fieldName">
-        @for (item of validationItems(fieldName); track item.id.raw) {
+        @for (verdict of validationItems(fieldName); track verdict.ruleGuid) {
             <p class="is-size-7 aurelius-editor-gov-line" data-gov-line>
                 <span class="icon-text">
                     <span
                         class="icon"
-                        [class.has-text-warning]="item.compliant.raw === '0'"
-                        [class.has-text-success]="item.compliant.raw === '1'"
+                        [class.has-text-warning]="!verdict.compliant"
+                        [class.has-text-success]="verdict.compliant"
                     >
-                        @if (item.compliant.raw === "0") {
+                        @if (!verdict.compliant) {
                             <fa-icon [icon]="faExclamationTriangle"></fa-icon>
                         }
-                        @if (item.compliant.raw === "1") {
+                        @if (verdict.compliant) {
                             <fa-icon [icon]="faCheckCircle"></fa-icon>
                         }
                     </span>
-                    <span>{{ item.result.raw }}</span>
+                    <span>{{ verdict.message }}</span>
                 </span>
             </p>
         }

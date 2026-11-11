@@ -1,8 +1,9 @@
-"""Fixtures for the app tests: settings, a fake Keycloak issuer, the app.
+"""Fixtures for the app tests: settings, a fake Keycloak issuer, a fake catalogue, the app.
 
 The fake issuer is the 8.0 auth library's test double (AUX-01..05 are tested at
-home, in ``aurelius-atlas-auth``). The app has no upstream (VE-01, DV-67), so
-there is no fake service to wire: every answer comes from the app itself.
+home, in ``aurelius-atlas-auth``); the fake catalogue is the Atlas server the
+rules door reads since 12.7 (VEV-03), in its own module ``fake_catalogue`` —
+helpers live there, importable by a unique name (8.2's pattern).
 """
 
 from __future__ import annotations
@@ -17,14 +18,17 @@ import httpx2 as httpx
 import jwt
 import pytest
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
+from aurelius_atlas_server_client.client import AtlasClient
 from aurelius_atlas_validate_entity import ValidateEntitySettings, create_app
 from aurelius_atlas_validate_entity.settings import ENV_PREFIX
 from cryptography.hazmat.primitives.asymmetric import rsa
+from fake_catalogue import FakeCatalogue
 from fastapi import FastAPI
 from jwt.algorithms import RSAAlgorithm
 from pydantic import HttpUrl
 
 ISSUER = "http://issuer.test"
+CATALOGUE = "http://catalogue.test"
 REALM = "master"
 BASE_URL = f"{ISSUER}/realms/{REALM}"
 KID = "test-key"
@@ -89,9 +93,15 @@ def make_token(
 
 
 @pytest.fixture
+def catalogue() -> FakeCatalogue:
+    """The programmable fake Atlas catalogue the app's rules door reads."""
+    return FakeCatalogue()
+
+
+@pytest.fixture
 def settings() -> ValidateEntitySettings:
-    """The app's settings: fake issuer, no TLS, console telemetry."""
-    return ValidateEntitySettings(auth_server_url=HttpUrl(ISSUER))
+    """The app's settings: fake issuer and catalogue, no TLS, console telemetry."""
+    return ValidateEntitySettings(auth_server_url=HttpUrl(ISSUER), server_base_url=HttpUrl(CATALOGUE))
 
 
 @pytest.fixture
@@ -103,9 +113,15 @@ def auth() -> Iterator[KeycloakAuth]:
 
 
 @pytest.fixture
-def app(settings: ValidateEntitySettings, auth: KeycloakAuth) -> FastAPI:
-    """The application, verifying tokens against the fake issuer."""
-    return create_app(settings, auth=auth)
+def app(settings: ValidateEntitySettings, auth: KeycloakAuth, catalogue: FakeCatalogue) -> FastAPI:
+    """The application, verifying tokens against the fake issuer and reading the fake catalogue.
+
+    The catalogue client speaks through an externally built httpx client on the
+    fake's recording transport (DD-200's seam, built outside per DD-205); the
+    token source is the app's own service identity, standing in for the mint.
+    """
+    atlas = AtlasClient(httpx.AsyncClient(base_url=CATALOGUE, transport=catalogue.transport()), "app-identity")
+    return create_app(settings, auth=auth, atlas=atlas)
 
 
 @pytest.fixture

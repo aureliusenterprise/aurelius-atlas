@@ -88,7 +88,16 @@ assets carry the client — master's since 6.1a/DD-250 — so this one is **not*
 realm-gated, unlike grafana's) and the server chart's
 `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET` join. Either consumer (keycloak or
 server) keeps it; disabling both drops it. Override with
-`secrets.serverClient.clientSecret`.`<release>-otel-clients` is **realm-shaped** (CHT-88, DD-277, 10.9): the
+`secrets.serverClient.clientSecret`.`<release>-validate-entity-client` (CHT-113, 12.7) is the validate-entity
+app's service credential (VEV-04, DD-499): the master realm import's
+`${VALIDATE_ENTITY_CLIENT_SECRET}` placeholder (the **master** asset carries
+the client — the prod realm's join lands with 12.3 — so the import consumer is
+realm-gated, unlike the server credential) and the app chart's
+`AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET` join. The app alone
+keeps it (a prod-realm cluster boots the leg without the realm client: the
+mint is refused, VEV-06 answers 502); master's import alone keeps it; neither
+consumer drops it. Override with `secrets.validateEntityClient.clientSecret`.
+`<release>-otel-clients` is **realm-shaped** (CHT-88, DD-277, 10.9): the
 hardened realm gets one key per ingest client id (`otel-atlas-server`, …,
 each generated/preserved/overridden independently via
 `secrets.otelClients.clients.<client-id>`), `master` keeps the single

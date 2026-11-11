@@ -219,6 +219,18 @@ spec:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.serverClientSecretName" . }}
                                   key: client-secret
+                        {{- /* CHT-113 (12.7): the validate-entity app's client
+                        placeholder — the MASTER asset carries it (the prod
+                        realm's join lands with 12.3), so the env renders on
+                        master alone: an unresolved placeholder on the prod
+                        import would fail it (CHT-80's rule). */}}
+                        {{- if eq (include "atlas-keycloak.realmName" .) "master" }}
+                        - name: VALIDATE_ENTITY_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.validateEntityClientSecretName" . }}
+                                  key: client-secret
+                        {{- end }}
                         {{- with (include "atlas-keycloak.telemetryEndpoint" .) }}
                         {{- /* Legacy-leg OTLP only, when telemetry resolves to
                         an endpoint (CHT-16/42): Keycloak is the issuer, so it

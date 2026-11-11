@@ -1,93 +1,78 @@
-"""The governance-quality document, as the client lib owns it (CL-40; DD-203).
+"""The governance-verdict document, as the client lib owns it (CL-40 as amended by 12.7; DD-498).
 
-The card the 8.3 mock answers — the editor's contract (VE-02) — stated once so
-the app's constant and a caller's parse validate one model.
+The document ``POST /`` answers since 12.7 — the flat verdict array and the unread rules,
+the browser's contract (VEV-02/03) — stated once so the app's answer and a caller's parse
+validate one model. The four canned cards of the 8.3 mock retired with DV-67 (ADR 061).
 """
 
 from typing import Any
 
 import pytest
 from aurelius_atlas_validate_entity_client.models import (
-    GovQualityItem,
-    GovQualityMeta,
-    GovQualityValue,
-    ValidationCard,
+    GovernanceVerdict,
+    UnreadRule,
     ValidationResponse,
 )
 from pydantic import ValidationError
 
-
-def _card(raw: str, compliant: str) -> dict[str, Any]:
-    """One card, as the mock emits it: the raw wrappers, the string verdict, the doc id."""
-    return {
-        "items": [
-            {
-                "result": {"raw": raw},
-                "dataqualitytype": {"raw": "attribute"},
-                "usedattributes": {"raw": ["name"]},
-                "name": {"raw": f"Attribute - {compliant}"},
-                "compliant": {"raw": compliant},
-                "_meta": {"engine": "atlas-dev-gov-quality", "score": 1, "id": "doc-1"},
-                "id": {"raw": "doc-1"},
-            }
-        ],
-        "isNonCompliant": compliant == "0",
-    }
-
-
+VERDICT: dict[str, Any] = {
+    "ruleGuid": "rule-1",
+    "ruleName": "Name present",
+    "attribute": "name",
+    "dimension": "COMPLETENESS",
+    "compliant": False,
+    "message": "This entity is missing a name",
+}
 ANSWER: dict[str, Any] = {
-    "dataEntity": _card("This entity is missing a dataEntity", "0"),
-    "definition": _card("This entity has a definition", "1"),
-    "domainLead": _card("This entity is missing a domainLead", "0"),
-    "name": _card("This entity has a name", "1"),
+    "verdicts": [VERDICT, {**VERDICT, "ruleGuid": "rule-2", "compliant": True, "message": "ok"}],
+    "unreadRules": [{"ruleGuid": "rule-3", "ruleName": "Legacy expression", "error": "no check kind"}],
 }
 
 
 @pytest.mark.covers(rules=["CL-40"])
-def test__the_four_cards_parse_as_the_editor_receives_them() -> None:
-    """``dataEntity``/``definition``/``domainLead``/``name``, the legacy's keys (VE-02)."""
+def test__the_document_parses_as_the_editor_receives_it() -> None:
+    """The flat array and the unread list, camelCase keys (VEV-02/03, DD-498)."""
     response = ValidationResponse.model_validate(ANSWER)
 
-    assert response.data_entity.is_non_compliant is True
-    assert response.definition.is_non_compliant is False
-    assert response.domain_lead.items[0].compliant.raw == "0"
-    assert response.name.items[0].name.raw == "Attribute - 1"
+    assert [verdict.compliant for verdict in response.verdicts] == [False, True]
+    assert response.verdicts[0].rule_guid == "rule-1"
+    assert response.verdicts[0].attribute == "name"
+    assert response.unread_rules[0].error == "no check kind"
 
 
 @pytest.mark.covers(rules=["CL-40"])
-def test__every_leaf_is_a_raw_wrapper() -> None:
-    """The ``{"raw": …}`` shape is the browser contract, modelled as it arrives."""
-    value = GovQualityValue.model_validate({"raw": ["dataEntity"]})
-
-    assert value.raw == ["dataEntity"]
-
-
-@pytest.mark.covers(rules=["CL-40"])
-def test__the_meta_keeps_the_engines_record() -> None:
-    """``_meta``: the engine, the score, the document id (the mock's DV-67 values)."""
-    meta = GovQualityMeta.model_validate({"engine": "atlas-dev-gov-quality", "score": 1, "id": "doc-1"})
-
-    assert meta.engine == "atlas-dev-gov-quality"
+def test__compliant_is_a_json_boolean() -> None:
+    """12.6's verdict, not the mock's string flag: a string is not the contract (DD-498)."""
+    with pytest.raises(ValidationError):
+        GovernanceVerdict.model_validate({**VERDICT, "compliant": "0"})
 
 
 @pytest.mark.covers(rules=["CL-40"])
 def test__an_unknown_field_is_a_validation_error() -> None:
-    """``extra='forbid'``: a card the legacy does not send is not the contract, not silence."""
+    """``extra='forbid'``: a field the app does not answer is not the contract, not silence."""
     with pytest.raises(ValidationError):
-        ValidationCard.model_validate({"items": [], "isNonCompliant": False, "surprise": 1})
+        ValidationResponse.model_validate({"verdicts": [], "unreadRules": [], "surprise": 1})
 
 
 @pytest.mark.covers(rules=["CL-40"])
 def test__the_document_is_immutable_once_parsed() -> None:
-    """Frozen models: the validated card cannot drift from the wire."""
-    card = ValidationCard.model_validate(_card("r", "1"))
+    """Frozen models: a validated verdict cannot drift from the wire."""
+    verdict = GovernanceVerdict.model_validate(VERDICT)
 
     with pytest.raises(ValidationError):
-        card.is_non_compliant = True
+        verdict.compliant = True
 
 
 @pytest.mark.covers(rules=["CL-40"])
-def test__an_item_needs_every_check_field() -> None:
-    """The item is exact: a missing verdict leaf is a validation error (VE-02)."""
+def test__a_verdict_needs_every_field() -> None:
+    """The verdict is exact: a missing line is a validation error (VEV-02)."""
     with pytest.raises(ValidationError):
-        GovQualityItem.model_validate({"result": {"raw": "r"}})
+        GovernanceVerdict.model_validate({"ruleGuid": "rule-1"})
+
+
+@pytest.mark.covers(rules=["CL-40"])
+def test__an_unread_rule_names_its_error() -> None:
+    """The unread entry carries the cause: recorded, never executed (VEV-03, DV-146)."""
+    unread = UnreadRule.model_validate({"ruleGuid": "r", "ruleName": "n", "error": "no check kind"})
+
+    assert unread.rule_name == "n"

@@ -185,26 +185,29 @@ function setup({
     return { fixture, compiled, httpMock: TestBed.inject(HttpTestingController), paramMap };
 }
 
-/** One governance item of the deployed 8.3 mock document (VE-02, DV-67). */
-function govItem(key: string, result: string, compliant: "0" | "1") {
+/** One verdict of the live answer (VEV-02, 12.7): the rule measuring `attribute`. */
+function govVerdict(attribute: string, message: string, compliant: boolean) {
     return {
-        result: { raw: result },
-        dataqualitytype: { raw: "attribute" },
-        usedattributes: { raw: [key] },
-        name: { raw: `Attribute - ${key}` },
-        compliant: { raw: compliant },
-        _meta: { engine: "atlas-dev-gov-quality", score: 1, id: `doc-${key}` },
-        id: { raw: `doc-${key}` },
+        ruleGuid: `rule-${attribute}`,
+        ruleName: `Rule - ${attribute}`,
+        attribute,
+        dimension: "COMPLETENESS",
+        compliant,
+        message,
     };
 }
 
-/** The deployed mock's four cards (EDT-21/EDT-24, VE-02): the drawer renders
- * the two whose keys name one of its controls (name, definition/description). */
+/** The engine's verdicts over four corpus rules (EDT-21/EDT-24 as amended by
+ * 12.7, VEV-02): the drawer renders the two whose attributes name one of its
+ * controls (name, definition/description). */
 const VALIDATION = {
-    dataEntity: { items: [govItem("dataEntity", "This entity is missing a dataEntity", "0")], isNonCompliant: true },
-    definition: { items: [govItem("definition", "This entity has a definition", "1")], isNonCompliant: false },
-    domainLead: { items: [govItem("domainLead", "This entity is missing a domainLead", "0")], isNonCompliant: true },
-    name: { items: [govItem("name", "This entity has a name", "1")], isNonCompliant: false },
+    verdicts: [
+        govVerdict("dataEntity", "This entity is missing a dataEntity", false),
+        govVerdict("definition", "This entity has a definition", true),
+        govVerdict("domainLead", "This entity is missing a domainLead", false),
+        govVerdict("name", "This entity has a name", true),
+    ],
+    unreadRules: [],
 };
 
 /** Answer every validate-entity call in flight (EDT-23): the open round fires
@@ -1191,14 +1194,15 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         vi.useRealTimers();
     });
 
-    it("renders one banner line per card that names a control, nothing for the rest (EDT-24)", () => {
+    it("renders one banner line per verdict that names a control, nothing for the rest (EDT-24)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
-        // The mock answers four cards (VE-02); the DataSet drawer renders
-        // controls for two of them — the `definition` card names the
-        // description key (the pair, DD-320). The unanswered-for keys
-        // (`dataEntity`, `domainLead`) render nowhere (DD-446).
+        // The engine answers four verdicts (VEV-02); the DataSet drawer renders
+        // controls for two of their attributes — a `definition` verdict names
+        // the description key (the pair, DD-320, EDT-24 as amended by 12.7).
+        // The attributes no control carries (`dataEntity`, `domainLead`) render
+        // nowhere (DD-446).
         const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
         expect(lines).toHaveLength(2);
         // The DOM order is the form's (EDT-03's rank): the name control's
@@ -1209,7 +1213,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         ]);
 
         // The lines sit under their own control, at the legacy's small size,
-        // with the success icon (compliant "1") in Bulma's icon seat.
+        // with the success icon (compliant true) in Bulma's icon seat.
         const nameLine = lines.find((line) => line.closest(".aurelius-editor-field")?.querySelector("#editor-name"));
         expect(normalize(nameLine?.textContent)).toBe("This entity has a name");
         expect(nameLine?.classList.contains("is-size-7")).toBe(true);
@@ -1221,14 +1225,15 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(definitionLine?.querySelector(".icon.has-text-success svg")).toBeTruthy();
     });
 
-    it("a non-compliant card paints the warning icon (EDT-24)", () => {
+    it("a non-compliant verdict paints the warning icon (EDT-24)", () => {
         const { fixture, compiled, httpMock } = setup();
         arriveTypeDefs(fixture, httpMock);
         httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
         fixture.detectChanges();
 
         httpMock.expectOne(VALIDATE_URL).flush({
-            name: { items: [govItem("name", "This entity is missing a name", "0")], isNonCompliant: true },
+            verdicts: [govVerdict("name", "This entity is missing a name", false)],
+            unreadRules: [],
         });
         fixture.detectChanges();
 
@@ -1243,8 +1248,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         arriveTypeDefs(fixture, httpMock);
 
         // The banner rides the create form as well: the open round answered
-        // the mock's cards, and the two rendered controls carry their lines —
-        // the mock's verdicts name the keys, not the drafted values (EDT-24).
+        // the corpus verdicts, and the two rendered controls carry their lines
+        // — the verdicts name their attributes, not the drafted values (EDT-24
+        // as amended by 12.7).
         const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
         expect(lines.map((line) => normalize(line.textContent))).toEqual([
             "This entity has a name",

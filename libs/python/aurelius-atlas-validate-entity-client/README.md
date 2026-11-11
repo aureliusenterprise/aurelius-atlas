@@ -1,18 +1,19 @@
 # aurelius-atlas-validate-entity-client
 
 The validate-entity API as a contract and a client (8.4, DD-203, DD-204,
-DD-205): the
-governance validation card the screen renders and an async
-`ValidateEntityClient` over `httpx2`. The `aurelius-atlas-validate-entity` app
-imports its own response model from here — one source of truth for both sides
-of the wire. This file covers wiring specific to this lib; workspace-wide rules
-live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
+DD-205; CL-40 amended by 12.7): the governance verdicts `POST /` answers and
+an async `ValidateEntityClient` over `httpx2`. The
+`aurelius-atlas-validate-entity` app imports its own response model from here —
+one source of truth for both sides of the wire. This file covers wiring
+specific to this lib; workspace-wide rules live in the root `AGENTS.md` and
+`libs/python/AGENTS.md`.
 
 ## Layout
 
 - `aurelius_atlas_validate_entity_client/models.py` — `ValidationResponse`,
-  `ValidationCard`, `GovQualityItem`, `GovQualityMeta`, `GovQualityValue`
-  (all `extra="forbid"`, frozen — the card is exact, CL-40)
+  `GovernanceVerdict`, `UnreadRule` (all `extra="forbid"`, frozen — the
+  verdict document is exact, CL-40 as amended by 12.7; `compliant` is a
+  `StrictBool`, so the legacy mock's string flag no longer parses)
 - `aurelius_atlas_validate_entity_client/client.py` — `ValidateEntityClient`
   (`validate`, `with_token`), `ValidateEntityClientError`, `TokenSource`
 
@@ -24,7 +25,9 @@ live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
   `create_app`, close the **pool** in the lifespan's shutdown — the client
   exposes no close of its own (DD-205). A `with_token(...)`
   wrapper shares the pool and closes nothing.
-- The rules it keeps (CL-01..CL-05, CL-40) are specified by the 8.4 spec
+- The rules it keeps (CL-01..CL-05; CL-40, amended by 12.7's spec at
+  `apps/aurelius-atlas-validate-entity/specs/12-7-governance-verdicts/spec.md`)
+  are specified by the 8.4 spec
   (`libs/python/aurelius-atlas-validate-entity-client/specs/8-4-api-client-libraries/spec.md`).
 
 ## Conventions
@@ -34,7 +37,8 @@ live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
   DD-205). The request path is relative to its base URL, so the app's URL
   passes through as given — no trailing-slash trimming.
 - `validate()` takes the entity as a plain mapping — the request has no
-  schema of its own (the legacy posts the screen's object).
+  schema of its own (the editor posts its draft; the app reads only its
+  `attributes`, VEV-01).
 - A non-2xx answer raises `ValidateEntityClientError` (CL-04); transport
   failures propagate as `httpx2` errors (CL-05).
 

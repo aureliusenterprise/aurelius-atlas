@@ -12,6 +12,24 @@ ENV_PREFIX = "AURELIUS_ATLAS_VALIDATE_ENTITY_"
 DEFAULT_PORT = 21003
 """The app's port: the third auxiliary API, above lineage-model's 21002."""
 
+DEFAULT_SERVER_URL = "https://localhost:21000"
+"""The dev Atlas server: what ``nx serve`` of the server publishes, where the rules read runs in dev."""
+
+DEFAULT_MINT_URL = "https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token"
+"""The dev issuer's token endpoint: the TLS :8443 listener every producer mints at (DD-113)."""
+
+DEFAULT_SERVER_CLIENT_ID = "aurelius-atlas-validate-entity"
+"""The Keycloak client the app signs in as (VEV-04, DD-499): its own service identity."""
+
+DEFAULT_RULES_CACHE_SECONDS = 60.0
+"""How long the read rule set is held (VEV-05): the editor's draft rides live; the rules do not."""
+
+DEFAULT_BREAKER_FAIL_MAX = 5
+"""Outages that open the catalogue circuit; the auth library's issuer-breaker default (AUX-02)."""
+
+DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS = 60.0
+"""Seconds an open circuit stays open before its half-open trial call (LM-14's shape)."""
+
 type LogLevel = Literal["trace", "debug", "info", "warning", "error"]
 """Levels both uvicorn and the OTel console accept."""
 
@@ -21,11 +39,12 @@ TLS_PAIR_ERROR = (
 
 
 class ValidateEntitySettings(BaseSettings):
-    """How the app runs, who issues its tokens, and where its telemetry goes.
+    """How the app runs, who issues its tokens, where its telemetry goes, and whom it asks for rules.
 
-    The mock has no upstreams (VE-01, DV-67): the settings set is the same
-    shape as the other auxiliary apps minus the proxy targets, so the dev
-    deployment and the container image stay uniform (DD-201).
+    Since 12.7 the app has one upstream — the catalogue server the governance
+    rules are read from (VEV-03) — and one identity of its own to ask with
+    (VEV-04, DD-499). The dev defaults point at what ``nx serve`` runs; every
+    deployed environment sets its own values.
     """
 
     model_config = SettingsConfigDict(env_prefix=ENV_PREFIX, frozen=True, extra="ignore")
@@ -57,6 +76,32 @@ class ValidateEntitySettings(BaseSettings):
 
     auth_ca_file: FilePath | None = None
     """PEM CA verifying the issuer's TLS; unset uses the system trust store."""
+
+    server_base_url: HttpUrl = DEFAULT_SERVER_URL  # pyright: ignore[reportAssignmentType] - pydantic validates the URL text
+    """The catalogue server whose search answers the governance rules (VEV-03): the upstream
+    this app grew at 12.7; a setting, never a hardcoded host (DV-69's sibling)."""
+
+    token_url: HttpUrl = DEFAULT_MINT_URL  # pyright: ignore[reportAssignmentType] - pydantic validates the URL text
+    """The issuer's token endpoint the app's own identity mints at (VEV-04, DD-499): the same
+    :8443 listener every producer mints at (DD-113)."""
+
+    server_client_id: str = DEFAULT_SERVER_CLIENT_ID
+    """The Keycloak client the app signs in as (VEV-04, DD-499): its service account holds
+    ``atlas-read``, and its token — never the caller's — rides every catalogue read."""
+
+    server_client_secret: SecretStr | None = None
+    """The secret of ``server_client_id``; never shown in logs. Unset keeps the leg closed:
+    ``POST /`` answers 502, never a no-rules verdict (VEV-06)."""
+
+    rules_cache_seconds: float = Field(default=DEFAULT_RULES_CACHE_SECONDS, ge=0)
+    """How long the read rule set is cached in process (VEV-05): 0 reads on every call."""
+
+    breaker_fail_max: int = Field(default=DEFAULT_BREAKER_FAIL_MAX, ge=1)
+    """The catalogue outages that open the circuit (VEV-06): 5xx answers and transport failures
+    count, 4xx answers are facts (the auth library's JWKS breaker shape, AUX-02)."""
+
+    breaker_reset_timeout: float = Field(default=DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS, gt=0)
+    """Seconds an open circuit stays open before its half-open trial call (LM-14's shape)."""
 
     otel_token_url: HttpUrl | None = None
     """The issuer's token endpoint for the OTLP ingest credential (DD-196, DD-197): with

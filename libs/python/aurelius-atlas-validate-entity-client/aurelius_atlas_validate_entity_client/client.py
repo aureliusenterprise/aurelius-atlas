@@ -1,4 +1,4 @@
-"""The async client for the validate-entity API (CL-01..CL-05, CL-40; DD-203, DD-204, DD-205).
+"""The async client for the validate-entity API (CL-01..CL-05; CL-40 as amended by 12.7; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally
 built ``httpx.AsyncClient`` and a token source, reading no environment variables
@@ -10,8 +10,8 @@ lifecycle. Tests pass one built on a
 (CL-03); ``ValidateEntityClientError`` rises on a non-2xx answer (CL-04);
 ``httpx``'s own error propagates on an unreachable upstream (CL-05).
 
-``validate`` posts any mapping — the endpoint never reads the body (VE-01, DD-201),
-so the request is not a model — and parses the fixed governance document into a
+``validate`` posts the draft entity — the endpoint reads only its ``attributes``
+(VEV-01), so the request is not a model — and parses the verdict document into a
 :class:`~aurelius_atlas_validate_entity_client.models.ValidationResponse` (CL-40).
 """
 
@@ -80,9 +80,9 @@ class ValidateEntityClient:
         return ValidateEntityClient(self._http, token)
 
     async def validate(self, entity: Mapping[str, Any]) -> ValidationResponse:
-        """``POST /``: the entity in, the governance-quality document out (VE-01, CL-40).
+        """`POST /`: the draft entity in, the governance verdicts out (VEV-01/02, CL-40).
 
-        :param entity: the entity being edited; the mock never reads it (VE-01).
+        :param entity: the entity being edited; only its ``attributes`` are read (VEV-01).
 
         Raises:
             ValidateEntityClientError: The API answered 4xx/5xx (a 401 is VE-03).

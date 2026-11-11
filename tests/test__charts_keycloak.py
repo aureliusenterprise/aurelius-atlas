@@ -123,6 +123,9 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
     # grafana's prod-only credential.
     ref = envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert ref == {"name": "atlas-server-client", "key": "client-secret"}
+    # CHT-113 (12.7): the validate-entity client rides the master asset only
+    # (the prod realm's join lands with 12.3), so its env is absent here.
+    assert "VALIDATE_ENTITY_CLIENT_SECRET" not in envs
 
     master = find(helm_render(KC_CHART, sets=("realm.name=master",)), "StatefulSet", "atlas-keycloak")
     master_envs = env_map(container(master, "keycloak"))
@@ -136,10 +139,20 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
     # the same ${ATLAS_SERVER_CLIENT_SECRET} placeholder.
     ref = master_envs["ATLAS_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert ref == {"name": "atlas-server-client", "key": "client-secret"}
+    # CHT-113 (12.7): master's asset carries the validate-entity client (the
+    # realm join of 12.7), so its placeholder feeds the same-named env.
+    ref = master_envs["VALIDATE_ENTITY_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+    assert ref == {"name": "atlas-validate-entity-client", "key": "client-secret"}
     assert not [
         n
         for n in master_envs
-        if n.endswith("_CLIENT_SECRET") and n not in ("OTEL_INGEST_CLIENT_SECRET", "ATLAS_SERVER_CLIENT_SECRET")
+        if n.endswith("_CLIENT_SECRET")
+        and n
+        not in (
+            "OTEL_INGEST_CLIENT_SECRET",
+            "ATLAS_SERVER_CLIENT_SECRET",
+            "VALIDATE_ENTITY_CLIENT_SECRET",
+        )
     ]
     # master's asset has no grafana client: no env, no credential (CHT-80's rule).
     assert "GRAFANA_CLIENT_SECRET" not in master_envs

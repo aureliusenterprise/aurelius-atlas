@@ -1,96 +1,69 @@
-"""The governance-quality answer of the validate-entity API (CL-40, VE-02; DD-203).
+"""The governance-verdict answer of the validate-entity API (CL-40 as amended by 12.7; DD-498).
 
-The body the 8.3 mock answers — the four cards the webapp's editor renders, the
-``AppSearchResult<GovQualitySearchObject>`` shape of the legacy
-``libs/atlas/api::GovQualityApi`` (ADR 055 R4) — stated as models so a caller
-parses it and the app's constant is checked against one shape (VE-02, DV-67).
+The body ``POST /`` answers since 12.7: the verdicts the app's own engine ran over the draft
+(VEV-02) and the rules the vocabulary could not read (VEV-03), stated as models so a caller
+parses them and the app's answer is checked against one shape. The four canned cards of the
+8.3 mock retire with DV-67 (ADR 061): ``compliant`` is a JSON boolean, not the legacy's
+string ``'0'``/``'1'``, and nothing of the legacy ``AppSearchResult`` document survives.
 
-Every leaf is a ``{"raw": …}`` wrapper, and the ``doc-…`` ids, string
-``compliant`` flags and ``_meta.engine`` of the mock are part of the browser
-contract, so they are modelled as they arrive, not normalised. The card keys and
-``isNonCompliant`` are camelCase, the legacy's names.
+The field names are camelCase, the same house style the card document used; ``verdicts`` is a
+flat array and the banner groups it by ``attribute`` (DD-498 — keyed cards and parallel arrays
+were refused there).
 """
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool
 
 
-# VE-02.
-class GovQualityValue(BaseModel):
-    """A ``{"raw": …}`` wrapper — every leaf of the governance document is one."""
+# VEV-02; CL-40.
+class GovernanceVerdict(BaseModel):
+    """One ACTIVE governance rule's answer about the draft (VEV-02).
 
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    raw: str | list[str] = Field(
-        description="The value: a string, or a list of strings (``usedattributes``).",
-    )
-
-
-# VE-02.
-class GovQualityMeta(BaseModel):
-    """The ``_meta`` of an item: the engine, score and document id."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    engine: str = Field(
-        description="The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
-    )
-
-    score: int = Field(description="The item's score.")
-
-    id: str = Field(description="The document id, e.g. a ``doc-…`` id.")
-
-
-# VE-02.
-class GovQualityItem(BaseModel):
-    """One governance check: a verdict item of a card."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    result: GovQualityValue = Field(description="The human-readable verdict.")
-
-    dataqualitytype: GovQualityValue = Field(
-        description="The kind of check; ``attribute`` checks carry the legacy's lower-case name.",
-    )
-
-    usedattributes: GovQualityValue = Field(description="The entity attributes the check reads.")
-
-    name: GovQualityValue = Field(description="The check's name, e.g. ``Attribute - <key>``.")
-
-    compliant: GovQualityValue = Field(
-        description="The verdict flag, a string ``'0'``/``'1'`` — as the legacy emits it.",
-    )
-
-    meta: GovQualityMeta = Field(alias="_meta", description="The producing engine's record.")
-
-    id: GovQualityValue = Field(description="The item's document id, wrapped like every leaf.")
-
-
-# VE-02.
-class ValidationCard(BaseModel):
-    """One governance card: the items of one aspect, with the card's verdict."""
-
-    model_config = ConfigDict(extra="forbid", frozen=True)
-
-    items: list[GovQualityItem] = Field(default_factory=list, description="The checks of this card.")
-
-    is_non_compliant: bool = Field(
-        alias="isNonCompliant",
-        description="Whether any item fails; the editor's badge.",
-    )
-
-
-# VE-02; DV-67; CL-40. The keys are the legacy's — ``dataEntity``,
-# ``definition``, ``domainLead``, ``name`` — the aspects the editor's
-# governance panel renders.
-class ValidationResponse(BaseModel):
-    """The ``POST /`` answer: the four governance cards."""
+    ``compliant`` is a JSON boolean — 12.6's verdict, not the mock's string flag — and
+    ``message`` is the verdict line the engine carries: the rule's own sentence for its
+    verdict, the kind's reason when the rule stores none (GQ-06).
+    """
 
     model_config = ConfigDict(populate_by_name=True, extra="forbid", frozen=True)
 
-    data_entity: ValidationCard = Field(alias="dataEntity", description="The card for the data entity aspect.")
+    rule_guid: str = Field(alias="ruleGuid", description="The catalogue guid of the rule that answered.")
 
-    definition: ValidationCard = Field(description="The card for the definition aspect.")
+    rule_name: str = Field(alias="ruleName", description="The rule's name, as the catalogue holds it.")
 
-    domain_lead: ValidationCard = Field(alias="domainLead", description="The card for the domain lead aspect.")
+    attribute: str = Field(description="The entity attribute the rule measures: the banner groups by it.")
 
-    name: ValidationCard = Field(description="The card for the name aspect.")
+    dimension: str = Field(description="The rule's quality dimension, e.g. ``COMPLETENESS``.")
+
+    compliant: StrictBool = Field(description="The verdict: whether the draft passes the rule.")
+
+    message: str = Field(description="The line to show: the rule's own sentence, or the kind's reason.")
+
+
+# VEV-03; CL-40.
+class UnreadRule(BaseModel):
+    """A rule the vocabulary cannot read — recorded, never executed (VEV-03, DV-146)."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid", frozen=True)
+
+    rule_guid: str = Field(alias="ruleGuid", description="The catalogue guid of the unread rule.")
+
+    rule_name: str = Field(alias="ruleName", description="The rule's name, as the catalogue holds it.")
+
+    error: str = Field(description="Why the vocabulary cannot read it, e.g. a stored expression rule.")
+
+
+# VEV-02/03; CL-40; DD-498.
+class ValidationResponse(BaseModel):
+    """The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones."""
+
+    model_config = ConfigDict(populate_by_name=True, extra="forbid", frozen=True)
+
+    verdicts: list[GovernanceVerdict] = Field(
+        default_factory=list,
+        description="One verdict per ACTIVE rule the vocabulary could read (VEV-02).",
+    )
+
+    unread_rules: list[UnreadRule] = Field(
+        alias="unreadRules",
+        default_factory=list,
+        description="The rules the vocabulary could not read (VEV-03): shown, never executed.",
+    )

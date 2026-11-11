@@ -150,15 +150,19 @@ def test__auth_env_block_joins_issuer_realm_and_secret(server_docs: list[dict[st
 
     The server refuses to boot without AUTH_SERVER_URL/AUTH_CLIENT_SECRET,
     so the block is not opt-in like telemetry: the issuer is the CHT-03
-    join, the realm the CHT-74 fact, the audiences the webapp's client
-    (AUT-02/10), the CA the Certificate's mounted ca.crt, and the secret the
+    join, the realm the CHT-74 fact, the audiences the webapp's client and the
+    validate-entity app's own client (AUT-02/10, VEV-04 — the pair the e2e
+    stacks carry), the CA the Certificate's mounted ca.crt, and the secret the
     <release>-server-client join the realm import resolves (CHT-109).
     """
     envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.test"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
-    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    assert set(json.loads(env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES"))) == {
+        "aurelius",
+        "aurelius-atlas-validate-entity",
+    }
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
     join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "atlas-server-client", "key": "client-secret"}

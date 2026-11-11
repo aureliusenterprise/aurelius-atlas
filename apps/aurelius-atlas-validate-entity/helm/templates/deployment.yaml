@@ -81,6 +81,28 @@ spec:
                                   key: {{ include "atlas-validate-entity.otelClientId" . | quote }}
                                   {{- end }}
                         {{- end }}
+                        {{- /* CHT-113 (12.7, VEV-04/DD-499): the catalogue leg.
+                        The rules read runs as the app's own service identity —
+                        the settings require the server URL, so it joins the
+                        co-deployed server's Service like lineage-model's
+                        upstream (CHT-28's shape); the mint rides the issuer's
+                        realm token endpoint (CHT-41's public URL, DD-265, the
+                        same join the OTLP leg makes); the secret is
+                        <release>-validate-entity-client (CHT-113), the same
+                        Secret the master realm's import resolves. A prod-realm
+                        cluster without the client join (12.3) still boots: the
+                        mint is refused and VEV-06 answers 502, never a start-up
+                        failure. */}}
+                        {{- $atlas := include "atlas-validate-entity.siblingService" (dict "name" "atlas-server" "release" .Release.Name "override" .Values.atlas.service) }}
+                        - name: {{ .Values.componentEnvPrefix }}SERVER_BASE_URL
+                          value: {{ printf "https://%s:%d" $atlas (int .Values.atlas.port) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}TOKEN_URL
+                          value: {{ printf "%s/realms/%s/protocol/openid-connect/token" (include "atlas-validate-entity.issuerUrl" .) (include "atlas-validate-entity.realm" .) | quote }}
+                        - name: {{ .Values.componentEnvPrefix }}SERVER_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ default (printf "%s-validate-entity-client" .Release.Name) .Values.credentialSecrets.validateEntityClient }}
+                                  key: client-secret
                         {{- with .Values.config }}
                         {{- range $key, $value := . }}
                         - name: {{ $key }}

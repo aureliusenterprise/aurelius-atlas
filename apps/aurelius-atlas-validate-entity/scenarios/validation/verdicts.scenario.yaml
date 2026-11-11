@@ -1,0 +1,48 @@
+# The editor's draft in, the live governance verdicts out (12.7, ADR 061):
+# the app reads the ACTIVE rules of m4i_gov_data_quality from the catalogue and
+# runs each over the draft's attributes (VEV-02). The rules are 12.6's
+# vocabulary shape, stored as the corpus stores it — the two records below are
+# the m4i_dataset corpus's own name/description rules, restated with the typed
+# attributes patch 002 added; the expected lines are those records' own
+# compliantMessage/nonCompliantMessage, so the document is derived from
+# Aurelius data, not invented.
+name: "A draft in, one verdict per active rule out"
+source:
+    - .scratch/aurelius/libs/m4i-governance-data-quality/m4i_governance_data_quality/rules/definitions/m4i_dataset.json
+    - .scratch/aurelius/backend/m4i-validate-entity/m4i_validate_entity/m4i_validate_entity.py
+rules:
+    - VEV-02
+    - VEV-03
+covers:
+    - aurelius_atlas_validate_entity.app.create_app
+stages:
+    - name: The draft answers with the verdicts of the two active rules
+      request:
+          method: POST
+          url: /
+          json:
+              guid: 6f1a2c34-0000-4000-8000-aureliusatlas0
+              typeName: m4i_dataset
+              status: ACTIVE
+              attributes:
+                  name: Sales Orders
+                  qualifiedName: kafka.topic.sales_orders
+      response:
+          status: 200
+          headers:
+              content-type: application/json
+          json:
+              verdicts:
+                  - ruleGuid: rule-dataset-name
+                    ruleName: Dataset has a name
+                    attribute: name
+                    dimension: COMPLETENESS
+                    compliant: true
+                    message: This dataset has a name
+                  - ruleGuid: rule-dataset-fields
+                    ruleName: Dataset has a field
+                    attribute: fields
+                    dimension: COMPLETENESS
+                    compliant: false
+                    message: This dataset should have at least one field
+              unreadRules: []

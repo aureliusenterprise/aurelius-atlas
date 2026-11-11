@@ -52,6 +52,10 @@ services:
             # ${KAFKA_SCANNER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here — the same mechanism as the secrets above.
             KAFKA_SCANNER_CLIENT_SECRET: ${KAFKA_SCANNER_CLIENT_SECRET:?}
+            # The validate-entity API's service client (12.7, DD-499): its
+            # ${VALIDATE_ENTITY_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            VALIDATE_ENTITY_CLIENT_SECRET: ${VALIDATE_ENTITY_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.

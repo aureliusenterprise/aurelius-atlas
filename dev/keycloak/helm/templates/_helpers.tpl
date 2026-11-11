@@ -252,6 +252,14 @@ its env on every realm. */}}
 {{- default (printf "%s-server-client" .Release.Name) .Values.realm.serverClientSecretName -}}
 {{- end -}}
 
+{{/* The validate-entity app's client Secret (CHT-113, 12.7): feeds the realm
+import's ${VALIDATE_ENTITY_CLIENT_SECRET}, carried by the MASTER asset only —
+the prod realm's client join lands with 12.3 — so the env below renders on
+master alone (CHT-80's unused-credential rule). */}}
+{{- define "atlas-keycloak.validateEntityClientSecretName" -}}
+{{- default (printf "%s-validate-entity-client" .Release.Name) .Values.realm.validateEntityClientSecretName -}}
+{{- end -}}
+
 {{- define "atlas-keycloak.legacyTokenSecretName" -}}
 {{- default (printf "%s-collector-legacy" .Release.Name) .Values.telemetry.tokenSecretName -}}
 {{- end -}}

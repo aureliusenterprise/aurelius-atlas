@@ -94,6 +94,11 @@ realm:
     # (CHT-83, DD-275). The placeholder is inert when the imported realm
     # has no grafana client (master), so this env is not realm-gated.
     grafanaOauthSecretName: ""
+    # The validate-entity app's service-client secret: <release>-validate-entity-client
+    # (key client-secret) feeds the ${VALIDATE_ENTITY_CLIENT_SECRET} import
+    # placeholder (CHT-113, 12.7). The master asset carries the client; the
+    # prod realm's join lands with 12.3, so the env renders on master only.
+    validateEntityClientSecretName: ""
     # The Atlas server's confidential-client secret: <release>-server-client
     # (key client-secret) feeds the ${ATLAS_SERVER_CLIENT_SECRET} import
     # placeholder (CHT-109/110, 10.12). Both shipped assets carry the client
