@@ -116,6 +116,7 @@ export class AlertsPanel {
      */
     protected close(): void {
         this.active.set(false);
-        void this.router.navigate([{ outlets: { drawer: null } }]);
+        // The URL's query stays, and with it the search behind the drawer (SBX-04).
+        void this.router.navigate([{ outlets: { drawer: null } }], { queryParamsHandling: "preserve" });
     }
 }

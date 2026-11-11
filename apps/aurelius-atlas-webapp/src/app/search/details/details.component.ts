@@ -26,7 +26,6 @@ import { canWriteEntities } from "../editor/can-write-entities";
 import { EntitySaved } from "../editor/entity-saved";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
-import { SimilarEntities } from "./similar/similar-entities.component";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
@@ -75,7 +74,6 @@ import { peopleRows } from "./shared/people";
         PeopleBox,
         PropertiesItem,
         SectionStats,
-        SimilarEntities,
         TypeName,
         RouterLink,
     ],

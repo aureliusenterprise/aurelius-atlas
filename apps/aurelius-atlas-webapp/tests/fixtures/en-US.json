@@ -644,12 +644,6 @@
                     "description": "The name of the entity type",
                     "displayName": "Type name"
                 }
-            },
-            "similar": {
-                "title": "Similar entities",
-                "notYet": "This entity is not analysed yet. Try again in a moment.",
-                "none": "No similar entities found.",
-                "failed": "Similar entities could not be loaded."
             }
         },
         "editEntity": {

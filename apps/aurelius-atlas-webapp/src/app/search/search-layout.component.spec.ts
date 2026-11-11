@@ -144,37 +144,3 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create"] } }]);
     });
 });
-
-describe("SearchLayout's mode switch (SBW-02)", () => {
-    it("shows Words, Meaning and Both beside the field, Words pressed", () => {
-        setup();
-        const fixture = TestBed.createComponent(SearchLayout);
-        fixture.detectChanges();
-        const group = (fixture.nativeElement as HTMLElement).querySelector(".aurelius-search-mode");
-
-        const buttons = Array.from(group?.querySelectorAll("button") ?? []);
-        expect(group?.getAttribute("role")).toBe("group");
-        expect(group?.getAttribute("aria-label")).toBe("Search by");
-        expect(buttons.map((button) => normalize(button.textContent))).toEqual(["Words", "Meaning", "Both"]);
-        expect(buttons.map((button) => button.getAttribute("aria-pressed"))).toEqual(["true", "false", "false"]);
-    });
-
-    it("a click chooses the mode for the session's store and presses its button", () => {
-        setup();
-        const fixture = TestBed.createComponent(SearchLayout);
-        fixture.detectChanges();
-        // The layout provides the session's store (DD-219): its own instance.
-        const store = fixture.debugElement.injector.get(SearchState);
-        const buttons = (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>(
-            ".aurelius-search-mode button",
-        );
-
-        buttons[2].click();
-        fixture.detectChanges();
-
-        expect(store.mode()).toBe("hybrid");
-        expect(buttons[2].getAttribute("aria-pressed")).toBe("true");
-        expect(buttons[2].classList).toContain("is-info");
-        expect(buttons[0].getAttribute("aria-pressed")).toBe("false");
-    });
-});

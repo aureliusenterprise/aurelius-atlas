@@ -1,6 +1,6 @@
 /**
  * The settings panel (SPL-03, SPL-06..SPL-14): the routed drawer the
- * header gear opens, carrying the five sections and About. The rules under
+ * header gear opens, carrying the six sections and About. The rules under
  * test are the panel's own — the sections render, the Appearance select
  * drives the theme through the facade, the language section computes locale
  * hrefs, the selects write their owners, About shows the build (SPL-12's
@@ -88,7 +88,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(fixture.componentInstance.active()).toBe(true);
     });
 
-    it("renders the drawer with its five sections and About (SPL-02, SPL-13)", async () => {
+    it("renders the drawer with its six sections and About (SPL-02, SPL-13, SBX-01)", async () => {
         const { compiled } = await renderOpen();
         const text = compiled.textContent ?? "";
 
@@ -97,6 +97,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         for (const label of [
             "Appearance",
             "Language",
+            "Search by",
             "Time zone",
             "Default table page size",
             "Usage telemetry",
@@ -105,7 +106,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
             expect(text).toContain(label);
         }
         // Every heading is a Bulma `.label` — the form-controls guide's
-        // field label, one shape for all six (SPL-13, DD-167). Appearance
+        // field label, one shape for all seven (SPL-13, DD-167). Appearance
         // carries it through the Select's own label.
         const headings = [...compiled.querySelectorAll(".label")].map((el) =>
             (el.textContent ?? "").replace(/\s+/g, " ").trim(),
@@ -114,6 +115,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(headings).toEqual([
             "Appearance",
             "Language",
+            "Search by",
             "Time zone",
             "Default table page size",
             "Usage telemetry",
@@ -165,7 +167,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
 
         expect(fixture.componentInstance.active()).toBe(false);
         // The dismissal clears the `drawer` outlet segment (DD-166).
-        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }]);
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: null } }], { queryParamsHandling: "preserve" });
     });
 
     it("the Appearance select drives the theme through the owner (SPL-03, SPL-10, DD-164)", async () => {
@@ -274,6 +276,21 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         fixture.detectChanges();
 
         expect(TestBed.inject(SettingsService).telemetry()).toBe(false);
+    });
+
+    it("Search by offers Words, Meaning and Both, Words pressed; a click stores the mode (SBX-01)", async () => {
+        const { fixture, compiled } = await renderOpen();
+        const buttons = () => [...compiled.querySelectorAll<HTMLButtonElement>(".settings-search-mode button")];
+
+        expect(compiled.textContent).toContain("Search by");
+        expect(buttons().map((b) => b.textContent?.trim())).toEqual(["Words", "Meaning", "Both"]);
+        expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false", "false"]);
+
+        buttons()[1].click();
+        fixture.detectChanges();
+
+        expect(TestBed.inject(SettingsService).searchMode()).toBe("semantic");
+        expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true", "false"]);
     });
 
     it("About shows the build's one version (SPL-12, DD-165)", async () => {

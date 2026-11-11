@@ -2413,22 +2413,6 @@ The technical data governance model consists of the following types of entities:
         <source>closest matches</source>
         <note priority="1" from="description">Aurelius dictionary key: search.results.closestMatches</note>
       </trans-unit>
-      <trans-unit id="search.details.similar.title" datatype="html">
-        <source>Similar entities</source>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.title</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.notYet" datatype="html">
-        <source>This entity is not analysed yet. Try again in a moment.</source>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.notYet</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.none" datatype="html">
-        <source>No similar entities found.</source>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.none</note>
-      </trans-unit>
-      <trans-unit id="search.details.similar.failed" datatype="html">
-        <source>Similar entities could not be loaded.</source>
-        <note priority="1" from="description">Aurelius dictionary key: search.details.similar.failed</note>
-      </trans-unit>
     </body>
   </file>
 </xliff>
