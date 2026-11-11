@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "fix-11-5b-mode-in-settings",
+    "title": "fix-11-5b-mode-in-settings",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
