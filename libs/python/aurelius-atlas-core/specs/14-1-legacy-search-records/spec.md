@@ -1,7 +1,7 @@
 # 14.1 The legacy search documents: records and rules
 
 - **Status:** in progress
-- **Pull request:** to be opened
+- **Pull request:** [#320](https://github.com/aureliusenterprise/aurelius-atlas/pull/320)
 - **Records:** ADR 060 (Proposed); DD-484 to DD-486 (here); relies on ADR 047 (one store), ADR 054 (whose
   retirement of the App Search surface ADR 060 supersedes), ADR 059 (search by meaning), and 12.2 (the
   `m4i_dq_score` entities, DQS-01..10)
