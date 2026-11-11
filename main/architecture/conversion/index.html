@@ -7680,6 +7680,20 @@ checks a PR must pass:</p>
 <td>– (net-new)</td>
 <td>in progress</td>
 </tr>
+<tr>
+<td>13.1</td>
+<td>The Kafka cluster scanner</td>
+<td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the <code>dev/kafka</code> broker-and-Registry stack (KSC-01..10, DD-465..469)</td>
+<td>Aurelius <code>apps/m4i-data-dictionary-io</code> (<code>sources/kafka/</code>)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.2</td>
+<td>The Kafka scanner chart and schedule</td>
+<td>The Helm chart, the CronJob, the prod realm join, and the broker's machine identity decision</td>
+<td>none</td>
+<td>planned</td>
+</tr>
 </tbody>
 </table>
 <h2 id="after-phase-0">After phase 0<a class="headerlink" href="#after-phase-0" title="Permanent link">&para;</a></h2>
