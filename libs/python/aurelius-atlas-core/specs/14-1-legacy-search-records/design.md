@@ -8,7 +8,7 @@ is never edited except its status line, and a changed decision is a new entry th
 
 ### DD-484. The legacy engines' documents are the reference, copied unchanged, beside their catalogue
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Increment:** 14.1
 - **Date:** 2026-11-11
 - **Supersedes:** none
@@ -35,7 +35,7 @@ change and never brought up to date, so their values describe a catalogue that n
 
 ### DD-485. Where the legacy documents differ from the catalogue, the documents follow the catalogue
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Increment:** 14.1
 - **Date:** 2026-11-11
 - **Supersedes:** none
@@ -61,7 +61,7 @@ comparison with the fixture tolerates exactly the listed documents.
 
 ### DD-486. The rules are stated over the catalogue's state, not over the events that changed it
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Increment:** 14.1
 - **Date:** 2026-11-11
 - **Supersedes:** none
