@@ -113,8 +113,9 @@ export class EditorState {
      * `translate.instant(entityDef.name)` (`type-select.component.ts:116`);
      * the store ships no typedef `displayName`, so the label is the
      * `nameDisplay` of the name — raw for a type the dictionary never saw
-     * (DD-379). The order is the raw names' — the legacy sorts the type
-     * names before mapping the display label (`type-select.component.ts:31`).
+     * (DD-379). The order is the labels' (DD-484): a picker a person reads
+     * is a word list, so the rows sort by the text they show, not by the
+     * raw names the legacy sorted (`type-select.component.ts:31`).
      */
     readonly pickerTypes = computed<readonly PickerType[]>(() => {
         const rows: PickerType[] = [];
@@ -125,7 +126,7 @@ export class EditorState {
             }
             rows.push({ name, label: def.options?.["displayName"] ?? nameDisplay(name) });
         }
-        return rows.sort((a, b) => a.name.localeCompare(b.name));
+        return rows.sort((a, b) => a.label.localeCompare(b.label));
     });
 
     /**

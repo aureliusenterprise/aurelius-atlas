@@ -93,9 +93,11 @@
 }
 
 /* The threshold pair (EDT-32, DD-481): the slider and the percentage
-   field side by side, one row. The slider takes the free width, the
-   number keeps a fixed column wide enough for the typed percent; Bulma
-   carries the field's own look and the % icon's place. */
+   field side by side, one row inside the field's width — the pair never
+   reaches wider than the other controls. The slider takes the free
+   width; the percentage column is fixed at the three digits it holds
+   plus the % icon (Bulma's has-icons-right slot, is-right anchoring it
+   inside the input's right edge). */
 .aurelius-quality-threshold-pair {
     align-items: center;
     display: flex;
@@ -108,19 +110,35 @@
 }
 
 .aurelius-quality-threshold-pair .aurelius-quality-threshold-number {
-    flex: 0 0 7rem;
-    width: 7rem;
+    flex: 0 0 5.5rem;
+    width: 5.5rem;
 }
 
 .aurelius-quality-threshold-number .input {
     width: 100%;
 }
 
-/* The % sign inside the field (the has-icons-right slot): the reading
-   of the number, so it sits at the text's baseline colour. */
-.aurelius-quality-threshold-percent {
-    color: hsl(var(--bulma-text-h), var(--bulma-text-s), var(--bulma-text-l));
+/* The % sign inside the field (the has-icons-right slot): Bulma's icon
+   palette, restated at a specificity that holds here — greyed at rest,
+   Bulma's hover grey, and Bulma's focus colour while the field holds
+   focus, the behaviour every other icon control in the drawer has.
+   Bulma also sizes the slot to the bare input height and hangs it from
+   the control's top, which lifts the glyph a few pixels over the
+   input's text; the full control height centres the % on the text's
+   line. These selectors out-specify Bulma's
+   `.control.has-icons-right .icon`, whose height would otherwise win. */
+.control.aurelius-quality-threshold-number > .aurelius-quality-threshold-percent {
+    color: var(--bulma-input-icon-color);
     font-size: 0.875rem;
+    height: 100%;
+}
+
+.control.aurelius-quality-threshold-number:hover > .aurelius-quality-threshold-percent {
+    color: var(--bulma-input-icon-hover-color);
+}
+
+.control.aurelius-quality-threshold-number:focus-within > .aurelius-quality-threshold-percent {
+    color: var(--bulma-input-icon-focus-color);
 }
 
 /* Narrow viewports (DD-336's rule): the pair stacks, the number full

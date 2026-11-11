@@ -79,6 +79,9 @@ const TYPEDEFS: AtlasTypesDef = {
             ],
         },
         { name: "DataSet", superTypes: ["Asset"], attributeDefs: [] },
+        // The displayName option stands for an alias: DD-484 sorts the picker
+        // by the label shown, so this row lands under "B", not under "P".
+        { name: "Process", superTypes: ["Asset"], attributeDefs: [], options: { displayName: "Business Process" } },
         { name: "AtlasGlossary", attributeDefs: [] },
         { name: "__AtlasHauskeeping", attributeDefs: [] },
     ],
@@ -441,12 +444,14 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(select).toBeTruthy();
         const options = [...(select?.querySelectorAll("option") ?? [])].map((option) => option.textContent);
         // The placeholder row is the hidden option; the data rows are the
-        // picker list — DataSet/Asset/Referenceable, no AtlasGlossary, no __.
+        // picker list — no AtlasGlossary, no __ — ordered by the label shown
+        // (DD-484): "Business Process" sorts from its alias, not its raw name.
         const dataRows = [...(select?.querySelectorAll("option") ?? [])]
             .filter((option) => !option.hasAttribute("hidden"))
             .map((option) => option.textContent);
-        expect(dataRows).toEqual(["Asset", "DataSet", "Referenceable"]);
+        expect(dataRows).toEqual(["Asset", "Business Process", "DataSet", "Referenceable"]);
         expect(options).not.toContain("AtlasGlossary");
+        expect(options).not.toContain("Process");
         // The bare route (no type yet): the picker alone, no form (DD-330).
         expect(compiled.querySelector("form")).toBeNull();
     });

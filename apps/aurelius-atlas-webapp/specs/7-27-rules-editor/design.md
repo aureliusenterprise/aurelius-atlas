@@ -179,7 +179,10 @@ visible, in the unit a person reads: 100%.
 
 **Consequences.** The form's threshold row is the only side-by-side pair, so the drawer's
 spacing rule needed to reach across the quality component's boundary (the `+` sibling rule
-in the drawer's styles). Storybook and unit tests cover both drag and type paths.
+in the drawer's styles). The pair stays inside the field's width — the percentage column is
+fixed at the three digits plus the % icon, and the icon rides Bulma's `is-right` slot so it
+sits inside the input's edge rather than past it. Storybook and unit tests cover both drag
+and type paths.
 
 ### DD-482. A rule's page is a layout row with a Fields box
 
@@ -237,3 +240,33 @@ which is what every other box is.
 **Consequences.** The e2e creates its rule through the generic door and picks the field in
 the relationship picker by hand. If a future increment re-proposes a shortcut, it supersedes
 this entry rather than re-adding the button.
+
+### DD-484. The entity-type picker sorts by its localized label
+
+- **Status:** Proposed
+- **Increment:** 7.27
+- **Date:** 2026-11-11
+- **Supersedes:** none
+
+**Decision.** The editor's create-mode entity-type picker (7.7a's EDT-04) orders its rows by
+the label each row shows — the display alias else the dictionary display name — with
+`localeCompare`, not by the raw type name the legacy sorted (`type-select.component.ts:31`).
+The same rule 7.27 set for the rule-kind picker (DD-480): a picker a person reads is a word
+list. EDT-04 amended in place; the picker's exclusions and labels are unchanged.
+
+**Reason.** The legacy's raw-name order served the dictionary, not the reader: shipped names
+are snake_case codes (`adls_gen2_blob`) and dictionary aliases (`Business Process`), so a
+user hunting "Dataset" scans a list shuffled by underscore order. The label is what the row
+shows, so it is what the order must follow — the identical complaint review raised on the
+kind picker, answered the same way for the same reason.
+
+**Alternatives.**
+
+- Keep the raw-name sort. Honest to the legacy source, unhelpful on screen: the labels stop
+  reading as sorted the moment two types share a first letter and differ in case or alias.
+- Sort by name, collate ignoring case. Half a fix: an aliased type (`m4i_dataset` →
+  "Dataset") still lands under M.
+
+**Consequences.** The unit picker test gains an aliased def ("Business Process" for `Process`)
+so a name-order list and a label-order list differ, and the order is actually pinned. The
+e2e suite selects picker options by label, never by position, so it is unaffected.
