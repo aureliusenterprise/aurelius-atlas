@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "fix-e2e-flakes",
+    "title": "fix-e2e-flakes",
+    "aliases": []
+  },
+  {
     "version": "feat-kafka-scanner-13-1",
     "title": "feat-kafka-scanner-13-1",
     "aliases": []
