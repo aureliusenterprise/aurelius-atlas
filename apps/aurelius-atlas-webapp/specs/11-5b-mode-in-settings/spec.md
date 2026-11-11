@@ -1,7 +1,7 @@
 # 11.5b The search mode in the settings, no Similar entities box
 
 - **Status:** in progress
-- **Pull request:** to be opened
+- **Pull request:** [#316](https://github.com/aureliusenterprise/aurelius-atlas/pull/316)
 - **Records:** DD-473 and DD-474, superseding 11.5's DD-444 and DD-446; amends 11.5 (SBW-02, SBW-05, SBW-06,
   SBW-07); relies on 7.10 (the settings panel, SPL-08 to SPL-13, DD-160)
 
