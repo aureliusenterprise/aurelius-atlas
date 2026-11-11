@@ -48,7 +48,7 @@ export class Results {
     /** The count header's word ("results" / "resultaten", SRH-05). */
     protected readonly resultsWord = $localize`:@@search.results.results:results`;
 
-    /** The header's word by meaning: the entities shown are the closest, not a total (SBW-04, DD-445). */
+    /** The header's word by meaning: the entities shown are the closest, not a total (SBW-04, DD-479). */
     protected readonly closestWord = $localize`:@@search.results.closestMatches:closest matches`;
 
     /** The "Load next page..." label (SRH-04, UIC-21's caller-supplied string). */

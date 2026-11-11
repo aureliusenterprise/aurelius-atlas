@@ -36,7 +36,7 @@ const FACET_TITLES: Record<string, string> = {
     ServiceType: $localize`:@@search.components.filter.serviceType:Service Type`,
 };
 
-/** The most entities a search by meaning answers (DD-441, DD-445). */
+/** The most entities a search by meaning answers (DD-441, DD-479). */
 const MAX_NEAREST = 1000;
 
 /** The server's code for a server without search by meaning (SBM-06). */
@@ -115,10 +115,10 @@ export class SearchState {
      */
     readonly byMeaning = computed(() => this.mode() !== "words" && this.queryText().trim() !== "");
 
-    /** The header's count (SBW-04, DD-445): the entities shown by meaning, the server's count by words. */
+    /** The header's count (SBW-04, DD-479): the entities shown by meaning, the server's count by words. */
     readonly shownCount = computed(() => (this.byMeaning() ? this.entries().length : this.approximateCount()));
 
-    /** The last page came back full: by meaning, the sign there is more (SBW-04, DD-445). */
+    /** The last page came back full: by meaning, the sign there is more (SBW-04, DD-479). */
     private readonly lastPageFull = signal(true);
 
     /** A page is in flight — the container's spinner (SRH-04). */
@@ -186,7 +186,7 @@ export class SearchState {
     /**
      * Every entity of the search is listed (the legacy equality, SRH-04); by
      * meaning, once a page came back short or 1,000 are shown, as a search
-     * by meaning counts what it was asked for (SBW-04, DD-445).
+     * by meaning counts what it was asked for (SBW-04, DD-479).
      */
     readonly allLoaded = computed(() => {
         if (this.loading()) {

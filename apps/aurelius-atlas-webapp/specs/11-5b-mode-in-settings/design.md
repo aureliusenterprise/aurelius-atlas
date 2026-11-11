@@ -11,7 +11,7 @@ is never edited except its status line, and a changed decision is a new entry th
 - **Status:** Proposed
 - **Increment:** 11.5b
 - **Date:** 2026-11-11
-- **Supersedes:** DD-444 of 11.5
+- **Supersedes:** DD-478
 
 **Decision.** The settings panel chooses Words, Meaning or Both, in a Search by section after Language.
 `SearchModeService` stores the choice in the browser, as `PageSizeService` stores the page size, and the
@@ -25,8 +25,8 @@ nothing, and only a choice the user makes restarts the search.
 
 **Alternatives.**
 
-- The switch under the field (11.5's DD-444): a row of the hero for a choice made once.
-- A `?mode=` parameter: as DD-444 said, a URL that differs by how, not what, was searched for.
+- The switch under the field (DD-478): a row of the hero for a choice made once.
+- A `?mode=` parameter: as DD-478 said, a URL that differs by how, not what, was searched for.
 
 **Consequences.** A shared link opens in its reader's own mode. A server without search by meaning stores Words
 (SBW-06), so the panel and the results agree. Opening and closing a drawer keeps the URL's query
@@ -38,7 +38,7 @@ entity instead of the search whose mode changed.
 - **Status:** Proposed
 - **Increment:** 11.5b
 - **Date:** 2026-11-11
-- **Supersedes:** DD-446 of 11.5
+- **Supersedes:** DD-480
 
 **Decision.** The details page shows no Similar entities box; its component and its four labels are removed.
 `SearchByMeaningService.similar` and the server's `/entity/guid/{guid}/similar` stay.
