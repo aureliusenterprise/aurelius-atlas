@@ -112,7 +112,22 @@
                     {{ notificationLine }}
                 </div>
             }
-            @for (field of fields(); track field.name) {
+            <!-- The quality rule form (EDT-25, DD-477): for a vocabulary
+                 rule, the served vocabulary's kind form replaces the generic
+                 attribute list (EDT-27: the save stays the drawer's, the
+                 notification's place the child's). A legacy rule (no kind)
+                 and every other type keep the field set below (EDT-29). -->
+            @if (qualityMode()) {
+                <aurelius-atlas-webapp-quality-fields
+                    [entity]="state.entity()"
+                    [mode]="state.mode()"
+                    [saveAttempted]="saveAttempted()"
+                    [notificationDismissed]="notificationDismissed()"
+                    [loadingLabel]="loadingLine"
+                    (dismissed)="dismissNotification()"
+                ></aurelius-atlas-webapp-quality-fields>
+            }
+            @for (field of qualityMode() ? [] : fields(); track field.name) {
                 <div class="field aurelius-editor-field" [attr.data-field]="field.name">
                     @if (field.kind === "boolean") {
                         <!-- Bulma's checkbox anatomy (EDT-03): the label wraps
@@ -231,8 +246,11 @@
                  supertypes, after the plain attributes and before the
                  classification box. Each is the classification box's anatomy
                  around the attribute search; the chips carry the target
-                 entity's type as their lead (the term chip's pattern, DD-341). -->
-            @for (field of relationshipFields(); track field.name) {
+                 entity's type as their lead (the term chip's pattern, DD-341).
+                 Quality mode renders the rule's `fields` end only (EDT-25):
+                 the derived typedefs also carry the inherited lineage ends,
+                 which the rule form does not edit. -->
+            @for (field of renderedRelationshipFields(); track field.name) {
                 <div class="field aurelius-editor-field aurelius-editor-relationship" [attr.data-field]="field.name">
                     <p class="label" [id]="'editor-relationship-' + field.name + '-label'">
                         {{ field.label }}

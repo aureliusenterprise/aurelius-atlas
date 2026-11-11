@@ -28,6 +28,8 @@ from aurelius_atlas_quality.governance import (
 from aurelius_atlas_quality.rule import (
     CASTABLE_TYPES,
     KINDS,
+    THRESHOLD_MAX,
+    THRESHOLD_MIN,
     CheckKind,
     Dimension,
     DqRule,
@@ -44,6 +46,8 @@ __all__ = [
     "KINDS",
     "RULE_TYPE_NAME",
     "SCORE_TYPE_NAME",
+    "THRESHOLD_MAX",
+    "THRESHOLD_MIN",
     "CheckKind",
     "Dimension",
     "DimensionScore",
