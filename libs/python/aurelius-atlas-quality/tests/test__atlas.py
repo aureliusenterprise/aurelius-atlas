@@ -7,10 +7,12 @@ from aurelius_atlas_quality import (
     CheckKind,
     Dimension,
     DqRule,
+    GovCheckKind,
     QualityRuleError,
     evaluate_rules,
     result_documents,
     rule_from_atlas_attributes,
+    rule_from_gov_attributes,
     summarise,
 )
 
@@ -152,3 +154,55 @@ def test__an_unscored_rule_writes_nothing() -> None:
     results = evaluate_rules(rules, pl.DataFrame({"a": []}))
     documents = result_documents(results, summarise(results), dataset_guid="ds-1", run_id="r-1", run_at_ms=1)
     assert documents == []
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07"])
+def test__a_gov_rule_reads_from_its_dq_attributes_and_its_messages() -> None:
+    """A stored governance rule of the vocabulary reads bare or raw-wrapped, with both messages."""
+    rule = rule_from_gov_attributes(
+        {
+            "guid": "gv-1",
+            "name": {"raw": "Data domain has a name"},
+            "qualityDimension": {"raw": "completeness"},
+            "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
+            "dqattribute": "name",
+            "compliantMessage": "This data domain has a name",
+            "noncompliantMessage": "This data domain should have a name",
+        }
+    )
+    assert rule.guid == "gv-1"
+    assert rule.name == "Data domain has a name"
+    assert rule.kind is GovCheckKind.ATTRIBUTE_NOT_EMPTY
+    assert rule.dimension is Dimension.COMPLETENESS  # the corpus's lowercase dimension reads upper
+    assert (rule.attribute, rule.any_of) == ("name", ())
+    assert rule.compliant_message == "This data domain has a name"
+    assert rule.non_compliant_message == "This data domain should have a name"
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07"])
+def test__a_gov_rule_reads_its_any_of_list_and_the_camel_message_spelling() -> None:
+    """The one OR pair of the corpus reads, and the webapp's camelCase spelling works too."""
+    rule = rule_from_gov_attributes(
+        {
+            "name": "domain or parent",
+            "dqcheckkind": "ATTRIBUTE_PRESENT",
+            "dqattribute": "dataDomain",
+            "dqanyOf": ["parentEntity"],
+            "nonCompliantMessage": "This entity needs a data domain or a parent entity",
+        }
+    )
+    assert rule.any_of == ("parentEntity",)
+    assert rule.non_compliant_message == "This entity needs a data domain or a parent entity"
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07"])
+def test__a_stored_expression_rule_raises_and_never_reads_its_expression() -> None:
+    """The legacy rule carries an expression and no dqcheckkind: the error names re-authoring (DV-146)."""
+    with pytest.raises(QualityRuleError, match="re-authoring"):
+        rule_from_gov_attributes(
+            {
+                "name": "legacy domain",
+                "expression": "length('dataDomain', 1) | length('parentEntity', 1)",
+                "qualityDimension": "completeness",
+            }
+        )

@@ -1,19 +1,25 @@
-"""The Atlas glue: rules read from ``m4i_data_quality`` entities, results written as score documents.
+"""The Atlas glue: rules read from stored entities, results written as score documents.
 
-This module converts; it holds no I/O. :func:`rule_from_atlas_attributes` reads a stored rule's
-attributes into a :class:`~aurelius_atlas_quality.rule.DqRule`, and :func:`result_documents` renders a
-run's results as the documents a scanner writes to the store (DQ-07, DQ-08).
+This module converts; it holds no I/O. :func:`rule_from_atlas_attributes` reads a stored
+``m4i_data_quality`` rule's attributes into a :class:`~aurelius_atlas_quality.rule.DqRule`,
+:func:`rule_from_gov_attributes` reads a stored ``m4i_gov_data_quality`` rule's attributes into a
+:class:`~aurelius_atlas_quality.governance.GovRule`, and :func:`result_documents` renders a run's
+results as the documents a scanner writes to the store (DQ-07, DQ-08, GQ-07).
 """
 
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 from aurelius_atlas_quality.evaluate import RuleResult
+from aurelius_atlas_quality.governance import GovRule
 from aurelius_atlas_quality.rule import CheckKind, DqRule, QualityRuleError
 from aurelius_atlas_quality.score import QualitySummary
 
 RULE_TYPE_NAME = "m4i_data_quality"
 """The Atlas entity type that carries a data-quality rule."""
+
+GOV_RULE_TYPE_NAME = "m4i_gov_data_quality"
+"""The Atlas entity type that carries a governance-quality rule (GQ-07)."""
 
 SCORE_TYPE_NAME = "m4i_dq_score"
 """The document type a scanner writes for one rule's score over one dataset."""
@@ -96,6 +102,46 @@ def _parse(plain: Mapping[str, Any], kind: str, params: Mapping[str, Any]) -> Dq
             "dimension": plain.get("dataqualityruledimension"),
             "params": {k: v for k, v in params.items() if v is not None},
             "threshold": plain.get("threshold", 1.0),
+        }
+    )
+
+
+_GOV_NO_KIND_ERROR = "the rule names no 'dqcheckkind': a stored expression rule needs re-authoring (DV-146)"
+
+
+def rule_from_gov_attributes(attributes: Mapping[str, Any]) -> GovRule:
+    """Build a governance rule from the attributes of an ``m4i_gov_data_quality`` entity (GQ-07).
+
+    ``attributes`` may carry the entity's ``guid``; it travels onto the rule. The rule reads under the
+    vocabulary names — ``dqcheckkind``, ``dqattribute``, ``dqanyOf`` — plus ``name``,
+    ``qualityDimension``, and the rule's messages: ``compliantMessage`` and ``nonCompliantMessage``,
+    the corpus's lowercase ``noncompliantMessage`` spelling read as the fallback. Each value is read
+    bare or as the webapp's ``{"raw": ...}`` wrapper.
+
+    A rule with no ``dqcheckkind`` — a stored expression rule, the legacy shape — raises: the caller
+    records it, nothing executes it (DV-146). The legacy ``expression`` is never read.
+
+    Raises:
+        aurelius_atlas_quality.rule.QualityRuleError: the entity names no kind of the governance
+            vocabulary, or a parameter is missing or malformed (GQ-02).
+    """
+    plain = {key: _raw(value) for key, value in attributes.items()}
+    kind = plain.get("dqcheckkind")
+    if not kind:
+        raise QualityRuleError(_GOV_NO_KIND_ERROR)
+    any_of = plain.get("dqanyOf")
+    return GovRule.from_json(
+        {
+            "guid": plain.get("guid"),
+            "name": plain.get("name", ""),
+            "checkKind": kind,
+            "dimension": plain.get("qualityDimension"),
+            "params": {
+                "attribute": plain.get("dqattribute"),
+                **({"anyOf": any_of} if any_of is not None else {}),
+            },
+            "compliantMessage": plain.get("compliantMessage"),
+            "nonCompliantMessage": plain.get("nonCompliantMessage") or plain.get("noncompliantMessage"),
         }
     )
 

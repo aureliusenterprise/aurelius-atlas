@@ -1,0 +1,47 @@
+{
+    "patches": [
+        {
+            "action": "ADD_ATTRIBUTE",
+            "applyToVersion": "1.0",
+            "attributeDefs": [
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The check kind of the governance rule, from the closed vocabulary of the quality engine (GQ-01).",
+                    "displayName": "Check Kind",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqcheckkind",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SINGLE",
+                    "description": "The entity attribute a governance check measures.",
+                    "displayName": "Attribute",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqattribute",
+                    "searchWeight": 1,
+                    "typeName": "string"
+                },
+                {
+                    "cardinality": "SET",
+                    "description": "The further attributes one of which may satisfy the check, the legacy OR pair (GQ-06).",
+                    "displayName": "Any Of",
+                    "isIndexable": true,
+                    "isOptional": true,
+                    "isUnique": false,
+                    "name": "dqanyOf",
+                    "searchWeight": 1,
+                    "typeName": "array<string>"
+                }
+            ],
+            "description": "Add the closed-vocabulary rule attributes to m4i_gov_data_quality: a stored governance rule names its check kind and attributes as data (12.6, DD-490).",
+            "id": "TYPEDEF_PATCH_M4I_0011_002",
+            "typeName": "m4i_gov_data_quality",
+            "updateToVersion": "1.1"
+        }
+    ]
+}
