@@ -1,7 +1,7 @@
 # 14.2 The derived documents
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#322](https://github.com/aureliusenterprise/aurelius-atlas/pull/322)
 - **Records:** DD-498 to DD-501 (here); relies on ADR 060, 14.1 (LAS-01 to LAS-06, DD-484 to DD-486), and 11.3's
   whole-document writes (DD-434, DD-436)
 
