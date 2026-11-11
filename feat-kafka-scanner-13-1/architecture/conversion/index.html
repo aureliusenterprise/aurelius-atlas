@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -7614,6 +7643,41 @@ checks a PR must pass:</p>
 <td>Search by meaning in the webapp</td>
 <td>The hero's Words, Meaning and Both switch, the session's choice; the results store's searches by meaning, their paging and their errors; the Similar entities box of every details page; <code>SearchByMeaningService</code> in the data-access library (SBW-01..08, DD-444..447)</td>
 <td>none</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.1</td>
+<td>The data quality engine</td>
+<td><code>libs/python/aurelius-atlas-quality</code>: a rule is data — one of ten check kinds over a polars frame, with its dimension, parameters, and threshold; the row mask, score, verdict, and rejected rows of a rule; the per-dimension and overall rollup; the stored <code>m4i_data_quality</code> entity read as a rule and the run rendered as score documents (DQ-01..08, DD-450..454, DV-146)</td>
+<td>none (the legacy Flink <code>dqscore_*</code> job, not ported)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.2</td>
+<td>The batch quality scanner</td>
+<td><code>apps/aurelius-atlas-quality-scanner</code>: the job around the engine — the ACTIVE <code>m4i_data_quality</code> rules read by paged search, their datasets reached through the <code>fields</code> end, each extract read through the file reader, scores stored in place as <code>m4i_dq_score</code> entities under the job's own service identity; the <code>m4i_dq_score</code> type joins the m4i models (DQS-01..10, DD-455..461, DV-146)</td>
+<td>none (the legacy Flink <code>dqscore_*</code> job, not ported)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.3</td>
+<td>The scanner chart and schedule</td>
+<td>The Helm chart and CronJob schedule for the batch scanner, the <code>quality-scanner</code> prod realm join, and its token audience. Cited by 12.2 (DD-458, DD-459)</td>
+<td>none (the batch image ships for it)</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>12.4</td>
+<td>Source readers (umbrella)</td>
+<td>The contract every scanner source reader obeys: the scan keeps reading through the reader seam, the operator configuration names every source, a refusal skips its dataset, a credential stays a secret, the reader cuts its own row budget, and each suite proves one real scan against a disposable instance of its source (DQS-11..16, DD-459, DV-146). The choice of database stays open; the first source lands with its own answers</td>
+<td>– (net-new)</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>12.4a</td>
+<td>The source envelope</td>
+<td>The first step of 12.4: <code>SOURCES</code> is a list of sources, each naming its dataset (qualified name or guid), its reader kind, and its config — <code>{"dataset": {"guid": …}, "kind": "file", "config": {"path": …}}</code> — and a <code>SourceRouter</code> sends each dataset to the reader of its kind, guid first (DQS-17..20, DD-462..464). The file reader's behaviour and pairs stand unchanged; no second reader lands here</td>
+<td>– (net-new)</td>
 <td>in progress</td>
 </tr>
 <tr>
