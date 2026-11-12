@@ -7763,26 +7763,26 @@ checks a PR must pass:</p>
 <td>The legacy search documents: records and rules</td>
 <td>ADR 060; the original Aurelius Atlas's three App Search engines for the sample catalogue as fixtures; the rules of their documents, over the catalogue's state, and the differences of the fixtures from it (LAS-01..13, DD-484..486)</td>
 <td>Aurelius <code>m4i-flink-tasks</code> (<code>synchronize_app_search</code>, <code>get_rules</code>), <code>m4i-atlas-post-install</code> (<code>propagate_quality</code>, <code>connect_datasets_with_entities</code>)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>14.2</td>
 <td>The derived documents</td>
-<td>Breadcrumbs, derived relations, source type and the never-filled fields on the entity documents, for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..07)</td>
-<td><code>synchronize_app_search/event_handlers/entity_created</code></td>
-<td>planned</td>
+<td>Each entity's own fields, breadcrumb and derived relations on its entity document, derived by an indexer; for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..06, ASD-01..05, DD-498..501)</td>
+<td><code>synchronize_app_search/event_handlers/entity_created</code>, <code>connect_datasets_with_entities</code></td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>14.3</td>
 <td>The derived documents kept up to date</td>
-<td>Server tasks that recompute the documents a change affects: names, definitions, deletes, relations (LAS-08..10, DD-486)</td>
+<td>Server tasks that recompute the documents a change affects: names, definitions, deletes, relations; the worker that runs the indexer (LAS-08..10, DD-486)</td>
 <td><code>synchronize_app_search/event_handlers/{attribute_changed,entity_deleted,relationship_audit}</code></td>
 <td>planned</td>
 </tr>
 <tr>
 <td>14.4</td>
 <td>The App Search API: <code>/elastic</code></td>
-<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does (ADR 060)</td>
+<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does, with the engine's fields that are the entity's or constants (ADR 060, LAS-07)</td>
 <td>Aurelius <code>libs/atlas/api/src/lib/elastic</code></td>
 <td>planned</td>
 </tr>

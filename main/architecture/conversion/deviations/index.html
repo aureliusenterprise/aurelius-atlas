@@ -7487,12 +7487,36 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>7.27</td>
 </tr>
 <tr>
+<td>DV-149</td>
+<td>App Search</td>
+<td>The legacy <code>atlas-dev</code> documents gave every <code>m4i_generic_process</code> its GUID as qualified name, left 86 business entities without the definition they have, and named one governance rule by an older qualified name, its title and a definition it has not</td>
+<td>Each document carries the entity's current <code>name</code>, <code>qualifiedName</code> and <code>definition</code>, falling back as LAS-02 states only where the entity has none</td>
+<td>The legacy values are a fallback for a model without a process qualified name and events lost or applied out of order (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
 <td>DV-150</td>
 <td>DB scanning</td>
 <td>A relational database's tables and columns reach the catalogue only through hook messages a registered application pushes (<code>classic_jdbc_*</code>, <code>dataset_db</code>); no job ever read a live database</td>
 <td><code>aurelius-atlas-db-scanner</code> reflects the live database through SQLAlchemy and registers the m4i tree (the System, a Collection per schema, a Dataset per table, a Field per column) plus one Process per foreign-key column pair, in one bulk write as its own service identity (DBS-01..12). The starting script's JSON-to-documents-folder handoff is not delivered: no file-based reader pipeline exists here</td>
 <td>A hook install is why the legacy database registration went unused, and reflection names no vendor (DBS-01); the file handoff belongs to another product's pipeline</td>
 <td>13.3</td>
+</tr>
+<tr>
+<td>DV-151</td>
+<td>App Search</td>
+<td>Two legacy datasets with two parent datasets sit under the second in their breadcrumbs</td>
+<td>A breadcrumb follows the first active parent in the type's parents' order (LAS-04)</td>
+<td>The legacy took the first element of a set, whichever arrived first (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-152</td>
+<td>App Search</td>
+<td>Five legacy datasets lack 18 relations (to fields and processes) that the documents at their other ends list</td>
+<td>Every active relationship between two mapped entities is listed at both its ends (LAS-05)</td>
+<td>The legacy lost the events that would have listed them (DD-485)</td>
+<td>14.2</td>
 </tr>
 </tbody>
 </table>
