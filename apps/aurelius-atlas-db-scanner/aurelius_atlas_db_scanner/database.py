@@ -15,7 +15,8 @@ database with the password scrubbed by SQLAlchemy's own rendering (DBS-02, DD-50
 
 import logging
 import re
-from typing import Protocol, cast
+from types import TracebackType
+from typing import Protocol, Self, cast
 
 from sqlalchemy import create_engine, inspect
 from sqlalchemy.engine import Engine, make_url
@@ -138,6 +139,10 @@ class SqlDatabase:
     The connect timeout is the settings' (DBS-02), handed to the driver as the connect argument
     its dialect accepts; a dialect that names none is left to its driver's default rather than
     guessed at. One DSN per door, one database per run (DD-503).
+
+    The door is a context manager: ``with SqlDatabase(dsn, ...) as door:`` opens it (the
+    DBS-02 connect proof runs there) and disposes of the pool on the way out, whatever the
+    body did.
     """
 
     def __init__(self, dsn: str, *, connect_timeout_seconds: float) -> None:
@@ -178,6 +183,24 @@ class SqlDatabase:
         if self._engine is not None:
             self._engine.dispose()
             self._engine = None
+
+    def __enter__(self) -> Self:
+        """Open the door for a ``with`` block: the connect proof runs here (DBS-02).
+
+        Raises:
+            DatabaseUnreachableError: the database answered nothing; the block never runs.
+        """
+        self.open()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        tb: TracebackType | None,
+    ) -> None:
+        """Close the door on the way out of the block, whatever the body did."""
+        self.close()
 
     def schema_names(self, patterns: list[re.Pattern[str]]) -> list[str | None]:
         """The admitted schemas (DBS-04): system set out, patterns applied, un-introspectable skipped."""

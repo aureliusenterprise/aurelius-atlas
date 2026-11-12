@@ -96,20 +96,17 @@ async def _scan(settings: ScannerSettings) -> int:
         settings.dsn.get_secret_value(),
         connect_timeout_seconds=settings.connect_timeout_seconds,
     )
-    door.open()  # A database that answers nothing raises here: the run fails naming host and database (DBS-02).
-    client, http = build_client(settings)
-    try:
-        report = await run_scan(
-            door,
-            client.entity,
-            settings,
-            schema_filter=settings.schema,
-            table_filter=settings.table,
-            dry_run=settings.dry_run,
-        )
-    finally:
-        door.close()
-        await http.aclose()
+    with door:  # The connect proof runs at the with (DBS-02): a silent database fails the run here.
+        client, http = build_client(settings)
+        async with http:  # The pool closes on the way out, whatever the scan did.
+            report = await run_scan(
+                door,
+                client.entity,
+                settings,
+                schema_filter=settings.schema,
+                table_filter=settings.table,
+                dry_run=settings.dry_run,
+            )
     for notice in report.notices:
         print(notice)  # noqa: T201 - command output
     if settings.dry_run:
