@@ -1,8 +1,9 @@
-"""The ``atlas-dev`` engine over the entity index (ASE-03 to ASE-11, DD-523 to DD-525), on the fake client.
+"""The ``atlas-dev`` engine over the entity index (ASE-03 to ASE-11, DD-523 to DD-525), and the quality and
+governance engines (ASQ-02 to ASQ-06, ASG-05), on the fake client.
 
 Small sets of entity documents written for one test show each rule; the sample catalogue, imported and indexed
 once, answers the webapp's search page as ``atlas-dev`` did.
-"""
+"""  # noqa: D205 - one sentence
 
 import asyncio
 import json
@@ -15,8 +16,10 @@ import pytest
 from aurelius_atlas_core.app_search_document import own_document
 from aurelius_atlas_core.app_search_engine import (
     ATLAS_DEV,
+    ATLAS_DEV_GOV_QUALITY,
     ATLAS_DEV_QUALITY,
     FIELDS,
+    GOV_QUALITY_FIELDS,
     QUALITY_FIELDS,
     AppSearchEngine,
     AppSearchError,
@@ -541,3 +544,126 @@ def test__a_details_card_s_filter_finds_what_atlas_dev_held() -> None:
 
     assert expected
     assert guids(answer) == expected
+
+
+def verdict(entity: str, rule: str, compliant: str, **fields: str) -> dict[str, Any]:
+    """The verdict of ``rule`` on ``entity``, named ``Rule <rule>``, of the completeness dimension unless given."""
+    pair = f"{entity}--{rule}"
+    return {
+        "id": pair,
+        "qualifiedname": pair,
+        "guid": rule,
+        "qualityqualifiedname": f"m4i_dataset--{rule}",
+        "name": f"Rule {rule}",
+        "expression": f"completeness('{rule}')",
+        "dataqualitytype": "attribute",
+        "dataqualityruledescription": f"About {rule}",
+        "dataqualityruledimension": "completeness",
+        "noncompliant_message": f"Misses {rule}",
+        "usedattributes": [rule],
+        "dataqualityruletypename": "m4i_dataset",
+        "entity_guid": entity,
+        "compliant": compliant,
+        "result_id": "0",
+        "business_rule_id": "1",
+    } | fields
+
+
+async def gov_engine(*verdicts: dict[str, Any]) -> AppSearchEngine:
+    """``atlas-dev-gov-quality`` over the verdicts, written to a fake store."""
+    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    await documents.prepare()
+    by_entity: dict[str, list[dict[str, Any]]] = {}
+    for found in verdicts:
+        by_entity.setdefault(found["entity_guid"], []).append(found)
+    await documents.replace_verdicts(by_entity)
+    return AppSearchEngine(documents, ATLAS_DEV_GOV_QUALITY)
+
+
+@pytest.mark.covers(f"{E}._gov_quality_fields", rules=["ASG-03", "ASG-05", "LAS-13"])
+def test__the_governance_engine_s_fields_are_the_legacy_schema_s() -> None:
+    """Every field of the legacy verdicts and the schema's two never filled, all text."""
+    legacy_verdicts = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
+
+    assert set(GOV_QUALITY_FIELDS) == {*legacy_verdicts[0], "result", "doc_guid"}
+    assert all(field.kind is Kind.TEXT for field in GOV_QUALITY_FIELDS.values())
+    assert GOV_QUALITY_FIELDS["result"].constant is GOV_QUALITY_FIELDS["doc_guid"].constant is None
+
+
+@pytest.mark.covers(X, rules=["ASG-05"])
+async def test__the_details_page_s_requests_answer_the_entity_s_verdicts() -> None:
+    """The cards: a page of 9 by ``entity_guid``, faceted on dimension and type, sorted by each option; the list:
+    its missed rules with their messages; a word of a rule's name; ``id`` the pair.
+    """  # noqa: D205 - one sentence
+    engine = await gov_engine(
+        verdict("e", "named", "1"),
+        verdict("e", "owned", "0", dataqualitytype="relationship"),
+        verdict("e", "defined", "0"),
+        verdict("other", "named", "0"),
+    )
+    cards = {
+        "query": "",
+        "facets": {
+            "dataqualityruledimension": {"type": "value", "size": 100},
+            "dataqualitytype": {"type": "value", "size": 100},
+        },
+        "page": {"current": 1, "size": 9},
+        "filters": {"all": [{"entity_guid": ["e"]}]},
+    }
+    listed = {
+        "result_fields": {name: {"raw": {}} for name in ("entity_guid", "guid", "compliant", "noncompliant_message")},
+        "facets": {"guid": {"type": "value", "size": 100}},
+        "page": {"current": 1, "size": 100},
+        "query": "",
+        "filters": {"all": [{"entity_guid": ["e"]}, {"compliant": ["0"]}]},
+    }
+
+    by_name = await engine.search(cards | {"sort": {"name": "asc"}})
+    by_compliant = await engine.search(cards | {"sort": [{"compliant": "desc"}, {"name": "desc"}]})
+    missed = await engine.search(listed | {"sort": {"name": "asc"}})
+    by_word = await engine.search({"query": "owned"})
+
+    assert guids(by_name) == ["e--defined", "e--named", "e--owned"]
+    assert guids(by_compliant) == ["e--named", "e--owned", "e--defined"]
+    assert by_name["facets"] == {
+        "dataqualityruledimension": [{"type": "value", "data": [{"value": "completeness", "count": 3}]}],
+        "dataqualitytype": [
+            {"type": "value", "data": [{"value": "attribute", "count": 2}, {"value": "relationship", "count": 1}]}
+        ],
+    }
+    assert [(found["guid"]["raw"], found["noncompliant_message"]["raw"]) for found in missed["results"]] == [
+        ("defined", "Misses defined"),
+        ("owned", "Misses owned"),
+    ]
+    assert guids(by_word) == ["e--owned"]
+    assert by_name["results"][0]["_meta"] | {"score": 0} == {
+        "id": "e--defined",
+        "engine": "atlas-dev-gov-quality",
+        "score": 0,
+    }
+
+
+@pytest.mark.covers(X, rules=["ASG-05"])
+async def test__a_rule_page_s_requests_answer_the_entities_that_meet_and_miss_it() -> None:
+    """The rule's verdicts by ``guid`` and ``compliant``, ``entity_guid`` read, pages of 1,000; their totals."""
+    engine = await gov_engine(
+        *(verdict(f"m{index}", "named", "1") for index in range(3)),
+        verdict("x", "named", "0"),
+        verdict("m0", "owned", "0"),
+    )
+
+    def tab(compliant: str) -> dict[str, Any]:
+        return {
+            "facets": {"guid": {"type": "value", "size": 250}},
+            "page": {"current": 1, "size": 1000},
+            "query": "",
+            "result_fields": {"entity_guid": {"raw": {}}},
+            "filters": {"all": [{"compliant": [compliant]}, {"guid": ["named"]}]},
+        }
+
+    met, missed = await engine.search(tab("1")), await engine.search(tab("0"))
+
+    assert sorted(found["entity_guid"]["raw"] for found in met["results"]) == ["m0", "m1", "m2"]
+    assert [found["entity_guid"]["raw"] for found in missed["results"]] == ["x"]
+    assert (met["meta"]["page"]["total_results"], missed["meta"]["page"]["total_results"]) == (3, 1)
+    assert met["facets"]["guid"] == [{"type": "value", "data": [{"value": "named", "count": 3}]}]

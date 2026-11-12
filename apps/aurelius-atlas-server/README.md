@@ -10,26 +10,26 @@ Atlas resource. What is ported, and how, is tracked in the
 
 ## Endpoints
 
-| Endpoint                          | Answers                                                               |
-| --------------------------------- | --------------------------------------------------------------------- |
-| `GET /api/atlas/admin/version`    | Name, release and revision of the server                              |
-| `GET /api/atlas/admin/status`     | `{"Status": "ACTIVE"}` while the server runs                          |
-| `GET /api/atlas/admin/session`    | The dashboard's settings and the signed-in user                       |
-| `GET /api/atlas/admin/liveness`   | `Service is live` while the server runs                               |
-| `GET /api/atlas/admin/readiness`  | `Service is ready to accept requests` while Elasticsearch is healthy  |
-| `/api/atlas/v2/types/...`         | The type definitions: read, search, create, update and delete         |
-| `GET /api/atlas/v2/entity/...`    | Entities and their headers by GUID or unique attributes, one or many  |
-| `POST`/`PUT /api/atlas/v2/entity` | Entities created or updated, in bulk, by unique attributes or by GUID |
-| `DELETE /api/atlas/v2/entity/...` | Entities deleted by GUID, in bulk or by unique attributes             |
-| `PUT /api/atlas/admin/purge`      | Deleted entities removed for good                                     |
-| `/api/atlas/v2/search/basic`      | Entities by type, attribute filters, sort and paging                  |
-| `/api/atlas/v2/search/fulltext`   | Entities by free text, best first, with their scores                  |
-| `/api/atlas/v2/search/quick`      | Entities by a query as a prefix, with facets; and term suggestions    |
-| `GET /api/atlas/v2/search/dsl`    | Entities, or an attribute table, of a DSL query                       |
-| `/api/atlas/v2/search/saved/...`  | The user's saved searches: save, read, rename, run and delete         |
-| `/api/atlas/v2/lineage/...`       | A data set's or process's lineage, by GUID or unique attributes       |
-| `/api/atlas/v2/glossary/...`      | Glossaries, categories and terms: CRUD; terms assigned to entities    |
-| `POST /api/as/v1/engines/...`     | The original webapp's App Search searches of `atlas-dev`              |
+| Endpoint                          | Answers                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `GET /api/atlas/admin/version`    | Name, release and revision of the server                                 |
+| `GET /api/atlas/admin/status`     | `{"Status": "ACTIVE"}` while the server runs                             |
+| `GET /api/atlas/admin/session`    | The dashboard's settings and the signed-in user                          |
+| `GET /api/atlas/admin/liveness`   | `Service is live` while the server runs                                  |
+| `GET /api/atlas/admin/readiness`  | `Service is ready to accept requests` while Elasticsearch is healthy     |
+| `/api/atlas/v2/types/...`         | The type definitions: read, search, create, update and delete            |
+| `GET /api/atlas/v2/entity/...`    | Entities and their headers by GUID or unique attributes, one or many     |
+| `POST`/`PUT /api/atlas/v2/entity` | Entities created or updated, in bulk, by unique attributes or by GUID    |
+| `DELETE /api/atlas/v2/entity/...` | Entities deleted by GUID, in bulk or by unique attributes                |
+| `PUT /api/atlas/admin/purge`      | Deleted entities removed for good                                        |
+| `/api/atlas/v2/search/basic`      | Entities by type, attribute filters, sort and paging                     |
+| `/api/atlas/v2/search/fulltext`   | Entities by free text, best first, with their scores                     |
+| `/api/atlas/v2/search/quick`      | Entities by a query as a prefix, with facets; and term suggestions       |
+| `GET /api/atlas/v2/search/dsl`    | Entities, or an attribute table, of a DSL query                          |
+| `/api/atlas/v2/search/saved/...`  | The user's saved searches: save, read, rename, run and delete            |
+| `/api/atlas/v2/lineage/...`       | A data set's or process's lineage, by GUID or unique attributes          |
+| `/api/atlas/v2/glossary/...`      | Glossaries, categories and terms: CRUD; terms assigned to entities       |
+| `POST /api/as/v1/engines/...`     | The original webapp's App Search searches: entities, quality, governance |
 
 ## Dashboards
 
@@ -147,7 +147,20 @@ ProxyPass "https://atlas-server:21000/api/as/v1/engines/atlas-dev-quality/search
 ```
 
 The App Search worker derives the results, and the score totals of `atlas-dev`'s documents, again each round
-after the documents (ASQ-07, DD-529). `atlas-dev-gov-quality` answers 404 until 14.6.
+after the documents (ASQ-07, DD-529).
+
+`atlas-dev-gov-quality` answers the governance cards and lists the same way (14.6): one verdict per governance
+rule (`m4i_gov_data_quality`) and active entity of the type its qualified name starts with, met or missed. A rule
+of 12.6's vocabulary is judged, and so is a stored expression of the two legacy forms, `completeness('<name>')`
+and `length('<name>', 1)`, joined by `|` or not; any other expression is not. The worker judges an entity again
+when its attributes, its relationships or its type's rules change (ASG-06, DD-535). Its `<base>/gov_quality`
+goes to that engine:
+
+```apache
+<Location /atlas/gov_quality>
+ProxyPass "https://atlas-server:21000/api/as/v1/engines/atlas-dev-gov-quality/search.json"
+</Location>
+```
 
 ## Lineage
 

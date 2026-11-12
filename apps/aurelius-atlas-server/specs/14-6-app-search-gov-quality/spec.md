@@ -16,6 +16,8 @@ the rule corpus uses (`atlas.py`). In `aurelius-atlas-core`:
 
 - the verdict of each rule for each entity of its type, judged again when the entity's document or the type's
   rules change (`app_search_governance.py`);
+- the marks of an entity judged, dropped by a write that changes what its verdicts read, and the verdicts'
+  mapping (`app_search_document.py`);
 - the engine as its documents and fields (`app_search_engine.py`);
 - the verdicts' index, and the listing of the entities to judge (`entity_documents.py`).
 
@@ -27,7 +29,7 @@ Not delivered, with the increment that will:
 | Not delivered                                                                     | Lands with |
 | --------------------------------------------------------------------------------- | ---------- |
 | A deployment's route from the original webapp's `gov_quality` to this endpoint    | none       |
-| The rules of another expression, such as the sample's 47 `conditional_value(...)` | none       |
+| The rules of another expression, such as the sample's 46 `conditional_value(...)` | none       |
 | A verdict over a draft: 12.7's `validate-entity` answers the editor's banner      | 12.7       |
 
 The first row is the operator's, as 14.4's `elastic`; the server's README shows the route. The rules of the second
@@ -67,7 +69,7 @@ The documents of `atlas-dev-gov-quality`, one per rule and entity it judges (LAS
 | ASG-03 | `atlas-dev-gov-quality` holds one document per rule and entity it judges, with the fields of the table above. A rule that is unread, inactive or deleted, or is for a type without such an entity, has none                                                                                                                                                                                                  |
 | ASG-04 | The verdict is the rule's check (GQ-04 to GQ-06) over the entity as its read answers it: a name its type has as a relationship attribute reads the other ends of the entity's active relationships under it, a list or one end; any other name reads its attribute (DD-536)                                                                                                                                  |
 | ASG-05 | `atlas-dev-gov-quality` answers its requests as `atlas-dev` does (ASE-04 to ASE-11), over its own fields, with `meta.engine.name` and `_meta.engine` its name. Its fields are all text, as the legacy schema's                                                                                                                                                                                               |
-| ASG-06 | Each round of the App Search worker, after the documents and the quality round, judges again each entity whose document was derived again, or whose type's rules changed, since it was judged, and writes its verdicts in place of those it had. An entity no longer judged loses its verdicts, a purged entity among them (DD-535)                                                                          |
+| ASG-06 | Each round of the App Search worker, after the documents and the quality round, judges again each entity whose attributes or relationships changed, or whose type's rules did, since it was judged, and writes its verdicts in place of those it had. An entity no longer judged loses its verdicts, a purged entity among them (DD-535)                                                                     |
 | ASG-07 | No answer of Apache Atlas's API changes                                                                                                                                                                                                                                                                                                                                                                      |
 
 ASG-02 amends GQ-07: 12.7's `validate-entity` and the 7.29 governance box read these rules too, and list in
@@ -112,7 +114,7 @@ four legacy pairs of the quality rules are.
       a subtype, a deleted entity or one without a document (ASG-03, ASG-04);
     - a second round writes nothing; a changed attribute, a new relationship, a changed, deactivated or deleted
       rule, a deleted and a purged entity show after a round (ASG-06);
-    - the sample catalogue imported and indexed: 48 rules read, 47 unread; 2,615 verdicts, 1,782 met and 833
+    - the sample catalogue imported and indexed: 47 rules read, 48 unread; 2,602 verdicts, 1,782 met and 820
       missed; every one of the 1,612 legacy documents of a read rule with the verdict it holds, and none of the
       16 of the rule whose expression is now `conditional_value(...)` (LAS-13, DV-160).
 - `libs/python/aurelius-atlas-core/tests/test__app_search_engine.py`: the engine's fields, and the details

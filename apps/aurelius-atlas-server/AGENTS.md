@@ -25,7 +25,8 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   lifespan starts it on the entity documents, and it runs `AppSearchIndexer` rounds every
   `app_search_poll_seconds`, deriving the original webapp's missing and stale App Search documents (ASU-06,
   DD-521), each followed by a `QualityIndexer` round deriving the quality results and score totals (ASQ-07,
-  DD-529). The unit tests' settings turn it off so no round writes beside their requests;
+  DD-529) and a `GovernanceIndexer` round judging the governance verdicts (ASG-06, DD-535).
+  The unit tests' settings turn it off so no round writes beside their requests;
   `tests/test__aurelius_atlas_server_app_search.py` turns it on
 - `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts
   the store's snapshot policy and starts it; it logs failed runs and reports the gauge
@@ -59,7 +60,7 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
 - `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`);
   `app_search.py` is the original webapp's App Search API, answered by core's `AppSearchEngine` over
   `app.state.entity_documents` in App Search's shapes, refusals included, for each engine of core's `ENGINES`
-  (ASE-01, ASE-02, ASQ-01, DD-527, DD-531)
+  (ASE-01, ASE-02, ASQ-01, ASG-01, DD-527, DD-531, DD-534)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
 - `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the image over HTTPS on the dev store

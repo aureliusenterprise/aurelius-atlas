@@ -37,7 +37,7 @@ INACTIVE_RULE = rule_entity(
 EXPRESSION_RULE = rule_entity(
     "rule-expression",
     "Legacy expression",
-    {"name": "Legacy expression", "expression": "completeness('owner')"},
+    {"name": "Legacy expression", "expression": "uniqueness('qualifiedName')"},
 )
 WRONG_KIND_RULE = rule_entity(
     "rule-wrong-kind",

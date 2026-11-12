@@ -7,11 +7,12 @@ This module converts; it holds no I/O. :func:`rule_from_atlas_attributes` reads 
 results as the documents a scanner writes to the store (DQ-07, DQ-08, GQ-07).
 """
 
+import re
 from collections.abc import Mapping, Sequence
 from typing import Any
 
 from aurelius_atlas_quality.evaluate import RuleResult
-from aurelius_atlas_quality.governance import GovRule
+from aurelius_atlas_quality.governance import GovCheckKind, GovRule
 from aurelius_atlas_quality.rule import CheckKind, DqRule, QualityRuleError
 from aurelius_atlas_quality.score import QualitySummary
 
@@ -108,6 +109,32 @@ def _parse(plain: Mapping[str, Any], kind: str, params: Mapping[str, Any]) -> Dq
 
 _GOV_NO_KIND_ERROR = "the rule names no 'dqcheckkind': a stored expression rule needs re-authoring (DV-146)"
 
+_GOV_FORMS = {
+    GovCheckKind.ATTRIBUTE_PRESENT: re.compile(r"\s*completeness\(\s*'([^']+)'\s*\)\s*"),
+    GovCheckKind.ATTRIBUTE_NOT_EMPTY: re.compile(r"\s*length\(\s*'([^']+)'\s*,\s*1\s*\)\s*"),
+}
+"""The corpus's two expression forms and the kinds they read as: not null, at least one (ASG-02, DD-533)."""
+
+
+def gov_expression_params(expression: Any) -> tuple[GovCheckKind, str, list[str]]:  # noqa: ANN401 - a stored value
+    """The kind, attribute and ``anyOf`` a stored governance expression reads as (ASG-02, DD-533).
+
+    The expression is one part, or several joined by ``|``, each ``completeness('<name>')`` or each
+    ``length('<name>', 1)``: the first part's name is the attribute, the others' the ``anyOf``. The text is
+    matched whole, never evaluated.
+
+    Raises:
+        aurelius_atlas_quality.rule.QualityRuleError: no expression, or one of another shape, a mix of the two
+            forms among them (DV-146).
+    """
+    parts = expression.split("|") if isinstance(expression, str) and expression.strip() else []
+    for kind, form in _GOV_FORMS.items():
+        matches = [form.fullmatch(part) for part in parts]
+        if parts and all(matches):
+            first, *others = [match.group(1) for match in matches if match is not None]
+            return kind, first, others
+    raise QualityRuleError(_GOV_NO_KIND_ERROR)
+
 
 def rule_from_gov_attributes(attributes: Mapping[str, Any]) -> GovRule:
     """Build a governance rule from the attributes of an ``m4i_gov_data_quality`` entity (GQ-07).
@@ -118,18 +145,20 @@ def rule_from_gov_attributes(attributes: Mapping[str, Any]) -> GovRule:
     the corpus's lowercase ``noncompliantMessage`` spelling read as the fallback. Each value is read
     bare or as the webapp's ``{"raw": ...}`` wrapper.
 
-    A rule with no ``dqcheckkind`` — a stored expression rule, the legacy shape — raises: the caller
-    records it, nothing executes it (DV-146). The legacy ``expression`` is never read.
+    A rule with no ``dqcheckkind`` — a stored expression rule, the legacy shape — reads from its
+    ``expression`` when that is one of the corpus's two forms (:func:`gov_expression_params`, ASG-02,
+    DD-533); any other expression raises: the caller records it, nothing executes it (DV-146).
 
     Raises:
         aurelius_atlas_quality.rule.QualityRuleError: the entity names no kind of the governance
-            vocabulary, or a parameter is missing or malformed (GQ-02).
+            vocabulary nor an expression of the two forms, or a parameter is missing or malformed (GQ-02).
     """
     plain = {key: _raw(value) for key, value in attributes.items()}
     kind = plain.get("dqcheckkind")
-    if not kind:
-        raise QualityRuleError(_GOV_NO_KIND_ERROR)
-    any_of = plain.get("dqanyOf")
+    if kind:
+        attribute, any_of = plain.get("dqattribute"), plain.get("dqanyOf")
+    else:
+        kind, attribute, any_of = gov_expression_params(plain.get("expression"))
     return GovRule.from_json(
         {
             "guid": plain.get("guid"),
@@ -137,7 +166,7 @@ def rule_from_gov_attributes(attributes: Mapping[str, Any]) -> GovRule:
             "checkKind": kind,
             "dimension": plain.get("qualityDimension"),
             "params": {
-                "attribute": plain.get("dqattribute"),
+                "attribute": attribute,
                 **({"anyOf": any_of} if any_of is not None else {}),
             },
             "compliantMessage": plain.get("compliantMessage"),

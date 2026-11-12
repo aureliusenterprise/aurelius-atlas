@@ -20,6 +20,9 @@ from pydantic import Field
 
 from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
+    GOV_RULE_TYPE,
+    GOVERNED_BY_FIELD,
+    GOVERNED_FIELD,
     GUID_FIELDS,
     M4I_PREFIX,
     QUALITY_RESULT_FIELD,
@@ -31,6 +34,7 @@ from aurelius_atlas_core.app_search_document import (
     app_search_mapping,
     quality_result_mapping,
     quality_totals_mapping,
+    verdict_mapping,
     with_current_app_search,
 )
 from aurelius_atlas_core.entity_embedding import (
@@ -93,6 +97,10 @@ LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification |
     LinkedKind.TASK: StoredTask,
 }
 
+ENTITY_DOCUMENTS = "entities"
+GOV_QUALITY = "gov-quality"
+"""The indices an App Search engine searches: the entities', and the governance verdicts' (DD-534)."""
+
 JOURNAL_PAGE = 1000
 """How many journal entries recovery reads at once; a live journal holds one entry per write in flight."""
 
@@ -149,6 +157,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         APP_SEARCH_FIELD: app_search_mapping(),
         QUALITY_RESULT_FIELD: quality_result_mapping(),
         QUALITY_TOTALS_FIELD: quality_totals_mapping(),
+        GOVERNED_FIELD: {"type": "boolean"},
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
@@ -461,6 +470,20 @@ class EntityDocuments(Protocol):
         """Every entity holding a quality result or score totals, by GUID (ASQ-07)."""
         ...
 
+    async def governance_rules(self) -> list[VersionedEntity]:
+        """The active governance rule entities, by GUID (ASG-03)."""
+        ...
+
+    async def to_govern(self, digests: Mapping[str, str], limit: int) -> list[VersionedEntity]:
+        """The entities to judge, by GUID: those with a document of a type in ``digests`` judged by another digest
+        or none, and those with verdicts no longer judged (ASG-06, DD-535).
+        """  # noqa: D205 - one sentence
+        ...
+
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None:
+        """Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534)."""
+        ...
+
 
 def _keeps_source_vectors(settings: dict[str, Any]) -> bool:
     """Whether an index's settings, flat or nested as Elasticsearch answers them, keep the source of vectors."""
@@ -488,11 +511,14 @@ class ElasticsearchEntityDocuments:
         self._unique_values = f"{prefix}-unique-values"
         self._journal = f"{prefix}-entity-journal"
         self._linked = {kind: f"{prefix}-{kind.value}" for kind in LinkedKind}
+        self._verdicts = f"{prefix}-{GOV_QUALITY}"
 
     @property
     def aliases(self) -> tuple[str, ...]:
-        """The aliases of the entity index, the reservations, the journal and the linked documents' indices."""
-        return self._entities, self._unique_values, self._journal, *self._linked.values()
+        """The aliases of the entity index, the reservations, the journal, the linked documents' indices and the
+        governance verdicts' (DD-534).
+        """  # noqa: D205 - one sentence
+        return self._entities, self._unique_values, self._journal, *self._linked.values(), self._verdicts
 
     async def prepare(self) -> None:
         """Create each index behind its alias unless it exists (ENS-01).
@@ -516,6 +542,7 @@ class ElasticsearchEntityDocuments:
             self._linked[LinkedKind.RELATIONSHIP]: RELATIONSHIP_MAPPING,
             self._linked[LinkedKind.CLASSIFICATION]: CLASSIFICATION_MAPPING,
             self._linked[LinkedKind.TASK]: TASK_MAPPING,
+            self._verdicts: verdict_mapping(),
         }
         limit = {"index.mapping.total_fields.limit": ENTITY_FIELD_LIMIT}
         for alias, mapping in mappings.items():
@@ -600,6 +627,9 @@ class ElasticsearchEntityDocuments:
                     kind=kind,
                 )
             )
+        purged = [result.guid for result in results[len(items) : len(items) + len(removed)] if result.written]
+        if purged:
+            await self.replace_verdicts(dict.fromkeys(purged, ()))
         return results
 
     async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
@@ -984,7 +1014,85 @@ class ElasticsearchEntityDocuments:
         ]
         return await self._paged({"bool": {"should": held, "minimum_should_match": 1}})
 
-    async def search_app_search(
+    async def governance_rules(self) -> list[VersionedEntity]:
+        """Page through the active governance rule entities (ASG-03): writes refresh (ENS-11)."""
+        rules = [{"term": {"state": ACTIVE}}, {"term": {"typeName": GOV_RULE_TYPE}}]
+        return await self._paged({"bool": {"filter": rules}})
+
+    async def to_govern(self, digests: Mapping[str, str], limit: int) -> list[VersionedEntity]:
+        """The entities to judge by GUID, a page of them: those of a ruled type judged otherwise, those that lost
+        their verdicts' cause (ASG-06, DD-535).
+        """  # noqa: D205 - one sentence
+        judged = [{"term": {"state": ACTIVE}}, {"exists": {"field": SOURCE_HASH_FIELD}}]
+        stale = [
+            {
+                "bool": {
+                    "filter": [{"term": {"typeName": type_name}}],
+                    "must_not": [{"term": {GOVERNED_BY_FIELD: digest}}],
+                }
+            }
+            for type_name, digest in digests.items()
+        ]
+        lost = {
+            "bool": {
+                "filter": [{"term": {GOVERNED_FIELD: True}}],
+                "must_not": [{"bool": {"filter": [*judged, {"terms": {"typeName": sorted(digests)}}]}}],
+            }
+        }
+        should: list[dict[str, Any]] = [lost]
+        if stale:
+            should.append({"bool": {"filter": judged, "should": stale, "minimum_should_match": 1}})
+        response = await self._client.search(
+            index=self._entities,
+            size=limit,
+            query={"bool": {"should": should, "minimum_should_match": 1}},
+            sort=[{"guid": "asc"}],
+            seq_no_primary_term=True,
+        )
+        return [
+            VersionedEntity(
+                StoredEntity.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"])
+            )
+            for hit in response["hits"]["hits"]
+        ]
+
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None:
+        """One bulk request: each verdict indexed, each other one of these entities deleted (DD-534)."""
+        if not verdicts:
+            return
+        wanted = {str(verdict["id"]): verdict for found in verdicts.values() for verdict in found}
+        held = await self._verdict_ids(list(verdicts))
+        lines: list[bytes] = []
+        for verdict_id, verdict in wanted.items():
+            lines += [codec.dumps({"index": {"_index": self._verdicts, "_id": verdict_id}}), codec.dumps(verdict)]
+        lines += [
+            codec.dumps({"delete": {"_index": self._verdicts, "_id": verdict_id}})
+            for verdict_id in held
+            if verdict_id not in wanted
+        ]
+        if lines:
+            body = b"\n".join(lines) + b"\n"
+            await self._client.bulk(operations=body, refresh=WRITE_REFRESH)  # pyright: ignore[reportArgumentType]
+
+    async def _verdict_ids(self, entity_guids: list[str]) -> list[str]:
+        """Page through the ids of these entities' verdicts."""
+        found: list[str] = []
+        after: list[Any] | None = None
+        while True:
+            response = await self._client.search(
+                index=self._verdicts,
+                size=REFERRING_PAGE,
+                query={"terms": {"entity_guid": entity_guids}},
+                sort=[{"id": "asc"}],
+                search_after=after,
+            )
+            hits = response["hits"]["hits"]
+            found += [hit["_id"] for hit in hits]
+            if len(hits) < REFERRING_PAGE:
+                return found
+            after = hits[-1]["sort"]
+
+    async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments, and the index
         self,
         *,
         query: dict[str, Any],
@@ -992,12 +1100,13 @@ class ElasticsearchEntityDocuments:
         aggs: dict[str, Any],
         from_: int,
         size: int,
+        index: str = ENTITY_DOCUMENTS,
     ) -> Mapping[str, Any]:
-        """One search of the entity index for the App Search engine: hits with scores, the exact total, the
-        aggregations (DD-523). Writes refresh (ENS-11).
+        """One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact
+        total, the aggregations (DD-523). Writes refresh (ENS-11).
         """  # noqa: D205 - one sentence
         response: Mapping[str, Any] = await self._client.search(  # pyright: ignore[reportAssignmentType]
-            index=self._entities,
+            index=self._verdicts if index == GOV_QUALITY else self._entities,
             query=query,
             sort=sort,
             aggs=aggs or None,

@@ -52,8 +52,8 @@ def entity(guid: str, **attributes: object) -> StoredEntity:
     return StoredEntity(guid=guid, type_name="table", attributes=attributes)
 
 
-@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02", "TSK-02"])
-async def test__six_aliases_are_created_once(fake: FakeClient) -> None:
+@pytest.mark.covers(f"{E}.prepare", f"{E}.aliases", rules=["ENS-01", "REL-05", "CLS-02", "TSK-02", "ASG-03"])
+async def test__seven_aliases_are_created_once(fake: FakeClient) -> None:
     """An index behind each alias; a second prepare changes nothing."""
     documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))
 
@@ -67,6 +67,7 @@ async def test__six_aliases_are_created_once(fake: FakeClient) -> None:
         "aurelius-atlas-relationships",
         "aurelius-atlas-classifications",
         "aurelius-atlas-tasks",
+        "aurelius-atlas-gov-quality",
     )
     assert fake.aliases == {alias: f"{alias}-000001" for alias in documents.aliases}
 
@@ -425,7 +426,15 @@ async def test__every_index_expands_its_replicas_to_the_cluster(fake: FakeClient
     replicas = {name: settings.get("index.auto_expand_replicas") for name, settings in fake.index_settings.items()}
     assert replicas == {
         f"o-{name}-000001": "0-1"
-        for name in ("entities", "unique-values", "entity-journal", "relationships", "classifications", "tasks")
+        for name in (
+            "entities",
+            "unique-values",
+            "entity-journal",
+            "relationships",
+            "classifications",
+            "tasks",
+            "gov-quality",
+        )
     }
     assert fake.index_settings["o-entities-000001"]["index.mapping.total_fields.limit"] == ENTITY_FIELD_LIMIT
 
