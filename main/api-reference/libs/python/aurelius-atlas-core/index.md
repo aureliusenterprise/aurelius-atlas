@@ -1196,7 +1196,7 @@ Attributes:
   The alias of the relationship index (DD-061).
 - **`RELATIONSHIP_MAPPING`** (`dict[str, Any]`) –
 
-  Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
+  Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute
 - **`TASK_MAPPING`** (`dict[str, Any]`) –
 
   Tasks by status and creation time; parameters stored, not indexed (DD-079).
@@ -1390,12 +1390,13 @@ RELATIONSHIP_MAPPING: dict[str, Any] = {
         "end2Guid": _KEYWORD,
         "state": _KEYWORD,
         "writeId": _KEYWORD,
+        "appSearchState": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
     },
 }
 ```
 
-Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
+Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute values stored, not indexed (DD-061, DD-520).
 
 ### TASK\_MAPPING
 
@@ -1490,6 +1491,9 @@ Methods:
 - **`list_tasks`** –
 
   Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+- **`naming`** –
+
+  Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11).
 - **`of_types`** –
 
   Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
@@ -1526,9 +1530,12 @@ Methods:
 - **`type_counts`** –
 
   A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
+- **`unseen_relationships`** –
+
+  The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04).
 - **`without_app_search`** –
 
-  The active entities of m4i types with a document that have none, by GUID (LAS-01, ASD-04, DD-500).
+  The active entities of m4i types with a document that have none, and those with a stale one, by GUID
 - **`without_embedding`** –
 
   The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
@@ -1640,6 +1647,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 
 Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
 
+#### naming
+
+```
+naming(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11).
+
 #### of\_types
 
 ```
@@ -1656,7 +1671,7 @@ prepare() -> None
 
 Create each index behind its alias unless it exists (ENS-01).
 
-An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity index keeps each document's source as written beside its vector: a new one is created so, and an existing one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
+An existing entity or relationship index gets the fields it lacks mapped, as `references` (EDL-10) and `appSearchState` (DD-520); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity index keeps each document's source as written beside its vector: a new one is created so, and an existing one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
 
 #### put\_journal
 
@@ -1740,13 +1755,21 @@ type_counts() -> list[TypeCount]
 
 A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 
+#### unseen\_relationships
+
+```
+unseen_relationships(limit: int) -> list[VersionedRelationship]
+```
+
+The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04).
+
 #### without\_app\_search
 
 ```
 without_app_search(limit: int) -> list[VersionedEntity]
 ```
 
-The active entities of m4i types with a document that have none, by GUID (LAS-01, ASD-04, DD-500).
+The active entities of m4i types with a document that have none, and those with a stale one, by GUID (LAS-01, ASD-04, ASU-02, DD-500).
 
 #### without\_embedding
 
@@ -1838,6 +1861,9 @@ Methods:
 - **`list_tasks`** –
 
   Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+- **`naming`** –
+
+  The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03).
 - **`of_types`** –
 
   The entities of exactly these types, in any state, as of now (EXP-03).
@@ -1874,9 +1900,12 @@ Methods:
 - **`type_counts`** –
 
   How many entities there are of each type, state and shell flag, as of now (MET-02).
+- **`unseen_relationships`** –
+
+  Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
 - **`without_app_search`** –
 
-  Up to `limit` entities that should have an App Search document and have none (ASD-04).
+  Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
 - **`without_embedding`** –
 
   Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
@@ -1971,6 +2000,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
 Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+
+#### naming
+
+```
+naming(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03).
 
 #### of\_types
 
@@ -2068,13 +2105,21 @@ type_counts() -> list[TypeCount]
 
 How many entities there are of each type, state and shell flag, as of now (MET-02).
 
+#### unseen\_relationships
+
+```
+unseen_relationships(limit: int) -> list[VersionedRelationship]
+```
+
+Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
 #### without\_app\_search
 
 ```
 without_app_search(limit: int) -> list[VersionedEntity]
 ```
 
-Up to `limit` entities that should have an App Search document and have none (ASD-04).
+Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04, ASU-02).
 
 #### without\_embedding
 
@@ -2471,7 +2516,7 @@ Bases: `AtlasModel`
 
 An entity's App Search document: what `atlas-dev` held of it, under the engine's field names (DD-498).
 
-`source_hash` is the hash of the entity's own fields the document was derived with (DD-499). Each derived relation is a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
+`source_hash` is the hash of the entity's own fields the document was derived with (DD-499); `stale` that a write changed them since, until the indexer replaces the document (ASU-01, DD-518). Each derived relation is a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
 
 Attributes:
 
@@ -2503,6 +2548,7 @@ Attributes:
 - **`referenceablequalifiedname`** (`str`) –
 - **`source_hash`** (`str`) –
 - **`sourcetype`** (`str`) –
+- **`stale`** (`bool`) –
 
 #### breadcrumbguid
 
@@ -2672,6 +2718,12 @@ source_hash: str
 sourcetype: str = ''
 ```
 
+#### stale
+
+```
+stale: bool = False
+```
+
 ### StoredEmbedding
 
 Bases: `AtlasModel`
@@ -2736,7 +2788,7 @@ Attributes:
 
 - **`app_search`** (`StoredAppSearch | None`) –
 
-  The entity's App Search document, kept only while its own fields are unchanged (ASD-03, DD-499).
+  The entity's App Search document, marked stale once its own fields change (ASD-03, ASU-01, DD-518).
 - **`attributes`** (`dict[str, Any]`) –
 - **`classification_guids`** (`list[str] | None`) –
 - **`create_time`** (`int`) –
@@ -2771,7 +2823,7 @@ Attributes:
 app_search: StoredAppSearch | None = None
 ```
 
-The entity's App Search document, kept only while its own fields are unchanged (ASD-03, DD-499).
+The entity's App Search document, marked stale once its own fields change (ASD-03, ASU-01, DD-518).
 
 #### attributes
 

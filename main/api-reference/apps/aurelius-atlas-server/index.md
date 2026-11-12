@@ -227,6 +227,24 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Embedding Poll Seconds",
 >       "type": "number"
 >     },
+>     "app_search_enabled": {
+>       "default": true,
+>       "title": "App Search Enabled",
+>       "type": "boolean"
+>     },
+>     "app_search_batch_size": {
+>       "default": 100,
+>       "exclusiveMinimum": 0,
+>       "maximum": 1000,
+>       "title": "App Search Batch Size",
+>       "type": "integer"
+>     },
+>     "app_search_poll_seconds": {
+>       "default": 10.0,
+>       "exclusiveMinimum": 0,
+>       "title": "App Search Poll Seconds",
+>       "type": "number"
+>     },
 >     "hybrid_vector_weight": {
 >       "default": 10.0,
 >       "minimum": 0,
@@ -584,6 +602,9 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `embedding_ca_file` (`FilePath | None`)
 > - `embedding_batch_size` (`int`)
 > - `embedding_poll_seconds` (`float`)
+> - `app_search_enabled` (`bool`)
+> - `app_search_batch_size` (`int`)
+> - `app_search_poll_seconds` (`float`)
 > - `hybrid_vector_weight` (`float`)
 > - `import_folder` (`Path | None`)
 > - `cluster_name` (`str`)
@@ -630,6 +651,30 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `auth_groups_claim` (`str`)
 > - `auth_ca_file` (`FilePath | None`)
 > - `session_timeout_seconds` (`int`)
+>
+> ### app\_search\_batch\_size
+>
+> ```
+> app_search_batch_size: int = 100
+> ```
+>
+> Entities, and relationships, per page of the App Search indexer (ASD-04).
+>
+> ### app\_search\_enabled
+>
+> ```
+> app_search_enabled: bool = True
+> ```
+>
+> Whether the server keeps the original webapp's App Search documents up to date in the background (ASU-06, LAS-10, DD-521).
+>
+> ### app\_search\_poll\_seconds
+>
+> ```
+> app_search_poll_seconds: float = 10.0
+> ```
+>
+> How often the App Search indexer looks for missing and stale documents (ASU-02, ASU-06).
 >
 > ### audit\_aging\_enabled
 >
