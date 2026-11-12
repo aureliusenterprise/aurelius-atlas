@@ -1295,6 +1295,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
         "search": {"type": "object", "dynamic": True, "subobjects": False},
+        APP_SEARCH_FIELD: app_search_mapping(),
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
@@ -1302,7 +1303,7 @@ ENTITY_MAPPING: dict[str, Any] = {
 }
 ```
 
-System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088).
+System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088); the App Search document's fields, by name (ASD-02).
 
 ### INDEX\_PREFIX
 
@@ -1525,6 +1526,9 @@ Methods:
 - **`type_counts`** –
 
   A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
+- **`without_app_search`** –
+
+  The active entities of m4i types with a document that have none, by GUID (LAS-01, ASD-04, DD-500).
 - **`without_embedding`** –
 
   The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
@@ -1736,6 +1740,14 @@ type_counts() -> list[TypeCount]
 
 A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 
+#### without\_app\_search
+
+```
+without_app_search(limit: int) -> list[VersionedEntity]
+```
+
+The active entities of m4i types with a document that have none, by GUID (LAS-01, ASD-04, DD-500).
+
 #### without\_embedding
 
 ```
@@ -1862,6 +1874,9 @@ Methods:
 - **`type_counts`** –
 
   How many entities there are of each type, state and shell flag, as of now (MET-02).
+- **`without_app_search`** –
+
+  Up to `limit` entities that should have an App Search document and have none (ASD-04).
 - **`without_embedding`** –
 
   Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
@@ -2052,6 +2067,14 @@ type_counts() -> list[TypeCount]
 ```
 
 How many entities there are of each type, state and shell flag, as of now (MET-02).
+
+#### without\_app\_search
+
+```
+without_app_search(limit: int) -> list[VersionedEntity]
+```
+
+Up to `limit` entities that should have an App Search document and have none (ASD-04).
 
 #### without\_embedding
 
@@ -2426,6 +2449,9 @@ What `EntityGraphMapper` and `GraphHelper` keep on an entity's vertex: the GUID,
 
 Classes:
 
+- **`StoredAppSearch`** –
+
+  An entity's App Search document: what `atlas-dev` held of it, under the engine's field names (DD-498).
 - **`StoredEmbedding`** –
 
   An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434).
@@ -2438,6 +2464,213 @@ Functions:
 - **`stored_attributes`** –
 
   Attribute values keyed by qualified name; names the type does not have are left out (DD-043).
+
+### StoredAppSearch
+
+Bases: `AtlasModel`
+
+An entity's App Search document: what `atlas-dev` held of it, under the engine's field names (DD-498).
+
+`source_hash` is the hash of the entity's own fields the document was derived with (DD-499). Each derived relation is a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
+
+Attributes:
+
+- **`breadcrumbguid`** (`list[str]`) –
+- **`breadcrumbname`** (`list[str | None]`) –
+- **`breadcrumbtype`** (`list[str]`) –
+- **`definition`** (`str`) –
+- **`derivedcollection`** (`list[str | None]`) –
+- **`derivedcollectionguid`** (`list[str]`) –
+- **`deriveddataattribute`** (`list[str | None]`) –
+- **`deriveddataattributeguid`** (`list[str]`) –
+- **`deriveddatadomain`** (`list[str | None]`) –
+- **`deriveddatadomainguid`** (`list[str]`) –
+- **`deriveddataentity`** (`list[str | None]`) –
+- **`deriveddataentityguid`** (`list[str]`) –
+- **`deriveddataset`** (`list[str | None]`) –
+- **`deriveddatasetguid`** (`list[str]`) –
+- **`derivedfield`** (`list[str | None]`) –
+- **`derivedfieldguid`** (`list[str]`) –
+- **`derivedperson`** (`list[str | None]`) –
+- **`derivedpersonguid`** (`list[str]`) –
+- **`derivedprocess`** (`list[str | None]`) –
+- **`derivedprocessguid`** (`list[str]`) –
+- **`derivedsystem`** (`list[str | None]`) –
+- **`derivedsystemguid`** (`list[str]`) –
+- **`email`** (`str | None`) –
+- **`name`** (`str | None`) –
+- **`parentguid`** (`str | None`) –
+- **`referenceablequalifiedname`** (`str`) –
+- **`source_hash`** (`str`) –
+- **`sourcetype`** (`str`) –
+
+#### breadcrumbguid
+
+```
+breadcrumbguid: list[str] = Field(default_factory=list)
+```
+
+#### breadcrumbname
+
+```
+breadcrumbname: list[str | None] = Field(default_factory=list)
+```
+
+#### breadcrumbtype
+
+```
+breadcrumbtype: list[str] = Field(default_factory=list)
+```
+
+#### definition
+
+```
+definition: str = ''
+```
+
+#### derivedcollection
+
+```
+derivedcollection: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedcollectionguid
+
+```
+derivedcollectionguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddataattribute
+
+```
+deriveddataattribute: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddataattributeguid
+
+```
+deriveddataattributeguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddatadomain
+
+```
+deriveddatadomain: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddatadomainguid
+
+```
+deriveddatadomainguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddataentity
+
+```
+deriveddataentity: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddataentityguid
+
+```
+deriveddataentityguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddataset
+
+```
+deriveddataset: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddatasetguid
+
+```
+deriveddatasetguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedfield
+
+```
+derivedfield: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedfieldguid
+
+```
+derivedfieldguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedperson
+
+```
+derivedperson: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedpersonguid
+
+```
+derivedpersonguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedprocess
+
+```
+derivedprocess: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedprocessguid
+
+```
+derivedprocessguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedsystem
+
+```
+derivedsystem: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedsystemguid
+
+```
+derivedsystemguid: list[str] = Field(default_factory=list)
+```
+
+#### email
+
+```
+email: str | None = None
+```
+
+#### name
+
+```
+name: str | None = None
+```
+
+#### parentguid
+
+```
+parentguid: str | None = None
+```
+
+#### referenceablequalifiedname
+
+```
+referenceablequalifiedname: str
+```
+
+#### source\_hash
+
+```
+source_hash: str
+```
+
+#### sourcetype
+
+```
+sourcetype: str = ''
+```
 
 ### StoredEmbedding
 
@@ -2501,6 +2734,9 @@ Methods:
 
 Attributes:
 
+- **`app_search`** (`StoredAppSearch | None`) –
+
+  The entity's App Search document, kept only while its own fields are unchanged (ASD-03, DD-499).
 - **`attributes`** (`dict[str, Any]`) –
 - **`classification_guids`** (`list[str] | None`) –
 - **`create_time`** (`int`) –
@@ -2528,6 +2764,14 @@ Attributes:
 - **`updated_by`** (`str | None`) –
 - **`version`** (`int`) –
 - **`write_id`** (`str | None`) –
+
+#### app\_search
+
+```
+app_search: StoredAppSearch | None = None
+```
+
+The entity's App Search document, kept only while its own fields are unchanged (ASD-03, DD-499).
 
 #### attributes
 
@@ -3469,8 +3713,17 @@ Classes:
 
   Another process wrote the document since this one read it (TDS-11).
 
+Functions:
+
+- **`ensure_index`** –
+
+  Create `index` unless it exists; whether this call made it (DD-508).
+
 Attributes:
 
+- **`ALREADY_EXISTS`** –
+
+  What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade
 - **`INDEX_SETTINGS`** (`dict[str, Any]`) –
 
   The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
@@ -3480,6 +3733,14 @@ Attributes:
 - **`TYPEDEF_INDEX`** –
 
   The alias of the index that holds the type definitions.
+
+### ALREADY\_EXISTS
+
+```
+ALREADY_EXISTS = 'resource_already_exists_exception'
+```
+
+What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade when both make the same index (DD-508).
 
 ### INDEX\_SETTINGS
 
@@ -3561,7 +3822,7 @@ prepare() -> None
 
 Create the index behind the alias unless it exists; the document itself is not searched.
 
-An existing index gets the settings of a new one, as its replicas (IDX-02).
+An existing index gets the settings of a new one, as its replicas (IDX-02). A create lost to a server booting on the same store takes that path too (DD-508).
 
 #### read
 
@@ -3707,6 +3968,23 @@ Raises:
 Bases: `Exception`
 
 Another process wrote the document since this one read it (TDS-11).
+
+### ensure\_index
+
+```
+ensure_index(
+    client: AsyncElasticsearch,
+    *,
+    index: str,
+    aliases: dict[str, Any] | None = None,
+    mappings: dict[str, Any] | None = None,
+    settings: dict[str, Any] | None = None,
+) -> bool
+```
+
+Create `index` unless it exists; whether this call made it (DD-508).
+
+Two servers that share a store make the same indices as they start, from the same definitions. A create that loses to the other server's identical one answers `resource_already_exists_exception`, which is success for both: the index stands, made whole by whoever got there first. Any other answer raises.
 
 ## aurelius\_atlas\_core.stored\_form
 

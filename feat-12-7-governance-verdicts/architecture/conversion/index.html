@@ -7734,9 +7734,9 @@ checks a PR must pass:</p>
 <tr>
 <td>12.3</td>
 <td>The scanner chart and schedule</td>
-<td>The Helm chart and CronJob schedule for the batch scanner, the <code>quality-scanner</code> prod realm join, and its token audience. Cited by 12.2 (DD-458, DD-459)</td>
+<td>The Helm chart and CronJob schedule for the batch scanner, and the server audience default that accepts its token. Cited by 12.2 (DD-458, DD-459). The shared scanner-chart contract and the audience default; client registration stays the deployment's act (CHT-114..120/125, DD-508..513)</td>
 <td>none (the batch image ships for it)</td>
-<td>planned</td>
+<td>in review</td>
 </tr>
 <tr>
 <td>12.4</td>
@@ -7769,7 +7769,7 @@ checks a PR must pass:</p>
 <tr>
 <td>12.7</td>
 <td>The governance verdicts, live</td>
-<td><code>apps/aurelius-atlas-validate-entity</code> answers real verdicts: the ACTIVE <code>m4i_gov_data_quality</code> rules read by paged search as the app's own service identity, run over the draft the editor sent, one boolean verdict per rule plus the unread ones; the 8.3 mock document retires and the webapp banner follows the new shape in the same PR; the deployed leg joins the charts (<code>SERVER_BASE_URL</code>/<code>TOKEN_URL</code>/<code>SERVER_CLIENT_SECRET</code>, the <code>&lt;release&gt;-validate-entity-client</code> Secret, the master realm's import env) (VEV-01..06, DD-498..501, CHT-113, DV-149 supersedes DV-67, ADR 061)</td>
+<td><code>apps/aurelius-atlas-validate-entity</code> answers real verdicts: the ACTIVE <code>m4i_gov_data_quality</code> rules read by paged search as the app's own service identity, run over the draft the editor sent, one boolean verdict per rule plus the unread ones; the 8.3 mock document retires and the webapp banner follows the new shape in the same PR; the deployed leg joins the charts (<code>SERVER_BASE_URL</code>/<code>TOKEN_URL</code>/<code>SERVER_CLIENT_SECRET</code>, the <code>&lt;release&gt;-validate-entity-client</code> Secret, the master realm's import env) (VEV-01..06, DD-498..501, CHT-113, DV-153 supersedes DV-67, ADR 061)</td>
 <td>Aurelius <code>apps/m4i-validate-entity</code> (the Flask mock, retired); the Flink governance evaluation it was never wired to</td>
 <td>in progress</td>
 </tr>
@@ -7783,35 +7783,49 @@ checks a PR must pass:</p>
 <tr>
 <td>13.2</td>
 <td>The Kafka scanner chart and schedule</td>
-<td>The Helm chart, the CronJob, the prod realm join, and the broker's machine identity decision</td>
+<td>The Helm chart, the CronJob, and the broker's machine identity decision (CHT-121/122, DD-514/515)</td>
 <td>none</td>
-<td>planned</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.3</td>
+<td>The relational database scanner</td>
+<td><code>apps/aurelius-atlas-db-scanner</code>: a batch CLI that reflects one live database through SQLAlchemy (no vendor tooling), registers the System/Collection-per-schema/Dataset/Field tree and one Process per foreign-key column pair in one bulk request as its own service identity (DBS-01..12, DD-502..507)</td>
+<td>— (net-new to Atlas; the port of a standalone reflection script, DV-150)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.4</td>
+<td>The database scanner chart and schedule</td>
+<td>The Helm chart, the CronJob, and the per-database secret wiring (CHT-123/124, DD-516/517)</td>
+<td>none</td>
+<td>in review</td>
 </tr>
 <tr>
 <td>14.1</td>
 <td>The legacy search documents: records and rules</td>
 <td>ADR 060; the original Aurelius Atlas's three App Search engines for the sample catalogue as fixtures; the rules of their documents, over the catalogue's state, and the differences of the fixtures from it (LAS-01..13, DD-484..486)</td>
 <td>Aurelius <code>m4i-flink-tasks</code> (<code>synchronize_app_search</code>, <code>get_rules</code>), <code>m4i-atlas-post-install</code> (<code>propagate_quality</code>, <code>connect_datasets_with_entities</code>)</td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>14.2</td>
 <td>The derived documents</td>
-<td>Breadcrumbs, derived relations, source type and the never-filled fields on the entity documents, for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..07)</td>
-<td><code>synchronize_app_search/event_handlers/entity_created</code></td>
-<td>planned</td>
+<td>Each entity's own fields, breadcrumb and derived relations on its entity document, derived by an indexer; for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..06, ASD-01..05, DD-498..501)</td>
+<td><code>synchronize_app_search/event_handlers/entity_created</code>, <code>connect_datasets_with_entities</code></td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>14.3</td>
 <td>The derived documents kept up to date</td>
-<td>Server tasks that recompute the documents a change affects: names, definitions, deletes, relations (LAS-08..10, DD-486)</td>
+<td>Server tasks that recompute the documents a change affects: names, definitions, deletes, relations; the worker that runs the indexer (LAS-08..10, DD-486)</td>
 <td><code>synchronize_app_search/event_handlers/{attribute_changed,entity_deleted,relationship_audit}</code></td>
 <td>planned</td>
 </tr>
 <tr>
 <td>14.4</td>
 <td>The App Search API: <code>/elastic</code></td>
-<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does (ADR 060)</td>
+<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does, with the engine's fields that are the entity's or constants (ADR 060, LAS-07)</td>
 <td>Aurelius <code>libs/atlas/api/src/lib/elastic</code></td>
 <td>planned</td>
 </tr>

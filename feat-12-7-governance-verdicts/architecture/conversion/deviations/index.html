@@ -6895,7 +6895,7 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-67</td>
 <td>Auxiliary API</td>
 <td>No entity-validation endpoint (the legacy Aurelius app calls a validation service that is itself a mock: it accepts any entity)</td>
-<td><em>Superseded by DV-149 (12.7):</em> <code>aurelius-atlas-validate-entity</code> shipped the legacy mock contract verbatim, with the workspace's auth and observability</td>
+<td><em>Superseded by DV-153 (12.7):</em> <code>aurelius-atlas-validate-entity</code> shipped the legacy mock contract verbatim, with the workspace's auth and observability</td>
 <td>The legacy backend is a mock (ADR 055); the browser contract is kept, real validation is a future server rule. ADR 061 retires the clause: the mock answers no more</td>
 <td>8.3</td>
 </tr>
@@ -7517,6 +7517,38 @@ each tolerated difference to its entry here; a difference without an entry is a 
 </tr>
 <tr>
 <td>DV-149</td>
+<td>App Search</td>
+<td>The legacy <code>atlas-dev</code> documents gave every <code>m4i_generic_process</code> its GUID as qualified name, left 86 business entities without the definition they have, and named one governance rule by an older qualified name, its title and a definition it has not</td>
+<td>Each document carries the entity's current <code>name</code>, <code>qualifiedName</code> and <code>definition</code>, falling back as LAS-02 states only where the entity has none</td>
+<td>The legacy values are a fallback for a model without a process qualified name and events lost or applied out of order (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-150</td>
+<td>DB scanning</td>
+<td>A relational database's tables and columns reach the catalogue only through hook messages a registered application pushes (<code>classic_jdbc_*</code>, <code>dataset_db</code>); no job ever read a live database</td>
+<td><code>aurelius-atlas-db-scanner</code> reflects the live database through SQLAlchemy and registers the m4i tree (the System, a Collection per schema, a Dataset per table, a Field per column) plus one Process per foreign-key column pair, in one bulk write as its own service identity (DBS-01..12). The starting script's JSON-to-documents-folder handoff is not delivered: no file-based reader pipeline exists here</td>
+<td>A hook install is why the legacy database registration went unused, and reflection names no vendor (DBS-01); the file handoff belongs to another product's pipeline</td>
+<td>13.3</td>
+</tr>
+<tr>
+<td>DV-151</td>
+<td>App Search</td>
+<td>Two legacy datasets with two parent datasets sit under the second in their breadcrumbs</td>
+<td>A breadcrumb follows the first active parent in the type's parents' order (LAS-04)</td>
+<td>The legacy took the first element of a set, whichever arrived first (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-152</td>
+<td>App Search</td>
+<td>Five legacy datasets lack 18 relations (to fields and processes) that the documents at their other ends list</td>
+<td>Every active relationship between two mapped entities is listed at both its ends (LAS-05)</td>
+<td>The legacy lost the events that would have listed them (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-153</td>
 <td>Auxiliary API</td>
 <td>The legacy entity-validation service is a mock: it ignores the entity and answers four canned cards, each aspect's verdict a string flag (DV-67, superseded here)</td>
 <td><code>aurelius-atlas-validate-entity</code> reads the ACTIVE <code>m4i_gov_data_quality</code> rules from the catalogue as its own service identity and answers one boolean verdict per rule over the draft's attributes — <code>{ruleGuid, ruleName, attribute, dimension, compliant, message}</code> with the rule's own sentence — plus <code>unreadRules</code> for the rules the vocabulary cannot read (VEV-01..06, ADR 061, DV-146)</td>
