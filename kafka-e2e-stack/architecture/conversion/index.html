@@ -7892,14 +7892,14 @@ checks a PR must pass:</p>
 <td>The App Search API: <code>/elastic</code></td>
 <td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does from the entity index, with the engine's fields that are the entity's or constants (ADR 060, LAS-07, ASE-01..12, DD-523..527)</td>
 <td>Aurelius <code>libs/atlas/api/src/lib/elastic</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>14.5</td>
 <td>The App Search API: <code>/data_quality</code></td>
-<td>The <code>atlas-dev-quality</code> results over 12.2's <code>m4i_dq_score</code> entities, and the score roll-up on the documents (LAS-11, LAS-12)</td>
+<td>The <code>atlas-dev-quality</code> results over 12.2's <code>m4i_dq_score</code> entities, one per score of a rule over a dataset, and the score roll-up on the documents, derived again each round (LAS-11, LAS-12, ASQ-01..08, DD-528..532)</td>
 <td><code>propagate_quality</code>; Aurelius <code>data-quality-search.service</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>14.6</td>

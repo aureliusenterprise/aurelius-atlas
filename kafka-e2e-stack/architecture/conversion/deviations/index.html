@@ -7653,6 +7653,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The original webapp sends none of these but snippets, which it never reads (DD-527)</td>
 <td>14.4</td>
 </tr>
+<tr>
+<td>DV-159</td>
+<td>App Search</td>
+<td><code>atlas-dev-quality</code> held one result per rule, under the rule's qualified name, naming one of its fields; <code>name</code>, <code>businessruleid</code> and <code>datadomainname</code> came from a source the catalogue no longer holds, and one rule that is not active had a result</td>
+<td>One result per score of an active rule over a dataset, under the score entity's GUID, listing every field of the rule in that dataset; <code>name</code> is the rule's, <code>businessruleid</code> its <code>id</code>, <code>datadomainname</code> the data domain above the fields' data attributes; ERROR verdicts, a dataset's summary and an inactive rule's score have none (ASQ-02, DD-528, DD-532)</td>
+<td>The scanner scores a rule over a dataset and keeps the newest score per pair (DD-456); a list of fields matches the field page's <code>fieldguid</code> filter as one value did; a deactivated rule's last score would stay in the totals for good</td>
+<td>14.5</td>
+</tr>
 </tbody>
 </table>
 
