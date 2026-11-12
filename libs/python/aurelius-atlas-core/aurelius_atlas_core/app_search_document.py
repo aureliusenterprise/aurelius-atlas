@@ -56,6 +56,12 @@ PARENTS = {
 GUID_FIELDS = ("breadcrumbguid", *(f"{field}guid" for field in RELATION_FIELDS.values()))
 """The fields a document names other entities in, by GUID: its breadcrumb and its relations (ASU-03)."""
 
+NAME_FIELDS = ("name", "referenceablequalifiedname", "definition", "breadcrumbname", *RELATION_FIELDS.values())
+"""The document's fields of names and words, mapped as keywords with a text sub-field (ASD-02)."""
+
+KEYWORD_FIELDS = ("email", "sourcetype", "breadcrumbtype", "parentguid", *GUID_FIELDS)
+"""The document's other fields, its source hash aside, mapped as keywords only (ASD-02)."""
+
 TECHNICAL = frozenset({"m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"})
 BUSINESS = frozenset({"m4i_data_domain", "m4i_data_entity", "m4i_data_attribute"})
 
@@ -154,8 +160,6 @@ def app_search_mapping() -> dict[str, Any]:
     """The mapping of the entity document's App Search document: keywords, names also as text (ASD-02); the stale
     flag a boolean (ASU-01).
     """  # noqa: D205 - one sentence
-    names = ["name", "referenceablequalifiedname", "definition", "breadcrumbname", *RELATION_FIELDS.values()]
-    keywords = ["sourceHash", "email", "sourcetype", "breadcrumbguid", "breadcrumbtype", "parentguid"]
-    keywords += [f"{field}guid" for field in RELATION_FIELDS.values()]
-    properties = dict.fromkeys(names, _NAME) | dict.fromkeys(keywords, _KEYWORD) | {"stale": {"type": "boolean"}}
+    keywords = ("sourceHash", *KEYWORD_FIELDS)
+    properties = dict.fromkeys(NAME_FIELDS, _NAME) | dict.fromkeys(keywords, _KEYWORD) | {"stale": {"type": "boolean"}}
     return {"properties": properties}

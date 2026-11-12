@@ -1,4 +1,5 @@
 from aurelius_atlas_server.routes.admin import ADMIN
+from aurelius_atlas_server.routes.app_search import APP_SEARCH
 from aurelius_atlas_server.routes.discovery import DISCOVERY
 from aurelius_atlas_server.routes.entity import ENTITY
 from aurelius_atlas_server.routes.glossary import GLOSSARY
@@ -11,6 +12,7 @@ from aurelius_atlas_server.routes.types import TYPES
 
 __all__ = [
     "ADMIN",
+    "APP_SEARCH",
     "DISCOVERY",
     "ENTITY",
     "GLOSSARY",
