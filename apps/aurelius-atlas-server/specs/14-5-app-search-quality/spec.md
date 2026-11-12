@@ -1,7 +1,7 @@
 # 14.5 The App Search API: `/data_quality` and the score roll-up
 
 - **Status:** in progress
-- **Pull request:** — (this increment's PR)
+- **Pull request:** [#331](https://github.com/aureliusenterprise/aurelius-atlas/pull/331)
 - **Records:** DD-528 to DD-532 (here), DV-159; relies on ADR 060, 14.1 (LAS-11, LAS-12), 14.2 (ASD-01),
   14.3 (ASU-06), 14.4 (ASE-01 to ASE-11) and 12.2 (the `m4i_dq_score` entities, DQS-06 to DQS-08)
 
