@@ -18,688 +18,339 @@ workspace = true
 
 ## aurelius\_atlas\_validate\_entity\_client.models
 
-The governance-quality answer of the validate-entity API (CL-40, VE-02; DD-203).
+The governance-verdict answer of the validate-entity API (CL-40 as amended by 12.7; DD-498).
 
-The body the 8.3 mock answers — the four cards the webapp's editor renders, the `AppSearchResult<GovQualitySearchObject>` shape of the legacy `libs/atlas/api::GovQualityApi` (ADR 055 R4) — stated as models so a caller parses it and the app's constant is checked against one shape (VE-02, DV-67).
+The body `POST /` answers since 12.7: the verdicts the app's own engine ran over the draft (VEV-02) and the rules the vocabulary could not read (VEV-03), stated as models so a caller parses them and the app's answer is checked against one shape. The four canned cards of the 8.3 mock retire with DV-67 (ADR 061): `compliant` is a JSON boolean, not the legacy's string `'0'`/`'1'`, and nothing of the legacy `AppSearchResult` document survives.
 
-Every leaf is a `{"raw": …}` wrapper, and the `doc-…` ids, string `compliant` flags and `_meta.engine` of the mock are part of the browser contract, so they are modelled as they arrive, not normalised. The card keys and `isNonCompliant` are camelCase, the legacy's names.
+The field names are camelCase, the same house style the card document used; `verdicts` is a flat array and the banner groups it by `attribute` (DD-498 — keyed cards and parallel arrays were refused there).
 
 Classes:
 
-- **`GovQualityItem`** –
+- **`GovernanceVerdict`** –
 
-  One governance check: a verdict item of a card.
-- **`GovQualityMeta`** –
+  One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).
+- **`UnreadRule`** –
 
-  The `_meta` of an item: the engine, score and document id.
-- **`GovQualityValue`** –
-
-  A `{"raw": …}` wrapper — every leaf of the governance document is one.
-- **`ValidationCard`** –
-
-  One governance card: the items of one aspect, with the card's verdict.
+  A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146).
 - **`ValidationResponse`** –
 
-  The `POST /` answer: the four governance cards.
+  The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).
 
-### GovQualityItem
+### GovernanceVerdict
 
 Bases: `BaseModel`
 
-One governance check: a verdict item of a card.
+One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).
+
+`compliant` is a JSON boolean — 12.6's verdict, not the mock's string flag — and `message` is the verdict line the engine carries: the rule's own sentence for its verdict, the kind's reason when the rule stores none (GQ-06).
 
 **Show JSON schema:**
 
 ```
 {
-  "$defs": {
-    "GovQualityMeta": {
-      "additionalProperties": false,
-      "description": "The ``_meta`` of an item: the engine, score and document id.",
-      "properties": {
-        "engine": {
-          "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
-          "title": "Engine",
-          "type": "string"
-        },
-        "score": {
-          "description": "The item's score.",
-          "title": "Score",
-          "type": "integer"
-        },
-        "id": {
-          "description": "The document id, e.g. a ``doc-\u2026`` id.",
-          "title": "Id",
-          "type": "string"
-        }
-      },
-      "required": [
-        "engine",
-        "score",
-        "id"
-      ],
-      "title": "GovQualityMeta",
-      "type": "object"
-    },
-    "GovQualityValue": {
-      "additionalProperties": false,
-      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
-      "properties": {
-        "raw": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
-          ],
-          "description": "The value: a string, or a list of strings (``usedattributes``).",
-          "title": "Raw"
-        }
-      },
-      "required": [
-        "raw"
-      ],
-      "title": "GovQualityValue",
-      "type": "object"
-    }
-  },
   "additionalProperties": false,
-  "description": "One governance check: a verdict item of a card.",
+  "description": "One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06).",
   "properties": {
-    "result": {
-      "$ref": "#/$defs/GovQualityValue",
-      "description": "The human-readable verdict."
+    "ruleGuid": {
+      "description": "The catalogue guid of the rule that answered.",
+      "title": "Ruleguid",
+      "type": "string"
     },
-    "dataqualitytype": {
-      "$ref": "#/$defs/GovQualityValue",
-      "description": "The kind of check; ``attribute`` checks carry the legacy's lower-case name."
+    "ruleName": {
+      "description": "The rule's name, as the catalogue holds it.",
+      "title": "Rulename",
+      "type": "string"
     },
-    "usedattributes": {
-      "$ref": "#/$defs/GovQualityValue",
-      "description": "The entity attributes the check reads."
+    "attribute": {
+      "description": "The entity attribute the rule measures: the banner groups by it.",
+      "title": "Attribute",
+      "type": "string"
     },
-    "name": {
-      "$ref": "#/$defs/GovQualityValue",
-      "description": "The check's name, e.g. ``Attribute - <key>``."
+    "dimension": {
+      "description": "The rule's quality dimension, e.g. ``COMPLETENESS``.",
+      "title": "Dimension",
+      "type": "string"
     },
     "compliant": {
-      "$ref": "#/$defs/GovQualityValue",
-      "description": "The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."
+      "description": "The verdict: whether the draft passes the rule.",
+      "title": "Compliant",
+      "type": "boolean"
     },
-    "_meta": {
-      "$ref": "#/$defs/GovQualityMeta",
-      "description": "The producing engine's record."
-    },
-    "id": {
-      "$ref": "#/$defs/GovQualityValue",
-      "description": "The item's document id, wrapped like every leaf."
+    "message": {
+      "description": "The line to show: the rule's own sentence, or the kind's reason.",
+      "title": "Message",
+      "type": "string"
     }
   },
   "required": [
-    "result",
-    "dataqualitytype",
-    "usedattributes",
-    "name",
+    "ruleGuid",
+    "ruleName",
+    "attribute",
+    "dimension",
     "compliant",
-    "_meta",
-    "id"
+    "message"
   ],
-  "title": "GovQualityItem",
+  "title": "GovernanceVerdict",
   "type": "object"
 }
 ```
 
 Config:
 
+- `populate_by_name`: `True`
 - `extra`: `forbid`
 - `frozen`: `True`
 
 Fields:
 
-- `result` (`GovQualityValue`)
-- `dataqualitytype` (`GovQualityValue`)
-- `usedattributes` (`GovQualityValue`)
-- `name` (`GovQualityValue`)
-- `compliant` (`GovQualityValue`)
-- `meta` (`GovQualityMeta`)
-- `id` (`GovQualityValue`)
+- `rule_guid` (`str`)
+- `rule_name` (`str`)
+- `attribute` (`str`)
+- `dimension` (`str`)
+- `compliant` (`StrictBool`)
+- `message` (`str`)
+
+#### attribute
+
+```
+attribute: str
+```
+
+The entity attribute the rule measures: the banner groups by it.
 
 #### compliant
 
 ```
-compliant: GovQualityValue
+compliant: StrictBool
 ```
 
-The verdict flag, a string `'0'`/`'1'` — as the legacy emits it.
+The verdict: whether the draft passes the rule.
 
-#### dataqualitytype
-
-```
-dataqualitytype: GovQualityValue
-```
-
-The kind of check; `attribute` checks carry the legacy's lower-case name.
-
-#### id
+#### dimension
 
 ```
-id: GovQualityValue
+dimension: str
 ```
 
-The item's document id, wrapped like every leaf.
+The rule's quality dimension, e.g. `COMPLETENESS`.
 
-#### meta
+#### message
 
 ```
-meta: GovQualityMeta
+message: str
 ```
 
-The producing engine's record.
+The line to show: the rule's own sentence, or the kind's reason.
 
 #### model\_config
 
 ```
-model_config = ConfigDict(extra='forbid', frozen=True)
+model_config = ConfigDict(populate_by_name=True, extra='forbid', frozen=True)
 ```
 
-#### name
+#### rule\_guid
 
 ```
-name: GovQualityValue
+rule_guid: str
 ```
 
-The check's name, e.g. `Attribute - <key>`.
+The catalogue guid of the rule that answered.
 
-#### result
-
-```
-result: GovQualityValue
-```
-
-The human-readable verdict.
-
-#### usedattributes
+#### rule\_name
 
 ```
-usedattributes: GovQualityValue
+rule_name: str
 ```
 
-The entity attributes the check reads.
+The rule's name, as the catalogue holds it.
 
-### GovQualityMeta
+### UnreadRule
 
 Bases: `BaseModel`
 
-The `_meta` of an item: the engine, score and document id.
+A rule the vocabulary cannot read — recorded, never executed (VEV-03; CL-40; DV-146).
 
 **Show JSON schema:**
 
 ```
 {
   "additionalProperties": false,
-  "description": "The ``_meta`` of an item: the engine, score and document id.",
+  "description": "A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03; CL-40; DV-146).",
   "properties": {
-    "engine": {
-      "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
-      "title": "Engine",
+    "ruleGuid": {
+      "description": "The catalogue guid of the unread rule.",
+      "title": "Ruleguid",
       "type": "string"
     },
-    "score": {
-      "description": "The item's score.",
-      "title": "Score",
-      "type": "integer"
+    "ruleName": {
+      "description": "The rule's name, as the catalogue holds it.",
+      "title": "Rulename",
+      "type": "string"
     },
-    "id": {
-      "description": "The document id, e.g. a ``doc-\u2026`` id.",
-      "title": "Id",
+    "error": {
+      "description": "Why the vocabulary cannot read it, e.g. a stored expression rule.",
+      "title": "Error",
       "type": "string"
     }
   },
   "required": [
-    "engine",
-    "score",
-    "id"
+    "ruleGuid",
+    "ruleName",
+    "error"
   ],
-  "title": "GovQualityMeta",
+  "title": "UnreadRule",
   "type": "object"
 }
 ```
 
 Config:
 
+- `populate_by_name`: `True`
 - `extra`: `forbid`
 - `frozen`: `True`
 
 Fields:
 
-- `engine` (`str`)
-- `score` (`int`)
-- `id` (`str`)
+- `rule_guid` (`str`)
+- `rule_name` (`str`)
+- `error` (`str`)
 
-#### engine
-
-```
-engine: str
-```
-
-The engine that produced the item, e.g. `atlas-dev-gov-quality`.
-
-#### id
+#### error
 
 ```
-id: str
+error: str
 ```
 
-The document id, e.g. a `doc-…` id.
+Why the vocabulary cannot read it, e.g. a stored expression rule.
 
 #### model\_config
 
 ```
-model_config = ConfigDict(extra='forbid', frozen=True)
+model_config = ConfigDict(populate_by_name=True, extra='forbid', frozen=True)
 ```
 
-#### score
+#### rule\_guid
 
 ```
-score: int
+rule_guid: str
 ```
 
-The item's score.
+The catalogue guid of the unread rule.
 
-### GovQualityValue
-
-Bases: `BaseModel`
-
-A `{"raw": …}` wrapper — every leaf of the governance document is one.
-
-**Show JSON schema:**
+#### rule\_name
 
 ```
-{
-  "additionalProperties": false,
-  "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
-  "properties": {
-    "raw": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        }
-      ],
-      "description": "The value: a string, or a list of strings (``usedattributes``).",
-      "title": "Raw"
-    }
-  },
-  "required": [
-    "raw"
-  ],
-  "title": "GovQualityValue",
-  "type": "object"
-}
+rule_name: str
 ```
 
-Config:
-
-- `extra`: `forbid`
-- `frozen`: `True`
-
-Fields:
-
-- `raw` (`str | list[str]`)
-
-#### model\_config
-
-```
-model_config = ConfigDict(extra='forbid', frozen=True)
-```
-
-#### raw
-
-```
-raw: str | list[str]
-```
-
-The value: a string, or a list of strings (`usedattributes`).
-
-### ValidationCard
-
-Bases: `BaseModel`
-
-One governance card: the items of one aspect, with the card's verdict.
-
-**Show JSON schema:**
-
-```
-{
-  "$defs": {
-    "GovQualityItem": {
-      "additionalProperties": false,
-      "description": "One governance check: a verdict item of a card.",
-      "properties": {
-        "result": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The human-readable verdict."
-        },
-        "dataqualitytype": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The kind of check; ``attribute`` checks carry the legacy's lower-case name."
-        },
-        "usedattributes": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The entity attributes the check reads."
-        },
-        "name": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The check's name, e.g. ``Attribute - <key>``."
-        },
-        "compliant": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."
-        },
-        "_meta": {
-          "$ref": "#/$defs/GovQualityMeta",
-          "description": "The producing engine's record."
-        },
-        "id": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The item's document id, wrapped like every leaf."
-        }
-      },
-      "required": [
-        "result",
-        "dataqualitytype",
-        "usedattributes",
-        "name",
-        "compliant",
-        "_meta",
-        "id"
-      ],
-      "title": "GovQualityItem",
-      "type": "object"
-    },
-    "GovQualityMeta": {
-      "additionalProperties": false,
-      "description": "The ``_meta`` of an item: the engine, score and document id.",
-      "properties": {
-        "engine": {
-          "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
-          "title": "Engine",
-          "type": "string"
-        },
-        "score": {
-          "description": "The item's score.",
-          "title": "Score",
-          "type": "integer"
-        },
-        "id": {
-          "description": "The document id, e.g. a ``doc-\u2026`` id.",
-          "title": "Id",
-          "type": "string"
-        }
-      },
-      "required": [
-        "engine",
-        "score",
-        "id"
-      ],
-      "title": "GovQualityMeta",
-      "type": "object"
-    },
-    "GovQualityValue": {
-      "additionalProperties": false,
-      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
-      "properties": {
-        "raw": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
-          ],
-          "description": "The value: a string, or a list of strings (``usedattributes``).",
-          "title": "Raw"
-        }
-      },
-      "required": [
-        "raw"
-      ],
-      "title": "GovQualityValue",
-      "type": "object"
-    }
-  },
-  "additionalProperties": false,
-  "description": "One governance card: the items of one aspect, with the card's verdict.",
-  "properties": {
-    "items": {
-      "description": "The checks of this card.",
-      "items": {
-        "$ref": "#/$defs/GovQualityItem"
-      },
-      "title": "Items",
-      "type": "array"
-    },
-    "isNonCompliant": {
-      "description": "Whether any item fails; the editor's badge.",
-      "title": "Isnoncompliant",
-      "type": "boolean"
-    }
-  },
-  "required": [
-    "isNonCompliant"
-  ],
-  "title": "ValidationCard",
-  "type": "object"
-}
-```
-
-Config:
-
-- `extra`: `forbid`
-- `frozen`: `True`
-
-Fields:
-
-- `items` (`list[GovQualityItem]`)
-- `is_non_compliant` (`bool`)
-
-#### is\_non\_compliant
-
-```
-is_non_compliant: bool
-```
-
-Whether any item fails; the editor's badge.
-
-#### items
-
-```
-items: list[GovQualityItem]
-```
-
-The checks of this card.
-
-#### model\_config
-
-```
-model_config = ConfigDict(extra='forbid', frozen=True)
-```
+The rule's name, as the catalogue holds it.
 
 ### ValidationResponse
 
 Bases: `BaseModel`
 
-The `POST /` answer: the four governance cards.
+The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).
 
 **Show JSON schema:**
 
 ```
 {
   "$defs": {
-    "GovQualityItem": {
+    "GovernanceVerdict": {
       "additionalProperties": false,
-      "description": "One governance check: a verdict item of a card.",
+      "description": "One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).\n\n``compliant`` is a JSON boolean \u2014 12.6's verdict, not the mock's string flag \u2014 and\n``message`` is the verdict line the engine carries: the rule's own sentence for its\nverdict, the kind's reason when the rule stores none (GQ-06).",
       "properties": {
-        "result": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The human-readable verdict."
+        "ruleGuid": {
+          "description": "The catalogue guid of the rule that answered.",
+          "title": "Ruleguid",
+          "type": "string"
         },
-        "dataqualitytype": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The kind of check; ``attribute`` checks carry the legacy's lower-case name."
+        "ruleName": {
+          "description": "The rule's name, as the catalogue holds it.",
+          "title": "Rulename",
+          "type": "string"
         },
-        "usedattributes": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The entity attributes the check reads."
+        "attribute": {
+          "description": "The entity attribute the rule measures: the banner groups by it.",
+          "title": "Attribute",
+          "type": "string"
         },
-        "name": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The check's name, e.g. ``Attribute - <key>``."
+        "dimension": {
+          "description": "The rule's quality dimension, e.g. ``COMPLETENESS``.",
+          "title": "Dimension",
+          "type": "string"
         },
         "compliant": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The verdict flag, a string ``'0'``/``'1'`` \u2014 as the legacy emits it."
-        },
-        "_meta": {
-          "$ref": "#/$defs/GovQualityMeta",
-          "description": "The producing engine's record."
-        },
-        "id": {
-          "$ref": "#/$defs/GovQualityValue",
-          "description": "The item's document id, wrapped like every leaf."
-        }
-      },
-      "required": [
-        "result",
-        "dataqualitytype",
-        "usedattributes",
-        "name",
-        "compliant",
-        "_meta",
-        "id"
-      ],
-      "title": "GovQualityItem",
-      "type": "object"
-    },
-    "GovQualityMeta": {
-      "additionalProperties": false,
-      "description": "The ``_meta`` of an item: the engine, score and document id.",
-      "properties": {
-        "engine": {
-          "description": "The engine that produced the item, e.g. ``atlas-dev-gov-quality``.",
-          "title": "Engine",
-          "type": "string"
-        },
-        "score": {
-          "description": "The item's score.",
-          "title": "Score",
-          "type": "integer"
-        },
-        "id": {
-          "description": "The document id, e.g. a ``doc-\u2026`` id.",
-          "title": "Id",
-          "type": "string"
-        }
-      },
-      "required": [
-        "engine",
-        "score",
-        "id"
-      ],
-      "title": "GovQualityMeta",
-      "type": "object"
-    },
-    "GovQualityValue": {
-      "additionalProperties": false,
-      "description": "A ``{\"raw\": \u2026}`` wrapper \u2014 every leaf of the governance document is one.",
-      "properties": {
-        "raw": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            }
-          ],
-          "description": "The value: a string, or a list of strings (``usedattributes``).",
-          "title": "Raw"
-        }
-      },
-      "required": [
-        "raw"
-      ],
-      "title": "GovQualityValue",
-      "type": "object"
-    },
-    "ValidationCard": {
-      "additionalProperties": false,
-      "description": "One governance card: the items of one aspect, with the card's verdict.",
-      "properties": {
-        "items": {
-          "description": "The checks of this card.",
-          "items": {
-            "$ref": "#/$defs/GovQualityItem"
-          },
-          "title": "Items",
-          "type": "array"
-        },
-        "isNonCompliant": {
-          "description": "Whether any item fails; the editor's badge.",
-          "title": "Isnoncompliant",
+          "description": "The verdict: whether the draft passes the rule.",
+          "title": "Compliant",
           "type": "boolean"
+        },
+        "message": {
+          "description": "The line to show: the rule's own sentence, or the kind's reason.",
+          "title": "Message",
+          "type": "string"
         }
       },
       "required": [
-        "isNonCompliant"
+        "ruleGuid",
+        "ruleName",
+        "attribute",
+        "dimension",
+        "compliant",
+        "message"
       ],
-      "title": "ValidationCard",
+      "title": "GovernanceVerdict",
+      "type": "object"
+    },
+    "UnreadRule": {
+      "additionalProperties": false,
+      "description": "A rule the vocabulary cannot read \u2014 recorded, never executed (VEV-03; CL-40; DV-146).",
+      "properties": {
+        "ruleGuid": {
+          "description": "The catalogue guid of the unread rule.",
+          "title": "Ruleguid",
+          "type": "string"
+        },
+        "ruleName": {
+          "description": "The rule's name, as the catalogue holds it.",
+          "title": "Rulename",
+          "type": "string"
+        },
+        "error": {
+          "description": "Why the vocabulary cannot read it, e.g. a stored expression rule.",
+          "title": "Error",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ruleGuid",
+        "ruleName",
+        "error"
+      ],
+      "title": "UnreadRule",
       "type": "object"
     }
   },
   "additionalProperties": false,
-  "description": "The ``POST /`` answer: the four governance cards.",
+  "description": "The ``POST /`` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-02/03; CL-40; DD-498).",
   "properties": {
-    "dataEntity": {
-      "$ref": "#/$defs/ValidationCard",
-      "description": "The card for the data entity aspect."
+    "verdicts": {
+      "description": "One verdict per ACTIVE rule the vocabulary could read (VEV-02).",
+      "items": {
+        "$ref": "#/$defs/GovernanceVerdict"
+      },
+      "title": "Verdicts",
+      "type": "array"
     },
-    "definition": {
-      "$ref": "#/$defs/ValidationCard",
-      "description": "The card for the definition aspect."
-    },
-    "domainLead": {
-      "$ref": "#/$defs/ValidationCard",
-      "description": "The card for the domain lead aspect."
-    },
-    "name": {
-      "$ref": "#/$defs/ValidationCard",
-      "description": "The card for the name aspect."
+    "unreadRules": {
+      "description": "The rules the vocabulary could not read (VEV-03): shown, never executed.",
+      "items": {
+        "$ref": "#/$defs/UnreadRule"
+      },
+      "title": "Unreadrules",
+      "type": "array"
     }
   },
-  "required": [
-    "dataEntity",
-    "definition",
-    "domainLead",
-    "name"
-  ],
   "title": "ValidationResponse",
   "type": "object"
 }
@@ -713,34 +364,8 @@ Config:
 
 Fields:
 
-- `data_entity` (`ValidationCard`)
-- `definition` (`ValidationCard`)
-- `domain_lead` (`ValidationCard`)
-- `name` (`ValidationCard`)
-
-#### data\_entity
-
-```
-data_entity: ValidationCard
-```
-
-The card for the data entity aspect.
-
-#### definition
-
-```
-definition: ValidationCard
-```
-
-The card for the definition aspect.
-
-#### domain\_lead
-
-```
-domain_lead: ValidationCard
-```
-
-The card for the domain lead aspect.
+- `verdicts` (`list[GovernanceVerdict]`)
+- `unread_rules` (`list[UnreadRule]`)
 
 #### model\_config
 
@@ -748,21 +373,29 @@ The card for the domain lead aspect.
 model_config = ConfigDict(populate_by_name=True, extra='forbid', frozen=True)
 ```
 
-#### name
+#### unread\_rules
 
 ```
-name: ValidationCard
+unread_rules: list[UnreadRule]
 ```
 
-The card for the name aspect.
+The rules the vocabulary could not read (VEV-03): shown, never executed.
+
+#### verdicts
+
+```
+verdicts: list[GovernanceVerdict]
+```
+
+One verdict per ACTIVE rule the vocabulary could read (VEV-02).
 
 ## aurelius\_atlas\_validate\_entity\_client.client
 
-The async client for the validate-entity API (CL-01..CL-05, CL-40; DD-203, DD-204, DD-205).
+The async client for the validate-entity API (CL-01..CL-05; CL-40 as amended by 12.7; DD-203, DD-204, DD-205).
 
 The shared client conventions of increment 8.4: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01). The request path is relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Tests pass one built on a `MockTransport` and no socket opens (CL-02); the bearer goes on every call (CL-03); `ValidateEntityClientError` rises on a non-2xx answer (CL-04); `httpx`'s own error propagates on an unreachable upstream (CL-05).
 
-`validate` posts any mapping — the endpoint never reads the body (VE-01, DD-201), so the request is not a model — and parses the fixed governance document into a :class:`~aurelius_atlas_validate_entity_client.models.ValidationResponse` (CL-40).
+`validate` posts the draft entity — the endpoint reads only its `attributes` (VEV-01), so the request is not a model — and parses the verdict document into a :class:`~aurelius_atlas_validate_entity_client.models.ValidationResponse` (CL-40).
 
 Type Aliases:
 
@@ -848,7 +481,7 @@ Methods:
 
 - **`validate`** –
 
-  `POST /`: the entity in, the governance-quality document out (VE-01, CL-40).
+  `POST /`: the draft entity in, the governance verdicts out (VEV-01/02, CL-40).
 - **`with_token`** –
 
   The same client speaking with `token` — sharing the connection pool (CL-03).
@@ -859,9 +492,9 @@ Methods:
 validate(entity: Mapping[str, Any]) -> ValidationResponse
 ```
 
-`POST /`: the entity in, the governance-quality document out (VE-01, CL-40).
+`POST /`: the draft entity in, the governance verdicts out (VEV-01/02, CL-40).
 
-:param entity: the entity being edited; the mock never reads it (VE-01).
+:param entity: the entity being edited; only its `attributes` are read (VEV-01).
 
 Raises:
 

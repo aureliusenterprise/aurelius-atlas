@@ -109,6 +109,7 @@
 - [058\. A new catalogue starts with the m4i types](<https://aureliusenterprise.github.io/main/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/index.md>)
 - [059\. The catalogue searches by meaning](<https://aureliusenterprise.github.io/main/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/index.md>)
 - [060\. The App Search API returns](<https://aureliusenterprise.github.io/main/architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/index.md>)
+- [061\. The governance banner answers live verdicts](<https://aureliusenterprise.github.io/main/architecture/adr/061-the-governance-banner-answers-live-verdicts/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/main/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/main/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/main/architecture/conversion/design-log/index.md>)

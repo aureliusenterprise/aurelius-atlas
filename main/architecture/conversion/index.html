@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/">
+        <link rel="prev" href="../adr/061-the-governance-banner-answers-live-verdicts/">
       
       
         <link rel="next" href="./design-log/">
@@ -2126,6 +2126,8 @@
       
         
       
+        
+      
     
     
     
@@ -3817,6 +3819,33 @@
     
   
   060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -7728,6 +7757,20 @@ checks a PR must pass:</p>
 <td>The source envelope</td>
 <td>The first step of 12.4: <code>SOURCES</code> is a list of sources, each naming its dataset (qualified name or guid), its reader kind, and its config — <code>{"dataset": {"guid": …}, "kind": "file", "config": {"path": …}}</code> — and a <code>SourceRouter</code> sends each dataset to the reader of its kind, guid first (DQS-17..20, DD-462..464). The file reader's behaviour and pairs stand unchanged; no second reader lands here</td>
 <td>– (net-new)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.6</td>
+<td>The governance quality checks</td>
+<td><code>aurelius_atlas_quality.governance</code>: a governance rule is data — one of two presence kinds (<code>ATTRIBUTE_PRESENT</code>, <code>ATTRIBUTE_NOT_EMPTY</code>) over the attributes of one catalogue record, an <code>anyOf</code> list standing in for the legacy OR bar; the verdict is boolean and carries the rule's own message, no score or threshold (DD-487..489); patch 002 adds the vocabulary attributes to <code>m4i_gov_data_quality</code> and the stored entity reads as a rule (GQ-01..08, DD-487..490)</td>
+<td>– (the legacy Flink expression evaluator, not ported; DV-146)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.7</td>
+<td>The governance verdicts, live</td>
+<td><code>apps/aurelius-atlas-validate-entity</code> answers real verdicts: the ACTIVE <code>m4i_gov_data_quality</code> rules read by paged search as the app's own service identity, run over the draft the editor sent, one boolean verdict per rule plus the unread ones; the 8.3 mock document retires and the webapp banner follows the new shape in the same PR; the deployed leg joins the charts (<code>SERVER_BASE_URL</code>/<code>TOKEN_URL</code>/<code>SERVER_CLIENT_SECRET</code>, the <code>&lt;release&gt;-validate-entity-client</code> Secret, the master realm's import env) (VEV-01..06, DD-498..501, CHT-113, DV-153 supersedes DV-67, ADR 061)</td>
+<td>Aurelius <code>apps/m4i-validate-entity</code> (the Flask mock, retired); the Flink governance evaluation it was never wired to</td>
 <td>in progress</td>
 </tr>
 <tr>

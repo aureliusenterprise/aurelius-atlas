@@ -3713,8 +3713,17 @@ Classes:
 
   Another process wrote the document since this one read it (TDS-11).
 
+Functions:
+
+- **`ensure_index`** –
+
+  Create `index` unless it exists; whether this call made it (DD-508).
+
 Attributes:
 
+- **`ALREADY_EXISTS`** –
+
+  What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade
 - **`INDEX_SETTINGS`** (`dict[str, Any]`) –
 
   The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
@@ -3724,6 +3733,14 @@ Attributes:
 - **`TYPEDEF_INDEX`** –
 
   The alias of the index that holds the type definitions.
+
+### ALREADY\_EXISTS
+
+```
+ALREADY_EXISTS = 'resource_already_exists_exception'
+```
+
+What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade when both make the same index (DD-508).
 
 ### INDEX\_SETTINGS
 
@@ -3805,7 +3822,7 @@ prepare() -> None
 
 Create the index behind the alias unless it exists; the document itself is not searched.
 
-An existing index gets the settings of a new one, as its replicas (IDX-02).
+An existing index gets the settings of a new one, as its replicas (IDX-02). A create lost to a server booting on the same store takes that path too (DD-508).
 
 #### read
 
@@ -3951,6 +3968,23 @@ Raises:
 Bases: `Exception`
 
 Another process wrote the document since this one read it (TDS-11).
+
+### ensure\_index
+
+```
+ensure_index(
+    client: AsyncElasticsearch,
+    *,
+    index: str,
+    aliases: dict[str, Any] | None = None,
+    mappings: dict[str, Any] | None = None,
+    settings: dict[str, Any] | None = None,
+) -> bool
+```
+
+Create `index` unless it exists; whether this call made it (DD-508).
+
+Two servers that share a store make the same indices as they start, from the same definitions. A create that loses to the other server's identical one answers `resource_already_exists_exception`, which is success for both: the index stands, made whole by whoever got there first. Any other answer raises.
 
 ## aurelius\_atlas\_core.stored\_form
 

@@ -17,21 +17,24 @@ workspace = true
 
 ## aurelius\_atlas\_quality
 
-Data quality for Aurelius Atlas: the closed rule vocabulary, the row-mask engine and the score rollup.
+Data quality for Aurelius Atlas: the closed rule vocabularies, the row-mask engine and the score rollup.
 
-A rule is data: a check kind from a closed vocabulary (:class:`CheckKind`), a dimension (:class:`Dimension`), and parameters. The library maps a rule to a row mask over a polars DataFrame (:func:`evaluate`), scores it, rolls results up per dimension (:func:`summarise`), and converts to and from the shapes the store holds (:func:`rule_from_atlas_attributes`, :func:`result_documents`).
+A rule is data: a check kind from a closed vocabulary (:class:`CheckKind` for a dataset's rows, :class:`GovCheckKind` for one catalogue record), a dimension (:class:`Dimension`), and parameters. The library maps a dataset rule to a row mask over a polars DataFrame (:func:`evaluate`), scores it, rolls results up per dimension (:func:`summarise`), answers a governance rule as a boolean verdict over one record (:func:`evaluate_gov_entity`), and converts to and from the shapes the store holds (:func:`rule_from_atlas_attributes`, :func:`rule_from_gov_attributes`, :func:`result_documents`).
 
 Modules:
 
 - **`atlas`** –
 
-  The Atlas glue: rules read from `m4i_data_quality` entities, results written as score documents.
+  The Atlas glue: rules read from stored entities, results written as score documents.
 - **`checks`** –
 
   The build side of the vocabulary: how each check kind masks a DataFrame (DQ-03).
 - **`evaluate`** –
 
   Evaluation: a rule over a DataFrame, into a score and the rows it rejects (DQ-04, DQ-05).
+- **`governance`** –
+
+  The governance rule vocabulary: two presence kinds, the rule, and the one-record verdict (GQ-01..GQ-06).
 - **`rule`** –
 
   The closed rule vocabulary: dimensions, check kinds, and the rule with its parse-time validation (DQ-01, DQ-02).
@@ -53,6 +56,15 @@ Classes:
 - **`DqRule`** –
 
   One data-quality rule: a check kind, its parameters, its dimension, and the pass threshold (DQ-01).
+- **`GovCheckKind`** –
+
+  The closed vocabulary of governance rule kinds. A rule names one of these; adding a kind is a release.
+- **`GovRule`** –
+
+  One governance rule: a presence kind, the attribute it measures, and the rule's own messages (GQ-01).
+- **`GovVerdict`** –
+
+  One rule's answer about one record: compliant or not, with the sentence to show (GQ-04).
 - **`KindSpec`** –
 
   One vocabulary row: the dimension a kind measures, the parameters it needs, and its reason line.
@@ -68,6 +80,9 @@ Classes:
 
 Functions:
 
+- **`evaluate_gov_entity`** –
+
+  Run one governance rule over one record's attributes (GQ-04..GQ-06).
 - **`evaluate_rules`** –
 
   Run every rule over `df` in order (DQ-05). A column error still raises; see :func:`evaluate`.
@@ -77,6 +92,9 @@ Functions:
 - **`rule_from_atlas_attributes`** –
 
   Build a rule from the attributes of an `m4i_data_quality` entity (DQ-07).
+- **`rule_from_gov_attributes`** –
+
+  Build a governance rule from the attributes of an `m4i_gov_data_quality` entity (GQ-07).
 - **`summarise`** –
 
   Roll results up into the per-dimension and overall scores (DQ-06).
@@ -89,6 +107,12 @@ Attributes:
 - **`CASTABLE_TYPES`** (`frozenset[str]`) –
 
   The type names a :attr:`CheckKind.COLUMN_TYPE_CASTABLE` rule may name. :mod:`.checks` maps them to casts.
+- **`GOV_KINDS`** (`Mapping[GovCheckKind, KindSpec]`) –
+
+  The governance vocabulary (GQ-03): the same :class:`KindSpec` rows `KINDS` uses, so one resource
+- **`GOV_RULE_TYPE_NAME`** –
+
+  The Atlas entity type that carries a governance-quality rule (GQ-07).
 - **`KINDS`** (`Mapping[CheckKind, KindSpec]`) –
 - **`RULE_TYPE_NAME`** –
 
@@ -125,6 +149,32 @@ CASTABLE_TYPES: frozenset[str] = frozenset({'int', 'integer', 'long', 'float', '
 ```
 
 The type names a :attr:`CheckKind.COLUMN_TYPE_CASTABLE` rule may name. :mod:`.checks` maps them to casts.
+
+### GOV\_KINDS
+
+```
+GOV_KINDS: Mapping[GovCheckKind, KindSpec] = {
+    GovCheckKind.ATTRIBUTE_PRESENT: KindSpec(
+        Dimension.COMPLETENESS,
+        frozenset({"attribute"}),
+        frozenset({"anyOf"}),
+        "the record does not carry the attribute",
+    ),
+    GovCheckKind.ATTRIBUTE_NOT_EMPTY: KindSpec(
+        Dimension.COMPLETENESS, frozenset({"attribute"}), frozenset({"anyOf"}), "the attribute holds no value to show"
+    ),
+}
+```
+
+The governance vocabulary (GQ-03): the same :class:`KindSpec` rows `KINDS` uses, so one resource can serve both. The dimension is COMPLETENESS for both kinds — the dimension every stored governance rule names. The reason line is the verdict message when the rule stores none (GQ-06).
+
+### GOV\_RULE\_TYPE\_NAME
+
+```
+GOV_RULE_TYPE_NAME = 'm4i_gov_data_quality'
+```
+
+The Atlas entity type that carries a governance-quality rule (GQ-07).
 
 ### KINDS
 
@@ -201,6 +251,8 @@ The lowest threshold a rule may name (DQ-02). Served to the editor with the voca
 __all__ = [
     "ATLAS_TO_KIND",
     "CASTABLE_TYPES",
+    "GOV_KINDS",
+    "GOV_RULE_TYPE_NAME",
     "KINDS",
     "RULE_TYPE_NAME",
     "SCORE_TYPE_NAME",
@@ -210,14 +262,19 @@ __all__ = [
     "Dimension",
     "DimensionScore",
     "DqRule",
+    "GovCheckKind",
+    "GovRule",
+    "GovVerdict",
     "KindSpec",
     "QualityRuleError",
     "QualitySummary",
     "RuleResult",
     "evaluate",
+    "evaluate_gov_entity",
     "evaluate_rules",
     "result_documents",
     "rule_from_atlas_attributes",
+    "rule_from_gov_attributes",
     "summarise",
 ]
 ```
@@ -461,6 +518,161 @@ Raises:
 
   the kind is unknown, the dimension disagrees, a parameter is missing or not known for the kind, or the threshold is not a ratio (DQ-02).
 
+### GovCheckKind
+
+Bases: `StrEnum`
+
+The closed vocabulary of governance rule kinds. A rule names one of these; adding a kind is a release.
+
+Attributes:
+
+- **`ATTRIBUTE_NOT_EMPTY`** –
+- **`ATTRIBUTE_PRESENT`** –
+
+#### ATTRIBUTE\_NOT\_EMPTY
+
+```
+ATTRIBUTE_NOT_EMPTY = 'ATTRIBUTE_NOT_EMPTY'
+```
+
+#### ATTRIBUTE\_PRESENT
+
+```
+ATTRIBUTE_PRESENT = 'ATTRIBUTE_PRESENT'
+```
+
+### GovRule
+
+```
+GovRule(
+    name: str,
+    kind: GovCheckKind,
+    dimension: Dimension,
+    attribute: str,
+    any_of: tuple[str, ...] = (),
+    compliant_message: str | None = None,
+    non_compliant_message: str | None = None,
+    guid: str | None = None,
+)
+```
+
+One governance rule: a presence kind, the attribute it measures, and the rule's own messages (GQ-01).
+
+`params` arrive as `attribute` (required) and `anyOf` (optional, the legacy `|` — GQ-06). `compliant_message` and `non_compliant_message` are the sentences the rule stores for its two verdicts; the type's legacy `compliantMessage`/`nonCompliantMessage` attributes carry them. There is no threshold and no score: a verdict over one record is boolean (DD-487).
+
+Methods:
+
+- **`from_json`** –
+
+  Build a rule from its JSON shape.
+
+Attributes:
+
+- **`any_of`** (`tuple[str, ...]`) –
+- **`attribute`** (`str`) –
+- **`compliant_message`** (`str | None`) –
+- **`dimension`** (`Dimension`) –
+- **`guid`** (`str | None`) –
+- **`kind`** (`GovCheckKind`) –
+- **`name`** (`str`) –
+- **`non_compliant_message`** (`str | None`) –
+
+#### any\_of
+
+```
+any_of: tuple[str, ...] = ()
+```
+
+#### attribute
+
+```
+attribute: str
+```
+
+#### compliant\_message
+
+```
+compliant_message: str | None = None
+```
+
+#### dimension
+
+```
+dimension: Dimension
+```
+
+#### guid
+
+```
+guid: str | None = None
+```
+
+#### kind
+
+```
+kind: GovCheckKind
+```
+
+#### name
+
+```
+name: str
+```
+
+#### non\_compliant\_message
+
+```
+non_compliant_message: str | None = None
+```
+
+#### from\_json
+
+```
+from_json(blob: Mapping[str, Any]) -> GovRule
+```
+
+Build a rule from its JSON shape.
+
+The shape is `guid`, `name`, `checkKind`, `params` (`attribute`, `anyOf`), `compliantMessage`, `nonCompliantMessage`, and an optional `dimension`. The `dimension` may be omitted, and then the kind's own is used; when present it must equal the kind's.
+
+Raises:
+
+- `QualityRuleError` –
+
+  the kind is unknown, the dimension disagrees, a parameter is missing or not known for the kind, or `anyOf` is not a list (GQ-02).
+
+### GovVerdict
+
+```
+GovVerdict(rule: GovRule, compliant: bool, message: str)
+```
+
+One rule's answer about one record: compliant or not, with the sentence to show (GQ-04).
+
+Attributes:
+
+- **`compliant`** (`bool`) –
+- **`message`** (`str`) –
+- **`rule`** (`GovRule`) –
+
+#### compliant
+
+```
+compliant: bool
+```
+
+#### message
+
+```
+message: str
+```
+
+#### rule
+
+```
+rule: GovRule
+```
+
 ### KindSpec
 
 ```
@@ -590,6 +802,16 @@ rule: DqRule
 score: float | None
 ```
 
+### evaluate\_gov\_entity
+
+```
+evaluate_gov_entity(rule: GovRule, attributes: Mapping[str, Any]) -> GovVerdict
+```
+
+Run one governance rule over one record's attributes (GQ-04..GQ-06).
+
+`attributes` are the record's attributes as bare JSON, the draft or the stored entity's. The check applies to the rule's attribute and to each `anyOf` attribute (GQ-06): one pass makes the verdict compliant. An attribute the record does not carry fails the check — it never raises, because an editor draft is always missing something (GQ-05). The message is the rule's own sentence for its verdict, or the kind's reason line when the rule stores none (GQ-06).
+
 ### evaluate\_rules
 
 ```
@@ -628,6 +850,24 @@ Raises:
 
   the entity names no kind this port knows, or a parameter is missing. The scanner records such a rule as ERROR — the legacy-expression case.
 
+### rule\_from\_gov\_attributes
+
+```
+rule_from_gov_attributes(attributes: Mapping[str, Any]) -> GovRule
+```
+
+Build a governance rule from the attributes of an `m4i_gov_data_quality` entity (GQ-07).
+
+`attributes` may carry the entity's `guid`; it travels onto the rule. The rule reads under the vocabulary names — `dqcheckkind`, `dqattribute`, `dqanyOf` — plus `name`, `qualityDimension`, and the rule's messages: `compliantMessage` and `nonCompliantMessage`, the corpus's lowercase `noncompliantMessage` spelling read as the fallback. Each value is read bare or as the webapp's `{"raw": ...}` wrapper.
+
+A rule with no `dqcheckkind` — a stored expression rule, the legacy shape — raises: the caller records it, nothing executes it (DV-146). The legacy `expression` is never read.
+
+Raises:
+
+- `QualityRuleError` –
+
+  the entity names no kind of the governance vocabulary, or a parameter is missing or malformed (GQ-02).
+
 ### summarise
 
 ```
@@ -640,9 +880,9 @@ Each dimension is the mean of its scoring rules' scores, and the overall score t
 
 ## aurelius\_atlas\_quality.atlas
 
-The Atlas glue: rules read from `m4i_data_quality` entities, results written as score documents.
+The Atlas glue: rules read from stored entities, results written as score documents.
 
-This module converts; it holds no I/O. :func:`rule_from_atlas_attributes` reads a stored rule's attributes into a :class:`~aurelius_atlas_quality.rule.DqRule`, and :func:`result_documents` renders a run's results as the documents a scanner writes to the store (DQ-07, DQ-08).
+This module converts; it holds no I/O. :func:`rule_from_atlas_attributes` reads a stored `m4i_data_quality` rule's attributes into a :class:`~aurelius_atlas_quality.rule.DqRule`, :func:`rule_from_gov_attributes` reads a stored `m4i_gov_data_quality` rule's attributes into a :class:`~aurelius_atlas_quality.governance.GovRule`, and :func:`result_documents` renders a run's results as the documents a scanner writes to the store (DQ-07, DQ-08, GQ-07).
 
 Functions:
 
@@ -652,12 +892,18 @@ Functions:
 - **`rule_from_atlas_attributes`** –
 
   Build a rule from the attributes of an `m4i_data_quality` entity (DQ-07).
+- **`rule_from_gov_attributes`** –
+
+  Build a governance rule from the attributes of an `m4i_gov_data_quality` entity (GQ-07).
 
 Attributes:
 
 - **`ATLAS_TO_KIND`** (`Mapping[tuple[str, str], CheckKind]`) –
 
   The legacy rule shapes this port reads: `dataqualitytype` and `dataqualityoperator` to a kind.
+- **`GOV_RULE_TYPE_NAME`** –
+
+  The Atlas entity type that carries a governance-quality rule (GQ-07).
 - **`RULE_TYPE_NAME`** –
 
   The Atlas entity type that carries a data-quality rule.
@@ -679,6 +925,14 @@ ATLAS_TO_KIND: Mapping[tuple[str, str], CheckKind] = {
 The legacy rule shapes this port reads: `dataqualitytype` and `dataqualityoperator` to a kind.
 
 A rule stored by the legacy application carries that pair. A rule of the new vocabulary names its kind under `dqcheckkind` instead, and has no legacy twin.
+
+### GOV\_RULE\_TYPE\_NAME
+
+```
+GOV_RULE_TYPE_NAME = 'm4i_gov_data_quality'
+```
+
+The Atlas entity type that carries a governance-quality rule (GQ-07).
 
 ### RULE\_TYPE\_NAME
 
@@ -723,6 +977,24 @@ Raises:
 - `QualityRuleError` –
 
   the entity names no kind this port knows, or a parameter is missing. The scanner records such a rule as ERROR — the legacy-expression case.
+
+### rule\_from\_gov\_attributes
+
+```
+rule_from_gov_attributes(attributes: Mapping[str, Any]) -> GovRule
+```
+
+Build a governance rule from the attributes of an `m4i_gov_data_quality` entity (GQ-07).
+
+`attributes` may carry the entity's `guid`; it travels onto the rule. The rule reads under the vocabulary names — `dqcheckkind`, `dqattribute`, `dqanyOf` — plus `name`, `qualityDimension`, and the rule's messages: `compliantMessage` and `nonCompliantMessage`, the corpus's lowercase `noncompliantMessage` spelling read as the fallback. Each value is read bare or as the webapp's `{"raw": ...}` wrapper.
+
+A rule with no `dqcheckkind` — a stored expression rule, the legacy shape — raises: the caller records it, nothing executes it (DV-146). The legacy `expression` is never read.
+
+Raises:
+
+- `QualityRuleError` –
+
+  the entity names no kind of the governance vocabulary, or a parameter is missing or malformed (GQ-02).
 
 ## aurelius\_atlas\_quality.checks
 

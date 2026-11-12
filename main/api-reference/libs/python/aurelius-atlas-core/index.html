@@ -5592,6 +5592,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_document.ALREADY_EXISTS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ALREADY_EXISTS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_document.INDEX_SETTINGS" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -5851,6 +5862,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;VersionConflictError
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_document.ensure_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;ensure_index
       </span>
     </span>
   </a>
@@ -6510,6 +6532,8 @@
       
         
           
+        
+      
         
       
         
@@ -8322,6 +8346,33 @@
     
   
   060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -14929,6 +14980,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_document.ALREADY_EXISTS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;ALREADY_EXISTS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.typedef_document.INDEX_SETTINGS" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -15188,6 +15250,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-class"></code>&nbsp;VersionConflictError
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.typedef_document.ensure_index" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;ensure_index
       </span>
     </span>
   </a>
@@ -30057,10 +30130,39 @@ then the files of its <code>patches</code> sub-directory. A directory without en
 
 
 
+<p><span class="doc-section-title">Functions:</span></p>
+    <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            ensure_index
+
+
+  
+      async
+   (aurelius_atlas_core.typedef_document.ensure_index)" href="./#aurelius_atlas_core.typedef_document.ensure_index">ensure_index</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>Create <code>index</code> unless it exists; whether this call made it (DD-508).</p>
+            </div>
+          </li>
+    </ul>
+
+
 
 
 <p><span class="doc-section-title">Attributes:</span></p>
     <ul>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            ALREADY_EXISTS
+
+
+  
+      module-attribute
+   (aurelius_atlas_core.typedef_document.ALREADY_EXISTS)" href="./#aurelius_atlas_core.typedef_document.ALREADY_EXISTS">ALREADY_EXISTS</a></code></b>
+          –
+          <div class="doc-md-description">
+            <p>What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade</p>
+          </div>
+        </li>
         <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            INDEX_SETTINGS
 
@@ -30109,6 +30211,31 @@ then the files of its <code>patches</code> sub-directory. A directory without en
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_core.typedef_document.ALREADY_EXISTS" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">ALREADY_EXISTS</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.typedef_document.ALREADY_EXISTS" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">ALREADY_EXISTS</span> <span class="o">=</span> <span class="s1">'resource_already_exists_exception'</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade
+when both make the same index (DD-508).</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -30436,7 +30563,8 @@ it, none on a single node, whose indices are then green, not yellow.</p>
     <div class="doc doc-contents ">
 
         <p>Create the index behind the alias unless it exists; the document itself is not searched.</p>
-<p>An existing index gets the settings of a new one, as its replicas (IDX-02).</p>
+<p>An existing index gets the settings of a new one, as its replicas (IDX-02). A create lost to a server
+booting on the same store takes that path too (DD-508).</p>
 
 
     </div>
@@ -31081,6 +31209,40 @@ it, none on a single node, whose indices are then green, not yellow.</p>
 
 </div>
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="aurelius_atlas_core.typedef_document.ensure_index" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">ensure_index</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.typedef_document.ensure_index" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">ensure_index</span><span class="p">(</span>
+    <span class="n"><span title="aurelius_atlas_core.typedef_document.ensure_index(client)">client</span></span><span class="p">:</span> <span class="n"><span title="elasticsearch.AsyncElasticsearch">AsyncElasticsearch</span></span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.typedef_document.ensure_index(index)">index</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.typedef_document.ensure_index(aliases)">aliases</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.typedef_document.ensure_index(mappings)">mappings</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.typedef_document.ensure_index(settings)">settings</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="bool">bool</span></span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Create <code>index</code> unless it exists; whether this call made it (DD-508).</p>
+<p>Two servers that share a store make the same indices as they start, from the same definitions. A create that
+loses to the other server's identical one answers <code>resource_already_exists_exception</code>, which is success for
+both: the index stands, made whole by whoever got there first. Any other answer raises.</p>
+
+
+    </div>
+
+</div>
 
 
 

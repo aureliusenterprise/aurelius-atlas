@@ -2126,6 +2126,8 @@
       
         
       
+        
+      
     
     
     
@@ -3817,6 +3819,33 @@
     
   
   060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -7085,6 +7114,18 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td>— (the Aurelius app's <code>apps/atlas/src/app/search/components/editor/{gov-quality,editors-by-type}</code> — the hand-written per-type rule form and its dispatch. Its free-text fields are replaced by 12.5's vocabulary form and its validation, DV-148)</td>
 <td><code>aurelius-atlas-webapp</code> (<code>search/editor/quality-fields</code>, <code>search/editor/entity-editor.component</code>, <code>search/details/details.component</code>, <code>search/details/sections/section-config.ts</code>, EDT-25..32, DET-38)</td>
 <td>7.27</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius legacy app's <code>libs/m4i-data-management/.../quality/utils/run_quality_rule_expression/</code> and its <code>completeness</code>/<code>length</code> functions — the <code>eval</code>-based expression evaluator the governance corpus stored; not executed, restated as two presence kinds over a record (DD-487..489, DV-146 extended)</td>
+<td><code>aurelius-atlas-quality</code> (<code>governance.py</code>, GQ-01..07)</td>
+<td>12.6</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius legacy app's <code>apps/m4i-validate-entity</code> — the Flask mock behind the editor's validation trigger; the Flink governance evaluation it was never wired to, ported as the real verdicts instead of the mock (DV-67 superseded by DV-153, ADR 061)</td>
+<td><code>aurelius-atlas-validate-entity</code> (<code>verdicts.py</code>, <code>providers/upstreams.py</code>, <code>routes/validate.py</code>, VEV-01..06, DD-498..501, CHT-113)</td>
+<td>12.7</td>
 <td>in progress</td>
 </tr>
 <tr>
