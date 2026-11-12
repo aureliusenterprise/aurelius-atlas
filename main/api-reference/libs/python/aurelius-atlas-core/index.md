@@ -1162,6 +1162,7 @@ Attributes:
 - **`COUNT_PAGE`** –
 
   How many buckets one page of a composite count aggregation holds (MET-02).
+- **`ENTITY_DOCUMENTS`** –
 - **`ENTITY_FIELD_LIMIT`** –
 
   `index.mapping.total_fields.limit` of the entity index: a field per searchable attribute (DD-088).
@@ -1171,6 +1172,9 @@ Attributes:
 - **`ENTITY_MAPPING`** (`dict[str, Any]`) –
 
   System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched
+- **`GOV_QUALITY`** –
+
+  The indices an App Search engine searches: the entities', and the governance verdicts' (DD-534).
 - **`INDEX_PREFIX`** –
 
   The prefix of the three aliases; tests give their own.
@@ -1251,6 +1255,12 @@ COUNT_PAGE = 1000
 
 How many buckets one page of a composite count aggregation holds (MET-02).
 
+### ENTITY\_DOCUMENTS
+
+```
+ENTITY_DOCUMENTS = 'entities'
+```
+
 ### ENTITY\_FIELD\_LIMIT
 
 ```
@@ -1298,6 +1308,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         APP_SEARCH_FIELD: app_search_mapping(),
         QUALITY_RESULT_FIELD: quality_result_mapping(),
         QUALITY_TOTALS_FIELD: quality_totals_mapping(),
+        GOVERNED_FIELD: {"type": "boolean"},
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
@@ -1306,6 +1317,14 @@ ENTITY_MAPPING: dict[str, Any] = {
 ```
 
 System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088); the App Search document's fields, by name (ASD-02).
+
+### GOV\_QUALITY
+
+```
+GOV_QUALITY = 'gov-quality'
+```
+
+The indices an App Search engine searches: the entities', and the governance verdicts' (DD-534).
 
 ### INDEX\_PREFIX
 
@@ -1484,6 +1503,9 @@ Methods:
 - **`get_linked`** –
 
   `mget` of the kind's index: real time (DD-061, DD-070).
+- **`governance_rules`** –
+
+  Page through the active governance rule entities (ASG-03): writes refresh (ENS-11).
 - **`journal`** –
 
   The entries of the journal as the last refresh shows them: recovery reads only entries whose lease has
@@ -1514,6 +1536,9 @@ Methods:
 - **`release`** –
 
   Delete the reservation when `guid` still holds it, guarded by its version.
+- **`replace_verdicts`** –
+
+  One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
 - **`reservations`** –
 
   `mget` of the reservations, in real time.
@@ -1534,10 +1559,13 @@ Methods:
   Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 - **`search_app_search`** –
 
-  One search of the entity index for the App Search engine: hits with scores, the exact total, the
+  One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact
 - **`terms`** –
 
   A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+- **`to_govern`** –
+
+  The entities to judge by GUID, a page of them: those of a ruled type judged otherwise, those that lost
 - **`type_counts`** –
 
   A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
@@ -1558,7 +1586,7 @@ Attributes:
 
 - **`aliases`** (`tuple[str, ...]`) –
 
-  The aliases of the entity index, the reservations, the journal and the linked documents' indices.
+  The aliases of the entity index, the reservations, the journal, the linked documents' indices and the
 
 #### aliases
 
@@ -1566,7 +1594,7 @@ Attributes:
 aliases: tuple[str, ...]
 ```
 
-The aliases of the entity index, the reservations, the journal and the linked documents' indices.
+The aliases of the entity index, the reservations, the journal, the linked documents' indices and the governance verdicts' (DD-534).
 
 #### classifications\_of\_types
 
@@ -1633,6 +1661,14 @@ get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, Do
 ```
 
 `mget` of the kind's index: real time (DD-061, DD-070).
+
+#### governance\_rules
+
+```
+governance_rules() -> list[VersionedEntity]
+```
+
+Page through the active governance rule entities (ASG-03): writes refresh (ENS-11).
 
 #### journal
 
@@ -1716,6 +1752,14 @@ release(key: str, guid: str) -> None
 
 Delete the reservation when `guid` still holds it, guarded by its version.
 
+#### replace\_verdicts
+
+```
+replace_verdicts(verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None
+```
+
+One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
+
 #### reservations
 
 ```
@@ -1770,11 +1814,17 @@ Free text is a scored `simple_query_string` over the text sub-fields (DD-092); f
 
 ```
 search_app_search(
-    *, query: dict[str, Any], sort: list[dict[str, Any]], aggs: dict[str, Any], from_: int, size: int
+    *,
+    query: dict[str, Any],
+    sort: list[dict[str, Any]],
+    aggs: dict[str, Any],
+    from_: int,
+    size: int,
+    index: str = ENTITY_DOCUMENTS,
 ) -> Mapping[str, Any]
 ```
 
-One search of the entity index for the App Search engine: hits with scores, the exact total, the aggregations (DD-523). Writes refresh (ENS-11).
+One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact total, the aggregations (DD-523). Writes refresh (ENS-11).
 
 #### terms
 
@@ -1783,6 +1833,14 @@ terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
 ```
 
 A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
+
+#### to\_govern
+
+```
+to_govern(digests: Mapping[str, str], limit: int) -> list[VersionedEntity]
+```
+
+The entities to judge by GUID, a page of them: those of a ruled type judged otherwise, those that lost their verdicts' cause (ASG-06, DD-535).
 
 #### type\_counts
 
@@ -1889,6 +1947,9 @@ Methods:
 - **`get_linked`** –
 
   The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
+- **`governance_rules`** –
+
+  The active governance rule entities, by GUID (ASG-03).
 - **`journal`** –
 
   Every journal entry, as the last refresh shows them.
@@ -1919,6 +1980,9 @@ Methods:
 - **`release`** –
 
   Delete the reservation of `key` if `guid` holds it.
+- **`replace_verdicts`** –
+
+  Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
 - **`reservations`** –
 
   The reservations of these keys that exist.
@@ -1940,6 +2004,9 @@ Methods:
 - **`terms`** –
 
   Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many
+- **`to_govern`** –
+
+  The entities to judge, by GUID: those with a document of a type in `digests` judged by another digest
 - **`type_counts`** –
 
   How many entities there are of each type, state and shell flag, as of now (MET-02).
@@ -2019,6 +2086,14 @@ get_linked(kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, Do
 ```
 
 The stored documents of a kind with these GUIDs, in real time; unknown GUIDs are left out (DD-061).
+
+#### governance\_rules
+
+```
+governance_rules() -> list[VersionedEntity]
+```
+
+The active governance rule entities, by GUID (ASG-03).
 
 #### journal
 
@@ -2100,6 +2175,14 @@ release(key: str, guid: str) -> None
 
 Delete the reservation of `key` if `guid` holds it.
 
+#### replace\_verdicts
+
+```
+replace_verdicts(verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None
+```
+
+Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
+
 #### reservations
 
 ```
@@ -2155,6 +2238,14 @@ terms(fields: Sequence[str], prefix: str) -> dict[str, list[tuple[str, int]]]
 ```
 
 Per search field, the 5 words of every entity's text in it that begin with `prefix`, with how many entities hold each, most first, then by word (DD-094).
+
+#### to\_govern
+
+```
+to_govern(digests: Mapping[str, str], limit: int) -> list[VersionedEntity]
+```
+
+The entities to judge, by GUID: those with a document of a type in `digests` judged by another digest or none, and those with verdicts no longer judged (ASG-06, DD-535).
 
 #### type\_counts
 
@@ -2611,6 +2702,12 @@ Attributes:
 - **`derivedsystem`** (`list[str | None]`) –
 - **`derivedsystemguid`** (`list[str]`) –
 - **`email`** (`str | None`) –
+- **`governed_by`** (`str | None`) –
+
+  The digest of the type's governance rules the entity was judged by; a document derived again has none
+- **`governed_source`** (`str | None`) –
+
+  The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).
 - **`name`** (`str | None`) –
 - **`parentguid`** (`str | None`) –
 - **`referenceablequalifiedname`** (`str`) –
@@ -2755,6 +2852,22 @@ derivedsystemguid: list[str] = Field(default_factory=list)
 ```
 email: str | None = None
 ```
+
+#### governed\_by
+
+```
+governed_by: str | None = None
+```
+
+The digest of the type's governance rules the entity was judged by; a document derived again has none (ASG-06, DD-535).
+
+#### governed\_source
+
+```
+governed_source: str | None = None
+```
+
+The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).
 
 #### name
 
@@ -2902,6 +3015,9 @@ Attributes:
 - **`embedding`** (`StoredEmbedding | None`) –
 
   The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435).
+- **`governed`** (`bool | None`) –
+
+  Whether the entity has governance verdicts, until a round takes them away (ASG-06, DD-535).
 - **`guid`** (`str`) –
 - **`home_id`** (`str | None`) –
 - **`is_incomplete`** (`bool`) –
@@ -2973,6 +3089,14 @@ embedding: StoredEmbedding | None = None
 ```
 
 The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435).
+
+#### governed
+
+```
+governed: bool | None = None
+```
+
+Whether the entity has governance verdicts, until a round takes them away (ASG-06, DD-535).
 
 #### guid
 

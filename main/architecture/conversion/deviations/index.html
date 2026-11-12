@@ -7661,6 +7661,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The scanner scores a rule over a dataset and keeps the newest score per pair (DD-456); a list of fields matches the field page's <code>fieldguid</code> filter as one value did; a deactivated rule's last score would stay in the totals for good</td>
 <td>14.5</td>
 </tr>
+<tr>
+<td>DV-160</td>
+<td>App Search</td>
+<td><code>atlas-dev-gov-quality</code> held the verdicts the legacy job wrote as each entity was published, for the rules of its definition files, and never judged them again: 1,628 of the sample's 5,675 pairs of an entity and a rule for its type, 199 naming attributes their own rule's expression does not</td>
+<td>A verdict for every rule of the vocabulary or of the two expression forms and every active entity of its type with a document, judged again when the entity's document or its type's rules change; a rule of another expression, such as the sample's 46 <code>conditional_value(...)</code>, judges nothing (ASG-02, ASG-03, ASG-06, DD-533, DD-535)</td>
+<td>A verdict out of step with its entity or rule shows a miss the record no longer has; nothing in the store is ever evaluated (DV-146), and the rules of another expression have no reading in the vocabulary</td>
+<td>14.6</td>
+</tr>
 </tbody>
 </table>
 
