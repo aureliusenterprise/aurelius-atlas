@@ -1,7 +1,7 @@
 # 14.7 The derived documents in the embedding
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#335](https://github.com/aureliusenterprise/aurelius-atlas/pull/335)
 - **Records:** ADR 059 (Proposed); DD-538 to DD-540 (here); relies on 11.3 (VEC-01 to VEC-06, DD-435 to DD-437),
   14.2 (ASD-01, LAS-04, LAS-05) and 14.3 (ASU-01, DD-518, DD-519)
 
