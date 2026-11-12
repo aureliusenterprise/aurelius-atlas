@@ -160,7 +160,10 @@ def test__the_person_page_draws_roles_and_counts(authenticated: Page, root_url: 
         # ProcessOwner end the legacy box never lists is absent (DV-154)
         # because no seed names it here and the layout seeds only five.
         roles = authenticated.locator("#governance-roles")
-        expect(roles.locator("h6")).to_have_text("5 result(s)")
+        # Name the count element: while the ends load, the box carries its own
+        # "Loading …" placeholders as h6 too, which a bare h6 locator resolves
+        # alongside the count and fails strict mode under load.
+        expect(roles.locator("h6.aurelius-card-section-count")).to_have_text("5 result(s)")
         expect(roles.locator(".title.is-4 a")).to_have_text(
             [
                 names["domain"],
