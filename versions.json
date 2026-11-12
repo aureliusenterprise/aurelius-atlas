@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "feat-14-4-app-search-elastic",
+    "title": "feat-14-4-app-search-elastic",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
