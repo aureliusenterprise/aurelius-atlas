@@ -2,7 +2,7 @@
 
 The suite drives the scanner in-process — the job is a batch CLI, not a service — against a
 stack whose services are the Atlas server and one disposable broker and Schema Registry
-(DD-528, the pattern of db-scanner's Postgres, DD-507): the stack starts with the suite and
+(DD-533, the pattern of db-scanner's Postgres, DD-507): the stack starts with the suite and
 discards its cluster data with it. The store and the issuer stay the dev ones. Seeding and
 cleanup ride the webapp suite's writer (the public client's password grant); every scan speaks
 as the scanner's own service identity, minted by client credentials (DD-469's pattern). Every
@@ -219,7 +219,7 @@ def server(keycloak: DockerCompose, elasticsearch: DockerCompose) -> Iterator[st
     liveness over TLS, the broker's metadata answer, the Registry's subject list, and the
     one-shot ``sasl-init`` exit. The stack rides the dev store and issuer, started first by the
     fixtures and left running (DD-223); this whole stack comes down at the end, and the
-    broker's data with it (DD-528).
+    broker's data with it (DD-533).
     """
     _ = keycloak, elasticsearch
     context = Path(__file__).parent.absolute()

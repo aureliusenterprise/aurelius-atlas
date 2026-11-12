@@ -28,7 +28,7 @@
             ],
             "executor": "@nxlv/python:run-commands",
             "metadata": {
-                "description": "E2E: the scanner in-process against a real server and its own disposable broker and Registry (DD-528; DD-223: the shared dev stacks are never restarted, so never parallel)"
+                "description": "E2E: the scanner in-process against a real server and its own disposable broker and Registry (DD-533; DD-223: the shared dev stacks are never restarted, so never parallel)"
             },
             "options": {
                 "command": "uv run pytest e2e",

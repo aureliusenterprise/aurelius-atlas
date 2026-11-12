@@ -78,7 +78,7 @@ npx nx e2e aurelius-atlas-kafka-scanner    # the scanner in-process against a re
 ```
 
 The e2e stack starts its own broker, Schema Registry, and SCRAM user beside
-the server (DD-528, the disposable-database pattern of DD-507), and discards
+the server (DD-533, the disposable-database pattern of DD-507), and discards
 the cluster when the suite ends. In dev, point the scan at any broker you
 own:
 
