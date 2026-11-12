@@ -19,8 +19,9 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 - `aurelius_atlas_server/embedding.py` — `EmbeddingClient` (an OpenAI-compatible `/v1/embeddings`, the
   embedder of 11.2) and `EmbeddingWorker`: with `embedding_url` set, the lifespan maps the entities' vectors,
   moving an entity index stored before to one that keeps vectors (DD-439), and the worker runs
-  `EntityEmbeddingIndexer` rounds every `embedding_poll_seconds` (VEC-07, DD-436). Unset, nothing changes
-  (VEC-08). `tests/test__aurelius_atlas_server_embedding.py` mocks the embedder's transport
+  `EntityEmbeddingIndexer` rounds every `embedding_poll_seconds` (VEC-07, DD-436). While `app_search_enabled`,
+  the indexer waits for an entity's App Search document, whose names join its text (EMC-04, DD-540). Unset,
+  nothing changes (VEC-08). `tests/test__aurelius_atlas_server_embedding.py` mocks the embedder's transport
 - `aurelius_atlas_server/app_search.py` — `AppSearchWorker`: unless `app_search_enabled` is false, the
   lifespan starts it on the entity documents, and it runs `AppSearchIndexer` rounds every
   `app_search_poll_seconds`, deriving the original webapp's missing and stale App Search documents (ASU-06,

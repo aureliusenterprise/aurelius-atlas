@@ -12,6 +12,7 @@ import certifi
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_server import app as app_module
 from aurelius_atlas_server.app import create_app
@@ -188,3 +189,31 @@ async def test__with_embedding_the_server_maps_the_vector_and_embeds_the_entitie
     assert {"input": ["m4i_data_entity\nCustomer"], "model": MODEL, "input_type": "passage"}.items() <= requests[
         -1
     ].items()
+
+
+@pytest.mark.parametrize("app_search", [True, False])
+@pytest.mark.usefixtures("fake_es")
+@pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["EMC-04"])
+async def test__the_embedding_indexer_waits_for_documents_while_the_app_search_worker_runs(
+    settings: ServerSettings, monkeypatch: pytest.MonkeyPatch, *, app_search: bool
+) -> None:
+    """The indexer is told to wait exactly when ``APP_SEARCH_ENABLED`` is on (DD-540)."""
+    made: list[EntityEmbeddingIndexer] = []
+
+    class Recorded(EntityEmbeddingIndexer):
+        def __init__(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401 - passed through
+            super().__init__(*args, **kwargs)
+            made.append(self)
+
+    monkeypatch.setattr(app_module, "EntityEmbeddingIndexer", Recorded)
+    monkeypatch.setattr(app_module, "embedding_http", lambda _ca: httpx.AsyncClient(transport=embedder([])))
+    configured = settings.model_copy(
+        update={"embedding_url": URL, "embedding_dimensions": 3, "app_search_enabled": app_search}
+    )
+    app = create_app(configured)
+
+    async with app.router.lifespan_context(app):
+        pass
+
+    [indexer] = made
+    assert indexer._wait_for_documents is app_search  # noqa: SLF001 - the wiring under test

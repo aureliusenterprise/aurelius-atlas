@@ -7,6 +7,7 @@ catalogues written for one test show what the sample does not: a cycle, a delete
 
 import asyncio
 import json
+from collections.abc import Sequence
 from functools import cache
 from pathlib import Path
 from typing import Any
@@ -14,6 +15,8 @@ from typing import Any
 import pytest
 from aurelius_atlas_core.app_search_document import source_hash, with_current_app_search
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
+from aurelius_atlas_core.entity_embedding import embeddable
+from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -46,6 +49,27 @@ Document = dict[str, Any]
 
 
 X = "aurelius_atlas_core.app_search_indexer.AppSearchIndexer"
+V = "aurelius_atlas_core.entity_embedding_indexer.EntityEmbeddingIndexer"
+
+
+class FakeEmbedder:
+    """Answers each text with its position among all texts it was given, so a vector names its text."""
+
+    model = "fake"
+
+    def __init__(self) -> None:
+        self.texts: list[str] = []
+
+    async def embed(self, texts: Sequence[str]) -> list[list[float]]:
+        """One vector per text: ``[position, 1.0]``."""
+        start = len(self.texts)
+        self.texts.extend(texts)
+        return [[float(start + n), 1.0] for n in range(len(texts))]
+
+    def text_of(self, entity: StoredEntity) -> str:
+        """The text the entity's embedding was computed from."""
+        assert entity.embedding is not None
+        return self.texts[int(entity.embedding.vector[0])]
 
 
 _LOADED: dict[str, TypedefStore] = {}
@@ -174,6 +198,26 @@ def test__the_derived_relations_are_the_legacy_ones_but_five_datasets() -> None:
     assert {typename for typename, _ in gained} == {"m4i_dataset"}
     assert sorted({field for _, field in gained}) == ["derivedfield", "derivedprocess"]
     assert len(gained) == 18
+
+
+@pytest.mark.covers(f"{V}.run_once", rules=["EMC-01", "EMC-04"])
+def test__the_sample_embeds_each_entity_once_with_its_document_s_names() -> None:
+    """After the App Search round, one embedding round embeds every entity once, each documented one with the
+    legacy breadcrumb as its path line but DD-485's two; a second round embeds none.
+    """  # noqa: D205 - one sentence
+    found = indexed()
+    embedder = FakeEmbedder()
+    indexer = EntityEmbeddingIndexer(found.documents, embedder, batch_size=200, wait_for_documents=True)
+
+    written = asyncio.run(indexer.run_once())
+
+    entities = found.entities()
+    assert written == len(embedder.texts) == sum(1 for entity in entities.values() if embeddable(entity.type_name))
+    assert asyncio.run(indexer.run_once()) == 0
+    wrong = differing("breadcrumbname")
+    for guid, document in legacy().items():
+        if guid not in wrong and document["breadcrumbname"]:
+            assert " > ".join(document["breadcrumbname"]) in embedder.text_of(entities[guid]).split("\n")
 
 
 @pytest.mark.covers("aurelius_atlas_core.app_search_document.with_current_app_search", rules=["ASD-03", "ASU-01"])
@@ -342,6 +386,48 @@ async def test__an_entity_changed_while_its_document_was_derived_gets_it_in_a_la
     assert catalogue.guids["e"] not in catalogue.documents.fail
     assert with_document == {"d", "e", "y"}
     assert await catalogue.documents.without_app_search(10) == []
+
+
+@pytest.mark.covers(f"{V}.run_once", rules=["EMC-01", "EMC-03", "EMC-04"])
+async def test__a_renamed_neighbour_embeds_the_entities_naming_it_again() -> None:
+    """Nothing is embedded before the documents; then each entity with its neighbours' names; a renamed domain
+    embeds again the three entities whose documents name it, and no other.
+    """  # noqa: D205 - one sentence
+    catalogue = await Catalogue.of(
+        m4i("m4i_data_domain", "d"),
+        m4i("m4i_data_entity", "e", dataDomain=["d"]),
+        m4i("m4i_data_attribute", "a", dataEntity=["e"]),
+        m4i("m4i_system", "y"),
+    )
+    embedder = FakeEmbedder()
+    embedding = EntityEmbeddingIndexer(catalogue.documents, embedder, wait_for_documents=True)
+
+    assert await embedding.run_once() == 0
+    await catalogue.indexer().run_once()
+    assert await embedding.run_once() == 4
+    stored = await catalogue.documents.get([catalogue.guids["e"], catalogue.guids["a"]])
+    assert embedder.text_of(stored[catalogue.guids["e"]].entity) == (
+        "m4i_data_entity\nE\ne\nD\nm4i_data_domain: D\nm4i_data_attribute: A"
+    )
+    assert embedder.text_of(stored[catalogue.guids["a"]].entity) == (
+        "m4i_data_attribute\nA\na\nD > E\nm4i_data_entity: E"
+    )
+
+    renamed = AtlasEntity(
+        type_name="m4i_data_domain",
+        guid=catalogue.guids["d"],
+        attributes={"qualifiedName": "d", "name": "Finance"},
+    )
+    await EntityWriter(catalogue.store, user="u").create_or_update(AtlasEntitiesWithExtInfo(entities=[renamed]))
+    assert await embedding.run_once() == 0
+    await catalogue.indexer().run_once()
+
+    assert await embedding.run_once() == 3
+    assert set(embedder.texts[-3:]) == {
+        "m4i_data_domain\nFinance\nd\nm4i_data_entity: E",
+        "m4i_data_entity\nE\ne\nFinance\nm4i_data_domain: Finance\nm4i_data_attribute: A",
+        "m4i_data_attribute\nA\na\nFinance > E\nm4i_data_entity: E",
+    }
 
 
 @pytest.mark.covers("aurelius_atlas_core.entity_retriever.EntityRetriever.entity_with_ext_info", rules=["ASD-05"])
