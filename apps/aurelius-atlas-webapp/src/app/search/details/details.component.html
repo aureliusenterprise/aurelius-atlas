@@ -73,62 +73,103 @@
          The default layout's row is the legacy single full-width column
          (default-details.component.html) — the `columns` is there for the
          type layouts' two-column shape, not for a sidebar. -->
-<div class="columns">
-    <div class="column">
-        <div id="description-details" class="box">
-            <h3 class="title is-3">{{ descriptionTitle() }}</h3>
-            <!-- The legacy description component (DET-10, DD-321):
+<!-- The person page omits the description box entirely (DET-39, DD-518):
+     the legacy person template never carried one, so the whole first row
+     is skipped when the layout says so. Every other layout (and the
+     default) leaves `descriptionBox` absent, which means true. -->
+@if (layout()?.descriptionBox !== false) {
+    <div class="columns">
+        <div class="column">
+            <div id="description-details" class="box">
+                <h3 class="title is-3">{{ descriptionTitle() }}</h3>
+                <!-- The legacy description component (DET-10, DD-321):
                          the text renders as markdown, and an empty
                          description shows its italic centered placeholder
                          line instead of a blank box. -->
-            @if (description()) {
-                <aurelius-atlas-ui-markdown class="aurelius-details-description" [markdown]="description()" />
-            } @else {
-                <p class="is-italic has-text-centered aurelius-details-description-empty">
-                    <span i18n="@@search.components.description.notAvailable">No description available.</span>
-                </p>
-            }
-        </div>
-    </div>
-    @if (layout()?.peopleBox) {
-        <div class="column">
-            <div id="people-details" class="box aurelius-details-people">
-                <h3 class="title is-3">{{ layout()?.peopleTitle }}</h3>
-                <!-- The People box (DET-23, UIC-28): the three labelled
-                         rows of the opened entity, deduped and filtered
-                         app-side; a person link routes the screen. -->
-                <aurelius-atlas-ui-people-box
-                    [rows]="people()"
-                    [emptyLabel]="peopleEmpty"
-                    (personClicked)="onCardClick($event)"
-                />
+                @if (description()) {
+                    <aurelius-atlas-ui-markdown class="aurelius-details-description" [markdown]="description()" />
+                } @else {
+                    <p class="is-italic has-text-centered aurelius-details-description-empty">
+                        <span i18n="@@search.components.description.notAvailable">No description available.</span>
+                    </p>
+                }
             </div>
         </div>
-    }
-</div>
+        @if (layout()?.peopleBox) {
+            <div class="column">
+                <div id="people-details" class="box aurelius-details-people">
+                    <h3 class="title is-3">{{ layout()?.peopleTitle }}</h3>
+                    <!-- The People box (DET-23, UIC-28): the three labelled
+                         rows of the opened entity, deduped and filtered
+                         app-side; a person link routes the screen. -->
+                    <aurelius-atlas-ui-people-box
+                        [rows]="people()"
+                        [emptyLabel]="peopleEmpty"
+                        (personClicked)="onCardClick($event)"
+                    />
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<!-- The grouped stats bar (DET-40, DD-518): the person page's four
+     headed boxes — the legacy columns of boxes, each box a heading over
+     its one or two level-item links. A heading link scrolls its box into
+     view (DET-25's router anchor, DV-156: scroll only, no section filter).
+     Only a layout with `statsGroups` renders this; every other keeps the
+     flat bar below. -->
+@if (statsGroups().length > 0) {
+    <div class="columns is-centered has-text-centered aurelius-details-stats-groups">
+        @for (group of statsGroups(); track group.heading) {
+            <div class="column">
+                <div class="box aurelius-details-stats-group">
+                    <p class="heading">{{ group.heading }}</p>
+                    <nav class="level is-mobile" [attr.aria-label]="group.heading">
+                        @for (item of group.items; track item.label) {
+                            <div class="level-item has-text-centered">
+                                <div>
+                                    <p class="heading">
+                                        <a [routerLink]="[]" [fragment]="item.target">{{ item.label }}</a>
+                                    </p>
+                                    <p class="title">{{ item.count }}</p>
+                                </div>
+                            </div>
+                        }
+                    </nav>
+                </div>
+            </div>
+        }
+    </div>
+}
 
 <!-- The stats bar (DET-24): the layout's `section-stats` in legacy order,
          counts live (a section's seed count, Properties the rendered rows)
          and every sourceless stat left out (DD-369). The default layout
          keeps the 7.20 single Properties level. -->
-<div class="box aurelius-details-stats">
-    @if (layout()) {
-        <aurelius-atlas-ui-section-stats [items]="stats()" (itemClicked)="onStatClick($event)" />
-    } @else {
-        <nav class="level">
-            <div class="level-item has-text-centered">
-                <div>
-                    <p class="heading">
-                        <a [routerLink]="[]" fragment="properties-details" i18n="@@search.details.default.properties"
-                            >Properties</a
-                        >
-                    </p>
-                    <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
+@if (statsGroups().length === 0) {
+    <div class="box aurelius-details-stats">
+        @if (layout()) {
+            <aurelius-atlas-ui-section-stats [items]="stats()" (itemClicked)="onStatClick($event)" />
+        } @else {
+            <nav class="level" [attr.aria-label]="propertiesTitle()">
+                <div class="level-item has-text-centered">
+                    <div>
+                        <p class="heading">
+                            <a
+                                [routerLink]="[]"
+                                fragment="properties-details"
+                                i18n="@@search.details.default.properties"
+                                >Properties</a
+                            >
+                        </p>
+                        <p class="title aurelius-details-property-count">{{ propertyCount() }}</p>
+                    </div>
                 </div>
-            </div>
-        </nav>
-    }
-</div>
+            </nav>
+        }
+    </div>
+}
 
 <!-- The layout's card sections (DET-17..DET-22): the box carries the
          legacy anchor id so the stats bar's and the navigation's `#href`s
@@ -209,6 +250,21 @@
                 <aurelius-atlas-webapp-lineage-model [guid]="guid()" />
             </section>
         }
+    }
+
+    <!-- The Governance Quality Rules box (DET-42, DD-520): the person
+         page's #gov-quality div, below the responsibilities box. The
+         rows — the person type's ACTIVE rules with their verdict icons —
+         ride the screen's store; a rule title opens the rule's page. An
+         empty box while loading, or after a failed read, is the settled
+         shape (DD-521's quiet swallow). -->
+    @if (layout()?.govQualityBox) {
+        <div id="gov-quality" class="box aurelius-details-gov-quality">
+            <h3 class="title is-3" i18n="@@search.details.components.governanceQualityCards.title">
+                Governance Quality Rules
+            </h3>
+            <aurelius-atlas-webapp-gov-quality-cards [rows]="govRows()" (ruleClicked)="onCardClick($event)" />
+        </div>
     }
 }
 

@@ -32,6 +32,8 @@ import { detailProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CardContent } from "./sections/card-content.component";
+import { DetailsGovQualityState } from "./sections/gov-quality.state";
+import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
 import type { StatDef } from "./sections/section-config";
@@ -69,6 +71,7 @@ import { peopleRows } from "./shared/people";
         DetailsNavigation,
         EntityCard,
         FontAwesomeModule,
+        GovQualityCards,
         LineageModel,
         Markdown,
         PeopleBox,
@@ -82,7 +85,7 @@ import { peopleRows } from "./shared/people";
     // drawer lives in the root `drawer` aux outlet and a page-scoped provider
     // would hide the box's state from it, so the service is the root
     // singleton both this page and the drawer read.
-    providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState],
+    providers: [DetailsState, DetailsBreadcrumbState, DetailsLayoutState, RelatedSectionsState, DetailsGovQualityState],
     templateUrl: "./details.component.html",
     styleUrl: "./details.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -109,6 +112,9 @@ export class Details {
 
     /** The Lineage Model fetch state (DD-400): the LDG-32 stat reads it. */
     protected readonly lineage = inject(LineageModelState);
+
+    /** The Governance Quality Rules box of the layout (DET-42, DD-520). */
+    private readonly govQuality = inject(DetailsGovQualityState);
 
     /** Whether the pencil shows (EDT-09, DD-324): the atlas-write grant. */
     protected readonly canWrite = canWriteEntities();
@@ -168,6 +174,11 @@ export class Details {
         });
         effect(() => {
             this.sections.seed(this.entity(), this.layoutState.layout());
+        });
+        // The rule box follows the entity (DET-42): every arrival re-reads,
+        // the save re-read among them — the sections store's rule.
+        effect(() => {
+            this.govQuality.load(this.layout()?.govQualityBox ? this.entity() : null);
         });
 
         // A deep link's anchor lands when its box arrives (DET-25, DD-381).
@@ -353,6 +364,25 @@ export class Details {
     );
 
     /**
+     * The grouped stats-bar boxes of the layout, with live counts
+     * (DET-40, DD-518): the person bar's four headed boxes. Empty for
+     * every other layout, which keeps the flat DET-24 bar above.
+     */
+    protected readonly statsGroups = computed(() =>
+        (this.layout()?.statsGroups ?? []).map((group) => ({
+            heading: group.heading,
+            items: group.items.map((stat) => ({
+                label: stat.label,
+                target: stat.anchor,
+                count: this.statCount(stat),
+            })),
+        })),
+    );
+
+    /** The Governance Quality Rules rows (DET-42), empty for every other type. */
+    protected readonly govRows = this.govQuality.rows;
+
+    /**
      * The count behind one stat (DET-24): the properties' own count, the
      * lineage's word, or the section's rendered-entry count — picked by
      * the stat's source kind.
@@ -364,6 +394,9 @@ export class Details {
         }
         if (stat.source.kind === "lineage") {
             return this.lineageWord(stat);
+        }
+        if (stat.source.kind === "end") {
+            return this.sections.endCount(stat.source.key);
         }
         return this.sections.countFor(stat.source.anchor);
     }

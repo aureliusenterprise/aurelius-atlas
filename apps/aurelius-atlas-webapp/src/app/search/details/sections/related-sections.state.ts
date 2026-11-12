@@ -135,6 +135,9 @@ export class RelatedSectionsState {
     /** The resolve generation: a re-seed drops every in-flight answer. */
     private generation = 0;
 
+    /** The entity the last seed read ({@link endCount}'s source, DET-40). */
+    private lastSeed: { entity: AtlasEntity | null } = { entity: null };
+
     /** The sections as the renderer draws them, in layout order. */
     readonly views = computed<SectionView[]>(() => this.records().map((record) => this.viewOf(record)));
 
@@ -148,6 +151,7 @@ export class RelatedSectionsState {
      */
     seed(entity: AtlasEntity | null, layout: TypeLayout | undefined): void {
         this.generation++;
+        this.lastSeed = { entity };
         if (entity === null || layout === undefined) {
             this.records.set([]);
             return;
@@ -181,6 +185,36 @@ export class RelatedSectionsState {
      */
     countFor(anchor: string): number {
         return this.records().find((record) => record.def.anchor === anchor)?.seed.length ?? 0;
+    }
+
+    /**
+     * The count of one `relationshipAttributes` end (DET-40, DD-519): the
+     * person stats bar's per-end numbers, computed by the same seed rule
+     * the sections ride — ACTIVE entries carrying a guid, deduped by guid
+     * — so a stat and the merged box's cards can never disagree. The seed
+     * follows the entity, like {@link seed}: the count is read from the
+     * last entity passed to it.
+     * @param key the `relationshipAttributes` key to count
+     * @returns the deduped ACTIVE entry count, 0 with no entity or end
+     */
+    endCount(key: string): number {
+        const entity = this.lastSeed.entity;
+        if (entity === null) {
+            return 0;
+        }
+
+        const stored = entity.relationshipAttributes ?? {};
+        const seen = new Set<string>();
+        for (const row of asRelatedList(stored[key])) {
+            if (row.relationshipStatus !== undefined && row.relationshipStatus !== "ACTIVE") {
+                continue; // EDT-15: a DELETED edge counts nothing
+            }
+            if (typeof row.guid === "string" && row.guid !== "") {
+                seen.add(row.guid);
+            }
+        }
+
+        return seen.size;
     }
 
     /**

@@ -559,6 +559,98 @@ function m4iProcess(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInf
     };
 }
 
+/**
+ * The m4i person body (DET-39..DET-43): the five responsibility ends,
+ * one duplicate Data Owner entity (dedup), one DELETED steward attribute
+ * (counts nothing), and a `ProcessOwner` end the box never lists (DV-154).
+ * `email` is the one property the Other stat counts.
+ */
+function m4iPerson(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+    return {
+        entity: {
+            guid: "pe-1",
+            typeName: "m4i_person",
+            attributes: { name: "Ada", qualifiedName: "ada@corp", email: "ada@example.com" },
+            relationshipAttributes: {
+                domainLead: [endOf("d1", "m4i_data_domain", "genomics")],
+                businessOwnerEntity: [
+                    endOf("e1", "m4i_data_entity", "variants"),
+                    endOf("e2", "m4i_data_entity", "samples"),
+                    endOf("e2", "m4i_data_entity", "samples"),
+                ],
+                businessOwnerAttribute: [endOf("a1", "m4i_data_attribute", "gene_symbol")],
+                stewardEntity: [endOf("e3", "m4i_data_entity", "reports")],
+                stewardAttribute: [
+                    {
+                        guid: "a2",
+                        displayText: "chromosome",
+                        typeName: "m4i_data_attribute",
+                        relationshipStatus: "DELETED",
+                    },
+                    endOf("a3", "m4i_data_attribute", "coverage"),
+                ],
+                ProcessOwner: [endOf("po1", "m4i_generic_process", "build_index")],
+            },
+            ...overrides,
+        },
+        referredEntities: {},
+    };
+}
+
+/** The bulk answer for the person's merged roles box: the five seeded ends. */
+function personEndsAnswer(): Record<string, unknown> {
+    return {
+        entities: [
+            {
+                guid: "d1",
+                typeName: "m4i_data_domain",
+                attributes: { name: "genomics", qualifiedName: "genomics@corp" },
+            },
+            {
+                guid: "e1",
+                typeName: "m4i_data_entity",
+                attributes: { name: "variants", qualifiedName: "variants@corp" },
+            },
+            { guid: "e2", typeName: "m4i_data_entity", attributes: { name: "samples", qualifiedName: "samples@corp" } },
+            { guid: "e3", typeName: "m4i_data_entity", attributes: { name: "reports", qualifiedName: "reports@corp" } },
+            {
+                guid: "a1",
+                typeName: "m4i_data_attribute",
+                attributes: { name: "gene_symbol", qualifiedName: "gene_symbol@corp" },
+            },
+            {
+                guid: "a3",
+                typeName: "m4i_data_attribute",
+                attributes: { name: "coverage", qualifiedName: "coverage@corp" },
+            },
+        ],
+        referredEntities: {},
+    };
+}
+
+/**
+ * Bring a person up fully: the entity, the roles box's chunk, and the rule
+ * box's two calls (the search of `rules`, the empty verdicts) all settle.
+ */
+function arrivePerson(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    body: AtlasEntityWithExtInfo = m4iPerson(),
+    rules: Record<string, unknown>[] = [],
+): void {
+    arrive(fixture, httpMock, body);
+    for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        request.flush(personEndsAnswer());
+    }
+    for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/search/basic")) {
+        request.flush({ entities: rules });
+    }
+    for (const request of httpMock.match((r) => r.url === "/validate-entity/")) {
+        request.flush({ verdicts: [], unreadRules: [] });
+    }
+    fixture.detectChanges();
+}
+
 /** Deliver an m4i entity's read, its sections' first chunk, and the box's call. */
 function arriveSections(
     fixture: { detectChanges: () => void },
@@ -1239,6 +1331,226 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         lineageCall.flush({ model: modelFixture.model, metadata: modelFixture.metadata });
         fixture.detectChanges();
         expect(statValue()).toBe("Available");
+    });
+});
+
+/** One rule header of the person box's search answer (DET-42). */
+function govRule(guid: string, name: string, extra: Record<string, unknown> = {}): Record<string, unknown> {
+    return {
+        guid,
+        typeName: "m4i_gov_data_quality",
+        displayText: name,
+        attributes: { name, qualityDimension: "COMPLETENESS", ...extra },
+    };
+}
+
+describe("Details person page (DET-39..DET-43)", () => {
+    it("a person renders the tenth layout, without a description box (DET-39)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrivePerson(fixture, httpMock);
+
+        // The roles box and the rule box, the legacy ids; the description
+        // box the nine older layouts draw is absent here (the legacy
+        // person template never carried one), and so is its nav entry.
+        expect(compiled.querySelector("#description-details")).toBeNull();
+        expect(compiled.querySelector("#governance-roles")).toBeTruthy();
+        expect(compiled.querySelector("#gov-quality")).toBeTruthy();
+        // The grouped bar replaces the flat one (DD-518): the four boxes.
+        expect(compiled.querySelector(".aurelius-details-stats")).toBeNull();
+        expect(compiled.querySelectorAll(".aurelius-details-stats-group")).toHaveLength(4);
+        // No People box on the person page either (the layout row says so).
+        expect(compiled.querySelector("#people-details")).toBeNull();
+        httpMock.verify();
+    });
+
+    it("the grouped stats bar counts the four headed boxes (DET-40, DD-519)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrivePerson(fixture, httpMock);
+
+        const groups = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats-group")].map((box) => [
+            normalize(box.querySelector(":scope > p.heading")?.textContent),
+            [...box.querySelectorAll<HTMLElement>(".level-item")].map((item) => [
+                normalize(item.querySelector("p.heading a")?.textContent),
+                item.querySelector<HTMLAnchorElement>("p.heading a")!.getAttribute("href"),
+                normalize(item.querySelector("p.title")?.textContent),
+            ]),
+        ]);
+        // The legacy order and counts: the duplicate entity dedupes, the
+        // DELETED edge counts nothing, the merged box holds the rest. The
+        // headings are routerLinks (the nav items' shape, DD-381), so the
+        // href is a real address with the fragment grafted on.
+        expect(groups).toEqual([
+            ["Domain Lead", [["Data Domains", "/#governance-roles", "1"]]],
+            [
+                "Data Owner",
+                [
+                    ["Data Entities", "/#governance-roles", "2"],
+                    ["Data Attributes", "/#governance-roles", "1"],
+                ],
+            ],
+            [
+                "Data Steward",
+                [
+                    ["Data Entities", "/#governance-roles", "1"],
+                    ["Data Attributes", "/#governance-roles", "1"],
+                ],
+            ],
+            ["Other", [["Properties", "/#properties-details", "1"]]],
+        ]);
+    });
+
+    it("the roles box merges the five ends and skips ProcessOwner (DET-41, DV-154)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrivePerson(fixture, httpMock);
+
+        const box = compiled.querySelector<HTMLElement>("#governance-roles");
+        // The five seeded ends, deduped (e2 twice): six cards. The
+        // `ProcessOwner` end seeds nothing — the legacy box never lists it.
+        expect(normalize(box?.querySelector("h6")?.textContent)).toBe("6 result(s)");
+        const titles = [...(box?.querySelectorAll(".title.is-4 a") ?? [])].map((link) => normalize(link.textContent));
+        expect(titles).toEqual(["genomics", "variants", "samples", "gene_symbol", "reports", "coverage"]);
+        expect(titles).not.toContain("build_index");
+    });
+
+    it("a grouped stat heading scrolls its box only (DET-40, DET-25, DV-156)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrivePerson(fixture, httpMock);
+
+        // The headings are routerLinks over the current route (the
+        // navigation items' shape, DD-381): the click goes through the
+        // router and the address names the section. Scroll only — the
+        // retired facet filter (DV-156) has no handler to call.
+        const router = TestBed.inject(Router);
+        const targets: UrlTree[] = [];
+        vi.spyOn(router, "navigateByUrl").mockImplementation((url) => {
+            targets.push(url as UrlTree);
+            return { catch: () => undefined } as never;
+        });
+
+        const groups = [...compiled.querySelectorAll<HTMLElement>(".aurelius-details-stats-group")];
+        groups[1].querySelector<HTMLAnchorElement>("p.heading a")!.click();
+        groups[3].querySelector<HTMLAnchorElement>("p.heading a")!.click();
+
+        expect(targets.map((target) => router.serializeUrl(target))).toEqual([
+            "/#governance-roles",
+            "/#properties-details",
+        ]);
+
+        // The roles box stayed unfiltered: still the six cards.
+        expect(compiled.querySelectorAll("#governance-roles aurelius-atlas-ui-entity-card")).toHaveLength(6);
+    });
+
+    it("the side navigation carries the person's three entries (DET-43)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrivePerson(fixture, httpMock);
+
+        const items = [...compiled.querySelectorAll(".aurelius-details-nav .menu-list a")].map((link) => [
+            normalize(link.textContent),
+            link.getAttribute("href"),
+        ]);
+        // The legacy order, and no Description entry: the page has no such
+        // box to scroll to (DET-39).
+        expect(items).toEqual([
+            ["Governance Responsibilities", "/#governance-roles"],
+            ["Governance Quality Rules", "/#gov-quality"],
+            ["Properties", "/#properties-details"],
+        ]);
+    });
+
+    it("the rule box lists the type's rules with their verdicts (DET-42, DV-155)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrive(fixture, httpMock, m4iPerson());
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+            request.flush(personEndsAnswer());
+        }
+        const search = httpMock.expectOne("/api/atlas/v2/search/basic");
+        search.flush({
+            entities: [
+                govRule("r2", "Person has a name", { ruleDescription: "A name is stored." }),
+                govRule("r1", "Person has an email address"),
+                govRule("r3", "Person has a role"),
+            ],
+        });
+        httpMock.expectOne("/validate-entity/").flush({
+            verdicts: [
+                {
+                    ruleGuid: "r1",
+                    ruleName: "Person has an email address",
+                    attribute: "email",
+                    dimension: "COMPLETENESS",
+                    compliant: false,
+                    message: "no email",
+                },
+                {
+                    ruleGuid: "r2",
+                    ruleName: "Person has a name",
+                    attribute: "name",
+                    dimension: "COMPLETENESS",
+                    compliant: true,
+                    message: "ok",
+                },
+            ],
+            unreadRules: [{ ruleGuid: "r3", ruleName: "Person has a role", error: "no attribute" }],
+        });
+        fixture.detectChanges();
+
+        // Name-ordered cards; the description line rides the rule that
+        // stores one; the verdicts mark success, warning, and the unread
+        // rule draws no icon at all (VEV-03).
+        const box = compiled.querySelector<HTMLElement>("#gov-quality");
+        const titles = [...(box?.querySelectorAll(".title.is-4 a") ?? [])].map((link) => normalize(link.textContent));
+        expect(titles).toEqual(["Person has a name", "Person has a role", "Person has an email address"]);
+        expect(normalize(box?.querySelector(".aurelius-gov-quality-description")?.textContent)).toBe(
+            "A name is stored.",
+        );
+        const icons = [...(box?.querySelectorAll(".aurelius-gov-quality-verdict .icon") ?? [])].map((icon) =>
+            icon.classList.contains("has-text-success")
+                ? "ok"
+                : icon.classList.contains("has-text-warning")
+                  ? "warn"
+                  : "?",
+        );
+        expect(icons).toEqual(["ok", "warn"]);
+        httpMock.verify();
+    });
+
+    it("a rule title opens the rule's page (DET-42, DET-06)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrivePerson(fixture, httpMock, m4iPerson(), [govRule("r1", "Person has a name")]);
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        compiled.querySelector<HTMLAnchorElement>("#gov-quality .title.is-4 a")!.click();
+        expect(navigate).toHaveBeenCalledWith(["/search/details", "r1"]);
+    });
+
+    it("a failed rule read leaves the box titled and empty, no alert (DET-42, DD-521)", () => {
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        arrive(fixture, httpMock, m4iPerson());
+        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+            request.flush(personEndsAnswer());
+        }
+        httpMock.expectOne("/api/atlas/v2/search/basic").flush({}, { status: 500, statusText: "Server Error" });
+        httpMock.expectOne("/validate-entity/").flush({}, { status: 500, statusText: "Server Error" });
+        fixture.detectChanges();
+
+        expect(normalize(compiled.querySelector("#gov-quality h3")?.textContent)).toBe("Governance Quality Rules");
+        expect(compiled.querySelectorAll("#gov-quality aurelius-atlas-ui-entity-card")).toHaveLength(0);
+        expect(add).not.toHaveBeenCalled();
+        httpMock.verify();
+    });
+
+    it("the person's box stays closed for a type without the layout (DET-39)", () => {
+        // The guard effect reads the layout: a person-shaped entity of an
+        // unmapped type asks for nothing (the default layout, DET-14).
+        const { fixture, compiled, httpMock } = setup("pe-1");
+        arrive(fixture, httpMock, { ...m4iPerson(), entity: { ...m4iPerson().entity, typeName: "person" } });
+        fixture.detectChanges();
+
+        expect(compiled.querySelector("#gov-quality")).toBeNull();
+        httpMock.expectNone("/api/atlas/v2/search/basic");
+        httpMock.expectNone("/validate-entity/");
+        httpMock.verify();
     });
 });
 
