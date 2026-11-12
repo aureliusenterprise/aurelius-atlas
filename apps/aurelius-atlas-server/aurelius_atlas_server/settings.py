@@ -141,6 +141,16 @@ class ServerSettings(StoreAccessSettings):
     embedding_poll_seconds: float = Field(default=10.0, gt=0)
     """How often the indexer looks for entities without a current embedding (VEC-07, DD-436)."""
 
+    app_search_enabled: bool = True
+    """Whether the server keeps the original webapp's App Search documents up to date in the background (ASU-06,
+    LAS-10, DD-521)."""
+
+    app_search_batch_size: int = Field(default=100, gt=0, le=1000)
+    """Entities, and relationships, per page of the App Search indexer (ASD-04)."""
+
+    app_search_poll_seconds: float = Field(default=10.0, gt=0)
+    """How often the App Search indexer looks for missing and stale documents (ASU-02, ASU-06)."""
+
     hybrid_vector_weight: float = Field(default=10.0, ge=0)
     """What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442)."""
 

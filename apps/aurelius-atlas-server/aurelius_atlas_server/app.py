@@ -10,6 +10,7 @@ from pathlib import Path
 
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
+from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
 from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
 from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
@@ -41,6 +42,7 @@ from fastapi.staticfiles import StaticFiles
 from opentelemetry import metrics
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from aurelius_atlas_server.app_search import AppSearchWorker
 from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingWorker, embedding_http
@@ -146,7 +148,9 @@ def create_app(
         started = int(time.time() * 1000)
         _start(metrics_util)
         worker: TaskWorker | None = None
-        schedules: list[AuditAgingScheduler | EmbeddingWorker | MetricsScheduler | SnapshotWatcher] = []
+        schedules: list[
+            AppSearchWorker | AuditAgingScheduler | EmbeddingWorker | MetricsScheduler | SnapshotWatcher
+        ] = []
         await store.open()
         try:
             documents = ElasticsearchEntityDocuments(store.client, embedding_dimensions=_dimensions(settings))
@@ -177,6 +181,7 @@ def create_app(
                     _audit_aging(settings, entity_store),
                     _metrics_schedule(app, settings, entity_store),
                     _embedding_worker(app, settings, documents),
+                    _app_search_worker(settings, documents, registry),
                     await _snapshots(settings, store),
                 )
                 if scheduler is not None
@@ -388,6 +393,18 @@ def _embedding_worker(
     app.state.embedder = client
     indexer = EntityEmbeddingIndexer(documents, client, batch_size=settings.embedding_batch_size)
     worker = EmbeddingWorker(indexer, poll_seconds=settings.embedding_poll_seconds, http=http)
+    worker.start()
+    return worker
+
+
+def _app_search_worker(
+    settings: ServerSettings, documents: ElasticsearchEntityDocuments, registry: TypeRegistry
+) -> AppSearchWorker | None:
+    """The worker that keeps the App Search documents up to date, started unless turned off (ASU-06, DD-521)."""
+    if not settings.app_search_enabled:
+        return None
+    indexer = AppSearchIndexer(documents, registry, batch_size=settings.app_search_batch_size)
+    worker = AppSearchWorker(indexer, poll_seconds=settings.app_search_poll_seconds)
     worker.start()
     return worker
 

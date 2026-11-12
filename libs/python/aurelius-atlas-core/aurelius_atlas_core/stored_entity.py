@@ -33,11 +33,13 @@ class StoredEmbedding(AtlasModel):
 class StoredAppSearch(AtlasModel):
     """An entity's App Search document: what ``atlas-dev`` held of it, under the engine's field names (DD-498).
 
-    ``source_hash`` is the hash of the entity's own fields the document was derived with (DD-499). Each derived
-    relation is a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
+    ``source_hash`` is the hash of the entity's own fields the document was derived with (DD-499); ``stale`` that
+    a write changed them since, until the indexer replaces the document (ASU-01, DD-518). Each derived relation is
+    a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
     """
 
     source_hash: str
+    stale: bool = False
     name: str | None = None
     referenceablequalifiedname: str
     definition: str = ""
@@ -96,7 +98,7 @@ class StoredEntity(AtlasModel):
     embedding: StoredEmbedding | None = None
     """The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435)."""
     app_search: StoredAppSearch | None = None
-    """The entity's App Search document, kept only while its own fields are unchanged (ASD-03, DD-499)."""
+    """The entity's App Search document, marked stale once its own fields change (ASD-03, ASU-01, DD-518)."""
 
     @classmethod
     def of(cls, entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: str | None) -> Self:

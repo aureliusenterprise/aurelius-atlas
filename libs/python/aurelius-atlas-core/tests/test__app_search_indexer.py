@@ -176,9 +176,9 @@ def test__the_derived_relations_are_the_legacy_ones_but_five_datasets() -> None:
     assert len(gained) == 18
 
 
-@pytest.mark.covers("aurelius_atlas_core.app_search_document.with_current_app_search", rules=["ASD-03"])
-def test__a_document_is_kept_only_while_its_own_fields_are_the_entity_s() -> None:
-    """Unchanged, kept; renamed, deleted or with another relationship, dropped."""
+@pytest.mark.covers("aurelius_atlas_core.app_search_document.with_current_app_search", rules=["ASD-03", "ASU-01"])
+def test__a_document_is_current_only_while_its_own_fields_are_the_entity_s() -> None:
+    """Unchanged, kept as it is; renamed, deleted or with another relationship, marked stale."""
     entity = next(entity for entity in indexed().entities().values() if entity.type_name == "m4i_field")
     renamed = entity.model_copy(update={"attributes": entity.attributes | {"Referenceable.name": "renamed"}})
     deleted = entity.model_copy(update={"state": EntityStatus.DELETED})
@@ -188,7 +188,7 @@ def test__a_document_is_kept_only_while_its_own_fields_are_the_entity_s() -> Non
     assert entity.app_search.source_hash == source_hash(entity)
     assert with_current_app_search(entity).app_search == entity.app_search
     for changed in (renamed, deleted, related):
-        assert with_current_app_search(changed).app_search is None
+        assert with_current_app_search(changed).app_search == entity.app_search.model_copy(update={"stale": True})
 
 
 class Catalogue:
@@ -215,10 +215,10 @@ class Catalogue:
         return AppSearchIndexer(self.documents, self.registry, batch_size=batch_size)
 
     async def documents_of(self) -> dict[str, StoredAppSearch]:
-        """Every entity's document as derived now, by key."""
+        """Every entity's document as derived now, by key; those without one left out."""
         found = await self.documents.get(list(self.guids.values()))
         derived = await self.indexer().derive([found[guid].entity for guid in self.guids.values()])
-        return {key: derived[guid] for key, guid in self.guids.items()}
+        return {key: document for key, guid in self.guids.items() if (document := derived[guid]) is not None}
 
     def keys(self, guids: list[str]) -> list[str]:
         """The keys of these GUIDs."""
