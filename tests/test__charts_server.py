@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 from conftest import (
+    SCANNER_CLIENT_IDS,
     SERVER_CHART,
     container,
     env_map,
@@ -150,15 +151,18 @@ def test__auth_env_block_joins_issuer_realm_and_secret(server_docs: list[dict[st
 
     The server refuses to boot without AUTH_SERVER_URL/AUTH_CLIENT_SECRET,
     so the block is not opt-in like telemetry: the issuer is the CHT-03
-    join, the realm the CHT-74 fact, the audiences the webapp's client
-    (AUT-02/10), the CA the Certificate's mounted ca.crt, and the secret the
-    <release>-server-client join the realm import resolves (CHT-109).
+    join, the realm the CHT-74 fact, the audiences the webapp's client plus
+    the three scanner clients (AUT-02/10, CHT-120), the CA the Certificate's
+    mounted ca.crt, and the secret the <release>-server-client join the
+    realm import resolves (CHT-109).
     """
     envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.test"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
-    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    # CHT-120 (12.3): the scanners' client-credentials tokens are accepted
+    # too — the default admits each scanner client id beside the webapp's.
+    assert json.loads(env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES")) == ["aurelius", *SCANNER_CLIENT_IDS]
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
     join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "atlas-server-client", "key": "client-secret"}

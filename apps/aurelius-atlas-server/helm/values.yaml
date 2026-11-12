@@ -107,14 +107,20 @@ credentialSecrets:
 # The 6.1a authentication join (CHT-108): the confidential client the server
 # verifies (its own — the dashboards sign in through it, DD-250) and the
 # further audiences whose tokens it accepts — the webapp's client, whose
-# tokens the browser presents at /api/ and the aux APIs forward (AUT-02/10).
-# AUTH_SERVER_URL/AUTH_REALM arrive from the issuer/realm joins;
+# tokens the browser presents at /api/ and the aux APIs forward (AUT-02/10),
+# and the three batch scanner clients, whose client-credentials tokens the
+# scans present (CHT-120, 12.3 — DD-513: a stock install accepts a scanner out
+# of the box; trim the list if you install neither the realm clients nor the
+# scanners). AUTH_SERVER_URL/AUTH_REALM arrive from the issuer/realm joins;
 # AUTH_CLIENT_SECRET from credentialSecrets.serverClient; AUTH_CA_FILE from
 # the mounted Certificate (config below).
 auth:
     clientId: aurelius-atlas-server
     audiences:
         - aurelius
+        - aurelius-atlas-quality-scanner
+        - aurelius-atlas-kafka-scanner
+        - aurelius-atlas-db-scanner
 
 # Client-IP trust (SRV-10, DD-238, DD-261): which peers may rewrite the client
 # address via X-Forwarded-For, passed to uvicorn. Loopback only in a stock

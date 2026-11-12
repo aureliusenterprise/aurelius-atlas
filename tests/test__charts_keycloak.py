@@ -15,6 +15,7 @@ import yaml
 from conftest import (
     KC_CHART,
     OTEL_CLIENT_IDS,
+    SCANNER_CLIENT_IDS,
     WORKSPACE,
     container,
     env_map,
@@ -678,6 +679,29 @@ def test__unknown_realm_fails_the_render() -> None:
     """A realm with no shipped asset is a render error, never a silent no-import."""
     error = helm_render_fails(KC_CHART, sets=("realm.name=does-not-exist",))
     assert "not a shipped realm asset" in error
+
+
+@pytest.mark.covers(rules=["CHT-118", "CHT-119"])
+def test__prod_realm_carries_no_scanner_registration(kc_docs: list[dict[str, Any]]) -> None:
+    """Scanner clients are the deployment's own registration (CHT-118/119, DD-509).
+
+    The scanners run on customer systems (DD-508), so the hardened realm
+    registers none of them and the chart's import envs feed no scanner
+    secret: the deployment registers the client in its own issuer and places
+    its own credential Secret (the chart's auth.secretName join, CHT-116).
+    The dev realm (import/master.json, carried by the master asset and fed by
+    the dev compose) keeps the clients 12.2/13.1/13.3 landed there for the
+    repo's own stack — that is the dev path, not the shipped contract.
+    """
+    asset = _rendered_asset(kc_docs)
+    clients = {c["clientId"] for c in asset["clients"]}
+    assert not clients & set(SCANNER_CLIENT_IDS)
+    placeholders = json.dumps(asset)
+    for client in SCANNER_CLIENT_IDS:
+        env = f"{client.removeprefix('aurelius-atlas-').upper().replace('-', '_')}_CLIENT_SECRET"
+        assert env not in placeholders
+    envs = env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))
+    assert not [n for n in envs if n.endswith("_SCANNER_CLIENT_SECRET")]
 
 
 @pytest.mark.covers(rules=["CHT-75", "CHT-110"])

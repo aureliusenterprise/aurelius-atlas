@@ -43,13 +43,13 @@ SCRAM-authenticated host listener, and a Schema Registry, all loopback-pinned), 
 
 Explicitly not delivered, with the increment that will:
 
-| Not delivered                                             | Lands with | Why                                                                                                          |
-| --------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
-| The Helm chart, the CronJob schedule, the prod realm join | 13.2       | The chart track owns deployment (10.x's split); the app first                                                |
-| An OAUTHBEARER listener on the dev broker                 | 13.2       | The broker's own identity round (its issuer wiring) is the prod chart's; the door's mint seam is proved here |
-| Confluent wire-format decoding of message bodies          | –          | The scan reads schemas, not rows; the sniff only needs the schema id (KSC-05)                                |
-| Partitions, replicas, configs, consumer groups            | –          | The legacy scanner registered none of them; the tree is topics and fields                                    |
-| Lineage (a process per producer)                          | –          | The legacy scanner registered none; 7.21c reads whatever lands                                               |
+| Not delivered                                                  | Lands with | Why                                                                                                          |
+| -------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
+| The Helm chart, the CronJob schedule, the server audience join | 13.2       | The chart track owns deployment (10.x's split); the app first                                                |
+| An OAUTHBEARER listener on the dev broker                      | 13.2       | The broker's own identity round (its issuer wiring) is the prod chart's; the door's mint seam is proved here |
+| Confluent wire-format decoding of message bodies               | –          | The scan reads schemas, not rows; the sniff only needs the schema id (KSC-05)                                |
+| Partitions, replicas, configs, consumer groups                 | –          | The legacy scanner registered none of them; the tree is topics and fields                                    |
+| Lineage (a process per producer)                               | –          | The legacy scanner registered none; 7.21c reads whatever lands                                               |
 
 ## Semantics
 

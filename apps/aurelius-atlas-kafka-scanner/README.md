@@ -17,8 +17,8 @@ and writes the whole tree in one bulk request. A re-scan updates the same
 entities in place; it never duplicates and never deletes a removed topic.
 
 The [spec](specs/13-1-kafka-cluster-scanner/spec.md) states the KSC-01..10
-rules. The Helm chart and the schedule land with the planned
-[13.2](../../docs/architecture/conversion/index.md).
+rules. The standalone `atlas-kafka-scanner` Helm chart (`helm/`, 13.2) runs it
+as a CronJob on the schedule the deployment names.
 
 ## Scan
 
@@ -77,5 +77,5 @@ npx nx e2e aurelius-atlas-kafka-scanner    # the scanner in-process against a re
 ```
 
 The job has no port and no liveness endpoint: it runs to completion and exits,
-so the image carries no healthcheck. In production a scheduler starts it (the
-Helm CronJob lands with 13.2).
+so the image carries no healthcheck. In production the `atlas-kafka-scanner`
+CronJob starts it (13.2).
