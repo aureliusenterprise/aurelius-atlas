@@ -1,6 +1,6 @@
 """The composition root: settings in, application out (VE-01, VE-03, VEV-02..06, DD-197, DD-209).
 
-Since 12.7 the app is not the mock any more (DV-67, superseded by DV-149): it
+Since 12.7 the app is not the mock any more (DV-67, superseded by DV-153): it
 reads the governance rules from the catalogue and answers the draft's verdicts.
 Everything it collaborates with is built elsewhere and wired here — the
 factories in ``providers/`` (the verifier, the upstreams, the telemetry), the

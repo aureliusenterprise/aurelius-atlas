@@ -8,7 +8,7 @@
   realm's client join still lands with 12.3); amends VE-01, VE-02 and CL-40 (8.3's mock
   rules and the client twin — the card document retires); amends EDT-21, EDT-23 and EDT-24 (7.24's
   banner data path, over the new shape); adds ADR 061 (Proposed, supersedes ADR 055's mock clause)
-  and DV-149 (supersedes DV-67). Relies on 12.6 (GQ-01..07, the engine half) and cites DV-146 (a
+  and DV-153 (supersedes DV-67). Relies on 12.6 (GQ-01..07, the engine half) and cites DV-146 (a
   stored expression is never executed) and DD-458 (a job's own service identity, the pattern this
   app's catalogue leg copies).
 
@@ -70,7 +70,7 @@ keeps the legacy `definition` → Description alias, GOV_CARD_KEYS).
 ## Aurelius origin
 
 - `backend/m4i-validate-entity/.../m4i_validate_entity.py` — the Flask mock this app replaces
-  (DV-67, superseded by DV-149). Its four cards retire; the trigger contract (POST the draft,
+  (DV-67, superseded by DV-153). Its four cards retire; the trigger contract (POST the draft,
   swallow failures quietly) survives in the webapp (EDT-23).
 - `libs/m4i-governance-data-quality/.../rules/definitions/*.json` — the rule corpus the legacy
   Flink job evaluated; read by 12.6 into the two-kind vocabulary, read here through the search.
@@ -79,7 +79,7 @@ keeps the legacy `definition` → Description alias, GOV_CARD_KEYS).
 
 ## Deviations
 
-DV-149 supersedes DV-67: the app answers real verdicts instead of shipping the legacy mock. ADR 061
+DV-153 supersedes DV-67: the app answers real verdicts instead of shipping the legacy mock. ADR 061
 supersedes ADR 055's validate clause: R3's "browser contract kept verbatim" retires for this
 endpoint — the shape is Aurelius's own now, and the webapp twin changes in lockstep (the clean
 cut). DV-146 stands extended: an expression rule reaches this endpoint as an unread rule. The

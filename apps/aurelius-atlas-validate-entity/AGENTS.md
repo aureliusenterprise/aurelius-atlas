@@ -49,7 +49,7 @@ The VEV/VE rules live in
 8.6's specs hold the history: the mock, the failure posture); tests cite them with
 `@pytest.mark.covers(..., rules=["VEV-NN"])` (ADR 056). The engine half is
 `aurelius-atlas-quality` (GQ, 12.6); the legacy reference is `.scratch/aurelius`
-(`backend/m4i-validate-entity/`) — the mock it answered with retired at 12.7 (DV-149
+(`backend/m4i-validate-entity/`) — the mock it answered with retired at 12.7 (DV-153
 supersedes DV-67, ADR 061); the trigger contract (POST the draft, read only its
 `attributes`) survives in the webapp (EDT-23).
 

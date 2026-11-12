@@ -5,7 +5,7 @@
 - **Records:** adds GQ-01..08 and DD-487..490 (here); relies on DQ-01/DQ-02 (the vocabulary
   discipline), DD-450 (polars masks, the shape this half deliberately drops), DD-457 (patch 001, the
   precedent for GQ-08), and DV-146 (a stored expression is never executed). The records that change
-  the product surface — ADR 061 and DV-149 (supersedes DV-67, the validate-entity mock retires) —
+  the product surface — ADR 061 and DV-153 (supersedes DV-67, the validate-entity mock retires) —
   join at 12.7, the increment this one unblocks. The roadmap row 12.6 joins
   [the ledger](../../../../docs/architecture/conversion/index.md) in the implementation PR.
 
@@ -37,7 +37,7 @@ Explicitly not delivered, with the increment that will:
 | Not delivered                                        | Lands with        | Why                                                                   |
 | ---------------------------------------------------- | ----------------- | --------------------------------------------------------------------- |
 | Fetching the active gov rules and evaluating a draft | 12.7              | validate-entity owns that call path; the engine takes data            |
-| The verdict REST shape and the editor banner switch  | 12.7 / 7.28       | DV-67 retires there, by ADR 061 and DV-149                            |
+| The verdict REST shape and the editor banner switch  | 12.7 / 7.28       | DV-67 retires there, by ADR 061 and DV-153                            |
 | The gov rule editor form and the kinds endpoint rows | 7.28 / 12.7       | The vocabulary needs its consumers, not a server change here          |
 | Storing each entity's verdicts when the entity saves | 12.8 (planned)    | The server's write path evaluates and stamps; this lib stays I/O-free |
 | Re-validating stored entities in bulk                | a later increment | The scanner scores dataset files; gov rules do not join it            |
@@ -81,7 +81,7 @@ so a reviewer can compare:
 Against Apache Atlas: none, this surface exists in no Apache product. Against the Aurelius product:
 the no-expression posture is [DV-146](../../../../docs/architecture/conversion/deviations.md)'s, and
 this increment states its governance case inside that row's meaning rather than adding a row. The
-the mock-retirement deviation (DV-149) and its ADR (061) join the 12.7 PR, where the user-visible change
+the mock-retirement deviation (DV-153) and its ADR (061) join the 12.7 PR, where the user-visible change
 lands. The legacy `compliantMessage`/`nonCompliantMessage` fields survive — the verdict lines are
 their job (DV-148's "carry over where a field survives").
 

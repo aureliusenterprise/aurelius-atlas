@@ -30,6 +30,43 @@ class StoredEmbedding(AtlasModel):
     source_hash: str
 
 
+class StoredAppSearch(AtlasModel):
+    """An entity's App Search document: what ``atlas-dev`` held of it, under the engine's field names (DD-498).
+
+    ``source_hash`` is the hash of the entity's own fields the document was derived with (DD-499). Each derived
+    relation is a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
+    """
+
+    source_hash: str
+    name: str | None = None
+    referenceablequalifiedname: str
+    definition: str = ""
+    email: str | None = None
+    sourcetype: str = ""
+    breadcrumbguid: list[str] = Field(default_factory=list)
+    breadcrumbname: list[str | None] = Field(default_factory=list)
+    breadcrumbtype: list[str] = Field(default_factory=list)
+    parentguid: str | None = None
+    deriveddatadomain: list[str | None] = Field(default_factory=list)
+    deriveddatadomainguid: list[str] = Field(default_factory=list)
+    deriveddataentity: list[str | None] = Field(default_factory=list)
+    deriveddataentityguid: list[str] = Field(default_factory=list)
+    deriveddataattribute: list[str | None] = Field(default_factory=list)
+    deriveddataattributeguid: list[str] = Field(default_factory=list)
+    derivedfield: list[str | None] = Field(default_factory=list)
+    derivedfieldguid: list[str] = Field(default_factory=list)
+    deriveddataset: list[str | None] = Field(default_factory=list)
+    deriveddatasetguid: list[str] = Field(default_factory=list)
+    derivedcollection: list[str | None] = Field(default_factory=list)
+    derivedcollectionguid: list[str] = Field(default_factory=list)
+    derivedsystem: list[str | None] = Field(default_factory=list)
+    derivedsystemguid: list[str] = Field(default_factory=list)
+    derivedperson: list[str | None] = Field(default_factory=list)
+    derivedpersonguid: list[str] = Field(default_factory=list)
+    derivedprocess: list[str | None] = Field(default_factory=list)
+    derivedprocessguid: list[str] = Field(default_factory=list)
+
+
 class StoredEntity(AtlasModel):
     """One document of the entity index; ``write_id`` names the write that last wrote it (DD-046)."""
 
@@ -58,6 +95,8 @@ class StoredEntity(AtlasModel):
     write_id: str | None = None
     embedding: StoredEmbedding | None = None
     """The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435)."""
+    app_search: StoredAppSearch | None = None
+    """The entity's App Search document, kept only while its own fields are unchanged (ASD-03, DD-499)."""
 
     @classmethod
     def of(cls, entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: str | None) -> Self:

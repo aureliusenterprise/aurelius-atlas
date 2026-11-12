@@ -17,7 +17,7 @@ webapp banner in one release.
 This supersedes the validate-entity clause of [ADR 055](./055-the-lineage-chain-is-a-named-data-surface.md):
 its R3 ("the JSON shapes the legacy services return are kept verbatim") stands
 for the lineage chain and retires for this endpoint alone. [DV-67](../conversion/deviations.md)
-("the app ships as the legacy mock") is superseded by DV-149. The auxiliary-API
+("the app ships as the legacy mock") is superseded by DV-153. The auxiliary-API
 surface itself — ADR 055's naming, auth, deployment, and parity discipline —
 stands unchanged.
 
@@ -85,5 +85,5 @@ throws away.
 - **Neutral / follow-ups:** the prod-realm client join rides the chart track
   (with 12.3's sibling); rule authoring for the new vocabulary lands with
   7.28; storing verdicts at save time is planned at 12.8; `deviations.md`
-  gains DV-149 (supersedes DV-67), and 8.3's VE-01/VE-02 and CL-40 are amended
+  gains DV-153 (supersedes DV-67), and 8.3's VE-01/VE-02 and CL-40 are amended
   by increment 12.7.

@@ -8,7 +8,7 @@ from the Aurelius `m4i-validate-entity` service
 Introduced by increment 8.3 as the mock the legacy service was
 ([DV-67](../../docs/architecture/conversion/deviations.md)); made live by 12.7
 ([ADR 061](../../docs/architecture/adr/061-the-governance-banner-answers-live-verdicts.md),
-[DV-149](../../docs/architecture/conversion/deviations.md)). The app reads the ACTIVE
+[DV-153](../../docs/architecture/conversion/deviations.md)). The app reads the ACTIVE
 governance rules (`m4i_gov_data_quality`) from the catalogue, runs each over the draft's
 attributes with the 12.6 engine, and answers one boolean verdict per rule — the rule's own
 guid, name, attribute, dimension, verdict, and message — plus the rules the vocabulary

@@ -58,7 +58,7 @@ export type EntityValidationResponse = {
  * browser's call that checks a draft entity against the governance rules.
  * Since 12.7 the app runs the catalogue's ACTIVE rules over the draft and
  * answers real verdicts (VEV-02) — the 8.3 mock and its card document retired
- * with DV-67 (DV-149, the clean cut of DD-501). This client is the Angular
+ * with DV-67 (DV-153, the clean cut of DD-501). This client is the Angular
  * twin of `aurelius_atlas_validate_entity_client.ValidateEntityClient` (CL-40)
  * and of the legacy `gov-quality-api-client.service.ts`, whose swallowed
  * errors are the editor's job, not this one's (the legacy catch-all is not

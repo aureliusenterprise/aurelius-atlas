@@ -34,7 +34,7 @@ Flink writer's quirk); the engine already answers a boolean (GQ-04, DD-489).
 item per key loses all but one rule per aspect, and every leaf carries a `raw`
 wrapper and a fake `doc-` id). Key by rule guid (refused: the grouping key is
 the attribute — the banner's rows sit under a control and nothing else). Cards
-plus a parallel flat array (refused: two shapes for one surface; DV-149
+plus a parallel flat array (refused: two shapes for one surface; DV-153
 retires the card one).
 
 ### DD-499. The rules read rides the app's own service identity, not the caller's token
@@ -118,7 +118,7 @@ client is on record). A dual-shape release would keep the `raw` wrappers alive
 in three twins for a window in which no supported pair needs them, and would
 leave the banner's parse ambiguous exactly where the mock once hid it (an
 unreadable answer renders nothing, so a half-switch fails silently — the worst
-outcome). Deleting the mock is the point of DV-149; keeping its models would
+outcome). Deleting the mock is the point of DV-153; keeping its models would
 make the deviation permanent.
 
 **Alternatives.** Content-negotiate both shapes (refused: two contracts in CI
