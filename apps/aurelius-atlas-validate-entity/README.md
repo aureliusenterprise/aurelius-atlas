@@ -12,7 +12,7 @@ Introduced by increment 8.3 as the mock the legacy service was
 governance rules (`m4i_gov_data_quality`) from the catalogue, runs each over the draft's
 attributes with the 12.6 engine, and answers one boolean verdict per rule — the rule's own
 guid, name, attribute, dimension, verdict, and message — plus the rules the vocabulary
-cannot read
+cannot read (a stored expression of the two legacy forms reads, 14.6's ASG-02)
 ([spec](specs/12-7-governance-verdicts/spec.md)). The code follows the workspace's
 example-app layout (DD-209): the collaborators built by `providers/`, the endpoints in
 `routes/`, and a thin composition root in `app.py`.

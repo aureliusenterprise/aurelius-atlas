@@ -180,7 +180,7 @@ async def test__the_rules_search_pages_to_the_end_and_asks_the_rule_attributes(
                         rule_entity(
                             "rule-legacy",
                             "Legacy expression",
-                            {"name": "Legacy expression", "expression": "completeness('owner')"},
+                            {"name": "Legacy expression", "expression": "uniqueness('qualifiedName')"},
                         )
                     ],
                     "-1",

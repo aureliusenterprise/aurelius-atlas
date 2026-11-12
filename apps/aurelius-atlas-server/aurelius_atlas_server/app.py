@@ -10,6 +10,7 @@ from pathlib import Path
 
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
+from aurelius_atlas_core.app_search_governance import GovernanceIndexer
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.app_search_quality import QualityIndexer
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
@@ -415,14 +416,15 @@ def _embedding_worker(
 def _app_search_worker(
     settings: ServerSettings, documents: ElasticsearchEntityDocuments, registry: TypeRegistry
 ) -> AppSearchWorker | None:
-    """The worker that keeps the App Search documents, results and totals up to date, started unless turned off
-    (ASU-06, ASQ-07, DD-521).
+    """The worker that keeps the App Search documents, results, totals and verdicts up to date, started unless
+    turned off (ASU-06, ASQ-07, ASG-06, DD-521).
     """  # noqa: D205 - one sentence
     if not settings.app_search_enabled:
         return None
     indexer = AppSearchIndexer(documents, registry, batch_size=settings.app_search_batch_size)
     quality = QualityIndexer(documents, batch_size=settings.app_search_batch_size)
-    worker = AppSearchWorker(indexer, quality, poll_seconds=settings.app_search_poll_seconds)
+    governance = GovernanceIndexer(documents, registry, batch_size=settings.app_search_batch_size)
+    worker = AppSearchWorker(indexer, quality, governance, poll_seconds=settings.app_search_poll_seconds)
     worker.start()
     return worker
 

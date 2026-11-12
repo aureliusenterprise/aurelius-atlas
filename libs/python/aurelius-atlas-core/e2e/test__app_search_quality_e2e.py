@@ -36,8 +36,7 @@ def m4i(type_name: str, key: str, values: dict[str, object] | None = None, **rel
     )
 
 
-# impact=major, likelihood=high (a quality rule misfires; the only e2e proof, and the path churns with its increment)
-@pytest.mark.high
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ASQ-02", "ASQ-03", "ASQ-04", "ASQ-05"])
 async def test__a_scored_rule_s_result_answers_the_field_page_and_its_totals_sort_the_domains(
     dev_store: ElasticsearchStore, entity_prefix: str

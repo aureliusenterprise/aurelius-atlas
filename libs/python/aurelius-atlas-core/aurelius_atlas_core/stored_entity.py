@@ -40,6 +40,11 @@ class StoredAppSearch(AtlasModel):
 
     source_hash: str
     stale: bool = False
+    governed_by: str | None = None
+    """The digest of the type's governance rules the entity was judged by; a document derived again has none
+    (ASG-06, DD-535)."""
+    governed_source: str | None = None
+    """The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535)."""
     name: str | None = None
     referenceablequalifiedname: str
     definition: str = ""
@@ -144,6 +149,8 @@ class StoredEntity(AtlasModel):
     """A score entity's quality result, derived each round (ASQ-02, DD-528)."""
     quality_totals: StoredQualityTotals | None = None
     """The score totals of the entity's App Search document, derived each round (ASQ-04, DD-529)."""
+    governed: bool | None = None
+    """Whether the entity has governance verdicts, until a round takes them away (ASG-06, DD-535)."""
 
     @classmethod
     def of(cls, entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: str | None) -> Self:

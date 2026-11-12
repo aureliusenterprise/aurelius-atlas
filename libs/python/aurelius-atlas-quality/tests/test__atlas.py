@@ -15,6 +15,7 @@ from aurelius_atlas_quality import (
     rule_from_gov_attributes,
     summarise,
 )
+from aurelius_atlas_quality.atlas import gov_expression_params
 
 
 @pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_atlas_attributes", rules=["DQ-07"])
@@ -195,14 +196,77 @@ def test__a_gov_rule_reads_its_any_of_list_and_the_camel_message_spelling() -> N
     assert rule.non_compliant_message == "This entity needs a data domain or a parent entity"
 
 
-@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07"])
-def test__a_stored_expression_rule_raises_and_never_reads_its_expression() -> None:
-    """The legacy rule carries an expression and no dqcheckkind: the error names re-authoring (DV-146)."""
+@pytest.mark.covers("aurelius_atlas_quality.atlas.gov_expression_params", rules=["ASG-02"])
+@pytest.mark.parametrize(
+    ("expression", "expected"),
+    [
+        ("completeness('name')", (GovCheckKind.ATTRIBUTE_PRESENT, "name", [])),
+        ("length('datasets', 1)", (GovCheckKind.ATTRIBUTE_NOT_EMPTY, "datasets", [])),
+        (
+            "length('dataDomain', 1) | length('parentEntity', 1)",
+            (GovCheckKind.ATTRIBUTE_NOT_EMPTY, "dataDomain", ["parentEntity"]),
+        ),
+        (" completeness( 'name' ) ", (GovCheckKind.ATTRIBUTE_PRESENT, "name", [])),
+    ],
+)
+def test__an_expression_of_the_two_forms_reads_as_a_kind_an_attribute_and_any_of(
+    expression: str, expected: tuple[GovCheckKind, str, list[str]]
+) -> None:
+    """Each form, and the corpus's ``|`` pair: the first part's name the attribute, the others' ``anyOf``."""
+    assert gov_expression_params(expression) == expected
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.gov_expression_params", rules=["ASG-02"])
+@pytest.mark.parametrize(
+    "expression",
+    [
+        None,
+        "",
+        "length('name', 2)",
+        "completeness('name') | length('datasets', 1)",
+        "uniqueness('qualifiedName')",
+        "conditional_value('target_relationship_type', 'source_typename', {'m4i_field_assignment':'m4i_field'})",
+        "completeness('name'); import os",
+        "completeness('name') |",
+    ],
+)
+def test__any_other_expression_reads_as_no_rule(expression: str | None) -> None:
+    """Another count, a mix of the forms, another function, trailing code or an empty part: unread (DV-146)."""
     with pytest.raises(QualityRuleError, match="re-authoring"):
-        rule_from_gov_attributes(
-            {
-                "name": "legacy domain",
-                "expression": "length('dataDomain', 1) | length('parentEntity', 1)",
-                "qualityDimension": "completeness",
-            }
-        )
+        gov_expression_params(expression)
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07", "ASG-02"])
+def test__a_stored_expression_rule_reads_from_its_expression() -> None:
+    """The legacy rule carries an expression and no dqcheckkind: its form gives the kind and attributes."""
+    rule = rule_from_gov_attributes(
+        {
+            "guid": "gv-2",
+            "name": "legacy domain",
+            "expression": "length('dataDomain', 1) | length('parentEntity', 1)",
+            "qualityDimension": "completeness",
+            "nonCompliantMessage": "This data entity needs a data domain or a parent entity",
+        }
+    )
+    assert (rule.kind, rule.attribute, rule.any_of) == (
+        GovCheckKind.ATTRIBUTE_NOT_EMPTY,
+        "dataDomain",
+        ("parentEntity",),
+    )
+    assert rule.non_compliant_message == "This data entity needs a data domain or a parent entity"
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07", "ASG-02"])
+def test__a_vocabulary_rule_ignores_its_expression() -> None:
+    """With ``dqcheckkind`` the vocabulary attributes decide; an expression beside them is never read."""
+    rule = rule_from_gov_attributes(
+        {"dqcheckkind": "ATTRIBUTE_PRESENT", "dqattribute": "definition", "expression": "length('name', 1)"}
+    )
+    assert (rule.kind, rule.attribute) == (GovCheckKind.ATTRIBUTE_PRESENT, "definition")
+
+
+@pytest.mark.covers("aurelius_atlas_quality.atlas.rule_from_gov_attributes", rules=["GQ-07"])
+def test__a_stored_expression_rule_of_another_shape_raises() -> None:
+    """An expression of neither form is never executed: the error names re-authoring (DV-146)."""
+    with pytest.raises(QualityRuleError, match="re-authoring"):
+        rule_from_gov_attributes({"name": "unique", "expression": "uniqueness('qualifiedName')"})

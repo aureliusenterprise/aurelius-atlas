@@ -3,7 +3,7 @@
 - **Status:** in review
 - **Pull request:** #314
 - **Records:** adds KSC-01..10 and DD-465..472 (here; DD-470 supersedes DD-465's library
-  clause, DD-471 supersedes DD-469), and DD-533 (the broker and Registry ride the app's own
+  clause, DD-471 supersedes DD-469), and DD-538 (the broker and Registry ride the app's own
   e2e stack, not a shared dev stack); relies on DD-458 and DQS-10 (a service identity of its
   own, 12.2), AUT-02/AUT-10 (azp audiences, scrubbed reads), DD-362 (the m4i models load at
   boot), EWR-11 (a relationship end resolves by guid or unique attribute), DD-223 (e2e rides
@@ -40,7 +40,7 @@ Delivered here:
 
 Also delivered: a Kafka stack for the suite — one KRaft broker with a plain and a
 SCRAM-authenticated host listener, and a Schema Registry, all loopback-pinned; it started as
-the shared `dev/kafka` stack and moved into this app's `e2e/docker-compose.yaml` with DD-533.
+the shared `dev/kafka` stack and moved into this app's `e2e/docker-compose.yaml` with DD-538.
 Also delivered: the dev realm's `aurelius-atlas-kafka-scanner` service-account client, and the
 e2e proof against that stack.
 

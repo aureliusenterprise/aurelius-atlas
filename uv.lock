@@ -347,6 +347,7 @@ source = { editable = "libs/python/aurelius-atlas-core" }
 dependencies = [
     { name = "aurelius-atlas-dsl" },
     { name = "aurelius-atlas-model" },
+    { name = "aurelius-atlas-quality" },
     { name = "aurelius-atlas-store-es" },
     { name = "aurelius-atlas-typesystem" },
     { name = "elasticsearch", extra = ["async"] },
@@ -358,6 +359,7 @@ dependencies = [
 requires-dist = [
     { name = "aurelius-atlas-dsl", editable = "libs/python/aurelius-atlas-dsl" },
     { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
+    { name = "aurelius-atlas-quality", editable = "libs/python/aurelius-atlas-quality" },
     { name = "aurelius-atlas-store-es", editable = "libs/python/aurelius-atlas-store-es" },
     { name = "aurelius-atlas-typesystem", editable = "libs/python/aurelius-atlas-typesystem" },
     { name = "elasticsearch", extras = ["async"], specifier = ">=9.5.1,<10" },

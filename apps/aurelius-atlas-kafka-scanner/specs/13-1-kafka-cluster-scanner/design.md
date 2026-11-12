@@ -302,7 +302,7 @@ the environment — the deployment story (secrets through the environment, alway
 gap harmless, and it is recorded here rather than papered over. The scan's flags ride settings
 fields (`dry_run`, `topic`), so `run_scan`'s keyword seam is unchanged.
 
-### DD-533. The broker and Registry move from `dev/kafka` into the scanner's e2e stack
+### DD-538. The broker and Registry move from `dev/kafka` into the scanner's e2e stack
 
 - **Status:** Proposed
 - **Increment:** 13.1 (a follow-up to the landed increment: it moves the placement of

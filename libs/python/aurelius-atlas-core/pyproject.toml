@@ -2,6 +2,7 @@
 dependencies = [
     "aurelius-atlas-dsl",
     "aurelius-atlas-model",
+    "aurelius-atlas-quality",
     "aurelius-atlas-store-es",
     "aurelius-atlas-typesystem",
     "elasticsearch[async]>=9.5.1,<10",
@@ -20,6 +21,9 @@ name = "Aurelius Enterprise"
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-model]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-quality]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-store-es]

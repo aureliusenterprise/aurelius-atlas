@@ -11,7 +11,13 @@ from aurelius_atlas_model.instance import EntityStatus, RelationshipStatus
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
-from aurelius_atlas_core.app_search_document import SCORE_TYPE, has_document, named_guids, with_current_app_search
+from aurelius_atlas_core.app_search_document import (
+    GOV_RULE_TYPE,
+    SCORE_TYPE,
+    has_document,
+    named_guids,
+    with_current_app_search,
+)
 from aurelius_atlas_core.entity_audit_repository import TAG_ACTIONS
 from aurelius_atlas_core.entity_documents import (
     LINKED_MODELS,
@@ -106,6 +112,7 @@ class MemoryEntityDocuments:
             kind: {} for kind in LinkedKind
         }
         self.unique_values: dict[str, Reservation] = {}
+        self.verdicts: dict[str, dict[str, Any]] = {}
         self.journal_entries: dict[str, dict[str, object]] = {}
         self.prepared = False
         self.fail: dict[str, str] = {}
@@ -156,6 +163,8 @@ class MemoryEntityDocuments:
                 results.append(self._put(documents, kept.guid, kept.to_json(), version, kind=kind))
             for guid, version in gone:
                 results.append(self._put(documents, guid, None, version, kind=kind))
+                if kind is None and results[-1].written:
+                    await self.replace_verdicts({guid: ()})
         if self.crash_after_write:
             self.crash_after_write = False
             raise SimulatedCrashError
@@ -401,6 +410,36 @@ class MemoryEntityDocuments:
             for found in self._all_versioned()
             if found.entity.quality_result is not None or found.entity.quality_totals is not None
         ]
+
+    async def governance_rules(self) -> list[VersionedEntity]:
+        """The active governance rule entities, by GUID (ASG-03)."""
+        return [
+            found
+            for found in self._all_versioned()
+            if found.entity.type_name == GOV_RULE_TYPE and found.entity.state is EntityStatus.ACTIVE
+        ]
+
+    async def to_govern(self, digests: Mapping[str, str], limit: int) -> list[VersionedEntity]:
+        """The entities to judge, by GUID: of a ruled type judged otherwise, or with verdicts no longer judged
+        (ASG-06, DD-535).
+        """  # noqa: D205 - one sentence
+        found = []
+        for versioned in self._all_versioned():
+            entity = versioned.entity
+            document = entity.app_search
+            judged = entity.state is EntityStatus.ACTIVE and document is not None and entity.type_name in digests
+            if (judged and document is not None and document.governed_by != digests[entity.type_name]) or (
+                entity.governed and not judged
+            ):
+                found.append(versioned)
+        return found[:limit]
+
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None:
+        """Each entity's verdicts in place of those it had (DD-534)."""
+        for guid in verdicts:
+            for verdict_id in [key for key, held in self.verdicts.items() if held["entity_guid"] == guid]:
+                del self.verdicts[verdict_id]
+        self.verdicts.update((str(verdict["id"]), dict(verdict)) for found in verdicts.values() for verdict in found)
 
     def _all_versioned(self) -> list[VersionedEntity]:
         found = []

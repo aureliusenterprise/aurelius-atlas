@@ -6,12 +6,14 @@ import pytest
 from aurelius_atlas_core.app_search_document import (
     app_search_mapping,
     attribute_value,
+    governance_source,
     has_document,
     identity,
     named_guids,
     own_document,
     source_hash,
     source_type,
+    ungoverned,
     with_current_app_search,
 )
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, LinkedKind, LinkedWrite
@@ -110,6 +112,37 @@ def test__a_document_is_stale_once_its_own_fields_or_relationships_change() -> N
         kept = with_current_app_search(changed).app_search
         assert kept == stored.app_search.model_copy(update={"stale": True})  # type: ignore[union-attr]
         assert with_current_app_search(with_current_app_search(changed)).app_search == kept
+
+
+@pytest.mark.covers(f"{A}.governance_source", rules=["ASG-06"])
+@pytest.mark.covers(f"{A}.with_current_app_search", rules=["ASG-06"])
+@pytest.mark.covers(f"{A}.ungoverned", rules=["ASG-06"])
+def test__a_judged_document_loses_its_marks_once_what_its_verdicts_read_changes() -> None:
+    """Any attribute or the listed relationships, not the update time; the document itself not stale (DD-535)."""
+    stored = indexed(entity(**{"m4i_data_entity.name": "N"}))
+    judged = stored.model_copy(
+        update={
+            "app_search": stored.app_search.model_copy(  # type: ignore[union-attr]
+                update={"governed_by": "digest", "governed_source": governance_source(stored)}
+            )
+        }
+    )
+
+    assert with_current_app_search(judged.model_copy(update={"update_time": 5})) == judged.model_copy(
+        update={"update_time": 5}
+    )
+    for changed in (
+        judged.model_copy(update={"attributes": judged.attributes | {"Asset.owner": "jo"}}),
+        judged.model_copy(update={"relationship_guids": ["r1"]}),
+    ):
+        kept = with_current_app_search(changed).app_search
+        assert kept is not None
+        assert (kept.governed_by, kept.governed_source) == (None, None)
+    assert not with_current_app_search(
+        judged.model_copy(update={"attributes": judged.attributes | {"Asset.owner": "jo"}})
+    ).app_search.stale  # type: ignore[union-attr]
+    assert ungoverned(judged.app_search) == stored.app_search
+    assert ungoverned(None) is None
 
 
 @pytest.mark.covers(f"{A}.named_guids", rules=["ASU-03"])

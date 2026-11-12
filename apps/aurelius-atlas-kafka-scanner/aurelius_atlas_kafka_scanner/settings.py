@@ -34,7 +34,7 @@ DEFAULT_MINT_URL = "https://keycloak.localhost:8443/realms/master/protocol/openi
 
 DEFAULT_BOOTSTRAP_SERVERS = "localhost:29092"
 """The broker of the e2e stack: its PLAINTEXT host listener, published loopback-pinned on this
-port (DD-469's port, moved into the app's own stack by DD-533). A deployment names its own
+port (DD-469's port, moved into the app's own stack by DD-538). A deployment names its own
 cluster with ``BOOTSTRAP_SERVERS``."""
 
 DEFAULT_SYSTEM_NAME = "Kafka Broker"
