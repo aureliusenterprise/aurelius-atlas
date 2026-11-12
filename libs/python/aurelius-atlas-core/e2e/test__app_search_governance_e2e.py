@@ -32,6 +32,7 @@ def m4i(type_name: str, key: str, values: dict[str, object] | None = None) -> At
     )
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ASG-03", "ASG-04", "ASG-05", "ASG-06"])
 async def test__a_rule_s_verdicts_answer_the_details_cards_and_the_rule_page(
     dev_store: ElasticsearchStore, entity_prefix: str
