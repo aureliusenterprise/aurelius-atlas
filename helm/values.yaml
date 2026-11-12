@@ -200,6 +200,13 @@ secrets:
         # realm import (${ATLAS_SERVER_CLIENT_SECRET}, CHT-110) and the
         # server's AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET (CHT-108, 6.1a).
         clientSecret: ""
+    validateEntityClient:
+        # The validate-entity app's service-client secret (CHT-113, 12.7) →
+        # Secret <release>-validate-entity-client, key client-secret. Read by
+        # the master realm's import (${VALIDATE_ENTITY_CLIENT_SECRET}) and the
+        # app's AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET — the
+        # identity its 12.7 rules leg mints as (VEV-04, DD-499).
+        clientSecret: ""
     keycloakUsers:
         # Demo account passwords the realm import fills (${DEV_USER_*}).
         writerPassword: ""

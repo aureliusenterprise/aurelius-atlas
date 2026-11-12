@@ -10,7 +10,7 @@ from functools import cmp_to_key
 from typing import Any
 
 from elastic_transport import ApiResponseMeta, HttpHeaders, NodeConfig
-from elasticsearch import ConflictError, NotFoundError
+from elasticsearch import ApiError, ConflictError, NotFoundError
 
 NODE = NodeConfig("https", "localhost", 9200)
 
@@ -26,6 +26,13 @@ def _not_found() -> NotFoundError:
 
 def _conflict() -> ConflictError:
     return ConflictError("version_conflict_engine_exception", response_meta(409), {"status": 409})
+
+
+def already_exists() -> ApiError:
+    """The answer of a create of an index that exists, as another server booting on the same store makes it."""
+    return ApiError(
+        "index already exists", response_meta(400), {"error": {"type": "resource_already_exists_exception"}}
+    )
 
 
 class FakeResponse(dict[str, Any]):
@@ -68,13 +75,29 @@ class FakeIndices:
         settings: dict[str, Any] | None = None,
         **_mappings: object,
     ) -> dict[str, Any]:
-        """Create ``index`` with ``aliases``; its settings and mappings are kept as given, not applied."""
+        """Create ``index`` with ``aliases``; its settings and mappings are kept as given, not applied.
+
+        The index named by ``race_lost`` answers like a create that lost to another server booting on the same
+        store: the other server's index stands (it appears, alias and all) and this call is refused.
+        """
+        if self._client.create_error is not None:
+            raise self._client.create_error
+        if self._client.race_lost == index:
+            self._client.race_lost = None
+            self._make(index, aliases, settings, _mappings)
+            raise already_exists()
+        self._make(index, aliases, settings, _mappings)
+        return {"acknowledged": True, "index": index}
+
+    def _make(
+        self, index: str, aliases: dict[str, Any] | None, settings: dict[str, Any] | None, _mappings: object
+    ) -> None:
+        """Put the index in the cluster with its alias, settings and mappings, as a create leaves them."""
         self._client.documents.setdefault(index, {})
         self._client.index_settings[index] = dict(settings or {})
         self._client.index_mappings[index] = dict(_mappings.get("mappings") or {})  # type: ignore[call-overload]
         for alias in aliases or {}:
             self._client.aliases[alias] = index
-        return {"acknowledged": True, "index": index}
 
     async def put_mapping(self, *, index: str, **_mapping: object) -> dict[str, Any]:
         """Count the call; the fake keeps no mappings."""
@@ -250,6 +273,10 @@ class FakeClient:
         self.snapshot_error: str | None = None
         """When set, each policy run fails with these details instead of taking a snapshot."""
         self.aliases: dict[str, str] = {}
+        self.create_error: Exception | None = None
+        """When set, each index create raises it instead of answering (a failed create other than the race)."""
+        self.race_lost: str | None = None
+        """The index whose next create loses to another server's identical one (DD-508); see ``FakeIndices.create``."""
         self.documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
         self.primary_term = 1
         self.mapping_updates: list[str] = []

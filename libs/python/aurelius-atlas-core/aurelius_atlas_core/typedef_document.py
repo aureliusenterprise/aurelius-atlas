@@ -5,7 +5,7 @@ from typing import Any, Protocol, runtime_checkable
 
 from aurelius_atlas_model.patches import AtlasPatch
 from aurelius_atlas_model.typedef import AtlasTypesDef
-from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
+from elasticsearch import ApiError, AsyncElasticsearch, ConflictError, NotFoundError
 
 TYPEDEF_INDEX = "aurelius-atlas-typedefs"
 """The alias of the index that holds the type definitions."""
@@ -16,6 +16,33 @@ TYPEDEF_DOCUMENT_ID = "typedefs"
 INDEX_SETTINGS: dict[str, Any] = {"index.auto_expand_replicas": "0-1"}
 """The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
 it, none on a single node, whose indices are then green, not yellow."""
+
+ALREADY_EXISTS = "resource_already_exists_exception"
+"""What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade
+when both make the same index (DD-508)."""
+
+
+async def ensure_index(
+    client: AsyncElasticsearch,
+    *,
+    index: str,
+    aliases: dict[str, Any] | None = None,
+    mappings: dict[str, Any] | None = None,
+    settings: dict[str, Any] | None = None,
+) -> bool:
+    """Create ``index`` unless it exists; whether this call made it (DD-508).
+
+    Two servers that share a store make the same indices as they start, from the same definitions. A create that
+    loses to the other server's identical one answers ``resource_already_exists_exception``, which is success for
+    both: the index stands, made whole by whoever got there first. Any other answer raises.
+    """
+    try:
+        await client.indices.create(index=index, aliases=aliases, mappings=mappings, settings=settings)
+    except ApiError as error:
+        if ALREADY_EXISTS not in repr(error.body):
+            raise
+        return False
+    return True
 
 
 @dataclass(frozen=True)
@@ -85,17 +112,20 @@ class ElasticsearchTypedefDocument:
     async def prepare(self) -> None:
         """Create the index behind the alias unless it exists; the document itself is not searched.
 
-        An existing index gets the settings of a new one, as its replicas (IDX-02).
+        An existing index gets the settings of a new one, as its replicas (IDX-02). A create lost to a server
+        booting on the same store takes that path too (DD-508).
         """
         if not await self._client.indices.exists_alias(name=self._index):
-            await self._client.indices.create(
+            made = await ensure_index(
+                self._client,
                 index=f"{self._index}-000001",
                 aliases={self._index: {"is_write_index": True}},
                 mappings={"dynamic": False, "properties": {}},
                 settings={"number_of_shards": 1} | INDEX_SETTINGS,
             )
-        else:
-            await self._client.indices.put_settings(index=self._index, settings=INDEX_SETTINGS)
+            if made:
+                return
+        await self._client.indices.put_settings(index=self._index, settings=INDEX_SETTINGS)
 
     async def read(self) -> tuple[StoredTypedefs | None, DocumentVersion | None]:
         """The stored definitions and their version; ``(None, None)`` when nothing is stored (TDS-12)."""

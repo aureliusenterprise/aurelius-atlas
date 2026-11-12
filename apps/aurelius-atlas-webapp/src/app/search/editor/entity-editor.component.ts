@@ -22,7 +22,7 @@ import {
     QualityRuleService,
     type AtlasEntity,
     type EntityValidationResponse,
-    type GovQualityItem,
+    type GovernanceVerdict,
     ValidateEntityService,
 } from "aurelius-atlas-data-access";
 
@@ -54,9 +54,11 @@ type EnumRow = { value: string };
 type EditorValue = string | number | boolean | string[] | null;
 
 /** The description pair (DET-10, DD-320): the product treats the two keys as
- * one description, so a governance card of one names a control of the other —
- * the legacy's types carry `definition`, this catalogue's carry `description`
- * (EDT-24: the mock's `definition` card banners the `description` control). */
+ * one description, so a verdict of one names a control of the other — the
+ * legacy's types carry `definition`, this catalogue's carry `description`
+ * (EDT-24 as amended by 12.7: a `definition` verdict banners the
+ * `description` control, the legacy's own alias kept — DD-498; the map keeps
+ * its 7.24 name). */
 const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
     description: ["description", "definition"],
     definition: ["definition", "description"],
@@ -81,10 +83,11 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
  * classifications through the one PUT (EDT-06, DD-326), and lands on the
  * entity's details screen.
  *
- * Since 7.24 the drawer also carries the governance banner (EDT-23/EDT-24,
- * DD-446): the draft rides the validate-entity aux API on open and after
- * every change debounced 200 ms, and each response card renders its verdict
- * lines under the control its key names — failures swallow quietly.
+ * Since 7.24 the drawer also carries the governance banner (EDT-23/EDT-24 as
+ * amended by 12.7, DD-446/DD-498): the draft rides the validate-entity aux API
+ * on open and after every change debounced 200 ms, and the answer's verdicts
+ * render as lines under the control their attribute names — failures swallow
+ * quietly.
  */
 @Component({
     imports: [
@@ -125,7 +128,7 @@ export class EntityEditor {
     /** Whether a Save was attempted — shows the notification (EDT-07). */
     protected readonly saveAttempted = signal(false);
 
-    /** The governance cards of the last validation, by key (EDT-23/EDT-24). */
+    /** The verdicts of the last validation (EDT-23 as amended by 12.7). */
     private readonly validation = signal<EntityValidationResponse | null>(null);
 
     /** The in-flight validation (a new draft drops it — the guard, EDT-23). */
@@ -560,15 +563,15 @@ export class EntityEditor {
     }
 
     /** One validation round (EDT-23): the draft rides the aux API (EDT-21);
-     * its answer replaces the cards, a failure clears them (DD-446 — the
+     * its answer replaces the verdicts, a failure clears them (DD-446 — the
      * quiet swallow, no alert). The in-flight subscription rides a field so
      * the effect's cleanup can drop it — the last draft wins. */
     private validateDraft(draft: () => Parameters<ValidateEntityService["validateEntity"]>[0]): void {
         this.validationPending?.unsubscribe();
         this.validationPending = this.validateEntity.validateEntity(draft()).subscribe({
-            next: (cards) => {
+            next: (answer) => {
                 this.validationPending = null;
-                this.validation.set(cards);
+                this.validation.set(answer);
             },
             error: () => {
                 this.validationPending = null;
@@ -577,18 +580,18 @@ export class EntityEditor {
         });
     }
 
-    /** The card's items for a rendered control (EDT-24): a control with no
-     * card of its key renders nothing, and a card with no control of its key
-     * renders nowhere — the mock answers four keys for every entity, the
-     * drawer's controls come from the entity's type. The description pair
-     * answers both keys ({@link GOV_CARD_KEYS}), the legacy's own mapping. */
-    protected validationItems(name: string): readonly GovQualityItem[] {
-        const cards = this.validation();
-        if (!cards) {
+    /** The verdicts that measure a rendered control (EDT-24 as amended by
+     * 12.7, DD-498): the answer's flat array grouped by `attribute`, keeping
+     * the legacy's description pair ({@link GOV_CONTROL_KEYS}). A control no
+     * rule measures renders nothing; `unreadRules` renders no line (VEV-03). */
+    protected validationItems(name: string): readonly GovernanceVerdict[] {
+        const answer = this.validation();
+        if (!answer) {
             return [];
         }
+        const keys = GOV_CARD_KEYS[name] ?? [name];
 
-        return (GOV_CARD_KEYS[name] ?? [name]).flatMap((key) => cards[key]?.items ?? []);
+        return answer.verdicts.filter((verdict) => keys.includes(verdict.attribute));
     }
 
     /** A fresh signal form over {@link values}, with the current field set's

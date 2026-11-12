@@ -19,7 +19,7 @@ FROM dhi.io/python:3.14-alpine3.24
 ARG VERSION=local
 
 LABEL org.opencontainers.image.authors="Aurelius Enterprise"
-LABEL org.opencontainers.image.description="The Aurelius Atlas validate-entity API: an entity in, the fixed governance-quality mock out."
+LABEL org.opencontainers.image.description="The Aurelius Atlas validate-entity API: an entity draft in, the governance verdicts read from the catalogue out."
 LABEL org.opencontainers.image.licenses=UNLICENSED
 LABEL org.opencontainers.image.source=https://github.com/aureliusenterprise/aurelius-atlas
 LABEL org.opencontainers.image.title="Aurelius Atlas validate-entity"

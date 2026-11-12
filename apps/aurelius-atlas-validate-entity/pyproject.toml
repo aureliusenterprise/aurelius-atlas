@@ -1,16 +1,21 @@
 [project]
 dependencies = [
     "aurelius-atlas-auth",
+    "aurelius-atlas-model",
     "aurelius-atlas-otel",
+    "aurelius-atlas-quality",
+    "aurelius-atlas-server-client",
     "aurelius-atlas-validate-entity-client",
     "fastapi>=0.162.0",
+    "httpx2>=2.0.0",
     "opentelemetry-instrumentation-fastapi>=0.65b0",
     "opentelemetry-instrumentation-httpx>=0.65b0",
+    "pybreaker>=1.4.1",
     "pydantic>=2.14.2",
     "pydantic-settings>=2.15.0",
     "uvicorn[standard]>=0.54.0",
 ]
-description = "The Aurelius Atlas validate-entity API: an entity in, the fixed governance-quality mock out."
+description = "The Aurelius Atlas validate-entity API: an entity draft in, the live governance verdicts out."
 name = "aurelius-atlas-validate-entity"
 requires-python = ">=3.14"
 version = "0.1.0"
@@ -29,7 +34,16 @@ required_plugins = ["pytest-asyncio"]
 [tool.uv.sources.aurelius-atlas-auth]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-model]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-otel]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-quality]
+workspace = true
+
+[tool.uv.sources.aurelius-atlas-server-client]
 workspace = true
 
 [tool.uv.sources.aurelius-atlas-validate-entity-client]

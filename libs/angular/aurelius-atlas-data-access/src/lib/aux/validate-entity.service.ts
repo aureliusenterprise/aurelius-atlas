@@ -4,82 +4,65 @@ import { Observable } from "rxjs";
 import { VALIDATE_ENTITY_BASE_URL } from "./aux-config";
 
 /**
- * A `{"raw": …}` wrapper — every leaf of the governance document is one
- * (VE-02). `raw` is a string, or a list of strings for `usedattributes`.
+ * One ACTIVE governance rule's answer about the draft (VEV-02, 12.7).
+ * `compliant` is a JSON boolean — 12.6's verdict, not the mock's string
+ * `"0"`/`"1"` — and `message` is the verdict line the engine carries: the
+ * rule's own sentence for its verdict, the kind's reason when the rule stores
+ * none (GQ-06). The twin is
+ * `aurelius_atlas_validate_entity_client.GovernanceVerdict` (CL-40 as amended
+ * by 12.7, DD-498).
  */
-export type GovQualityValue = {
-    raw: string | string[];
+export type GovernanceVerdict = {
+    /** The catalogue guid of the rule that answered. */
+    ruleGuid: string;
+    /** The rule's name, as the catalogue holds it. */
+    ruleName: string;
+    /** The entity attribute the rule measures: the banner groups by it. */
+    attribute: string;
+    /** The rule's quality dimension, e.g. `COMPLETENESS`. */
+    dimension: string;
+    /** The verdict: whether the draft passes the rule. */
+    compliant: boolean;
+    /** The line to show: the rule's own sentence, or the kind's reason. */
+    message: string;
 };
 
 /**
- * The `_meta` of an item: the engine that produced it, its score and its
- * document id (VE-02).
+ * A rule the vocabulary cannot read — recorded, never executed (VEV-03,
+ * DV-146). 12.7's banner shows no line for it; it rides the answer for the
+ * caller that asks (the 7.28 rule box).
  */
-export type GovQualityMeta = {
-    /** The engine, e.g. `atlas-dev-gov-quality`. */
-    engine: string;
-    /** The item's score. */
-    score: number;
-    /** The document id, e.g. a `doc-…` id. */
-    id: string;
+export type UnreadRule = {
+    /** The catalogue guid of the unread rule. */
+    ruleGuid: string;
+    /** The rule's name, as the catalogue holds it. */
+    ruleName: string;
+    /** Why the vocabulary cannot read it, e.g. a stored expression rule. */
+    error: string;
 };
 
 /**
- * One governance check: a verdict item of a card (VE-02). Every leaf keeps the
- * `{"raw": …}` wrapper of the wire contract, and `compliant.raw` is the string
- * `"0"`/`"1"` — as the legacy emits it, not a boolean.
- * `dataqualityruledimension` is in the legacy's `GovQualitySearchObject` but
- * the deployed 8.3 mock answers without it, so it is optional here.
- */
-export type GovQualityItem = {
-    /** The human-readable verdict. */
-    result: GovQualityValue;
-    /** The kind of check; `attribute` checks carry the legacy's name. */
-    dataqualitytype: GovQualityValue;
-    /** The entity attributes the check reads. */
-    usedattributes: GovQualityValue;
-    /** The check's name, e.g. `Attribute - <key>`. */
-    name: GovQualityValue;
-    /** The verdict flag, the string `"0"`/`"1"`. */
-    compliant: GovQualityValue;
-    /** The rule's dimension, when the answer carries it (see above). */
-    dataqualityruledimension?: GovQualityValue;
-    /** The producing engine's record. */
-    _meta: GovQualityMeta;
-    /** The item's document id, wrapped like every leaf. */
-    id: GovQualityValue;
-};
-
-/**
- * One governance card: the items of one aspect, with the card's verdict
- * (VE-02). `isNonCompliant` is whether any item fails.
- */
-export type ValidationCard = {
-    items: GovQualityItem[];
-    isNonCompliant: boolean;
-};
-
-/**
- * The answer of `POST {baseUrl}/` (EDT-21, VE-01/VE-02): one card per aspect
- * key. The deployed 8.3 mock answers the keys `dataEntity`, `definition`,
- * `domainLead` and `name`; the keys are open because the editor renders by
- * them (EDT-24) and a future engine may answer more. The twin is
- * `aurelius_atlas_validate_entity_client.ValidationResponse` (CL-40, DD-203).
+ * The answer of `POST {baseUrl}/` (EDT-21 as amended by 12.7, VEV-02/VEV-03):
+ * the verdicts of the ACTIVE rules and the rules that could not be read.
+ * The flat array replaces the mock's keyed cards (DD-498): the banner groups
+ * `verdicts` by `attribute` (EDT-24 amended). The twin is
+ * `aurelius_atlas_validate_entity_client.ValidationResponse` (CL-40).
  */
 export type EntityValidationResponse = {
-    [cardKey: string]: ValidationCard;
+    verdicts: GovernanceVerdict[];
+    unreadRules: UnreadRule[];
 };
 
 /**
- * The validate-entity auxiliary API (ADR 055, 8.3): the browser's call that
- * checks a draft entity against the governance rules. The API is a mock today
- * (DV-67) — it accepts the entity, never reads it, and answers the fixed
- * four-card document — but the contract is the real one, so the editor renders
- * its answer as verdict lines (EDT-24). This client is the Angular twin of
- * `aurelius_atlas_validate_entity_client.ValidateEntityClient` (CL-40) and of
- * the legacy `gov-quality-api-client.service.ts`, whose swallowed errors are
- * the editor's job, not this one's (the legacy catch-all is not ported, the
- * DD-386 rule). Every URL composes from the injected
+ * The validate-entity auxiliary API (ADR 061, 8.3 grown by 12.7): the
+ * browser's call that checks a draft entity against the governance rules.
+ * Since 12.7 the app runs the catalogue's ACTIVE rules over the draft and
+ * answers real verdicts (VEV-02) — the 8.3 mock and its card document retired
+ * with DV-67 (DV-153, the clean cut of DD-501). This client is the Angular
+ * twin of `aurelius_atlas_validate_entity_client.ValidateEntityClient` (CL-40)
+ * and of the legacy `gov-quality-api-client.service.ts`, whose swallowed
+ * errors are the editor's job, not this one's (the legacy catch-all is not
+ * ported, the DD-386 rule). Every URL composes from the injected
  * {@link VALIDATE_ENTITY_BASE_URL} and never from `API_BASE_URL` (DD-387); the
  * aux API is a separate deployment.
  */
@@ -91,14 +74,14 @@ export class ValidateEntityService {
     private readonly baseUrl = inject(VALIDATE_ENTITY_BASE_URL);
 
     /**
-     * Validate the draft entity (EDT-21, VE-01/VE-02) — the legacy
+     * Validate the draft entity (EDT-21, VEV-01/VEV-02) — the legacy
      * `validateEntity(entityDetails)`. The aux API's route is its root, so the
      * URL is `{baseUrl}/` with the entity as the JSON body and no query
-     * string. A `200` answers the typed cards; a `4xx`, `5xx`, or unreachable
-     * API stays on the error channel with its body — this client interprets
-     * nothing; the editor swallows quietly (EDT-23, DD-446).
+     * string. A `200` answers the typed verdicts; a `4xx`, `5xx`, or
+     * unreachable API stays on the error channel with its body — this client
+     * interprets nothing; the editor swallows quietly (EDT-23, DD-446).
      * @param entity the draft entity, as the editor form holds it
-     * @returns the governance cards, one per aspect key
+     * @returns the verdicts of the ACTIVE rules, and the unread ones
      */
     validateEntity(entity: unknown): Observable<EntityValidationResponse> {
         return this.http.post<EntityValidationResponse>(`${this.baseUrl}/`, entity);

@@ -5,7 +5,14 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from aurelius_atlas_validate_entity.settings import DEFAULT_PORT, ValidateEntitySettings
+from aurelius_atlas_validate_entity.settings import (
+    DEFAULT_BREAKER_FAIL_MAX,
+    DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS,
+    DEFAULT_MINT_URL,
+    DEFAULT_PORT,
+    DEFAULT_RULES_CACHE_SECONDS,
+    ValidateEntitySettings,
+)
 from pydantic import ValidationError
 
 
@@ -32,6 +39,40 @@ def test__the_settings_are_read_from_prefixed_variables(environment: pytest.Monk
     # The ingest secret's value never appears in the repr (DD-196).
     environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET", "s3cr3t")
     assert "s3cr3t" not in repr(ValidateEntitySettings())  # pyright: ignore[reportCallIssue]
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.settings.ValidateEntitySettings.tls", rules=["VE-05"])
+def test__the_catalogue_leg_settings_default_to_the_dev_cluster(environment: pytest.MonkeyPatch) -> None:
+    """The 12.7 leg's settings carry dev defaults; the secret stays unset until a deployment sets it (VE-05)."""
+    settings = ValidateEntitySettings()  # pyright: ignore[reportCallIssue] - read from the environment
+
+    assert str(settings.server_base_url) == "https://localhost:21000/"
+    assert str(settings.token_url) == DEFAULT_MINT_URL
+    assert settings.server_client_id == "aurelius-atlas-validate-entity"
+    assert settings.server_client_secret is None  # the join absent: VEV-06 answers 502, never a start-up failure
+    assert settings.rules_cache_seconds == DEFAULT_RULES_CACHE_SECONDS == 60.0
+    assert settings.breaker_fail_max == DEFAULT_BREAKER_FAIL_MAX == 5
+    assert settings.breaker_reset_timeout == DEFAULT_BREAKER_RESET_TIMEOUT_SECONDS == 60.0
+
+    environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET", "s3cr3t")
+    environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_RULES_CACHE_SECONDS", "0")
+    with_secret = ValidateEntitySettings()  # pyright: ignore[reportCallIssue]
+    assert with_secret.server_client_secret is not None
+    assert with_secret.server_client_secret.get_secret_value() == "s3cr3t"
+    assert "s3cr3t" not in repr(with_secret)  # the catalogue secret never appears in the repr either
+    assert with_secret.rules_cache_seconds == 0.0  # 0 is legal: the cache off (VEV-05)
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.settings.ValidateEntitySettings.tls", rules=["VE-05"])
+def test__the_cache_window_and_the_breaker_are_bounded(environment: pytest.MonkeyPatch) -> None:
+    """A negative window, a zero failure bound or a zero reset is a settings error, not a weird runtime."""
+    environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_RULES_CACHE_SECONDS", "-1")
+    with pytest.raises(ValidationError, match="rules_cache_seconds"):
+        ValidateEntitySettings()  # pyright: ignore[reportCallIssue]
+    environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_RULES_CACHE_SECONDS", "60")
+    environment.setenv("AURELIUS_ATLAS_VALIDATE_ENTITY_BREAKER_FAIL_MAX", "0")
+    with pytest.raises(ValidationError, match="breaker_fail_max"):
+        ValidateEntitySettings()  # pyright: ignore[reportCallIssue]
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.settings.ValidateEntitySettings.tls", rules=["VE-05"])

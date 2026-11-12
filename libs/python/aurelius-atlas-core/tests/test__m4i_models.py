@@ -20,6 +20,7 @@ from aurelius_atlas_core.testing.memory import MemoryEntityDocuments, MemoryType
 from aurelius_atlas_core.typedef_change_listener import ChangedTypeDefs
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.impexp import AtlasImportRequest
+from aurelius_atlas_model.typedef import AtlasEntityDef
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 SAMPLES = Path(__file__).parents[4] / "data" / "atlas-sample"
@@ -118,8 +119,24 @@ async def test__the_m4i_types_load_after_atlas_models_and_once(tmp_path: Path) -
     assert dataset is not None
     assert {"DataSet", "m4i_referenceable"} <= set(dataset.all_super_types)
     assert (first.failed_files, again.failed_files) == ([], [])
-    assert told == 3  # the two model files and the patch file each change the store once
+    assert told == 4  # the two model files and the two patch files each change the store once
     assert len(changes.told) == told
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["GQ-08"])
+async def test__the_gov_quality_patch_lands_on_the_governance_type() -> None:
+    """Patch 002 adds the vocabulary attributes to ``m4i_gov_data_quality`` and keeps its legacy fields (GQ-08)."""
+    store = await loaded(BUILTIN_MODELS_DIR, M4I_MODELS_DIR)
+    gov = store.registry.typedef_by_name("m4i_gov_data_quality")
+    assert isinstance(gov, AtlasEntityDef)
+    types_by_attribute = {attribute.name: attribute.type_name for attribute in gov.attribute_defs}
+
+    assert types_by_attribute["dqcheckkind"] == "string"
+    assert types_by_attribute["dqattribute"] == "string"
+    assert types_by_attribute["dqanyOf"] == "array<string>"
+    assert gov.type_version == "1.1"
+    for kept in ("expression", "ruleType", "qualityDimension", "compliantMessage", "nonCompliantMessage"):
+        assert kept in types_by_attribute, kept  # a stored value is never dropped (ADR 046)
 
 
 @pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["MDD-04"])

@@ -112,12 +112,15 @@ services:
         volumes:
             - ../certs:/certs:ro
 
-    # The 8.3 validate-entity API behind the nginx /validate-entity/ location
+    # The validate-entity API behind the nginx /validate-entity/ location
     # (7.24, EDT-22, DD-435): the editor's governance banner validates through
-    # this path. The audience is the browser client `aurelius` by design
-    # (AUX-04, DV-75): the endpoint is the browser's from begin to end, the
-    # app forwards nothing, so no extra-audiences join (unlike the lineage
-    # app's DD-385 pair).
+    # this path. The caller-side audience is the browser client `aurelius` by
+    # design (AUX-04, DV-75): the endpoint is the browser's from begin to end,
+    # the app forwards nothing, so no extra-audiences join (unlike the lineage
+    # app's DD-385 pair). Since 12.7 the app reads its governance rules from
+    # the chain's server as its OWN service identity (VEV-04, DD-499): the
+    # leg's secret is mirrored in the webapp .env and the app reaches the
+    # server on the atlas network, under its certificate name.
     aurelius-atlas-validate-entity:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-validate-entity:local
         environment:
@@ -140,10 +143,21 @@ services:
             AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CA_FILE: /certs/ca.pem
             OTEL_BSP_SCHEDULE_DELAY: "1000"
+            # The 12.7 catalogue leg (VEV-04): the chain's server under its
+            # certificate name on the atlas network, minted for as the app's
+            # own client. RULES_CACHE_SECONDS 0 so the banner test's freshly
+            # seeded rules answer on the next call (VEV-05).
+            AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL: https://aurelius-atlas-server:21000
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET: ${AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET:?}
+            AURELIUS_ATLAS_VALIDATE_ENTITY_RULES_CACHE_SECONDS: "0"
         extra_hosts:
             - keycloak.localhost:host-gateway
         networks:
             - default
+            # The Atlas server answers as `aurelius-atlas-server` here — the
+            # name in its certificate, the alias its service declares.
+            - atlas
             - observability
         volumes:
             - ../certs:/certs:ro
@@ -210,7 +224,10 @@ services:
             # by this stack; its secret is mirrored in the webapp .env.
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
-            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
+            # 12.7: the validate-entity app reads the rules with its own
+            # client-credentials token (VEV-04), so its client id is a
+            # second accepted audience besides the browser's (DD-499).
+            AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius", "aurelius-atlas-validate-entity"]'
             AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
             # Export every second in test containers so Tempo read-back
             # probes land sooner (DD-225); mirrors the server e2e compose.

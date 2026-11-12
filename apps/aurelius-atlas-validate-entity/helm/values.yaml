@@ -1,10 +1,11 @@
 # The validate-entity chart — its runtime contract (CHT-02).
 # apps/aurelius-atlas-validate-entity: FastAPI, prefix AURELIUS_ATLAS_VALIDATE_ENTITY_,
 # port 21003. Verifies Keycloak bearer tokens (audience aurelius — the browser
-# client, since 7.24: the webapp's editor calls it through its nginx, DD-435)
-# and exports OTLP with its own ingest identity. Shares the service shape with
-# data2model and lineage-model by design — each chart owns its templates
-# (DD-290).
+# client, since 7.24: the webapp's editor calls it through its nginx, DD-435),
+# reads its governance rules from the co-deployed Atlas server as its own
+# service identity (12.7, VEV-04, CHT-113), and exports OTLP with its own
+# ingest identity. Shares the service shape with data2model and lineage-model
+# by design — each chart owns its templates (DD-290).
 
 # The umbrella's contract (CHT-03), declared whole — see atlas-server/values.yaml.
 global:
@@ -76,6 +77,19 @@ certificate:
     duration: 2160h
     renewBefore: 720h
 
+# The 12.7 catalogue leg (CHT-113, VEV-04): the Atlas server the rules read
+# runs against. "" derives this release's atlas-server chart name (the
+# siblingService name rule, as lineage-model's upstream join, CHT-28).
+atlas:
+    service: ""
+    port: 21000
+
+# The credential joins (CHT-113): "" derives <release>-validate-entity-client,
+# the Secret the umbrella generates and the master realm's import resolves
+# (the same Secret, both ends of the client — CHT-109's shape).
+credentialSecrets:
+    validateEntityClient: ""
+
 service:
     type: ClusterIP
     port: 21003
@@ -101,8 +115,9 @@ config:
     # The endpoint is the browser's from begin to end (7.24, DD-435): the
     # webapp's editor calls it with the user's own token through nginx, so the
     # verifier takes the browser client's audience — the dev .env's value, the
-    # e2e compose's value, AUX-04. No extra-audiences join: the app forwards
-    # nothing, its own client identity earns nothing (DV-75).
+    # e2e compose's value, AUX-04. No extra-audiences join: the caller's token
+    # stops at the gate (DV-75); the app's OWN identity belongs to the rules
+    # leg, not the verifier (12.7, VEV-04).
     AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius
     AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /etc/aurelius-atlas/tls/ca.crt
     AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info

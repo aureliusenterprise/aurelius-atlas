@@ -1621,6 +1621,32 @@
             "webOrigins": []
         },
         {
+            "authorizationServicesEnabled": false,
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-validate-entity",
+            "consentRequired": false,
+            "defaultClientScopes": ["basic", "profile", "roles"],
+            "description": "The validate-entity API's own service identity (12.7, DD-499): its client-credentials token, accepted by azp (AUT-02), names the app in every governance-rule read. Its service account holds atlas-read on aurelius-atlas-server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas-validate-entity",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${VALIDATE_ENTITY_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
+        },
+        {
             "alwaysDisplayInConsole": false,
             "attributes": {
                 "post.logout.redirect.uris": "+",
@@ -2728,6 +2754,15 @@
             "realmRoles": ["default-roles-master"],
             "serviceAccountClientId": "aurelius-atlas-quality-scanner",
             "username": "service-account-aurelius-atlas-quality-scanner"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read"]
+            },
+            "enabled": true,
+            "realmRoles": ["default-roles-master"],
+            "serviceAccountClientId": "aurelius-atlas-validate-entity",
+            "username": "service-account-aurelius-atlas-validate-entity"
         }
     ],
     "verifiableCredentialsEnabled": false,

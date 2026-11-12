@@ -1,10 +1,10 @@
-"""The Aurelius Atlas validate-entity API (increment 8.3, ADR 055).
+"""The Aurelius Atlas validate-entity API (increment 8.3, ADR 055; 12.7, ADR 061).
 
-An entity in, the fixed governance-quality mock out — the validation
-endpoint the legacy editor called, ported from ``m4i-validate-entity``.
-The legacy service is a mock (DV-67): the body is ignored and the answer is
-a constant; the port keeps that browser contract, with the workspace's auth
-and observability.
+An entity draft in, the governance verdicts out — the validation endpoint the
+legacy editor called, ported from ``m4i-validate-entity``. The legacy service
+was a mock (DV-67); since 12.7 the app reads the ACTIVE governance rules from
+the catalogue and runs them over the draft (VEV-01..06, DV-153): the answer is
+the draft's real verdicts, with the workspace's auth and observability.
 """
 
 from aurelius_atlas_validate_entity.app import create_app

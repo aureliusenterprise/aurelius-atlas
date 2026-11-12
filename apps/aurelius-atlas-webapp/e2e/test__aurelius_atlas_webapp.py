@@ -1900,49 +1900,110 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         _delete_entity(authenticated, root_url, user_token, volume_guid)
 
 
+def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, str]) -> str:
+    """Seed one ACTIVE governance rule through the proxy; return its real guid (12.7, VEV-02).
+
+    The banner test seeds through the catalogue — the same store the deployed
+    validate-entity app reads — with the run's word in every visible string:
+    the dev store also carries the m4i sample corpus's rules, so the assertions
+    name this run's sentences and never count the banner's total lines.
+    """
+    name = attributes["name"]
+    body = {
+        "entities": [
+            {
+                "typeName": "m4i_gov_data_quality",
+                "guid": "-0",
+                # `id` is mandatory on the type (isOptional: false): the create must
+                # carry it, the legacy editor's create seeds -1 (the rules editor's
+                # idiom in quality-fields.ts); the attribute is not unique.
+                "attributes": {"qualifiedName": name, "id": -1, **attributes},
+            }
+        ]
+    }
+    response = page.request.post(
+        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+        data=json.dumps(body),
+        headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+    )
+
+    assert response.status == 200, response.text()
+
+    return response.json()["guidAssignments"]["-0"]
+
+
 @pytest.mark.covers(rules=["EDT-24"])
 def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: str, user_token: str) -> None:
-    """The drawer validates the draft and paints the mock's verdict lines (EDT-23, EDT-24).
+    """The drawer validates the draft and paints the live verdict lines (EDT-23, EDT-24, VEV-02).
 
-    The 7.24 editor over the deployed aux API: opening the drawer posts the
-    draft to ``/validate-entity/`` through the webapp's own nginx (EDT-22), and
-    the mock's four cards (VE-02, DV-67) come back. The drawer renders one line
-    per card whose key names a rendered control (EDT-24): the DataSet editor
-    carries ``name`` and the description key, so two lines appear — under Name
-    and under Description — with the success icon for compliant "1" (the
-    warning-icon case is specced at the component). The cards whose keys name no
-    control the DataSet has (``dataEntity``, ``domainLead``) render nowhere.
-    Self-cleaned by the entity delete.
+    The 12.7 editor over the deployed chain: opening the drawer posts the draft
+    to ``/validate-entity/`` through the webapp's own nginx (EDT-22), the app
+    reads its rules from the chain's server as its own identity (VEV-04), and
+    the seeded rules answer. The drawer renders one line per verdict whose
+    attribute names a rendered control (EDT-24): the DataSet editor carries
+    ``name`` and the description key, so this run's success line appears under
+    Name and its refusal line, warning-iconed, under Description. Lines are
+    keyed by this run's sentences — the shared store's corpus rules ride the
+    answer too, and that is not this test's failure (DD-223). Self-cleaned.
     """
     run = secrets.token_hex(4)
     name = f"zz{run}govbanner"
+    ok_line = f"zz{run} the dataset carries a name"
+    warn_line = f"zz{run} the dataset has no description"
     guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
     guid = guids["-0"]
+    rule_guids = [
+        _seed_gov_rule(
+            authenticated,
+            root_url,
+            user_token,
+            {
+                "name": f"zz{run}name-present",
+                "active": "true",
+                "dqcheckkind": "ATTRIBUTE_PRESENT",
+                "dqattribute": "name",
+                "qualityDimension": "COMPLETENESS",
+                "compliantMessage": ok_line,
+                "nonCompliantMessage": f"zz{run} the dataset carries no name",
+            },
+        ),
+        _seed_gov_rule(
+            authenticated,
+            root_url,
+            user_token,
+            {
+                "name": f"zz{run}description-filled",
+                "active": "true",
+                "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
+                "dqattribute": "description",
+                "qualityDimension": "COMPLETENESS",
+                "compliantMessage": f"zz{run} the dataset describes itself",
+                "nonCompliantMessage": warn_line,
+            },
+        ),
+    ]
 
     try:
         _open_editor_from_details(authenticated, root_url, guid)
         drawer = authenticated.locator(".aurelius-drawer")
 
-        # The open round renders the lines without any edit (EDT-23's trigger).
-        lines = drawer.locator("[data-gov-line]")
-        expect(lines).to_have_count(2)
-        expect(lines.nth(0)).to_have_text("This entity has a name")
-        expect(lines.nth(0).locator(".icon.has-text-success")).to_have_count(1)
-        expect(lines.nth(1)).to_have_text("This entity has a definition")
-
-        # The two cards the DataSet drawer has no control for (dataEntity,
-        # domainLead) render nowhere — which the exact count of 2 and the two
-        # verdict texts above already pin.
-
-        # Each line sits under its own control (EDT-24's keying).
+        # The open round renders the lines without any edit (EDT-23's trigger),
+        # each under its own control (EDT-24's keying), icon by the verdict.
         name_field = drawer.locator(".aurelius-editor-field", has=authenticated.locator("#editor-name"))
-        expect(name_field.locator("[data-gov-line]")).to_have_count(1)
-        definition_field = drawer.locator(
+        ok = name_field.locator("[data-gov-line]").filter(has_text=ok_line)
+        expect(ok).to_have_count(1)
+        expect(ok.locator(".icon.has-text-success")).to_have_count(1)
+
+        description_field = drawer.locator(
             ".aurelius-editor-field", has=authenticated.locator("textarea#editor-description")
         )
-        expect(definition_field.locator("[data-gov-line]")).to_have_count(1)
+        warn = description_field.locator("[data-gov-line]").filter(has_text=warn_line)
+        expect(warn).to_have_count(1)
+        expect(warn.locator(".icon.has-text-warning")).to_have_count(1)
     finally:
         _delete_entity(authenticated, root_url, user_token, guid)
+        for rule_guid in rule_guids:
+            _delete_entity(authenticated, root_url, user_token, rule_guid)
 
 
 @pytest.mark.covers(rules=["EDT-23"])

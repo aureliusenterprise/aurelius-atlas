@@ -777,11 +777,16 @@ version = "0.1.0"
 source = { editable = "apps/aurelius-atlas-validate-entity" }
 dependencies = [
     { name = "aurelius-atlas-auth" },
+    { name = "aurelius-atlas-model" },
     { name = "aurelius-atlas-otel" },
+    { name = "aurelius-atlas-quality" },
+    { name = "aurelius-atlas-server-client" },
     { name = "aurelius-atlas-validate-entity-client" },
     { name = "fastapi" },
+    { name = "httpx2" },
     { name = "opentelemetry-instrumentation-fastapi" },
     { name = "opentelemetry-instrumentation-httpx" },
+    { name = "pybreaker" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
     { name = "uvicorn", extra = ["standard"] },
@@ -790,11 +795,16 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "aurelius-atlas-auth", editable = "libs/python/aurelius-atlas-auth" },
+    { name = "aurelius-atlas-model", editable = "libs/python/aurelius-atlas-model" },
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
+    { name = "aurelius-atlas-quality", editable = "libs/python/aurelius-atlas-quality" },
+    { name = "aurelius-atlas-server-client", editable = "libs/python/aurelius-atlas-server-client" },
     { name = "aurelius-atlas-validate-entity-client", editable = "libs/python/aurelius-atlas-validate-entity-client" },
     { name = "fastapi", specifier = ">=0.162.0" },
+    { name = "httpx2", specifier = ">=2.0.0" },
     { name = "opentelemetry-instrumentation-fastapi", specifier = ">=0.65b0" },
     { name = "opentelemetry-instrumentation-httpx", specifier = ">=0.65b0" },
+    { name = "pybreaker", specifier = ">=1.4.1" },
     { name = "pydantic", specifier = ">=2.14.2" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.54.0" },
