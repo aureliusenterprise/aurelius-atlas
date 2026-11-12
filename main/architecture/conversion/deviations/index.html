@@ -7486,6 +7486,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A stored rule must parse in the engine (12.1) and free text cannot promise that; the closed vocabulary is the rule's shape, so the editor shows the vocabulary as it is</td>
 <td>7.27</td>
 </tr>
+<tr>
+<td>DV-150</td>
+<td>DB scanning</td>
+<td>A relational database's tables and columns reach the catalogue only through hook messages a registered application pushes (<code>classic_jdbc_*</code>, <code>dataset_db</code>); no job ever read a live database</td>
+<td><code>aurelius-atlas-db-scanner</code> reflects the live database through SQLAlchemy and registers the m4i tree (the System, a Collection per schema, a Dataset per table, a Field per column) plus one Process per foreign-key column pair, in one bulk write as its own service identity (DBS-01..12). The starting script's JSON-to-documents-folder handoff is not delivered: no file-based reader pipeline exists here</td>
+<td>A hook install is why the legacy database registration went unused, and reflection names no vendor (DBS-01); the file handoff belongs to another product's pipeline</td>
+<td>13.3</td>
+</tr>
 </tbody>
 </table>
 

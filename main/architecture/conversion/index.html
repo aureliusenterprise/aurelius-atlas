@@ -7745,6 +7745,20 @@ checks a PR must pass:</p>
 <td>planned</td>
 </tr>
 <tr>
+<td>13.3</td>
+<td>The relational database scanner</td>
+<td><code>apps/aurelius-atlas-db-scanner</code>: a batch CLI that reflects one live database through SQLAlchemy (no vendor tooling), registers the System/Collection-per-schema/Dataset/Field tree and one Process per foreign-key column pair in one bulk request as its own service identity (DBS-01..12, DD-502..507)</td>
+<td>— (net-new to Atlas; the port of a standalone reflection script, DV-150)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.4</td>
+<td>The database scanner chart and schedule</td>
+<td>The Helm chart, the CronJob, the prod realm join, and the per-database secret wiring</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
 <td>14.1</td>
 <td>The legacy search documents: records and rules</td>
 <td>ADR 060; the original Aurelius Atlas's three App Search engines for the sample catalogue as fixtures; the rules of their documents, over the catalogue's state, and the differences of the fixtures from it (LAS-01..13, DD-484..486)</td>
