@@ -71,6 +71,24 @@ async def test__six_aliases_are_created_once(fake: FakeClient) -> None:
     assert fake.aliases == {alias: f"{alias}-000001" for alias in documents.aliases}
 
 
+@pytest.mark.covers(f"{E}.prepare", rules=["ENS-01"])
+async def test__prepare_survives_losing_each_create_to_another_server(fake: FakeClient) -> None:
+    """Two servers booting on one store make the same indices: each lost create takes the existing path (DD-508).
+
+    The fake loses one create per prepare; the four prepares cover the entity index (with its field limit
+    re-applied on the existing path) and the plain ones, and every alias ends whole.
+    """
+    documents = ElasticsearchEntityDocuments(cast("AsyncElasticsearch", fake))
+    for alias in documents.aliases:
+        fake.race_lost = f"{alias}-000001"
+        await documents.prepare()
+
+    assert fake.aliases == {alias: f"{alias}-000001" for alias in documents.aliases}
+    assert fake.index_settings[f"{documents.aliases[0]}-000001"]["index.mapping.total_fields.limit"] == (
+        ENTITY_FIELD_LIMIT
+    )
+
+
 @pytest.mark.covers(f"{E}.write", f"{E}.get", rules=["ENS-04", "ENS-08"])
 async def test__bulk_writes_create_or_replace_conditionally(documents: ElasticsearchEntityDocuments) -> None:
     """``create`` fails for an existing GUID, ``index`` for a stale version; decimals keep their digits."""

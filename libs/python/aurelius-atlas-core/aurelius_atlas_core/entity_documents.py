@@ -42,7 +42,7 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
-from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, DocumentVersion
+from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, DocumentVersion, ensure_index
 
 LOGGER = logging.getLogger(__name__)
 
@@ -476,13 +476,15 @@ class ElasticsearchEntityDocuments:
             settings = INDEX_SETTINGS | limit if alias == self._entities else INDEX_SETTINGS
             vectors = alias == self._entities and self._embedding_dimensions is not None
             if not await self._client.indices.exists_alias(name=alias):
-                await self._client.indices.create(
+                made = await ensure_index(
+                    self._client,
                     index=f"{alias}-000001",
                     aliases={alias: {"is_write_index": True}},
                     mappings=mapping,
                     settings=settings | KEEP_SOURCE_VECTORS if vectors else settings,
                 )
-                continue
+                if made:
+                    continue
             if vectors:
                 await self._keep_source_vectors(mapping, settings)
             if alias == self._entities:

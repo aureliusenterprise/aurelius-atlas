@@ -126,3 +126,62 @@ forever; ADR 017's compatible-change rule protects the Atlas public contract,
 not this Aurelius-origin internal one). Ship the app first and the webapp next
 PR (refused: between the two, the live banner parses nothing and shows nothing
 — a silent regression, and the e2e banner pin could not join either PR).
+
+### DD-508. A lost index create on a shared store is success, not a start failure
+
+- **Status:** Proposed
+- **Increment:** 12.7
+- **Date:** 2026-11-12
+
+**Decision.** The server's index-preparation steps (`ElasticsearchEntityDocuments.prepare`,
+`ElasticsearchTypedefDocument.prepare`, `ElasticsearchEntityAuditRepository.prepare`)
+create each index through one helper, `ensure_index`: a create that answers
+`resource_already_exists_exception` is success — the index stands, made whole by
+the other server — and the step then takes the existing-index path (settings,
+mappings). Any other error still raises. Shared infra is deliberate (DD-223):
+suites ride the dev Elasticsearch side by side, and this PR's stack starts its
+own Atlas server on that same store, so two servers can boot there in the same
+second.
+
+**Reason.** The CI run of this PR paired the new validate-entity stack with the
+server suite's own stack on the dev store: both ran `prepare` against the same
+aliases, one lost the create race, Elasticsearch answered 400
+`resource_already_exists_exception`, the lifespan raised, uvicorn exited 3, and
+62 server-scenario tests errored in setup. The loser's create was never a real
+error — both servers make the same index from the same definitions — and a
+start that treats it as one turns a coincidence of timing into a suite failure.
+The check-then-create stayed (the answer's cost is one search); only the create
+learned to lose gracefully.
+
+**Alternatives.** Serialize the e2e suites so no two servers boot together
+(refused: shared infra is the point, and CI parallelism is DD-223's trade). Give
+each stack its own store (refused: the same reasoning, and the memory). Retry
+`prepare` on any 400 (refused: a wrong mapping must stay a start failure — the
+helper distinguishes the one answer that means "someone already made it").
+
+### DD-509. The validate-entity e2e stack's server keeps host port 21008
+
+- **Status:** Proposed
+- **Increment:** 12.7
+- **Date:** 2026-11-12
+
+**Decision.** The 12.7 stack's Atlas server publishes loopback host port 21008.
+It was 21007 when the increment was written; main's db-scanner stack (#323)
+claimed 21007 for its server meanwhile, and the two suites would fail each
+other's `docker compose up` if they ever ran side by side. The next free port
+joins the ladder: 21000 serve, 21001 the server suite, 21003 the app, 21005/
+21006/21007 the three scanners, 21008 this stack.
+
+**Reason.** Every e2e stack publishes its chain's ports loopback-pinned so the
+suite's client speaks to them from the host (CIA-03), which makes the host port
+a repo-wide resource with no allocator but the comment that names its neighbours.
+A silent double-booking fails as an `address already in use` inside whichever
+suite loses, far from its cause; naming the ladder in the comment is the cheap
+guard.
+
+**Alternatives.** Ephemeral ports (`:21000` published unbound, the conftest
+reading the mapped port — the pattern the webapp suite's `get_service_port`
+could adopt; refused here: the fixed port is what lets the app's compose alias,
+the realm's registered return URLs, and the suite's pin agree without a lookup,
+the server suite's precedent). Renumber db-scanner instead (refused: it is
+merged; the moving PR yields).

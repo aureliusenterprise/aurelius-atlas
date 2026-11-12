@@ -34,7 +34,7 @@ CA_FILE = PROJECT / "certs" / "ca.pem"
 
 SERVICE = "aurelius-atlas-validate-entity"
 
-SERVER_URL = "https://localhost:21007"
+SERVER_URL = "https://localhost:21008"
 """The chain's Atlas server, published loopback-pinned by the e2e compose (CIA-03)."""
 
 MINT_TIMEOUT_SECONDS = 120.0
@@ -328,7 +328,11 @@ async def seed_rules(writer: AtlasClient) -> AsyncIterator[Callable[[list[dict[s
             AtlasEntity(
                 type_name=GOV_RULE_TYPE,
                 guid=f"-{index}",
-                attributes={"qualifiedName": rule["name"], **rule},
+                # The type's `id` is mandatory (isOptional: false), so a create must
+                # carry it: the legacy editor's create seeds -1 for it (the same
+                # idiom the rules editor keeps in quality-fields.ts); the attribute is
+                # not unique, so the seeds can share it.
+                attributes={"qualifiedName": rule["name"], "id": -1, **rule},
             )
             for index, rule in enumerate(rules)
         ]

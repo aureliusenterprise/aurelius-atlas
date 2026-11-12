@@ -12,11 +12,12 @@ from aurelius_atlas_core.typedef_document import (
     StoredTypedefs,
     TypedefDocument,
     VersionConflictError,
+    ensure_index,
 )
 from aurelius_atlas_model.patches import TYPEDEF_PATCH_TYPE, AtlasPatch, PatchStatus
 from aurelius_atlas_model.typedef import AtlasEntityDef, AtlasTypesDef
-from aurelius_atlas_store_es.testing.fake import FakeClient
-from elasticsearch import AsyncElasticsearch
+from aurelius_atlas_store_es.testing.fake import FakeClient, already_exists
+from elasticsearch import ApiError, AsyncElasticsearch
 
 
 @pytest.fixture
@@ -40,6 +41,37 @@ async def test__prepare_creates_the_index_behind_its_alias_once(
     await document.prepare()
 
     assert client.aliases == {TYPEDEF_INDEX: f"{TYPEDEF_INDEX}-000001"}
+
+
+@pytest.mark.covers("aurelius_atlas_core.typedef_document.ElasticsearchTypedefDocument.prepare", rules=["TDS-12"])
+async def test__prepare_survives_losing_the_create_to_another_server(
+    client: FakeClient, document: ElasticsearchTypedefDocument
+) -> None:
+    """Two servers booting on one store make the same index: the loser takes the existing path (DD-508)."""
+    client.race_lost = f"{TYPEDEF_INDEX}-000001"
+
+    await document.prepare()
+
+    assert client.aliases == {TYPEDEF_INDEX: f"{TYPEDEF_INDEX}-000001"}
+    assert client.index_settings[f"{TYPEDEF_INDEX}-000001"]["index.auto_expand_replicas"] == "0-1"
+
+
+@pytest.mark.covers("aurelius_atlas_core.typedef_document.ensure_index", rules=["TDS-12"])
+async def test__ensure_index_makes_an_index_and_survives_the_race(client: FakeClient) -> None:
+    """True when the call made the index; False on the other server's identical create; any other error raises.
+
+    DD-508.
+    """
+    elasticsearch = cast("AsyncElasticsearch", client)
+    assert await ensure_index(elasticsearch, index="a-000001") is True
+    assert await ensure_index(elasticsearch, index="b-000001") is True  # the loser of the same race
+    client.race_lost = "b-000002"
+    assert await ensure_index(elasticsearch, index="b-000002") is False
+
+    other = ApiError("bad mapping", already_exists().meta, {"error": {"type": "mapper_parsing_exception"}})
+    client.create_error = other
+    with pytest.raises(ApiError):
+        await ensure_index(elasticsearch, index="c-000001")
 
 
 @pytest.mark.covers("aurelius_atlas_core.typedef_document.ElasticsearchTypedefDocument.prepare", rules=["IDX-02"])

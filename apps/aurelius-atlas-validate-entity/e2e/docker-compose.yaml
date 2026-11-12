@@ -20,10 +20,10 @@ services:
             observability: {}
         ports:
             # Fixed host port, loopback-pinned (CIA-03): the suite seeds rules
-            # through it and its client speaks to it there. 21007 is this
-            # stack's; the scanner's 21005 and the kafka-scanner's 21006 stay
-            # free.
-            - 127.0.0.1:21007:21000
+            # through it and its client speaks to it there. 21008 is this
+            # stack's; the quality scanner's 21005, the kafka-scanner's 21006
+            # and the db-scanner's 21007 stay free.
+            - 127.0.0.1:21008:21000
         environment:
             # ${VAR:?} guards: Nx injects this project's .env into the e2e
             # task environment; a missing value fails the compose start loudly.

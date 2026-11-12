@@ -1914,7 +1914,10 @@ def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, 
             {
                 "typeName": "m4i_gov_data_quality",
                 "guid": "-0",
-                "attributes": {"qualifiedName": name, **attributes},
+                # `id` is mandatory on the type (isOptional: false): the create must
+                # carry it, the legacy editor's create seeds -1 (the rules editor's
+                # idiom in quality-fields.ts); the attribute is not unique.
+                "attributes": {"qualifiedName": name, "id": -1, **attributes},
             }
         ]
     }

@@ -15,7 +15,7 @@ from aurelius_atlas_model.audit_reduction import AtlasAuditAgingType
 from elasticsearch import AsyncElasticsearch
 
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX, WRITE_REFRESH
-from aurelius_atlas_core.typedef_document import INDEX_SETTINGS
+from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, ensure_index
 
 AUDIT_INDEX = f"{INDEX_PREFIX}-entity-audits"
 """The alias of the audit index (DD-082)."""
@@ -87,16 +87,21 @@ class ElasticsearchEntityAuditRepository:
         self.alias = f"{prefix}-entity-audits"
 
     async def prepare(self) -> None:
-        """Create the index behind its alias unless it exists; an existing one gets a new one's settings (IDX-02)."""
+        """Create the index behind its alias unless it exists; an existing one gets a new one's settings (IDX-02).
+
+        A create lost to a server booting on the same store takes the existing-index path too (DD-508).
+        """
         if not await self._client.indices.exists_alias(name=self.alias):
-            await self._client.indices.create(
+            made = await ensure_index(
+                self._client,
                 index=f"{self.alias}-000001",
                 aliases={self.alias: {"is_write_index": True}},
                 mappings=AUDIT_MAPPING,
                 settings=INDEX_SETTINGS,
             )
-        else:
-            await self._client.indices.put_settings(index=self.alias, settings=INDEX_SETTINGS)
+            if made:
+                return
+        await self._client.indices.put_settings(index=self.alias, settings=INDEX_SETTINGS)
 
     async def put_events(self, events: Sequence[EntityAuditEventV2]) -> None:
         """Index each event as a new document, in one bulk request.

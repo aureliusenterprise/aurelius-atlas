@@ -60,6 +60,17 @@ async def test__events_are_written_in_one_bulk_request_and_listed_by_entity(
     assert fake.refreshes == []
 
 
+@pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])
+async def test__prepare_survives_losing_the_create_to_another_server(fake: FakeClient) -> None:
+    """Two servers booting on one store make the audit index: the loser takes the existing path (DD-508)."""
+    fake.race_lost = "t-entity-audits-000001"
+
+    await ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t").prepare()
+
+    assert fake.aliases == {"t-entity-audits": "t-entity-audits-000001"}
+    assert fake.index_settings["t-entity-audits-000001"]["index.auto_expand_replicas"] == "0-1"
+
+
 @pytest.mark.covers(f"{E}.put_events", rules=["AUD-05"])
 async def test__events_that_are_not_kept_fail_the_put(fake: FakeClient) -> None:
     """A bulk item that fails is an error."""

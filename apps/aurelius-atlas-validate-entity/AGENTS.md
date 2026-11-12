@@ -80,7 +80,7 @@ supersedes DV-67, ADR 061); the trigger contract (POST the draft, read only its
   so the in-network TLS calls verify.
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled), nonroot,
   liveness healthcheck.
-- `e2e/docker-compose.yaml` — this app plus a real `atlas-server` (host port 21007) on
+- `e2e/docker-compose.yaml` — this app plus a real `atlas-server` (host port 21008) on
   the dev Elasticsearch and observability networks; the server accepts the app's client
   as an audience (DD-499); Keycloak through `keycloak.localhost:host-gateway`.
 
