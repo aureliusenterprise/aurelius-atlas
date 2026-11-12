@@ -334,19 +334,22 @@ jobs:
 
             # The integration phase, tiered by criticality (DD-401): a pull
             # request and the push to main both run the critical and high
-            # scenarios, and the weekly Scan carries the whole suite. Pull
-            # and main share the levels so a merge carries no surprise: the
-            # only difference is the browser set (see the WebKit note below).
+            # scenarios on Chromium only, and the weekly Scan carries the
+            # whole suite on every browser. Pull and main are identical here
+            # (same levels, same browser) so a merge carries no surprise and
+            # the step needs no event branch.
             # The level
             # is a pytest marker filter passed after `--`, not an Nx
             # configuration - Nx 24 does not merge two `-c` names, and the
             # flags reach only the requested target: `docker-build` rides
             # the graph as each suite's dependency, where no pytest flags
             # land (a requested sibling would inherit them, and `-m` means
-            # memory to buildx). WebKit leaves the pull-request gate with
-            # `-k "not webkit"` - the other suites have no webkit
-            # scenarios, so the filter is a no-op there. The weekly Scan runs
-            # WebKit again for every level.
+            # memory to buildx). Firefox and WebKit leave the pull-request
+            # and main gate with `-k "not webkit and not firefox"` - the
+            # browser rides the webapp test id (`test__x[webkit]`), so the
+            # keyword filter drops exactly those legs; the other suites have
+            # no browser scenarios, so the filter is a no-op there. Firefox
+            # and WebKit stay proven on the weekly Scan for every level.
             #
             # docker-build keeps its own step: e2e stacks build the images
             # they need as a dependency inside this graph, and the separate
@@ -370,11 +373,7 @@ jobs:
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: |
-                  if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-                      npx nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit"
-                  else
-                      npx nx affected -t e2e -c ci -- -m "critical or high"
-                  fi
+                  npx nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit and not firefox"
                   npx nx affected -t docker-build -c ci
 
             # Collect container logs and status for debugging failed tests.

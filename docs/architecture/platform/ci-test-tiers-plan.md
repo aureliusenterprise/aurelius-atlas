@@ -48,8 +48,9 @@ claim, and the cadence follows from it.
 `critical` and `high` share every cadence: the pull-request gate carries both so
 a merge brings no test the pull request did not already prove. The two differ in
 the risk score beside the marker (`critical` is the spine, `high` is a severe
-path with a weaker backstop), not in when they run. See step 4 for the one way
-the pull-request run is still smaller than main: it leaves WebKit out.
+path with a weaker backstop), not in when they run. See step 3 for how the
+gate stays small: pull and main run Chromium only, and the other browsers
+ride the weekly Scan.
 
 Local runs are unaffected: `nx e2e <project>` applies no filter and runs the
 whole project suite.
@@ -159,7 +160,8 @@ levels). Counts below are test functions; parametrization adds a few runnables.
 | `aurelius-atlas-data2model`      | all (4 tests; severe: only proof, young chain)                                    | none                                                                                              | none                                                                                                      |
 
 The webapp file's demotions name their catcher: a collector/CSP/chrome break
-lands on the push to main at worst (`high`) or the weekly Scan (`medium`), each
+lands on the pull request when it breaks Chromium, and on the weekly Scan
+otherwise (a `medium` scenario, or one that breaks only Firefox or WebKit), each
 with the pair beside the marker. The aux suites lost their blanket `critical`
 because `nx affected` already runs them only when they change; the level now
 states how soon a silent break must surface, per scenario.
@@ -170,9 +172,10 @@ Two rules govern future changes to this table.
   against evidence (git churn, a runtime or contention record), and the marker
   comment carries the pair and the override. A catcher line says what proves it
   later: main, weekly, or a dispatch.
-- **No browser is dropped from the weekly run.** Cutting WebKit from PR CI is a
-  latency decision (step 4), and the WebKit-only behaviours (the
-  history-fragment notes in the webapp e2e helpers) stay proven weekly.
+- **No browser is dropped from the weekly run.** Cutting Firefox and WebKit
+  from the pull-request and main gate is a latency decision (step 3), and the
+  engine-only behaviours (the history-fragment notes in the webapp e2e
+  helpers) stay proven weekly.
 
 The sweep in the rollout PR writes a decorator on every test function: each
 scenario carries its own level, so one file mixes levels freely (the server
@@ -240,28 +243,30 @@ configuration silently falls to its `defaultConfiguration`, which sent
 
 ### 3. Trim browsers with a keyword filter
 
-WebKit leaves the pull-request gate with pytest's own `-k "not webkit"`, not
-with a target configuration: the webapp suite's Playwright instances carry
-the browser in the test id (`test__x[webkit]`), so the keyword filter drops
-exactly the WebKit legs (verified through the Nx target: the webapp's
-gate is 64 of its 180 instances once WebKit leaves). The other suites have no webkit scenarios, so the
+Firefox and WebKit leave the pull-request and main gate with pytest's own
+`-k "not webkit and not firefox"`, not with a target configuration: the webapp
+suite's Playwright instances carry the browser in the test id
+(`test__x[webkit]`), so the keyword filter drops exactly those legs (verified
+through the Nx target: the webapp's gate is 32 of its 180 instances, Chromium
+only). No scenario name contains "firefox" or "webkit", so the keywords trim
+browsers and nothing else. The other suites have no browser scenarios, so the
 filter is a no-op there. The hand-written webapp target keeps its one
 all-browsers command for local and weekly use. Browser trimming and
-criticality stay separate levers: WebKit leaves PR CI for every level,
-independent of the marker.
+criticality stay separate levers: the two browsers leave the gate for every
+level, independent of the marker.
 
 ### 4. Switch the CI steps
 
-| Step                            | Today                                   | After                                                                                                                                                  |
-| ------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `validate` "Run unit tests"     | `nx affected -t test -c ci`             | unchanged (units are the Sonar product), plus the guard-test step                                                                                      |
-| `e2e` job                       | `nx affected -t e2e docker-build -c ci` | `nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit"` (PR) / `-- -m "critical or high"` (main), then `nx affected -t docker-build -c ci` |
-| Weekly Scan "Test all projects" | `nx run-many -t test e2e -c ci`         | unchanged (full suite, all four levels, see below)                                                                                                     |
+| Step                            | Today                                   | After                                                                                                                                                    |
+| ------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `validate` "Run unit tests"     | `nx affected -t test -c ci`             | unchanged (units are the Sonar product), plus the guard-test step                                                                                        |
+| `e2e` job                       | `nx affected -t e2e docker-build -c ci` | `nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit and not firefox"` (PR and main, one command), then `nx affected -t docker-build -c ci` |
+| Weekly Scan "Test all projects" | `nx run-many -t test e2e -c ci`         | unchanged (full suite, all four levels, see below)                                                                                                       |
 
-Both event branches carry `-m "critical or high"`, so pull and main prove the
-same levels and a merge holds no surprise. The step differs only in the browser
-trim: the pull request adds `-k "not webkit"` and main does not. The weekly Scan
-stays unfiltered, so it runs all four levels on every browser, and its manual
+One command serves both events: `-m "critical or high" -k "not webkit and not
+firefox"`. Pull and main prove the same levels on the same browser, so a merge
+holds no surprise and the step needs no event branch. The weekly Scan stays
+unfiltered, so it runs all four levels on every browser, and its manual
 dispatch is the `low` cadence and the release-candidate check.
 
 Splitting `docker-build` out of the one request is required, not cosmetic: CLI
@@ -275,16 +280,16 @@ no flags, and the second step replays the same builds from cache.
     the first time, after the merge. The team judged that surprise worse than
     the extra minutes, so the pull request runs `high` beside `critical`. The
     gate is therefore not the cheapest tier split; it is the one that leaves no
-    proven-on-PR path able to break on main. Only `medium` and `low` wait for
-    the weekly Scan, and only the WebKit leg and the browser set shrink the
-    pull-request run versus main.
+    proven-on-PR path able to break on main. Only `medium` and `low`, and only
+    the Firefox and WebKit legs, wait for the weekly Scan. The pull-request run
+    and the push-to-main run are identical.
 
 ## What is lost, and the compensation
 
 | Loss                                   | Compensation                                                                                          |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
 | `medium` paths no longer gate the PR   | weekly Scan on a dedicated runner; a `medium` break reaches main and surfaces within a week           |
-| WebKit interaction proof in PR CI      | weekly full sweep, and the webkit-specific quirks stay in code comments                               |
+| Firefox/WebKit proof in PR + main CI   | weekly full sweep, and the engine-specific quirks stay in code comments                               |
 | Load budgets (LOD-03) in PR CI         | weekly Scan on a dedicated runner, plus the test's own env knobs for a local harder run               |
 | `low` runs happen only when dispatched | manual `workflow_dispatch` on Scan, the release-candidate check, and the dispatch duty in the runbook |
 
@@ -304,17 +309,16 @@ on its own cadence.
 
 ## Wall-time and pool effect
 
-On a spine pull request the e2e job runs `critical` and `high`: it drops the
-WebKit leg of the webapp suite (about a third of 14 min), the webapp's `medium`
-and `low` files, the server's `medium` run, and the aux suites' `medium`/`low`
-probes. The gate is the webapp's 64 of 180 browser instances (up from 32 on the
-critical-only design), the server's 67 of 68, and every core/young-path test.
-The first week's numbers will tell the wall time; it lands between the
-critical-only estimate (about 20 to 24 min) and the full suite (about 31 min).
-The win over the old full-suite gate is real but smaller than a critical-only
-gate: it is pool pressure and contention, not raw level cuts. main runs are not
-on the pool's critical path for any pull request, so main carrying the same
-levels (plus WebKit) costs no pull request any time.
+On a spine pull request the e2e job runs `critical` and `high` on Chromium
+only: it drops two thirds of the webapp suite's browser instances (its gate is
+32 of 180), the webapp's `medium` and `low` files, the server's `medium` run,
+and the aux suites' `medium`/`low` probes. The server gate is 67 of 68 (its
+suites are browser-less, so only the level filter bites there), and every
+core/young-path test still runs. The first week's numbers will tell the wall
+time; cutting the levels and two of three browsers should land near the 20 to
+24 min estimate against the old about 31 min. The win is pool pressure and
+contention as much as raw minutes. main carries the identical command, so a
+merge holds no surprise and main costs no pull request any time.
 
 ## Goal 2 pilot: the two flakes ride the mechanism
 
@@ -369,18 +373,18 @@ classification change and its first real fix. The main run on the merge commit
   `critical` shows its score pair.
 - Level 1: `nx test aurelius-atlas-server -c ci` stays green (units unchanged).
 - Level 2: `nx e2e aurelius-atlas-webapp -c ci -- -m "critical or high" -k
-"not webkit" --collect-only -q` proves the flags reach pytest through the
-  target: 64 of 180 browser instances, and the dry run of the new gate.
+"not webkit and not firefox" --collect-only -q` proves the flags reach pytest
+  through the target: 32 of 180 browser instances, and the dry run of the new
+  gate.
 
 ## Open decisions for approval
 
 1. ~~The `high` cadence.~~ Decided: the pull-request gate carries `high`
    beside `critical`, so a merge holds no surprise. The two levels now share
    every cadence and differ only in the risk score beside the marker.
-2. PR browsers: Chromium plus Firefox (this plan) versus Chromium only. Firefox
-   keeps a second engine in the gate for about a third of the webapp suite's
-   cost. This is now the only thing that makes the pull-request run smaller
-   than the push-to-main run.
+2. ~~PR browsers.~~ Decided: the pull-request and main gate runs Chromium
+   only. Firefox and WebKit are proven on the weekly Scan, so an engine-only
+   break waits at most a week. Pull and main carry one identical command.
 3. Whether the ADR lands inside PR 1 or as its own record first. It landed
    inside PR 1 as [ADR 062](../adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md),
    still Proposed until a person accepts it.

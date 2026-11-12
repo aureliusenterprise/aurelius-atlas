@@ -29,9 +29,10 @@ with behavior-oriented names and reusable fixtures in place of copy-pasted setup
 The e2e layer is tiered by criticality
 ([ADR 062](../../adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md)).
 Every scenario carries one of four levels. A pull request and the push to main
-both run the critical and high ones, and the weekly scan runs the whole suite.
-The two share the levels so a merge brings no test the pull request missed; only
-the browser set differs. A guard test refuses a scenario that carries no level.
+run the same command: the critical and high levels on Chromium only. The weekly
+scan runs the whole suite on every browser, so a merge brings no test the pull
+request missed, and an engine-only break waits at most a week. A guard test
+refuses a scenario that carries no level.
 The levels, the risk matrix behind them, and the scores per
 component are in the [CI test tiers plan](../ci-test-tiers-plan.md).
 
