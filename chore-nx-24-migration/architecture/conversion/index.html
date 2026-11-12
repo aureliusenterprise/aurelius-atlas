@@ -7820,14 +7820,14 @@ checks a PR must pass:</p>
 <td>The derived documents</td>
 <td>Each entity's own fields, breadcrumb and derived relations on its entity document, derived by an indexer; for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..06, ASD-01..05, DD-498..501)</td>
 <td><code>synchronize_app_search/event_handlers/entity_created</code>, <code>connect_datasets_with_entities</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>14.3</td>
 <td>The derived documents kept up to date</td>
-<td>Server tasks that recompute the documents a change affects: names, definitions, deletes, relations; the worker that runs the indexer (LAS-08..10, DD-486)</td>
+<td>The documents a change affects derived again by the indexer: a changed entity's document kept stale, then the documents naming it or named by it; deleted relationships' ends; the server's background worker (LAS-08..10, ASU-01..07, DD-518..521)</td>
 <td><code>synchronize_app_search/event_handlers/{attribute_changed,entity_deleted,relationship_audit}</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>14.4</td>
