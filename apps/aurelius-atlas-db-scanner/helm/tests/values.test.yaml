@@ -1,0 +1,14 @@
+# Test values for helm lint/template (CHT-06): the four required guards
+# (schedule, catalogue.serverUrl, database.dsnSecret.name, database.systemName)
+# and the issuer TOKEN_URL derives from.
+global:
+    domain: atlas.test
+    issuer:
+        url: https://keycloak.atlas.test
+schedule: "0 5 * * 1"
+catalogue:
+    serverUrl: https://atlas-server.atlas.svc.cluster.local:21000
+database:
+    dsnSecret:
+        name: crm-db-dsn
+    systemName: CRM Postgres

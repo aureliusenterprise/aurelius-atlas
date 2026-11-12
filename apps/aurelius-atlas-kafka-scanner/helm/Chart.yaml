@@ -1,0 +1,11 @@
+apiVersion: v2
+name: atlas-kafka-scanner
+description: "The batch Kafka cluster scanner as a CronJob (increment 13.2): scheduled topic reflection into the catalogue, standalone by design (DD-508)."
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+    - aurelius-atlas
+home: https://aureliusenterprise.github.io/aurelius-atlas/
+sources:
+    - https://github.com/aureliusenterprise/aurelius-atlas

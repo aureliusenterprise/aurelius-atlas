@@ -13,6 +13,7 @@ dev = [
     "aurelius-atlas-core",
     "aurelius-atlas-data2model",
     "aurelius-atlas-data2model-client",
+    "aurelius-atlas-db-scanner",
     "aurelius-atlas-dsl",
     "aurelius-atlas-embedder",
     "aurelius-atlas-kafka-scanner",
@@ -81,6 +82,9 @@ workspace = true
 [tool.uv.sources.aurelius-atlas-license-report]
 workspace = true
 
+[tool.uv.sources.aurelius-atlas-db-scanner]
+workspace = true
+
 [tool.uv.sources.aurelius-atlas-lineage-model]
 workspace = true
 
@@ -135,6 +139,7 @@ workspace = true
 [tool.uv.workspace]
 members = [
     "apps/aurelius-atlas-data2model",
+    "apps/aurelius-atlas-db-scanner",
     "apps/aurelius-atlas-embedder",
     "apps/aurelius-atlas-kafka-scanner",
     "apps/aurelius-atlas-lineage-model",
@@ -220,6 +225,12 @@ root = "libs/python/aurelius-atlas-validate-entity-client"
 extraPaths = ["apps/aurelius-atlas-kafka-scanner/e2e"]
 root = "apps/aurelius-atlas-kafka-scanner"
 
+# The database scanner's e2e imports its fixtures module-style (`from conftest
+# import ...`); the path keeps that import resolvable for pyright as pytest resolves it.
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["apps/aurelius-atlas-db-scanner/e2e"]
+root = "apps/aurelius-atlas-db-scanner"
+
 [[tool.pyright.executionEnvironments]]
 # e2e first: the suite imports its fixtures module-style (`from conftest import ...`)
 # and conftest exists in both dirs; tests/ only needs the path for `fake_catalogue`.
@@ -268,6 +279,8 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 # the assert/subprocess safety codes are the harness's shape, not a hazard.
 "**/test__*.py" = ["INP001", "S101", "PLR0913", "PLR0917", "PLR2004"]
 "tests/conftest.py" = ["INP001", "S101", "S603", "S607"]
+# The packaging guard shells out to `helm package` fixed-argument (CHT-05).
+"tests/test__chart_packaging.py" = ["S603", "S607"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 # The digest guard is a CLI script: print is its output contract and the
 # docker imagetools call is fixed-argument (CHT-96).

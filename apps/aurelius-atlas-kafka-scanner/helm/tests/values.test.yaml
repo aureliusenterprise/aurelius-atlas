@@ -1,0 +1,12 @@
+# Test values for helm lint/template (CHT-06): the three required guards
+# (schedule, catalogue.serverUrl, broker.bootstrapServers) and the issuer
+# TOKEN_URL derives from.
+global:
+    domain: atlas.test
+    issuer:
+        url: https://keycloak.atlas.test
+schedule: "30 4 * * *"
+catalogue:
+    serverUrl: https://atlas-server.atlas.svc.cluster.local:21000
+broker:
+    bootstrapServers: kafka.dev.svc.cluster.local:29092
