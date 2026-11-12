@@ -1,7 +1,7 @@
 # 14.3 The derived documents kept up to date
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#328](https://github.com/aureliusenterprise/aurelius-atlas/pull/328)
 - **Records:** DD-518 to DD-521 (here); relies on 14.1 (LAS-04 to LAS-06, LAS-08 to LAS-10, DD-486) and 14.2
   (ASD-01 to ASD-05, DD-498 to DD-501)
 
