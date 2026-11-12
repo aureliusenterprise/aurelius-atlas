@@ -1,6 +1,6 @@
 # 14.4 The App Search API: `/elastic`
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#330](https://github.com/aureliusenterprise/aurelius-atlas/pull/330)
 - **Records:** DD-523 to DD-527 (here), DV-157 and DV-158; relies on ADR 060, 14.1 (LAS-01 to LAS-07,
   LAS-12), 14.2 (ASD-01 to ASD-05) and 14.3 (ASU-01)

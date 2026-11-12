@@ -13,14 +13,30 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.app_search_document import own_document
-from aurelius_atlas_core.app_search_engine import FIELDS, AppSearchEngine, AppSearchError, parse, query_body
+from aurelius_atlas_core.app_search_engine import (
+    ATLAS_DEV,
+    ATLAS_DEV_QUALITY,
+    FIELDS,
+    QUALITY_FIELDS,
+    AppSearchEngine,
+    AppSearchError,
+    Engine,
+    Kind,
+    parse,
+    query_body,
+)
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR, ModelLoader
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import (
+    StoredDimensionTotals,
+    StoredEntity,
+    StoredQualityResult,
+    StoredQualityTotals,
+)
 from aurelius_atlas_core.testing.memory import MemoryTypedefDocument
 from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.impexp import AtlasImportRequest
@@ -84,12 +100,36 @@ def stored(guid: str, type_name: str = "m4i_data_entity", **fields: Any) -> Stor
     return entity.model_copy(update={"app_search": own_document(entity).model_copy(update=fields)})
 
 
-async def engine_of(*entities: StoredEntity) -> AppSearchEngine:
-    """An engine over the entities, written to a fake store."""
+async def engine_of(*entities: StoredEntity, engine: Engine = ATLAS_DEV) -> AppSearchEngine:
+    """``engine`` over the entities, written to a fake store."""
     documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
     await documents.prepare()
     await documents.write([(entity, None) for entity in entities])
-    return AppSearchEngine(documents)
+    return AppSearchEngine(documents, engine)
+
+
+def scored(guid: str, rule: str, dimension: str, score: float, *fields: str) -> StoredEntity:
+    """A score entity holding its result: ``rule``'s, named ``Rule <rule>``, over ``fields``."""
+    result = StoredQualityResult(
+        qualityguid=rule,
+        qualityqualifiedname=f"{rule}--q",
+        name=f"Rule {rule}",
+        expression=f"completeness('{rule}')",
+        dataqualityruledimension=dimension,
+        businessruleid=1.0,
+        fieldguid=list(fields),
+        fieldqualifiedname=[f"{field}--q" for field in fields],
+        datadomainname="Domain",
+        dqscore=score,
+    )
+    return StoredEntity(guid=guid, type_name="m4i_dq_score", attributes={}, quality_result=result)
+
+
+def with_totals(entity: StoredEntity, total: float, count: float, rules: list[str]) -> StoredEntity:
+    """The entity holding accuracy totals, the overall the same."""
+    accuracy = StoredDimensionTotals(total=total, count=count, score=total / count, rules=rules)
+    overall = accuracy.model_copy(update={"rules": []})
+    return entity.model_copy(update={"quality_totals": StoredQualityTotals(accuracy=accuracy, overall=overall)})
 
 
 def guids(answer: dict[str, Any]) -> list[str]:
@@ -107,14 +147,16 @@ def refused(body: object) -> list[str]:
 
 @pytest.mark.covers(f"{E}._fields", rules=["ASE-03", "LAS-07"])
 def test__the_engine_s_fields_are_atlas_dev_s() -> None:
-    """Every field of the legacy documents, and no other; LAS-07's constants and the scores' empty values."""
+    """Every field of the legacy documents, and no other; LAS-07's constants; the scores 0 without totals."""
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev.json").read_text())
 
     assert set(FIELDS) == set(legacy[0])
     assert FIELDS["entityname"].constant is None
     assert FIELDS["classificationstext"].constant == []
     assert FIELDS["businessruleid"].constant == 0.0
-    assert all(FIELDS[f"dqscore_{d}"].constant == 0.0 for d in ("overall", "accuracy", "validity"))
+    assert all(FIELDS[f"dqscore_{d}"].value({}) == 0.0 for d in ("overall", "accuracy", "validity"))
+    assert all(FIELDS[f"dqscorecnt_{d}"].missing == 0.0 for d in ("overall", "accuracy", "validity"))
+    assert FIELDS["qualityguid_accuracy"].value({}) == []
 
 
 @pytest.mark.covers(X, rules=["ASE-03", "ASE-10", "ASE-11"])
@@ -290,6 +332,94 @@ async def test__a_sort_orders_by_fields_or_score_arrays_by_their_ends_ties_by_id
     assert query_body(parse({}))["sort"] == [{"_score": {"order": "desc"}}, {"guid": {"order": "asc"}}]
 
 
+@pytest.mark.covers(f"{E}._quality_fields", rules=["ASQ-02", "ASQ-03", "LAS-11"])
+def test__the_quality_engine_s_fields_are_atlas_dev_quality_s() -> None:
+    """Every field of the legacy results, and no other; ``dqscore`` and ``businessruleid`` numbers, the rest text."""
+    legacy_results = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-quality.json").read_text())
+
+    assert set(QUALITY_FIELDS) == set(legacy_results[0])
+    assert {name for name, field in QUALITY_FIELDS.items() if field.kind is Kind.NUMBER} == {
+        "dqscore",
+        "businessruleid",
+    }
+    assert all(field.constant is None and field.path is not None for field in QUALITY_FIELDS.values())
+
+
+@pytest.mark.covers(X, rules=["ASQ-02", "ASQ-03"])
+async def test__a_field_page_s_request_answers_the_field_s_results() -> None:
+    """The field page's filter on ``fieldguid``, facet on the dimension and sorts; a word in a rule's name; the
+    engine named; documents and deleted scores without a result left out.
+    """  # noqa: D205 - one sentence
+    engine = await engine_of(
+        scored("s1", "r1", "Accuracy", 0.9, "f", "g"),
+        scored("s2", "r2", "Validity", 0.5, "f"),
+        scored("s3", "r3", "Validity", 0.7, "g"),
+        scored("s4", "r4", "Validity", 0.1, "f").model_copy(update={"state": EntityStatus.DELETED}),
+        stored("f", "m4i_field"),
+        engine=ATLAS_DEV_QUALITY,
+    )
+    body = {
+        "filters": {"all": [{"fieldguid": ["f"]}]},
+        "facets": {"dataqualityruledimension": {"type": "value"}},
+        "result_fields": {name: {"raw": {}} for name in ("guid", "name", "dqscore", "fieldguid", "businessruleid")},
+    }
+
+    by_score = await engine.search(body | {"sort": [{"dqscore": "desc"}]})
+    by_name = await engine.search(body | {"sort": {"name": "desc"}})
+    by_word = await engine.search({"query": "r3"})
+
+    assert guids(by_score) == ["s1", "s2"]
+    assert guids(by_name) == ["s2", "s1"]
+    assert guids(by_word) == ["s3"]
+    first = by_score["results"][0]
+    assert first["guid"] == {"raw": "r1"}
+    assert (first["name"], first["dqscore"], first["businessruleid"]) == (
+        {"raw": "Rule r1"},
+        {"raw": 0.9},
+        {"raw": 1.0},
+    )
+    assert first["fieldguid"] == {"raw": ["f", "g"]}
+    assert first["_meta"]["engine"] == by_score["meta"]["engine"]["name"] == "atlas-dev-quality"
+    assert by_score["facets"]["dataqualityruledimension"] == [
+        {"type": "value", "data": [{"value": "Accuracy", "count": 1}, {"value": "Validity", "count": 1}]}
+    ]
+
+
+@pytest.mark.covers(X, rules=["ASQ-04", "ASQ-06"])
+@pytest.mark.covers(f"{E}._sort_clauses", rules=["ASQ-06"])
+async def test__the_score_fields_read_filter_facet_and_sort_with_and_without_totals() -> None:
+    """``a`` holds totals; ``b`` none, read, filtered, faceted and sorted as 0 (DD-530)."""
+    engine = await engine_of(with_totals(stored("a"), 1.5, 2, ["r"]), stored("b"))
+
+    async def found(body: dict[str, Any]) -> list[str]:
+        return guids(await engine.search(body))
+
+    answer = await engine.search({"sort": {"guid": "asc"}})
+    a, b = answer["results"]
+    assert (a["dqscore_accuracy"], a["dqscorecnt_accuracy"], a["dqscoresum_overall"]) == (
+        {"raw": 0.75},
+        {"raw": 2.0},
+        {"raw": 1.5},
+    )
+    assert (a["qualityguid_accuracy"], a["qualityguid_validity"]) == ({"raw": ["r"]}, {"raw": []})
+    assert (b["dqscore_accuracy"], b["dqscorecnt_overall"], b["qualityguid_accuracy"]) == (
+        {"raw": 0.0},
+        {"raw": 0.0},
+        {"raw": []},
+    )
+    assert await found({"filters": {"dqscore_overall": [0]}}) == ["b"]
+    assert await found({"filters": {"dqscore_overall": [0.75]}}) == ["a"]
+    assert await found({"filters": {"dqscorecnt_overall": {"from": 1}}}) == ["a"]
+    assert await found({"filters": {"dqscore_overall": {"to": 0.5}}}) == ["b"]
+    assert await found({"filters": {"qualityguid_accuracy": ["r"]}}) == ["a"]
+    assert await found({"sort": {"dqscore_overall": "desc"}}) == ["a", "b"]
+    assert await found({"sort": {"dqscore_overall": "asc"}}) == ["b", "a"]
+    facets = await engine.search({"facets": {"dqscorecnt_overall": {"type": "value", "sort": {"value": "asc"}}}})
+    assert facets["facets"]["dqscorecnt_overall"] == [
+        {"type": "value", "data": [{"value": 0.0, "count": 1}, {"value": 2.0, "count": 1}]}
+    ]
+
+
 @pytest.mark.covers(X, rules=["ASE-09"])
 @pytest.mark.covers(f"{E}.query_body", rules=["ASE-09"])
 async def test__pages_answer_their_slice_and_the_totals_and_nothing_past_the_window() -> None:
@@ -330,29 +460,27 @@ async def test__results_hold_the_fields_asked_raw_cut_and_snippets_escaped_with_
     assert result["_meta"]["score"] > 0
 
 
-_SAMPLE: dict[str, AppSearchEngine] = {}
+async def indexed_sample() -> ElasticsearchEntityDocuments:
+    """The sample catalogue imported into a new fake store, its documents indexed."""
+    types = TypedefStore(TypeRegistry(), MemoryTypedefDocument())
+    await types.load()
+    for models_dir in (BUILTIN_MODELS_DIR, M4I_MODELS_DIR):
+        await ModelLoader(types).load(models_dir)
+    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    store = EntityStore(types.registry, documents)
+    await store.prepare()
+    result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
+        SAMPLE.read_bytes(), AtlasImportRequest(), "importer", "h", "ip"
+    )
+    assert result.operation_status.value == "SUCCESS"
+    await AppSearchIndexer(documents, types.registry).run_once()
+    return documents
 
 
 @cache
 def sample() -> AppSearchEngine:
     """The sample catalogue imported into the fake store and indexed once for the module."""
-
-    async def build() -> AppSearchEngine:
-        types = TypedefStore(TypeRegistry(), MemoryTypedefDocument())
-        await types.load()
-        for models_dir in (BUILTIN_MODELS_DIR, M4I_MODELS_DIR):
-            await ModelLoader(types).load(models_dir)
-        documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
-        store = EntityStore(types.registry, documents)
-        await store.prepare()
-        result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
-            SAMPLE.read_bytes(), AtlasImportRequest(), "importer", "h", "ip"
-        )
-        assert result.operation_status.value == "SUCCESS"
-        await AppSearchIndexer(documents, types.registry).run_once()
-        return AppSearchEngine(documents)
-
-    return asyncio.run(build())
+    return AppSearchEngine(asyncio.run(indexed_sample()))
 
 
 @cache

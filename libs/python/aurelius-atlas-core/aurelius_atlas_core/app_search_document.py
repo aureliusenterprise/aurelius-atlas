@@ -62,6 +62,35 @@ NAME_FIELDS = ("name", "referenceablequalifiedname", "definition", "breadcrumbna
 KEYWORD_FIELDS = ("email", "sourcetype", "breadcrumbtype", "parentguid", *GUID_FIELDS)
 """The document's other fields, its source hash aside, mapped as keywords only (ASD-02)."""
 
+SCORE_TYPE = "m4i_dq_score"
+"""The quality scanner's score entities, one per rule and dataset (DQS-06)."""
+
+RULE_TYPE = "m4i_data_quality"
+"""The data quality rules a score scores (DQS-02)."""
+
+QUALITY_RESULT_FIELD = "qualityResult"
+"""The entity document's field of a score entity's quality result (ASQ-02, DD-528)."""
+
+QUALITY_TOTALS_FIELD = "qualityTotals"
+"""The entity document's field of its App Search document's score totals (ASQ-04, DD-529)."""
+
+DIMENSIONS = ("accuracy", "completeness", "timeliness", "uniqueness", "validity")
+"""The data quality dimensions of the score fields (LAS-12)."""
+
+QUALITY_TEXT_FIELDS = (
+    "qualityqualifiedname",
+    "name",
+    "expression",
+    "dataqualityruledescription",
+    "dataqualityruledimension",
+    "fieldqualifiedname",
+    "datadomainname",
+)
+"""A quality result's fields of names and words, mapped as keywords with a text sub-field (ASQ-03)."""
+
+QUALITY_KEYWORD_FIELDS = ("qualityguid", "fieldguid")
+QUALITY_NUMBER_FIELDS = ("businessruleid", "dqscore")
+
 TECHNICAL = frozenset({"m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"})
 BUSINESS = frozenset({"m4i_data_domain", "m4i_data_entity", "m4i_data_attribute"})
 
@@ -163,3 +192,25 @@ def app_search_mapping() -> dict[str, Any]:
     keywords = ("sourceHash", *KEYWORD_FIELDS)
     properties = dict.fromkeys(NAME_FIELDS, _NAME) | dict.fromkeys(keywords, _KEYWORD) | {"stale": {"type": "boolean"}}
     return {"properties": properties}
+
+
+_NUMBER = {"type": "double"}
+
+
+def quality_result_mapping() -> dict[str, Any]:
+    """The mapping of a quality result: names also as text, GUIDs as keywords, numbers as doubles (ASQ-03)."""
+    return {
+        "properties": dict.fromkeys(QUALITY_TEXT_FIELDS, _NAME)
+        | dict.fromkeys(QUALITY_KEYWORD_FIELDS, _KEYWORD)
+        | dict.fromkeys(QUALITY_NUMBER_FIELDS, _NUMBER)
+    }
+
+
+def quality_totals_mapping() -> dict[str, Any]:
+    """The mapping of a document's score totals: each dimension's and the overall numbers, and rule GUIDs."""
+    return {
+        "properties": {
+            name: {"properties": {"total": _NUMBER, "count": _NUMBER, "score": _NUMBER, "rules": _KEYWORD}}
+            for name in (*DIMENSIONS, "overall")
+        }
+    }

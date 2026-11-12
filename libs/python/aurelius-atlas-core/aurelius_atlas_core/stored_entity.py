@@ -69,6 +69,47 @@ class StoredAppSearch(AtlasModel):
     derivedprocessguid: list[str] = Field(default_factory=list)
 
 
+class StoredQualityResult(AtlasModel):
+    """A score entity's quality result: what ``atlas-dev-quality`` holds of it, under the engine's names (DD-528).
+
+    Read from the score, its rule, and the rule's fields in the scored dataset (ASQ-02).
+    """
+
+    qualityguid: str
+    qualityqualifiedname: str = ""
+    name: str = ""
+    expression: str = ""
+    dataqualityruledescription: str = ""
+    dataqualityruledimension: str = ""
+    businessruleid: float = 0.0
+    fieldguid: list[str] = Field(default_factory=list)
+    fieldqualifiedname: list[str] = Field(default_factory=list)
+    datadomainname: str = ""
+    dqscore: float = 0.0
+
+
+class StoredDimensionTotals(AtlasModel):
+    """One dimension's totals on a document: the sum of the scores, their count, the one over the other, and the
+    rules' GUIDs on a field (LAS-12, ASQ-04).
+    """  # noqa: D205 - one sentence
+
+    total: float = 0.0
+    count: float = 0.0
+    score: float = 0.0
+    rules: list[str] = Field(default_factory=list)
+
+
+class StoredQualityTotals(AtlasModel):
+    """A document's score totals per dimension and overall, held only where a result reaches (DD-529, DD-530)."""
+
+    accuracy: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+    completeness: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+    timeliness: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+    uniqueness: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+    validity: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+    overall: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+
+
 class StoredEntity(AtlasModel):
     """One document of the entity index; ``write_id`` names the write that last wrote it (DD-046)."""
 
@@ -99,6 +140,10 @@ class StoredEntity(AtlasModel):
     """The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435)."""
     app_search: StoredAppSearch | None = None
     """The entity's App Search document, marked stale once its own fields change (ASD-03, ASU-01, DD-518)."""
+    quality_result: StoredQualityResult | None = None
+    """A score entity's quality result, derived each round (ASQ-02, DD-528)."""
+    quality_totals: StoredQualityTotals | None = None
+    """The score totals of the entity's App Search document, derived each round (ASQ-04, DD-529)."""
 
     @classmethod
     def of(cls, entity: AtlasEntity, entity_type: EntityType, *, guid: str, now: int, user: str | None) -> Self:

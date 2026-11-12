@@ -1,10 +1,12 @@
-"""The App Search engine ``atlas-dev`` answered from the entity index (ASE-03 to ASE-11, DD-523 to DD-525).
+"""The App Search engines ``atlas-dev`` and ``atlas-dev-quality`` answered from the entity index (ASE-03 to
+ASE-11, ASQ-02 to ASQ-06, DD-523 to DD-525, DD-530, DD-531).
 
 The original webapp sends App Search's Search API requests: a query, filters, facets, a sort, a page and the
-fields to answer. Each of the engine's fields is a row of ``FIELDS``: its kind, and the index field it is read
-from or the constant it holds. A request is checked against the table, as App Search checks it, and becomes one
-search of the entity index; the answer is read back through the table in App Search's shape.
-"""
+fields to answer. An engine is the entity documents it holds and its fields; each field is a row of its table:
+its kind, and the index field it is read from or the constant it holds. A request is checked against the table,
+as App Search checks it, and becomes one search of the entity index; the answer is read back through the table
+in App Search's shape.
+"""  # noqa: D205 - one sentence
 
 import html
 import math
@@ -12,16 +14,31 @@ import re
 import uuid
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
+from decimal import Decimal
 from enum import StrEnum
 from typing import Any
 
-from aurelius_atlas_core.app_search_document import APP_SEARCH_FIELD, KEYWORD_FIELDS, NAME_FIELDS, SOURCE_HASH_FIELD
+from aurelius_atlas_core.app_search_document import (
+    APP_SEARCH_FIELD,
+    DIMENSIONS,
+    KEYWORD_FIELDS,
+    NAME_FIELDS,
+    QUALITY_KEYWORD_FIELDS,
+    QUALITY_NUMBER_FIELDS,
+    QUALITY_RESULT_FIELD,
+    QUALITY_TEXT_FIELDS,
+    QUALITY_TOTALS_FIELD,
+    SOURCE_HASH_FIELD,
+)
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.search_query import ACTIVE
-from aurelius_atlas_core.stored_entity import StoredAppSearch
+from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
 ENGINE = "atlas-dev"
 """The engine of the entity documents (LAS-01)."""
+
+QUALITY_ENGINE = "atlas-dev-quality"
+"""The engine of the quality results (LAS-11, ASQ-02)."""
 
 MAX_PAGE = 100
 MAX_PAGE_SIZE = 1000
@@ -32,9 +49,6 @@ RESULT_WINDOW = 10_000
 MIN_SNIPPET = 20
 MAX_SNIPPET = 1000
 DEFAULT_SNIPPET = 100
-
-DIMENSIONS = ("accuracy", "completeness", "timeliness", "uniqueness", "validity")
-"""The data quality dimensions of the score fields (LAS-12)."""
 
 _DIRECTIONS = ("asc", "desc")
 _WORD = re.compile(r"\w+")
@@ -52,7 +66,8 @@ class EngineField:
     """A field of the engine: its kind, and either the index field it is read from or its constant (DD-523).
 
     ``text`` is the analysed sub-field a query's words are matched in; ``read`` gives the value from a hit's
-    source.
+    source; ``missing`` is the number a document without the index field holds for filters, facets and sorts
+    (DD-530).
     """
 
     kind: Kind
@@ -60,6 +75,7 @@ class EngineField:
     constant: Any = None
     text: str | None = None
     read: Callable[[Mapping[str, Any]], Any] | None = None
+    missing: float | None = None
 
     def value(self, source: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a field's JSON value
         """The field's value in a hit's source."""
@@ -74,6 +90,23 @@ def _stored(name: str) -> Callable[[Mapping[str, Any]], Any]:
         return (source.get(APP_SEARCH_FIELD) or {}).get(name, default)
 
     return read
+
+
+def _nested(path: str, default: Any) -> Callable[[Mapping[str, Any]], Any]:  # noqa: ANN401 - a JSON value
+    """The reader of a dotted index field, ``default`` where the source lacks it."""
+    keys = path.split(".")
+
+    def read(source: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a field's JSON value
+        value: Any = source
+        for key in keys:
+            value = value.get(key) if isinstance(value, dict) else None
+        return default if value is None else value
+
+    return read
+
+
+_TOTALS = {"dqscore": "score", "dqscorecnt": "count", "dqscoresum": "total"}
+"""The score fields of ``atlas-dev`` and the totals they are read from (ASQ-04, ASQ-05)."""
 
 
 def _fields() -> dict[str, EngineField]:
@@ -102,15 +135,63 @@ def _fields() -> dict[str, EngineField]:
     ):
         fields[name] = EngineField(Kind.TEXT, constant=[])
     for dimension in (*DIMENSIONS, "overall"):
-        for prefix in ("dqscore", "dqscorecnt", "dqscoresum"):
-            fields[f"{prefix}_{dimension}"] = EngineField(Kind.NUMBER, constant=0.0)
+        for prefix, total in _TOTALS.items():
+            path = f"{QUALITY_TOTALS_FIELD}.{dimension}.{total}"
+            fields[f"{prefix}_{dimension}"] = EngineField(Kind.NUMBER, path=path, read=_nested(path, 0.0), missing=0.0)
     for dimension in DIMENSIONS:
-        fields[f"qualityguid_{dimension}"] = EngineField(Kind.TEXT, constant=[])
+        path = f"{QUALITY_TOTALS_FIELD}.{dimension}.rules"
+        fields[f"qualityguid_{dimension}"] = EngineField(Kind.TEXT, path=path, read=_nested(path, []))
     return fields
 
 
 FIELDS = _fields()
-"""The engine's fields by name: LAS-02 to LAS-07, and the scores, constant until 14.5 (LAS-12)."""
+"""``atlas-dev``'s fields by name: LAS-02 to LAS-07, and the scores read from the totals (ASQ-04 to ASQ-06)."""
+
+
+def _quality_fields() -> dict[str, EngineField]:
+    """``atlas-dev-quality``'s fields (14.1's documents): the score entity's GUID and its result's (ASQ-02)."""
+    fields = {"id": EngineField(Kind.TEXT, path="guid", read=lambda source: source.get("guid"))}
+    defaults = {
+        name: info.get_default(call_default_factory=True) for name, info in StoredQualityResult.model_fields.items()
+    }
+    for name in ("guid", *QUALITY_KEYWORD_FIELDS):
+        stored = "qualityguid" if name == "guid" else name
+        path = f"{QUALITY_RESULT_FIELD}.{stored}"
+        fields[name] = EngineField(Kind.TEXT, path=path, read=_nested(path, defaults[stored]))
+    for name in QUALITY_TEXT_FIELDS:
+        path = f"{QUALITY_RESULT_FIELD}.{name}"
+        fields[name] = EngineField(Kind.TEXT, path=path, text=f"{path}.text", read=_nested(path, defaults[name]))
+    for name in QUALITY_NUMBER_FIELDS:
+        path = f"{QUALITY_RESULT_FIELD}.{name}"
+        fields[name] = EngineField(Kind.NUMBER, path=path, read=_nested(path, defaults[name]))
+    return fields
+
+
+QUALITY_FIELDS = _quality_fields()
+"""``atlas-dev-quality``'s fields by name (LAS-11, ASQ-02)."""
+
+
+@dataclass(frozen=True)
+class Engine:
+    """An engine: its name, the filter of the entity documents it holds, and its fields (DD-531)."""
+
+    name: str
+    holds: tuple[dict[str, Any], ...]
+    fields: Mapping[str, EngineField]
+
+
+ATLAS_DEV = Engine(ENGINE, ({"term": {"state": ACTIVE}}, {"exists": {"field": SOURCE_HASH_FIELD}}), FIELDS)
+"""The active entities with an App Search document, stale or not (ASE-03, DD-524)."""
+
+ATLAS_DEV_QUALITY = Engine(
+    QUALITY_ENGINE,
+    ({"term": {"state": ACTIVE}}, {"exists": {"field": f"{QUALITY_RESULT_FIELD}.qualityguid"}}),
+    QUALITY_FIELDS,
+)
+"""The active score entities with a quality result (ASQ-02)."""
+
+ENGINES = {engine.name: engine for engine in (ATLAS_DEV, ATLAS_DEV_QUALITY)}
+"""The engines by name (ASE-01, ASQ-01)."""
 
 
 class AppSearchError(Exception):
@@ -150,6 +231,7 @@ class _ResultField:
 class Search:
     """A request checked against the engine's fields, ready to run (ASE-04)."""
 
+    engine: Engine = ATLAS_DEV
     query: str = ""
     filters: list[dict[str, Any]] = field(default_factory=list)
     facets: dict[str, list[_Facet]] = field(default_factory=dict)
@@ -163,7 +245,8 @@ class Search:
 class _Errors:
     """The problems found in a request, raised together."""
 
-    def __init__(self) -> None:
+    def __init__(self, fields: Mapping[str, EngineField]) -> None:
+        self.fields = fields
         self.messages: list[str] = []
 
     def add(self, message: str) -> None:
@@ -174,16 +257,17 @@ class _Errors:
             raise AppSearchError(400, *self.messages)
 
 
-def parse(body: object) -> Search:
-    """The request checked as App Search checks it; other keys ignored (ASE-04, DD-527).
+def parse(body: object, engine: Engine = ATLAS_DEV) -> Search:
+    """The request checked as App Search checks it against ``engine``'s fields; other keys ignored (ASE-04,
+    DD-527).
 
     Raises:
         AppSearchError: 400 with each problem found.
-    """
+    """  # noqa: D205 - one sentence
     if not isinstance(body, dict):
         raise AppSearchError(400, "The request body must be a JSON object")
-    errors = _Errors()
-    search = Search()
+    errors = _Errors(engine.fields)
+    search = Search(engine)
     query = body.get("query", "")
     if isinstance(query, str):
         search.query = query
@@ -207,7 +291,7 @@ def parse(body: object) -> Search:
 
 def _known(name: object, errors: _Errors, what: str) -> EngineField | None:
     """The engine's field of that name, or a problem named after ``what``."""
-    found = FIELDS.get(name) if isinstance(name, str) else None
+    found = errors.fields.get(name) if isinstance(name, str) else None
     if found is None:
         errors.add(f"{what} contains an unknown field: {name}")
     return found
@@ -249,7 +333,15 @@ def _field_filter(name: str, engine_field: EngineField, value: object, errors: _
     if engine_field.path is None:
         held = engine_field.constant if isinstance(engine_field.constant, list) else [engine_field.constant]
         return _ALL if any(item in held for item in wanted if item is not None) else _NONE
-    return {"terms": {engine_field.path: [item for item in wanted if item is not None]}}
+    terms = {"terms": {engine_field.path: [item for item in wanted if item is not None]}}
+    missing = engine_field.missing
+    return _or_missing(engine_field, terms) if missing is not None and missing in wanted else terms
+
+
+def _or_missing(engine_field: EngineField, clause: dict[str, Any]) -> dict[str, Any]:
+    """The clause, or the field missing: a document without it holds the field's ``missing`` value (DD-530)."""
+    absent = {"bool": {"must_not": [{"exists": {"field": engine_field.path}}]}}
+    return {"bool": {"should": [clause, absent], "minimum_should_match": 1}}
 
 
 def _filter_value(name: str, engine_field: EngineField, value: object, errors: _Errors) -> object:
@@ -272,11 +364,16 @@ def _range_filter(name: str, engine_field: EngineField, bounds: dict[str, Any], 
         errors.add(f"Range filter for {name} must have a number from or to")
         return _ALL
     if engine_field.path is None:
-        constant = engine_field.constant
-        inside = (lower is None or constant >= lower) and (upper is None or constant < upper)
-        return _ALL if inside else _NONE
+        return _ALL if _within(engine_field.constant, lower, upper) else _NONE
     limits = ({"gte": lower} if lower is not None else {}) | ({"lt": upper} if upper is not None else {})
-    return {"range": {engine_field.path: limits}}
+    clause = {"range": {engine_field.path: limits}}
+    missing = engine_field.missing
+    return _or_missing(engine_field, clause) if missing is not None and _within(missing, lower, upper) else clause
+
+
+def _within(value: float, lower: float | None, upper: float | None) -> bool:
+    """Whether the value is from ``lower`` on, ``lower`` included, and below ``upper``; ``None`` bounds nothing."""
+    return (lower is None or value >= lower) and (upper is None or value < upper)
 
 
 def _is_number(value: object) -> bool:
@@ -417,10 +514,10 @@ def _search_fields(search_fields: object, errors: _Errors) -> dict[str, float]:
 
 def _matched_fields(search: Search) -> list[str]:
     """The index fields a query's words are matched in, with their weights (DD-525): the stored text fields."""
-    weights = search.search_fields or dict.fromkeys(FIELDS, 1.0)
+    weights = search.search_fields or dict.fromkeys(search.engine.fields, 1.0)
     fields = []
     for name, weight in weights.items():
-        engine_field = FIELDS[name]
+        engine_field = search.engine.fields[name]
         target = engine_field.text or engine_field.path
         if (
             engine_field.kind is Kind.TEXT
@@ -432,7 +529,7 @@ def _matched_fields(search: Search) -> list[str]:
 
 
 def query_body(search: Search) -> dict[str, Any]:
-    """The search of the entity index: active entities with a document, the query, filters, facets, sort, page."""
+    """The search of the entity index: the engine's documents, the query, filters, facets, sort, page."""
     must: list[dict[str, Any]] = []
     if search.query.strip():
         must.append(
@@ -445,21 +542,27 @@ def query_body(search: Search) -> dict[str, Any]:
                 }
             }
         )
-    base = [{"term": {"state": ACTIVE}}, {"exists": {"field": SOURCE_HASH_FIELD}}]
     start = (search.current - 1) * search.size
+    fields = search.engine.fields
     aggs = {
-        f"{name}#{index}": {"terms": {"field": path, "size": facet.size + 1, "order": _facet_order(facet)}}
+        f"{name}#{index}": {"terms": _facet_terms(fields[name], facet)}
         for name, facets in search.facets.items()
-        if (path := FIELDS[name].path) is not None
+        if fields[name].path is not None
         for index, facet in enumerate(facets)
     }
     return {
-        "query": {"bool": {"filter": base + search.filters, "must": must}},
-        "sort": _sort_clauses(search.sort),
+        "query": {"bool": {"filter": [*search.engine.holds, *search.filters], "must": must}},
+        "sort": _sort_clauses(search.sort, fields),
         "aggs": aggs,
         "from_": min(start, RESULT_WINDOW),
         "size": max(0, min(search.size, RESULT_WINDOW - start)),
     }
+
+
+def _facet_terms(engine_field: EngineField, facet: _Facet) -> dict[str, Any]:
+    """A facet's ``terms``: one more value than asked, to drop an empty one; missing values counted (DD-530)."""
+    terms = {"field": engine_field.path, "size": facet.size + 1, "order": _facet_order(facet)}
+    return terms if engine_field.missing is None else terms | {"missing": engine_field.missing}
 
 
 def _facet_order(facet: _Facet) -> list[dict[str, str]]:
@@ -467,22 +570,25 @@ def _facet_order(facet: _Facet) -> list[dict[str, str]]:
     return [facet.order, {"_key": "asc"}] if "_count" in facet.order else [facet.order]
 
 
-def _sort_clauses(sort: list[tuple[str, str]]) -> list[dict[str, Any]]:
-    """The sort, constants dropped, ties by ``id`` (ASE-08)."""
+def _sort_clauses(sort: list[tuple[str, str]], fields: Mapping[str, EngineField]) -> list[dict[str, Any]]:
+    """The sort, constants dropped, a missing number as its ``missing`` value, ties by ``id`` (ASE-08, DD-530)."""
     clauses: list[dict[str, Any]] = []
     for name, direction in sort or [("_score", "desc")]:
-        path = "_score" if name == "_score" else FIELDS[name].path
-        if path is not None:
-            clauses.append({path: {"order": direction}})
+        if name == "_score":
+            clauses.append({"_score": {"order": direction}})
+        elif (path := fields[name].path) is not None:
+            missing = fields[name].missing
+            clauses.append({path: {"order": direction} | ({} if missing is None else {"missing": missing})})
     return [*clauses, {"guid": {"order": "asc"}}]
 
 
 class AppSearchEngine:
-    """The ``atlas-dev`` engine over ``documents``' entity index (ASE-03 to ASE-11)."""
+    """An engine over ``documents``' entity index, ``atlas-dev`` by default (ASE-03 to ASE-11, ASQ-03)."""
 
-    def __init__(self, documents: ElasticsearchEntityDocuments) -> None:
-        """An engine answering from ``documents``."""
+    def __init__(self, documents: ElasticsearchEntityDocuments, engine: Engine = ATLAS_DEV) -> None:
+        """``engine`` answering from ``documents``."""
         self._documents = documents
+        self._engine = engine
 
     async def search(self, body: object) -> dict[str, Any]:
         """App Search's answer to the request ``body``.
@@ -490,7 +596,7 @@ class AppSearchEngine:
         Raises:
             AppSearchError: 400 for a request App Search refuses (ASE-04).
         """
-        search = parse(body)
+        search = parse(body, self._engine)
         response = await self._documents.search_app_search(**query_body(search))
         total = int(response["hits"]["total"]["value"])
         return {
@@ -504,7 +610,7 @@ class AppSearchEngine:
                     "total_results": total,
                     "size": search.size,
                 },
-                "engine": {"name": ENGINE, "type": "default"},
+                "engine": {"name": self._engine.name, "type": "default"},
                 "request_id": uuid.uuid4().hex,
             },
             "results": [_result(hit, search) for hit in response["hits"]["hits"]],
@@ -515,19 +621,29 @@ class AppSearchEngine:
 def _result(hit: Mapping[str, Any], search: Search) -> dict[str, Any]:
     """One result: the fields asked for, ``id`` always, and ``_meta`` (ASE-10)."""
     source = hit["_source"]
-    asked = search.result_fields if search.result_fields is not None else dict.fromkeys(FIELDS, _ResultField(raw=True))
+    fields = search.engine.fields
+    asked = search.result_fields if search.result_fields is not None else dict.fromkeys(fields, _ResultField(raw=True))
     result: dict[str, Any] = {"id": {"raw": source.get("guid")}}
     words = [word.lower() for word in _WORD.findall(search.query)]
     for name, options in asked.items():
-        value = FIELDS[name].value(source)
+        value = _plain(fields[name].value(source))
         answered: dict[str, Any] = {}
         if options.raw:
             answered["raw"] = _cut(value, options.raw_size)
         if options.snippet:
             answered["snippet"] = _snippet(value, words, options)
         result[name] = answered
-    result["_meta"] = {"id": source.get("guid"), "engine": ENGINE, "score": float(hit.get("_score") or 0.0)}
+    result["_meta"] = {"id": source.get("guid"), "engine": search.engine.name, "score": float(hit.get("_score") or 0.0)}
     return result
+
+
+def _plain(value: Any) -> Any:  # noqa: ANN401 - a field's JSON value
+    """The value as JSON answers it: a number the store reads as a ``Decimal`` a float, in a list too."""
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, list):
+        return [_plain(item) for item in value]
+    return value
 
 
 def _cut(value: Any, size: int | None) -> Any:  # noqa: ANN401 - a field's JSON value
@@ -569,7 +685,7 @@ def _answered_facets(search: Search, aggregations: Mapping[str, Any], total: int
     """Each facet field's facets in the request's order: the values and counts, empty values left out (ASE-07)."""
     answered: dict[str, Any] = {}
     for name, facets in search.facets.items():
-        engine_field = FIELDS[name]
+        engine_field = search.engine.fields[name]
         answered[name] = []
         for index, facet in enumerate(facets):
             if engine_field.path is None:
@@ -578,7 +694,7 @@ def _answered_facets(search: Search, aggregations: Mapping[str, Any], total: int
             else:
                 buckets = aggregations[f"{name}#{index}"]["buckets"]
                 data = [
-                    {"value": bucket["key"], "count": bucket["doc_count"]}
+                    {"value": _plain(bucket["key"]), "count": bucket["doc_count"]}
                     for bucket in buckets
                     if bucket["key"] not in ("", None)
                 ][: facet.size]

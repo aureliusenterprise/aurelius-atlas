@@ -186,7 +186,7 @@ venvPath = "."
 
 # pytest's conftest dir lands on sys.path at collection; pyright needs the same
 # view for the app tests' helper-module imports (the 8.2 fake upstream, the 8.4
-# client recorders).
+# client recorders, core's sample catalogue of 14.4 reused by 14.5).
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-embedder/tests"]
 root = "apps/aurelius-atlas-embedder"
@@ -202,6 +202,10 @@ root = "apps/aurelius-atlas-validate-entity"
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["apps/aurelius-atlas-server/tests", "apps/aurelius-atlas-server/e2e"]
 root = "apps/aurelius-atlas-server"
+
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["libs/python/aurelius-atlas-core/tests"]
+root = "libs/python/aurelius-atlas-core"
 
 [[tool.pyright.executionEnvironments]]
 extraPaths = ["libs/python/aurelius-atlas-server-client/tests"]
