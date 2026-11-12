@@ -1,0 +1,161 @@
+# The quality-scanner chart — its runtime contract (CHT-02, CHT-114..117).
+# apps/aurelius-atlas-quality-scanner: batch CLI, prefix
+# AURELIUS_ATLAS_QUALITY_SCANNER_, no port (DQS-01). The CronJob owns when it
+# runs (DD-510); the image owns what a run does. Standalone by design — never a
+# dependency of the helm/ umbrella (DD-508), so the full global.* contract is
+# declared here with empty defaults (CHT-03) and the chart installs alone.
+
+# The contract the umbrella would pass through a dependency (CHT-03); declared
+# whole so a standalone render has every map it reads (a deep access into a
+# missing map panics the Go template).
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    # The Keycloak issuer the job mints its client credentials against
+    # (TOKEN_URL). "" derives https://keycloak.<domain> from global.domain.
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+    # The realm whose token endpoint the mint names (CHT-74); "" is aurelius-atlas.
+    realm: ""
+    trust:
+        # Only caSecretName is read here: the CA Secret the job mounts when a
+        # deployment pins a private issuer (CHT-117). No Certificate renders —
+        # the job is a client, never a server (CHT-115).
+        issuerRef:
+            name: ""
+            kind: ""
+        caSecretName: ""
+
+enabled: true
+component: quality-scanner
+# The env prefix of the settings module (CHT-116's join names).
+componentEnvPrefix: AURELIUS_ATLAS_QUALITY_SCANNER_
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+    name: aurelius-atlas-quality-scanner
+    tag: ""
+    # Operator override (CHT-92): a set digest always wins over the tag.
+    digest: ""
+
+# The schedule (CHT-115): required — a vendor-chosen default would scan on a
+# clock nobody picked (DD-510). A standard cron expression.
+schedule: ""
+# A late tick is skipped, not stacked (DD-510): Forbid keeps one scan per tree.
+concurrencyPolicy: Forbid
+# A run that outlives the deadline is a failed job, not a stuck pod (DD-510).
+activeDeadlineSeconds: 3600
+startingDeadlineSeconds: 600
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 1
+# A finished Job is kept until the cluster's GC or a ttl value trims it (DD-510).
+ttlSecondsAfterFinished: ""
+# true holds the ticks without deleting the schedule — the safe state for a
+# chart installed before its sources exist.
+suspend: false
+
+# Where the catalogue is (CHT-116): required, because a batch chart has no
+# co-deployed server Service to derive (DD-508's consequence).
+catalogue:
+    serverUrl: ""
+
+# The job's identity (CHT-116): an operator-supplied Secret, never a value the
+# chart generates (DD-509). secretName defaults to <release>-scanner-clients;
+# the deployment places its own credential Secret under that name (or names
+# its vault's Secret here) — no chart in this repository generates it.
+auth:
+    clientId: aurelius-atlas-quality-scanner
+    secretName: ""
+    # "" takes the client id as the key (the roster shape of CHT-88/119).
+    secretKey: ""
+
+# The trust CA, optional (CHT-117): a name mounts the Secret read-only and
+# joins CA_FILE; no name keeps the image's system trust (the bootstrap path).
+# The mounted CA also verifies an OTLP collector reached over TLS (CHT-125).
+trust:
+    caSecretName: ""
+    mountPath: /etc/aurelius-atlas/ca
+
+# The scan's OTLP export (CHT-125, DD-511): a first-class block, off by
+# default — a batch job exports a handful of spans per run and the operator
+# decides whether the cluster hears them. endpoint is required when on
+# (DD-508: no co-deployed collector to derive, like catalogue.serverUrl).
+telemetry:
+    enabled: false
+    endpoint: ""
+    # The ingest auth (CHT-125): on, the chart joins the app-owned leg's trio
+    # (DD-196) and reuses the job's own client and identity Secret unless the
+    # deployment registers a dedicated ingest client (DD-514's reuse rule).
+    # Off, the export rides the SDK env leg unauthenticated (DD-210) — a
+    # customer collector that asks for no credential.
+    auth:
+        enabled: true
+        # "" reuses auth.clientId; a name takes its own key in secretName.
+        clientId: ""
+        # "" reuses the identity Secret the job reads (CHT-116's default).
+        secretName: ""
+        secretKey: ""
+
+# The scan's own knobs (DQS-05, DQS-02): rendered only when set, so the app's
+# defaults stay the app's. sources is the JSON list DQS-17's envelope defines.
+scan:
+    sources: []
+    maxRows: ""
+    searchLimit: ""
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 512Mi
+    limits:
+        memory: 1Gi
+
+# Pass-throughs, verbatim like the service charts (CHT-117): config renders
+# static settings, secretRefs maps an existing Secret's keys to env names
+# (SASL-style credentials, an out-of-band DSN), extraEnv renders whole entries
+# for anything the typed blocks above do not model.
+config: {}
+secretRefs: []
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+# The image's declared user (DD-257): dhi.io/python-3.14-alpine runs as
+# nonroot (uid/gid 65532). A batch pod writes nothing (CHT-115's hardened
+# pod): read-only root, no service-account token, drop-all.
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+serviceAccount:
+    create: true
+    name: ""
+
+# Render guards (CHT-02/115): the bare render fails naming what the deployment
+# must supply; the test values file answers both.
+required:
+    - key: schedule
+      message: "schedule is required (the cron expression the scan runs on, CHT-115)"
+    - key: catalogue.serverUrl
+      message: "catalogue.serverUrl is required (the catalogue the scan reads and writes, CHT-116)"

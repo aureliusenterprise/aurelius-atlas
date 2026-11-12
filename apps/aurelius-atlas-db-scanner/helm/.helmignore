@@ -1,0 +1,28 @@
+# Patterns the helm toolchain excludes from packaged archives.
+# NOTE: `charts/` and `*.tgz` must NOT be ignored here — Helm loads dependency
+# archives through the same ignore rules, and ignoring the directory makes
+# every `file://` dependency invisible to lint/template (verified, helm 4.3.1).
+# Resolved dependency tarballs stay out of git via the root .gitignore.
+.git
+.gitignore
+.svn
+.project
+.hg
+.hgignore
+.cvs
+*.swp
+*.bak
+*.tmp
+*.orig
+~
+.vscode/
+.idea/
+.DS_Store
+__pycache__/
+# Rendering/test artifacts
+*.rendered.yaml
+# The chart's render inputs (CHT-06): tests/values.test.yaml is read from the
+# source tree by helm template -f (helm.ts and the chart suites), never from
+# the archive — helm-publish (CHT-05) ships without it. The leading / keeps
+# the match at the chart root, so a future templates/tests/ hook dir is safe.
+/tests/

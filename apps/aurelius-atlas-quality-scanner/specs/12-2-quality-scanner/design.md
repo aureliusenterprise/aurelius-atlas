@@ -166,8 +166,10 @@ decision for the chart's increment (12.3), not the app's.
 (one client block with `serviceAccountsEnabled: true` and the `profile`
 default scope, plus its service-account user), the dev keycloak compose (the
 secret guard alongside the others), and the scanner's and server's `.env`
-keys. The prod realm join waits for 12.3 with the rest of the deployment
-surface, the same split 10.7 used for the production identity realm.
+keys. The prod-side joins wait for 12.3 with the rest of the deployment
+surface, the same split 10.7 used for the production identity realm: the
+server audience default lands there, and the customer's own issuer carries
+the registration (DD-509, restated in 12.3).
 
 The service account holds the server client's `atlas-read` and `atlas-write`
 roles (AUZ-02). Acceptance of the token's audience only opens the door

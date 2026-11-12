@@ -46,15 +46,15 @@ image it creates and removes, never the shared Keycloak store).
 
 Explicitly not delivered, with the increment that will:
 
-| Not delivered                                             | Lands with | Why                                                                     |
-| --------------------------------------------------------- | ---------- | ----------------------------------------------------------------------- |
-| The Helm chart, the CronJob schedule, the prod realm join | 13.4       | The chart track owns deployment (13.1's split, same rule)               |
-| A registered view as a dataset                            | –          | Reflection reads table metadata only; views need a second read (DBS-04) |
-| A row, a value, or a statistic                            | –          | The scan registers metadata; 12.2's readers read data                   |
-| Stored procedures, triggers, sequences, partitions        | –          | They are not in the m4i tree, as in Kafka scanning (13.1)               |
-| Lineage from query logs                                   | –          | Foreign keys are the only relationships the scan can prove (DBS-08)     |
-| A second database in one run                              | –          | One DSN per run; a deployment runs the job once per database            |
-| A `database` reader in the quality scanner's router       | 12.4       | The 12.4a envelope keeps one kind (`file`) until its umbrella lands     |
+| Not delivered                                                  | Lands with | Why                                                                     |
+| -------------------------------------------------------------- | ---------- | ----------------------------------------------------------------------- |
+| The Helm chart, the CronJob schedule, the server audience join | 13.4       | The chart track owns deployment (13.1's split, same rule)               |
+| A registered view as a dataset                                 | –          | Reflection reads table metadata only; views need a second read (DBS-04) |
+| A row, a value, or a statistic                                 | –          | The scan registers metadata; 12.2's readers read data                   |
+| Stored procedures, triggers, sequences, partitions             | –          | They are not in the m4i tree, as in Kafka scanning (13.1)               |
+| Lineage from query logs                                        | –          | Foreign keys are the only relationships the scan can prove (DBS-08)     |
+| A second database in one run                                   | –          | One DSN per run; a deployment runs the job once per database            |
+| A `database` reader in the quality scanner's router            | 12.4       | The 12.4a envelope keeps one kind (`file`) until its umbrella lands     |
 
 ## Semantics
 

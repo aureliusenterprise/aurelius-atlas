@@ -17,6 +17,7 @@ import yaml
 from conftest import (
     OTEL_CLIENT_IDS,
     PINNED,
+    SCANNER_CLIENT_IDS,
     UMBRELLA_CHART,
     container,
     env_map,
@@ -113,6 +114,11 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
     }
     assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
+    # CHT-119 (12.3, DD-509): no scanner credential among them — the
+    # deployment registers its scanner clients and places its own Secret;
+    # the umbrella generates none.
+    assert not [name for name in secrets if name.endswith("-scanner-clients")]
+    assert not [key for s in secrets.values() for key in s["data"] if key in SCANNER_CLIENT_IDS]
     for name, keys in expected.items():
         assert set(secrets[name]["data"]) == keys, name
     # Generated credentials are 32 random chars (b64 >= 44); the usernames are
@@ -276,7 +282,11 @@ def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.example"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
-    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == '["aurelius"]'
+    # CHT-120 (12.3): the chart default admits the scanner clients beside the
+    # webapp's — acceptance is the server's grant, not a registration.
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == json.dumps(
+        ["aurelius", *SCANNER_CLIENT_IDS], separators=(",", ":")
+    )
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
     join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "atlas-server-client", "key": "client-secret"}

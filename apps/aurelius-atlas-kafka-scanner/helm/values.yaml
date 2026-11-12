@@ -1,0 +1,162 @@
+# The kafka-scanner chart — its runtime contract (CHT-02, CHT-114..117, 121..122).
+# apps/aurelius-atlas-kafka-scanner: batch CLI, prefix AURELIUS_ATLAS_KAFKA_SCANNER_,
+# no port (KSC-01). Standalone by design — never a dependency of the helm/ umbrella
+# (DD-508); the full global.* contract is declared here (CHT-03) so it installs alone.
+
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+    realm: ""
+    trust:
+        issuerRef:
+            name: ""
+            kind: ""
+        caSecretName: ""
+
+enabled: true
+component: kafka-scanner
+componentEnvPrefix: AURELIUS_ATLAS_KAFKA_SCANNER_
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+    name: aurelius-atlas-kafka-scanner
+    tag: ""
+    digest: ""
+
+# The schedule (CHT-115): required (DD-510).
+schedule: ""
+concurrencyPolicy: Forbid
+activeDeadlineSeconds: 3600
+startingDeadlineSeconds: 600
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 1
+ttlSecondsAfterFinished: ""
+suspend: false
+args: []
+
+# Where the catalogue is (CHT-116): required.
+catalogue:
+    serverUrl: ""
+
+# The job's identity (CHT-116, DD-509): an operator-supplied Secret. The
+# OAUTHBEARER broker leg reuses this client (DD-514, CHT-122).
+auth:
+    clientId: aurelius-atlas-kafka-scanner
+    secretName: ""
+    secretKey: ""
+
+# The broker under scan (CHT-121): bootstrapServers is required (no default —
+# the app default is the dev loopback, a lie in a cluster, DD-515). The rest
+# render only when set, keeping the app's defaults (DD-515). SASL credentials
+# are never values: supply a Secret and map it with secretRefs (CHT-117).
+broker:
+    bootstrapServers: ""
+    # The transport (KSC-10): PLAINTEXT / SSL / SASL_PLAINTEXT / SASL_SSL. An
+    # explicit value; never inferred (DD-514).
+    securityProtocol: ""
+    # The System the tree hangs under (KSC-03); "" keeps "Kafka Broker".
+    systemName: ""
+    # The topic filter (KSC-02); "" keeps "*".
+    topicPattern: ""
+    # The per-topic sniff bound and the three timeouts (KSC-05); "" keeps the app's.
+    sniffMessages: ""
+    pollTimeoutSeconds: ""
+    adminRequestTimeoutMs: ""
+    registryTimeoutSeconds: ""
+
+# The Schema Registry, when the broker has one (KSC-04). "" renders nothing.
+schemaRegistry:
+    url: ""
+
+# The broker's OAUTHBEARER leg (CHT-122, DD-514): on, the chart joins
+# SASL_MECHANISM=OAUTHBEARER and reuses the catalogue client + issuer for the
+# broker token. The broker's own SASL secret (for the SASL_*_PLAIN/SCRAM
+# mechanisms) stays a secretRefs join; this block covers only the OAUTHBEARER
+# wiring that reuses the identity the chart already has.
+brokerOauth:
+    enabled: false
+
+# The scan's OTLP export (CHT-125, DD-511): a first-class block, off by
+# default — a batch job exports a handful of spans per run and the operator
+# decides whether the cluster hears them. endpoint is required when on
+# (DD-508: no co-deployed collector to derive, like catalogue.serverUrl).
+# The broker's own transport is separate: broker.securityProtocol + the CA
+# mount below (CHT-121/122). This block is only the telemetry leg.
+telemetry:
+    enabled: false
+    endpoint: ""
+    # The ingest auth (CHT-125): on, the chart joins the app-owned leg's trio
+    # (DD-196) and reuses the job's own client and identity Secret unless the
+    # deployment registers a dedicated ingest client (DD-514's reuse rule).
+    # Off, the export rides the SDK env leg unauthenticated (DD-210) — a
+    # customer collector that asks for no credential.
+    auth:
+        enabled: true
+        # "" reuses auth.clientId; a name takes its own key in secretName.
+        clientId: ""
+        # "" reuses the identity Secret the job reads (CHT-116's default).
+        secretName: ""
+        secretKey: ""
+
+# The trust CA, optional (CHT-117): a name mounts the Secret read-only and
+# joins CA_FILE — the issuer, the catalogue, the broker, and (CHT-125) an OTLP
+# collector reached over TLS; no name keeps the image's system trust.
+trust:
+    caSecretName: ""
+    mountPath: /etc/aurelius-atlas/ca
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 512Mi
+    limits:
+        memory: 1Gi
+
+# CHT-117 passthroughs. broker.sasl_username / broker.sasl_password /
+# broker.sasl_oauth_client_secret and the app's other secret settings reach
+# their env names through secretRefs; extraEnv covers anything the typed
+# blocks above do not model.
+config: {}
+secretRefs: []
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+serviceAccount:
+    create: true
+    name: ""
+
+required:
+    - key: schedule
+      message: "schedule is required (the cron expression the scan runs on, CHT-115)"
+    - key: catalogue.serverUrl
+      message: "catalogue.serverUrl is required (the catalogue the scan writes to, CHT-116)"
+    - key: broker.bootstrapServers
+      message: "broker.bootstrapServers is required (the broker to scan; the app default is the dev loopback, CHT-121)"

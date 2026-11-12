@@ -32,6 +32,11 @@ AUX_CHARTS = {
     "lineage-model": WORKSPACE / "apps/aurelius-atlas-lineage-model/helm",
     "validate-entity": WORKSPACE / "apps/aurelius-atlas-validate-entity/helm",
 }
+SCANNER_CHARTS = {
+    "quality-scanner": WORKSPACE / "apps/aurelius-atlas-quality-scanner/helm",
+    "kafka-scanner": WORKSPACE / "apps/aurelius-atlas-kafka-scanner/helm",
+    "db-scanner": WORKSPACE / "apps/aurelius-atlas-db-scanner/helm",
+}
 OBS_CHART = WORKSPACE / "dev/observability/helm"
 UMBRELLA_CHART = WORKSPACE / "helm"
 
@@ -48,6 +53,17 @@ OTEL_CLIENT_IDS = (
     "otel-lineage-model",
     "otel-postgres",
     "otel-validate-entity",
+)
+
+# The batch-scanner client roster (DD-509, 12.3): the client id each scanner
+# chart defaults `auth.clientId` to, and the name the deployment's own
+# registration must issue for a scanner token to carry that audience
+# (CHT-120). The charts never register these clients or generate their
+# secrets — the deployment provisions the identity Secret the job reads.
+SCANNER_CLIENT_IDS = (
+    "aurelius-atlas-quality-scanner",
+    "aurelius-atlas-kafka-scanner",
+    "aurelius-atlas-db-scanner",
 )
 
 # The committed third-party digests (CHT-93, DD-278): the nine distinct dhi.io

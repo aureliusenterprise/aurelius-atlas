@@ -1,0 +1,10 @@
+{{- include "atlas-quality-scanner.requireValues" (dict "values" .Values) }}
+{{- if not (include "atlas-quality-scanner.issuerUrl" .) -}}
+{{- fail "global.issuer.url (or, as its fallback, global.domain) is required — TOKEN_URL: the job mints its client credentials against it (CHT-116)" -}}
+{{- end -}}
+{{- if not .Values.auth.clientId -}}
+{{- fail "auth.clientId is required (the Keycloak client the job signs in as, CHT-116)" -}}
+{{- end -}}
+{{- if and .Values.telemetry.enabled (not .Values.telemetry.endpoint) -}}
+{{- fail "telemetry.endpoint is required when telemetry.enabled (the collector leg the scan exports to; DD-508: no co-deployed collector to derive, CHT-125)" -}}
+{{- end -}}
