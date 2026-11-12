@@ -1,10 +1,12 @@
 """The embedded text, its hash, the store's keeping of embeddings, and the indexer (VEC-01, VEC-02, VEC-05,
-VEC-06, VEC-10), on the in-memory store and a fake embedder.
+VEC-06, VEC-10, EMC-01 to EMC-05), on the in-memory store and a fake embedder.
 """  # noqa: D205 - one sentence
 
 from collections.abc import Sequence
 
 import pytest
+from aurelius_atlas_core.app_search_document import awaits_document
+from aurelius_atlas_core.app_search_document import source_hash as document_hash
 from aurelius_atlas_core.entity_documents import (
     ElasticsearchEntityDocuments,
     EmbeddingDimensionsError,
@@ -13,6 +15,7 @@ from aurelius_atlas_core.entity_documents import (
 )
 from aurelius_atlas_core.entity_embedding import (
     MAX_CHARACTERS,
+    document_names,
     embeddable,
     embedding_mapping,
     embedding_text,
@@ -24,7 +27,13 @@ from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.stored_classification import StoredClassification
-from aurelius_atlas_core.stored_entity import StoredEmbedding, StoredEntity
+from aurelius_atlas_core.stored_entity import (
+    StoredAppSearch,
+    StoredDimensionTotals,
+    StoredEmbedding,
+    StoredEntity,
+    StoredQualityTotals,
+)
 from aurelius_atlas_core.testing.entity_samples import sample_entities, sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model import codec
@@ -40,6 +49,14 @@ MODEL = "intfloat/multilingual-e5-small"
 def entity(guid: str = "g", type_name: str = "m4i_data_entity", **attributes: object) -> StoredEntity:
     """An entity of ``type_name`` with ``attributes`` under their qualified names."""
     return StoredEntity(guid=guid, type_name=type_name, attributes=dict(attributes))
+
+
+def documented(stored: StoredEntity, **fields: object) -> StoredEntity:
+    """``stored`` with an App Search document of its current own fields and ``fields``."""
+    document = StoredAppSearch.model_validate(
+        {"source_hash": document_hash(stored), "referenceablequalifiedname": stored.guid} | fields
+    )
+    return stored.model_copy(update={"app_search": document})
 
 
 def embedded(stored: StoredEntity, model: str = MODEL) -> StoredEntity:
@@ -130,6 +147,133 @@ def test__an_embedding_stays_only_while_its_hash_is_the_entity_s() -> None:
     assert with_current_embedding(current) is current
     assert with_current_embedding(renamed).embedding is None
     assert with_current_embedding(entity()).embedding is None
+
+
+@pytest.mark.covers(f"{E}.document_names", rules=["EMC-01"])
+@pytest.mark.covers(f"{E}.embedding_text", rules=["EMC-01"])
+def test__the_document_s_breadcrumb_and_relations_follow_the_classifications() -> None:
+    """The breadcrumb as a path from the top, then a line per relation field in LAS-05's order, by its type; none
+    values and empty fields left out.
+    """  # noqa: D205 - one sentence
+    stored = documented(
+        entity("s", "m4i_dataset", **{"Asset.name": "orders"}),
+        breadcrumbname=["Finance", None, "Sales"],
+        derivedfield=["payment", "amount"],
+        deriveddatadomain=["Finance"],
+        derivedperson=[None],
+    )
+
+    assert document_names(stored) == (
+        ["Finance", "Sales"],
+        [("m4i_data_domain", ["Finance"]), ("m4i_field", ["payment", "amount"])],
+    )
+    assert embedding_text(stored, ["PII"]) == (
+        "m4i_dataset\norders\nPII\nFinance > Sales\nm4i_data_domain: Finance\nm4i_field: payment, amount"
+    )
+
+
+@pytest.mark.covers(f"{E}.embedding_text", rules=["EMC-01"])
+def test__a_document_without_names_leaves_the_text_as_it_was() -> None:
+    """Relations only: no path line; no names at all: VEC-01's text."""
+    plain = entity("s", "m4i_dataset", **{"Asset.name": "orders"})
+
+    assert embedding_text(documented(plain, derivedsystem=["kafka"])) == "m4i_dataset\norders\nm4i_system: kafka"
+    assert embedding_text(documented(plain, breadcrumbname=[None])) == embedding_text(plain) == "m4i_dataset\norders"
+    assert document_names(plain) == ([], [])
+
+
+@pytest.mark.covers(f"{E}.source_hash", rules=["EMC-02", "EMC-05"])
+def test__the_hash_takes_the_document_s_names_and_nothing_else_of_it() -> None:
+    """Names change it; a document without names, the stale flag, the marks, the totals and the email do not."""
+    plain = entity("s", "m4i_dataset", **{"Asset.name": "orders"})
+    named = documented(plain, breadcrumbname=["Finance"], derivedfield=["payment"])
+    hashed = source_hash(named)
+    assert named.app_search is not None
+    totals = StoredQualityTotals(overall=StoredDimensionTotals(total=1.0, count=1.0, score=1.0))
+    marked = named.app_search.model_copy(
+        update={"stale": True, "governed_by": "d", "governed_source": "h", "email": "a@b", "definition": "x"}
+    )
+
+    assert source_hash(documented(plain)) == source_hash(plain)
+    assert hashed != source_hash(plain)
+    assert source_hash(documented(plain, breadcrumbname=["Sales"], derivedfield=["payment"])) != hashed
+    assert source_hash(documented(plain, breadcrumbname=["Finance"], derivedfield=["amount"])) != hashed
+    assert source_hash(documented(plain, breadcrumbname=["Finance"], deriveddataset=["payment"])) != hashed
+    assert source_hash(named.model_copy(update={"app_search": marked, "quality_totals": totals})) == hashed
+
+
+@pytest.mark.covers(f"{E}.with_current_embedding", rules=["EMC-03"])
+def test__an_embedding_stays_while_the_document_s_names_do() -> None:
+    """A document derived again with other names drops it; a stale flag, or the same names, keeps it."""
+    current = embedded(documented(entity("s", "m4i_dataset"), deriveddatadomain=["Finance"]))
+    assert current.app_search is not None
+    stale = current.model_copy(update={"app_search": current.app_search.model_copy(update={"stale": True})})
+    renamed = documented(current, deriveddatadomain=["Sales"])
+    again = documented(current, deriveddatadomain=["Finance"], derivedsystemguid=["y"])
+
+    assert with_current_embedding(stale).embedding == current.embedding
+    assert with_current_embedding(again).embedding == current.embedding
+    assert with_current_embedding(renamed).embedding is None
+
+
+def awaiting_and_current() -> list[StoredEntity]:
+    """An m4i dataset without its document, one with it, one with a stale one, a non-m4i entity and a source."""
+    stale = documented(entity("c", "m4i_dataset"))
+    assert stale.app_search is not None
+    return [
+        entity("a", "m4i_dataset"),
+        documented(entity("b", "m4i_dataset")),
+        stale.model_copy(update={"app_search": stale.app_search.model_copy(update={"stale": True})}),
+        entity("d", "DataSet"),
+        entity("e", "m4i_source"),
+    ]
+
+
+@pytest.mark.covers("aurelius_atlas_core.app_search_document.awaits_document", rules=["EMC-04"])
+def test__an_entity_awaits_a_missing_or_stale_document() -> None:
+    """Only the dataset without one and the one with a stale one; neither the non-m4i entity nor the source."""
+    assert [found.guid for found in awaiting_and_current() if awaits_document(found)] == ["a", "c"]
+
+
+@pytest.mark.covers(f"{M}.without_embedding", rules=["EMC-04"])
+async def test__the_memory_store_leaves_out_entities_awaiting_their_document_when_asked() -> None:
+    """Waiting: neither the dataset without its document nor the one with a stale one; else all five."""
+    documents = MemoryEntityDocuments()
+    await documents.write([(found, None) for found in awaiting_and_current()])
+
+    waiting = await documents.without_embedding(MODEL, 10, wait_for_documents=True)
+
+    assert [found.entity.guid for found in waiting] == ["b", "d", "e"]
+    assert [found.entity.guid for found in await documents.without_embedding(MODEL, 10)] == ["a", "b", "c", "d", "e"]
+
+
+@pytest.mark.covers(f"{D}.without_embedding", rules=["EMC-04"])
+async def test__the_elasticsearch_documents_leave_out_entities_awaiting_their_document_when_asked() -> None:
+    """On the fake client, the same five entities and the same two listings."""
+    client = FakeClient()
+    documents = ElasticsearchEntityDocuments(client, embedding_dimensions=2)  # type: ignore[arg-type]
+    await documents.prepare()
+    await documents.write([(found, None) for found in awaiting_and_current()])
+
+    waiting = await documents.without_embedding(MODEL, 10, wait_for_documents=True)
+
+    assert [found.entity.guid for found in waiting] == ["b", "d", "e"]
+    assert [found.entity.guid for found in await documents.without_embedding(MODEL, 10)] == ["a", "b", "c", "d", "e"]
+
+
+@pytest.mark.covers(f"{X}.__init__", rules=["EMC-04"])
+async def test__an_indexer_waiting_for_documents_embeds_an_entity_once_its_document_is_there() -> None:
+    """The dataset without its document waits a round; with it, it is embedded with its names."""
+    documents = MemoryEntityDocuments()
+    await documents.write([(entity("s", "m4i_dataset", **{"Asset.name": "orders"}), None)])
+    embedder = FakeEmbedder()
+    indexer = EntityEmbeddingIndexer(documents, embedder, wait_for_documents=True)
+
+    assert await indexer.run_once() == 0
+    read = (await documents.get(["s"]))["s"]
+    await documents.write([(documented(read.entity, deriveddatadomain=["Finance"]), read.version)])
+    assert await indexer.run_once() == 1
+    assert embedder.texts == [["m4i_dataset\norders\nm4i_data_domain: Finance"]]
 
 
 @pytest.mark.covers(f"{E}.embeddable", rules=["VEC-06"])

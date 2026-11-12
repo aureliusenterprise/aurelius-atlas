@@ -444,8 +444,12 @@ class EntityDocuments(Protocol):
         """The classification instances of these types, or of every type for None, as of now (DD-090)."""
         ...
 
-    async def without_embedding(self, model: str, limit: int) -> list[VersionedEntity]:
-        """Up to ``limit`` entities without an embedding of ``model``, internal types left out (VEC-06, DD-436)."""
+    async def without_embedding(
+        self, model: str, limit: int, *, wait_for_documents: bool = False
+    ) -> list[VersionedEntity]:
+        """Up to ``limit`` entities without an embedding of ``model``, internal types left out (VEC-06, DD-436);
+        with ``wait_for_documents``, also those awaiting their App Search document (EMC-04, DD-540).
+        """  # noqa: D205 - one sentence
         ...
 
     async def without_app_search(self, limit: int) -> list[VersionedEntity]:
@@ -490,6 +494,22 @@ def _keeps_source_vectors(settings: dict[str, Any]) -> bool:
     flat = settings.get("index.mapping.exclude_source_vectors")
     nested = settings.get("index", {}).get("mapping", {}).get("exclude_source_vectors")
     return str(flat if flat is not None else nested).lower() == "false"
+
+
+def _awaiting_document() -> dict[str, Any]:
+    """The entities the App Search indexer has a document to derive for: active ones of m4i types with a document
+    that have none, and those with a stale one (LAS-01, ASD-04, ASU-02, DD-500).
+    """  # noqa: D205 - one sentence
+    missing = {
+        "bool": {
+            "filter": [{"term": {"state": ACTIVE}}, {"prefix": {"typeName": M4I_PREFIX}}],
+            "must_not": [
+                {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
+                {"exists": {"field": SOURCE_HASH_FIELD}},
+            ],
+        }
+    }
+    return {"bool": {"should": [missing, {"term": {STALE_FIELD: True}}], "minimum_should_match": 1}}
 
 
 def _next_generation(index: str) -> str:
@@ -921,12 +941,19 @@ class ElasticsearchEntityDocuments:
         await self._client.indices.delete(index=old)
         LOGGER.warning("Moved %d entities to %s", copied, new)
 
-    async def without_embedding(self, model: str, limit: int) -> list[VersionedEntity]:
-        """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06, DD-436)."""
+    async def without_embedding(
+        self, model: str, limit: int, *, wait_for_documents: bool = False
+    ) -> list[VersionedEntity]:
+        """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06, DD-436); with
+        ``wait_for_documents``, also those awaiting their App Search document (EMC-04, DD-540).
+        """  # noqa: D205 - one sentence
+        left_out: list[dict[str, Any]] = [{"term": {MODEL_FIELD: model}}, {"prefix": {"typeName": INTERNAL_PREFIX}}]
+        if wait_for_documents:
+            left_out.append(_awaiting_document())
         response = await self._client.search(
             index=self._entities,
             size=limit,
-            query={"bool": {"must_not": [{"term": {MODEL_FIELD: model}}, {"prefix": {"typeName": INTERNAL_PREFIX}}]}},
+            query={"bool": {"must_not": left_out}},
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )
@@ -941,19 +968,10 @@ class ElasticsearchEntityDocuments:
         """The active entities of m4i types with a document that have none, and those with a stale one, by GUID
         (LAS-01, ASD-04, ASU-02, DD-500).
         """  # noqa: D205 - one sentence
-        missing = {
-            "bool": {
-                "filter": [{"term": {"state": ACTIVE}}, {"prefix": {"typeName": M4I_PREFIX}}],
-                "must_not": [
-                    {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
-                    {"exists": {"field": SOURCE_HASH_FIELD}},
-                ],
-            }
-        }
         response = await self._client.search(
             index=self._entities,
             size=limit,
-            query={"bool": {"should": [missing, {"term": {STALE_FIELD: True}}], "minimum_should_match": 1}},
+            query=_awaiting_document(),
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )

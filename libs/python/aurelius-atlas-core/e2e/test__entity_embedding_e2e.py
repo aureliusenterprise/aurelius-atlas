@@ -1,4 +1,4 @@
-"""Entity vectors on the dev Elasticsearch (VEC-03 to VEC-06), in indices of their own per test.
+"""Entity vectors on the dev Elasticsearch (VEC-03 to VEC-06, EMC-03, EMC-04), in indices of their own per test.
 
 What only a real Elasticsearch shows: 9.5 rewrites the source of every document of an index that maps a vector,
 unless the index was created with ``index.mapping.exclude_source_vectors: false``; and a write replaces the whole
@@ -9,10 +9,11 @@ from collections.abc import Sequence
 from decimal import Decimal
 
 import pytest
+from aurelius_atlas_core.app_search_document import source_hash as document_hash
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, EmbeddingDimensionsError
 from aurelius_atlas_core.entity_embedding import VECTOR_FIELD, source_hash
 from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_store_es import ElasticsearchStore
 
 # The async fixtures run on the module loop (asyncio_default_fixture_loop_scope); so must async tests.
@@ -25,6 +26,18 @@ DIMENSIONS = 3
 def entity(guid: str, name: str) -> StoredEntity:
     """An entity with a name."""
     return StoredEntity(guid=guid, type_name="m4i_data_entity", attributes={"Asset.name": name})
+
+
+def documented(stored: StoredEntity, *, stale: bool = False, domains: Sequence[str] = ()) -> StoredEntity:
+    """``stored`` with an App Search document of its own fields, naming ``domains``."""
+    document = StoredAppSearch(
+        source_hash=document_hash(stored),
+        stale=stale,
+        referenceablequalifiedname=stored.guid,
+        deriveddatadomain=list(domains),
+        deriveddatadomainguid=[f"d{n}" for n, _ in enumerate(domains)],
+    )
+    return stored.model_copy(update={"app_search": document})
 
 
 class FakeEmbedder:
@@ -186,3 +199,33 @@ async def test__an_index_stored_before_embedding_moves_to_a_new_generation_with_
     assert list((await dev_store.client.indices.get_alias(name=f"{entity_prefix}-entities")).body) == [
         f"{entity_prefix}-entities-000002"
     ]
+
+
+@pytest.mark.critical
+@pytest.mark.covers(rules=["EMC-03", "EMC-04"])
+async def test__an_entity_waits_for_its_document_and_is_found_by_its_neighbours_names(
+    dev_store: ElasticsearchStore, entity_prefix: str
+) -> None:
+    """Of three datasets, the one with a current document is embedded, and found by its domain's name; its
+    document derived again with another name takes the vector away.
+    """  # noqa: D205 - one sentence
+    documents = await opened(dev_store, entity_prefix)
+    orders = StoredEntity(guid="b", type_name="m4i_dataset", attributes={"Asset.name": "Orders"})
+    await documents.write(
+        [
+            (StoredEntity(guid="a", type_name="m4i_dataset", attributes={"Asset.name": "Leads"}), None),
+            (documented(orders, domains=["Customer"]), None),
+            (documented(entity("c", "Invoices"), stale=True), None),
+        ]
+    )
+
+    listed = await documents.without_embedding(MODEL, 10, wait_for_documents=True)
+    written = await EntityEmbeddingIndexer(documents, FakeEmbedder(), wait_for_documents=True).run_once()
+
+    assert [found.entity.guid for found in listed] == ["b"]
+    assert written == 1
+    assert await nearest(dev_store, entity_prefix, [1.0, 0.0, 0.0]) == ["b"]
+    read = (await documents.get(["b"]))["b"]
+    await documents.write([(documented(read.entity, domains=["Sales"]), read.version)])
+    assert (await documents.get(["b"]))["b"].entity.embedding is None
+    assert await nearest(dev_store, entity_prefix, [1.0, 0.0, 0.0]) == []

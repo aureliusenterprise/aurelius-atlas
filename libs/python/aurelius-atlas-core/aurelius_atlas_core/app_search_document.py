@@ -136,6 +136,14 @@ def has_document(entity: StoredEntity) -> bool:
     )
 
 
+def awaits_document(entity: StoredEntity) -> bool:
+    """Whether the indexer has a document to derive for the entity: one it should have and lacks, or a stale one
+    (ASD-04, ASU-02, EMC-04).
+    """  # noqa: D205 - one sentence
+    document = entity.app_search
+    return (document is None and has_document(entity)) or (document is not None and document.stale)
+
+
 def mapped(entity: StoredEntity) -> bool:
     """Whether the entity is active and of a mapped type, so has a breadcrumb and derived relations (LAS-04)."""
     return entity.state is EntityStatus.ACTIVE and entity.type_name in RELATION_FIELDS
