@@ -333,8 +333,11 @@ jobs:
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
             # The integration phase, tiered by criticality (DD-401): a pull
-            # request runs the critical scenarios, the push to main adds
-            # high, and the weekly Scan carries the whole suite. The level
+            # request and the push to main both run the critical and high
+            # scenarios, and the weekly Scan carries the whole suite. Pull
+            # and main share the levels so a merge carries no surprise: the
+            # only difference is the browser set (see the WebKit note below).
+            # The level
             # is a pytest marker filter passed after `--`, not an Nx
             # configuration - Nx 24 does not merge two `-c` names, and the
             # flags reach only the requested target: `docker-build` rides
@@ -342,7 +345,8 @@ jobs:
             # land (a requested sibling would inherit them, and `-m` means
             # memory to buildx). WebKit leaves the pull-request gate with
             # `-k "not webkit"` - the other suites have no webkit
-            # scenarios, so the filter is a no-op there.
+            # scenarios, so the filter is a no-op there. The weekly Scan runs
+            # WebKit again for every level.
             #
             # docker-build keeps its own step: e2e stacks build the images
             # they need as a dependency inside this graph, and the separate
@@ -367,7 +371,7 @@ jobs:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
               run: |
                   if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
-                      npx nx affected -t e2e -c ci -- -m critical -k "not webkit"
+                      npx nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit"
                   else
                       npx nx affected -t e2e -c ci -- -m "critical or high"
                   fi

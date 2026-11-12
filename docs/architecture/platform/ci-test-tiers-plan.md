@@ -3,16 +3,16 @@
 !!! DRAFT "Plan for approval, not yet the as-built"
 
     This page is the plan to split the test suites into tiers so pull-request CI runs
-    only the acceptance-critical path. Nothing here is implemented. On approval, the
-    rollout steps below land as small PRs, and [Testing](delivery/testing.md) gains a
-    pointer to the as-built tier rules.
+    the acceptance-critical and high path and waits for the rest. Nothing here is
+    implemented. On approval, the rollout steps below land as small PRs, and
+    [Testing](delivery/testing.md) gains a pointer to the as-built tier rules.
 
 Pull-request CI runs every unit test and every end-to-end test that the change
 affects. The end-to-end suites dominate the wall time, and most of that runtime
 proves paths that a pull request rarely breaks. This plan classifies every
 end-to-end test into one of four criticality levels, `critical`, `high`,
-`medium`, or `low`, and runs each level on a cadence: `critical` gates every
-pull request, `high` runs on every push to main, `medium` runs weekly, and
+`medium`, or `low`, and runs each level on a cadence: `critical` and `high`
+gate every pull request and every push to main, `medium` runs weekly, and
 `low` runs on demand. A guard test fails the build when a test carries no
 level. Classification is required, not a convention.
 
@@ -41,9 +41,15 @@ claim, and the cadence follows from it.
 | Level (`@pytest.mark.*`) | What it claims                          | Cadence                             |
 | ------------------------ | --------------------------------------- | ----------------------------------- |
 | `critical`               | The pull request must gate on this      | PR (affected), main, weekly, manual |
-| `high`                   | A merge must not carry this broken      | main (affected), weekly, manual     |
+| `high`                   | A merge must not carry this broken      | PR (affected), main, weekly, manual |
 | `medium`                 | Weekly proof is enough, drift is caught | weekly Scan, manual                 |
 | `low`                    | Valuable, run on purpose                | manual dispatch only                |
+
+`critical` and `high` share every cadence: the pull-request gate carries both so
+a merge brings no test the pull request did not already prove. The two differ in
+the risk score beside the marker (`critical` is the spine, `high` is a severe
+path with a weaker backstop), not in when they run. See step 4 for the one way
+the pull-request run is still smaller than main: it leaves WebKit out.
 
 Local runs are unaffected: `nx e2e <project>` applies no filter and runs the
 whole project suite.
@@ -113,15 +119,17 @@ suite in one sweep, so the tree starts complete.
 !!! NOTE "Why levels and cadences, not one gate flag"
 
     A single gate flag forces a yes-or-no choice per test. The four levels say
-    how soon a break must be caught, which lets a `high` test keep a merge
-    check (the push to main runs it) without paying for it on every pull
-    request, and keeps the heavy runs honest on the weekly dedicated runner.
+    how soon a break must be caught, and score the risk behind it. Here the
+    `critical` and `high` levels share a cadence (both gate the pull request),
+    so the split is about the recorded risk and the demotion rule, not about
+    two different run times. `medium` and `low` keep the cheaper cadences: the
+    weekly dedicated runner and an on-demand dispatch.
 
 !!! IMPORTANT "A subset that cannot fail is a green lie"
 
-    The `critical` level must keep every path a pull request can break, and
-    each lower level must say what catches it later (main, weekly, or a human
-    who dispatches). The file list below is the reviewable answer, and a
+    The gate levels (`critical` and `high`) must keep every path a pull request
+    can break, and each lower level must say what catches it later (weekly, or a
+    human who dispatches). The file list below is the reviewable answer, and a
     reclassification is a reviewable change, never a side effect. The guard
     test makes an unclassified test a red run instead of a quiet skip.
 
@@ -137,7 +145,7 @@ then went through a per-scenario audit: every marker carries its own pair, and
 files that mix scenario kinds split (the webapp main file spans all four
 levels). Counts below are test functions; parametrization adds a few runnables.
 
-| Project                          | `critical` (PR gate, 84 tests)                                                    | `high` (main + weekly, 38)                                                                        | `medium` / `low` (weekly / dispatch, 29 + 6)                                                              |
+| Project                          | `critical` (PR + main, 84)                                                        | `high` (PR + main, 38)                                                                            | `medium` / `low` (weekly / dispatch, 29 + 6)                                                              |
 | -------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `aurelius-atlas-server` e2e      | search, scenarios (parity), the load file's percentile test (severe, churn)       | cleanup, export, admin audits, restore, dashboards (severe, low churn)                            | mixed-load run medium (severe, low; cost-capped from `high`)                                              |
 | `aurelius-atlas-webapp` e2e      | editor, search, seeded details, reader gate, the boot/sign-in proofs (16)         | entry/locale routing, api proxy, config bootstrap, 404 details, banner, field rules, explore (15) | shell chrome, locale/telemetry probes, drawer resilience (24); links, footer, greeting, mistyped path (4) |
@@ -236,7 +244,7 @@ WebKit leaves the pull-request gate with pytest's own `-k "not webkit"`, not
 with a target configuration: the webapp suite's Playwright instances carry
 the browser in the test id (`test__x[webkit]`), so the keyword filter drops
 exactly the WebKit legs (verified through the Nx target: the webapp's
-critical gate is 32 of its 180 instances once WebKit leaves). The other suites have no webkit scenarios, so the
+gate is 64 of its 180 instances once WebKit leaves). The other suites have no webkit scenarios, so the
 filter is a no-op there. The hand-written webapp target keeps its one
 all-browsers command for local and weekly use. Browser trimming and
 criticality stay separate levers: WebKit leaves PR CI for every level,
@@ -244,37 +252,45 @@ independent of the marker.
 
 ### 4. Switch the CI steps
 
-| Step                            | Today                                   | After                                                                                                                                        |
-| ------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| `validate` "Run unit tests"     | `nx affected -t test -c ci`             | unchanged (units are the Sonar product), plus the guard-test step                                                                            |
-| `e2e` job                       | `nx affected -t e2e docker-build -c ci` | `nx affected -t e2e -c ci -- -m critical -k "not webkit"` (PR) / `-- -m "critical or high"` (main), then `nx affected -t docker-build -c ci` |
-| Weekly Scan "Test all projects" | `nx run-many -t test e2e -c ci`         | unchanged (full suite, all four levels, see below)                                                                                           |
+| Step                            | Today                                   | After                                                                                                                                                  |
+| ------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `validate` "Run unit tests"     | `nx affected -t test -c ci`             | unchanged (units are the Sonar product), plus the guard-test step                                                                                      |
+| `e2e` job                       | `nx affected -t e2e docker-build -c ci` | `nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit"` (PR) / `-- -m "critical or high"` (main), then `nx affected -t docker-build -c ci` |
+| Weekly Scan "Test all projects" | `nx run-many -t test e2e -c ci`         | unchanged (full suite, all four levels, see below)                                                                                                     |
 
-The step picks its filter from `GITHUB_EVENT_NAME`. The weekly Scan stays
-unfiltered, so it runs all four levels, and its manual dispatch is the `low`
-cadence and the release-candidate check.
+Both event branches carry `-m "critical or high"`, so pull and main prove the
+same levels and a merge holds no surprise. The step differs only in the browser
+trim: the pull request adds `-k "not webkit"` and main does not. The weekly Scan
+stays unfiltered, so it runs all four levels on every browser, and its manual
+dispatch is the `low` cadence and the release-candidate check.
 
 Splitting `docker-build` out of the one request is required, not cosmetic: CLI
 flags become pytest arguments for every _requested_ target, and `-m` means
 memory to buildx. As a dependency inside the e2e graph, `docker-build:ci` takes
 no flags, and the second step replays the same builds from cache.
 
-!!! NOTE "Why push-to-main carries `high`"
+!!! NOTE "Why the pull-request gate carries `high` too"
 
-    A `high` test no longer gates its pull request, so a break can reach main.
-    The push-to-main run (the same workflow, already in place) fails on it
-    within minutes of the merge, and the weekly Scan repeats it. The
-    reclassification review must accept that window, measured in hours at
-    worst, for the wall-time it buys.
+    A `high` break that only the push-to-main run caught would fail on main for
+    the first time, after the merge. The team judged that surprise worse than
+    the extra minutes, so the pull request runs `high` beside `critical`. The
+    gate is therefore not the cheapest tier split; it is the one that leaves no
+    proven-on-PR path able to break on main. Only `medium` and `low` wait for
+    the weekly Scan, and only the WebKit leg and the browser set shrink the
+    pull-request run versus main.
 
 ## What is lost, and the compensation
 
 | Loss                                   | Compensation                                                                                          |
 | -------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| `high` paths no longer gate the PR     | push-to-main run fails within minutes of the merge, weekly repeats                                    |
+| `medium` paths no longer gate the PR   | weekly Scan on a dedicated runner; a `medium` break reaches main and surfaces within a week           |
 | WebKit interaction proof in PR CI      | weekly full sweep, and the webkit-specific quirks stay in code comments                               |
 | Load budgets (LOD-03) in PR CI         | weekly Scan on a dedicated runner, plus the test's own env knobs for a local harder run               |
 | `low` runs happen only when dispatched | manual `workflow_dispatch` on Scan, the release-candidate check, and the dispatch duty in the runbook |
+
+Note that `high` stays in the pull-request gate. The plan first moved it to
+main-only, and that was reversed: the team would rather pay the extra minutes
+than let a `high` scenario fail on main for the first time after a merge.
 
 Sonar coverage does not shrink. The `coverage.xml` that feeds SonarQube comes
 from the `test` (unit) targets, and the plan keeps those whole. The e2e targets
@@ -288,15 +304,17 @@ on its own cadence.
 
 ## Wall-time and pool effect
 
-On a spine pull request the e2e job runs the `critical` level only: it drops
-the WebKit leg of the webapp suite (about a third of 14 min), the webapp's
-`high` and `medium` files, the server's `high` files, and the load run. The
-first week's numbers will tell, and the estimate lands near 20 to 24 min from
-about 31 min. The larger win is pool pressure: a shorter e2e job releases its
-runner sooner, so the 3-slot pool drains faster across parallel PRs. This does
-not replace the `concurrency` guard on `ci.yaml`, it reduces how often that
-guard matters. The push-to-main run grows a little (it adds the `high` level
-back); main runs are not on the pool's critical path for any pull request.
+On a spine pull request the e2e job runs `critical` and `high`: it drops the
+WebKit leg of the webapp suite (about a third of 14 min), the webapp's `medium`
+and `low` files, the server's `medium` run, and the aux suites' `medium`/`low`
+probes. The gate is the webapp's 64 of 180 browser instances (up from 32 on the
+critical-only design), the server's 67 of 68, and every core/young-path test.
+The first week's numbers will tell the wall time; it lands between the
+critical-only estimate (about 20 to 24 min) and the full suite (about 31 min).
+The win over the old full-suite gate is real but smaller than a critical-only
+gate: it is pool pressure and contention, not raw level cuts. main runs are not
+on the pool's critical path for any pull request, so main carrying the same
+levels (plus WebKit) costs no pull request any time.
 
 ## Goal 2 pilot: the two flakes ride the mechanism
 
@@ -336,7 +354,7 @@ classification change and its first real fix. The main run on the merge commit
    whole stays inside the 1,500-line convention.
 2. **ADR (same PR):** the gate change (which tests gate a pull request) is a
    business-level decision, so it enters `docs/architecture/adr/` as
-   [ADR 062](../adr/062-the-pull-request-gate-proves-the-critical-scenarios.md),
+   [ADR 062](../adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md),
    and `delivery/testing.md` carries the tier paragraph with a pointer here.
 3. **Later increments:** further reclassifications ride their increment PRs
    with a measured reason, per the table rules above.
@@ -350,19 +368,19 @@ classification change and its first real fix. The main run on the merge commit
   decorators, no module `pytestmark` carries one, and each test below
   `critical` shows its score pair.
 - Level 1: `nx test aurelius-atlas-server -c ci` stays green (units unchanged).
-- Level 2: `nx e2e aurelius-atlas-webapp -c ci -- -m critical -k "not webkit"
---collect-only -q` proves the flags reach pytest through the target: 32 of
-  `nx affected -t e2e -c ci -- -m critical` locally is the dry run of the new
-  gate.
+- Level 2: `nx e2e aurelius-atlas-webapp -c ci -- -m "critical or high" -k
+"not webkit" --collect-only -q` proves the flags reach pytest through the
+  target: 64 of 180 browser instances, and the dry run of the new gate.
 
 ## Open decisions for approval
 
-1. The `high` cadence: push-to-main plus weekly (this plan) versus still
-   gating the pull request. Gating keeps the stronger bar and gives back most of
-   the webapp savings.
+1. ~~The `high` cadence.~~ Decided: the pull-request gate carries `high`
+   beside `critical`, so a merge holds no surprise. The two levels now share
+   every cadence and differ only in the risk score beside the marker.
 2. PR browsers: Chromium plus Firefox (this plan) versus Chromium only. Firefox
    keeps a second engine in the gate for about a third of the webapp suite's
-   cost.
+   cost. This is now the only thing that makes the pull-request run smaller
+   than the push-to-main run.
 3. Whether the ADR lands inside PR 1 or as its own record first. It landed
-   inside PR 1 as [ADR 062](../adr/062-the-pull-request-gate-proves-the-critical-scenarios.md),
+   inside PR 1 as [ADR 062](../adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md),
    still Proposed until a person accepts it.

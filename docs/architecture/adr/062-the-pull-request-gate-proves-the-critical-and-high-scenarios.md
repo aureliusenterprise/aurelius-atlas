@@ -1,4 +1,4 @@
-# 062. The pull-request gate proves the critical scenarios and waits for the rest
+# 062. The pull-request gate proves the critical and high scenarios and waits for the rest
 
 - **Status:** Proposed
 - **Date:** 2026-11-12
@@ -6,12 +6,15 @@
 
 ## Decision
 
-We will run the acceptance-critical end-to-end scenarios on every pull request,
-and move the rest of the suite to the merge run and the weekly scan. Every
-scenario carries one of four criticality levels, and a guard test refuses any
-scenario that carries none. A pull request no longer waits for the whole suite,
-and a path that left the gate stays proven within hours on main and within a
-week in full.
+We will run the acceptance-critical and high end-to-end scenarios on every pull
+request, and move the rest of the suite to the weekly scan. Every scenario
+carries one of four criticality levels, and a guard test refuses any scenario
+that carries none. The pull-request gate and the push-to-main run carry the same
+two levels, so a merge carries no test the pull request did not already prove.
+The only difference between the two runs is the browser set: the pull request
+leaves WebKit out and the weekly scan brings it back. A pull request no longer
+waits for the whole suite, and a path that left the gate stays proven within a
+week.
 
 ## Context
 
@@ -36,7 +39,8 @@ as one gate forces the weakest probe to set the price of every merge.
   shipped screens) fails before it merges.
 - R2: Every scenario still runs on a known cadence, so nothing goes unproven
   forever.
-- R3: A break outside the gate becomes visible on main within hours, not days.
+- R3: A scenario the pull request proved does not fail for the first time on
+  main. The two runs carry the same levels.
 - R4: The classification is written where a reviewer sees it, and a scenario
   cannot join the suite unclassified.
 - R5: The weekly proof keeps the full suite, including the browsers and the
@@ -46,9 +50,9 @@ as one gate forces the weakest probe to set the price of every merge.
 
 ## Alternatives
 
-- **Keep everything on the pull request (do nothing).** It fails the pressure
-  it exists to answer: the queue and the flakes stay, and the lesson of the
-  contention record repeats.
+- **Gate the pull request on `critical` only.** It is cheaper, but it lets a
+  `high` break reach main and fail there for the first time. The team judged the
+  merge surprise worse than the extra minutes, so `high` stays in the gate.
 - **Mark only the slow or flaky tests to skip them.** A skip list is an
   unranked list. It answers "what is slow", never "what matters", so the next
   removal has no rule to appeal to. The four levels and the score pair (impact
@@ -63,13 +67,16 @@ as one gate forces the weakest probe to set the price of every merge.
 
 ## Tradeoffs
 
-- **Positive:** the pull-request job drops roughly a third of its wall time,
-  releases its runner sooner, and drains the queue across parallel pull
-  requests. The gate's failures get more signal from contention.
-- **Negative:** a break on a non-critical path reaches main before it fails.
-  The window is hours: the push-to-main run adds the next level back, and the
-  weekly scan repeats everything. The review of any reclassification must
-  accept that window explicitly.
+- **Positive:** a merge carries no test the pull request did not already prove,
+  so the surprise a bad merge used to cause on main is gone. The gate still
+  leaves the `medium` and `low` paths and the WebKit leg out, so it stays
+  shorter than the full suite, and a `critical` or `high` break is caught on
+  the change that caused it.
+- **Negative:** a break on a `medium` or `low` path reaches main before it
+  fails, and its proof is the weekly scan. Because `critical` and `high` now
+  share every cadence, the two levels differ only in the risk score beside the
+  marker, not in when they run. The review of any reclassification must accept
+  that window explicitly.
 - **Neutral / follow-ups:** the weekly scan becomes the full suite's home and
   gains duty value. Its manual dispatch is the on-demand cadence for the
   lowest level. Each increment's review decides whether a new scenario starts
