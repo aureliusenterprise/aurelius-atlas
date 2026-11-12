@@ -407,7 +407,12 @@ def _embedding_worker(
         str(settings.embedding_url), settings.embedding_model, settings.embedding_dimensions, http=http
     )
     app.state.embedder = client
-    indexer = EntityEmbeddingIndexer(documents, client, batch_size=settings.embedding_batch_size)
+    indexer = EntityEmbeddingIndexer(
+        documents,
+        client,
+        batch_size=settings.embedding_batch_size,
+        wait_for_documents=settings.app_search_enabled,  # a document comes only while its indexer runs (DD-540)
+    )
     worker = EmbeddingWorker(indexer, poll_seconds=settings.embedding_poll_seconds, http=http)
     worker.start()
     return worker

@@ -1,15 +1,18 @@
-"""An entity's embedded text, the hash it is made of, and the mapping of its vector (VEC-01 to VEC-03, VEC-05).
+"""An entity's embedded text, the hash it is made of, and the mapping of its vector (VEC-01 to VEC-03, VEC-05,
+EMC-01 to EMC-03).
 
 The text is what a search by meaning matches (ADR 059); the hash says whether an embedding is still the entity's,
-and the store checks it at every write (DD-435). Pure functions of a stored entity, so the store and the indexer
+and the store checks it at every write (DD-435). Both read the breadcrumb and relation names of the entity's App
+Search document when it has any (DD-538, DD-539). Pure functions of a stored entity, so the store and the indexer
 share them.
-"""
+"""  # noqa: D205 - one sentence
 
 import hashlib
 import json
 from collections.abc import Iterable
 from typing import Any
 
+from aurelius_atlas_core.app_search_document import RELATION_FIELDS
 from aurelius_atlas_core.stored_entity import StoredEntity
 
 EMBEDDING_FIELD = "embedding"
@@ -51,15 +54,42 @@ def text_values(entity: StoredEntity) -> list[str]:
     return values
 
 
+def document_names(entity: StoredEntity) -> tuple[list[str], list[tuple[str, list[str]]]]:
+    """The names of the entity's App Search document: its breadcrumb's from the top, and each relation field's
+    with the type it lists, in LAS-05's order; none values and fields without names left out (EMC-01).
+    """  # noqa: D205 - one sentence
+    document = entity.app_search
+    if document is None:
+        return [], []
+    breadcrumb = [name for name in document.breadcrumbname if name]
+    relations = [
+        (type_name, names)
+        for type_name, field in RELATION_FIELDS.items()
+        if (names := [name for name in getattr(document, field) if name])
+    ]
+    return breadcrumb, relations
+
+
 def embedding_text(entity: StoredEntity, classification_names: Iterable[str] = ()) -> str:
-    """The text the entity's embedding is computed from: its type, its text values, its classifications (VEC-01)."""
+    """The text the entity's embedding is computed from: its type, its text values, its classifications (VEC-01),
+    then its document's breadcrumb as a path and a line per relation field (EMC-01, DD-538).
+    """  # noqa: D205 - one sentence
     lines = [entity.type_name, *text_values(entity), *sorted(set(classification_names))]
+    breadcrumb, relations = document_names(entity)
+    if breadcrumb:
+        lines.append(" > ".join(breadcrumb))
+    lines.extend(f"{type_name}: {', '.join(names)}" for type_name, names in relations)
     return "\n".join(lines)[:MAX_CHARACTERS]
 
 
 def source_hash(entity: StoredEntity) -> str:
-    """The SHA-256 of what the entity's text is made of, its classifications by GUID (VEC-02, DD-435)."""
+    """The SHA-256 of what the entity's text is made of, its classifications by GUID (VEC-02, DD-435), and its
+    document's names when it has any (EMC-02, DD-539).
+    """  # noqa: D205 - one sentence
     made_of: list[Any] = [entity.type_name, text_values(entity), sorted(entity.classification_guids or [])]
+    breadcrumb, relations = document_names(entity)
+    if breadcrumb or relations:
+        made_of.append([breadcrumb, [[type_name, names] for type_name, names in relations]])
     return hashlib.sha256(json.dumps(made_of, ensure_ascii=False).encode()).hexdigest()
 
 

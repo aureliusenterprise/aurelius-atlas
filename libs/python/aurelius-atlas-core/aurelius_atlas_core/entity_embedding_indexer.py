@@ -5,6 +5,9 @@ as passages, and writes each entity with its embedding on the version it read. A
 Elasticsearch rewrites the source of a partial update, and the store keeps its documents' bytes (DD-039). An entity
 changed in between keeps its write and waits for a later round, so two servers embedding at once only lose work. The
 same rounds backfill the entities stored before embedding was on, and re-embed every entity when the model changes.
+
+An entity's text holds its App Search document's names (EMC-01); while the App Search indexer runs, an entity
+waits for its document, so it is embedded once with them (EMC-04, DD-540).
 """
 
 from collections.abc import Sequence
@@ -35,11 +38,21 @@ class Embedder(Protocol):
 class EntityEmbeddingIndexer:
     """Embeds the entities of ``documents`` that lack an embedding of ``embedder``'s model."""
 
-    def __init__(self, documents: EntityDocuments, embedder: Embedder, *, batch_size: int = DEFAULT_BATCH_SIZE) -> None:
-        """An indexer over ``documents``, embedding ``batch_size`` entities at a time."""
+    def __init__(
+        self,
+        documents: EntityDocuments,
+        embedder: Embedder,
+        *,
+        batch_size: int = DEFAULT_BATCH_SIZE,
+        wait_for_documents: bool = False,
+    ) -> None:
+        """An indexer over ``documents``, embedding ``batch_size`` entities at a time; with ``wait_for_documents``,
+        none awaiting its App Search document (EMC-04).
+        """  # noqa: D205 - one sentence
         self._documents = documents
         self._embedder = embedder
         self._batch_size = batch_size
+        self._wait_for_documents = wait_for_documents
 
     async def run_once(self) -> int:
         """Embed page after page until none is left, or a page writes nothing; how many embeddings were written.
@@ -48,7 +61,9 @@ class EntityEmbeddingIndexer:
         """
         written = 0
         while True:
-            page = await self._documents.without_embedding(self._embedder.model, self._batch_size)
+            page = await self._documents.without_embedding(
+                self._embedder.model, self._batch_size, wait_for_documents=self._wait_for_documents
+            )
             if not page:
                 return written
             put = await self._embed(page)

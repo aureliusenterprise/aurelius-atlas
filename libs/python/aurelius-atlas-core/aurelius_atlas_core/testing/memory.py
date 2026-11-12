@@ -14,7 +14,7 @@ from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_core.app_search_document import (
     GOV_RULE_TYPE,
     SCORE_TYPE,
-    has_document,
+    awaits_document,
     named_guids,
     with_current_app_search,
 )
@@ -350,13 +350,21 @@ class MemoryEntityDocuments:
         facets = facet_counts(matching, query.facets)
         return SearchHits(page, len(found), [scores.get(entity.guid, 0.0) for entity in page], facets)
 
-    async def without_embedding(self, model: str, limit: int) -> list[VersionedEntity]:
-        """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06)."""
+    async def without_embedding(
+        self, model: str, limit: int, *, wait_for_documents: bool = False
+    ) -> list[VersionedEntity]:
+        """The entities without an embedding of ``model``, internal types left out, by GUID (VEC-06); with
+        ``wait_for_documents``, also those awaiting their App Search document (EMC-04).
+        """  # noqa: D205 - one sentence
         found = []
         for guid in sorted(self.entities):
             source, version = self.entities[guid]
             entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
-            if embeddable(entity.type_name) and (entity.embedding is None or entity.embedding.model != model):
+            if (
+                embeddable(entity.type_name)
+                and (entity.embedding is None or entity.embedding.model != model)
+                and not (wait_for_documents and awaits_document(entity))
+            ):
                 found.append(VersionedEntity(entity, version))
         return found[:limit]
 
@@ -368,8 +376,7 @@ class MemoryEntityDocuments:
         for guid in sorted(self.entities):
             source, version = self.entities[guid]
             entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
-            document = entity.app_search
-            if (document is None and has_document(entity)) or (document is not None and document.stale):
+            if awaits_document(entity):
                 found.append(VersionedEntity(entity, version))
         return found[:limit]
 
