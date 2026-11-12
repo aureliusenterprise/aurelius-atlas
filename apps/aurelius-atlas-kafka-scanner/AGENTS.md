@@ -58,7 +58,7 @@ The job is a CLI, not a service: one process per scan, no HTTP router, no port
 - `e2e/` — the scanner in-process against a real server image on the dev
   stack, driving the suite's own real broker and Schema Registry (KSC-07,
   KSC-09, KSC-10). The broker, its one-shot `sasl-init`, and the Registry are
-  services of `e2e/docker-compose.yaml` (DD-538): the stack starts with the
+  services of `e2e/docker-compose.yaml` (DD-541): the stack starts with the
   suite and discards its cluster data with it, as db-scanner's Postgres does
   (DD-507).
 
@@ -76,7 +76,7 @@ deviation and needs a `deviations.md` row, not a silent edit.
   skips this app's own `docker-build` (the suite drives the CLI in-process)
   and depends on the server's image plus the three dev stacks it shares
   (keycloak, observability, elasticsearch). The Kafka stack is not among
-  them: it rides this app's own e2e compose (DD-538). It re-declares the
+  them: it rides this app's own e2e compose (DD-541). It re-declares the
   `ci` configuration (the webapp override lesson: an explicit target loses
   the inferred `configurations`) and sets `parallelism: false` — one server
   container on one port, one broker on 29092. No `serve`: the job has no
@@ -109,7 +109,7 @@ deviation and needs a `deviations.md` row, not a silent edit.
   (CHT-125, DD-511). Never an umbrella dependency (DD-508).
   `tests/values.test.yaml` answers the guards.
 - Broker and Registry — the suite's own, in `e2e/docker-compose.yaml`
-  (DD-538, the db-scanner Postgres pattern of DD-507): a KRaft broker with
+  (DD-541, the db-scanner Postgres pattern of DD-507): a KRaft broker with
   loopback-pinned ports 29092 (PLAINTEXT, no credentials, DD-469) and 29095
   (SASL_PLAINTEXT with SCRAM-SHA-512, DD-471), the one-shot `sasl-init`, and
   the Registry at 28081. The SCRAM pair lives in this app's `.env` (as
@@ -134,7 +134,7 @@ deviation and needs a `deviations.md` row, not a silent edit.
   HEALTHCHECK: the batch image ships for 13.2's CronJob.
 - `e2e/docker-compose.yaml` — the server image on the dev networks, port
   21006 (21005 was 12.2's), beside the suite's broker, `sasl-init`, and
-  Registry (DD-538). The scanner itself has no service; the suite calls
+  Registry (DD-541). The scanner itself has no service; the suite calls
   `run_scan` in-process. Tests seed `zz<run>`-namespaced topics, subjects,
   and entities and delete them in teardown, fields before datasets (DD-223:
   the shared dev store is never restarted; the broker is discarded with the
@@ -145,7 +145,7 @@ deviation and needs a `deviations.md` row, not a silent edit.
 
 The app is one increment's deliverable: remove
 `apps/aurelius-atlas-kafka-scanner`, including its `helm/` chart and its
-`e2e/` Kafka services (DD-538 moved them in with the app), its root
+`e2e/` Kafka services (DD-541 moved them in with the app), its root
 `pyproject.toml` entries (member, dev group, uv source), the scanner client
 and service-account user in `dev/keycloak/import/master.json` (and the helm
 copy), the `KAFKA_SCANNER_CLIENT_SECRET` passthrough in

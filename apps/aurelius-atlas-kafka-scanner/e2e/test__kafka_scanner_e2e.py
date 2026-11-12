@@ -2,7 +2,7 @@
 
 The suite drives the job in-process — the scanner is a batch CLI, not a service — on the
 stack of ``e2e/docker-compose.yaml``: a real Atlas server on the dev store, and the suite's
-own real broker and Schema Registry the scan reads (DD-538, KSC-10: the door walks a live
+own real broker and Schema Registry the scan reads (DD-541, KSC-10: the door walks a live
 broker, no fakes). Every scan speaks as the scanner's own service client (KSC-09): the write
 rides its client-credentials token and the audit names it, so this is the spec's end-to-end
 proof that the identity answers read AND write in the real catalogue. Each scenario namespaces

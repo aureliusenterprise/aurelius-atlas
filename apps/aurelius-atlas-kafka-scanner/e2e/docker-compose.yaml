@@ -7,7 +7,7 @@ name: aurelius-atlas-kafka-scanner-e2e
 # the scanner's audience joined). The store and the collector ride the dev
 # networks; Keycloak is reached on the host. The broker and its Schema
 # Registry are this stack's own, started with it and discarded with it
-# (DD-538, the disposable-database pattern of DD-507): the suite seeds and
+# (DD-541, the disposable-database pattern of DD-507): the suite seeds and
 # scans them over their published ports and rides no shared broker.
 services:
     atlas-server:
@@ -70,7 +70,7 @@ services:
             - ../certs:/certs:ro
 
     broker:
-        # The cluster under scan (KSC-10, DD-538): the suite's own KRaft
+        # The cluster under scan (KSC-10, DD-541): the suite's own KRaft
         # single node, started with the stack and discarded with it. Two
         # client listeners (DD-469): the anonymous HOST listener the scan
         # reads with when the cluster answers PLAINTEXT, and a SASL_PLAINTEXT
