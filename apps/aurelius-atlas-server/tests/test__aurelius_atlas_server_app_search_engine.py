@@ -1,5 +1,5 @@
-"""The App Search API in the server: its two paths, the quality engine, an unknown engine, the privilege it needs,
-and a refused body (ASE-01, ASE-02, ASE-04, ASQ-01), on the fake store.
+"""The App Search API in the server: its two paths, the quality and governance engines, an unknown engine, the
+privilege it needs, and a refused body (ASE-01, ASE-02, ASE-04, ASQ-01, ASG-01), on the fake store.
 """  # noqa: D205 - one sentence
 
 import httpx2 as httpx
@@ -60,10 +60,31 @@ async def test__the_quality_engine_answers_its_results_on_both_paths(
         assert [(found["name"], found["dqscore"]) for found in answer["results"]] == [({"raw": "Rule 1"}, {"raw": 0.5})]
 
 
-@pytest.mark.covers(R, rules=["ASE-01", "ASQ-01"])
+@pytest.mark.covers(R, rules=["ASG-01"])
+async def test__the_governance_engine_answers_its_verdicts_on_both_paths(
+    client: httpx.AsyncClient, fake_es: FakeClient
+) -> None:
+    """An entity's missed rules by ``entity_guid`` and ``compliant``, the card list's filter; ``id`` the pair."""
+    verdicts = [
+        {"id": f"d--{rule}", "guid": rule, "name": rule.title(), "entity_guid": "d", "compliant": compliant}
+        for rule, compliant in (("named", "1"), ("owned", "0"))
+    ]
+    await ElasticsearchEntityDocuments(fake_es).replace_verdicts({"d": verdicts})  # type: ignore[arg-type]
+    body = {"filters": {"all": [{"entity_guid": ["d"]}, {"compliant": ["0"]}]}, "result_fields": {"name": {"raw": {}}}}
+
+    for path in ("search", "search.json"):
+        response = await client.post(f"{ENGINES}/atlas-dev-gov-quality/{path}", json=body)
+        assert response.status_code == 200
+        answer = response.json()
+        assert answer["meta"]["engine"]["name"] == "atlas-dev-gov-quality"
+        (found,) = answer["results"]
+        assert (found["id"], found["name"]) == ({"raw": "d--owned"}, {"raw": "Owned"})
+
+
+@pytest.mark.covers(R, rules=["ASE-01", "ASQ-01", "ASG-01"])
 async def test__another_engine_is_not_found(client: httpx.AsyncClient) -> None:
-    """The governance engine comes with 14.6."""
-    response = await client.post(f"{ENGINES}/atlas-dev-gov-quality/search.json", json={})
+    """Only the three engines answer."""
+    response = await client.post(f"{ENGINES}/atlas-dev-other/search.json", json={})
 
     assert (response.status_code, response.json()) == (404, {"errors": ["Could not find engine."]})
 

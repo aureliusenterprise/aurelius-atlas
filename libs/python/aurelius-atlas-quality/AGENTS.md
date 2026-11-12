@@ -16,7 +16,9 @@ workspace-wide rules live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
   `RuleResult`.
 - `aurelius_atlas_quality/score.py` — `summarise`, `QualitySummary`.
 - `aurelius_atlas_quality/atlas.py` — the store shapes: `m4i_data_quality`
-  attributes in (`rule_from_atlas_attributes`), `m4i_dq_score` documents out
+  attributes in (`rule_from_atlas_attributes`), `m4i_gov_data_quality`
+  attributes in (`rule_from_gov_attributes`, a legacy expression of the two
+  forms read by `gov_expression_params`, ASG-02), `m4i_dq_score` documents out
   (`result_documents`).
 
 ## Wiring Checklist

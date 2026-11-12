@@ -11,13 +11,13 @@ data and writes scores is 12.2, and the REST surface that serves the scores is
 
 ## What it holds
 
-| Module     | Holds                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------- |
-| `rule`     | the five dimensions, the ten check kinds, the rule and its parse-time validation (DQ-01, DQ-02)   |
-| `checks`   | the row mask each kind asks for, over a polars frame (DQ-03)                                      |
-| `evaluate` | a rule over a frame into a score, a verdict, and the rejected rows (DQ-04, DQ-05)                 |
-| `score`    | the rollup: rule scores to dimension scores to the overall score (DQ-06)                          |
-| `atlas`    | the glue: a stored `m4i_data_quality` entity to a rule, results to score documents (DQ-07, DQ-08) |
+| Module     | Holds                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------- |
+| `rule`     | the five dimensions, the ten check kinds, the rule and its parse-time validation (DQ-01, DQ-02)    |
+| `checks`   | the row mask each kind asks for, over a polars frame (DQ-03)                                       |
+| `evaluate` | a rule over a frame into a score, a verdict, and the rejected rows (DQ-04, DQ-05)                  |
+| `score`    | the rollup: rule scores to dimension scores to the overall score (DQ-06)                           |
+| `atlas`    | the glue: a stored rule entity to a rule, results to score documents (DQ-07, DQ-08, GQ-07, ASG-02) |
 
 The semantics live in [`specs/12-1-quality-engine/spec.md`](./specs/12-1-quality-engine/spec.md)
 and its design records in `design.md` beside it.

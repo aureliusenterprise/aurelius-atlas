@@ -28,6 +28,7 @@ from aurelius_atlas_core.app_search_document import (
     mapped,
     named_guids,
     own_document,
+    ungoverned,
 )
 from aurelius_atlas_core.entity_documents import (
     EntityDocuments,
@@ -228,7 +229,7 @@ class AppSearchIndexer:
                 seen.add(guid)
                 catalogue.add([versioned.entity])
                 new = await _document(catalogue, versioned.entity)
-                if new == old:
+                if new == ungoverned(old):
                     continue
                 affected.append((versioned, new))
                 if identity(new) != identity(old):

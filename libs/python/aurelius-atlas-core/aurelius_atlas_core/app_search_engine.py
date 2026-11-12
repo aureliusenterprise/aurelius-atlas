@@ -1,5 +1,6 @@
-"""The App Search engines ``atlas-dev`` and ``atlas-dev-quality`` answered from the entity index (ASE-03 to
-ASE-11, ASQ-02 to ASQ-06, DD-523 to DD-525, DD-530, DD-531).
+"""The App Search engines ``atlas-dev`` and ``atlas-dev-quality`` answered from the entity index, and
+``atlas-dev-gov-quality`` from the governance verdicts' (ASE-03 to ASE-11, ASQ-02 to ASQ-06, ASG-05, DD-523 to
+DD-525, DD-530, DD-531, DD-534).
 
 The original webapp sends App Search's Search API requests: a query, filters, facets, a sort, a page and the
 fields to answer. An engine is the entity documents it holds and its fields; each field is a row of its table:
@@ -29,8 +30,9 @@ from aurelius_atlas_core.app_search_document import (
     QUALITY_TEXT_FIELDS,
     QUALITY_TOTALS_FIELD,
     SOURCE_HASH_FIELD,
+    VERDICT_FIELDS,
 )
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, ElasticsearchEntityDocuments
 from aurelius_atlas_core.search_query import ACTIVE
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
@@ -39,6 +41,9 @@ ENGINE = "atlas-dev"
 
 QUALITY_ENGINE = "atlas-dev-quality"
 """The engine of the quality results (LAS-11, ASQ-02)."""
+
+GOV_QUALITY_ENGINE = "atlas-dev-gov-quality"
+"""The engine of the governance verdicts (LAS-13, ASG-03)."""
 
 MAX_PAGE = 100
 MAX_PAGE_SIZE = 1000
@@ -171,13 +176,42 @@ QUALITY_FIELDS = _quality_fields()
 """``atlas-dev-quality``'s fields by name (LAS-11, ASQ-02)."""
 
 
+def _verdict(name: str, default: Any) -> Callable[[Mapping[str, Any]], Any]:  # noqa: ANN401 - a JSON value
+    """The reader of a verdict's field, ``default`` where the source lacks it."""
+    return lambda source: source.get(name, default)
+
+
+def _gov_quality_fields() -> dict[str, EngineField]:
+    """``atlas-dev-gov-quality``'s fields (14.1's documents, the legacy schema): all text (ASG-03, ASG-05)."""
+    fields = {
+        name: EngineField(
+            Kind.TEXT,
+            path=name,
+            text=f"{name}.text",
+            read=_verdict(name, [] if name == "usedattributes" else ""),
+        )
+        for name in VERDICT_FIELDS
+    }
+    for name in ("result", "doc_guid"):
+        fields[name] = EngineField(Kind.TEXT, constant=None)
+    return fields
+
+
+GOV_QUALITY_FIELDS = _gov_quality_fields()
+"""``atlas-dev-gov-quality``'s fields by name (LAS-13, ASG-03)."""
+
+
 @dataclass(frozen=True)
 class Engine:
-    """An engine: its name, the filter of the entity documents it holds, and its fields (DD-531)."""
+    """An engine: its name, the filter of the documents it holds, its fields, and the index and id field of its
+    documents (DD-531, DD-534).
+    """  # noqa: D205 - one sentence
 
     name: str
     holds: tuple[dict[str, Any], ...]
     fields: Mapping[str, EngineField]
+    index: str = ENTITY_DOCUMENTS
+    id_field: str = "guid"
 
 
 ATLAS_DEV = Engine(ENGINE, ({"term": {"state": ACTIVE}}, {"exists": {"field": SOURCE_HASH_FIELD}}), FIELDS)
@@ -190,8 +224,11 @@ ATLAS_DEV_QUALITY = Engine(
 )
 """The active score entities with a quality result (ASQ-02)."""
 
-ENGINES = {engine.name: engine for engine in (ATLAS_DEV, ATLAS_DEV_QUALITY)}
-"""The engines by name (ASE-01, ASQ-01)."""
+ATLAS_DEV_GOV_QUALITY = Engine(GOV_QUALITY_ENGINE, (), GOV_QUALITY_FIELDS, index=GOV_QUALITY, id_field="id")
+"""Every governance verdict (ASG-03, DD-534)."""
+
+ENGINES = {engine.name: engine for engine in (ATLAS_DEV, ATLAS_DEV_QUALITY, ATLAS_DEV_GOV_QUALITY)}
+"""The engines by name (ASE-01, ASQ-01, ASG-01)."""
 
 
 class AppSearchError(Exception):
@@ -552,10 +589,11 @@ def query_body(search: Search) -> dict[str, Any]:
     }
     return {
         "query": {"bool": {"filter": [*search.engine.holds, *search.filters], "must": must}},
-        "sort": _sort_clauses(search.sort, fields),
+        "sort": _sort_clauses(search.sort, fields, search.engine.id_field),
         "aggs": aggs,
         "from_": min(start, RESULT_WINDOW),
         "size": max(0, min(search.size, RESULT_WINDOW - start)),
+        "index": search.engine.index,
     }
 
 
@@ -570,7 +608,9 @@ def _facet_order(facet: _Facet) -> list[dict[str, str]]:
     return [facet.order, {"_key": "asc"}] if "_count" in facet.order else [facet.order]
 
 
-def _sort_clauses(sort: list[tuple[str, str]], fields: Mapping[str, EngineField]) -> list[dict[str, Any]]:
+def _sort_clauses(
+    sort: list[tuple[str, str]], fields: Mapping[str, EngineField], id_field: str
+) -> list[dict[str, Any]]:
     """The sort, constants dropped, a missing number as its ``missing`` value, ties by ``id`` (ASE-08, DD-530)."""
     clauses: list[dict[str, Any]] = []
     for name, direction in sort or [("_score", "desc")]:
@@ -579,11 +619,11 @@ def _sort_clauses(sort: list[tuple[str, str]], fields: Mapping[str, EngineField]
         elif (path := fields[name].path) is not None:
             missing = fields[name].missing
             clauses.append({path: {"order": direction} | ({} if missing is None else {"missing": missing})})
-    return [*clauses, {"guid": {"order": "asc"}}]
+    return [*clauses, {id_field: {"order": "asc"}}]
 
 
 class AppSearchEngine:
-    """An engine over ``documents``' entity index, ``atlas-dev`` by default (ASE-03 to ASE-11, ASQ-03)."""
+    """An engine over ``documents``' indices, ``atlas-dev`` by default (ASE-03 to ASE-11, ASQ-03, ASG-05)."""
 
     def __init__(self, documents: ElasticsearchEntityDocuments, engine: Engine = ATLAS_DEV) -> None:
         """``engine`` answering from ``documents``."""
@@ -622,8 +662,9 @@ def _result(hit: Mapping[str, Any], search: Search) -> dict[str, Any]:
     """One result: the fields asked for, ``id`` always, and ``_meta`` (ASE-10)."""
     source = hit["_source"]
     fields = search.engine.fields
+    document_id = source.get(search.engine.id_field)
     asked = search.result_fields if search.result_fields is not None else dict.fromkeys(fields, _ResultField(raw=True))
-    result: dict[str, Any] = {"id": {"raw": source.get("guid")}}
+    result: dict[str, Any] = {"id": {"raw": document_id}}
     words = [word.lower() for word in _WORD.findall(search.query)]
     for name, options in asked.items():
         value = _plain(fields[name].value(source))
@@ -633,7 +674,7 @@ def _result(hit: Mapping[str, Any], search: Search) -> dict[str, Any]:
         if options.snippet:
             answered["snippet"] = _snippet(value, words, options)
         result[name] = answered
-    result["_meta"] = {"id": source.get("guid"), "engine": search.engine.name, "score": float(hit.get("_score") or 0.0)}
+    result["_meta"] = {"id": document_id, "engine": search.engine.name, "score": float(hit.get("_score") or 0.0)}
     return result
 
 

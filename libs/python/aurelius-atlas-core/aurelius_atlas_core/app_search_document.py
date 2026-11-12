@@ -91,6 +91,35 @@ QUALITY_TEXT_FIELDS = (
 QUALITY_KEYWORD_FIELDS = ("qualityguid", "fieldguid")
 QUALITY_NUMBER_FIELDS = ("businessruleid", "dqscore")
 
+GOV_RULE_TYPE = "m4i_gov_data_quality"
+"""The governance rules, each for the entity type its qualified name starts with (LAS-13, ASG-03)."""
+
+GOVERNED_BY_FIELD = f"{APP_SEARCH_FIELD}.governedBy"
+"""The field of the digest of the type's governance rules the entity was judged by (DD-535)."""
+
+GOVERNED_FIELD = "governed"
+"""The entity document's field set while the entity has governance verdicts (DD-535)."""
+
+VERDICT_FIELDS = (
+    "id",
+    "qualifiedname",
+    "guid",
+    "qualityqualifiedname",
+    "name",
+    "expression",
+    "dataqualitytype",
+    "dataqualityruledescription",
+    "dataqualityruledimension",
+    "noncompliant_message",
+    "usedattributes",
+    "dataqualityruletypename",
+    "entity_guid",
+    "compliant",
+    "result_id",
+    "business_rule_id",
+)
+"""A governance verdict's fields, each a document's field of the verdicts' index (LAS-13, ASG-03, DD-534)."""
+
 TECHNICAL = frozenset({"m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"})
 BUSINESS = frozenset({"m4i_data_domain", "m4i_data_entity", "m4i_data_attribute"})
 
@@ -144,6 +173,20 @@ def source_hash(entity: StoredEntity) -> str:
     return hashlib.sha256(json.dumps(made_of, ensure_ascii=False, default=str).encode()).hexdigest()
 
 
+def governance_source(entity: StoredEntity) -> str:
+    """The SHA-256 of what a governance verdict reads on the entity (ASG-04, DD-535).
+
+    Its type, state, every attribute's value and the relationships it lists, sorted.
+    """
+    made_of: list[Any] = [
+        entity.type_name,
+        entity.state.value,
+        sorted(entity.attributes.items()),
+        sorted(entity.relationship_guids or []),
+    ]
+    return hashlib.sha256(json.dumps(made_of, ensure_ascii=False, default=str).encode()).hexdigest()
+
+
 def own_document(entity: StoredEntity) -> StoredAppSearch:
     """The document with the entity's own fields only: no breadcrumb, no relations (LAS-02, LAS-03)."""
     return StoredAppSearch(
@@ -157,11 +200,25 @@ def own_document(entity: StoredEntity) -> StoredAppSearch:
 
 
 def with_current_app_search(entity: StoredEntity) -> StoredEntity:
-    """The entity, its document marked stale unless derived from its current own fields (ASU-01, DD-518)."""
+    """The entity, its document marked stale unless derived from its current own fields (ASU-01, DD-518), and
+    without its governance marks unless judged with what its verdicts read now (DD-535).
+    """  # noqa: D205 - one sentence
     document = entity.app_search
-    if document is None or document.stale or document.source_hash == source_hash(entity):
+    if document is None:
         return entity
-    return entity.model_copy(update={"app_search": document.model_copy(update={"stale": True})})
+    update: dict[str, object] = {}
+    if not document.stale and document.source_hash != source_hash(entity):
+        update["stale"] = True
+    if document.governed_source is not None and document.governed_source != governance_source(entity):
+        update |= {"governed_by": None, "governed_source": None}
+    return entity.model_copy(update={"app_search": document.model_copy(update=update)}) if update else entity
+
+
+def ungoverned(document: StoredAppSearch | None) -> StoredAppSearch | None:
+    """The document without its governance marks: what the indexer derives (DD-535)."""
+    if document is None or document.governed_source is None:
+        return document
+    return document.model_copy(update={"governed_by": None, "governed_source": None})
 
 
 def named_guids(document: StoredAppSearch | None) -> list[str]:
@@ -189,7 +246,7 @@ def app_search_mapping() -> dict[str, Any]:
     """The mapping of the entity document's App Search document: keywords, names also as text (ASD-02); the stale
     flag a boolean (ASU-01).
     """  # noqa: D205 - one sentence
-    keywords = ("sourceHash", *KEYWORD_FIELDS)
+    keywords = ("sourceHash", "governedBy", "governedSource", *KEYWORD_FIELDS)
     properties = dict.fromkeys(NAME_FIELDS, _NAME) | dict.fromkeys(keywords, _KEYWORD) | {"stale": {"type": "boolean"}}
     return {"properties": properties}
 
@@ -214,3 +271,8 @@ def quality_totals_mapping() -> dict[str, Any]:
             for name in (*DIMENSIONS, "overall")
         }
     }
+
+
+def verdict_mapping() -> dict[str, Any]:
+    """The mapping of the verdicts' index: each field a keyword with a text sub-field (ASG-05, DD-534)."""
+    return {"dynamic": False, "properties": dict.fromkeys(VERDICT_FIELDS, _NAME)}
