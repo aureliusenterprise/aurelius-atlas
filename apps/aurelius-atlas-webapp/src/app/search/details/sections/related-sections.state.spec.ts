@@ -390,3 +390,58 @@ describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
         httpMock.verify();
     });
 });
+
+describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
+    /** An opened person carrying the given ends under their own keys. */
+    function openedPerson(seeds: Record<string, unknown[]>): AtlasEntity {
+        return { guid: "pe-1", typeName: "m4i_person", attributes: { name: "Ada" }, relationshipAttributes: seeds };
+    }
+
+    it("counts one end on its own, by the seed rule (DET-40)", () => {
+        const { store, httpMock } = setup();
+        store.seed(
+            openedPerson({
+                domainLead: [related("d1", "Genomics"), related("d1", "Genomics"), { displayText: "No guid" }],
+                stewardEntity: [related("e1", "Variants")],
+            }),
+            LAYOUTS.m4i_person,
+        );
+
+        // A deduped, guid-bearing, ACTIVE-only count — the section's own rule.
+        expect(store.endCount("domainLead")).toBe(1); // the duplicate and guidless end drop
+        expect(store.endCount("stewardEntity")).toBe(1);
+        expect(store.endCount("stewardAttribute")).toBe(0); // an absent end counts nothing
+        // The merged box agrees: two ends, two cards' worth of seed.
+        expect(store.countFor("governance-roles")).toBe(2);
+        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+        httpMock.verify();
+    });
+
+    it("a DELETED edge counts nothing, as in a section (DET-40, EDT-15)", () => {
+        const { store, httpMock } = setup();
+        store.seed(
+            openedPerson({
+                businessOwnerEntity: [related("e1", "Live"), related("e2", "Gone", "DELETED")],
+            }),
+            LAYOUTS.m4i_person,
+        );
+
+        expect(store.endCount("businessOwnerEntity")).toBe(1);
+        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+        httpMock.verify();
+    });
+
+    it("the count follows the last seed: a re-seed or a clear moves it (DET-40)", () => {
+        const { store, httpMock } = setup();
+        store.seed(openedPerson({ domainLead: [related("d1", "Genomics")] }), LAYOUTS.m4i_person);
+        expect(store.endCount("domainLead")).toBe(1);
+        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+
+        store.seed(openedPerson({}), LAYOUTS.m4i_person); // the save re-read's entity
+        expect(store.endCount("domainLead")).toBe(0);
+
+        store.seed(null, undefined); // no entity: no counts
+        expect(store.endCount("domainLead")).toBe(0);
+        httpMock.verify();
+    });
+});

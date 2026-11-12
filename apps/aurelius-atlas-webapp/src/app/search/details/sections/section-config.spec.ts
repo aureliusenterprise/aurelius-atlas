@@ -1,13 +1,14 @@
 import { LAYOUTS, layoutForTypeName } from "./section-config";
 
 /**
- * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33): the nine
- * layouts key for key the spec's table — anchors, titles, seed keys, People
- * box flag, stats, and nav. The table itself is the fixture; these specs pin
- * the dispatch's lookup and the shapes one renderer depends on.
+ * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33; 7.29's
+ * person row, DET-39..DET-43): the ten layouts key for key the spec's
+ * table — anchors, titles, seed keys, People box flag, stats, and nav. The
+ * table itself is the fixture; these specs pin the dispatch's lookup and the
+ * shapes one renderer depends on.
  */
 describe("Section config (DET-16)", () => {
-    it("holds exactly the nine m4i layouts (DET-16, DET-33, DET-38)", () => {
+    it("holds exactly the ten m4i layouts (DET-16, DET-33, DET-38, DET-39)", () => {
         expect(Object.keys(LAYOUTS).sort()).toEqual([
             "m4i_collection",
             "m4i_data_attribute",
@@ -17,11 +18,12 @@ describe("Section config (DET-16)", () => {
             "m4i_dataset",
             "m4i_field",
             "m4i_generic_process",
+            "m4i_person",
             "m4i_system",
         ]);
     });
 
-    it("maps each of the nine names to its layout (DET-15, DET-16)", () => {
+    it("maps each of the ten names to its layout (DET-15, DET-16)", () => {
         for (const name of Object.keys(LAYOUTS)) {
             expect(layoutForTypeName(name)).toBe(LAYOUTS[name as keyof typeof LAYOUTS]);
         }
@@ -32,7 +34,6 @@ describe("Section config (DET-16)", () => {
         // The bare Atlas `Process` keeps the default: the legacy's dispatch
         // names the m4i type, not the built-in (DET-33, DD-383).
         expect(layoutForTypeName("Process")).toBeUndefined();
-        expect(layoutForTypeName("m4i_person")).toBeUndefined();
         expect(layoutForTypeName("")).toBeUndefined();
     });
 
@@ -217,18 +218,26 @@ describe("Section config (DET-16)", () => {
         }
     });
 
-    it("lists only rendered boxes in the stats and the nav (DET-24, DET-25, DD-369, LDG-32)", () => {
+    it("lists only rendered boxes in the stats and the nav (DET-24, DET-25, DD-369, LDG-32, DET-43)", () => {
         // Each layout's stats and nav name a box that layout renders: one
         // of its own sections, the lineage box the row seats (LDG-09's
-        // lineageAfter), or one of the shared ids. The deferred DQ entry
-        // stays absent by this rule (DD-369).
+        // lineageAfter), the rule box the row carries (DET-42), or one of
+        // the shared ids. The deferred DQ entry stays absent by this rule
+        // (DD-369); the person's nav names no description because its row
+        // omits the box (DET-39).
         for (const [name, layout] of Object.entries(LAYOUTS)) {
-            const rendered = new Set(["description-details", "properties-details"]);
+            const rendered = new Set(["properties-details"]);
+            if (layout.descriptionBox !== false) {
+                rendered.add("description-details");
+            }
             if (layout.peopleBox) {
                 rendered.add("people-details");
             }
             if (layout.lineageAfter !== undefined) {
                 rendered.add("lineage-model");
+            }
+            if (layout.govQualityBox) {
+                rendered.add("gov-quality");
             }
             for (const section of layout.sections) {
                 rendered.add(section.anchor);
@@ -236,9 +245,70 @@ describe("Section config (DET-16)", () => {
             for (const stat of layout.stats) {
                 expect(rendered.has(stat.anchor), `${name} stat ${stat.anchor}`).toBe(true);
             }
+            for (const group of layout.statsGroups ?? []) {
+                for (const stat of group.items) {
+                    expect(rendered.has(stat.anchor), `${name} stat ${stat.anchor}`).toBe(true);
+                }
+            }
             for (const entry of layout.nav) {
                 expect(rendered.has(entry.anchor), `${name} nav ${entry.anchor}`).toBe(true);
             }
         }
+    });
+
+    it("carries the person row's shape (DET-39..DET-43)", () => {
+        const person = LAYOUTS.m4i_person;
+        // DET-39: the table's only row without the description box.
+        expect(person.descriptionBox).toBe(false);
+        expect(person.peopleBox).toBe(false);
+        // DET-41: the one merged section, the five ends in the legacy order.
+        expect(person.sections.map((section) => [section.anchor, [...section.seedKeys]])).toEqual([
+            [
+                "governance-roles",
+                ["domainLead", "businessOwnerEntity", "businessOwnerAttribute", "stewardEntity", "stewardAttribute"],
+            ],
+        ]);
+        // DET-40: four headed boxes, each stat counting its own end (or the
+        // properties), every heading linking to its legacy target.
+        expect(person.stats).toEqual([]);
+        expect(
+            person.statsGroups?.map((group) => [
+                group.heading,
+                group.items.map((item) => [item.label, item.anchor, item.source]),
+            ]),
+        ).toEqual([
+            ["Domain Lead", [["Data Domains", "governance-roles", { kind: "end", key: "domainLead" }]]],
+            [
+                "Data Owner",
+                [
+                    ["Data Entities", "governance-roles", { kind: "end", key: "businessOwnerEntity" }],
+                    ["Data Attributes", "governance-roles", { kind: "end", key: "businessOwnerAttribute" }],
+                ],
+            ],
+            [
+                "Data Steward",
+                [
+                    ["Data Entities", "governance-roles", { kind: "end", key: "stewardEntity" }],
+                    ["Data Attributes", "governance-roles", { kind: "end", key: "stewardAttribute" }],
+                ],
+            ],
+            ["Other", [["Properties", "properties-details", { kind: "properties" }]]],
+        ]);
+        // DET-42: the rule box, this row only. Every other row leaves both
+        // new flags out (absent means the 7.21a shape).
+        expect(person.govQualityBox).toBe(true);
+        for (const [name, layout] of Object.entries(LAYOUTS)) {
+            if (name !== "m4i_person") {
+                expect(layout.descriptionBox, name).toBeUndefined();
+                expect(layout.govQualityBox, name).toBeUndefined();
+                expect(layout.statsGroups, name).toBeUndefined();
+            }
+        }
+        // DET-43: the nav's three entries, in the legacy order.
+        expect(person.nav.map((entry) => entry.anchor)).toEqual([
+            "governance-roles",
+            "gov-quality",
+            "properties-details",
+        ]);
     });
 });

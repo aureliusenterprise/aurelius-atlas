@@ -1,11 +1,12 @@
 /**
- * The eight m4i layouts as one config table (DET-16, DD-366; 7.21c's eighth
- * row, DET-33/DD-383): per type the description box, the People box, the
- * ordered card sections, the stats-bar entries, and the side-navigation
- * entries. The legacy shipped nine copy-pasted layout components
- * (`apps/atlas/src/app/search/details/<type>/` in the Aurelius source); this
- * table is their content, and one renderer draws them all (the person page
- * stays deferred — the last row 7.21c does not take).
+ * The ten m4i layouts as one config table (DET-16, DD-366; 7.21c's eighth
+ * row, DET-33/DD-383; 7.29's tenth, DET-39/DD-518): per type the description
+ * box, the People box, the ordered card sections, the stats-bar entries, and
+ * the side-navigation entries. The legacy shipped ten copy-pasted layout
+ * components (`apps/atlas/src/app/search/details/<type>/` in the Aurelius
+ * source); this table is their content, and one renderer draws them all. The
+ * person row (7.29) carries the table's three flags: no description box, a
+ * grouped stats bar, and the Governance Quality Rules box.
  *
  * Every string is the Aurelius catalogue key it shows (DET-04, SHL-08): the
  * `$localize` id names the key and the fallback text is that key's English
@@ -32,18 +33,22 @@ export interface SectionDef {
 
 /**
  * Which count a stat shows: a section's seed count, the properties rows,
- * or the Lineage Model fetch state (LDG-32: "Available"/"Unavailable",
- * blank while the call is pending — the legacy's shape, never a count).
+ * the Lineage Model fetch state (LDG-32: "Available"/"Unavailable",
+ * blank while the call is pending — the legacy's shape, never a count),
+ * or one `relationshipAttributes` end's entry count (DET-40, DD-519: the
+ * person bar counts its five responsibility ends on their own, while the
+ * one merged section dedupes across them).
  */
-export type StatSource = { kind: "section"; anchor: string } | { kind: "properties" } | { kind: "lineage" };
+export type StatSource =
+    { kind: "section"; anchor: string } | { kind: "properties" } | { kind: "lineage" } | { kind: "end"; key: string };
 
-/** One stats-bar entry (DET-24 renders it; Data Quality stays out, DD-369). */
+/** One heading of the stats bar, flat or grouped (DET-24, DET-40). */
 export interface StatDef {
     /** The heading's label (the layout's stat key's text). */
     readonly label: string;
     /** The anchor the heading links to, without the `#`. */
     readonly anchor: string;
-    /** Which count the stat shows. */
+    /** Which count the heading shows. */
     readonly source: StatSource;
     /**
      * The value word when the lineage model has drawn (LDG-32, the
@@ -52,6 +57,19 @@ export interface StatDef {
     readonly available?: string;
     /** The value word when it rests empty (the `...unavailable` key). */
     readonly unavailable?: string;
+}
+
+/**
+ * One grouped stats-bar box (DET-40, DD-518): the legacy person page's
+ * four headed groups — Domain Lead, Data Owner, Data Steward, Other —
+ * each holding one or two heading-links. A layout with `statsGroups`
+ * renders these instead of the flat `stats` list.
+ */
+export interface StatGroupDef {
+    /** The group's heading (the legacy box heading's key's text). */
+    readonly heading: string;
+    /** The group's stats, in legacy order. */
+    readonly items: readonly StatDef[];
 }
 
 /** One side-navigation entry (DET-25 renders the layout's set). */
@@ -66,6 +84,12 @@ export interface NavDef {
 export interface TypeLayout {
     /** The description box's title (the layout's own `description` key). */
     readonly descriptionTitle: string;
+    /**
+     * Whether the layout renders the description box (DET-39, DD-518).
+     * Absent means true — the nine rows of 7.21a/7.21c/7.27 all carry the
+     * box; only the person page omits it, as the legacy's did.
+     */
+    readonly descriptionBox?: boolean;
     /** Whether the layout renders the People box (DET-23). */
     readonly peopleBox: boolean;
     /** The People box's title, when it has one. */
@@ -74,6 +98,19 @@ export interface TypeLayout {
     readonly sections: readonly SectionDef[];
     /** The stats-bar entries, in legacy order. */
     readonly stats: readonly StatDef[];
+    /**
+     * The grouped stats-bar boxes (DET-40, DD-518), in legacy order, when
+     * the layout groups its bar: the person row's four headed boxes. A
+     * layout with these renders them instead of the flat `stats` list, so
+     * every other row keeps the DET-24 bar unchanged.
+     */
+    readonly statsGroups?: readonly StatGroupDef[];
+    /**
+     * Whether the layout renders the Governance Quality Rules box (DET-42,
+     * DD-520). Absent means false; only the person row carries it — the
+     * other pages' boxes stay with 7.25 (7.24's deferral).
+     */
+    readonly govQualityBox?: boolean;
     /** The properties accordion's title (the layout's own `properties` key). */
     readonly propertiesTitle: string;
     /** The side-navigation entries, in legacy order. */
@@ -86,7 +123,7 @@ export interface TypeLayout {
     readonly lineageAfter?: string;
 }
 
-/** The layout key: one of the nine m4i catalogue types. */
+/** The layout key: one of the ten m4i catalogue types. */
 export type M4iLayoutType =
     | "m4i_data_domain"
     | "m4i_data_entity"
@@ -96,16 +133,17 @@ export type M4iLayoutType =
     | "m4i_dataset"
     | "m4i_collection"
     | "m4i_system"
-    | "m4i_generic_process";
+    | "m4i_generic_process"
+    | "m4i_person";
 
 /**
- * The nine layouts, key for key the spec's table (DET-16, amended by 7.21c's
+ * The ten layouts, key for key the spec's table (DET-16, amended by 7.21c's
  * DET-32/DET-33 rows, 7.22b's LDG-09 box positions, 7.22d's LDG-32 lineage
- * entries, and 7.27's DET-38 rule row). The stats and navigation list the
- * rendered boxes only: every deferred section's stat and link stays out
- * (DD-369); the lineage box's pair returned with the finished box (DD-383's
- * hold-out, ended). Built once at load; `$localize` resolves per locale at
- * compile time.
+ * entries, 7.27's DET-38 rule row, and 7.29's DET-39 person row). The stats
+ * and navigation list the rendered boxes only: every deferred section's stat
+ * and link stays out (DD-369); the lineage box's pair returned with the
+ * finished box (DD-383's hold-out, ended). Built once at load; `$localize`
+ * resolves per locale at compile time.
  */
 export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
     m4i_data_domain: {
@@ -585,6 +623,100 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
             { label: $localize`:@@search.details.process.properties:Properties`, anchor: "properties-details" },
         ],
         lineageAfter: "related-systems",
+    },
+    // DET-39 (7.29, DD-518): the person page enters as the tenth row. It is
+    // the table's first row without a description box (the legacy's has
+    // none), the first with a grouped stats bar (DET-40's four headed
+    // boxes), and the first with the Governance Quality Rules box (DET-42,
+    // DV-155). The one card section merges the five responsibility ends
+    // (DET-41, DD-519); `ProcessOwner` seeds nothing (DV-154), and the box
+    // has no People box, no lineage box, and no People title.
+    m4i_person: {
+        descriptionTitle: "",
+        descriptionBox: false,
+        peopleBox: false,
+        peopleTitle: "",
+        sections: [
+            {
+                anchor: "governance-roles",
+                title: $localize`:@@search.details.person.governanceRolesCards.title:Governance Responsibilities`,
+                seedKeys: [
+                    "domainLead",
+                    "businessOwnerEntity",
+                    "businessOwnerAttribute",
+                    "stewardEntity",
+                    "stewardAttribute",
+                ],
+            },
+        ],
+        // The grouped bar renders these (DET-40); the flat list stays empty
+        // because the person page has no flat stats to render.
+        stats: [],
+        statsGroups: [
+            {
+                heading: $localize`:@@search.details.person.domainLead:Domain Lead`,
+                items: [
+                    {
+                        label: $localize`:@@search.details.person.dataDomains:Data Domains`,
+                        anchor: "governance-roles",
+                        source: { kind: "end", key: "domainLead" },
+                    },
+                ],
+            },
+            {
+                heading: $localize`:@@search.details.person.dataOwner:Data Owner`,
+                items: [
+                    {
+                        label: $localize`:@@search.details.person.dataEntities:Data Entities`,
+                        anchor: "governance-roles",
+                        source: { kind: "end", key: "businessOwnerEntity" },
+                    },
+                    {
+                        label: $localize`:@@search.details.person.dataAttributes:Data Attributes`,
+                        anchor: "governance-roles",
+                        source: { kind: "end", key: "businessOwnerAttribute" },
+                    },
+                ],
+            },
+            {
+                heading: $localize`:@@search.details.person.dataSteward:Data Steward`,
+                items: [
+                    {
+                        label: $localize`:@@search.details.person.dataEntities:Data Entities`,
+                        anchor: "governance-roles",
+                        source: { kind: "end", key: "stewardEntity" },
+                    },
+                    {
+                        label: $localize`:@@search.details.person.dataAttributes:Data Attributes`,
+                        anchor: "governance-roles",
+                        source: { kind: "end", key: "stewardAttribute" },
+                    },
+                ],
+            },
+            {
+                heading: $localize`:@@search.details.person.other:Other`,
+                items: [
+                    {
+                        label: $localize`:@@search.details.person.properties:Properties`,
+                        anchor: "properties-details",
+                        source: { kind: "properties" },
+                    },
+                ],
+            },
+        ],
+        govQualityBox: true,
+        propertiesTitle: $localize`:@@search.details.person.properties:Properties`,
+        nav: [
+            {
+                label: $localize`:@@search.details.person.governanceResponsibilities:Governance Responsibilities`,
+                anchor: "governance-roles",
+            },
+            {
+                label: $localize`:@@search.details.person.governanceQualityRules:Governance Quality Rules`,
+                anchor: "gov-quality",
+            },
+            { label: $localize`:@@search.details.person.properties:Properties`, anchor: "properties-details" },
+        ],
     },
 };
 
