@@ -238,10 +238,17 @@ extraPaths = ["apps/aurelius-atlas-quality-scanner/e2e", "apps/aurelius-atlas-qu
 root = "apps/aurelius-atlas-quality-scanner"
 
 [tool.pytest.ini_options]
+addopts = "--strict-markers"
 asyncio_default_fixture_loop_scope = "module"
 asyncio_mode = "auto"
 log_format = "%(message)s"
 log_level = "INFO"
+markers = [
+    "critical: gates a pull request",
+    "high: gates a merge, runs on main and weekly",
+    "low: on-demand only",
+    "medium: weekly proof is enough",
+]
 required_plugins = ["pytest-asyncio"]
 
 [tool.ruff]

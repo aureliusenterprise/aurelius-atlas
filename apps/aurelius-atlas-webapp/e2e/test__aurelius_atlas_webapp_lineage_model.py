@@ -33,6 +33,8 @@ _M4I_TYPES = [
 ]
 
 
+# impact=severe, likelihood=low (an open aux data plane; the verifier moves rarely)
+@pytest.mark.high
 def test__lineage_model_anonymous_request_reaches_the_aux_401(page: Page, root_url: str) -> None:
     """The proxy adds no auth: an anonymous call gets the aux API's own 401 (LDG-06, LM-08).
 
@@ -48,6 +50,8 @@ def test__lineage_model_anonymous_request_reaches_the_aux_401(page: Page, root_u
     assert response.status == 401
 
 
+# impact=minor, likelihood=medium (the empty-lineage answer through the proxy)
+@pytest.mark.medium
 def test__lineage_model_unknown_guid_answers_no_content(authenticated: Page, root_url: str, user_token: str) -> None:
     """The empty lineage is the aux 204, forwarded through the proxy (LDG-06, LM-05/LM-06).
 
@@ -68,6 +72,8 @@ def test__lineage_model_unknown_guid_answers_no_content(authenticated: Page, roo
     assert not response.text()
 
 
+# impact=major, likelihood=high (a young screen with churn on its path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["LDG-06"])
 def test__lineage_model_answers_the_seeded_chain(authenticated: Page, root_url: str, user_token: str) -> None:
     """The seeded m4i graph comes back as an ar3 model through the whole chain (LDG-06, LM-04).
@@ -217,6 +223,8 @@ def _edge_click_selects_the_relation(drawer: Locator, box: Locator) -> None:
     expect(drawer).not_to_be_visible()
 
 
+# impact=major, likelihood=high (a young panel with churn on its path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["LDG-17", "LDG-19", "LDG-21", "LDG-23", "LDG-25"])
 def test__the_quickview_panel_opens_on_a_node_click(authenticated: Page, root_url: str, user_token: str) -> None:
     """The 7.22c quickview panel: a node click opens it, live metadata lands in Properties (LDG-19/LDG-21/LDG-25).
@@ -321,6 +329,8 @@ def test__the_quickview_panel_opens_on_a_node_click(authenticated: Page, root_ur
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
+# impact=major, likelihood=high (a young box, churn on the details path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["LDG-09", "LDG-10", "LDG-17", "LDG-18"])
 def test__the_details_page_draws_the_lineage_box(authenticated: Page, root_url: str, user_token: str) -> None:
     """The Lineage Model box draws the seeded chain on the details page (LDG-09/LDG-10/LDG-17/LDG-18).
@@ -421,6 +431,8 @@ def test__the_details_page_draws_the_lineage_box(authenticated: Page, root_url: 
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
+# impact=minor, likelihood=medium (toolbar chrome: a download and a toggle)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["LDG-28", "LDG-30", "LDG-31"])
 def test__the_toolbar_saves_the_view_and_toggles_fullscreen(
     authenticated: Page, root_url: str, user_token: str

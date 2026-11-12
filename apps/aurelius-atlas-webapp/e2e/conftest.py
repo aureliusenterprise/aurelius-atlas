@@ -268,6 +268,25 @@ def _wait_url_clean(page: Page) -> None:
         page.wait_for_timeout(100)
 
 
+def _goto_app(page: Page, url: str) -> None:
+    """Navigate to a cold app url and hand the page back once its shell is up.
+
+    A cold ``goto`` reloads the SPA, which re-runs the keycloak-js check-sso
+    handshake and the screen's first data round-trip before it renders. On a
+    contended runner that work outlasts Playwright's default 5 s expect, so a
+    caller that asserts straight after the goto can fail while the page is
+    still booting (ADR 062: the webkit deep-link flake). Wait the way the
+    sign-in fixture does — ``nav.navbar`` is the app's own chrome, so its
+    arrival means the handshake traded the session and the router holds the
+    tokens; a target ``#anchor`` is the router's own scroll target, not the
+    callback fragment, so it stays. The caller then asserts at the default
+    timeout. The navbar does not prove the screen rendered, so this cannot
+    hide a real regression: the caller's title expect still fails on one.
+    """
+    page.goto(url)
+    page.locator("nav.navbar").wait_for(state="visible", timeout=30_000)
+
+
 def _wait_signed_in(page: Page) -> bool:
     """Watch the boot: True when the app renders, False when Keycloak's form answers.
 

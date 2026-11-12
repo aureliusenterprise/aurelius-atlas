@@ -54,6 +54,8 @@ async def _rest_at_the_sign_in_page(page: Page) -> None:
 
 
 # The browser fixture lives on the module loop, so the test runs there too.
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.covers(rules=["DSH-01", "DSH-02", "DSH-05", "DSH-06", "AUT-04", "AUT-05", "AUT-07", "AUT-09"])
 @pytest.mark.parametrize("path", ["/", "/n/"], ids=["dashboardv2", "dashboardv3"])
@@ -95,6 +97,8 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
     await context.close()
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(
     "aurelius_atlas_server_client.client.AdminApi.version",
     "aurelius_atlas_server_client.client.AdminApi.status",
@@ -127,6 +131,8 @@ async def _fetch_trace(trace_id: str) -> str | None:
     return fetched.text if fetched.status_code == 200 else None
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(rules=["CIA-07"])
 async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient) -> None:
     """elasticsearch-py's native OTel spans ride the server trace (DD-210, DD-196, DD-222).
@@ -194,6 +200,8 @@ async def test__the_store_calls_ride_the_server_trace(client: httpx.AsyncClient)
     )
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(rules=["AUT-02", "AUT-04"])
 async def test__the_api_needs_a_token_of_the_dev_realm(anonymous: httpx.AsyncClient, client: httpx.AsyncClient) -> None:
     """Without a token the API answers 401 with the bearer challenge; the writer's token names the writer."""
@@ -202,6 +210,8 @@ async def test__the_api_needs_a_token_of_the_dev_realm(anonymous: httpx.AsyncCli
     assert (await client.get(SESSION)).json()["userName"] == USERNAME
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(rules=["AUZ-01", "AUZ-03", "AUZ-04", "AUZ-06"])
 async def test__the_reader_may_read_types_but_not_change_them(
     anonymous: httpx.AsyncClient, reader_token: Callable[[], str]

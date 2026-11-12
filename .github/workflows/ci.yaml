@@ -209,6 +209,15 @@ jobs:
             - name: Lint & render charts
               run: npx nx affected -t helm-lint helm-template
 
+            # The tier ledger (ADR 062): every e2e test names exactly one
+            # criticality level and every level below critical shows its
+            # risk pair. Offline - it reads the e2e trees, never runs
+            # them - so no key and no docker. It rides validate because
+            # the root chart-contract `test` target keys on chart paths
+            # only and would never notice an unclassified scenario.
+            - name: Check e2e criticality levels
+              run: uv run pytest tests/test__e2e_classification.py -q
+
             # Registry logins against the container's OWN dockerd (the
             # docker-in-docker feature starts it at pod boot). The unit
             # suites include testcontainers (store-es spins a real
@@ -323,18 +332,37 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-            # The integration phase: the affected e2e suites + the image
-            # builds they depend on (e2e stacks build some apps as a
-            # dependency; docker-build rides the same graph because image
-            # builds depend on source, not on tests, and the daemon is
-            # warm - serialising them behind the test step was a free
-            # minute). Parallelism stays at Nx's default (3): --parallel=5
-            # regressed run 40486044342 - the store-es suite's
-            # testcontainers Elasticsearch missed its 180s health window, a
-            # fastapi auth fixture read-timed out, and the critical path
-            # grew 7m37s -> 10m35s. The node's CPUs are already spent: e2e
-            # suites, the compose stacks' JVMs, and pytest workers share
-            # them.
+            # The integration phase, tiered by criticality (ADR 062): a pull
+            # request and the push to main both run the critical and high
+            # scenarios on Chromium only, and the weekly Scan carries the
+            # whole suite on every browser. Pull and main are identical here
+            # (same levels, same browser) so a merge carries no surprise and
+            # the step needs no event branch.
+            # The level
+            # is a pytest marker filter passed after `--`, not an Nx
+            # configuration - Nx 24 does not merge two `-c` names, and the
+            # flags reach only the requested target: `docker-build` rides
+            # the graph as each suite's dependency, where no pytest flags
+            # land (a requested sibling would inherit them, and `-m` means
+            # memory to buildx). Firefox and WebKit leave the pull-request
+            # and main gate with `-k "not webkit and not firefox"` - the
+            # browser rides the webapp test id (`test__x[webkit]`), so the
+            # keyword filter drops exactly those legs; the other suites have
+            # no browser scenarios, so the filter is a no-op there. Firefox
+            # and WebKit stay proven on the weekly Scan for every level.
+            #
+            # docker-build keeps its own step: e2e stacks build the images
+            # they need as a dependency inside this graph, and the separate
+            # request warms the GHCR buildcache for the scan job (what the
+            # merged step bought was build/test overlap; the tier filter
+            # made the shared request unsafe).
+            #
+            # Parallelism stays at Nx's default (3): --parallel=5 regressed
+            # run 40486044342 - the store-es suite's testcontainers
+            # Elasticsearch missed its 180s health window, a fastapi auth
+            # fixture read-timed out, and the critical path grew 7m37s ->
+            # 10m35s. The node's CPUs are already spent: e2e suites, the
+            # compose stacks' JVMs, and pytest workers share them.
             #
             # Note on durations: the task graph runs e2e suites
             # concurrently on this runner, so per-test times in the junit
@@ -344,7 +372,9 @@ jobs:
             - name: Run integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx affected -t e2e docker-build -c ci
+              run: |
+                  npx nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit and not firefox"
+                  npx nx affected -t docker-build -c ci
 
             # Collect container logs and status for debugging failed tests.
             # Same container, same dockerd as the step above, so this sees

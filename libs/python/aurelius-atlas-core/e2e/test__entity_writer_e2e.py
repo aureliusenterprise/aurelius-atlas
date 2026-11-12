@@ -71,6 +71,7 @@ def numbered() -> Any:  # noqa: ANN401 - a GUID source
     return lambda: f"n{next(numbers)}"
 
 
+@pytest.mark.critical
 @pytest.mark.covers(f"{W}.create_or_update", rules=["EWR-06", "EWR-10", "EWR-13"])
 async def test__entities_written_to_elasticsearch_read_back_as_from_memory(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -90,6 +91,7 @@ async def test__entities_written_to_elasticsearch_read_back_as_from_memory(
     assert from_elastic[2]["entity"]["attributes"]["place"]["attributes"]["label"] == "q"
 
 
+@pytest.mark.critical
 @pytest.mark.covers(f"{W}.update_by_unique_attributes", rules=["EWR-16"])
 async def test__two_writers_racing_on_one_entity_both_get_their_change_in(
     dev_store: ElasticsearchStore, entity_prefix: str

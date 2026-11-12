@@ -56,6 +56,7 @@ async def nearest(dev_store: ElasticsearchStore, prefix: str, vector: list[float
     return [hit["_id"] for hit in response["hits"]["hits"]]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["VEC-03"])
 async def test__the_entity_index_maps_the_vector_and_refuses_other_dimensions(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -72,6 +73,7 @@ async def test__the_entity_index_maps_the_vector_and_refuses_other_dimensions(
         await opened(dev_store, entity_prefix, dimensions=8)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["VEC-04", "VEC-05"])
 async def test__a_vector_survives_a_write_of_unchanged_text_and_goes_with_a_rename(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -94,6 +96,7 @@ async def test__a_vector_survives_a_write_of_unchanged_text_and_goes_with_a_rena
     assert await nearest(dev_store, entity_prefix, [1.0, 0.0, 0.0]) == []
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["VEC-04"])
 async def test__the_listings_a_write_starts_from_carry_the_vector(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -111,6 +114,7 @@ async def test__the_listings_a_write_starts_from_carry_the_vector(
     assert await nearest(dev_store, entity_prefix, [1.0, 0.0, 0.0]) == ["e"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["VEC-06"])
 async def test__the_indexer_embeds_the_store_s_entities_and_knn_finds_them_by_meaning(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -130,6 +134,7 @@ async def test__the_indexer_embeds_the_store_s_entities_and_knn_finds_them_by_me
     assert (await nearest(dev_store, entity_prefix, [1.0, 0.0, 0.0]))[0] == "c"
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["VEC-06"])
 async def test__an_entity_changed_while_it_was_embedded_keeps_its_change(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -153,6 +158,7 @@ async def test__an_entity_changed_while_it_was_embedded_keeps_its_change(
     assert stored.embedding.source_hash == source_hash(stored)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["VEC-03", "VEC-04"])
 async def test__an_index_stored_before_embedding_moves_to_a_new_generation_with_its_sources_as_written(
     dev_store: ElasticsearchStore, entity_prefix: str

@@ -44,6 +44,8 @@ def _attrs(span: dict) -> dict[str, object]:
     return raw
 
 
+# impact=minor, likelihood=medium (a fragile probe of a contained path)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["ETR-01", "ETR-02"])
 def test__the_edge_span_rides_the_browser_trace_to_the_server(page: Page, root_url: str) -> None:
     """A minted traceparent turns into edge span -> server span, stitched (ETR-01, ETR-02).
@@ -119,6 +121,8 @@ def test__the_edge_span_rides_the_browser_trace_to_the_server(page: Page, root_u
     assert attrs.get("net.sock.peer.addr"), "edge span carries no client address"
 
 
+# impact=minor, likelihood=medium (a fragile probe of a contained path)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["ETR-03"])
 def test__edge_telemetry_is_producer_attributed(page: Page, root_url: str) -> None:
     """The legacy-leg stamp holds: edge spans carry no user identity (ETR-03).

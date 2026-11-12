@@ -24,6 +24,7 @@ def item(name: str, **attributes: Any) -> dict[str, Any]:  # noqa: ANN401 - Atla
     return {"typeName": "w_item", "guid": f"-{name}", "attributes": {"qualifiedName": name, **attributes}}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.dsl_query_composer.DslQueryComposer.compose",
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
@@ -63,6 +64,7 @@ async def test__dsl_queries_search_the_same_on_elasticsearch(dev_store: Elastics
     assert await names("w_item where `count` > 2 orderby `count` desc") == ["i2", "i4", "i3"]  # count is a keyword
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.dsl_query_executor.DslQueryExecutor.execute",
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.referring",

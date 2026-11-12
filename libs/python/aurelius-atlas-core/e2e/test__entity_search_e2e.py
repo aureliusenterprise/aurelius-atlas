@@ -33,6 +33,7 @@ def where(name: str, operator: str, value: str | None = None) -> dict[str, Any]:
     return {"attributeName": name, "operator": operator, "attributeValue": value}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
     "aurelius_atlas_core.discovery_service.EntityDiscoveryService.search_with_parameters",
@@ -77,6 +78,7 @@ async def test__items_are_searched_by_their_typed_fields_on_elasticsearch(
     assert len(await names(typeName="_ALL_ENTITY_TYPES", limit=2)) == 2
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.classification_search_processor.ClassificationSearchProcessor.criterion",
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.classifications_of_types",
@@ -126,6 +128,7 @@ async def test__entities_are_searched_by_classification_on_elasticsearch(
     assert await names(typeName="p_data", entityFilters=where("__classificationNames", "=", "c_pii")) == ["a@cs"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search",
     "aurelius_atlas_core.discovery_service.EntityDiscoveryService.search_using_full_text",
@@ -191,6 +194,7 @@ async def test__entities_are_found_by_free_text_on_elasticsearch(
     assert full_text["fullTextResult"][0]["score"] > full_text["fullTextResult"][1]["score"] > 0
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms",
     "aurelius_atlas_core.discovery_service.EntityDiscoveryService.quick_search",

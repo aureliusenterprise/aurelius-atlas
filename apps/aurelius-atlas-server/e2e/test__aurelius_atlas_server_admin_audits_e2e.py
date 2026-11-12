@@ -6,6 +6,8 @@ import httpx2 as httpx
 import pytest
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.get_atlas_audits",
     "aurelius_atlas_server.routes.admin.get_audit_details",

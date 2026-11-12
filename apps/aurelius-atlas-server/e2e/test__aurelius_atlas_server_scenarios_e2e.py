@@ -8,6 +8,7 @@ SCENARIOS = Path(__file__).parents[1] / "scenarios"
 
 
 # The client fixture lives on the module loop (asyncio_default_fixture_loop_scope), so the test runs there too.
+@pytest.mark.critical
 @pytest.mark.asyncio(loop_scope="module")
 @pytest.mark.parametrize("scenario", load_scenarios(SCENARIOS))
 async def test__scenario(scenario: Scenario, client: httpx.AsyncClient) -> None:

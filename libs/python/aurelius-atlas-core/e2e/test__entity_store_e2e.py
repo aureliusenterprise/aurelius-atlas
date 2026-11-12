@@ -91,6 +91,7 @@ async def opened(
     return store
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ENS-01", "ENS-04", "ENS-09"])
 async def test__an_entity_is_stored_and_read_back_exactly(dev_store: ElasticsearchStore, entity_prefix: str) -> None:
     """Three aliases; a decimal keeps its digits through Elasticsearch; the type is in use at once."""
@@ -111,6 +112,7 @@ async def test__an_entity_is_stored_and_read_back_exactly(dev_store: Elasticsear
     assert await store.type_in_use("table")
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ENS-05"])
 async def test__two_stores_racing_for_a_value_let_one_win(dev_store: ElasticsearchStore, entity_prefix: str) -> None:
     """The create-only reservation admits one writer of a unique value; the loser wrote nothing."""
@@ -140,6 +142,7 @@ async def recovered(store: EntityStore, seconds: float = 5.0) -> int:
     return found
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ENS-07", "ENS-08"])
 async def test__a_write_cut_short_is_undone_by_another_process(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -169,6 +172,7 @@ async def test__a_write_cut_short_is_undone_by_another_process(
     await survivor.write([EntityChange(table(survivor, qualifiedName="renamed@e2e"))])
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.type_counts", rules=["MET-02"])
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.linked_type_counts", rules=["MET-02"]

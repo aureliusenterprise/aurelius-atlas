@@ -19,6 +19,7 @@ pytestmark = pytest.mark.asyncio(loop_scope="module")
 C = "aurelius_atlas_core.entity_classifications.EntityClassifications"
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     f"{C}.add_classifications", f"{C}.delete_classification", rules=["CLS-02", "CLS-05", "CLS-09", "CLS-11", "CLS-12"]
 )

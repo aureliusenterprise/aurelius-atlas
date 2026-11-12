@@ -40,6 +40,7 @@ def guids(result: AtlasQuickSearchResult) -> list[str]:
     return [entity.guid or "" for entity in result.search_results.entities or []]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["SBM-02"])
 async def test__the_nearest_come_first_filtered_paged_and_faceted(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -64,6 +65,7 @@ async def test__the_nearest_come_first_filtered_paged_and_faceted(
     assert guids(paged) == ["c1", "c3"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["SBM-05"])
 async def test__an_excluded_entity_is_never_among_the_nearest(
     dev_store: ElasticsearchStore, entity_prefix: str
@@ -78,6 +80,7 @@ async def test__an_excluded_entity_is_never_among_the_nearest(
     assert guids(result) == ["c1", "c3"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["SBM-03"])
 async def test__hybrid_adds_the_text_s_matches_and_weighs_the_vector(
     dev_store: ElasticsearchStore, entity_prefix: str

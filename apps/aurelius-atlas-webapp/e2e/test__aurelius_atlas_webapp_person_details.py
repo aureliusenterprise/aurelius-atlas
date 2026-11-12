@@ -17,6 +17,7 @@ import secrets
 from urllib.parse import urljoin
 
 import pytest
+from conftest import _goto_app
 from playwright.sync_api import Page, expect
 from test__aurelius_atlas_webapp import (
     _delete_entity,
@@ -101,6 +102,7 @@ def _person_stat(page: Page, group_heading: str, label: str) -> str:
     return item.locator("p.title").inner_text().strip()
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["DET-39", "DET-40", "DET-41", "DET-43"])
 def test__the_person_page_draws_roles_and_counts(authenticated: Page, root_url: str, user_token: str) -> None:
     """The tenth layout: no description box, four stat boxes, the merged roles box (DET-39..DET-41, DET-43).
@@ -127,7 +129,7 @@ def test__the_person_page_draws_roles_and_counts(authenticated: Page, root_url: 
             predicate=lambda entity: all(entity.get("relationshipAttributes", {}).get(key) for key in ends),
         )
 
-        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{guid}"))
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guid}"))
 
         # DET-39: the description box is absent — the one layout without it.
         expect(authenticated.locator("#description-details")).to_have_count(0)
@@ -186,6 +188,7 @@ def test__the_person_page_draws_roles_and_counts(authenticated: Page, root_url: 
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["DET-42"])
 def test__the_person_page_shows_the_quality_rules_with_verdicts(
     authenticated: Page, root_url: str, user_token: str
@@ -226,7 +229,7 @@ def test__the_person_page_shows_the_quality_rules_with_verdicts(
     try:
         _wait_entity_read(authenticated, root_url, user_token, guid, predicate=bool)
 
-        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{guid}"))
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guid}"))
 
         box = authenticated.locator("#gov-quality")
         expect(box.locator("h3")).to_have_text("Governance Quality Rules")

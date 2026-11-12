@@ -42,6 +42,7 @@ async def hits(dev_store: ElasticsearchStore, prefix: str, field: str, value: st
     return sorted(hit["_id"] for hit in response["hits"]["hits"])
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ASD-02", "ASD-03", "ASD-04", "ASU-01", "ASU-02", "ASU-03", "ASU-04"])
 async def test__the_indexer_writes_documents_a_term_query_finds_and_keeps_them_up_to_date(
     dev_store: ElasticsearchStore, entity_prefix: str

@@ -42,6 +42,8 @@ def _qualified(name: str) -> AtlasEntityDef:
     return AtlasEntityDef(name=name, attribute_defs=[QUALIFIED_NAME])
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.export",
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.of_types",
@@ -95,6 +97,8 @@ async def test__an_export_answers_the_zip_of_what_an_entity_reaches(api: AtlasCl
     assert info["operationStatus"] == "SUCCESS"
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.import_data",
     "aurelius_atlas_server_client.client.TypesApi.create_typedefs",
@@ -123,6 +127,8 @@ async def test__an_export_imports_back_into_the_catalogue(api: AtlasClient) -> N
     assert found.export_result.request.items_to_export == [AtlasObjectId(guid=guid)]
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.admin.get_cluster",
     "aurelius_atlas_server.routes.admin.get_export_import_audit",

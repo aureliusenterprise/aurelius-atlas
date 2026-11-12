@@ -23,6 +23,7 @@ def data(guid: str, name: str) -> dict[str, Any]:
     return {"typeName": "p_data", "guid": guid, "attributes": {"qualifiedName": name}}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.tag_propagation.TagPropagation.remove_all", rules=["PRO-03", "PRO-07", "PRO-10"]
 )

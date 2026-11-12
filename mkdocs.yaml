@@ -180,6 +180,7 @@ nav:
                 - 059. The catalogue searches by meaning: architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site.md
                 - 060. The App Search API returns: architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store.md
                 - 061. The governance banner answers live verdicts: architecture/adr/061-the-governance-banner-answers-live-verdicts.md
+                - 062. The pull-request gate proves the critical and high scenarios: architecture/adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md
@@ -232,6 +233,7 @@ nav:
                       - Change Management: architecture/platform/delivery/change-management.md
                       - Testing: architecture/platform/delivery/testing.md
                       - Test Suite Review: architecture/platform/delivery/testing-review.md
+                      - CI Test Tiers Plan: architecture/platform/ci-test-tiers-plan.md
                       - Release Management: architecture/platform/delivery/release-management.md
                       - Deployment: architecture/platform/delivery/deployment.md
                       - Self-hosted CI: architecture/self-hosted-ci.md

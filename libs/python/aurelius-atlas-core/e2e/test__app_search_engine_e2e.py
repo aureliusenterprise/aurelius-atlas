@@ -32,6 +32,7 @@ def m4i(type_name: str, key: str, **attributes: object) -> AtlasEntity:
     )
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["ASE-05", "ASE-06", "ASE-07", "ASE-08", "ASE-09"])
 async def test__the_engine_searches_filters_facets_and_sorts_the_entity_index(
     dev_store: ElasticsearchStore, entity_prefix: str

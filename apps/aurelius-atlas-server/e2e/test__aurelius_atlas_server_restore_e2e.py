@@ -134,6 +134,8 @@ async def _read_catalogue(client: httpx.AsyncClient, guids: list[str]) -> dict[s
     }
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers("aurelius_atlas_server.snapshots.run", rules=["SNP-04", "SNP-05", "SNP-06"])
 @pytest.mark.covers("aurelius_atlas_store_es.testing.container.elasticsearch_container", rules=["SNP-06"])
 async def test__a_snapshot_of_a_running_server_comes_back_as_a_working_server_on_a_clean_cluster(

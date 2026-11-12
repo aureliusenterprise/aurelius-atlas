@@ -24,6 +24,7 @@ def data(guid: str, name: str) -> dict[str, Any]:
     return {"typeName": "p_data", "guid": guid, "attributes": {"qualifiedName": name}}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.task_management.TaskManagement.run_pending",
     "aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.list_tasks",

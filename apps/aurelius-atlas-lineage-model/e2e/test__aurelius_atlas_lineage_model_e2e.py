@@ -41,6 +41,7 @@ async def _fetch_trace(trace_id: str) -> str | None:
     return fetched.text if fetched.status_code == 200 else None
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-08"])
 async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient) -> None:
     """The container, on the dev issuer: no bearer token is a 401 (LM-08, AUX-05)."""
@@ -48,6 +49,7 @@ async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient)
     assert response.status_code == 401
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_lineage_model.app.create_app",
     "aurelius_atlas_lineage_model_client.client.LineageModelClient.get",
@@ -63,6 +65,7 @@ async def test__the_lineage_graph_extracts_through_the_chain(api: LineageModelCl
     assert response.model_dump(mode="json", by_alias=True) == json.loads(CANNED_EXTRACT.read_text())
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_lineage_model.app.create_app",
     "aurelius_atlas_lineage_model_client.client.LineageModelClient.get",
@@ -73,12 +76,14 @@ async def test__an_unknown_guid_is_no_content(api: LineageModelClient) -> None:
     assert await api.get(UUID(int=9)) is None
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-09"])
 async def test__liveness_answers_anonymously(anonymous_client: httpx.AsyncClient) -> None:
     """The container healthcheck route answers without a token (the image is healthy by construction)."""
     assert (await anonymous_client.get("/liveness")).status_code == 204
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-04"])
 async def test__the_chain_shares_one_trace_with_the_caller(client: httpx.AsyncClient) -> None:
     """The caller's traceparent rides the chain: both containers answer in ONE trace (DD-210).

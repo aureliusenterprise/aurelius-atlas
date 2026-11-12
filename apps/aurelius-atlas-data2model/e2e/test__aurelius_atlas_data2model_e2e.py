@@ -71,6 +71,7 @@ _LINEAGE_BODY: dict[str, object] = {
 }
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_data2model.app.create_app", rules=["DTM-10"])
 async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient) -> None:
     """The container, on the dev issuer: no bearer token is a 401 (DTM-10, AUX-05)."""
@@ -78,6 +79,7 @@ async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient)
     assert response.status_code == 401
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_data2model.app.create_app",
     "aurelius_atlas_data2model_client.client.Data2ModelClient.extract",
@@ -90,6 +92,7 @@ async def test__the_lineage_rules_extract_over_https(api: Data2ModelClient) -> N
     assert response.model  # The ar3 JSON string the browser draws (DV-68).
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_data2model.app.create_app")
 async def test__liveness_answers_anonymously(anonymous_client: httpx.AsyncClient) -> None:
     """The container healthcheck route answers without a token (the image is healthy by construction)."""

@@ -28,6 +28,7 @@ async def seeded(store: EntityStore) -> EntityStore:
     return store
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     f"{R}.entity_with_ext_info",
     f"{R}.entities_by_unique_attributes",
