@@ -9,6 +9,18 @@ on:
         branches:
             - main
 
+# One CI run per ref, and on PRs the new push replaces the running one. The
+# fan-out below takes up to three Shape A runners (e2e, scan-sonar, chromatic)
+# and the pool is capped at three (infra/arc), so two runs of one branch
+# double-book it and starve every other PR's `validate` (observed 2026-11-12:
+# PR 328's runs 43197693157 and 43197753345, pushed 24 s apart, rode the pool
+# together while PR 329's validate queued 20 m). Cancel only on PRs: a
+# push-to-main run is a release gate and must finish, never be replaced
+# mid-flight; a second main push queues behind it instead.
+concurrency:
+    group: ci-${{ github.event.pull_request.number || github.ref }}
+    cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 # Default-deny: every job declares its own scope below; this top-level block
 # is the fallback so a future job that forgets `permissions:` still gets the
 # minimum instead of the org default.
@@ -215,24 +227,14 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-            # Decrypt every project, not just the affected ones - unit
-            # tests re-execute decrypt when a .env.enc is in the affected
-            # set, and keeping every job's decrypt identical (run-many,
-            # key scoped to the step) is the per-job contract of the split
-            # world. Key scoped to this step.
-            - name: Decrypt project env
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t decrypt
-
             # Unit suites only (the e2e suites moved to the `e2e` job;
             # docker-build moved with them - the scan job rebuilds what it
             # scans via the GHCR buildcache, so no daemon is shared across
             # jobs). Coverage (-c ci) is this job's product: the sonar
             # job uploads it. Cache env + PATH come from the pod's
-            # container command; SOPS_AGE_KEY stays as a safeguard - a
-            # test run re-executes `decrypt` when a .env.enc is in the
-            # affected set.
+            # container command; SOPS_AGE_KEY stays scoped here because
+            # every test task decrypts its own .env.enc in-graph (dependsOn)
+            # and reads it through its envFile at spawn.
             - name: Run unit tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
@@ -320,11 +322,6 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
-
-            - name: Decrypt project env
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t decrypt
 
             # The integration phase: the affected e2e suites + the image
             # builds they depend on (e2e stacks build some apps as a
@@ -467,11 +464,6 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-            - name: Decrypt project env
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t decrypt
-
             # The SonarScanner download cache (~382 MB of engine/JRE/plugin
             # jars, SONAR_USER_HOME): a fresh pod's first sonar task pays
             # ~94 s of jar downloads (DD-230). Content-addressed - no lock
@@ -527,12 +519,10 @@ jobs:
             # available: coverage arrived as an artifact, the sarif is
             # scan's own work-volume output (see the job header - scan and
             # sonar co-locate for exactly this handoff). The sonar target
-            # dependsOn decrypt (the per-project .env carries SONAR_TOKEN),
-            # and with task-based affected decrypt only rides the graph when
-            # a .env.enc is affected - so the age key is scoped to this
-            # step, as the hosted sonar job's "Decrypt secrets for
-            # SonarQube" step did (run 40468045053: keyless decrypt failed
-            # every project's .env.enc).
+            # dependsOn decrypt (the per-project .env carries SONAR_TOKEN):
+            # every sonar task decrypts its own .env.enc in-graph and reads
+            # it through its envFile at spawn, so the age key is scoped to
+            # this step and no separate decrypt step runs.
             - name: Run SonarQube analysis
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
@@ -600,11 +590,6 @@ jobs:
               run: |
                   bash .devcontainer/npm.sh
                   bash .devcontainer/uv.sh
-
-            - name: Decrypt project env
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t decrypt
 
             # The Storybook build Chromatic publishes - only when the UI
             # (or its dependencies) are affected. dist/ lands in the

@@ -22,7 +22,6 @@ Part of the **spine**.
 ## Running
 
 ```bash
-nx serve aurelius-atlas-dev-elasticsearch   # docker compose up (foreground)
 nx up aurelius-atlas-dev-elasticsearch      # detached, waits for healthy
 ```
 

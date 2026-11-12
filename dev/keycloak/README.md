@@ -52,11 +52,12 @@ DD-366). This Keycloak doesn't import that realm.
 ## Running
 
 ```bash
-nx serve aurelius-atlas-dev-keycloak
+nx up aurelius-atlas-dev-keycloak
 ```
 
-The `serve` target first runs `decrypt` (SOPS) and the project's `docker-build`,
-and starts its dependencies (`aurelius-atlas-dev-observability`). Keycloak can take a
+The `up` target first runs `decrypt` (SOPS) and the project's `docker-build`,
+and starts its dependencies (`aurelius-atlas-dev-observability`). It waits until
+every service is healthy, then leaves the stack running. Keycloak can take a
 couple of minutes to become healthy on first start.
 
 > [!NOTE]

@@ -148,11 +148,6 @@ jobs:
               with:
                   name: vuln-reports
 
-            - name: Decrypt secrets for SonarQube
-              env:
-                  SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: npx nx run-many -t decrypt
-
             - name: Run SonarQube analysis
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}

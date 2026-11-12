@@ -154,7 +154,7 @@
         "ghcr.io/devcontainers-extra/features/cosign:1.0.10": {},
         "ghcr.io/devcontainers-extra/features/cyclonedx-cli:1.0.10": {},
         "ghcr.io/devcontainers-extra/features/nx-npm:1": {
-            "version": "23.3.0"
+            "version": "24.0.6"
         },
         "ghcr.io/devcontainers-extra/features/sops:1": {
             "version": "latest"

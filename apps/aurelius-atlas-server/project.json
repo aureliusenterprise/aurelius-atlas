@@ -42,7 +42,7 @@
                         "aurelius-atlas-dev-keycloak",
                         "aurelius-atlas-dev-observability"
                     ],
-                    "target": "serve"
+                    "target": "up"
                 },
                 { "projects": ["aurelius-atlas-dashboard"], "target": "build" }
             ],
@@ -51,7 +51,11 @@
                 "description": "Serve the Atlas API and the dashboards on https://localhost:21000 against the dev store"
             },
             "options": {
-                "command": "uv run python -m aurelius_atlas_server"
+                "command": "uv run python -m aurelius_atlas_server",
+                "envFile": "apps/aurelius-atlas-server/.env"
+            },
+            "readyWhen": {
+                "port": 21000
             }
         }
     }

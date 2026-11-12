@@ -3,7 +3,6 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 
 export interface DockerComposePluginOptions {
-    readonly serveTargetName?: string;
     readonly upTargetName?: string;
 }
 
@@ -23,7 +22,7 @@ export const createNodes: CreateNodes<DockerComposePluginOptions> = [
 
 function createNodesInternal(
     configFilePath: string,
-    { serveTargetName = "serve", upTargetName = "up" }: DockerComposePluginOptions = {},
+    { upTargetName = "up" }: DockerComposePluginOptions = {},
 ): CreateNodesResult {
     const projectRoot = dirname(configFilePath);
 
@@ -41,23 +40,12 @@ function createNodesInternal(
             [projectRoot]: {
                 tags: ["docker-compose"],
                 targets: {
-                    [serveTargetName]: {
-                        continuous: true,
-                        command: "docker compose up",
-                        dependsOn: [
-                            { target: "decrypt" },
-                            ...certgen,
-                            { target: "docker-build" },
-                            { target: "docker-build", dependencies: true },
-                            { target: serveTargetName, dependencies: true },
-                        ],
-                        metadata: {
-                            description: "Run the service locally.",
-                        },
-                        options: {
-                            cwd: projectRoot,
-                        },
-                    },
+                    // No foreground "serve" target: `docker compose up` in the
+                    // foreground tears the stack down when it exits, which
+                    // takes the shared dev infrastructure with it. The discrete
+                    // `up` target below is the only entry point; `--wait`
+                    // already blocks until every service is healthy, so no
+                    // readiness probe is needed.
                     [upTargetName]: {
                         command: "docker compose up -d --wait",
                         dependsOn: [
