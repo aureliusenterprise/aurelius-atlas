@@ -21,15 +21,14 @@
                     "projects": [
                         "aurelius-atlas-dev-keycloak",
                         "aurelius-atlas-dev-observability",
-                        "aurelius-atlas-dev-elasticsearch",
-                        "aurelius-atlas-dev-kafka"
+                        "aurelius-atlas-dev-elasticsearch"
                     ],
                     "target": "up"
                 }
             ],
             "executor": "@nxlv/python:run-commands",
             "metadata": {
-                "description": "E2E: the scanner in-process against a real server and a real broker (DD-223: shared dev stacks, never restarted, so never parallel)"
+                "description": "E2E: the scanner in-process against a real server and its own disposable broker and Registry (DD-528; DD-223: the shared dev stacks are never restarted, so never parallel)"
             },
             "options": {
                 "command": "uv run pytest e2e",

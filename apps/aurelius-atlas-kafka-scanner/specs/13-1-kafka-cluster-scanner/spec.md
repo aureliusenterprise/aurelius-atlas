@@ -3,7 +3,8 @@
 - **Status:** in review
 - **Pull request:** #314
 - **Records:** adds KSC-01..10 and DD-465..472 (here; DD-470 supersedes DD-465's library
-  clause, DD-471 supersedes DD-469); relies on DD-458 and DQS-10 (a service identity of its
+  clause, DD-471 supersedes DD-469), and DD-528 (the broker and Registry ride the app's own
+  e2e stack, not a shared dev stack); relies on DD-458 and DQS-10 (a service identity of its
   own, 12.2), AUT-02/AUT-10 (azp audiences, scrubbed reads), DD-362 (the m4i models load at
   boot), EWR-11 (a relationship end resolves by guid or unique attribute), DD-223 (e2e rides
   the shared dev stack, never restarted), and ADR 051/052/056.
@@ -37,16 +38,18 @@ Delivered here:
 | `scan.py`     | one scan: the steps, the notices, the one bulk write                   |
 | `__main__.py` | the CLI: the run, the Keycloak token, telemetry, the exit code         |
 
-Also delivered: the dev Kafka stack `dev/kafka` (one KRaft broker with a plain and a
-SCRAM-authenticated host listener, and a Schema Registry, all loopback-pinned), the dev realm's
-`aurelius-atlas-kafka-scanner` service-account client, and the e2e proof against the dev stack.
+Also delivered: a Kafka stack for the suite — one KRaft broker with a plain and a
+SCRAM-authenticated host listener, and a Schema Registry, all loopback-pinned; it started as
+the shared `dev/kafka` stack and moved into this app's `e2e/docker-compose.yaml` with DD-528.
+Also delivered: the dev realm's `aurelius-atlas-kafka-scanner` service-account client, and the
+e2e proof against that stack.
 
 Explicitly not delivered, with the increment that will:
 
 | Not delivered                                                  | Lands with | Why                                                                                                          |
 | -------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------ |
 | The Helm chart, the CronJob schedule, the server audience join | 13.2       | The chart track owns deployment (10.x's split); the app first                                                |
-| An OAUTHBEARER listener on the dev broker                      | 13.2       | The broker's own identity round (its issuer wiring) is the prod chart's; the door's mint seam is proved here |
+| An OAUTHBEARER listener on the suite's broker                  | 13.2       | The broker's own identity round (its issuer wiring) is the prod chart's; the door's mint seam is proved here |
 | Confluent wire-format decoding of message bodies               | –          | The scan reads schemas, not rows; the sniff only needs the schema id (KSC-05)                                |
 | Partitions, replicas, configs, consumer groups                 | –          | The legacy scanner registered none of them; the tree is topics and fields                                    |
 | Lineage (a process per producer)                               | –          | The legacy scanner registered none; 7.21c reads whatever lands                                               |

@@ -301,3 +301,45 @@ suppression does not reject such a flag if typed by hand, and the flag still res
 the environment — the deployment story (secrets through the environment, always) keeps the
 gap harmless, and it is recorded here rather than papered over. The scan's flags ride settings
 fields (`dry_run`, `topic`), so `run_scan`'s keyword seam is unchanged.
+
+### DD-528. The broker and Registry move from `dev/kafka` into the scanner's e2e stack
+
+- **Status:** Proposed
+- **Increment:** 13.1 (a follow-up to the landed increment: it moves the placement of
+  DD-469's and DD-471's dev broker, not their listener or ladder decisions)
+- **Date:** 2026-11-12
+
+**Decision.** `dev/kafka` is removed as a shared dev stack. The KRaft broker, the one-shot
+`sasl-init`, and the Schema Registry join `apps/aurelius-atlas-kafka-scanner/e2e/docker-compose.yaml`
+as the suite's own services, started with the e2e stack and discarded with it. The host ports
+stay 29092, 29095, and 28081, spelled as literals in the compose so the advertised listeners
+and the publishes cannot drift apart. The SCRAM pair stays in the app's `.env` and reaches
+`sasl-init` through `${VAR:?}` compose guards — one value, two places, as db-scanner's Postgres
+password does (DD-507). The broker carries no named volumes: the cluster lives in the container
+layer, and the suite's teardown (`docker compose down --volumes`) discards it. The e2e target
+drops its `up` dependency on the dev Kafka stack, and `tests/test__dev_stack.py` drops the
+`kafka` entry from `DEV_COMPOSES`.
+
+**Reason.** Kafka serves exactly one consumer: this scanner's e2e suite. A shared `dev/*`
+stack says "several projects ride this", and nothing else does, so every `nx serve` of the
+server and every other suite paid for a broker no one read. db-scanner already proves the
+shape: its disposable Postgres rides its own e2e compose (DD-507), the suite seeds it, and the
+stack drops at the end. A per-run cluster also fits the suite's own rules better — it already
+namespaces every topic to `zz<run>` and deletes it, because it shares the broker with nothing
+in fact.
+
+**Alternatives.** Keep `dev/kafka` and add a compose under `e2e/` that attaches its network:
+rejected — that keeps the always-on stack, the thing the move removes. Keep the stack shared
+but make it opt-in (drop the `up` dependency): rejected — a stack the suite must remember to
+start is a flake, and conftest had to keep a start-guard for it anyway. Named volumes on the
+e2e broker: rejected — `down --volumes` removes them each run, so they only add indirection;
+the db-scanner precedent runs its database the same way.
+
+**Consequences.** The e2e run pays the broker and Registry boot once per session (about a
+minute, waited by `up --wait` healthchecks) and comes down clean, so no foreign topic or
+subject can survive into the next run. DD-223's no-restart rule is untouched: the shared dev
+stacks (Keycloak, Elasticsearch, observability) ride exactly as before. `nx scan` of a dev
+cluster now needs a broker the operator runs or owns, as db-scanner's dev scan needs a
+database (its README spells both); the settings' loopback defaults simply name the e2e stack's
+ports. The CHT-101 loopback guard keeps its force on the remaining dev stacks, and the e2e
+publishes stay loopback-pinned under CIA-03 like the server's own publish.

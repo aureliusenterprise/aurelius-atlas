@@ -56,7 +56,11 @@ The job is a CLI, not a service: one process per scan, no HTTP router, no port
   transport, a recording client): the qualified-name rule, the parsers, the
   wire id, the notices, the dry-run, the temp-guid bulk shape.
 - `e2e/` — the scanner in-process against a real server image on the dev
-  stack, driving a real broker and Schema Registry (KSC-07, KSC-09, KSC-10).
+  stack, driving the suite's own real broker and Schema Registry (KSC-07,
+  KSC-09, KSC-10). The broker, its one-shot `sasl-init`, and the Registry are
+  services of `e2e/docker-compose.yaml` (DD-528): the stack starts with the
+  suite and discards its cluster data with it, as db-scanner's Postgres does
+  (DD-507).
 
 ## Rules the app keeps
 
@@ -70,12 +74,13 @@ deviation and needs a `deviations.md` row, not a silent edit.
 
 - `project.json` — the explicit `e2e` target replaces the inferred one: it
   skips this app's own `docker-build` (the suite drives the CLI in-process)
-  and depends on the server's image plus the four dev stacks (keycloak,
-  observability, elasticsearch, kafka). It re-declares the `ci` configuration
-  (the webapp override lesson: an explicit target loses the inferred
-  `configurations`) and sets `parallelism: false` — one server container on
-  one port. No `serve`: the job has no process to serve; `scan` is the run
-  target.
+  and depends on the server's image plus the three dev stacks it shares
+  (keycloak, observability, elasticsearch). The Kafka stack is not among
+  them: it rides this app's own e2e compose (DD-528). It re-declares the
+  `ci` configuration (the webapp override lesson: an explicit target loses
+  the inferred `configurations`) and sets `parallelism: false` — one server
+  container on one port, one broker on 29092. No `serve`: the job has no
+  process to serve; `scan` is the run target.
 - Realm (DD-469's sibling of DD-458): the
   `aurelius-atlas-kafka-scanner` confidential client in
   `dev/keycloak/import/master.json` (and the byte-identical helm copy), with
@@ -103,46 +108,51 @@ deviation and needs a `deviations.md` row, not a silent edit.
   the optional CA mount; the OTLP export is the optional `telemetry` block
   (CHT-125, DD-511). Never an umbrella dependency (DD-508).
   `tests/values.test.yaml` answers the guards.
-- `dev/kafka` — the broker and Registry the scan reads in dev and in e2e:
-  loopback-pinned ports 29092 (PLAINTEXT, no credentials, DD-469), 29095
-  (SASL_PLAINTEXT with SCRAM-SHA-512, DD-471) and 28081 (Registry). The
-  SCRAM pair in `dev/kafka/.env` is mirrored in this app's `.env` (as
-  `AURELIUS_ATLAS_KAFKA_SCANNER_SASL_USERNAME`/`_PASSWORD`) so the e2e suite
-  authenticates against it: keep the two pairs equal when either changes,
-  and re-encrypt both `.env.enc` files. Its `README.md` carries the removal
-  checklist.
+- Broker and Registry — the suite's own, in `e2e/docker-compose.yaml`
+  (DD-528, the db-scanner Postgres pattern of DD-507): a KRaft broker with
+  loopback-pinned ports 29092 (PLAINTEXT, no credentials, DD-469) and 29095
+  (SASL_PLAINTEXT with SCRAM-SHA-512, DD-471), the one-shot `sasl-init`, and
+  the Registry at 28081. The SCRAM pair lives in this app's `.env` (as
+  `AURELIUS_ATLAS_KAFKA_SCANNER_SASL_USERNAME`/`_PASSWORD`); `sasl-init`
+  reads the same values through compose `${VAR:?}` guards — one value two
+  places. The ports are literals in the compose because the broker's
+  advertised listeners spell them: change one, change the other. The
+  cluster carries no named volumes; `down --volumes` at teardown discards
+  it. There is no `dev/kafka`: a dev `scan` points at a broker the operator
+  runs or owns (the README spells how).
 - `.env` / `.env.enc` — dev defaults; re-run
   `nx encrypt aurelius-atlas-kafka-scanner` after changing `.env` (CI
   regenerates the plaintext from the `.env.enc`). The e2e vars the server
   image and the keycloak compose read carry their own names
   (`AURELIUS_ATLAS_SERVER_*`, bare `KAFKA_SCANNER_CLIENT_SECRET`
-  passthrough) because Nx injects this `.env` into the task. The dev SASL
-  credentials mirror `dev/kafka/.env` — see the `dev/kafka` bullet above.
+  passthrough) because Nx injects this `.env` into the task. The SASL pair
+  the e2e compose's `sasl-init` writes — see the broker bullet above.
 - `tls.json` — the server's certificate SANs only: the job is a client and
   verifies the server and the issuer with `CA_FILE`. The broker and Registry
   are PLAINTEXT and need no certificate material (DD-469).
 - `Dockerfile` — the wheel `nx build` makes, nonroot, no EXPOSE and no
   HEALTHCHECK: the batch image ships for 13.2's CronJob.
-- `e2e/docker-compose.yaml` — one service: the server image on the dev
-  networks, port 21006 (21005 was 12.2's). The scanner itself has no service;
-  the suite calls `run_scan` in-process. Tests seed `zz<run>`-namespaced
-  topics, subjects, and entities and delete them in teardown, fields before
-  datasets (DD-223: the shared dev store and broker are never restarted).
-  The door wrapper records the bulk write's guid assignments so teardown
-  deletes by guid, not by name.
+- `e2e/docker-compose.yaml` — the server image on the dev networks, port
+  21006 (21005 was 12.2's), beside the suite's broker, `sasl-init`, and
+  Registry (DD-528). The scanner itself has no service; the suite calls
+  `run_scan` in-process. Tests seed `zz<run>`-namespaced topics, subjects,
+  and entities and delete them in teardown, fields before datasets (DD-223:
+  the shared dev store is never restarted; the broker is discarded with the
+  stack). The door wrapper records the bulk write's guid assignments so
+  teardown deletes by guid, not by name.
 
 ## Removal
 
 The app is one increment's deliverable: remove
-`apps/aurelius-atlas-kafka-scanner`, including its `helm/` chart, its root
-`pyproject.toml` entries (member, dev group, uv source), `dev/kafka` (its own
-README has the full unwire), the scanner client and service-account user in
-`dev/keycloak/import/master.json` (and the helm copy), the
-`KAFKA_SCANNER_CLIENT_SECRET` passthrough in `dev/keycloak/docker-compose.yaml`,
-the scanner entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` and in the server
-chart's `auth.audiences` default (CHT-120), the `kafka` entry in
-`tests/test__dev_stack.py`'s `DEV_COMPOSES`, the mkdocs nav entry, and the
-13.1/13.2 roadmap rows. Nothing to unwire in the umbrella or the hardened
-realm asset: scanner registration was never theirs (CHT-118/119). Drop the mirrored SASL pair from this app's
-`.env`/`.env.enc` with the stack (`dev/kafka`'s own README unwires its side).
-The `m4i_dataset`/`m4i_field` models stay — the webapp reads them.
+`apps/aurelius-atlas-kafka-scanner`, including its `helm/` chart and its
+`e2e/` Kafka services (DD-528 moved them in with the app), its root
+`pyproject.toml` entries (member, dev group, uv source), the scanner client
+and service-account user in `dev/keycloak/import/master.json` (and the helm
+copy), the `KAFKA_SCANNER_CLIENT_SECRET` passthrough in
+`dev/keycloak/docker-compose.yaml`, the scanner entry in
+`AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` and in the server chart's
+`auth.audiences` default (CHT-120), the mkdocs nav entry, and the 13.1/13.2
+roadmap rows. Nothing to unwire in the umbrella or the hardened realm
+asset: scanner registration was never theirs (CHT-118/119). The SASL pair
+and its `sasl-init` leave with this app's own files. The
+`m4i_dataset`/`m4i_field` models stay — the webapp reads them.

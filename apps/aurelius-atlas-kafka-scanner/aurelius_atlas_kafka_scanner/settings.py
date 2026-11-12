@@ -33,7 +33,9 @@ DEFAULT_MINT_URL = "https://keycloak.localhost:8443/realms/master/protocol/openi
 """The dev issuer's token endpoint: the TLS :8443 listener every producer mints at (DD-113)."""
 
 DEFAULT_BOOTSTRAP_SERVERS = "localhost:29092"
-"""The dev broker: the PLAINTEXT listener ``dev/kafka`` publishes, loopback-pinned (DD-469)."""
+"""The broker of the e2e stack: its PLAINTEXT host listener, published loopback-pinned on this
+port (DD-469's port, moved into the app's own stack by DD-528). A deployment names its own
+cluster with ``BOOTSTRAP_SERVERS``."""
 
 DEFAULT_SYSTEM_NAME = "Kafka Broker"
 """The System the tree hangs under, when the operator names none (KSC-03)."""
@@ -138,7 +140,7 @@ class ScannerSettings(BaseSettings):
 
     security_protocol: SecurityProtocol = "PLAINTEXT"
     """How the broker doors reach the bootstrap list (KSC-10): plain, TLS, or SASL over either.
-    The dev broker answers PLAINTEXT and SASL_PLAINTEXT; a customer cluster typically answers
+    The stack's broker answers PLAINTEXT and SASL_PLAINTEXT; a customer cluster typically answers
     SASL_SSL with OAUTHBEARER (DD-469)."""
 
     sasl_mechanism: SaslMechanism | None = None

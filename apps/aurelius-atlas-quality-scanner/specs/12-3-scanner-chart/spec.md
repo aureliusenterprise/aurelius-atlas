@@ -62,7 +62,8 @@ registration absence (CHT-118/119) are proven once, in
 
 From the umbrella's install shape: the scanner charts sit outside it (DD-508).
 A customer deployment installs and values them per deployment; the dev stack
-composes what it needs with its compose files, as `dev/kafka` already does.
+composes what it needs with its compose files, as the scanners' own e2e
+stacks already do.
 From Java Atlas: none (platform slice, no REST behaviour changes).
 
 ## Acceptance
