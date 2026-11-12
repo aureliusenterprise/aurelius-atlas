@@ -38,7 +38,7 @@ nothing runs the indexer in the server.
 
 ### DD-499. A hash of the entity's own inputs decides whether its document is still current
 
-- **Status:** Proposed
+- **Status:** Proposed; superseded in part by DD-518 (14.3)
 - **Increment:** 14.2
 - **Date:** 2026-11-11
 - **Supersedes:** none
