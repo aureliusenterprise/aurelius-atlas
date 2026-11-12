@@ -22225,7 +22225,7 @@ values stored, not indexed (DD-061, DD-520).</p>
    (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding">without_embedding</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The entities without an embedding of <code>model</code>, internal types left out, by GUID (VEC-06, DD-436).</p>
+              <p>The entities without an embedding of <code>model</code>, internal types left out, by GUID (VEC-06, DD-436); with</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -23192,7 +23192,7 @@ their verdicts' cause (ASG-06, DD-535).</p>
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">without_embedding</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding(model)">model</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding(limit)">limit</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            VersionedEntity
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">without_embedding</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding(model)">model</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding(limit)">limit</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.without_embedding(wait_for_documents)">wait_for_documents</span></span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            VersionedEntity
 
 
   
@@ -23202,7 +23202,8 @@ their verdicts' cause (ASG-06, DD-535).</p>
 
     <div class="doc doc-contents ">
 
-        <p>The entities without an embedding of <code>model</code>, internal types left out, by GUID (VEC-06, DD-436).</p>
+        <p>The entities without an embedding of <code>model</code>, internal types left out, by GUID (VEC-06, DD-436); with
+<code>wait_for_documents</code>, also those awaiting their App Search document (EMC-04, DD-540).</p>
 
 
     </div>
@@ -23806,7 +23807,7 @@ their verdicts' cause (ASG-06, DD-535).</p>
    (aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding)" href="./#aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding">without_embedding</a></code></b>
             –
             <div class="doc-md-description">
-              <p>Up to <code>limit</code> entities without an embedding of <code>model</code>, internal types left out (VEC-06, DD-436).</p>
+              <p>Up to <code>limit</code> entities without an embedding of <code>model</code>, internal types left out (VEC-06, DD-436);</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -24684,7 +24685,7 @@ ASU-02).</p>
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">without_embedding</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding(model)">model</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding(limit)">limit</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            VersionedEntity
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">without_embedding</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding(model)">model</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding(limit)">limit</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.without_embedding(wait_for_documents)">wait_for_documents</span></span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            VersionedEntity
 
 
   
@@ -24694,7 +24695,8 @@ ASU-02).</p>
 
     <div class="doc doc-contents ">
 
-        <p>Up to <code>limit</code> entities without an embedding of <code>model</code>, internal types left out (VEC-06, DD-436).</p>
+        <p>Up to <code>limit</code> entities without an embedding of <code>model</code>, internal types left out (VEC-06, DD-436);
+with <code>wait_for_documents</code>, also those awaiting their App Search document (EMC-04, DD-540).</p>
 
 
     </div>
