@@ -1296,6 +1296,8 @@ ENTITY_MAPPING: dict[str, Any] = {
         "customAttributes": {"type": "object", "dynamic": False},
         "search": {"type": "object", "dynamic": True, "subobjects": False},
         APP_SEARCH_FIELD: app_search_mapping(),
+        QUALITY_RESULT_FIELD: quality_result_mapping(),
+        QUALITY_TOTALS_FIELD: quality_totals_mapping(),
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
@@ -1503,6 +1505,9 @@ Methods:
 - **`put_journal`** –
 
   Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
+- **`quality_holders`** –
+
+  Page through the entities holding a quality result or score totals (ASQ-07): writes refresh (ENS-11).
 - **`referring`** –
 
   Page through the entities whose `references` hold a GUID (DD-057): writes refresh (ENS-11).
@@ -1521,6 +1526,9 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`scores`** –
+
+  Page through the active score entities (ASQ-02): writes refresh (ENS-11).
 - **`search`** –
 
   Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
@@ -1684,6 +1692,14 @@ put_journal(entry: JournalEntry) -> None
 
 Index the entry under its write id, without waiting for a refresh (ENS-11, DD-247).
 
+#### quality\_holders
+
+```
+quality_holders() -> list[VersionedEntity]
+```
+
+Page through the entities holding a quality result or score totals (ASQ-07): writes refresh (ENS-11).
+
 #### referring
 
 ```
@@ -1731,6 +1747,14 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
+
+#### scores
+
+```
+scores() -> list[VersionedEntity]
+```
+
+Page through the active score entities (ASQ-02): writes refresh (ENS-11).
 
 #### search
 
@@ -1886,6 +1910,9 @@ Methods:
 - **`put_journal`** –
 
   Write a journal entry.
+- **`quality_holders`** –
+
+  Every entity holding a quality result or score totals, by GUID (ASQ-07).
 - **`referring`** –
 
   The entities whose references name any of these GUIDs, as of now (DD-057).
@@ -1904,6 +1931,9 @@ Methods:
 - **`restore_linked`** –
 
   Put back a linked document's state before a write, or delete one the write created (DD-062).
+- **`scores`** –
+
+  Every active score entity, by GUID (ASQ-02).
 - **`search`** –
 
   The entities of the query's page, as of now, how many match it in all, their scores, and the query's
@@ -2046,6 +2076,14 @@ put_journal(entry: JournalEntry) -> None
 
 Write a journal entry.
 
+#### quality\_holders
+
+```
+quality_holders() -> list[VersionedEntity]
+```
+
+Every entity holding a quality result or score totals, by GUID (ASQ-07).
+
 #### referring
 
 ```
@@ -2093,6 +2131,14 @@ restore_linked(kind: LinkedKind, guid: str, before: Linked | None) -> None
 ```
 
 Put back a linked document's state before a write, or delete one the write created (DD-062).
+
+#### scores
+
+```
+scores() -> list[VersionedEntity]
+```
+
+Every active score entity, by GUID (ASQ-02).
 
 #### search
 
@@ -2510,12 +2556,21 @@ Classes:
 - **`StoredAppSearch`** –
 
   An entity's App Search document: what `atlas-dev` held of it, under the engine's field names (DD-498).
+- **`StoredDimensionTotals`** –
+
+  One dimension's totals on a document: the sum of the scores, their count, the one over the other, and the
 - **`StoredEmbedding`** –
 
   An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434).
 - **`StoredEntity`** –
 
   One document of the entity index; `write_id` names the write that last wrote it (DD-046).
+- **`StoredQualityResult`** –
+
+  A score entity's quality result: what `atlas-dev-quality` holds of it, under the engine's names (DD-528).
+- **`StoredQualityTotals`** –
+
+  A document's score totals per dimension and overall, held only where a result reaches (DD-529, DD-530).
 
 Functions:
 
@@ -2737,6 +2792,43 @@ sourcetype: str = ''
 stale: bool = False
 ```
 
+### StoredDimensionTotals
+
+Bases: `AtlasModel`
+
+One dimension's totals on a document: the sum of the scores, their count, the one over the other, and the rules' GUIDs on a field (LAS-12, ASQ-04).
+
+Attributes:
+
+- **`count`** (`float`) –
+- **`rules`** (`list[str]`) –
+- **`score`** (`float`) –
+- **`total`** (`float`) –
+
+#### count
+
+```
+count: float = 0.0
+```
+
+#### rules
+
+```
+rules: list[str] = Field(default_factory=list)
+```
+
+#### score
+
+```
+score: float = 0.0
+```
+
+#### total
+
+```
+total: float = 0.0
+```
+
 ### StoredEmbedding
 
 Bases: `AtlasModel`
@@ -2817,6 +2909,12 @@ Attributes:
 - **`labels`** (`list[str] | None`) –
 - **`pending_tasks`** (`list[str] | None`) –
 - **`provenance_type`** (`int`) –
+- **`quality_result`** (`StoredQualityResult | None`) –
+
+  A score entity's quality result, derived each round (ASQ-02, DD-528).
+- **`quality_totals`** (`StoredQualityTotals | None`) –
+
+  The score totals of the entity's App Search document, derived each round (ASQ-04, DD-529).
 - **`references`** (`list[str] | None`) –
 - **`relationship_guids`** (`list[str] | None`) –
 - **`search`** (`dict[str, Any] | None`) –
@@ -2917,6 +3015,22 @@ pending_tasks: list[str] | None = None
 ```
 provenance_type: int = 0
 ```
+
+#### quality\_result
+
+```
+quality_result: StoredQualityResult | None = None
+```
+
+A score entity's quality result, derived each round (ASQ-02, DD-528).
+
+#### quality\_totals
+
+```
+quality_totals: StoredQualityTotals | None = None
+```
+
+The score totals of the entity's App Search document, derived each round (ASQ-04, DD-529).
 
 #### references
 
@@ -3041,6 +3155,145 @@ unlisting(relationship_guids: set[str]) -> Self
 ```
 
 This entity no longer listing these relationships (DD-061).
+
+### StoredQualityResult
+
+Bases: `AtlasModel`
+
+A score entity's quality result: what `atlas-dev-quality` holds of it, under the engine's names (DD-528).
+
+Read from the score, its rule, and the rule's fields in the scored dataset (ASQ-02).
+
+Attributes:
+
+- **`businessruleid`** (`float`) –
+- **`datadomainname`** (`str`) –
+- **`dataqualityruledescription`** (`str`) –
+- **`dataqualityruledimension`** (`str`) –
+- **`dqscore`** (`float`) –
+- **`expression`** (`str`) –
+- **`fieldguid`** (`list[str]`) –
+- **`fieldqualifiedname`** (`list[str]`) –
+- **`name`** (`str`) –
+- **`qualityguid`** (`str`) –
+- **`qualityqualifiedname`** (`str`) –
+
+#### businessruleid
+
+```
+businessruleid: float = 0.0
+```
+
+#### datadomainname
+
+```
+datadomainname: str = ''
+```
+
+#### dataqualityruledescription
+
+```
+dataqualityruledescription: str = ''
+```
+
+#### dataqualityruledimension
+
+```
+dataqualityruledimension: str = ''
+```
+
+#### dqscore
+
+```
+dqscore: float = 0.0
+```
+
+#### expression
+
+```
+expression: str = ''
+```
+
+#### fieldguid
+
+```
+fieldguid: list[str] = Field(default_factory=list)
+```
+
+#### fieldqualifiedname
+
+```
+fieldqualifiedname: list[str] = Field(default_factory=list)
+```
+
+#### name
+
+```
+name: str = ''
+```
+
+#### qualityguid
+
+```
+qualityguid: str
+```
+
+#### qualityqualifiedname
+
+```
+qualityqualifiedname: str = ''
+```
+
+### StoredQualityTotals
+
+Bases: `AtlasModel`
+
+A document's score totals per dimension and overall, held only where a result reaches (DD-529, DD-530).
+
+Attributes:
+
+- **`accuracy`** (`StoredDimensionTotals`) –
+- **`completeness`** (`StoredDimensionTotals`) –
+- **`overall`** (`StoredDimensionTotals`) –
+- **`timeliness`** (`StoredDimensionTotals`) –
+- **`uniqueness`** (`StoredDimensionTotals`) –
+- **`validity`** (`StoredDimensionTotals`) –
+
+#### accuracy
+
+```
+accuracy: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+```
+
+#### completeness
+
+```
+completeness: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+```
+
+#### overall
+
+```
+overall: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+```
+
+#### timeliness
+
+```
+timeliness: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+```
+
+#### uniqueness
+
+```
+uniqueness: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+```
+
+#### validity
+
+```
+validity: StoredDimensionTotals = Field(default_factory=StoredDimensionTotals)
+```
 
 ### stored\_attributes
 
