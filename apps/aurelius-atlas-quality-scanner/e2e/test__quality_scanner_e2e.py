@@ -73,6 +73,7 @@ def _now_ms() -> int:
     return int(time.time() * 1000)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_quality_scanner.scan.run_scan",
     "aurelius_atlas_quality_scanner.catalogue.fetch_rules",
@@ -131,6 +132,7 @@ async def test__the_scanners_own_token_reads_rules_writes_scores_and_reads_them_
     assert summary["dimensions"] == {"COMPLETENESS": "1.0"}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_quality_scanner.scan.run_scan",
     "aurelius_atlas_quality_scanner.catalogue.write_scores",
@@ -176,6 +178,7 @@ async def test__a_second_run_updates_the_same_score_entities_in_place(
     assert {_attributes(entity)["runId"] for entity in after_second.values()} == {second}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_quality_scanner.scan.run_scan",
     "aurelius_atlas_quality_scanner.catalogue.write_scores",
@@ -217,6 +220,7 @@ async def test__a_dry_run_writes_nothing(
     assert stored == {}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_quality_scanner.scan.run_scan",
     "aurelius_atlas_quality_scanner.catalogue.write_scores",
@@ -268,6 +272,7 @@ async def test__an_unreadable_rule_lands_as_an_error_entity(
     assert attributes["rowsChecked"] == 0
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_quality_scanner.scan.run_scan",
     "aurelius_atlas_quality_scanner.__main__.build_client",

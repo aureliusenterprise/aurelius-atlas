@@ -27,6 +27,7 @@ def entity(type_name: str, guid: str, **attributes: Any) -> dict[str, Any]:  # n
     return {"typeName": type_name, "guid": guid, "attributes": attributes}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     f"{R}.create", f"{R}.get_by_id", f"{R}.delete_by_id", rules=["REL-05", "REL-06", "REL-08", "REL-09", "REL-10"]
 )

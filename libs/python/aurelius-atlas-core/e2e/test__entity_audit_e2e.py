@@ -26,6 +26,7 @@ from aurelius_atlas_store_es import ElasticsearchStore
 pytestmark = pytest.mark.asyncio(loop_scope="module")
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_audit_repository.ElasticsearchEntityAuditRepository.list_events",
     "aurelius_atlas_core.entity_audit_repository.ElasticsearchEntityAuditRepository.put_events",
@@ -63,6 +64,7 @@ async def test__a_tables_events_are_recorded_and_read_newest_first(
     assert [e.action for e in oldest] == ["ENTITY_CREATE", "ENTITY_UPDATE"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_audit_repository.ElasticsearchEntityAuditRepository.entities_with_tag_changes",
     "aurelius_atlas_core.classification_associator.ClassificationRetriever.get",
@@ -111,6 +113,7 @@ async def test__classification_events_are_recorded_and_their_entities_found(
     assert list(changed.guid_header_map or {}) == [guids["-1"]]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_audit_repository.ElasticsearchEntityAuditRepository.delete_events",
     "aurelius_atlas_core.entity_audit_repository.delete_events_v2",

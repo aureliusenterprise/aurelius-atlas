@@ -161,6 +161,7 @@ def run_cluster_id(scanner_settings: ScannerSettings) -> str | None:
         cluster.close()
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.scan.run_scan",
     "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.external_topics",
@@ -226,6 +227,7 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     assert {e.user for e in collection_events if e.action is EntityAuditActionV2.ENTITY_CREATE} == {str(expected)}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.scan.run_scan",
     "aurelius_atlas_kafka_scanner.graph.build_graph",
@@ -260,6 +262,7 @@ async def test__a_second_scan_updates_the_same_entities_in_place(
     assert str(again.guid) == first_guid, "the re-scan duplicated or replaced the dataset"
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.scan.run_scan",
     "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.newest_record",
@@ -313,6 +316,7 @@ async def test__the_subject_the_wire_id_and_the_inference_each_answer_a_topic(
         assert _attributes(entity)["fieldType"] == type_name
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.scan.run_scan",
     rules=["KSC-05", "KSC-08"],
@@ -344,6 +348,7 @@ async def test__a_fieldless_topic_lands_as_a_dataset_with_a_notice(
     assert _attributes(dataset)["name"] == empty
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.scan.run_scan",
     "aurelius_atlas_kafka_scanner.scan.dry_run_lines",
@@ -373,6 +378,7 @@ async def test__a_dry_run_writes_nothing(
     assert await _found(writer, "m4i_dataset", qn) is None
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.scan.run_scan",
     "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.external_topics",
@@ -404,6 +410,7 @@ async def test__a_scan_over_scram_reads_the_same_broker(
     assert report.entities
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_kafka_scanner.cluster.KafkaCluster.external_topics",
     rules=["KSC-01", "KSC-10"],

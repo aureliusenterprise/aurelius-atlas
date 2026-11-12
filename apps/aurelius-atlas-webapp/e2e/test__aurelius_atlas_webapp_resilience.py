@@ -10,10 +10,13 @@ by DD-281: its fixture stops compose containers through the docker SDK,
 which the Helm/minikube lane has no counterpart for.
 """
 
+import pytest
 from conftest import Settings
 from playwright.sync_api import Page, expect
 
 
+# impact=minor, likelihood=medium (a fragile probe of a contained path)
+@pytest.mark.medium
 def test__logout_returns_to_sign_in_and_signing_in_again_restores_the_app(
     authenticated: Page,
     settings: Settings,

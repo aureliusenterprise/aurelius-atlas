@@ -26,6 +26,7 @@ def entity(type_name: str, guid: str, **attributes: Any) -> dict[str, Any]:  # n
     return {"typeName": type_name, "guid": guid, "attributes": attributes}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(f"{W}.delete_by_id", f"{W}.purge_by_ids", rules=["EDL-06", "EDL-07", "EDL-09", "EDL-10"])
 async def test__deletes_find_referrers_and_remove_documents_on_elasticsearch(
     dev_store: ElasticsearchStore, entity_prefix: str

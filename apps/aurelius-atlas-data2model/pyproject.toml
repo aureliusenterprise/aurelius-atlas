@@ -22,8 +22,15 @@ name = "Aurelius Enterprise"
 packages = ["aurelius_atlas_data2model"]
 
 [tool.pytest.ini_options]
+addopts = "--strict-markers"
 asyncio_default_fixture_loop_scope = "module"
 asyncio_mode = "auto"
+markers = [
+    "critical: gates a pull request",
+    "high: gates a merge, runs on main and weekly",
+    "low: on-demand only",
+    "medium: weekly proof is enough",
+]
 required_plugins = ["pytest-asyncio"]
 
 [tool.uv.sources.aurelius-atlas-auth]

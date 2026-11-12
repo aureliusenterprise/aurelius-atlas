@@ -106,6 +106,7 @@ def _dataset_qn(run: str, schema: str, table: str) -> str:
     return dataset_qualified_name(_system_qn(run), "default", schema, table)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_db_scanner.scan.run_scan",
     "aurelius_atlas_db_scanner.database.SqlDatabase.schema_names",
@@ -178,6 +179,7 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
     assert {event.user for event in created} == {str(expected)}
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_db_scanner.scan.run_scan",
     "aurelius_atlas_db_scanner.graph.build_graph",
@@ -212,6 +214,7 @@ async def test__a_second_scan_updates_the_same_entities_in_place(
     assert str(entities[0].guid) == first_guid, "the re-scan replaced the dataset"
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_db_scanner.__main__.run", rules=["DBS-02", "DBS-10"])
 def test__a_refused_connect_exits_one_naming_host_not_password(
     monkeypatch: pytest.MonkeyPatch,

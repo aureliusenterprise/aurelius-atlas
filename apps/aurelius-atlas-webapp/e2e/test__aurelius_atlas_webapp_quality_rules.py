@@ -97,6 +97,8 @@ def _drive_threshold_pair(authenticated: Page, rest: str) -> None:
     expect(authenticated.locator("#editor-threshold")).to_have_value("75")
 
 
+# impact=major, likelihood=high (a young screen with churn on its path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["EDT-25", "EDT-26", "EDT-28", "EDT-30", "EDT-31", "EDT-32", "DET-35", "DET-38"])
 def test__the_generic_door_creates_a_rule(
     authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]
@@ -210,6 +212,8 @@ def test__the_generic_door_creates_a_rule(
             _purge_type(authenticated, root_url, fresh_user_token(), type_name)
 
 
+# impact=major, likelihood=high (a young screen with churn on its path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["EDT-27", "EDT-28", "EDT-29"])
 def test__the_editor_edits_a_stored_rule(
     authenticated: Page, root_url: str, fresh_user_token: Callable[[], str]

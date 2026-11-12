@@ -51,6 +51,8 @@ def _client(server: FakeServer) -> httpx.Client:
     return httpx.Client(base_url="https://atlas", transport=httpx.MockTransport(server))
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers("cleanup.Created.record_response", "cleanup.Created.entity", rules=["ECU-01"])
 def test__the_answers_of_writes_say_what_was_created() -> None:
     """CREATE guids, an import's entities, glossary and saved-search guids, and the POSTed types are recorded."""
@@ -71,6 +73,8 @@ def test__the_answers_of_writes_say_what_was_created() -> None:
     assert list(created.types) == ["a", "r"]
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.asyncio
 @pytest.mark.covers("cleanup.Created.record", rules=["ECU-01"])
 async def test__the_response_hook_reads_the_answer() -> None:
@@ -93,6 +97,8 @@ async def test__the_response_hook_reads_the_answer() -> None:
     assert list(created.entities) == ["e1"]
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers("cleanup.remove", rules=["ECU-02", "ECU-03"])
 def test__entities_are_deleted_and_purged_then_the_types_left_deleted_at_once() -> None:
     """The guids deleted, then purged; the types still stored deleted in one request by category."""
@@ -120,6 +126,8 @@ def test__entities_are_deleted_and_purged_then_the_types_left_deleted_at_once() 
     assert (left, server.types) == ([], {"other": "ENTITY"})
 
 
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.covers("cleanup.remove", "cleanup.warn_left", rules=["ECU-03", "ECU-04"])
 def test__a_refused_batch_falls_back_to_one_by_one_and_reports_what_stays() -> None:
     """The later created first, pass by pass; a type no pass deletes is reported, and warned of."""

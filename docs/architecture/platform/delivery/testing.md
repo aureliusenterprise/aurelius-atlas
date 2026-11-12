@@ -26,6 +26,13 @@ are written in the Arrange-Act-Assert shape — set the world up, run the thing,
 with behavior-oriented names and reusable fixtures in place of copy-pasted setup
 ([AAA](https://semaphore.io/blog/aaa-pattern-test-automation)).
 
+The e2e layer is tiered by criticality
+([ADR 062](../../adr/062-the-pull-request-gate-proves-the-critical-scenarios.md)).
+Every scenario carries one of four levels. A pull request runs the critical ones, the push to
+main adds the next level, and the weekly scan runs the whole suite. A guard test refuses a
+scenario that carries no level. The levels, the risk matrix behind them, and the scores per
+component are in the [CI test tiers plan](../ci-test-tiers-plan.md).
+
 The current stack, named once as evidence: [pytest](https://docs.pytest.org/en/stable/) with
 [`pytest-cov`](https://github.com/pytest-dev/pytest-cov) and
 [`pytest-mock`](https://github.com/pytest-dev/pytest-mock) for the Python layers,

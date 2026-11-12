@@ -61,6 +61,7 @@ def _present_rule(run: str, attribute: str) -> dict[str, Any]:
     }
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_validate_entity.routes.validate.build_router", rules=["VE-03"])
 async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient) -> None:
     """``POST /`` without a bearer is the gate's 401, before any rule is read (VE-03, DV-75)."""
@@ -69,6 +70,7 @@ async def test__a_missing_token_is_rejected(anonymous_client: httpx.AsyncClient)
     assert response.status_code == 401
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft",
     "aurelius_atlas_validate_entity.verdicts.VerdictEngine._read",
@@ -115,6 +117,7 @@ async def test__the_draft_answers_with_the_seeded_rules_verdicts(
     assert refusal.rule_name == f"zz{run}.description-empty"
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine._read", rules=["VEV-03"])
 async def test__an_inactive_rule_needs_no_verdict_and_an_expression_rule_is_unread(
     api: ValidateEntityClient, seed_rules: SeedRules, run: str
@@ -146,6 +149,7 @@ async def test__an_inactive_rule_needs_no_verdict_and_an_expression_rule_is_unre
     assert unread[guids["1"]].rule_name == f"zz{run}.legacy-expression"
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-01"])
 async def test__a_body_that_is_not_json_is_400_in_the_atlas_error_body(client: httpx.AsyncClient) -> None:
     """A body the app cannot parse is VEV-01's 400, in the Atlas error body (DV-79's posture)."""
@@ -159,6 +163,7 @@ async def test__a_body_that_is_not_json_is_400_in_the_atlas_error_body(client: h
     assert response.json()["errorCode"] == "ATLAS-400-00-029"
 
 
+@pytest.mark.critical
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VE-04"])
 async def test__liveness_needs_no_token(anonymous_client: httpx.AsyncClient) -> None:
     """The container healthcheck answers 204, anonymous, on the deployed container (VE-04)."""

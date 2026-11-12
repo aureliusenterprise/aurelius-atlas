@@ -29,6 +29,7 @@ def _cosine(left: list[float], right: list[float]) -> float:
     return sum(a * b for a, b in zip(left, right, strict=True))
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-01", "EMB-02", "EMB-03"])
 def test__texts_get_384_dimension_embeddings_of_length_1_in_their_order(client: httpx.Client) -> None:
     """OpenAI's answer shape, one vector per text in order, each of length 1, and the tokens read."""
@@ -49,6 +50,7 @@ def test__texts_get_384_dimension_embeddings_of_length_1_in_their_order(client: 
     assert len({tuple(entry["embedding"]) for entry in body["data"]}) == len(texts)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-03"])
 def test__a_query_ranks_texts_of_its_meaning_above_an_unrelated_one_also_in_dutch(client: httpx.Client) -> None:
     """The model's purpose: "customer address" is nearer an English and a Dutch paraphrase than sensor readings."""
@@ -61,6 +63,7 @@ def test__a_query_ranks_texts_of_its_meaning_above_an_unrelated_one_also_in_dutc
     assert _cosine(query, dutch) > _cosine(query, unrelated)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-03"])
 def test__a_query_and_a_passage_of_one_text_differ(client: httpx.Client) -> None:
     """``input_type`` reaches the model: the prefixes give one text two embeddings."""
@@ -70,6 +73,7 @@ def test__a_query_and_a_passage_of_one_text_differ(client: httpx.Client) -> None
     assert as_query != as_passage
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-04"])
 def test__a_text_s_embedding_does_not_depend_on_its_batch(client: httpx.Client) -> None:
     """Alone, or padded beside a long text, a text gets the same vector."""
@@ -79,6 +83,7 @@ def test__a_text_s_embedding_does_not_depend_on_its_batch(client: httpx.Client) 
     assert beside == pytest.approx(alone, abs=1e-5)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-05"])
 @pytest.mark.parametrize(
     ("body", "status", "param"),
@@ -101,6 +106,7 @@ def test__refusals_answer_in_openai_s_error_shape(
     assert response.json()["error"]["param"] == param
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-06"])
 def test__the_model_list_names_the_shipped_model(client: httpx.Client) -> None:
     """The pinned model, its revision and its 384 dimensions."""
@@ -118,6 +124,7 @@ def test__the_model_list_names_the_shipped_model(client: httpx.Client) -> None:
     ]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-07"])
 def test__the_probes_answer_204_without_credentials(client: httpx.Client) -> None:
     """Liveness and readiness, over TLS."""
@@ -125,6 +132,7 @@ def test__the_probes_answer_204_without_credentials(client: httpx.Client) -> Non
     assert client.get("/readiness").status_code == 204
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["EMB-10"])
 def test__the_image_holds_the_pinned_model_files(compose: DockerCompose) -> None:
     """Each file the image fetched has its pinned SHA-256; the hardened image has Python but no shell."""

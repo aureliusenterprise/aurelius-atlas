@@ -26,6 +26,10 @@ BATCH = 100
 """The guids per delete and purge request of the clean-up."""
 
 
+# impact=severe, likelihood=low (the spine under load drifts slowly). Cost
+# ceiling (DD-401): a capacity claim a contended shared runner cannot honour
+# (PR 329's flake record) — weekly Scan's dedicated runner is its home.
+@pytest.mark.medium
 @pytest.mark.covers(
     "load.drive", "load.atlas_mix", "load.report", "load.OperationReport.as_dict", rules=["LOD-01", "LOD-02", "LOD-03"]
 )
@@ -54,6 +58,7 @@ async def test__the_server_holds_a_mixed_load(
     assert [found.operation for found in reports if found.p95 > P95_MS] == []
 
 
+@pytest.mark.critical
 @pytest.mark.covers("load.percentile", "load.report", "load.Sample.ok", rules=["LOD-02"])
 def test__the_report_counts_failures_and_takes_nearest_rank_percentiles() -> None:
     """Nearest rank: of 1 to 20 ms, p50 is 10 and p95 is 19; a 409 or no answer is a failure (LOD-02)."""

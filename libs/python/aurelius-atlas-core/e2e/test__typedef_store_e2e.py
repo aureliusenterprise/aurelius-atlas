@@ -29,6 +29,7 @@ async def loaded_store(dev_store: ElasticsearchStore, alias: str, refresh_second
     return store
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["TDS-10", "TDS-12"])
 async def test__the_base_model_survives_a_restart(dev_store: ElasticsearchStore, typedef_index: str) -> None:
     """Created definitions are in Elasticsearch; a new process loads them all."""
@@ -45,6 +46,7 @@ async def test__the_base_model_survives_a_restart(dev_store: ElasticsearchStore,
     assert process.relationship_attribute("inputs") is not None
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["TDS-11", "TDS-13"])
 async def test__two_processes_see_each_others_changes(dev_store: ElasticsearchStore, typedef_index: str) -> None:
     """DD-029: the second writer reloads first; the reader reloads on refresh."""
@@ -59,6 +61,7 @@ async def test__two_processes_see_each_others_changes(dev_store: ElasticsearchSt
     assert sorted(two.registry.typedef_names(TypeCategory.ENTITY)) == ["fromOne", "fromTwo"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["TDS-10"])
 async def test__a_rejected_change_leaves_elasticsearch_unchanged(
     dev_store: ElasticsearchStore, typedef_index: str
@@ -77,6 +80,7 @@ async def test__a_rejected_change_leaves_elasticsearch_unchanged(
     assert restarted.registry.typedef_names(TypeCategory.ENTITY) == ["kept"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(rules=["MDL-15"])
 async def test__two_processes_starting_together_load_the_models_once(
     dev_store: ElasticsearchStore, typedef_index: str

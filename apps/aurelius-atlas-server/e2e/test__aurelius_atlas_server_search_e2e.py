@@ -12,6 +12,7 @@ from aurelius_atlas_model.discovery import QuickSearchParameters, SearchParamete
 from aurelius_atlas_server_client import AtlasClient, AtlasClientError
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_server_client.client.SearchApi.search_with_parameters",
     "aurelius_atlas_server_client.client.SearchApi.search_using_basic",
@@ -29,6 +30,7 @@ async def test__the_basic_searches_answer_over_tls(api: AtlasClient) -> None:
     assert by_query.query_type == "BASIC"
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_server_client.client.SearchApi.search_using_full_text",
     rules=["CL-13", "FTX-05"],
@@ -41,6 +43,7 @@ async def test__the_fulltext_search_answers_with_scores(api: AtlasClient) -> Non
     assert result.full_text_result is None or all(found.score is not None for found in result.full_text_result)
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_server_client.client.SearchApi.quick_search",
     "aurelius_atlas_server_client.client.SearchApi.quick_search_using_query",
@@ -58,6 +61,7 @@ async def test__the_quick_searches_answer_with_facets(api: AtlasClient) -> None:
     assert fetched.search_results is not None
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_server_client.client.SearchApi.get_suggestions",
     rules=["CL-13", "SUG-01"],
@@ -70,6 +74,7 @@ async def test__the_suggestions_answer_through_the_client(api: AtlasClient) -> N
     assert result.suggestions is None or len(result.suggestions) <= 5
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_server_client.client.SearchApi.quick_search",
     "aurelius_atlas_server_client.client.SearchApi.search_with_parameters",

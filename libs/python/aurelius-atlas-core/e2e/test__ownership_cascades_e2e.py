@@ -24,6 +24,7 @@ def request(*entities: dict[str, Any]) -> AtlasEntitiesWithExtInfo:
     return AtlasEntitiesWithExtInfo.model_validate({"entities": list(entities)})
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.entity_writer.EntityWriter.create_or_update", rules=["OWN-01", "OWN-02", "OWN-03"]
 )

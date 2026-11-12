@@ -21,6 +21,7 @@ HOUR = 3_600_000
 BASE = json.loads((BUILTIN_MODELS_DIR / "0000-Area0" / "0010-base_model.json").read_text(encoding="utf-8"))
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.metrics_service.MetricsService.save_metrics",
     "aurelius_atlas_core.metrics_service.MetricsService.get_all_metrics_stats",

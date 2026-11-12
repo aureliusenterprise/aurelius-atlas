@@ -36,6 +36,7 @@ async def read(store: EntityStore, guid: str) -> dict[str, Any]:
     return codec.loads(codec.dumps(found.to_json()))["entity"]
 
 
+@pytest.mark.critical
 @pytest.mark.covers(
     "aurelius_atlas_core.relationship_mapper.RelationshipMapper.map",
     rules=["REL-11", "REL-12", "REL-14", "REL-17", "REL-19"],
