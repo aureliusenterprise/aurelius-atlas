@@ -216,7 +216,9 @@ def test__both_implementations_are_entity_documents(documents: ElasticsearchEnti
     assert isinstance(MemoryEntityDocuments(), EntityDocuments)
 
 
-@pytest.mark.covers(f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10", "ENS-11", "IDX-01"])
+@pytest.mark.covers(
+    f"{E}.referring", f"{E}.write", f"{E}.prepare", rules=["EDL-09", "EDL-10", "ENS-11", "IDX-01", "ASU-04"]
+)
 async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_deletes(
     documents: ElasticsearchEntityDocuments, fake: FakeClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -246,7 +248,7 @@ async def test__referring_entities_are_found_page_by_page_and_removals_are_bulk_
     assert set(await documents.get(["a", "c"])) == {"a"}
     assert set(fake.write_refreshes) == {("t-entities", "true")}
     assert fake.refreshes == []
-    assert fake.mapping_updates == ["t-entities"]
+    assert fake.mapping_updates == ["t-entities", "t-relationships"]
 
 
 @pytest.mark.covers(f"{E}.classified", rules=["PRO-07"])

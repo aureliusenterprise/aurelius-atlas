@@ -21,6 +21,11 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
   moving an entity index stored before to one that keeps vectors (DD-439), and the worker runs
   `EntityEmbeddingIndexer` rounds every `embedding_poll_seconds` (VEC-07, DD-436). Unset, nothing changes
   (VEC-08). `tests/test__aurelius_atlas_server_embedding.py` mocks the embedder's transport
+- `aurelius_atlas_server/app_search.py` — `AppSearchWorker`: unless `app_search_enabled` is false, the
+  lifespan starts it on the entity documents, and it runs `AppSearchIndexer` rounds every
+  `app_search_poll_seconds`, deriving the original webapp's missing and stale App Search documents (ASU-06,
+  DD-521). The unit tests' settings turn it off so no round writes beside their requests;
+  `tests/test__aurelius_atlas_server_app_search.py` turns it on
 - `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts
   the store's snapshot policy and starts it; it logs failed runs and reports the gauge
   `aurelius_atlas.snapshot.last_success` (SNP-01 to SNP-03, 6.4e)

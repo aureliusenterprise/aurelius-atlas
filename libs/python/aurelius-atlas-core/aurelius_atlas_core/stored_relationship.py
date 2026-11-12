@@ -17,7 +17,8 @@ class StoredRelationship(AtlasModel):
 
     Attribute values are stored by attribute name (DD-049); ``index`` is the position the last write of an array
     gave it (DD-065); ``blocked_classification_guids`` the classification instances it does not propagate (PRO-05);
-    ``write_id`` names the write that last wrote it (DD-046).
+    ``write_id`` names the write that last wrote it (DD-046); ``app_search_state`` the state its ends' App Search
+    documents were last derived with, once it was deleted (ASU-04, DD-520).
     """
 
     guid: str
@@ -39,6 +40,7 @@ class StoredRelationship(AtlasModel):
     blocked_classification_guids: list[str] | None = None
     pending_tasks: list[str] | None = None
     write_id: str | None = None
+    app_search_state: RelationshipStatus | None = None
 
     def ends(self) -> tuple[str, str]:
         """The GUIDs of end 1 and end 2."""
