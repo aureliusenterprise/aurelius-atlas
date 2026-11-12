@@ -175,6 +175,82 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Task Poll Seconds",
 >       "type": "number"
 >     },
+>     "embedding_url": {
+>       "anyOf": [
+>         {
+>           "format": "uri",
+>           "maxLength": 2083,
+>           "minLength": 1,
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Embedding Url"
+>     },
+>     "embedding_model": {
+>       "default": "intfloat/multilingual-e5-small",
+>       "title": "Embedding Model",
+>       "type": "string"
+>     },
+>     "embedding_dimensions": {
+>       "default": 384,
+>       "exclusiveMinimum": 0,
+>       "title": "Embedding Dimensions",
+>       "type": "integer"
+>     },
+>     "embedding_ca_file": {
+>       "anyOf": [
+>         {
+>           "format": "file-path",
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Embedding Ca File"
+>     },
+>     "embedding_batch_size": {
+>       "default": 32,
+>       "exclusiveMinimum": 0,
+>       "maximum": 256,
+>       "title": "Embedding Batch Size",
+>       "type": "integer"
+>     },
+>     "embedding_poll_seconds": {
+>       "default": 10.0,
+>       "exclusiveMinimum": 0,
+>       "title": "Embedding Poll Seconds",
+>       "type": "number"
+>     },
+>     "app_search_enabled": {
+>       "default": true,
+>       "title": "App Search Enabled",
+>       "type": "boolean"
+>     },
+>     "app_search_batch_size": {
+>       "default": 100,
+>       "exclusiveMinimum": 0,
+>       "maximum": 1000,
+>       "title": "App Search Batch Size",
+>       "type": "integer"
+>     },
+>     "app_search_poll_seconds": {
+>       "default": 10.0,
+>       "exclusiveMinimum": 0,
+>       "title": "App Search Poll Seconds",
+>       "type": "number"
+>     },
+>     "hybrid_vector_weight": {
+>       "default": 10.0,
+>       "minimum": 0,
+>       "title": "Hybrid Vector Weight",
+>       "type": "number"
+>     },
 >     "import_folder": {
 >       "anyOf": [
 >         {
@@ -520,6 +596,16 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `delete_type_override` (`bool`)
 > - `tasks_enabled` (`bool`)
 > - `task_poll_seconds` (`float`)
+> - `embedding_url` (`HttpUrl | None`)
+> - `embedding_model` (`str`)
+> - `embedding_dimensions` (`int`)
+> - `embedding_ca_file` (`FilePath | None`)
+> - `embedding_batch_size` (`int`)
+> - `embedding_poll_seconds` (`float`)
+> - `app_search_enabled` (`bool`)
+> - `app_search_batch_size` (`int`)
+> - `app_search_poll_seconds` (`float`)
+> - `hybrid_vector_weight` (`float`)
 > - `import_folder` (`Path | None`)
 > - `cluster_name` (`str`)
 > - `lineage_on_demand_enabled` (`bool`)
@@ -565,6 +651,30 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `auth_groups_claim` (`str`)
 > - `auth_ca_file` (`FilePath | None`)
 > - `session_timeout_seconds` (`int`)
+>
+> ### app\_search\_batch\_size
+>
+> ```
+> app_search_batch_size: int = 100
+> ```
+>
+> Entities, and relationships, per page of the App Search indexer (ASD-04).
+>
+> ### app\_search\_enabled
+>
+> ```
+> app_search_enabled: bool = True
+> ```
+>
+> Whether the server keeps the original webapp's App Search documents up to date in the background (ASU-06, LAS-10, DD-521).
+>
+> ### app\_search\_poll\_seconds
+>
+> ```
+> app_search_poll_seconds: float = 10.0
+> ```
+>
+> How often the App Search indexer looks for missing and stale documents (ASU-02, ASU-06).
 >
 > ### audit\_aging\_enabled
 >
@@ -846,6 +956,54 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > User for the store.
 >
+> ### embedding\_batch\_size
+>
+> ```
+> embedding_batch_size: int = 32
+> ```
+>
+> Entities per page of the indexer and per request to the embedder, which takes 256 at most (EMB-01).
+>
+> ### embedding\_ca\_file
+>
+> ```
+> embedding_ca_file: FilePath | None = None
+> ```
+>
+> PEM CA verifying the embedder's TLS; unset uses the system trust store.
+>
+> ### embedding\_dimensions
+>
+> ```
+> embedding_dimensions: int = 384
+> ```
+>
+> The model's vectors' dimensions, as the entity index maps them (VEC-03, DD-438).
+>
+> ### embedding\_model
+>
+> ```
+> embedding_model: str = 'intfloat/multilingual-e5-small'
+> ```
+>
+> The model the embeddings are computed with, sent with every request and recorded with each embedding.
+>
+> ### embedding\_poll\_seconds
+>
+> ```
+> embedding_poll_seconds: float = 10.0
+> ```
+>
+> How often the indexer looks for entities without a current embedding (VEC-07, DD-436).
+>
+> ### embedding\_url
+>
+> ```
+> embedding_url: HttpUrl | None = None
+> ```
+>
+> The base of an OpenAI-compatible embeddings API, as the embedder of 11.2 serves one; unset, embedding is off: no vectors are mapped or computed (VEC-08, ADR 059).
+>
 > ### forwarded\_allow\_ips
 >
 > ```
@@ -869,6 +1027,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Whether responses carry `Strict-Transport-Security` (SRV-08, DD-236). The image ships True; the dev arrangement turns it off so a browser that visited the mkcert server is not pinned to HTTPS on the plaintext dev surfaces (ADR 039's named relaxations).
+>
+> ### hybrid\_vector\_weight
+>
+> ```
+> hybrid_vector_weight: float = 10.0
+> ```
+>
+> What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442).
 >
 > ### import\_folder
 >

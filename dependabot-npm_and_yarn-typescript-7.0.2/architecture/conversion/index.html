@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/">
+        <link rel="prev" href="../adr/061-the-governance-banner-answers-live-verdicts/">
       
       
         <link rel="next" href="./design-log/">
@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -1973,6 +2002,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -3730,6 +3765,87 @@
     
   
   058. A new catalogue starts with the m4i types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  059. The catalogue searches by meaning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -7210,6 +7326,41 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>7.24</td>
+<td>Data quality rules and the governance banner</td>
+<td>The field page's Data Quality Rules box seeded from the field's own <code>dataQuality</code> end with its stat and link back in legacy order (DET-35/36, closing DD-369's <code>#related-rules</code> row), the editor's governance banner over the 8.3 mock at <code>/validate-entity/</code> (EDT-21..24, DD-445, DV-144), and the four dumb quality components the 7.25 return needs (UIC-36..39, DD-444/446/447)</td>
+<td>Aurelius <code>details/field/data-quality-cards</code>, <code>editor/{services/entity-validate,components/gov-quality-display}</code>, <code>search/components/{data-quality-pie,data-quality-list}</code>, <code>cards/{data-quality,gov-quality}</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.25</td>
+<td>Quality scores and compliance</td>
+<td>The scores return: the DQ score stats and pies on the layouts, the DQ and dimension sorts, the card quality badges, the Governance Quality Rules box, the compliant/non-compliant cards, the quickview addon, and the search-side DQ list (the rest of DD-369's hold-out, over UIC-36..39)</td>
+<td>Aurelius <code>details/**</code> (score boxes), <code>details/gov-quality/**</code>, quickview addon</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>7.26</td>
+<td>HTTP retry: the dead-connection resend</td>
+<td>The browser resends an idempotent call once when its connection dies rather than its answer (APC-12/13, DD-449, DV-145): the editor-drawer field race (uvicorn's 5 s keep-alive close against the dev proxy's pooled socket) becomes invisible, and proxy restarts with it</td>
+<td>– (Aurelius client never resends)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>7.27</td>
+<td>Rules editor</td>
+<td>The editor drawer's quality mode: the rule form renders from 12.5's vocabulary (a kind picker, the chosen kind's parameters only, the dimension read-only from the kind, EDT-25..27), a save validates the shape through the server's parser before it posts (EDT-28), a legacy pair rule keeps the generic form and its stored check rides along untouched (EDT-29/30), the kinds and dimensions read in human words with a threshold slider beside the number (EDT-31/32), a rule enters through the generic doors like any entity (DD-496), and the rule's page lists its fields (DET-38, DD-477/DD-491..497)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/components/editor/{gov-quality,editors-by-type}</code> (DV-148)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>7.29</td>
+<td>Person details page</td>
+<td>The tenth layout row: <code>m4i_person</code> enters the dispatch with no description box (DET-39, DD-518), the legacy's four grouped stat boxes counting the five responsibility ends (DET-40, DD-519), the merged Governance Responsibilities box seeded from those ends (DET-41, DV-154), the Governance Quality Rules box reading the type's rules by qualified-name prefix with 12.7's live verdicts joined (DET-42, DD-520, DV-155), and the three-entry navigation (DET-43)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/details/person/</code> (DV-154..156)</td>
+<td>in progress</td>
+</tr>
+<tr>
 <td>8.0</td>
 <td>Auxiliary API foundation</td>
 <td>Shared foundation for the ADR 055 data surface: <code>aurelius-atlas-otel</code> + <code>aurelius-atlas-auth</code> libs, per-service ingest clients (AUX-01..05, DD-108)</td>
@@ -7535,6 +7686,174 @@ checks a PR must pass:</p>
 <td>11.1</td>
 <td>Spike: Apache HugeGraph as the store</td>
 <td>Whether HugeGraph, with HugeGraph-AI, can replace Elasticsearch behind the three store protocols: conditional writes, unique values, runtime schema, text ranking, facets by <code>groupCount()</code>, filtered kNN, backup (HGS-01..11); measured against Elasticsearch at up to 1,000,000 entities (HGS-20..26); ends in ADR 059, Proposed</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>11.2</td>
+<td>The embedding service</td>
+<td><code>apps/aurelius-atlas-embedder</code>: OpenAI-shaped <code>/v1/embeddings</code> with <code>input_type</code>, <code>/v1/models</code>, the probes; <code>intfloat/multilingual-e5-small</code> on ONNX Runtime, fetched at build at a pinned revision and checked; the standalone stack's <code>embedder</code>, unpublished (EMB-01..11, ADR 059, DD-429..433)</td>
+<td>none</td>
+<td>done</td>
+</tr>
+<tr>
+<td>11.3</td>
+<td>Entity vectors</td>
+<td>Each entity's embedding on its document, in an entity index that keeps sources as written (an older one moves once); the text and its hash, checked at every write; the indexer that embeds new, changed and stored entities; the server's settings, client and worker; the standalone server embedding through <code>embedder</code> (VEC-01..11, DD-434..439)</td>
+<td>none</td>
+<td>done</td>
+</tr>
+<tr>
+<td>11.4</td>
+<td>Search by meaning</td>
+<td><code>POST /api/aurelius/v1/search/semantic</code> (semantic, hybrid) and <code>GET /api/aurelius/v1/entity/guid/{guid}/similar</code>, answering as quick search with its facets; a kNN clause of the entity search with its filters inside; hybrid as a weighted sum, as RRF needs a paid licence; Aurelius error codes in Atlas's shape (SBM-01..08, DD-440..443)</td>
+<td>none</td>
+<td>done</td>
+</tr>
+<tr>
+<td>11.5</td>
+<td>Search by meaning in the webapp</td>
+<td>The hero's Words, Meaning and Both switch, the session's choice; the results store's searches by meaning, their paging and their errors; the Similar entities box of every details page; <code>SearchByMeaningService</code> in the data-access library (SBW-01..08, DD-478..481)</td>
+<td>none</td>
+<td>done</td>
+</tr>
+<tr>
+<td>11.5b</td>
+<td>The search mode in the settings</td>
+<td>Words, Meaning and Both move from the hero's switch to a stored Search by setting in the settings panel; a new mode reruns the shown query; the Similar entities box leaves the details page; the drawers keep the URL's query (SBX-01..04, DD-473..474)</td>
+<td>none</td>
+<td>done</td>
+</tr>
+<tr>
+<td>12.1</td>
+<td>The data quality engine</td>
+<td><code>libs/python/aurelius-atlas-quality</code>: a rule is data — one of ten check kinds over a polars frame, with its dimension, parameters, and threshold; the row mask, score, verdict, and rejected rows of a rule; the per-dimension and overall rollup; the stored <code>m4i_data_quality</code> entity read as a rule and the run rendered as score documents (DQ-01..08, DD-450..454, DV-146)</td>
+<td>none (the legacy Flink <code>dqscore_*</code> job, not ported)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.2</td>
+<td>The batch quality scanner</td>
+<td><code>apps/aurelius-atlas-quality-scanner</code>: the job around the engine — the ACTIVE <code>m4i_data_quality</code> rules read by paged search, their datasets reached through the <code>fields</code> end, each extract read through the file reader, scores stored in place as <code>m4i_dq_score</code> entities under the job's own service identity; the <code>m4i_dq_score</code> type joins the m4i models (DQS-01..10, DD-455..461, DV-146)</td>
+<td>none (the legacy Flink <code>dqscore_*</code> job, not ported)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.3</td>
+<td>The scanner chart and schedule</td>
+<td>The Helm chart and CronJob schedule for the batch scanner, and the server audience default that accepts its token. Cited by 12.2 (DD-458, DD-459). The shared scanner-chart contract and the audience default; client registration stays the deployment's act (CHT-114..120/125, DD-508..513)</td>
+<td>none (the batch image ships for it)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>12.4</td>
+<td>Source readers (umbrella)</td>
+<td>The contract every scanner source reader obeys: the scan keeps reading through the reader seam, the operator configuration names every source, a refusal skips its dataset, a credential stays a secret, the reader cuts its own row budget, and each suite proves one real scan against a disposable instance of its source (DQS-11..16, DD-459, DV-146). The choice of database stays open; the first source lands with its own answers</td>
+<td>– (net-new)</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>12.5</td>
+<td>The rule vocabulary endpoint</td>
+<td><code>GET /api/aurelius/v1/quality/kinds</code> serves the engine's closed vocabulary (the kinds, their dimensions, parameters and reason lines) and <code>POST /api/aurelius/v1/quality/rules/validate</code> checks a stored-rule shape through the engine's parser, answering 200 with the engine's own reason (QRE-01..05, DD-475/476). The rules editor (7.27) renders its form from these answers</td>
+<td>– (the legacy editor kept its rule form's fields in the browser, DV-146)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.4a</td>
+<td>The source envelope</td>
+<td>The first step of 12.4: <code>SOURCES</code> is a list of sources, each naming its dataset (qualified name or guid), its reader kind, and its config — <code>{"dataset": {"guid": …}, "kind": "file", "config": {"path": …}}</code> — and a <code>SourceRouter</code> sends each dataset to the reader of its kind, guid first (DQS-17..20, DD-462..464). The file reader's behaviour and pairs stand unchanged; no second reader lands here</td>
+<td>– (net-new)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.6</td>
+<td>The governance quality checks</td>
+<td><code>aurelius_atlas_quality.governance</code>: a governance rule is data — one of two presence kinds (<code>ATTRIBUTE_PRESENT</code>, <code>ATTRIBUTE_NOT_EMPTY</code>) over the attributes of one catalogue record, an <code>anyOf</code> list standing in for the legacy OR bar; the verdict is boolean and carries the rule's own message, no score or threshold (DD-487..489); patch 002 adds the vocabulary attributes to <code>m4i_gov_data_quality</code> and the stored entity reads as a rule (GQ-01..08, DD-487..490)</td>
+<td>– (the legacy Flink expression evaluator, not ported; DV-146)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>12.7</td>
+<td>The governance verdicts, live</td>
+<td><code>apps/aurelius-atlas-validate-entity</code> answers real verdicts: the ACTIVE <code>m4i_gov_data_quality</code> rules read by paged search as the app's own service identity, run over the draft the editor sent, one boolean verdict per rule plus the unread ones; the 8.3 mock document retires and the webapp banner follows the new shape in the same PR; the deployed leg joins the charts (<code>SERVER_BASE_URL</code>/<code>TOKEN_URL</code>/<code>SERVER_CLIENT_SECRET</code>, the <code>&lt;release&gt;-validate-entity-client</code> Secret, the master realm's import env) (VEV-01..06, DD-498..501, CHT-113, DV-153 supersedes DV-67, ADR 061)</td>
+<td>Aurelius <code>apps/m4i-validate-entity</code> (the Flask mock, retired); the Flink governance evaluation it was never wired to</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>13.1</td>
+<td>The Kafka cluster scanner</td>
+<td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the <code>dev/kafka</code> broker-and-Registry stack (KSC-01..10, DD-465..469)</td>
+<td>Aurelius <code>apps/m4i-data-dictionary-io</code> (<code>sources/kafka/</code>)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.2</td>
+<td>The Kafka scanner chart and schedule</td>
+<td>The Helm chart, the CronJob, and the broker's machine identity decision (CHT-121/122, DD-514/515)</td>
+<td>none</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.3</td>
+<td>The relational database scanner</td>
+<td><code>apps/aurelius-atlas-db-scanner</code>: a batch CLI that reflects one live database through SQLAlchemy (no vendor tooling), registers the System/Collection-per-schema/Dataset/Field tree and one Process per foreign-key column pair in one bulk request as its own service identity (DBS-01..12, DD-502..507)</td>
+<td>— (net-new to Atlas; the port of a standalone reflection script, DV-150)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>13.4</td>
+<td>The database scanner chart and schedule</td>
+<td>The Helm chart, the CronJob, and the per-database secret wiring (CHT-123/124, DD-516/517)</td>
+<td>none</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>14.1</td>
+<td>The legacy search documents: records and rules</td>
+<td>ADR 060; the original Aurelius Atlas's three App Search engines for the sample catalogue as fixtures; the rules of their documents, over the catalogue's state, and the differences of the fixtures from it (LAS-01..13, DD-484..486)</td>
+<td>Aurelius <code>m4i-flink-tasks</code> (<code>synchronize_app_search</code>, <code>get_rules</code>), <code>m4i-atlas-post-install</code> (<code>propagate_quality</code>, <code>connect_datasets_with_entities</code>)</td>
+<td>done</td>
+</tr>
+<tr>
+<td>14.2</td>
+<td>The derived documents</td>
+<td>Each entity's own fields, breadcrumb and derived relations on its entity document, derived by an indexer; for the sample catalogue equal to the legacy <code>atlas-dev</code> but for DD-485's list (LAS-01..06, ASD-01..05, DD-498..501)</td>
+<td><code>synchronize_app_search/event_handlers/entity_created</code>, <code>connect_datasets_with_entities</code></td>
+<td>done</td>
+</tr>
+<tr>
+<td>14.3</td>
+<td>The derived documents kept up to date</td>
+<td>The documents a change affects derived again by the indexer: a changed entity's document kept stale, then the documents naming it or named by it; deleted relationships' ends; the server's background worker (LAS-08..10, ASU-01..07, DD-518..521)</td>
+<td><code>synchronize_app_search/event_handlers/{attribute_changed,entity_deleted,relationship_audit}</code></td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>14.4</td>
+<td>The App Search API: <code>/elastic</code></td>
+<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does, with the engine's fields that are the entity's or constants (ADR 060, LAS-07)</td>
+<td>Aurelius <code>libs/atlas/api/src/lib/elastic</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.5</td>
+<td>The App Search API: <code>/data_quality</code></td>
+<td>The <code>atlas-dev-quality</code> results over 12.2's <code>m4i_dq_score</code> entities, and the score roll-up on the documents (LAS-11, LAS-12)</td>
+<td><code>propagate_quality</code>; Aurelius <code>data-quality-search.service</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.6</td>
+<td>The App Search API: <code>/gov_quality</code></td>
+<td>The governance rules judged for every entity of their type, the verdicts on the entity documents, and <code>atlas-dev-gov-quality</code> (LAS-13)</td>
+<td><code>m4i-governance-data-quality</code>, <code>get_rules</code></td>
+<td>planned</td>
+</tr>
+<tr>
+<td>14.7</td>
+<td>The derived documents in the embedding</td>
+<td>The breadcrumb and derived relations join the text an entity's embedding is made of (ADR 059)</td>
 <td>none</td>
 <td>planned</td>
 </tr>

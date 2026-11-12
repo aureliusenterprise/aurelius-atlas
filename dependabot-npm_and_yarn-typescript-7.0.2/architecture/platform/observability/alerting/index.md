@@ -35,7 +35,7 @@ The chart then provisions the contact point `maintainers`, and a notification po
 In dev, with no server running, "Server silent" turns pending at its first evaluation and firing a minute later:
 
 ```
-npx nx serve aurelius-atlas-dev-observability
+npx nx up aurelius-atlas-dev-observability
 ```
 
 Open Grafana on [http://localhost:3000](<http://localhost:3000>), Alerting \> Alert rules, folder Aurelius. Start the server (`npx nx serve aurelius-atlas-server`) and the rule returns to normal within a minute.

@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -1973,6 +2002,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -3730,6 +3765,87 @@
     
   
   058. A new catalogue starts with the m4i types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  059. The catalogue searches by meaning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -6968,6 +7084,60 @@ truth about what has been ported. Status values: <em>not started</em>, <em>in pr
 <td><code>AtlasErrorCode</code>, <code>AtlasBaseException</code> (the codes each increment raises)</td>
 <td><code>aurelius_atlas_model.errors</code> (DD-023)</td>
 <td>0.5, 1.2</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius app's <code>libs/atlas/api::GovQualityApi</code> — <code>gov-quality-api{,-client}.service.ts</code>, the <code>validate_entity</code> POST and its typed cards)</td>
+<td><code>aurelius-atlas-data-access</code> (<code>src/lib/aux/validate-entity.service.ts</code>, EDT-21)</td>
+<td>7.24</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius app's <code>editor/services/entity-validate</code>, <code>editor/components/gov-quality-display</code>, and <code>details/field/data-quality-cards</code> — the trigger, the verdict lines, the rules box; its App Search reads replaced by the <code>dataQuality</code> end, DV-144)</td>
+<td><code>aurelius-atlas-webapp</code> (<code>search/editor/entity-editor.component</code>, <code>search/details/sections/section-config.ts</code>, DET-35/36, EDT-23/24)</td>
+<td>7.24</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius legacy app's <code>apps/m4i-data-dictionary-io</code> <code>sources/kafka/</code> — the cluster scanner: topic list, subject and sniffed schemas, the qualified-name rule, per-entity retry; its admin-password auth and unbounded hang replaced by a service identity and a metadata timeout, DD-465..472)</td>
+<td><code>aurelius-atlas-kafka-scanner</code> (<code>cluster.py</code>, <code>registry.py</code>, <code>fields.py</code>, <code>graph.py</code>, <code>scan.py</code>, KSC-01..10)</td>
+<td>13.1</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the engine's vocabulary served to the editor: the legacy kept its rule form's fields in the browser with no API (<code>apps/atlas/.../editor/gov-quality</code>). These endpoints serve the closed vocabulary (12.1's <code>KINDS</code>) and its parser)</td>
+<td><code>aurelius-atlas-server</code> (<code>routes/quality.py</code>, QRE-01..05, DD-475/476)</td>
+<td>12.5</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius app's <code>apps/atlas/src/app/search/components/editor/{gov-quality,editors-by-type}</code> — the hand-written per-type rule form and its dispatch. Its free-text fields are replaced by 12.5's vocabulary form and its validation, DV-148)</td>
+<td><code>aurelius-atlas-webapp</code> (<code>search/editor/quality-fields</code>, <code>search/editor/entity-editor.component</code>, <code>search/details/details.component</code>, <code>search/details/sections/section-config.ts</code>, EDT-25..32, DET-38)</td>
+<td>7.27</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius legacy app's <code>libs/m4i-data-management/.../quality/utils/run_quality_rule_expression/</code> and its <code>completeness</code>/<code>length</code> functions — the <code>eval</code>-based expression evaluator the governance corpus stored; not executed, restated as two presence kinds over a record (DD-487..489, DV-146 extended)</td>
+<td><code>aurelius-atlas-quality</code> (<code>governance.py</code>, GQ-01..07)</td>
+<td>12.6</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius legacy app's <code>apps/m4i-validate-entity</code> — the Flask mock behind the editor's validation trigger; the Flink governance evaluation it was never wired to, ported as the real verdicts instead of the mock (DV-67 superseded by DV-153, ADR 061)</td>
+<td><code>aurelius-atlas-validate-entity</code> (<code>verdicts.py</code>, <code>providers/upstreams.py</code>, <code>routes/validate.py</code>, VEV-01..06, DD-498..501, CHT-113)</td>
+<td>12.7</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (no Atlas module: <code>hook-runtime</code>'s <code>JdbcConsumer</code> and the <code>classic_jdbc_*</code> models learned a database's tables and columns only from hook messages a registered application pushed, never from a live database. The port of a standalone SQLAlchemy reflection script to the scanner shape of 13.1, with its JSON-file handoff replaced by the catalogue write, DV-150)</td>
+<td><code>aurelius-atlas-db-scanner</code> (<code>database.py</code>, <code>reflect.py</code>, <code>graph.py</code>, <code>scan.py</code>, DBS-01..12)</td>
+<td>13.3</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>— (the Aurelius app's <code>apps/atlas/src/app/search/details/person/</code> — the tenth copy-pasted details page: no description box, the four grouped stat boxes, the <code>derivedperson</code> roles box, the <code>atlas-dev-gov-quality</code> rules box; the grouped bar, the five-end seed, and the prefix-plus-verdicts rule box replace the retired-engine reads, DV-154..156)</td>
+<td><code>aurelius-atlas-webapp</code> (<code>search/details/sections/section-config.ts</code> (the tenth row, <code>statsGroups</code>, <code>govQualityBox</code>), <code>search/details/sections/gov-quality.state.ts</code>, <code>search/details/sections/gov-quality-cards.component.ts</code>, DET-39..43)</td>
+<td>7.29</td>
 <td>in progress</td>
 </tr>
 </tbody>

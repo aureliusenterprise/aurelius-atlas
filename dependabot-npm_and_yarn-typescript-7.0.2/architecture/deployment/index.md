@@ -49,6 +49,20 @@ The components and their charts:
 
 Each component chart lives next to the project it deploys (`apps/<app>/helm/`, `dev/<name>/helm/`, DD-290); the umbrella `aurelius-atlas` is the one chart without an owning project and sits at the workspace root, `helm/` (DD-292). Helpers are chart-local — the naming convention is the dedupe, no library charts.
 
+## Scanner charts install on their own
+
+The three batch scanner charts are standalone: a deployment installs each one as its own release, and the umbrella never carries them (DD-508).
+
+| Chart | Scanner | Workload |
+| --- | --- | --- |
+| `atlas-quality-scanner` | The data-quality scan over file sources | CronJob |
+| `atlas-kafka-scanner` | The Kafka broker topic scan | CronJob |
+| `atlas-db-scanner` | The relational database reflection | CronJob |
+
+A scanner chart declares the full `global.*` contract with empty defaults, so it renders alone (CHT-03). It needs three facts from the deployment: the catalogue URL (`catalogue.serverUrl`), the issuer (from `global.issuer.url` or `global.domain`), and a client credential in the Secret `<release>-scanner-clients` under the scanner's client-id key (CHT-116). The deployment registers the scanner's client in its own issuer and places that Secret itself — no shipped chart registers a scanner client or generates its credential, because the scanners read customer systems (CHT-118/119, DD-509). The shape to register: one confidential client per scanner, named by the chart's `auth.clientId` default, with a service account holding `atlas-read` and `atlas-write` on the `aurelius-atlas-server` client. The server accepts a scanner's token out of the box: its `auth.audiences` default names the scanner clients (CHT-120). The deployment supplies its own schedule: `schedule` is a required value, so the chart never scans on a clock nobody picked (CHT-115).
+
+TLS and telemetry are both supported but optional (CHT-117, CHT-125). A private CA arrives through `trust.caSecretName`: a name mounts the Secret and the job verifies the issuer, the catalogue, the Kafka broker, and an OTLP collector with it; no name keeps the image's system trust. The OTLP export is a `telemetry` block, off by default — a batch job exports a handful of spans per run. When on, it names the collector (`telemetry.endpoint`) and, by default, mints an ingest token with the job's own client credential; set `telemetry.auth.enabled: false` for a collector that asks for no credential. Either way the chart generates nothing: every credential and CA stays the deployment's (DD-511).
+
 ## The values contract
 
 The umbrella owns what no component can (CHT-03): the edge, the trust issuers, the generated secrets, and the `global.*` block every chart reads — namespace, domain, image registry/namespace/tag/pull secrets, storage class, issuer URL, and the per-component enable toggles. A component chart declares the same `global.*` shape in its own `values.yaml` (with empty defaults) so it renders standalone; through the umbrella, Helm's `global` merge passes the umbrella's values down, and the umbrella is the source of truth.

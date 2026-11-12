@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -1973,6 +2002,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -3730,6 +3765,87 @@
     
   
   058. A new catalogue starts with the m4i types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  059. The catalogue searches by meaning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -6284,6 +6400,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#scanner-charts-install-on-their-own" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Scanner charts install on their own
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#the-values-contract" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6579,6 +6706,59 @@ edge, on one OIDC issuer:</p>
 is the one chart without an owning project and sits at the workspace root,
 <code>helm/</code> (DD-292). Helpers are chart-local — the naming convention is the
 dedupe, no library charts.</p>
+<h2 id="scanner-charts-install-on-their-own">Scanner charts install on their own<a class="headerlink" href="#scanner-charts-install-on-their-own" title="Permanent link">&para;</a></h2>
+<p>The three batch scanner charts are standalone: a deployment installs each one
+as its own release, and the umbrella never carries them (DD-508).</p>
+<table>
+<thead>
+<tr>
+<th>Chart</th>
+<th>Scanner</th>
+<th>Workload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>atlas-quality-scanner</code></td>
+<td>The data-quality scan over file sources</td>
+<td>CronJob</td>
+</tr>
+<tr>
+<td><code>atlas-kafka-scanner</code></td>
+<td>The Kafka broker topic scan</td>
+<td>CronJob</td>
+</tr>
+<tr>
+<td><code>atlas-db-scanner</code></td>
+<td>The relational database reflection</td>
+<td>CronJob</td>
+</tr>
+</tbody>
+</table>
+<p>A scanner chart declares the full <code>global.*</code> contract with empty defaults, so
+it renders alone (CHT-03). It needs three facts from the deployment: the
+catalogue URL (<code>catalogue.serverUrl</code>), the issuer (from <code>global.issuer.url</code> or
+<code>global.domain</code>), and a client credential in the Secret
+<code>&lt;release&gt;-scanner-clients</code> under the scanner's client-id key (CHT-116). The
+deployment registers the scanner's client in its own issuer and places that
+Secret itself — no shipped chart registers a scanner client or generates its
+credential, because the scanners read customer systems (CHT-118/119, DD-509).
+The shape to register: one confidential client per scanner, named by the
+chart's <code>auth.clientId</code> default, with a service account holding <code>atlas-read</code>
+and <code>atlas-write</code> on the <code>aurelius-atlas-server</code> client. The server accepts a
+scanner's token out of the box: its <code>auth.audiences</code> default names the scanner
+clients (CHT-120). The deployment supplies its own schedule: <code>schedule</code> is a
+required value, so the chart never scans on a clock nobody picked (CHT-115).</p>
+<p>TLS and telemetry are both supported but optional (CHT-117, CHT-125). A
+private CA arrives through <code>trust.caSecretName</code>: a name mounts the Secret and
+the job verifies the issuer, the catalogue, the Kafka broker, and an OTLP
+collector with it; no name keeps the image's system trust. The OTLP export is
+a <code>telemetry</code> block, off by default — a batch job exports a handful of spans
+per run. When on, it names the collector (<code>telemetry.endpoint</code>) and, by
+default, mints an ingest token with the job's own client credential; set
+<code>telemetry.auth.enabled: false</code> for a collector that asks for no credential.
+Either way the chart generates nothing: every credential and CA stays the
+deployment's (DD-511).</p>
 <h2 id="the-values-contract">The values contract<a class="headerlink" href="#the-values-contract" title="Permanent link">&para;</a></h2>
 <p>The umbrella owns what no component can (CHT-03): the edge, the trust
 issuers, the generated secrets, and the <code>global.*</code> block every chart reads —

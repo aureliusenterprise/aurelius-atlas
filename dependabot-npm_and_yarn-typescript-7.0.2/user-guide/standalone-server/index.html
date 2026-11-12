@@ -1441,6 +1441,8 @@
       
         
       
+        
+      
     
     
     
@@ -1698,6 +1700,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -2066,6 +2095,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -3820,6 +3855,87 @@
     
   
   058. A new catalogue starts with the m4i types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  059. The catalogue searches by meaning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -6542,8 +6658,10 @@ Keycloak is ready, about a minute after the start. Sign in to either as one of t
 serves both, as they share the realm. Keycloak's admin console is <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a>, as
 <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>, in the realm <code>master</code>; its session doesn't sign you in to the dashboards. The
 certificate is the dev CA's, so the browser asks once, for <code>localhost:9000</code>.</p>
-<p>The images are <code>aurelius-atlas-server:local</code> and <code>aurelius-atlas-webapp:local</code>; <code>npx nx docker-build
-aurelius-atlas-server</code> and <code>npx nx docker-build aurelius-atlas-webapp</code> build them from the checkout.</p>
+<p>The images are <code>aurelius-atlas-server:local</code>, <code>aurelius-atlas-webapp:local</code> and
+<code>aurelius-atlas-embedder:local</code>; <code>npx nx docker-build</code> of <code>aurelius-atlas-server</code>, <code>aurelius-atlas-webapp</code> and
+<code>aurelius-atlas-embedder</code> builds them from the checkout. The embedder needs its own certificate too: <code>npx nx
+certgen aurelius-atlas-embedder</code>.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
 <p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
 is ready, the <code>sample-import</code> service signs in as <code>atlas</code> and posts it to <code>admin/import</code>, through
@@ -6603,6 +6721,11 @@ later.</p>
   (<code>webapp/resolve-nginx.sh</code>, as the chart's init container does), and <code>webapp/config.json</code> points the webapp
   at the demo realm. The stack has no telemetry collector, so <code>/otel/</code> takes the webapp's pushes and drops
   them.</li>
+<li><code>embedder</code>: the embedding model of search by meaning (ADR 059), <code>https://embedder:21004</code> on the stack's network
+  with its own certificate. It checks no tokens, so it has no published port (DD-432), and nothing waits for it.
+  The server embeds every entity through it in the background (11.3): new and changed ones within its poll
+  interval, and those stored before at the first start. That start first moves the entity index to one that keeps
+  vectors, <code>aurelius-atlas-entities-000002</code>, once (DD-439). See <code>apps/aurelius-atlas-embedder/README.md</code>.</li>
 <li>The server and the sample import run in the proxy's network (<code>network_mode: service:proxy</code>). nginx reaches
   the server on <code>127.0.0.1:21000</code> and the webapp as <code>aurelius-atlas-webapp:8080</code>, and the server reaches
   Keycloak at <code>https://localhost:9000/auth</code>, the

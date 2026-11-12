@@ -1114,6 +1114,9 @@ Classes:
 - **`ElasticsearchEntityDocuments`** –
 
   `EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
+- **`EmbeddingDimensionsError`** –
+
+  The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438).
 - **`EntityDocuments`** –
 
   Where `EntityStore` keeps entities, reservations and its journal.
@@ -1177,10 +1180,14 @@ Attributes:
 - **`JOURNAL_PAGE`** –
 
   How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
+- **`KEEP_SOURCE_VECTORS`** –
+
+  The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and
 - **`KEYWORD_LIMIT`** –
 
   `ignore_above` of keyword search fields: the longest value a keyword holds, in characters (DD-092).
 - **`LINKED_MODELS`** (`dict[LinkedKind, type[StoredRelationship | StoredClassification | StoredTask]]`) –
+- **`LOGGER`** –
 - **`REFERRING_PAGE`** –
 
   How many referring entities one search page holds (DD-057).
@@ -1189,7 +1196,7 @@ Attributes:
   The alias of the relationship index (DD-061).
 - **`RELATIONSHIP_MAPPING`** (`dict[str, Any]`) –
 
-  Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
+  Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute
 - **`TASK_MAPPING`** (`dict[str, Any]`) –
 
   Tasks by status and creation time; parameters stored, not indexed (DD-079).
@@ -1200,8 +1207,6 @@ Attributes:
 
   The alias of the unique value reservations (DD-045).
 - **`WRITE_REFRESH`** –
-
-  Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and
 
 ### CLASSIFICATION\_INDEX
 
@@ -1290,6 +1295,7 @@ ENTITY_MAPPING: dict[str, Any] = {
         "attributes": {"type": "object", "dynamic": False},
         "customAttributes": {"type": "object", "dynamic": False},
         "search": {"type": "object", "dynamic": True, "subobjects": False},
+        APP_SEARCH_FIELD: app_search_mapping(),
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
@@ -1297,7 +1303,7 @@ ENTITY_MAPPING: dict[str, Any] = {
 }
 ```
 
-System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088).
+System properties and referenced GUIDs mapped for exact lookup; attribute values stored, not indexed, and searched in the typed fields of `search`, which the dynamic templates map by their kind (DD-043, DD-057, DD-088); the App Search document's fields, by name (ASD-02).
 
 ### INDEX\_PREFIX
 
@@ -1323,6 +1329,14 @@ JOURNAL_PAGE = 1000
 
 How many journal entries recovery reads at once; a live journal holds one entry per write in flight.
 
+### KEEP\_SOURCE\_VECTORS
+
+```
+KEEP_SOURCE_VECTORS = {'index.mapping.exclude_source_vectors': False}
+```
+
+The entity index's setting with vectors: each document's source stays as written, vector and digits alike, and every read returns it. Elasticsearch 9.5's default rewrites the source of every document of an index that maps a vector (VEC-03, VEC-04, DD-434). Static: only an index's creation sets it.
+
 ### KEYWORD\_LIMIT
 
 ```
@@ -1339,6 +1353,12 @@ LINKED_MODELS: dict[LinkedKind, type[StoredRelationship | StoredClassification |
     LinkedKind.CLASSIFICATION: StoredClassification,
     LinkedKind.TASK: StoredTask,
 }
+```
+
+### LOGGER
+
+```
+LOGGER = logging.getLogger(__name__)
 ```
 
 ### REFERRING\_PAGE
@@ -1370,12 +1390,13 @@ RELATIONSHIP_MAPPING: dict[str, Any] = {
         "end2Guid": _KEYWORD,
         "state": _KEYWORD,
         "writeId": _KEYWORD,
+        "appSearchState": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
     },
 }
 ```
 
-Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061).
+Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute values stored, not indexed (DD-061, DD-520).
 
 ### TASK\_MAPPING
 
@@ -1417,8 +1438,6 @@ The alias of the unique value reservations (DD-045).
 WRITE_REFRESH = 'true'
 ```
 
-Every write's `refresh` parameter (ENS-11, IDX-01, DD-322): the write refreshes the shards it wrote and returns after its documents are visible, so the next read sees them — no read path pays a refresh of its own, and no write waits for the index's next scheduled refresh.
-
 ### Linked
 
 ```
@@ -1430,7 +1449,9 @@ A document an entity lists: a relationship or a classification instance.
 ### ElasticsearchEntityDocuments
 
 ```
-ElasticsearchEntityDocuments(client: AsyncElasticsearch, prefix: str = INDEX_PREFIX)
+ElasticsearchEntityDocuments(
+    client: AsyncElasticsearch, prefix: str = INDEX_PREFIX, *, embedding_dimensions: int | None = None
+)
 ```
 
 `EntityDocuments` in three Elasticsearch indices behind aliases (DD-043, DD-045, DD-046).
@@ -1470,6 +1491,9 @@ Methods:
 - **`list_tasks`** –
 
   Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
+- **`naming`** –
+
+  Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11).
 - **`of_types`** –
 
   Page through the entities whose `typeName` is one of these (EXP-03): writes refresh (ENS-11).
@@ -1506,6 +1530,15 @@ Methods:
 - **`type_counts`** –
 
   A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
+- **`unseen_relationships`** –
+
+  The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04).
+- **`without_app_search`** –
+
+  The active entities of m4i types with a document that have none, and those with a stale one, by GUID
+- **`without_embedding`** –
+
+  The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1614,6 +1647,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 
 Page through the task index by creation time (TSK-04, TSK-06): writes refresh (ENS-11).
 
+#### naming
+
+```
+naming(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11).
+
 #### of\_types
 
 ```
@@ -1630,7 +1671,7 @@ prepare() -> None
 
 Create each index behind its alias unless it exists (ENS-01).
 
-An existing entity index gets the fields it lacks mapped, as `references` (EDL-10); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02).
+An existing entity or relationship index gets the fields it lacks mapped, as `references` (EDL-10) and `appSearchState` (DD-520); mapped ones stay. Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity index keeps each document's source as written beside its vector: a new one is created so, and an existing one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
 
 #### put\_journal
 
@@ -1696,7 +1737,7 @@ search(query: SearchQuery) -> SearchHits
 
 Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 
-Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093).
+Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093). A vector is a `knn` search with the same filters inside it, so they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).
 
 #### terms
 
@@ -1714,6 +1755,30 @@ type_counts() -> list[TypeCount]
 
 A composite aggregation of the entities by type, state and shell flag (MET-02): writes refresh (ENS-11).
 
+#### unseen\_relationships
+
+```
+unseen_relationships(limit: int) -> list[VersionedRelationship]
+```
+
+The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04).
+
+#### without\_app\_search
+
+```
+without_app_search(limit: int) -> list[VersionedEntity]
+```
+
+The active entities of m4i types with a document that have none, and those with a stale one, by GUID (LAS-01, ASD-04, ASU-02, DD-500).
+
+#### without\_embedding
+
+```
+without_embedding(model: str, limit: int) -> list[VersionedEntity]
+```
+
+The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
+
 #### write
 
 ```
@@ -1727,6 +1792,33 @@ write(
 One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
 
 DD-047, DD-056, DD-062, DD-071.
+
+### EmbeddingDimensionsError
+
+```
+EmbeddingDimensionsError(mapped: int, configured: int)
+```
+
+Bases: `RuntimeError`
+
+The entity index maps vectors of other dimensions than the configured ones (VEC-03, DD-438).
+
+Attributes:
+
+- **`configured`** –
+- **`mapped`** –
+
+#### configured
+
+```
+configured = configured
+```
+
+#### mapped
+
+```
+mapped = mapped
+```
 
 ### EntityDocuments
 
@@ -1769,6 +1861,9 @@ Methods:
 - **`list_tasks`** –
 
   Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+- **`naming`** –
+
+  The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03).
 - **`of_types`** –
 
   The entities of exactly these types, in any state, as of now (EXP-03).
@@ -1805,6 +1900,15 @@ Methods:
 - **`type_counts`** –
 
   How many entities there are of each type, state and shell flag, as of now (MET-02).
+- **`unseen_relationships`** –
+
+  Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+- **`without_app_search`** –
+
+  Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
+- **`without_embedding`** –
+
+  Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -1896,6 +2000,14 @@ list_tasks(*, open_only: bool) -> list[tuple[StoredTask, DocumentVersion]]
 ```
 
 Every task, or those `PENDING` or `IN_PROGRESS`, oldest first, as of now (TSK-04, TSK-06).
+
+#### naming
+
+```
+naming(guids: Sequence[str]) -> list[VersionedEntity]
+```
+
+The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03).
 
 #### of\_types
 
@@ -1992,6 +2104,30 @@ type_counts() -> list[TypeCount]
 ```
 
 How many entities there are of each type, state and shell flag, as of now (MET-02).
+
+#### unseen\_relationships
+
+```
+unseen_relationships(limit: int) -> list[VersionedRelationship]
+```
+
+Up to `limit` relationships deleted or restored since their ends' documents saw them (ASU-04).
+
+#### without\_app\_search
+
+```
+without_app_search(limit: int) -> list[VersionedEntity]
+```
+
+Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04, ASU-02).
+
+#### without\_embedding
+
+```
+without_embedding(model: str, limit: int) -> list[VersionedEntity]
+```
+
+Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
 
 #### write
 
@@ -2358,6 +2494,12 @@ What `EntityGraphMapper` and `GraphHelper` keep on an entity's vertex: the GUID,
 
 Classes:
 
+- **`StoredAppSearch`** –
+
+  An entity's App Search document: what `atlas-dev` held of it, under the engine's field names (DD-498).
+- **`StoredEmbedding`** –
+
+  An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434).
 - **`StoredEntity`** –
 
   One document of the entity index; `write_id` names the write that last wrote it (DD-046).
@@ -2367,6 +2509,250 @@ Functions:
 - **`stored_attributes`** –
 
   Attribute values keyed by qualified name; names the type does not have are left out (DD-043).
+
+### StoredAppSearch
+
+Bases: `AtlasModel`
+
+An entity's App Search document: what `atlas-dev` held of it, under the engine's field names (DD-498).
+
+`source_hash` is the hash of the entity's own fields the document was derived with (DD-499); `stale` that a write changed them since, until the indexer replaces the document (ASU-01, DD-518). Each derived relation is a pair of lists, the other ends' names and, at the same positions, their GUIDs (LAS-05).
+
+Attributes:
+
+- **`breadcrumbguid`** (`list[str]`) –
+- **`breadcrumbname`** (`list[str | None]`) –
+- **`breadcrumbtype`** (`list[str]`) –
+- **`definition`** (`str`) –
+- **`derivedcollection`** (`list[str | None]`) –
+- **`derivedcollectionguid`** (`list[str]`) –
+- **`deriveddataattribute`** (`list[str | None]`) –
+- **`deriveddataattributeguid`** (`list[str]`) –
+- **`deriveddatadomain`** (`list[str | None]`) –
+- **`deriveddatadomainguid`** (`list[str]`) –
+- **`deriveddataentity`** (`list[str | None]`) –
+- **`deriveddataentityguid`** (`list[str]`) –
+- **`deriveddataset`** (`list[str | None]`) –
+- **`deriveddatasetguid`** (`list[str]`) –
+- **`derivedfield`** (`list[str | None]`) –
+- **`derivedfieldguid`** (`list[str]`) –
+- **`derivedperson`** (`list[str | None]`) –
+- **`derivedpersonguid`** (`list[str]`) –
+- **`derivedprocess`** (`list[str | None]`) –
+- **`derivedprocessguid`** (`list[str]`) –
+- **`derivedsystem`** (`list[str | None]`) –
+- **`derivedsystemguid`** (`list[str]`) –
+- **`email`** (`str | None`) –
+- **`name`** (`str | None`) –
+- **`parentguid`** (`str | None`) –
+- **`referenceablequalifiedname`** (`str`) –
+- **`source_hash`** (`str`) –
+- **`sourcetype`** (`str`) –
+- **`stale`** (`bool`) –
+
+#### breadcrumbguid
+
+```
+breadcrumbguid: list[str] = Field(default_factory=list)
+```
+
+#### breadcrumbname
+
+```
+breadcrumbname: list[str | None] = Field(default_factory=list)
+```
+
+#### breadcrumbtype
+
+```
+breadcrumbtype: list[str] = Field(default_factory=list)
+```
+
+#### definition
+
+```
+definition: str = ''
+```
+
+#### derivedcollection
+
+```
+derivedcollection: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedcollectionguid
+
+```
+derivedcollectionguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddataattribute
+
+```
+deriveddataattribute: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddataattributeguid
+
+```
+deriveddataattributeguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddatadomain
+
+```
+deriveddatadomain: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddatadomainguid
+
+```
+deriveddatadomainguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddataentity
+
+```
+deriveddataentity: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddataentityguid
+
+```
+deriveddataentityguid: list[str] = Field(default_factory=list)
+```
+
+#### deriveddataset
+
+```
+deriveddataset: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddatasetguid
+
+```
+deriveddatasetguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedfield
+
+```
+derivedfield: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedfieldguid
+
+```
+derivedfieldguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedperson
+
+```
+derivedperson: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedpersonguid
+
+```
+derivedpersonguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedprocess
+
+```
+derivedprocess: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedprocessguid
+
+```
+derivedprocessguid: list[str] = Field(default_factory=list)
+```
+
+#### derivedsystem
+
+```
+derivedsystem: list[str | None] = Field(default_factory=list)
+```
+
+#### derivedsystemguid
+
+```
+derivedsystemguid: list[str] = Field(default_factory=list)
+```
+
+#### email
+
+```
+email: str | None = None
+```
+
+#### name
+
+```
+name: str | None = None
+```
+
+#### parentguid
+
+```
+parentguid: str | None = None
+```
+
+#### referenceablequalifiedname
+
+```
+referenceablequalifiedname: str
+```
+
+#### source\_hash
+
+```
+source_hash: str
+```
+
+#### sourcetype
+
+```
+sourcetype: str = ''
+```
+
+#### stale
+
+```
+stale: bool = False
+```
+
+### StoredEmbedding
+
+Bases: `AtlasModel`
+
+An entity's embedding: its vector, the model that computed it, and the hash of its text (VEC-02, DD-434).
+
+Attributes:
+
+- **`model`** (`str`) –
+- **`source_hash`** (`str`) –
+- **`vector`** (`list[float]`) –
+
+#### model
+
+```
+model: str
+```
+
+#### source\_hash
+
+```
+source_hash: str
+```
+
+#### vector
+
+```
+vector: list[float]
+```
 
 ### StoredEntity
 
@@ -2400,11 +2786,17 @@ Methods:
 
 Attributes:
 
+- **`app_search`** (`StoredAppSearch | None`) –
+
+  The entity's App Search document, marked stale once its own fields change (ASD-03, ASU-01, DD-518).
 - **`attributes`** (`dict[str, Any]`) –
 - **`classification_guids`** (`list[str] | None`) –
 - **`create_time`** (`int`) –
 - **`created_by`** (`str | None`) –
 - **`custom_attributes`** (`dict[str, str] | None`) –
+- **`embedding`** (`StoredEmbedding | None`) –
+
+  The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435).
 - **`guid`** (`str`) –
 - **`home_id`** (`str | None`) –
 - **`is_incomplete`** (`bool`) –
@@ -2424,6 +2816,14 @@ Attributes:
 - **`updated_by`** (`str | None`) –
 - **`version`** (`int`) –
 - **`write_id`** (`str | None`) –
+
+#### app\_search
+
+```
+app_search: StoredAppSearch | None = None
+```
+
+The entity's App Search document, marked stale once its own fields change (ASD-03, ASU-01, DD-518).
 
 #### attributes
 
@@ -2454,6 +2854,14 @@ created_by: str | None = None
 ```
 custom_attributes: dict[str, str] | None = None
 ```
+
+#### embedding
+
+```
+embedding: StoredEmbedding | None = None
+```
+
+The embedding of the entity's text, kept only while that text is unchanged (VEC-05, DD-435).
 
 #### guid
 
@@ -3357,8 +3765,17 @@ Classes:
 
   Another process wrote the document since this one read it (TDS-11).
 
+Functions:
+
+- **`ensure_index`** –
+
+  Create `index` unless it exists; whether this call made it (DD-508).
+
 Attributes:
 
+- **`ALREADY_EXISTS`** –
+
+  What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade
 - **`INDEX_SETTINGS`** (`dict[str, Any]`) –
 
   The settings of every index the server keeps (IDX-02, DD-323): a replica when the cluster has a node to hold
@@ -3368,6 +3785,14 @@ Attributes:
 - **`TYPEDEF_INDEX`** –
 
   The alias of the index that holds the type definitions.
+
+### ALREADY\_EXISTS
+
+```
+ALREADY_EXISTS = 'resource_already_exists_exception'
+```
+
+What Elasticsearch calls a create of an index that exists, the answer two servers booting on one store trade when both make the same index (DD-508).
 
 ### INDEX\_SETTINGS
 
@@ -3449,7 +3874,7 @@ prepare() -> None
 
 Create the index behind the alias unless it exists; the document itself is not searched.
 
-An existing index gets the settings of a new one, as its replicas (IDX-02).
+An existing index gets the settings of a new one, as its replicas (IDX-02). A create lost to a server booting on the same store takes that path too (DD-508).
 
 #### read
 
@@ -3595,6 +4020,23 @@ Raises:
 Bases: `Exception`
 
 Another process wrote the document since this one read it (TDS-11).
+
+### ensure\_index
+
+```
+ensure_index(
+    client: AsyncElasticsearch,
+    *,
+    index: str,
+    aliases: dict[str, Any] | None = None,
+    mappings: dict[str, Any] | None = None,
+    settings: dict[str, Any] | None = None,
+) -> bool
+```
+
+Create `index` unless it exists; whether this call made it (DD-508).
+
+Two servers that share a store make the same indices as they start, from the same definitions. A create that loses to the other server's identical one answers `resource_already_exists_exception`, which is success for both: the index stands, made whole by whoever got there first. Any other answer raises.
 
 ## aurelius\_atlas\_core.stored\_form
 

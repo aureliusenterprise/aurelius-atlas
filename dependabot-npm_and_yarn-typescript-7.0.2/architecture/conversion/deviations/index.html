@@ -1343,6 +1343,8 @@
       
         
       
+        
+      
     
     
     
@@ -1600,6 +1602,33 @@
     
   
   aurelius-atlas-parity
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../api-reference/libs/python/aurelius-atlas-quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  aurelius-atlas-quality
 
     
   </span>
@@ -1973,6 +2002,12 @@
       
         
           
+        
+      
+        
+      
+        
+      
         
       
         
@@ -3730,6 +3765,87 @@
     
   
   058. A new catalogue starts with the m4i types
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  059. The catalogue searches by meaning
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  060. The App Search API returns
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/061-the-governance-banner-answers-live-verdicts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  061. The governance banner answers live verdicts
 
     
   </span>
@@ -6779,8 +6895,8 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>DV-67</td>
 <td>Auxiliary API</td>
 <td>No entity-validation endpoint (the legacy Aurelius app calls a validation service that is itself a mock: it accepts any entity)</td>
-<td><code>aurelius-atlas-validate-entity</code> ships the legacy mock contract verbatim, with the workspace's auth and observability</td>
-<td>The legacy backend is a mock (ADR 055); the browser contract is kept, real validation is a future server rule</td>
+<td><em>Superseded by DV-153 (12.7):</em> <code>aurelius-atlas-validate-entity</code> shipped the legacy mock contract verbatim, with the workspace's auth and observability</td>
+<td>The legacy backend is a mock (ADR 055); the browser contract is kept, real validation is a future server rule. ADR 061 retires the clause: the mock answers no more</td>
 <td>8.3</td>
 </tr>
 <tr>
@@ -7358,6 +7474,110 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The sidebar's facet counts narrow with the type selection (QSR-03) and only the <code>__typeName</code> facet is a checkbox; <code>__state</code>, <code>Asset.owner</code>, and <code>ServiceType</code> render read-only, with seen type values kept visible at their last count (SDX-04..07, DD-426)</td>
 <td>Atlas quick search counts the entities its query matches, and the non-type facets have no quick-search parameter, so a click there could send nothing (DD-426); the seen set keeps the legacy "values stay listed" feel within the shipped contract</td>
 <td>7.4b</td>
+</tr>
+<tr>
+<td>DV-144</td>
+<td>Webapp</td>
+<td>The validate-entity API reaches the browser at the underscore path <code>validate_entity</code>, rewritten to the legacy Flask app by a deployment proxy (<code>:7200</code>)</td>
+<td>The webapp's nginx serves it same-origin at <code>/validate-entity/</code>, beside <code>/api/</code>, <code>/otel/</code>, and <code>/lineage-model/</code>, TLS-verified like the API upstream (EDT-22, DD-445)</td>
+<td>The kebab style is what the webapp's own locations use; the underscore is the legacy proxy's accident, not a contract (the DV-142 sibling)</td>
+<td>7.24</td>
+</tr>
+<tr>
+<td>DV-145</td>
+<td>Webapp</td>
+<td>The Atlas 2.4.0 browser client never resends a failed call: a lost connection surfaces as a failed request</td>
+<td>The webapp resends an idempotent call (GET/HEAD/OPTIONS/PUT/DELETE) once when the failure means a dead connection (status 0, 502/503/504); POST never resends (APC-12, DD-449)</td>
+<td>A pooled keep-alive socket closed by the server mid-write (uvicorn's 5 s default against the dev proxy's pool) reads as a status-0 error on a call that was never executed; one quiet resend turns it into a success, and POST is where a resend cannot be proven safe</td>
+<td>7.26</td>
+</tr>
+<tr>
+<td>DV-146</td>
+<td>Data quality</td>
+<td>A legacy quality rule carries its check as a <code>dataqualitytype</code>/<code>dataqualityoperator</code> pair, and the Flink rule type stores its check as a Python expression the Flink job evaluates</td>
+<td>A rule is data from a closed vocabulary: one of ten check kinds with named parameters, parsed and validated before it runs; the four corpus pairs read through a map, and a pair outside it — the expression case — raises for the scanner to record as ERROR (DQ-01, DQ-02, DQ-07, DD-451, DD-454)</td>
+<td>Nothing in the store is ever executed: an evaluated expression string is code with the scanner's privileges, invisible to review and testing; the ten kinds cover every rule the sample corpus and the 7.24 rules box carry</td>
+<td>12.1</td>
+</tr>
+<tr>
+<td>DV-147</td>
+<td>Kafka scanning</td>
+<td>The legacy cluster scanner chose its source with one <code>SOURCE</code> variable, authenticated to the broker and the catalogue with an admin's username and password, listed every topic it found, spoke only TLS-plus-OAuth or nothing, and a broker it could not reach left it hanging; it retried each entity write singly</td>
+<td>Aurelius runs its own app (<code>aurelius-atlas-kafka-scanner</code>), signs as its own service identity through the catalogue server (KSC-09), filters topics by pattern (KSC-02), speaks the auth ladder (PLAINTEXT, SSL with a CA, SASL with PLAIN/SCRAM/OAUTHBEARER, KSC-10, DD-471 — the OAuth broker token rides the same mint the catalogue legs use), fails the run naming the bootstrap list when metadata does not answer (KSC-01), and writes once per scan (KSC-07)</td>
+<td>The legacy friction was the reason the job went unused; the capability was worth keeping and the friction was not (spec 13.1's Scope)</td>
+<td>13.1</td>
+</tr>
+<tr>
+<td>DV-148</td>
+<td>Webapp</td>
+<td>The legacy rule editor is a hand-written form per quality type whose fields store free text (<code>ruleType</code>, a typed dimension, an <code>expression</code>)</td>
+<td>Aurelius Atlas renders the rule form from the engine's vocabulary served by the server (DD-475): a kind picker, the chosen kind's parameters only, the dimension read-only from the kind, and no expression field (DV-146). The legacy's dictionary keys for the shared fields (<code>search.components.editor.govQuality.*</code>) carry over where a field survives</td>
+<td>A stored rule must parse in the engine (12.1) and free text cannot promise that; the closed vocabulary is the rule's shape, so the editor shows the vocabulary as it is</td>
+<td>7.27</td>
+</tr>
+<tr>
+<td>DV-149</td>
+<td>App Search</td>
+<td>The legacy <code>atlas-dev</code> documents gave every <code>m4i_generic_process</code> its GUID as qualified name, left 86 business entities without the definition they have, and named one governance rule by an older qualified name, its title and a definition it has not</td>
+<td>Each document carries the entity's current <code>name</code>, <code>qualifiedName</code> and <code>definition</code>, falling back as LAS-02 states only where the entity has none</td>
+<td>The legacy values are a fallback for a model without a process qualified name and events lost or applied out of order (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-150</td>
+<td>DB scanning</td>
+<td>A relational database's tables and columns reach the catalogue only through hook messages a registered application pushes (<code>classic_jdbc_*</code>, <code>dataset_db</code>); no job ever read a live database</td>
+<td><code>aurelius-atlas-db-scanner</code> reflects the live database through SQLAlchemy and registers the m4i tree (the System, a Collection per schema, a Dataset per table, a Field per column) plus one Process per foreign-key column pair, in one bulk write as its own service identity (DBS-01..12). The starting script's JSON-to-documents-folder handoff is not delivered: no file-based reader pipeline exists here</td>
+<td>A hook install is why the legacy database registration went unused, and reflection names no vendor (DBS-01); the file handoff belongs to another product's pipeline</td>
+<td>13.3</td>
+</tr>
+<tr>
+<td>DV-151</td>
+<td>App Search</td>
+<td>Two legacy datasets with two parent datasets sit under the second in their breadcrumbs</td>
+<td>A breadcrumb follows the first active parent in the type's parents' order (LAS-04)</td>
+<td>The legacy took the first element of a set, whichever arrived first (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-152</td>
+<td>App Search</td>
+<td>Five legacy datasets lack 18 relations (to fields and processes) that the documents at their other ends list</td>
+<td>Every active relationship between two mapped entities is listed at both its ends (LAS-05)</td>
+<td>The legacy lost the events that would have listed them (DD-485)</td>
+<td>14.2</td>
+</tr>
+<tr>
+<td>DV-153</td>
+<td>Auxiliary API</td>
+<td>The legacy entity-validation service is a mock: it ignores the entity and answers four canned cards, each aspect's verdict a string flag (DV-67, superseded here)</td>
+<td><code>aurelius-atlas-validate-entity</code> reads the ACTIVE <code>m4i_gov_data_quality</code> rules from the catalogue as its own service identity and answers one boolean verdict per rule over the draft's attributes — <code>{ruleGuid, ruleName, attribute, dimension, compliant, message}</code> with the rule's own sentence — plus <code>unreadRules</code> for the rules the vocabulary cannot read (VEV-01..06, ADR 061, DV-146)</td>
+<td>The engine exists now (12.1/12.6); the mock was the only thing between it and the editor. The card shape was an accident of the legacy search index, not a contract (ADR 061); the legacy <code>compliantMessage</code>/<code>nonCompliantMessage</code> sentences survive as the verdict lines</td>
+<td>12.7</td>
+</tr>
+<tr>
+<td>DV-154</td>
+<td>Webapp</td>
+<td>The legacy person page's Governance Responsibilities box queries the <code>atlas-dev</code> App Search engine with the filter <code>derivedperson: [name]</code> and lists what that index returns</td>
+<td>The box seeds from the opened person's own five responsibility ends — <code>domainLead</code>, <code>businessOwnerEntity</code>, <code>businessOwnerAttribute</code>, <code>stewardEntity</code>, <code>stewardAttribute</code> — merged and deduped by the DET-17 seed rule (DET-41, DD-519). <code>ProcessOwner</code> seeds nothing: the legacy box never lists a person's processes</td>
+<td><code>atlas-dev</code> is retired (ADR 054/060) and its name-keyed index has no twin; the ends are the same facts the store already holds, they need no extra read, and a rename cannot orphan the box</td>
+<td>7.29</td>
+</tr>
+<tr>
+<td>DV-155</td>
+<td>Webapp</td>
+<td>The legacy Governance Quality Rules box reads the <code>atlas-dev-gov-quality</code> App Search engine, one document per entity and rule, with the filter <code>entity_guid: [entityId]</code></td>
+<td>The box reads the ACTIVE <code>m4i_gov_data_quality</code> rules whose <code>qualifiedName</code> starts <code>&lt;typeName&gt;--</code> from the catalogue (basic search, the LAS-13 prefix) and joins the live verdicts of 12.7's <code>/validate-entity/</code> answer on <code>ruleGuid</code> (DET-42, DD-520)</td>
+<td>That engine has no twin (ADR 060) and its per-document verdicts were a stale snapshot (14.1); 12.7's verdicts are computed over the opened record, which is what the box showed</td>
+<td>7.29</td>
+</tr>
+<tr>
+<td>DV-156</td>
+<td>Webapp</td>
+<td>A legacy person stats heading both scrolls to its box and rewrites the Responsibilities box's App Search filters (<code>filterResponsibilitiesByType</code>, keyed by <code>derived&lt;role&gt;guid</code> and <code>typename</code>)</td>
+<td>A heading routes its box's fragment and nothing else — scroll only (DET-40, DET-25, DD-522)</td>
+<td>That facet belongs to the retired engine (ADR 054/060); the merged box lists all five ends at once, so a filter would hide what the box exists to show</td>
+<td>7.29</td>
 </tr>
 </tbody>
 </table>

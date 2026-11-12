@@ -55,6 +55,9 @@
         <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/api-reference/libs/python/aurelius-atlas-parity/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/api-reference/libs/python/aurelius-atlas-quality/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/api-reference/libs/python/aurelius-atlas-server-client/</loc>
       </url>
       <url>
@@ -254,6 +257,15 @@
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/architecture/adr/059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/architecture/adr/061-the-governance-banner-answers-live-verdicts/</loc>
       </url>
       <url>
         <loc>https://aureliusenterprise.github.io/dependabot-npm_and_yarn-typescript-7.0.2/architecture/adr/template/</loc>
