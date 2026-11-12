@@ -1,5 +1,5 @@
-"""The App Search worker in the server: its rounds, a failed round, its settings, and the wiring (ASU-06, LAS-10),
-on the fake store.
+"""The App Search worker in the server: its rounds, the quality round after the documents', a failed round, its
+settings, and the wiring (ASU-06, LAS-10, ASQ-07), on the fake store.
 """  # noqa: D205 - one sentence
 
 import asyncio
@@ -17,15 +17,18 @@ W = "aurelius_atlas_server.app_search.AppSearchWorker"
 
 
 class Indexer:
-    """An indexer whose rounds answer ``results`` in turn; an exception is raised."""
+    """An indexer whose rounds answer ``results`` in turn; an exception is raised. Each round is logged in ``log``."""
 
-    def __init__(self, *results: int | Exception) -> None:
+    def __init__(self, *results: int | Exception, name: str = "documents", log: list[str] | None = None) -> None:
         self.results = list(results)
         self.rounds = 0
+        self.name = name
+        self.log = [] if log is None else log
 
     async def run_once(self) -> int:
         """The next result."""
         self.rounds += 1
+        self.log.append(self.name)
         result = self.results.pop(0) if self.results else 0
         if isinstance(result, Exception):
             raise result
@@ -35,7 +38,7 @@ class Indexer:
 @pytest.mark.covers(f"{W}.run_once", rules=["ASU-06"])
 async def test__a_failed_round_is_logged_and_the_next_one_tries_again(caplog: pytest.LogCaptureFixture) -> None:
     """The store down: logged, 0 written; the next round writes."""
-    worker = AppSearchWorker(Indexer(RuntimeError("store down"), 3), poll_seconds=60)  # type: ignore[arg-type]
+    worker = AppSearchWorker(Indexer(RuntimeError("store down"), 3), Indexer(), poll_seconds=60)  # type: ignore[arg-type]
 
     with caplog.at_level(logging.INFO, logger="aurelius-atlas-server"):
         assert await worker.run_once() == 0
@@ -45,12 +48,22 @@ async def test__a_failed_round_is_logged_and_the_next_one_tries_again(caplog: py
     assert "Wrote 3 App Search documents" in caplog.text
 
 
+@pytest.mark.covers(f"{W}.run_once", rules=["ASQ-07"])
+async def test__a_round_derives_the_quality_after_the_documents() -> None:
+    """The documents' round first, then the quality round over them; the written add up."""
+    log: list[str] = []
+    worker = AppSearchWorker(Indexer(2, log=log), Indexer(5, name="quality", log=log), poll_seconds=60)  # type: ignore[arg-type]
+
+    assert await worker.run_once() == 7
+    assert log == ["documents", "quality"]
+
+
 @pytest.mark.covers(f"{W}.start", rules=["ASU-06"])
 @pytest.mark.covers(f"{W}.stop", rules=["ASU-06"])
 async def test__the_worker_runs_a_round_at_start_and_then_every_poll_interval() -> None:
     """Started, it runs at once and again after each interval; stopping twice is harmless."""
     indexer = Indexer(1, 0, 0)
-    worker = AppSearchWorker(indexer, poll_seconds=0.01)  # type: ignore[arg-type]
+    worker = AppSearchWorker(indexer, Indexer(), poll_seconds=0.01)  # type: ignore[arg-type]
 
     worker.start()
     for _ in range(100):

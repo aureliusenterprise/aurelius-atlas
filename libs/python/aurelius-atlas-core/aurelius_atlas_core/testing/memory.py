@@ -7,11 +7,11 @@ from typing import Any
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
-from aurelius_atlas_model.instance import RelationshipStatus
+from aurelius_atlas_model.instance import EntityStatus, RelationshipStatus
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
-from aurelius_atlas_core.app_search_document import has_document, named_guids, with_current_app_search
+from aurelius_atlas_core.app_search_document import SCORE_TYPE, has_document, named_guids, with_current_app_search
 from aurelius_atlas_core.entity_audit_repository import TAG_ACTIONS
 from aurelius_atlas_core.entity_documents import (
     LINKED_MODELS,
@@ -385,6 +385,29 @@ class MemoryEntityDocuments:
             if deleted != (relationship.app_search_state is RelationshipStatus.DELETED):
                 found.append(VersionedRelationship(relationship, version))
         return found[:limit]
+
+    async def scores(self) -> list[VersionedEntity]:
+        """The active score entities, by GUID (ASQ-02)."""
+        return [
+            found
+            for found in self._all_versioned()
+            if found.entity.type_name == SCORE_TYPE and found.entity.state is EntityStatus.ACTIVE
+        ]
+
+    async def quality_holders(self) -> list[VersionedEntity]:
+        """The entities holding a quality result or score totals, by GUID (ASQ-07)."""
+        return [
+            found
+            for found in self._all_versioned()
+            if found.entity.quality_result is not None or found.entity.quality_totals is not None
+        ]
+
+    def _all_versioned(self) -> list[VersionedEntity]:
+        found = []
+        for guid in sorted(self.entities):
+            source, version = self.entities[guid]
+            found.append(VersionedEntity(StoredEntity.model_validate(codec.loads(codec.dumps(source))), version))
+        return found
 
     def _nearest(self, query: SearchQuery) -> dict[str, float]:
         """The ``k`` selected entities nearest to the query's vector, by GUID, with their weighted scores."""

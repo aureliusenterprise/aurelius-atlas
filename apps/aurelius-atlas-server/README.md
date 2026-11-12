@@ -134,8 +134,20 @@ ProxyPass "https://atlas-server:21000/api/as/v1/engines/atlas-dev/search.json"
 </Location>
 ```
 
-The proxy passes the user's bearer token on; the user needs `ENTITY_READ` (DD-526). The quality engines,
-`atlas-dev-quality` and `atlas-dev-gov-quality`, answer 404 until 14.5 and 14.6.
+The proxy passes the user's bearer token on; the user needs `ENTITY_READ` (DD-526).
+
+`atlas-dev-quality` answers the field page's data quality results the same way (14.5): one result per score
+of a data quality rule over a dataset, written by the quality scanner (12.2). Its `<base>/data_quality` goes to
+that engine:
+
+```apache
+<Location /atlas/data_quality>
+ProxyPass "https://atlas-server:21000/api/as/v1/engines/atlas-dev-quality/search.json"
+</Location>
+```
+
+The App Search worker derives the results, and the score totals of `atlas-dev`'s documents, again each round
+after the documents (ASQ-07, DD-529). `atlas-dev-gov-quality` answers 404 until 14.6.
 
 ## Lineage
 

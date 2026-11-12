@@ -22,10 +22,15 @@ from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
     GUID_FIELDS,
     M4I_PREFIX,
+    QUALITY_RESULT_FIELD,
+    QUALITY_TOTALS_FIELD,
+    SCORE_TYPE,
     SOURCE_HASH_FIELD,
     STALE_FIELD,
     WITHOUT_DOCUMENT,
     app_search_mapping,
+    quality_result_mapping,
+    quality_totals_mapping,
     with_current_app_search,
 )
 from aurelius_atlas_core.entity_embedding import (
@@ -142,6 +147,8 @@ ENTITY_MAPPING: dict[str, Any] = {
         "customAttributes": {"type": "object", "dynamic": False},
         "search": {"type": "object", "dynamic": True, "subobjects": False},
         APP_SEARCH_FIELD: app_search_mapping(),
+        QUALITY_RESULT_FIELD: quality_result_mapping(),
+        QUALITY_TOTALS_FIELD: quality_totals_mapping(),
     },
     "dynamic_templates": [
         {f"search_{kind}": {"path_match": f"search.{kind}.*", "mapping": _search_mapping(kind)}} for kind in KINDS
@@ -444,6 +451,14 @@ class EntityDocuments(Protocol):
 
     async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
         """Up to ``limit`` relationships deleted or restored since their ends' documents saw them (ASU-04)."""
+        ...
+
+    async def scores(self) -> list[VersionedEntity]:
+        """Every active score entity, by GUID (ASQ-02)."""
+        ...
+
+    async def quality_holders(self) -> list[VersionedEntity]:
+        """Every entity holding a quality result or score totals, by GUID (ASQ-07)."""
         ...
 
 
@@ -955,6 +970,19 @@ class ElasticsearchEntityDocuments:
             )
             for hit in response["hits"]["hits"]
         ]
+
+    async def scores(self) -> list[VersionedEntity]:
+        """Page through the active score entities (ASQ-02): writes refresh (ENS-11)."""
+        active = [{"term": {"state": ACTIVE}}, {"term": {"typeName": SCORE_TYPE}}]
+        return await self._paged({"bool": {"filter": active}})
+
+    async def quality_holders(self) -> list[VersionedEntity]:
+        """Page through the entities holding a quality result or score totals (ASQ-07): writes refresh (ENS-11)."""
+        held = [
+            {"exists": {"field": f"{QUALITY_RESULT_FIELD}.qualityguid"}},
+            {"exists": {"field": f"{QUALITY_TOTALS_FIELD}.overall.count"}},
+        ]
+        return await self._paged({"bool": {"should": held, "minimum_should_match": 1}})
 
     async def search_app_search(
         self,

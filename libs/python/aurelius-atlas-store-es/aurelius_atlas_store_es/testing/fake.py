@@ -607,8 +607,8 @@ def _text_score(source: dict[str, Any], options: dict[str, Any]) -> float:
 
 def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, Any]:
     """A ``terms`` aggregation, by count then key, or as ``order`` says (``_count`` or ``_key``, ``asc`` or
-    ``desc``, one or a list): a ``.text`` sub-field's lowercased words, else the values; ``include`` a regular
-    expression the whole term matches.
+    ``desc``, one or a list): a ``.text`` sub-field's lowercased words, else the values, ``missing`` for a source
+    without one; ``include`` a regular expression the whole term matches.
     """  # noqa: D205 - one sentence
     field: str = options["field"]
     text = field.endswith(".text")
@@ -616,6 +616,8 @@ def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, 
     counts: dict[Any, int] = {}
     for source in sources:
         held = _held(source, field.removesuffix(".text") if text else field)
+        if not held and "missing" in options:
+            held = [options["missing"]]
         terms = {word.lower() for value in held for word in _WORD.findall(str(value))} if text else set(held)
         for term in terms:
             if include is None or include.fullmatch(str(term)):
@@ -709,10 +711,13 @@ def _sort_clause(clause: Any) -> tuple[str, dict[str, Any]]:  # noqa: ANN401 - a
 
 
 def _sort_value(source: dict[str, Any], field: str, document_id: str, options: dict[str, Any]) -> Any:  # noqa: ANN401
-    """A hit's value of a sort field: an array's least, or largest descending; the id or None when missing."""
+    """A hit's value of a sort field: an array's least, or largest descending; when missing, the id, the
+    ``missing`` value given, or None.
+    """  # noqa: D205 - one sentence
     held = _held(source, field)
+    missing = options.get("missing")
     if not held:
-        return document_id if options.get("missing") == "_id" else None
+        return document_id if missing == "_id" else None if missing in (None, "_last", "_first") else missing
     return max(held) if options.get("order") == "desc" else min(held)
 
 
