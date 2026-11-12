@@ -19,7 +19,10 @@ from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity,
 
 Settings = Callable[..., ScannerSettings]
 
-DEAD_DSN = "postgresql+psycopg://atlas:sup3r-s3cret@127.0.0.1:1/warehouse"
+SCRUB_CANARY = "sup3r-s3cret"
+"""The stand-in password the door must never repeat: it proves the scrubbing (DBS-02, DD-506)."""
+
+DEAD_DSN = f"postgresql+psycopg://atlas:{SCRUB_CANARY}@127.0.0.1:1/warehouse"
 """A Postgres DSN pointing at a port nothing answers on, with a password to prove scrubbing."""
 
 
@@ -182,7 +185,7 @@ def test_a_database_that_answers_no_connect_exits_one_naming_host_not_password(
     printed = caplog.text
     assert "127.0.0.1:1" in printed
     assert "warehouse" in printed
-    assert "sup3r-s3cret" not in printed
+    assert SCRUB_CANARY not in printed
 
 
 @pytest.mark.covers("aurelius_atlas_db_scanner.__main__.run", rules=["DBS-02", "DBS-12"])
