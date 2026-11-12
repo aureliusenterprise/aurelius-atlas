@@ -1,28 +1,47 @@
-"""``AppSearchIndexer``: derives the App Search documents the store's entities lack (LAS-01 to LAS-06, ASD-04).
+"""``AppSearchIndexer``: derives the App Search documents the store's entities lack, and keeps them up to date
+(LAS-01 to LAS-10, ASD-04, ASU-02 to ASU-05).
 
-Each round asks the store for a page of entities that should have a document and have none, or none of their
-current own fields (DD-499), derives each one's document from the entities around it, and writes each entity with
-its document on the version it read. A whole write, as the embedding indexer's (DD-436): an entity changed in
-between keeps its write and waits for a later round.
+Each round asks the store for a page of entities that should have a document and have none, or have a stale one
+(DD-518), and a page of relationships deleted or restored since their ends' documents saw them (DD-520). It
+derives each entity's document from the entities around it. An entity whose document goes, or that other
+documents now know by another name, breadcrumb or relations, affects the documents that name it; those are
+derived again and written first, if they changed (DD-519). Then each entity is written with its document, and
+each relationship with its state recorded. Whole writes on the version read, as the embedding indexer's
+(DD-436): an entity changed in between keeps its write and waits for a later round.
 
 A document's breadcrumb follows the first active parent up (LAS-04); its derived relations are the other ends of
 its active relationships, and, for datasets and data entities, the pairs a field joins (LAS-05, LAS-06). The
 entities and relationships a page reads are read once for the page.
-"""
+"""  # noqa: D205 - one sentence
 
 from collections.abc import Iterable, Sequence
 
 from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
-from aurelius_atlas_core.app_search_document import PARENTS, RELATION_FIELDS, document_name, mapped, own_document
-from aurelius_atlas_core.entity_documents import EntityDocuments, LinkedKind, VersionedEntity
+from aurelius_atlas_core.app_search_document import (
+    PARENTS,
+    RELATION_FIELDS,
+    document_name,
+    has_document,
+    identity,
+    mapped,
+    named_guids,
+    own_document,
+)
+from aurelius_atlas_core.entity_documents import (
+    EntityDocuments,
+    LinkedKind,
+    LinkedWrite,
+    VersionedEntity,
+    VersionedRelationship,
+)
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, referenced_end
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 
 DEFAULT_BATCH_SIZE = 100
-"""Entities per page."""
+"""Entities, and relationships, per page."""
 
 _JOINS = {
     "m4i_dataset": ("m4i_field", "m4i_data_attribute", "m4i_data_entity"),
@@ -130,39 +149,102 @@ class AppSearchIndexer:
         self._batch_size = batch_size
 
     async def run_once(self) -> int:
-        """Derive page after page until none is left, or a page writes nothing; how many documents were written."""
+        """Derive page after page until none is left, or a page writes nothing; how many entities and relationships
+        were written.
+        """  # noqa: D205 - one sentence
         written = 0
         while True:
             page = await self._documents.without_app_search(self._batch_size)
-            if not page:
+            relationships = await self._documents.unseen_relationships(self._batch_size)
+            if not page and not relationships:
                 return written
-            put = await self._write(page)
+            put = await self._write(page, relationships)
             written += put
-            if put == 0 or len(page) < self._batch_size:
+            if put == 0 or max(len(page), len(relationships)) < self._batch_size:
                 return written
 
-    async def derive(self, entities: Sequence[StoredEntity]) -> dict[str, StoredAppSearch]:
-        """The documents of the entities that have one (LAS-01), by GUID, as the store holds the rest now."""
+    async def derive(self, entities: Sequence[StoredEntity]) -> dict[str, StoredAppSearch | None]:
+        """The entities' documents by GUID, none for one without (LAS-01), as the store holds the rest now."""
         catalogue = _Catalogue(self._documents, self._registry)
         catalogue.add(entities)
         return {entity.guid: await _document(catalogue, entity) for entity in entities}
 
-    async def _write(self, page: list[VersionedEntity]) -> int:
-        documents = await self.derive([found.entity for found in page])
+    async def _write(self, page: list[VersionedEntity], relationships: list[VersionedRelationship]) -> int:
+        """Write the documents the page affects, then, if all were written, the page's own (ASU-05)."""
+        catalogue = _Catalogue(self._documents, self._registry)
+        catalogue.add(found.entity for found in page)
+        documents = {found.entity.guid: await _document(catalogue, found.entity) for found in page}
+        changed = [
+            found.entity
+            for found in page
+            if found.entity.app_search is not None
+            and identity(found.entity.app_search) != identity(documents[found.entity.guid])
+        ]
+        named = [guid for entity in changed for guid in named_guids(entity.app_search)]
+        named += [guid for entity in changed for guid in named_guids(documents[entity.guid])]
+        named += [end for found in relationships for end in found.relationship.ends()]
+        affected = await self._affected(catalogue, [entity.guid for entity in changed], named, set(documents))
+        if affected:
+            results = await self._documents.write(
+                [
+                    (found.entity.model_copy(update={"app_search": document}), found.version)
+                    for found, document in affected
+                ]
+            )
+            if not all(result.written for result in results):
+                return sum(1 for result in results if result.written)
+        seen = [
+            (found.relationship.model_copy(update={"app_search_state": found.relationship.state}), found.version)
+            for found in relationships
+        ]
         results = await self._documents.write(
             [
                 (found.entity.model_copy(update={"app_search": documents[found.entity.guid]}), found.version)
                 for found in page
-            ]
+            ],
+            linked={LinkedKind.RELATIONSHIP: LinkedWrite(written=seen)} if seen else None,
         )
-        return sum(1 for result in results if result.written)
+        return len(affected) + sum(1 for result in results if result.written)
+
+    async def _affected(
+        self, catalogue: _Catalogue, changed: list[str], named: list[str], skip: set[str]
+    ) -> list[tuple[VersionedEntity, StoredAppSearch | None]]:
+        """The current documents that name a changed entity, or that one names, derived again where they differ.
+
+        One whose name, breadcrumb or relations' GUIDs change is a changed entity in turn (ASU-03, DD-519). A
+        missing or stale document is left to its own listing, as are the ``skip`` ones.
+        """
+        affected: list[tuple[VersionedEntity, StoredAppSearch | None]] = []
+        seen = set(skip)
+        while changed or named:
+            found = {versioned.entity.guid: versioned for versioned in await self._documents.naming(changed)}
+            rest = [guid for guid in dict.fromkeys(named) if guid not in found and guid not in seen]
+            found |= await self._documents.get(rest)
+            changed, named = [], []
+            for guid, versioned in found.items():
+                old = versioned.entity.app_search
+                if guid in seen or old is None or old.stale:
+                    continue
+                seen.add(guid)
+                catalogue.add([versioned.entity])
+                new = await _document(catalogue, versioned.entity)
+                if new == old:
+                    continue
+                affected.append((versioned, new))
+                if identity(new) != identity(old):
+                    changed.append(guid)
+                    named += named_guids(old) + named_guids(new)
+        return affected
 
 
-async def _document(catalogue: _Catalogue, entity: StoredEntity) -> StoredAppSearch:
-    """The entity's document: its own fields, then its breadcrumb and derived relations if of a mapped type.
+async def _document(catalogue: _Catalogue, entity: StoredEntity) -> StoredAppSearch | None:
+    """The entity's document: its own fields, then its breadcrumb and derived relations if of a mapped type; none
+    for an entity without (LAS-01).
 
     A relation field lists the entity's relationships in the order it lists them, then the joins, once (DD-501).
-    """
+    """  # noqa: D205 - one sentence
+    if not has_document(entity):
+        return None
     document = own_document(entity)
     if not mapped(entity):
         return document

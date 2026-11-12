@@ -3,8 +3,8 @@
 ADR 060 keeps what the original webapp's ``atlas-dev`` engine held on the entity's own document (DD-498). Its own
 fields come from the entity alone; its breadcrumb and derived relations from the entities around it, which
 ``AppSearchIndexer`` reads. These are the pure parts the store and the indexer share: which entities have a
-document, the mapped types and their parents, the own fields, the source hash a write checks (DD-499), and the
-mapping.
+document, the mapped types and their parents, the own fields, the source hash a write checks (DD-499), what a
+document names and is known by (DD-519), and the mapping.
 """
 
 import hashlib
@@ -19,7 +19,10 @@ APP_SEARCH_FIELD = "appSearch"
 """The entity document's field holding its App Search document (DD-498)."""
 
 SOURCE_HASH_FIELD = f"{APP_SEARCH_FIELD}.sourceHash"
-"""The field of the hash the document was derived with; an entity without it has no current document."""
+"""The field of the hash the document was derived with; an entity without it has no document."""
+
+STALE_FIELD = f"{APP_SEARCH_FIELD}.stale"
+"""The field a write sets when the entity's own fields changed since the document was derived (ASU-01, DD-518)."""
 
 M4I_PREFIX = "m4i_"
 """The data dictionary's types (ADR 058) are the ones with a document."""
@@ -49,6 +52,9 @@ PARENTS = {
     "m4i_field": ("parentField", "datasets"),
 }
 """Each mapped type's parent attributes, in the order the first parent is looked for (LAS-04)."""
+
+GUID_FIELDS = ("breadcrumbguid", *(f"{field}guid" for field in RELATION_FIELDS.values()))
+"""The fields a document names other entities in, by GUID: its breadcrumb and its relations (ASU-03)."""
 
 TECHNICAL = frozenset({"m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"})
 BUSINESS = frozenset({"m4i_data_domain", "m4i_data_entity", "m4i_data_attribute"})
@@ -116,10 +122,28 @@ def own_document(entity: StoredEntity) -> StoredAppSearch:
 
 
 def with_current_app_search(entity: StoredEntity) -> StoredEntity:
-    """The entity, without its document unless that was derived from its current own fields (ASD-03, DD-499)."""
-    if entity.app_search is None or entity.app_search.source_hash == source_hash(entity):
+    """The entity, its document marked stale unless derived from its current own fields (ASU-01, DD-518)."""
+    document = entity.app_search
+    if document is None or document.stale or document.source_hash == source_hash(entity):
         return entity
-    return entity.model_copy(update={"app_search": None})
+    return entity.model_copy(update={"app_search": document.model_copy(update={"stale": True})})
+
+
+def named_guids(document: StoredAppSearch | None) -> list[str]:
+    """The GUIDs the document names in its breadcrumb and relations, once each (ASU-03)."""
+    if document is None:
+        return []
+    return list(dict.fromkeys(guid for field in GUID_FIELDS for guid in getattr(document, field)))
+
+
+def identity(document: StoredAppSearch | None) -> tuple[object, ...] | None:
+    """What other documents know the entity by: its name, breadcrumb and relations' GUIDs (ASU-03, DD-519).
+
+    A change of anything else, as the definition, shows on the entity's own document only.
+    """
+    if document is None:
+        return None
+    return (document.name, document.breadcrumbname, *(getattr(document, field) for field in GUID_FIELDS))
 
 
 _KEYWORD = {"type": "keyword"}
@@ -127,8 +151,11 @@ _NAME = {"type": "keyword", "ignore_above": 8191, "fields": {"text": {"type": "t
 
 
 def app_search_mapping() -> dict[str, Any]:
-    """The mapping of the entity document's App Search document: keywords, names also as text (ASD-02)."""
+    """The mapping of the entity document's App Search document: keywords, names also as text (ASD-02); the stale
+    flag a boolean (ASU-01).
+    """  # noqa: D205 - one sentence
     names = ["name", "referenceablequalifiedname", "definition", "breadcrumbname", *RELATION_FIELDS.values()]
     keywords = ["sourceHash", "email", "sourcetype", "breadcrumbguid", "breadcrumbtype", "parentguid"]
     keywords += [f"{field}guid" for field in RELATION_FIELDS.values()]
-    return {"properties": dict.fromkeys(names, _NAME) | dict.fromkeys(keywords, _KEYWORD)}
+    properties = dict.fromkeys(names, _NAME) | dict.fromkeys(keywords, _KEYWORD) | {"stale": {"type": "boolean"}}
+    return {"properties": properties}

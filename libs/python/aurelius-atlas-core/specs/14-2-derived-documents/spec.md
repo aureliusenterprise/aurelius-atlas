@@ -1,6 +1,6 @@
 # 14.2 The derived documents
 
-- **Status:** in progress
+- **Status:** done
 - **Pull request:** [#322](https://github.com/aureliusenterprise/aurelius-atlas/pull/322)
 - **Records:** DD-498 to DD-501 (here); relies on ADR 060, 14.1 (LAS-01 to LAS-06, DD-484 to DD-486), and 11.3's
   whole-document writes (DD-434, DD-436)
@@ -29,6 +29,7 @@ Not delivered, with the increment that will:
 ## Semantics
 
 14.1's LAS-01 to LAS-06 hold for the stored documents, with LAS-01 leaving out `m4i_dq_score` too (DD-500).
+From 14.3, a write marks a document whose hash is not current stale instead of dropping it (ASU-01, DD-518).
 
 | Id     | Rule                                                                                                                                                                                                                                                                                                                                     |
 | ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -13,14 +13,17 @@ from typing import Any, Protocol, runtime_checkable
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_model.discovery import Condition
+from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_model.tasks import TaskStatus
 from elasticsearch import AsyncElasticsearch, ConflictError, NotFoundError
 from pydantic import Field
 
 from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
+    GUID_FIELDS,
     M4I_PREFIX,
     SOURCE_HASH_FIELD,
+    STALE_FIELD,
     WITHOUT_DOCUMENT,
     app_search_mapping,
     with_current_app_search,
@@ -184,10 +187,13 @@ RELATIONSHIP_MAPPING: dict[str, Any] = {
         "end2Guid": _KEYWORD,
         "state": _KEYWORD,
         "writeId": _KEYWORD,
+        "appSearchState": _KEYWORD,
         "attributes": {"type": "object", "dynamic": False},
     },
 }
-"""Relationships by type, label, ends and state; attribute values stored, not indexed (DD-061)."""
+"""Relationships by type, label, ends and state, and the state their ends' App Search documents saw; attribute
+values stored, not indexed (DD-061, DD-520).
+"""
 
 CLASSIFICATION_MAPPING: dict[str, Any] = {
     "dynamic": False,
@@ -427,7 +433,17 @@ class EntityDocuments(Protocol):
         ...
 
     async def without_app_search(self, limit: int) -> list[VersionedEntity]:
-        """Up to ``limit`` entities that should have an App Search document and have none (ASD-04)."""
+        """Up to ``limit`` entities that should have an App Search document and have none, or a stale one (ASD-04,
+        ASU-02).
+        """  # noqa: D205 - one sentence
+        ...
+
+    async def naming(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose App Search document names one of these GUIDs in its breadcrumb or relations (ASU-03)."""
+        ...
+
+    async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
+        """Up to ``limit`` relationships deleted or restored since their ends' documents saw them (ASU-04)."""
         ...
 
 
@@ -466,7 +482,8 @@ class ElasticsearchEntityDocuments:
     async def prepare(self) -> None:
         """Create each index behind its alias unless it exists (ENS-01).
 
-        An existing entity index gets the fields it lacks mapped, as ``references`` (EDL-10); mapped ones stay.
+        An existing entity or relationship index gets the fields it lacks mapped, as ``references`` (EDL-10) and
+        ``appSearchState`` (DD-520); mapped ones stay.
         Every existing index gets the settings of a new one, as its replicas (IDX-02). With embedding on, the entity
         index keeps each document's source as written beside its vector: a new one is created so, and an existing
         one that is not moves to a new generation behind its alias first (VEC-03, DD-434, DD-439).
@@ -505,6 +522,8 @@ class ElasticsearchEntityDocuments:
                 await self._client.indices.put_mapping(
                     index=alias, properties=mapping["properties"], dynamic_templates=mapping["dynamic_templates"]
                 )
+            elif alias == self._linked[LinkedKind.RELATIONSHIP]:
+                await self._client.indices.put_mapping(index=alias, properties=mapping["properties"])
             await self._client.indices.put_settings(index=alias, settings=settings)
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
@@ -647,13 +666,16 @@ class ElasticsearchEntityDocuments:
     async def _listing(self, field: str, guids: Sequence[str]) -> list[VersionedEntity]:
         if not guids:
             return []
+        return await self._paged({"terms": {field: list(guids)}})
+
+    async def _paged(self, query: dict[str, Any]) -> list[VersionedEntity]:
         found: list[VersionedEntity] = []
         after: list[Any] | None = None
         while True:
             response = await self._client.search(
                 index=self._entities,
                 size=REFERRING_PAGE,
-                query={"terms": {field: list(guids)}},
+                query=query,
                 sort=[{"guid": "asc"}],
                 search_after=after,
                 seq_no_primary_term=True,
@@ -871,25 +893,65 @@ class ElasticsearchEntityDocuments:
         ]
 
     async def without_app_search(self, limit: int) -> list[VersionedEntity]:
-        """The active entities of m4i types with a document that have none, by GUID (LAS-01, ASD-04, DD-500)."""
+        """The active entities of m4i types with a document that have none, and those with a stale one, by GUID
+        (LAS-01, ASD-04, ASU-02, DD-500).
+        """  # noqa: D205 - one sentence
+        missing = {
+            "bool": {
+                "filter": [{"term": {"state": ACTIVE}}, {"prefix": {"typeName": M4I_PREFIX}}],
+                "must_not": [
+                    {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
+                    {"exists": {"field": SOURCE_HASH_FIELD}},
+                ],
+            }
+        }
         response = await self._client.search(
             index=self._entities,
             size=limit,
-            query={
-                "bool": {
-                    "filter": [{"term": {"state": ACTIVE}}, {"prefix": {"typeName": M4I_PREFIX}}],
-                    "must_not": [
-                        {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
-                        {"exists": {"field": SOURCE_HASH_FIELD}},
-                    ],
-                }
-            },
+            query={"bool": {"should": [missing, {"term": {STALE_FIELD: True}}], "minimum_should_match": 1}},
             sort=[{"guid": "asc"}],
             seq_no_primary_term=True,
         )
         return [
             VersionedEntity(
                 StoredEntity.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"])
+            )
+            for hit in response["hits"]["hits"]
+        ]
+
+    async def naming(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """Page through the entities whose App Search GUID fields hold one (ASU-03): writes refresh (ENS-11)."""
+        if not guids:
+            return []
+        fields = [{"terms": {f"{APP_SEARCH_FIELD}.{field}": list(guids)}} for field in GUID_FIELDS]
+        return await self._paged({"bool": {"should": fields, "minimum_should_match": 1}})
+
+    async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
+        """The relationships deleted whose record is not, and those active whose record is, by GUID (ASU-04)."""
+        deleted = RelationshipStatus.DELETED.value
+        response = await self._client.search(
+            index=self._linked[LinkedKind.RELATIONSHIP],
+            size=limit,
+            query={
+                "bool": {
+                    "should": [
+                        {
+                            "bool": {
+                                "filter": [{"term": {"state": deleted}}],
+                                "must_not": [{"term": {"appSearchState": deleted}}],
+                            }
+                        },
+                        {"bool": {"filter": [{"term": {"state": ACTIVE}}, {"term": {"appSearchState": deleted}}]}},
+                    ],
+                    "minimum_should_match": 1,
+                }
+            },
+            sort=[{"guid": "asc"}],
+            seq_no_primary_term=True,
+        )
+        return [
+            VersionedRelationship(
+                StoredRelationship.model_validate(hit["_source"]), DocumentVersion(hit["_seq_no"], hit["_primary_term"])
             )
             for hit in response["hits"]["hits"]
         ]

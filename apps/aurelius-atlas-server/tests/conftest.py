@@ -59,7 +59,8 @@ def models_dir(tmp_path: Path) -> Path:
 def settings(ca_file: Path, tls_pair: tuple[Path, Path], models_dir: Path) -> ServerSettings:
     """Settings for a server on a local store, without models: loading Atlas's takes seconds (MDL-16).
 
-    Propagation happens in the request (TSK-08), so responses show it at once; the task tests turn tasks on.
+    Propagation happens in the request (TSK-08), so responses show it at once; the task tests turn tasks on. No
+    App Search round writes beside a test's requests; its tests turn the worker on (ASU-06).
     """
     certificate, key = tls_pair
     return ServerSettings.model_validate(
@@ -73,6 +74,7 @@ def settings(ca_file: Path, tls_pair: tuple[Path, Path], models_dir: Path) -> Se
             "models_dir": models_dir,
             "m4i_models_enabled": False,
             "tasks_enabled": False,
+            "app_search_enabled": False,
             "auth_server_url": SERVER_URL,
             "auth_client_secret": CLIENT_SECRET,
             "auth_audiences": [WEBAPP],

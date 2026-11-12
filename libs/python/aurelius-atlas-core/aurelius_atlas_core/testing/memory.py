@@ -7,10 +7,11 @@ from typing import Any
 
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
+from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
-from aurelius_atlas_core.app_search_document import has_document, with_current_app_search
+from aurelius_atlas_core.app_search_document import has_document, named_guids, with_current_app_search
 from aurelius_atlas_core.entity_audit_repository import TAG_ACTIONS
 from aurelius_atlas_core.entity_documents import (
     LINKED_MODELS,
@@ -21,6 +22,7 @@ from aurelius_atlas_core.entity_documents import (
     Reservation,
     TypeCount,
     VersionedEntity,
+    VersionedRelationship,
     WriteResult,
 )
 from aurelius_atlas_core.entity_embedding import embeddable, with_current_embedding
@@ -28,6 +30,7 @@ from aurelius_atlas_core.free_text import field_terms, text_matches
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery, facet_counts, selects
 from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.typedef_document import DocumentVersion, StoredTypedefs, VersionConflictError
 
@@ -349,13 +352,38 @@ class MemoryEntityDocuments:
         return found[:limit]
 
     async def without_app_search(self, limit: int) -> list[VersionedEntity]:
-        """The entities that should have an App Search document and have none, by GUID (ASD-04)."""
+        """The entities that should have an App Search document and have none, or have a stale one, by GUID (ASD-04,
+        ASU-02).
+        """  # noqa: D205 - one sentence
         found = []
         for guid in sorted(self.entities):
             source, version = self.entities[guid]
             entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
-            if has_document(entity) and entity.app_search is None:
+            document = entity.app_search
+            if (document is None and has_document(entity)) or (document is not None and document.stale):
                 found.append(VersionedEntity(entity, version))
+        return found[:limit]
+
+    async def naming(self, guids: Sequence[str]) -> list[VersionedEntity]:
+        """The entities whose App Search document names one of the GUIDs in its breadcrumb or relations (ASU-03)."""
+        wanted = set(guids)
+        found = []
+        for source, version in self.entities.values():
+            entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
+            if wanted & set(named_guids(entity.app_search)):
+                found.append(VersionedEntity(entity, version))
+        return found
+
+    async def unseen_relationships(self, limit: int) -> list[VersionedRelationship]:
+        """The relationships deleted or restored since their ends' documents saw them, by GUID (ASU-04)."""
+        found = []
+        relationships = self.linked[LinkedKind.RELATIONSHIP]
+        for guid in sorted(relationships):
+            source, version = relationships[guid]
+            relationship = StoredRelationship.model_validate(codec.loads(codec.dumps(source)))
+            deleted = relationship.state is RelationshipStatus.DELETED
+            if deleted != (relationship.app_search_state is RelationshipStatus.DELETED):
+                found.append(VersionedRelationship(relationship, version))
         return found[:limit]
 
     def _nearest(self, query: SearchQuery) -> dict[str, float]:
