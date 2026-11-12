@@ -1,7 +1,7 @@
 # 14.6 The App Search API: `/gov_quality`
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#334](https://github.com/aureliusenterprise/aurelius-atlas/pull/334)
 - **Records:** DD-533 to DD-537 (here), DV-160; relies on ADR 060, 14.1 (LAS-13), 14.2 (ASD-01), 14.3
   (ASU-06), 14.4 (ASE-01 to ASE-11), 14.5 (DD-531) and 12.6 (GQ-01 to GQ-07, amended here)
 
