@@ -364,14 +364,16 @@ def _range_filter(name: str, engine_field: EngineField, bounds: dict[str, Any], 
         errors.add(f"Range filter for {name} must have a number from or to")
         return _ALL
     if engine_field.path is None:
-        constant = engine_field.constant
-        inside = (lower is None or constant >= lower) and (upper is None or constant < upper)
-        return _ALL if inside else _NONE
+        return _ALL if _within(engine_field.constant, lower, upper) else _NONE
     limits = ({"gte": lower} if lower is not None else {}) | ({"lt": upper} if upper is not None else {})
     clause = {"range": {engine_field.path: limits}}
     missing = engine_field.missing
-    inside = missing is not None and (lower is None or missing >= lower) and (upper is None or missing < upper)
-    return _or_missing(engine_field, clause) if inside else clause
+    return _or_missing(engine_field, clause) if missing is not None and _within(missing, lower, upper) else clause
+
+
+def _within(value: float, lower: float | None, upper: float | None) -> bool:
+    """Whether the value is from ``lower`` on, ``lower`` included, and below ``upper``; ``None`` bounds nothing."""
+    return (lower is None or value >= lower) and (upper is None or value < upper)
 
 
 def _is_number(value: object) -> bool:

@@ -208,5 +208,9 @@ def quality_result_mapping() -> dict[str, Any]:
 
 def quality_totals_mapping() -> dict[str, Any]:
     """The mapping of a document's score totals: each dimension's and the overall numbers, and rule GUIDs."""
-    dimension = {"properties": {"total": _NUMBER, "count": _NUMBER, "score": _NUMBER, "rules": _KEYWORD}}
-    return {"properties": dict.fromkeys((*DIMENSIONS, "overall"), dimension)}
+    return {
+        "properties": {
+            name: {"properties": {"total": _NUMBER, "count": _NUMBER, "score": _NUMBER, "rules": _KEYWORD}}
+            for name in (*DIMENSIONS, "overall")
+        }
+    }

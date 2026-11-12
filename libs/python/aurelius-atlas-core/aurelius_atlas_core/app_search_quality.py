@@ -189,9 +189,12 @@ class QualityIndexer:
         """  # noqa: D205 - one sentence
         own = _field_sums(results)
         await reads.load(own)
-        for guid in list(own):
+        attributes: dict[str, dict[str, _Sums]] = {}
+        for guid, sums in own.items():
             for attribute in _document_guids(reads.entity(guid), "deriveddataattributeguid"):
-                _add_all(own.setdefault(attribute, {}), own[guid])
+                _add_all(attributes.setdefault(attribute, {}), sums)
+        for attribute, sums in attributes.items():
+            _add_all(own.setdefault(attribute, {}), sums)
         await reads.load(own)
         added = {
             guid: {dimension: _Sums(sums.total, sums.count, list(sums.rules)) for dimension, sums in dimensions.items()}
@@ -279,15 +282,19 @@ def _result(reads: _Reads, score: StoredEntity, rule: StoredEntity, fields: list
 def _domain_name(reads: _Reads, fields: list[StoredEntity]) -> str:
     """The first data domain in the breadcrumbs of the fields' data attributes, else empty (ASQ-02)."""
     for entity in fields:
-        for guid in entity.app_search.deriveddataattributeguid if entity.app_search is not None else []:
-            attribute = reads.entity(guid)
-            document = attribute.app_search if attribute is not None else None
-            if document is None:
-                continue
-            for name, type_name in zip(document.breadcrumbname, document.breadcrumbtype, strict=False):
-                if type_name == DOMAIN_TYPE and name:
-                    return name
+        for guid in _document_guids(entity, "deriveddataattributeguid"):
+            if name := _breadcrumb_domain(reads.entity(guid)):
+                return name
     return ""
+
+
+def _breadcrumb_domain(entity: StoredEntity | None) -> str:
+    """The first data domain in the breadcrumb of the entity's App Search document, else empty."""
+    document = entity.app_search if entity is not None else None
+    if document is None:
+        return ""
+    crumbs = zip(document.breadcrumbname, document.breadcrumbtype, strict=False)
+    return next((name for name, type_name in crumbs if type_name == DOMAIN_TYPE and name), "")
 
 
 def _stored_totals(dimensions: dict[str, _Sums]) -> StoredQualityTotals:
