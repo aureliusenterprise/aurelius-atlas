@@ -10,11 +10,6 @@
     "aliases": []
   },
   {
-    "version": "fix-db-scanner-sonar-scrub-canary",
-    "title": "fix-db-scanner-sonar-scrub-canary",
-    "aliases": []
-  },
-  {
     "version": "feat-12-7-governance-verdicts",
     "title": "feat-12-7-governance-verdicts",
     "aliases": []
