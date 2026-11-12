@@ -84,14 +84,11 @@ async def _scan(
     """One scan on the real doors: the database and the scanner's catalogue client.
 
     The door is the app's own class — this is DBS-01's proof that the walk runs on a real
-    dialect with no fakes between the job and the database. The door closes on the way out.
+    dialect with no fakes between the job and the database. The door is a context manager,
+    so it opens with the block and closes on the way out.
     """
-    door = SqlDatabase(settings.dsn.get_secret_value(), connect_timeout_seconds=settings.connect_timeout_seconds)
-    door.open()
-    try:
+    with SqlDatabase(settings.dsn.get_secret_value(), connect_timeout_seconds=settings.connect_timeout_seconds) as door:
         return await run_scan(door, _RecordingDoor(scanner, cleanup), settings)
-    finally:
-        door.close()
 
 
 def _run_settings(scanner_settings: ScannerSettings, run: str) -> ScannerSettings:
