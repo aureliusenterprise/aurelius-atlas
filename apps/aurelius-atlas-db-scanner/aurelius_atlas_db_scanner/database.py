@@ -167,8 +167,7 @@ class SqlDatabase:
             connect_args=_connect_args(self._url.get_backend_name(), self._timeout_seconds),
         )
         try:
-            with engine.connect():
-                pass
+            engine.connect().close()  # the connect itself is the proof (DBS-02); the connection goes right back
         except SQLAlchemyError as cause:
             engine.dispose()
             msg = (
