@@ -17,7 +17,10 @@ from aurelius_atlas_db_scanner.database import (
 )
 from sqlalchemy import create_engine, text
 
-DEAD_DSN = "postgresql+psycopg://atlas:sup3r-s3cret@127.0.0.1:1/warehouse"
+SCRUB_CANARY = "sup3r-s3cret"
+"""The stand-in password the door must never repeat: it proves the scrubbing (DBS-02, DD-506)."""
+
+DEAD_DSN = f"postgresql+psycopg://atlas:{SCRUB_CANARY}@127.0.0.1:1/warehouse"
 """A Postgres DSN pointing at a port nothing answers on, with a password to prove scrubbing."""
 
 
@@ -119,7 +122,7 @@ def test_a_database_that_answers_no_connect_names_host_and_database_not_the_pass
     message = str(error.value)
     assert "127.0.0.1:1" in message
     assert "warehouse" in message
-    assert "sup3r-s3cret" not in message
+    assert SCRUB_CANARY not in message
 
 
 @pytest.mark.covers("aurelius_atlas_db_scanner.database.SqlDatabase.safe_url", rules=["DBS-02"])

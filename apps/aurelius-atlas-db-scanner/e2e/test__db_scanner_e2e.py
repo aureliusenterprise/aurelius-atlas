@@ -26,7 +26,10 @@ from aurelius_atlas_model.instance import AtlasEntitiesWithExtInfo, AtlasEntity,
 from aurelius_atlas_server_client import AtlasClient
 from conftest import Seeded
 
-DEAD_DSN = "postgresql+psycopg://atlas:sup3r-s3cret@127.0.0.1:1/scan-dead"
+SCRUB_CANARY = "sup3r-s3cret"
+"""The stand-in password the door must never repeat: it proves the scrubbing (DBS-02, DD-506)."""
+
+DEAD_DSN = f"postgresql+psycopg://atlas:{SCRUB_CANARY}@127.0.0.1:1/scan-dead"
 """A DSN on a port nothing answers, with a password to prove the scrubbing in the failure."""
 
 
@@ -229,4 +232,4 @@ def test__a_refused_connect_exits_one_naming_host_not_password(
     code = run(["--system-name", f"zz{run_token} Dead", "--connect-timeout-seconds", "1"])
     assert code == EXIT_FAILURE
     assert "127.0.0.1:1" in caplog.text
-    assert "sup3r-s3cret" not in caplog.text
+    assert SCRUB_CANARY not in caplog.text
