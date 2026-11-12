@@ -1546,6 +1546,32 @@
             "authorizationServicesEnabled": false,
             "bearerOnly": false,
             "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-db-scanner",
+            "consentRequired": false,
+            "defaultClientScopes": ["basic", "profile", "roles"],
+            "description": "The relational database scanner's own service identity (13.3, DD-506): its client-credentials token, accepted by azp (AUT-02), names the job in every catalogue write. Its service account holds atlas-read and atlas-write on aurelius-atlas-server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas-db-scanner",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${DB_SCANNER_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
+        },
+        {
+            "authorizationServicesEnabled": false,
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
             "clientId": "aurelius-atlas-kafka-scanner",
             "consentRequired": false,
             "defaultClientScopes": ["basic", "profile", "roles"],
@@ -2675,6 +2701,15 @@
             "lastName": "Reader",
             "realmRoles": ["default-roles-master"],
             "username": "aurelius-reader"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write"]
+            },
+            "enabled": true,
+            "realmRoles": ["default-roles-master"],
+            "serviceAccountClientId": "aurelius-atlas-db-scanner",
+            "username": "service-account-aurelius-atlas-db-scanner"
         },
         {
             "clientRoles": {
