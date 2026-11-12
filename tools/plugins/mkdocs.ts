@@ -38,6 +38,12 @@ function createNodesInternal(
                         options: {
                             command: "uv run zensical serve",
                         },
+                        // Zensical's default dev address is localhost:8000
+                        // (-a/--dev-addr); a dependent waiting on docs waits
+                        // for the port, not for the process to appear.
+                        readyWhen: {
+                            port: 8000,
+                        },
                     },
                 },
             },

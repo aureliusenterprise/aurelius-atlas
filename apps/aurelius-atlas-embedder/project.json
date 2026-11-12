@@ -14,6 +14,9 @@
             },
             "options": {
                 "command": "uv run python -m aurelius_atlas_embedder"
+            },
+            "readyWhen": {
+                "port": 21004
             }
         }
     }

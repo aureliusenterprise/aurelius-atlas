@@ -22,7 +22,7 @@
                 { "target": "certgen" },
                 {
                     "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
-                    "target": "serve"
+                    "target": "up"
                 }
             ],
             "executor": "@nxlv/python:run-commands",
@@ -30,7 +30,11 @@
                 "description": "Serve the lineage-model API on https://localhost:21002"
             },
             "options": {
-                "command": "uv run python -m aurelius_atlas_lineage_model"
+                "command": "uv run python -m aurelius_atlas_lineage_model",
+                "envFile": "apps/aurelius-atlas-lineage-model/.env"
+            },
+            "readyWhen": {
+                "port": 21002
             }
         }
     }

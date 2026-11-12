@@ -37,7 +37,8 @@
             },
             "options": {
                 "command": "uv run pytest e2e",
-                "cwd": "{projectRoot}"
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-quality-scanner/.env"
             },
             "parallelism": false
         },
@@ -48,7 +49,8 @@
                 "description": "Run one quality scan: uv run python -m aurelius_atlas_quality_scanner [--dry-run] [--dataset <qualifiedName>]"
             },
             "options": {
-                "command": "uv run python -m aurelius_atlas_quality_scanner"
+                "command": "uv run python -m aurelius_atlas_quality_scanner",
+                "envFile": "apps/aurelius-atlas-quality-scanner/.env"
             }
         }
     }

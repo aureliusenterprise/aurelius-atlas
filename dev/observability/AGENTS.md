@@ -108,7 +108,7 @@ rules live in the root `AGENTS.md`.
 ## Commands
 
 ```bash
-nx serve aurelius-atlas-dev-observability   # Grafana on http://localhost:3000
+nx up aurelius-atlas-dev-observability      # Grafana on http://localhost:3000
 ```
 
 > [!NOTE]

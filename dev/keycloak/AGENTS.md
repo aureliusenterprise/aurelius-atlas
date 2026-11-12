@@ -29,7 +29,7 @@ project; workspace-wide rules live in the root `AGENTS.md`.
 ## Wiring Checklist
 
 - `project.json` `implicitDependencies` on `aurelius-atlas-dev-observability`; the
-  `serve` target chains `decrypt` → `docker-build` → dependency `serve`. The
+  `up` target chains `decrypt` → `docker-build` → dependency `up`. The
   server's native OTLP rides the collector's **legacy leg**
   (`https://otel-collector:4320`, shared token — the issuer cannot present a
   Keycloak JWT at its own cold boot, DD-196; JVM truststore
@@ -121,7 +121,7 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
   `IGNORE_EXISTING` rule above applies to client secrets too), then restart the
   producers. Adding/renaming an `otel-*` client has the same rule: a running
   stack will not pick up the import.
-- The webapp's `serve` target depends on this project's `serve`.
+- The webapp's `serve` target depends on this project's `up` target.
 - Realm imports can carry `${VAR}` placeholders resolved from the container
   environment; substitution needs the
   `-Dkeycloak.migration.replace-placeholders=true` JVM flag in `JAVA_OPTS`
@@ -132,7 +132,7 @@ down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
 ## Commands
 
 ```bash
-nx serve aurelius-atlas-dev-keycloak   # decrypt + build + observability + up
+nx up aurelius-atlas-dev-keycloak      # decrypt + build + observability, waits for healthy
 ```
 
 ## Conventions

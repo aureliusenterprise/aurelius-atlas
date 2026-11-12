@@ -54,7 +54,6 @@ workspace-wide rules live in the root `AGENTS.md`.
 ## Commands
 
 ```bash
-nx serve aurelius-atlas-dev-kafka   # compose up (foreground)
 nx up aurelius-atlas-dev-kafka      # detached, waits for healthy
 docker compose -f dev/kafka/docker-compose.yaml down -v   # reset all data
 ```

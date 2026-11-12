@@ -54,7 +54,6 @@ specific to this project; workspace-wide rules live in the root `AGENTS.md`.
 ## Commands
 
 ```bash
-nx serve aurelius-atlas-dev-elasticsearch   # compose up (foreground)
 nx up aurelius-atlas-dev-elasticsearch      # detached, waits for healthy
 docker compose -f dev/elasticsearch/docker-compose.yaml down -v   # reset all data
 ```
