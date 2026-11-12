@@ -7827,14 +7827,14 @@ checks a PR must pass:</p>
 <td>The derived documents kept up to date</td>
 <td>The documents a change affects derived again by the indexer: a changed entity's document kept stale, then the documents naming it or named by it; deleted relationships' ends; the server's background worker (LAS-08..10, ASU-01..07, DD-518..521)</td>
 <td><code>synchronize_app_search/event_handlers/{attribute_changed,entity_deleted,relationship_audit}</code></td>
-<td>in progress</td>
+<td>done</td>
 </tr>
 <tr>
 <td>14.4</td>
 <td>The App Search API: <code>/elastic</code></td>
-<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does, with the engine's fields that are the entity's or constants (ADR 060, LAS-07)</td>
+<td><code>POST /api/as/v1/engines/atlas-dev/search(.json)</code>: the query, filters, facets, sort and paging the original webapp sends, answered as App Search does from the entity index, with the engine's fields that are the entity's or constants (ADR 060, LAS-07, ASE-01..12, DD-523..527)</td>
 <td>Aurelius <code>libs/atlas/api/src/lib/elastic</code></td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>14.5</td>

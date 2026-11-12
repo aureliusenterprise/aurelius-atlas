@@ -3105,6 +3105,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;search_app_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12548,6 +12559,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-method"></code>&nbsp;search_app_search
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.terms" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -21006,6 +21028,18 @@ values stored, not indexed (DD-061, DD-520).</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            search_app_search
+
+
+  
+      async
+   (aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search)" href="./#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search">search_app_search</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>One search of the entity index for the App Search engine: hits with scores, the exact total, the</p>
+            </div>
+          </li>
+          <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            terms
 
 
@@ -21719,6 +21753,33 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
 <p>Free text is a scored <code>simple_query_string</code> over the text sub-fields (DD-092); facets are <code>terms</code>
 aggregations of the same query (DD-093). A vector is a <code>knn</code> search with the same filters inside it, so
 they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h4 id="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-method"></code>            <span class="doc doc-object-name doc-function-name">search_app_search</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">search_app_search</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(query)">query</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(sort)">sort</span></span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]],</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(aggs)">aggs</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(from_)">from_</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(size)">size</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>One search of the entity index for the App Search engine: hits with scores, the exact total, the
+aggregations (DD-523). Writes refresh (ENS-11).</p>
 
 
     </div>

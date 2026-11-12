@@ -1524,6 +1524,9 @@ Methods:
 - **`search`** –
 
   Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
+- **`search_app_search`** –
+
+  One search of the entity index for the App Search engine: hits with scores, the exact total, the
 - **`terms`** –
 
   A `terms` aggregation of each field's text sub-field (DD-094): writes refresh (ENS-11).
@@ -1738,6 +1741,16 @@ search(query: SearchQuery) -> SearchHits
 Answer the query as a `bool` query of the search fields (DD-089): writes refresh (ENS-11).
 
 Free text is a scored `simple_query_string` over the text sub-fields (DD-092); facets are `terms` aggregations of the same query (DD-093). A vector is a `knn` search with the same filters inside it, so they apply before the nearest are picked; with free text, an entity's score is the sum (DD-441, DD-442).
+
+#### search\_app\_search
+
+```
+search_app_search(
+    *, query: dict[str, Any], sort: list[dict[str, Any]], aggs: dict[str, Any], from_: int, size: int
+) -> Mapping[str, Any]
+```
+
+One search of the entity index for the App Search engine: hits with scores, the exact total, the aggregations (DD-523). Writes refresh (ENS-11).
 
 #### terms
 

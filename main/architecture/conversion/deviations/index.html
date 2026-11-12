@@ -7579,6 +7579,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>That facet belongs to the retired engine (ADR 054/060); the merged box lists all five ends at once, so a filter would hide what the box exists to show</td>
 <td>7.29</td>
 </tr>
+<tr>
+<td>DV-157</td>
+<td>App Search</td>
+<td>App Search matched a query's words with its own analysis: stemming, typo tolerance and its precision setting, and ranked by its relevance</td>
+<td>A query's words, joined by OR, match the analysed names, qualified name and definition, and the other text fields' exact values, ranked by Elasticsearch's BM25 (ASE-05)</td>
+<td>The engine reads the entity index's analysis, the server's free-text search's; App Search's analysis is a closed product's (DD-525)</td>
+<td>14.4</td>
+</tr>
+<tr>
+<td>DV-158</td>
+<td>App Search</td>
+<td>App Search answered range facets, <code>group</code>, <code>boosts</code>, <code>precision</code> and analytics, and made snippets with its analysis</td>
+<td>A range facet is refused 400; <code>group</code>, <code>boosts</code>, <code>precision</code> and analytics are ignored; a snippet marks the query's words in the escaped raw value (ASE-07, ASE-10)</td>
+<td>The original webapp sends none of these but snippets, which it never reads (DD-527)</td>
+<td>14.4</td>
+</tr>
 </tbody>
 </table>
 
