@@ -1,12 +1,12 @@
-"""The App Search API in the server: its two paths, an unknown engine, the privilege it needs, and a refused body
-(ASE-01, ASE-02, ASE-04), on the fake store.
+"""The App Search API in the server: its two paths, the quality engine, an unknown engine, the privilege it needs,
+and a refused body (ASE-01, ASE-02, ASE-04, ASQ-01), on the fake store.
 """  # noqa: D205 - one sentence
 
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.app_search_document import own_document
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
-from aurelius_atlas_core.stored_entity import StoredEntity
+from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from fake_issuer import FakeIssuer
 
@@ -42,10 +42,28 @@ async def test__both_paths_answer_the_engine_alike(client: httpx.AsyncClient, fa
     assert empty.json()["meta"]["page"]["total_results"] == 1
 
 
-@pytest.mark.covers(R, rules=["ASE-01"])
+@pytest.mark.covers(R, rules=["ASQ-01"])
+async def test__the_quality_engine_answers_its_results_on_both_paths(
+    client: httpx.AsyncClient, fake_es: FakeClient
+) -> None:
+    """A score's result by ``fieldguid``, the field page's filter; the engine named in the answer."""
+    result = StoredQualityResult(qualityguid="r", name="Rule 1", fieldguid=["f"], dqscore=0.5)
+    score = StoredEntity(guid="s", type_name="m4i_dq_score", attributes={}, quality_result=result)
+    await ElasticsearchEntityDocuments(fake_es).write([(score, None)])  # type: ignore[arg-type]
+    body = {"filters": {"all": [{"fieldguid": ["f"]}]}, "result_fields": {"name": {"raw": {}}, "dqscore": {"raw": {}}}}
+
+    for path in ("search", "search.json"):
+        response = await client.post(f"{ENGINES}/atlas-dev-quality/{path}", json=body)
+        assert response.status_code == 200
+        answer = response.json()
+        assert answer["meta"]["engine"]["name"] == "atlas-dev-quality"
+        assert [(found["name"], found["dqscore"]) for found in answer["results"]] == [({"raw": "Rule 1"}, {"raw": 0.5})]
+
+
+@pytest.mark.covers(R, rules=["ASE-01", "ASQ-01"])
 async def test__another_engine_is_not_found(client: httpx.AsyncClient) -> None:
-    """The quality engines come with 14.5 and 14.6."""
-    response = await client.post(f"{ENGINES}/atlas-dev-quality/search.json", json={})
+    """The governance engine comes with 14.6."""
+    response = await client.post(f"{ENGINES}/atlas-dev-gov-quality/search.json", json={})
 
     assert (response.status_code, response.json()) == (404, {"errors": ["Could not find engine."]})
 

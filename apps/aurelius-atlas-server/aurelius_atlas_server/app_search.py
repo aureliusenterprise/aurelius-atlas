@@ -1,8 +1,9 @@
-"""Keeping the App Search documents up to date in the background: the indexer's worker (ASU-06, LAS-10).
+"""Keeping the App Search documents up to date in the background: the indexer's worker (ASU-06, LAS-10, ASQ-07).
 
 The worker runs ``AppSearchIndexer`` rounds in the background of every server process, a round at start and then
-every poll interval, as the embedding worker does (DD-521). A failed round, as when the store cannot be reached,
-is logged and the next one tries again; neither the start nor a request waits for it.
+every poll interval, as the embedding worker does (DD-521). Each round ends with the ``QualityIndexer``'s, over the
+documents just written (DD-529). A failed round, as when the store cannot be reached, is logged and the next one
+tries again; neither the start nor a request waits for it.
 """
 
 import asyncio
@@ -10,16 +11,20 @@ import contextlib
 import logging
 
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
+from aurelius_atlas_core.app_search_quality import QualityIndexer
 
 LOGGER = logging.getLogger("aurelius-atlas-server")
 
 
 class AppSearchWorker:
-    """Runs rounds of ``indexer`` in the background, one at start and then every ``poll_seconds`` (ASU-06)."""
+    """Runs rounds of ``indexer``, then of ``quality``, in the background, one at start and then every
+    ``poll_seconds`` (ASU-06, ASQ-07).
+    """  # noqa: D205 - one sentence
 
-    def __init__(self, indexer: AppSearchIndexer, *, poll_seconds: float) -> None:
-        """A worker of ``indexer``, looking again every ``poll_seconds``."""
+    def __init__(self, indexer: AppSearchIndexer, quality: QualityIndexer, *, poll_seconds: float) -> None:
+        """A worker of ``indexer`` and ``quality``, looking again every ``poll_seconds``."""
         self._indexer = indexer
+        self._quality = quality
         self._poll_seconds = poll_seconds
         self._running: asyncio.Task[None] | None = None
 
@@ -39,11 +44,12 @@ class AppSearchWorker:
         """Run one round; a failure is logged and the next round tries again."""
         try:
             written = await self._indexer.run_once()
+            written += await self._quality.run_once()
         except Exception:
             LOGGER.exception("Deriving the App Search documents failed; trying again in %.0f s", self._poll_seconds)
             return 0
         if written:
-            LOGGER.info("Wrote %d App Search documents and relationships", written)
+            LOGGER.info("Wrote %d App Search documents, relationships, quality results and totals", written)
         return written
 
     async def _loop(self) -> None:

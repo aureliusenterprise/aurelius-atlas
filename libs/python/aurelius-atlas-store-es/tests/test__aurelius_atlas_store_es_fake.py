@@ -264,7 +264,9 @@ async def test__regexp_queries_match_whole_values_or_words_of_a_text_sub_field()
 
 
 async def test__search_sorts_with_options_and_pages_from_an_offset() -> None:
-    """Missing values last either way; arrays by least ascending, largest descending; ``from_`` skips."""
+    """Missing values last either way, or as the value given; arrays by least ascending, largest descending;
+    ``from_`` skips.
+    """  # noqa: D205 - one sentence
     fake = FakeClient()
     for document_id, value in (("a", [1, 9]), ("b", 5), ("c", None)):
         await fake.index(index="docs", id=document_id, document={"n": value})
@@ -279,6 +281,8 @@ async def test__search_sorts_with_options_and_pages_from_an_offset() -> None:
     assert await order("asc") == ["a", "b", "c"]
     assert await order("desc") == ["a", "b", "c"]
     assert await order("desc", 1) == ["b", "c"]
+    valued = await fake.search(index="docs", sort=[{"n": {"order": "asc", "missing": 3}}], size=10)
+    assert [hit["_id"] for hit in valued["hits"]["hits"]] == ["a", "c", "b"]
     assert fake_settings["acknowledged"]
     assert fake.settings_updates == ["docs"]
 
@@ -311,7 +315,7 @@ async def test__simple_query_strings_score_and_sort_by_boosted_words() -> None:
 
 async def test__terms_aggregations_count_values_or_words_of_the_matches() -> None:
     """By count then key, or as ``order`` says; a ``.text`` sub-field counts lowercased words once a document;
-    ``include`` filters.
+    ``include`` filters; ``missing`` counts the documents without a value.
     """  # noqa: D205 - one sentence
     fake = FakeClient()
     for document_id, document in {"a": {"t": ["X y", "y"]}, "b": {"t": "x"}, "c": {"u": 1}}.items():
@@ -322,6 +326,7 @@ async def test__terms_aggregations_count_values_or_words_of_the_matches() -> Non
         "some": {"terms": {"field": "t.text", "include": "y.*"}},
         "by_key": {"terms": {"field": "t.text", "order": {"_key": "desc"}}},
         "fewest": {"terms": {"field": "t.text", "order": {"_count": "asc"}}},
+        "missing": {"terms": {"field": "u", "missing": 0}},
     }
 
     found = await fake.search(index="docs", size=0, aggs=aggs)
@@ -337,6 +342,7 @@ async def test__terms_aggregations_count_values_or_words_of_the_matches() -> Non
     assert buckets["some"] == [{"key": "y", "doc_count": 1}]
     assert [bucket["key"] for bucket in buckets["by_key"]] == ["y", "x"]
     assert [bucket["key"] for bucket in buckets["fewest"]] == ["y", "x"]
+    assert buckets["missing"] == [{"key": 0, "doc_count": 2}, {"key": 1, "doc_count": 1}]
     assert "aggregations" not in plain
 
 
