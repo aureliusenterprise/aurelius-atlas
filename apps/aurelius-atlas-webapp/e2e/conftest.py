@@ -275,7 +275,7 @@ def _goto_app(page: Page, url: str) -> None:
     handshake and the screen's first data round-trip before it renders. On a
     contended runner that work outlasts Playwright's default 5 s expect, so a
     caller that asserts straight after the goto can fail while the page is
-    still booting (DD-401: the webkit deep-link flake). Wait the way the
+    still booting (ADR 062: the webkit deep-link flake). Wait the way the
     sign-in fixture does — ``nav.navbar`` is the app's own chrome, so its
     arrival means the handshake traded the session and the router holds the
     tokens; a target ``#anchor`` is the router's own scroll target, not the

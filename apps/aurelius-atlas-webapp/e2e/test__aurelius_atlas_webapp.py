@@ -1033,7 +1033,7 @@ def _deep_link_lands_its_section(page: Page, root_url: str, entity_guid: str, ru
     fixed navbar (the router's own jump runs before the entity answers,
     so the screen lands it once its box renders). The boot wait inside
     ``_goto_app`` is what makes the cold open safe on a contended runner
-    (DD-401: the webkit flake).
+    (ADR 062: the webkit flake).
     """
     _goto_app(page, urljoin(root_url, f"/en-US/search/details/{entity_guid}#related-attributes"))
     expect(page.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")

@@ -27,7 +27,7 @@ BATCH = 100
 
 
 # impact=severe, likelihood=low (the spine under load drifts slowly). Cost
-# ceiling (DD-401): a capacity claim a contended shared runner cannot honour
+# ceiling (ADR 062): a capacity claim a contended shared runner cannot honour
 # (PR 329's flake record) — weekly Scan's dedicated runner is its home.
 @pytest.mark.medium
 @pytest.mark.covers(

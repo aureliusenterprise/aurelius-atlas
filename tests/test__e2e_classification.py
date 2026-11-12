@@ -1,4 +1,4 @@
-"""The criticality classification of every e2e test (the CI test tiers, DD-401).
+"""The criticality classification of every e2e test (the CI test tiers, ADR 062).
 
 Every end-to-end test names one of the four criticality levels — ``critical``,
 ``high``, ``medium`` or ``low`` — in its own decorators, one scenario at a

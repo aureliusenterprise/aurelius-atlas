@@ -209,7 +209,7 @@ jobs:
             - name: Lint & render charts
               run: npx nx affected -t helm-lint helm-template
 
-            # The tier ledger (DD-401): every e2e test names exactly one
+            # The tier ledger (ADR 062): every e2e test names exactly one
             # criticality level and every level below critical shows its
             # risk pair. Offline - it reads the e2e trees, never runs
             # them - so no key and no docker. It rides validate because
@@ -332,7 +332,7 @@ jobs:
                   printf '%s' "$DOCKERHUB_PASSWORD" | docker login dhi.io -u "$DOCKERHUB_USER" --password-stdin
                   printf '%s' "$GITHUB_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
 
-            # The integration phase, tiered by criticality (DD-401): a pull
+            # The integration phase, tiered by criticality (ADR 062): a pull
             # request and the push to main both run the critical and high
             # scenarios on Chromium only, and the weekly Scan carries the
             # whole suite on every browser. Pull and main are identical here
