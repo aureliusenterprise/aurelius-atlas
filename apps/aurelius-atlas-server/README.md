@@ -29,6 +29,7 @@ Atlas resource. What is ported, and how, is tracked in the
 | `/api/atlas/v2/search/saved/...`  | The user's saved searches: save, read, rename, run and delete         |
 | `/api/atlas/v2/lineage/...`       | A data set's or process's lineage, by GUID or unique attributes       |
 | `/api/atlas/v2/glossary/...`      | Glossaries, categories and terms: CRUD; terms assigned to entities    |
+| `POST /api/as/v1/engines/...`     | The original webapp's App Search searches of `atlas-dev`              |
 
 ## Dashboards
 
@@ -120,6 +121,21 @@ facets by type, state, owner and service type, and `search/suggestions` the most
 weighted 8 or more (DD-093, DD-094).
 `GET search/dsl` answers a DSL query, parsed by Atlas's grammar (DD-240), with the entities it finds or its
 `select`'s attribute table, following references and classification attributes (DD-242, DD-243).
+
+### The original webapp's App Search
+
+`POST /api/as/v1/engines/atlas-dev/search` and `.../search.json` answer the App Search requests of the
+original Aurelius Atlas webapp from the entity index (`routes/app_search.py`, ADR 060, 14.4). The webapp's
+reverse proxy sends `<base>/elastic` to App Search; point it at the server instead, for example in Apache:
+
+```apache
+<Location /atlas/elastic>
+ProxyPass "https://atlas-server:21000/api/as/v1/engines/atlas-dev/search.json"
+</Location>
+```
+
+The proxy passes the user's bearer token on; the user needs `ENTITY_READ` (DD-526). The quality engines,
+`atlas-dev-quality` and `atlas-dev-gov-quality`, answer 404 until 14.5 and 14.6.
 
 ## Lineage
 

@@ -956,6 +956,30 @@ class ElasticsearchEntityDocuments:
             for hit in response["hits"]["hits"]
         ]
 
+    async def search_app_search(
+        self,
+        *,
+        query: dict[str, Any],
+        sort: list[dict[str, Any]],
+        aggs: dict[str, Any],
+        from_: int,
+        size: int,
+    ) -> Mapping[str, Any]:
+        """One search of the entity index for the App Search engine: hits with scores, the exact total, the
+        aggregations (DD-523). Writes refresh (ENS-11).
+        """  # noqa: D205 - one sentence
+        response: Mapping[str, Any] = await self._client.search(  # pyright: ignore[reportAssignmentType]
+            index=self._entities,
+            query=query,
+            sort=sort,
+            aggs=aggs or None,
+            from_=from_,
+            size=size,
+            track_total_hits=True,
+            track_scores=True,
+        )
+        return response
+
     async def search(self, query: SearchQuery) -> SearchHits:
         """Answer the query as a ``bool`` query of the search fields (DD-089): writes refresh (ENS-11).
 

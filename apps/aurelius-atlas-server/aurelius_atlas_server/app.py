@@ -52,6 +52,7 @@ from aurelius_atlas_server.oidc_client import OidcClient
 from aurelius_atlas_server.request_context import RequestContextMiddleware
 from aurelius_atlas_server.routes import (
     ADMIN,
+    APP_SEARCH,
     DISCOVERY,
     ENTITY,
     GLOSSARY,
@@ -156,6 +157,7 @@ def create_app(
             documents = ElasticsearchEntityDocuments(store.client, embedding_dimensions=_dimensions(settings))
             entity_store = EntityStore(registry, documents)
             await entity_store.prepare()
+            app.state.entity_documents = documents
             entity_audits = ElasticsearchEntityAuditRepository(store.client)
             await entity_audits.prepare()
             app.state.entity_audits = entity_audits
@@ -254,7 +256,19 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
     # them all; the instrumentor below wraps this middleware.
     app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
     app.add_exception_handler(AtlasError, atlas_error_handler)
-    for router in (ADMIN, TYPES, ENTITY, RELATIONSHIP, DISCOVERY, LINEAGE, GLOSSARY, LOGIN, SEARCH_BY_MEANING, QUALITY):
+    for router in (
+        ADMIN,
+        TYPES,
+        ENTITY,
+        RELATIONSHIP,
+        DISCOVERY,
+        LINEAGE,
+        GLOSSARY,
+        LOGIN,
+        SEARCH_BY_MEANING,
+        QUALITY,
+        APP_SEARCH,
+    ):
         app.include_router(router)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
