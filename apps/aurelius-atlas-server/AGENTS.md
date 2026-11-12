@@ -55,7 +55,9 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)
-- `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`)
+- `aurelius_atlas_server/routes/` — one router module per Atlas resource class (`admin.py` ← `AdminResource`);
+  `app_search.py` is the original webapp's App Search API, answered by core's `AppSearchEngine` over
+  `app.state.entity_documents` in App Search's shapes, refusals included (ASE-01, ASE-02, DD-527)
 - `aurelius_atlas_server/__main__.py` — the uvicorn entry point
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
 - `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the image over HTTPS on the dev store

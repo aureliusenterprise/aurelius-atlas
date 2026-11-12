@@ -606,8 +606,9 @@ def _text_score(source: dict[str, Any], options: dict[str, Any]) -> float:
 
 
 def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, Any]:
-    """A ``terms`` aggregation, by count then key: a ``.text`` sub-field's lowercased words, else the values;
-    ``include`` a regular expression the whole term matches.
+    """A ``terms`` aggregation, by count then key, or as ``order`` says (``_count`` or ``_key``, ``asc`` or
+    ``desc``, one or a list): a ``.text`` sub-field's lowercased words, else the values; ``include`` a regular
+    expression the whole term matches.
     """  # noqa: D205 - one sentence
     field: str = options["field"]
     text = field.endswith(".text")
@@ -619,7 +620,12 @@ def _terms(sources: list[dict[str, Any]], options: dict[str, Any]) -> dict[str, 
         for term in terms:
             if include is None or include.fullmatch(str(term)):
                 counts[term] = counts.get(term, 0) + 1
-    ordered = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[: options.get("size", 10)]
+    order = options.get("order", [{"_count": "desc"}, {"_key": "asc"}])
+    ordered = list(counts.items())
+    for clause in reversed(order if isinstance(order, list) else [order]):
+        ((by, direction),) = clause.items()
+        ordered.sort(key=lambda item, by=by: item[0] if by == "_key" else item[1], reverse=direction == "desc")
+    ordered = ordered[: options.get("size", 10)]
     return {"buckets": [{"key": key, "doc_count": count} for key, count in ordered]}
 
 
