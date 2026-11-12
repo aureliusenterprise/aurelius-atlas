@@ -53,7 +53,7 @@ From `aureliusenterprise/aurelius` at commit b057389:
 
 None against Apache Atlas: its API answers as before (ASD-05). Against the legacy documents, the differences of
 14.1's table, which DD-485 decided: [DV-149](../../../../docs/architecture/conversion/deviations.md) (the own
-fields), DV-150 (the breadcrumbs) and DV-151 (the relations).
+fields), DV-151 (the breadcrumbs) and DV-152 (the relations).
 
 ## Acceptance
 
