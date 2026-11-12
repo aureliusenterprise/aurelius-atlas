@@ -10,6 +10,7 @@ from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
 from aurelius_atlas_model.tasks import TaskStatus
 from aurelius_atlas_model.typedef import AtlasTypesDef
 
+from aurelius_atlas_core.app_search_document import has_document, with_current_app_search
 from aurelius_atlas_core.entity_audit_repository import TAG_ACTIONS
 from aurelius_atlas_core.entity_documents import (
     LINKED_MODELS,
@@ -144,7 +145,11 @@ class MemoryEntityDocuments:
         groups += [(self.linked[kind], write.written, write.removed, kind) for kind, write in (linked or {}).items()]
         for documents, written, gone, kind in groups:
             for document, version in written:
-                kept = with_current_embedding(document) if isinstance(document, StoredEntity) else document
+                kept = (
+                    with_current_app_search(with_current_embedding(document))
+                    if isinstance(document, StoredEntity)
+                    else document
+                )
                 results.append(self._put(documents, kept.guid, kept.to_json(), version, kind=kind))
             for guid, version in gone:
                 results.append(self._put(documents, guid, None, version, kind=kind))
@@ -340,6 +345,16 @@ class MemoryEntityDocuments:
             source, version = self.entities[guid]
             entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
             if embeddable(entity.type_name) and (entity.embedding is None or entity.embedding.model != model):
+                found.append(VersionedEntity(entity, version))
+        return found[:limit]
+
+    async def without_app_search(self, limit: int) -> list[VersionedEntity]:
+        """The entities that should have an App Search document and have none, by GUID (ASD-04)."""
+        found = []
+        for guid in sorted(self.entities):
+            source, version = self.entities[guid]
+            entity = StoredEntity.model_validate(codec.loads(codec.dumps(source)))
+            if has_document(entity) and entity.app_search is None:
                 found.append(VersionedEntity(entity, version))
         return found[:limit]
 
