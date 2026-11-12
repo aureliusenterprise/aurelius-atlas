@@ -52,6 +52,10 @@ services:
             # ${KAFKA_SCANNER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here — the same mechanism as the secrets above.
             KAFKA_SCANNER_CLIENT_SECRET: ${KAFKA_SCANNER_CLIENT_SECRET:?}
+            # The relational database scanner's service client (13.3, DD-506): its
+            # ${DB_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            DB_SCANNER_CLIENT_SECRET: ${DB_SCANNER_CLIENT_SECRET:?}
             # Credentials: an empty value here yields obscure failures
             # (missing admin user, JDBC/SSL crash loops) instead of a
             # clear startup error, so require them at interpolation time.

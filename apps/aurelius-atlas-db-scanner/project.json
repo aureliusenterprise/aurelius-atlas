@@ -1,0 +1,50 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-atlas-model", "aurelius-atlas-otel", "aurelius-atlas-server-client"],
+    "name": "aurelius-atlas-db-scanner",
+    "projectType": "application",
+    "sourceRoot": "{projectRoot}/aurelius_atlas_db_scanner",
+    "tags": [],
+    "targets": {
+        "e2e": {
+            "configurations": {
+                "ci": {
+                    "junitxml": "junit-e2e.xml",
+                    "trace-json": "trace-e2e.json"
+                }
+            },
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                { "projects": ["aurelius-atlas-server"], "target": "docker-build" },
+                {
+                    "projects": [
+                        "aurelius-atlas-dev-keycloak",
+                        "aurelius-atlas-dev-observability",
+                        "aurelius-atlas-dev-elasticsearch"
+                    ],
+                    "target": "up"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "E2E: the scanner in-process against a real server and its own disposable Postgres (DD-507: the suite's own database, never a shared store)"
+            },
+            "options": {
+                "command": "uv run pytest e2e",
+                "cwd": "{projectRoot}"
+            },
+            "parallelism": false
+        },
+        "scan": {
+            "dependsOn": [{ "target": "decrypt" }],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "Run one database scan: uv run python -m aurelius_atlas_db_scanner [--dry-run] [--table <name>] (DSN and SYSTEM_NAME from the environment)"
+            },
+            "options": {
+                "command": "uv run python -m aurelius_atlas_db_scanner"
+            }
+        }
+    }
+}
