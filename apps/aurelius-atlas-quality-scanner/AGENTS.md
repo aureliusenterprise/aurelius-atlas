@@ -62,7 +62,8 @@ this app moves data, it never recomputes a score.
 - Audiences: the server accepts the scanner's token because
   `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` names the client (the server's `.env` for `serve`,
   the e2e compose for the suite). Adding a service client means editing that list too. The
-  prod-side join lands with 12.3's chart work.
+  prod-side join landed with 12.3: the server chart's `auth.audiences` default names the
+  three scanner clients (CHT-120).
 - `.env` / `.env.enc` — dev defaults; re-run `nx encrypt aurelius-atlas-quality-scanner`
   after changing `.env` (CI regenerates the plaintext from the `.env.enc`). The e2e vars the
   server image reads carry the server's own prefix (Nx injects this `.env` into the task).
@@ -70,6 +71,17 @@ this app moves data, it never recomputes a score.
   server and the issuer with `CA_FILE`.
 - `Dockerfile` — the wheel `nx build` makes, nonroot, no EXPOSE and no HEALTHCHECK: the
   batch image ships for 12.3's CronJob.
+- `helm/` — the standalone `atlas-quality-scanner` chart (12.3, CHT-114..117, CHT-125): one
+  CronJob (Forbid, deadline 3600, `restartPolicy: Never`, no service-account token) and a
+  ServiceAccount. `schedule` and `catalogue.serverUrl` are required values; the identity
+  joins (CHT-116) read `auth.clientId` and the `<release>-scanner-clients` Secret — the
+  deployment registers that client and places that Secret (CHT-118/119, DD-509). Never
+  an umbrella dependency (DD-508) — it declares the full `global.*` contract itself and
+  publishes to its own OCI repository. Optional blocks: `trust.caSecretName` mounts a
+  customer CA (also verifies the collector, CHT-117) and `telemetry` turns the OTLP
+  export on with the job's own client credential by default (CHT-125, DD-511). The scan
+  knobs (`scan.sources`, `scan.maxRows`, `scan.searchLimit`) render only when set.
+  `tests/values.test.yaml` answers the guards.
 - `e2e/docker-compose.yaml` — one service: the server image on the dev networks. The scanner
   itself has no service; the suite calls `run_scan` in-process (a batch CLI has nothing to
   compose). Tests seed `zz<run>`-namespaced entities and hard-delete them (DD-223: the shared
@@ -80,9 +92,12 @@ this app moves data, it never recomputes a score.
 
 ## Removal
 
-The app is one increment's deliverable: remove `apps/aurelius-atlas-quality-scanner`, its
-root `pyproject.toml` entries (member, dev group, uv source), the scanner client and
-service-account user in `dev/keycloak/import/master.json` (and the helm copy), the scanner
-entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES`, the mkdocs nav entry, and the 12.2 roadmap
-rows. The `m4i_dq_score` model and its patches live in `aurelius-atlas-core` and stay —
-7.25 reads them. The engine lib (12.1) stays.
+The app is one increment's deliverable: remove `apps/aurelius-atlas-quality-scanner`,
+including its `helm/` chart, its root `pyproject.toml` entries (member, dev group, uv
+source), the scanner client and service-account user in `dev/keycloak/import/master.json`
+(and the helm copy), the scanner entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` and in
+the server chart's `auth.audiences` default (CHT-120), the mkdocs nav entry, and the
+12.2/12.3 roadmap rows. Nothing to unwire in the umbrella or the hardened realm asset:
+scanner registration was never theirs (CHT-118/119). The
+`m4i_dq_score` model and its patches live in `aurelius-atlas-core` and stay — 7.25 reads
+them. The engine lib (12.1) stays.

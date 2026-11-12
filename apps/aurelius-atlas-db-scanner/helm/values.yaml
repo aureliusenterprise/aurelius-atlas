@@ -1,0 +1,152 @@
+# The db-scanner chart — its runtime contract (CHT-02, CHT-114..117, 123..124).
+# apps/aurelius-atlas-db-scanner: batch CLI, prefix AURELIUS_ATLAS_DB_SCANNER_,
+# no port (DBS-02). Standalone by design — never a dependency of the helm/
+# umbrella (DD-508); the full global.* contract is declared here (CHT-03) so it
+# installs alone. One release scans one database (CHT-124): the DSN, the System,
+# and the schedule are per release.
+
+global:
+    namespace: ""
+    labels: {}
+    image:
+        registry: ghcr.io
+        namespace: aureliusenterprise
+        tag: ""
+        pullSecrets: []
+    issuer:
+        url: ""
+    domain: ""
+    dnsResolver: ""
+    realm: ""
+    trust:
+        issuerRef:
+            name: ""
+            kind: ""
+        caSecretName: ""
+
+enabled: true
+component: db-scanner
+componentEnvPrefix: AURELIUS_ATLAS_DB_SCANNER_
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+    name: aurelius-atlas-db-scanner
+    tag: ""
+    digest: ""
+
+# The schedule (CHT-115): required (DD-510).
+schedule: ""
+concurrencyPolicy: Forbid
+activeDeadlineSeconds: 3600
+startingDeadlineSeconds: 600
+successfulJobsHistoryLimit: 3
+failedJobsHistoryLimit: 1
+ttlSecondsAfterFinished: ""
+suspend: false
+args: []
+
+# Where the catalogue is (CHT-116): required.
+catalogue:
+    serverUrl: ""
+
+# The job's identity (CHT-116, DD-509): an operator-supplied Secret.
+auth:
+    clientId: aurelius-atlas-db-scanner
+    secretName: ""
+    secretKey: ""
+
+# The database under scan (CHT-123, DD-516). The DSN carries the database's
+# credentials, so it is a Secret reference and never a value (DD-506's rule
+# extended to the chart): name an existing Secret and the key inside it.
+# systemName is required — DBS-03's no-default setting, guarded at the render
+# so an unnamed System fails the install, not the 03:00 run.
+database:
+    dsnSecret:
+        name: ""
+        # "" takes the whole DSN from the key "dsn" of the named Secret.
+        key: dsn
+    systemName: ""
+    # The Collection name for a nameless default schema (DBS-04); "" keeps "default".
+    schemaName: ""
+    # The schema/table patterns (DBS-04, DBS-05); "" keeps the app's "*".
+    schemaPatterns: ""
+    tablePatterns: ""
+    # How long the door waits for a connect (DBS-02); "" keeps 10s.
+    connectTimeoutSeconds: ""
+
+# The scan's OTLP export (CHT-125, DD-511): a first-class block, off by
+# default — a batch job exports a handful of spans per run and the operator
+# decides whether the cluster hears them. endpoint is required when on
+# (DD-508: no co-deployed collector to derive, like catalogue.serverUrl).
+telemetry:
+    enabled: false
+    endpoint: ""
+    # The ingest auth (CHT-125): on, the chart joins the app-owned leg's trio
+    # (DD-196) and reuses the job's own client and identity Secret unless the
+    # deployment registers a dedicated ingest client (DD-514's reuse rule).
+    # Off, the export rides the SDK env leg unauthenticated (DD-210) — a
+    # customer collector that asks for no credential.
+    auth:
+        enabled: true
+        # "" reuses auth.clientId; a name takes its own key in secretName.
+        clientId: ""
+        # "" reuses the identity Secret the job reads (CHT-116's default).
+        secretName: ""
+        secretKey: ""
+
+# The trust CA, optional (CHT-117): a name mounts the Secret read-only and
+# joins CA_FILE — the issuer, the catalogue, and (CHT-125) an OTLP collector
+# reached over TLS; no name keeps the image's system trust. The database's own
+# TLS stays inside the DSN.
+trust:
+    caSecretName: ""
+    mountPath: /etc/aurelius-atlas/ca
+
+resources:
+    requests:
+        cpu: 100m
+        memory: 512Mi
+    limits:
+        memory: 1Gi
+
+# CHT-117 passthroughs: config, secretRefs (an extra credential the DSN does
+# not carry), extraEnv (anything the typed blocks above do not model). A
+# driver outside the image is an image concern (DBS-01), never a chart value
+# (CHT-124).
+config: {}
+secretRefs: []
+extraEnv: []
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
+podAnnotations: {}
+podLabels: {}
+
+podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    seccompProfile:
+        type: RuntimeDefault
+securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+        drop:
+            - ALL
+
+serviceAccount:
+    create: true
+    name: ""
+
+required:
+    - key: schedule
+      message: "schedule is required (the cron expression the scan runs on, CHT-115)"
+    - key: catalogue.serverUrl
+      message: "catalogue.serverUrl is required (the catalogue the scan writes to, CHT-116)"
+    - key: database.dsnSecret.name
+      message: "database.dsnSecret.name is required (the Secret holding the DSN; a DSN is never a value, CHT-123)"
+    - key: database.systemName
+      message: "database.systemName is required (the System the tree hangs under, DBS-03)"

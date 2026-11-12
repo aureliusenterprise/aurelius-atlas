@@ -97,7 +97,8 @@ override. The keycloak StatefulSet's import envs and every producer's
 `OTEL_CLIENT_SECRET` join follow the same realm gate — keep the three
 spellings and the asset's placeholders derived from one roster (the
 umbrella suite pins them; `atlas-keycloak.otelClients` is the chart-local
-copy). `global.realm` is the one-value retarget for all of them (CHT-74):
+copy).
+`global.realm` is the one-value retarget for all of them (CHT-74):
 chart-local `atlas-keycloak.realm.name=master` alone flips the Secret but
 not the producers' joins, so a mixed render dangles — set `global.realm`
 when retargeting.
@@ -213,6 +214,19 @@ absent; read optional component blocks as`index .Values "x" | default dict`.
 4. Copy `helm/.helmignore-shared` to `<chart>/.helmignore`; add
    `tests/values.test.yaml`; run `npx nx run-many -t helm-lint helm-template`
    (CHT-06).
+
+> [!NOTE]
+> A standalone chart skips step 3 on purpose. The batch scanner charts
+> (`apps/aurelius-atlas-{quality,kafka,db}-scanner/helm`, DD-508) deploy to
+> customer environments on their own release cycle, so the umbrella never
+> carries a dependency row for them: no `atlas-<name>.enabled` toggle, no
+> umbrella values passthrough. They declare the full `global.*` contract with
+> empty defaults (CHT-03) and publish to their own OCI repositories like every
+> other chart. Nothing here provisions what they sign in with either: no
+> scanner client enters the realm asset, and no scanner Secret enters the
+> generated set (CHT-118/119, DD-509) — the deployment registers the client
+> in its own issuer and places the credential Secret the chart's
+> `auth.secretName` names.
 
 ## Removing a slice
 

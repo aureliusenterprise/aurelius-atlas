@@ -1,0 +1,182 @@
+{{/*
+The CronJob (CHT-115, 123, 124): one run reflects one database and writes the
+tree (DBS-02). The shared batch shape is 12.3's (the quality chart is the
+stated twin); the database block is this chart's own (CHT-123): the DSN is a
+Secret reference that never becomes a value here (DD-516), and one release
+scans one database (CHT-124). No Service, Certificate, or NetworkPolicy
+(CHT-115).
+*/}}
+{{- $fullname := include "atlas-db-scanner.fullname" . -}}
+{{- $ns := default .Release.Namespace .Values.global.namespace -}}
+{{- $caSecret := include "atlas-db-scanner.caSecretName" . -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+    name: {{ $fullname }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "atlas-db-scanner.labels" . | nindent 8 }}
+spec:
+    schedule: {{ .Values.schedule | quote }}
+    concurrencyPolicy: {{ default "Forbid" .Values.concurrencyPolicy }}
+    startingDeadlineSeconds: {{ int .Values.startingDeadlineSeconds }}
+    successfulJobsHistoryLimit: {{ int .Values.successfulJobsHistoryLimit }}
+    failedJobsHistoryLimit: {{ int .Values.failedJobsHistoryLimit }}
+    suspend: {{ .Values.suspend }}
+    {{- with .Values.ttlSecondsAfterFinished }}
+    ttlSecondsAfterFinished: {{ int . }}
+    {{- end }}
+    jobTemplate:
+        spec:
+            {{- with .Values.activeDeadlineSeconds }}
+            activeDeadlineSeconds: {{ int . }}
+            {{- end }}
+            template:
+                metadata:
+                    labels:
+                        {{- include "atlas-db-scanner.labels" . | nindent 24 }}
+                        {{- with .Values.podLabels }}
+                        {{- toYaml . | nindent 24 }}
+                        {{- end }}
+                    {{- with .Values.podAnnotations }}
+                    annotations:
+                        {{- toYaml . | nindent 24 }}
+                    {{- end }}
+                spec:
+                    restartPolicy: Never
+                    serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+                    automountServiceAccountToken: false
+                    {{- with .Values.global.image.pullSecrets }}
+                    imagePullSecrets:
+                        {{- toYaml . | nindent 22 }}
+                    {{- end }}
+                    securityContext:
+                        {{- toYaml .Values.podSecurityContext | nindent 24 }}
+                    containers:
+                        -   name: {{ .Values.component }}
+                            image: {{ include "atlas-db-scanner.image" . | quote }}
+                            imagePullPolicy: IfNotPresent
+                            securityContext:
+                                {{- toYaml .Values.securityContext | nindent 32 }}
+                            {{- with .Values.args }}
+                            args:
+                                {{- toYaml . | nindent 32 }}
+                            {{- end }}
+                            env:
+                                - name: {{ .Values.componentEnvPrefix }}SERVER_URL
+                                  value: {{ .Values.catalogue.serverUrl | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}TOKEN_URL
+                                  value: {{ include "atlas-db-scanner.tokenUrl" . | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}CLIENT_ID
+                                  value: {{ .Values.auth.clientId | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}CLIENT_SECRET
+                                  valueFrom:
+                                      secretKeyRef:
+                                          name: {{ include "atlas-db-scanner.secretName" . }}
+                                          key: {{ include "atlas-db-scanner.secretKey" . | quote }}
+                                {{- /* The DSN, a Secret reference only
+                                (CHT-123, DD-516): the string never passes
+                                through a value, a template, or a render. */}}
+                                - name: {{ .Values.componentEnvPrefix }}DSN
+                                  valueFrom:
+                                      secretKeyRef:
+                                          name: {{ .Values.database.dsnSecret.name }}
+                                          key: {{ default "dsn" .Values.database.dsnSecret.key | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}SYSTEM_NAME
+                                  value: {{ .Values.database.systemName | quote }}
+                                {{- /* The scan knobs (CHT-123): rendered only
+                                when named; the app's defaults stay the app's. */}}
+                                {{- with .Values.database.schemaName }}
+                                - name: {{ $.Values.componentEnvPrefix }}SCHEMA_NAME
+                                  value: {{ . | quote }}
+                                {{- end }}
+                                {{- with .Values.database.schemaPatterns }}
+                                - name: {{ $.Values.componentEnvPrefix }}SCHEMAS
+                                  value: {{ . | quote }}
+                                {{- end }}
+                                {{- with .Values.database.tablePatterns }}
+                                - name: {{ $.Values.componentEnvPrefix }}TABLES
+                                  value: {{ . | quote }}
+                                {{- end }}
+                                {{- with .Values.database.connectTimeoutSeconds }}
+                                - name: {{ $.Values.componentEnvPrefix }}CONNECT_TIMEOUT_SECONDS
+                                  value: {{ . | quote }}
+                                {{- end }}
+                                {{- if $caSecret }}
+                                - name: {{ .Values.componentEnvPrefix }}CA_FILE
+                                  value: {{ printf "%s/ca.crt" (trimSuffix "/" .Values.trust.mountPath) | quote }}
+                                {{- end }}
+                                {{- /* The scan's OTLP export (CHT-125, DD-511),
+                                off by default. Auth on: the app-owned leg's
+                                trio (DD-196), minting against the issuer the
+                                identity join already names. Auth off: the SDK
+                                env leg (DD-210), unauthenticated — the shape
+                                for a collector that asks for no credential. */}}
+                                {{- if .Values.telemetry.enabled }}
+                                {{- if .Values.telemetry.auth.enabled }}
+                                - name: {{ .Values.componentEnvPrefix }}OTEL_ENDPOINT
+                                  value: {{ .Values.telemetry.endpoint | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}OTEL_TOKEN_URL
+                                  value: {{ include "atlas-db-scanner.tokenUrl" . | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}OTEL_CLIENT_ID
+                                  value: {{ include "atlas-db-scanner.otelClientId" . | quote }}
+                                - name: {{ .Values.componentEnvPrefix }}OTEL_CLIENT_SECRET
+                                  valueFrom:
+                                      secretKeyRef:
+                                          name: {{ include "atlas-db-scanner.otelSecretName" . }}
+                                          key: {{ include "atlas-db-scanner.otelSecretKey" . | quote }}
+                                {{- else }}
+                                - name: OTEL_EXPORTER_OTLP_ENDPOINT
+                                  value: {{ .Values.telemetry.endpoint | quote }}
+                                {{- /* The env leg's own TLS knob (DD-210):
+                                the SDK reads the standard var, not CA_FILE. */}}
+                                {{- if $caSecret }}
+                                - name: OTEL_EXPORTER_OTLP_CERTIFICATE
+                                  value: {{ printf "%s/ca.crt" (trimSuffix "/" .Values.trust.mountPath) | quote }}
+                                {{- end }}
+                                {{- end }}
+                                {{- end }}
+                                {{- with .Values.config }}
+                                {{- range $key, $value := . }}
+                                - name: {{ $key }}
+                                  value: {{ $value | quote }}
+                                {{- end }}
+                                {{- end }}
+                                {{- with .Values.secretRefs }}
+                                {{- range . }}
+                                - name: {{ .name }}
+                                  valueFrom:
+                                      secretKeyRef:
+                                          name: {{ .secret }}
+                                          key: {{ .key }}
+                                {{- end }}
+                                {{- end }}
+                                {{- with .Values.extraEnv }}
+                                {{- toYaml . | nindent 32 }}
+                                {{- end }}
+                            {{- if $caSecret }}
+                            volumeMounts:
+                                - name: ca
+                                  mountPath: {{ .Values.trust.mountPath }}
+                                  readOnly: true
+                            {{- end }}
+                            resources:
+                                {{- toYaml .Values.resources | nindent 32 }}
+                    {{- if $caSecret }}
+                    volumes:
+                        -   name: ca
+                            secret:
+                                secretName: {{ $caSecret }}
+                    {{- end }}
+                    {{- with .Values.nodeSelector }}
+                    nodeSelector:
+                        {{- toYaml . | nindent 22 }}
+                    {{- end }}
+                    {{- with .Values.tolerations }}
+                    tolerations:
+                        {{- toYaml . | nindent 22 }}
+                    {{- end }}
+                    {{- with .Values.affinity }}
+                    affinity:
+                        {{- toYaml . | nindent 22 }}
+                    {{- end }}

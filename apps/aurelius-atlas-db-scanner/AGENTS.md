@@ -90,8 +90,20 @@ KSC-07), cited not restated; any change to either is a deviation and needs a
 - Audiences: the server accepts the scanner's token because
   `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` names the client (the server's `.env`
   for `serve`, the e2e compose's `AUTH_AUDIENCES` for the suite). Adding a
-  service client means editing that list too. The prod-side join lands with
-  13.4's chart work.
+  service client means editing that list too. The prod-side join landed with
+  13.4: the server chart's `auth.audiences` default names the three scanner
+  clients (CHT-120).
+- `helm/` — the standalone `atlas-db-scanner` chart (13.4, CHT-114..117 and
+  CHT-123/124): one CronJob (Forbid, deadline 3600, `restartPolicy: Never`, no
+  service-account token) and a ServiceAccount. `schedule`, `catalogue.serverUrl`,
+  `database.dsnSecret.name` and `database.systemName` are required values. The
+  DSN is a `secretKeyRef` into the named Secret and never a value (DD-516); the
+  scan knobs (`database.schemaName`, `schemaPatterns`, `tablePatterns`,
+  `connectTimeoutSeconds`) render only when set. One release scans one database
+  under release-derived names (DD-517); there is no driver layer in the chart
+  (DBS-01's boundary); the database's own TLS stays inside the DSN and the
+  OTLP export is the optional `telemetry` block (CHT-125, DD-511). Never an
+  umbrella dependency (DD-508). `tests/values.test.yaml` answers the guards.
 - `.env` / `.env.enc` — dev defaults; re-run
   `nx encrypt aurelius-atlas-db-scanner` after changing `.env` (CI regenerates
   the plaintext from the `.env.enc`). The e2e vars the server image and the
@@ -129,10 +141,11 @@ KSC-07), cited not restated; any change to either is a deviation and needs a
 
 ## Removal
 
-Remove the app directory, its root `pyproject.toml` uv member and dev-group
-entries and `uv.sources`, its `pyright.executionEnvironments` entry, its
-realm client and service-account user in both `master.json` copies, and the
-`aurelius-atlas-db-scanner` entry in every `AUTH_AUDIENCES` list (the server
-`.env` and each e2e compose). Nothing else imports this app: it is a leaf.
-The 13.4 chart work has not landed yet, so there is no helm or schedule
-footprint to unwire.
+Remove the app directory, including its `helm/` chart, its root
+`pyproject.toml` uv member and dev-group entries and `uv.sources`, its
+`pyright.executionEnvironments` entry, its realm client and service-account
+user in both `master.json` copies, the `aurelius-atlas-db-scanner` entry in
+every `AUTH_AUDIENCES` list (the server `.env` and each e2e compose) and in the
+server chart's `auth.audiences` default (CHT-120). Nothing to unwire in the
+umbrella or the hardened realm asset: scanner registration was never theirs
+(CHT-118/119). Nothing else imports this app: it is a leaf.

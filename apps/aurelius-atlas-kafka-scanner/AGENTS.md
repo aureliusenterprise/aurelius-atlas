@@ -89,8 +89,20 @@ deviation and needs a `deviations.md` row, not a silent edit.
 - Audiences: the server accepts the scanner's token because
   `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` names the client (the server's `.env`
   for `serve`, the e2e compose's `AUTH_AUDIENCES` for the suite). Adding a
-  service client means editing that list too. The prod-side join lands with
-  13.2's chart work.
+  service client means editing that list too. The prod-side join landed with
+  13.2: the server chart's `auth.audiences` default names the three scanner
+  clients (CHT-120).
+- `helm/` — the standalone `atlas-kafka-scanner` chart (13.2, CHT-114..117 and
+  CHT-121/122): one CronJob (Forbid, deadline 3600, `restartPolicy: Never`, no
+  service-account token) and a ServiceAccount. `schedule`, `catalogue.serverUrl`
+  and `broker.bootstrapServers` are required values (DD-515: the app default is
+  the dev loopback, a silent no-scan in a cluster). `brokerOauth.enabled` renders
+  the OAUTHBEARER broker leg off the catalogue client (DD-514); SASL credentials
+  for the other mechanisms travel `secretRefs`, never values. The other broker
+  knobs render only when set. Broker TLS stays `broker.securityProtocol` plus
+  the optional CA mount; the OTLP export is the optional `telemetry` block
+  (CHT-125, DD-511). Never an umbrella dependency (DD-508).
+  `tests/values.test.yaml` answers the guards.
 - `dev/kafka` — the broker and Registry the scan reads in dev and in e2e:
   loopback-pinned ports 29092 (PLAINTEXT, no credentials, DD-469), 29095
   (SASL_PLAINTEXT with SCRAM-SHA-512, DD-471) and 28081 (Registry). The
@@ -122,13 +134,15 @@ deviation and needs a `deviations.md` row, not a silent edit.
 ## Removal
 
 The app is one increment's deliverable: remove
-`apps/aurelius-atlas-kafka-scanner`, its root `pyproject.toml` entries
-(member, dev group, uv source), `dev/kafka` (its own README has the full
-unwire), the scanner client and service-account user in
+`apps/aurelius-atlas-kafka-scanner`, including its `helm/` chart, its root
+`pyproject.toml` entries (member, dev group, uv source), `dev/kafka` (its own
+README has the full unwire), the scanner client and service-account user in
 `dev/keycloak/import/master.json` (and the helm copy), the
 `KAFKA_SCANNER_CLIENT_SECRET` passthrough in `dev/keycloak/docker-compose.yaml`,
-the scanner entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES`, the `kafka`
-entry in `tests/test__dev_stack.py`'s `DEV_COMPOSES`, the mkdocs nav entry,
-and the 13.1 roadmap rows. Drop the mirrored SASL pair from this app's
+the scanner entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` and in the server
+chart's `auth.audiences` default (CHT-120), the `kafka` entry in
+`tests/test__dev_stack.py`'s `DEV_COMPOSES`, the mkdocs nav entry, and the
+13.1/13.2 roadmap rows. Nothing to unwire in the umbrella or the hardened
+realm asset: scanner registration was never theirs (CHT-118/119). Drop the mirrored SASL pair from this app's
 `.env`/`.env.enc` with the stack (`dev/kafka`'s own README unwires its side).
 The `m4i_dataset`/`m4i_field` models stay — the webapp reads them.

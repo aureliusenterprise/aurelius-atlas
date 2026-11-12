@@ -275,6 +275,8 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 # the assert/subprocess safety codes are the harness's shape, not a hazard.
 "**/test__*.py" = ["INP001", "S101", "PLR0913", "PLR0917", "PLR2004"]
 "tests/conftest.py" = ["INP001", "S101", "S603", "S607"]
+# The packaging guard shells out to `helm package` fixed-argument (CHT-05).
+"tests/test__chart_packaging.py" = ["S603", "S607"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 # The digest guard is a CLI script: print is its output contract and the
 # docker imagetools call is fixed-argument (CHT-96).

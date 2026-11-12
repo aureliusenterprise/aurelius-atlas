@@ -40,13 +40,13 @@ and the e2e proof against the dev stack.
 
 Explicitly not delivered, with the increment that will:
 
-| Not delivered                                             | Lands with     | Why                                                                               |
-| --------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
-| The Helm chart, the CronJob schedule, the prod realm join | 12.3           | The chart track owns deployment (10.x's split); the app first                     |
-| Customer source readers (JDBC, object store)              | 12.4           | The reader seam is here (DQS-04); each source is its own decision and secret      |
-| The score REST surface and the webapp's score box         | 7.25           | The server and webapp read what the scanner stores                                |
-| Score history (one row per run)                           | a later record | Latest-per-rule is the product (DD-456); history needs its own retention decision |
-| Incremental scanning (only new rows)                      | a later record | Every scan re-reads its extracts; the budget bounds them (DQS-05)                 |
+| Not delivered                                                  | Lands with     | Why                                                                               |
+| -------------------------------------------------------------- | -------------- | --------------------------------------------------------------------------------- |
+| The Helm chart, the CronJob schedule, the server audience join | 12.3           | The chart track owns deployment (10.x's split); the app first                     |
+| Customer source readers (JDBC, object store)                   | 12.4           | The reader seam is here (DQS-04); each source is its own decision and secret      |
+| The score REST surface and the webapp's score box              | 7.25           | The server and webapp read what the scanner stores                                |
+| Score history (one row per run)                                | a later record | Latest-per-rule is the product (DD-456); history needs its own retention decision |
+| Incremental scanning (only new rows)                           | a later record | Every scan re-reads its extracts; the budget bounds them (DQS-05)                 |
 
 ## Semantics
 

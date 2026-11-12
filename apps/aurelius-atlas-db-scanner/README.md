@@ -20,7 +20,8 @@ one bulk request as its own service identity. A re-scan updates the same
 entities in place.
 
 The [spec](specs/13-3-relational-database-scanner/spec.md) states the DBS-01..12
-rules. The Helm chart and the schedule land with the planned 13.4.
+rules. The standalone `atlas-db-scanner` Helm chart (`helm/`, 13.4) runs it as a
+CronJob on the schedule the deployment names.
 
 ## Scan
 
@@ -87,5 +88,5 @@ npx nx scan aurelius-atlas-db-scanner --dry-run
 ```
 
 The job has no port and no liveness endpoint: it runs to completion and exits,
-so the image carries no healthcheck. In production a scheduler starts it (the
-Helm CronJob lands with 13.4).
+so the image carries no healthcheck. In production the `atlas-db-scanner`
+CronJob starts it (13.4).

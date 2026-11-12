@@ -21,3 +21,8 @@
 __pycache__/
 # Rendering/test artifacts
 *.rendered.yaml
+# The chart's render inputs (CHT-06): tests/values.test.yaml is read from the
+# source tree by helm template -f (helm.ts and the chart suites), never from
+# the archive — helm-publish (CHT-05) ships without it. The leading / keeps
+# the match at the chart root, so a future templates/tests/ hook dir is safe.
+/tests/

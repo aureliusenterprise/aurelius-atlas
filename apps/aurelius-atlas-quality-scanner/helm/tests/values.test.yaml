@@ -1,0 +1,9 @@
+# Test values for helm lint/template (CHT-06): the two required guards
+# (schedule, catalogue.serverUrl) and the issuer TOKEN_URL derives from.
+global:
+    domain: atlas.test
+    issuer:
+        url: https://keycloak.atlas.test
+schedule: "0 3 * * *"
+catalogue:
+    serverUrl: https://atlas-server.atlas.svc.cluster.local:21000
