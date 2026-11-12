@@ -33,7 +33,7 @@ rather than to each backend.
 ## Running
 
 ```bash
-nx serve aurelius-atlas-dev-observability
+nx up aurelius-atlas-dev-observability
 ```
 
 Grafana is on `http://localhost:3000`. The Atlas server, Keycloak, and the

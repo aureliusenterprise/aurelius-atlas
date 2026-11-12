@@ -33,7 +33,6 @@ Part of the Kafka scanning track (13.1), with `apps/aurelius-atlas-kafka-scanner
 ## Running
 
 ```bash
-nx serve aurelius-atlas-dev-kafka   # docker compose up (foreground)
 nx up aurelius-atlas-dev-kafka      # detached, waits for healthy
 ```
 

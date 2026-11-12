@@ -44,6 +44,7 @@ function buildTargets(
         testTargetName = "test",
         typecheckTargetName = "typecheck",
     }: PythonPluginOptions = {},
+    envFile?: string,
 ): Record<string, TargetConfiguration> {
     const targets: Record<string, TargetConfiguration> = {};
 
@@ -99,6 +100,7 @@ function buildTargets(
             options: {
                 command: `uv run pytest ${e2ePath}`,
                 cwd: projectRoot,
+                ...(envFile ? { envFile } : {}),
             },
         };
     }
@@ -172,6 +174,7 @@ function buildTargets(
             options: {
                 command: `uv run pytest ${testPath}`,
                 cwd: projectRoot,
+                ...(envFile ? { envFile } : {}),
             },
         };
     }
@@ -183,7 +186,14 @@ function createNodesInternal(configFilePath: string, options: PythonPluginOption
     const projectRoot = dirname(configFilePath);
 
     const isWorkspaceProject = projectRoot === ".";
-    const targets = buildTargets(projectRoot, options);
+    // A project with an encrypted env file must hand its decrypted .env to
+    // the pytest processes at spawn, not through the task env Nx snapshots
+    // at pre-hash — before `decrypt` ran. run-commands loads `envFile` when
+    // it starts the command, so the values written by this run's decrypt
+    // arrive. The gate mirrors the targets' `decrypt` dependsOn: no
+    // `.env.enc` means no decrypt, no .env, and a missing envFile throws.
+    const envFile = existsSync(join(projectRoot, ".env.enc")) ? join(projectRoot, ".env") : undefined;
+    const targets = buildTargets(projectRoot, options, envFile);
     // Every pyproject owner is also a Helm chart owner (apps/*, the root
     // umbrella), so release runs the composite module — the ecosystem's
     // pyproject versioning AND the chart's Chart.yaml, umbrella pins, and

@@ -19,7 +19,7 @@
                 { "target": "certgen" },
                 {
                     "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
-                    "target": "serve"
+                    "target": "up"
                 }
             ],
             "executor": "@nxlv/python:run-commands",
@@ -27,7 +27,11 @@
                 "description": "Serve the validate-entity API on https://localhost:21003"
             },
             "options": {
-                "command": "uv run python -m aurelius_atlas_validate_entity"
+                "command": "uv run python -m aurelius_atlas_validate_entity",
+                "envFile": "apps/aurelius-atlas-validate-entity/.env"
+            },
+            "readyWhen": {
+                "port": 21003
             }
         }
     }

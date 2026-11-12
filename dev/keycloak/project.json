@@ -10,9 +10,6 @@
     },
     "tags": [],
     "targets": {
-        "serve": {
-            "dependsOn": ["decrypt", "certgen", "docker-build", "^docker-build", "^serve"]
-        },
         "up": {
             "dependsOn": ["decrypt", "certgen", "docker-build", "^docker-build", "^up"]
         }

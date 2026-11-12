@@ -52,7 +52,8 @@
             "dependsOn": ["build-storybook", "decrypt"],
             "executor": "nx:run-commands",
             "options": {
-                "command": "chromatic --storybook-build-dir=dist/storybook/aurelius-atlas-ui --no-interactive --exit-once-uploaded"
+                "command": "chromatic --storybook-build-dir=dist/storybook/aurelius-atlas-ui --no-interactive --exit-once-uploaded",
+                "envFile": "libs/angular/aurelius-atlas-ui/.env"
             }
         },
         "static-storybook": {
@@ -77,6 +78,7 @@
                     "quiet": true
                 }
             },
+            "continuous": true,
             "executor": "@storybook/angular:start-storybook",
             "options": {
                 "assets": [
@@ -93,6 +95,10 @@
                 "host": "127.0.0.1",
                 "port": 4400,
                 "styles": ["libs/angular/aurelius-atlas-ui/.storybook/styles.scss"]
+            },
+            "readyWhen": {
+                "host": "{env.SBCONFIG_HOSTNAME ?? options.host ?? localhost}",
+                "port": "{env.SBCONFIG_PORT ?? options.port ?? 9009}"
             }
         },
         "test": {

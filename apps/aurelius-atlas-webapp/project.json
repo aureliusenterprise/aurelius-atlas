@@ -120,7 +120,8 @@
             "executor": "@nxlv/python:run-commands",
             "options": {
                 "command": "uv run pytest e2e --browser chromium --browser firefox --browser webkit --tracing retain-on-failure",
-                "cwd": "{projectRoot}"
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-webapp/.env"
             },
             "parallelism": false
         },
@@ -161,16 +162,23 @@
                     "target": "certgen"
                 },
                 {
-                    "projects": ["aurelius-atlas-server", "aurelius-atlas-dev-keycloak"],
-                    "target": "serve"
+                    "projects": ["aurelius-atlas-server"],
+                    "target": "serve",
+                    "waitFor": "ready"
+                },
+                {
+                    "projects": ["aurelius-atlas-dev-keycloak"],
+                    "target": "up"
                 },
                 {
                     "projects": ["aurelius-atlas-lineage-model", "aurelius-atlas-data2model"],
-                    "target": "serve"
+                    "target": "serve",
+                    "waitFor": "ready"
                 },
                 {
                     "projects": ["aurelius-atlas-validate-entity"],
-                    "target": "serve"
+                    "target": "serve",
+                    "waitFor": "ready"
                 }
             ],
             "executor": "@angular/build:dev-server",
@@ -178,6 +186,9 @@
                 "host": "127.0.0.1",
                 "port": 4300,
                 "proxyConfig": "apps/aurelius-atlas-webapp/proxy.conf.json"
+            },
+            "readyWhen": {
+                "signal": true
             }
         },
         "test": {

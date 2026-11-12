@@ -32,7 +32,8 @@
             },
             "options": {
                 "command": "uv run pytest e2e",
-                "cwd": "{projectRoot}"
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-db-scanner/.env"
             },
             "parallelism": false
         },
@@ -43,7 +44,8 @@
                 "description": "Run one database scan: uv run python -m aurelius_atlas_db_scanner [--dry-run] [--table <name>] (DSN and SYSTEM_NAME from the environment)"
             },
             "options": {
-                "command": "uv run python -m aurelius_atlas_db_scanner"
+                "command": "uv run python -m aurelius_atlas_db_scanner",
+                "envFile": "apps/aurelius-atlas-db-scanner/.env"
             }
         }
     }

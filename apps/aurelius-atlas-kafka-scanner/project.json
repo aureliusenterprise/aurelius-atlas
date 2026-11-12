@@ -33,7 +33,8 @@
             },
             "options": {
                 "command": "uv run pytest e2e",
-                "cwd": "{projectRoot}"
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-kafka-scanner/.env"
             },
             "parallelism": false
         },
@@ -44,7 +45,8 @@
                 "description": "Run one cluster scan: uv run python -m aurelius_atlas_kafka_scanner [--dry-run] [--topic <name>]"
             },
             "options": {
-                "command": "uv run python -m aurelius_atlas_kafka_scanner"
+                "command": "uv run python -m aurelius_atlas_kafka_scanner",
+                "envFile": "apps/aurelius-atlas-kafka-scanner/.env"
             }
         }
     }
