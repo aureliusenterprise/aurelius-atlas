@@ -2710,6 +2710,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_quality.atlas.gov_expression_params" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;gov_expression_params
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_quality.atlas.result_documents" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -9251,6 +9262,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_quality.atlas.gov_expression_params" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-function"></code>&nbsp;gov_expression_params
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_quality.atlas.result_documents" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -13860,8 +13882,9 @@ vocabulary names — <code>dqcheckkind</code>, <code>dqattribute</code>, <code>d
 <code>qualityDimension</code>, and the rule's messages: <code>compliantMessage</code> and <code>nonCompliantMessage</code>,
 the corpus's lowercase <code>noncompliantMessage</code> spelling read as the fallback. Each value is read
 bare or as the webapp's <code>{"raw": ...}</code> wrapper.</p>
-<p>A rule with no <code>dqcheckkind</code> — a stored expression rule, the legacy shape — raises: the caller
-records it, nothing executes it (DV-146). The legacy <code>expression</code> is never read.</p>
+<p>A rule with no <code>dqcheckkind</code> — a stored expression rule, the legacy shape — reads from its
+<code>expression</code> when that is one of the corpus's two forms (:func:<code>gov_expression_params</code>, ASG-02,
+DD-533); any other expression raises: the caller records it, nothing executes it (DV-146).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -13871,7 +13894,7 @@ records it, nothing executes it (DV-146). The legacy <code>expression</code> is 
             –
           <div class="doc-md-description">
             <p>the entity names no kind of the governance
-vocabulary, or a parameter is missing or malformed (GQ-02).</p>
+vocabulary nor an expression of the two forms, or a parameter is missing or malformed (GQ-02).</p>
           </div>
         </li>
     </ul>
@@ -13953,6 +13976,13 @@ results as the documents a scanner writes to the store (DQ-07, DQ-08, GQ-07).</p
 
 <p><span class="doc-section-title">Functions:</span></p>
     <ul>
+          <li class="doc-section-item field-body">
+            <b><code><a class="autorefs autorefs-internal" title="            gov_expression_params (aurelius_atlas_quality.atlas.gov_expression_params)" href="./#aurelius_atlas_quality.atlas.gov_expression_params">gov_expression_params</a></code></b>
+            –
+            <div class="doc-md-description">
+              <p>The kind, attribute and <code>anyOf</code> a stored governance expression reads as (ASG-02, DD-533).</p>
+            </div>
+          </li>
           <li class="doc-section-item field-body">
             <b><code><a class="autorefs autorefs-internal" title="            result_documents (aurelius_atlas_quality.atlas.result_documents)" href="./#aurelius_atlas_quality.atlas.result_documents">result_documents</a></code></b>
             –
@@ -14175,6 +14205,42 @@ kind under <code>dqcheckkind</code> instead, and has no legacy twin.</p>
 <div class="doc doc-object doc-function">
 
 
+<h3 id="aurelius_atlas_quality.atlas.gov_expression_params" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">gov_expression_params</span>
+
+
+<a href="#aurelius_atlas_quality.atlas.gov_expression_params" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">gov_expression_params</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_quality.atlas.gov_expression_params(expression)">expression</span></span><span class="p">:</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="tuple">tuple</span></span><span class="p">[</span><span class="n"><a class="autorefs autorefs-internal" title="            GovCheckKind (aurelius_atlas_quality.governance.GovCheckKind)" href="./#aurelius_atlas_quality.GovCheckKind">GovCheckKind</a></span><span class="p">,</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The kind, attribute and <code>anyOf</code> a stored governance expression reads as (ASG-02, DD-533).</p>
+<p>The expression is one part, or several joined by <code>|</code>, each <code>completeness('&lt;name&gt;')</code> or each
+<code>length('&lt;name&gt;', 1)</code>: the first part's name is the attribute, the others' the <code>anyOf</code>. The text is
+matched whole, never evaluated.</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><a class="autorefs autorefs-internal" title="            QualityRuleError (aurelius_atlas_quality.rule.QualityRuleError)" href="./#aurelius_atlas_quality.rule.QualityRuleError">QualityRuleError</a></code>
+            –
+          <div class="doc-md-description">
+            <p>no expression, or one of another shape, a mix of the two
+forms among them (DV-146).</p>
+          </div>
+        </li>
+    </ul>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="aurelius_atlas_quality.atlas.result_documents" class="doc doc-heading">
 <code class="doc-symbol doc-symbol-heading doc-symbol-function"></code>            <span class="doc doc-object-name doc-function-name">result_documents</span>
 
@@ -14273,8 +14339,9 @@ vocabulary names — <code>dqcheckkind</code>, <code>dqattribute</code>, <code>d
 <code>qualityDimension</code>, and the rule's messages: <code>compliantMessage</code> and <code>nonCompliantMessage</code>,
 the corpus's lowercase <code>noncompliantMessage</code> spelling read as the fallback. Each value is read
 bare or as the webapp's <code>{"raw": ...}</code> wrapper.</p>
-<p>A rule with no <code>dqcheckkind</code> — a stored expression rule, the legacy shape — raises: the caller
-records it, nothing executes it (DV-146). The legacy <code>expression</code> is never read.</p>
+<p>A rule with no <code>dqcheckkind</code> — a stored expression rule, the legacy shape — reads from its
+<code>expression</code> when that is one of the corpus's two forms (:func:<code>gov_expression_params</code>, ASG-02,
+DD-533); any other expression raises: the caller records it, nothing executes it (DV-146).</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -14284,7 +14351,7 @@ records it, nothing executes it (DV-146). The legacy <code>expression</code> is 
             –
           <div class="doc-md-description">
             <p>the entity names no kind of the governance
-vocabulary, or a parameter is missing or malformed (GQ-02).</p>
+vocabulary nor an expression of the two forms, or a parameter is missing or malformed (GQ-02).</p>
           </div>
         </li>
     </ul>

@@ -860,13 +860,13 @@ Build a governance rule from the attributes of an `m4i_gov_data_quality` entity 
 
 `attributes` may carry the entity's `guid`; it travels onto the rule. The rule reads under the vocabulary names — `dqcheckkind`, `dqattribute`, `dqanyOf` — plus `name`, `qualityDimension`, and the rule's messages: `compliantMessage` and `nonCompliantMessage`, the corpus's lowercase `noncompliantMessage` spelling read as the fallback. Each value is read bare or as the webapp's `{"raw": ...}` wrapper.
 
-A rule with no `dqcheckkind` — a stored expression rule, the legacy shape — raises: the caller records it, nothing executes it (DV-146). The legacy `expression` is never read.
+A rule with no `dqcheckkind` — a stored expression rule, the legacy shape — reads from its `expression` when that is one of the corpus's two forms (:func:`gov_expression_params`, ASG-02, DD-533); any other expression raises: the caller records it, nothing executes it (DV-146).
 
 Raises:
 
 - `QualityRuleError` –
 
-  the entity names no kind of the governance vocabulary, or a parameter is missing or malformed (GQ-02).
+  the entity names no kind of the governance vocabulary nor an expression of the two forms, or a parameter is missing or malformed (GQ-02).
 
 ### summarise
 
@@ -886,6 +886,9 @@ This module converts; it holds no I/O. :func:`rule_from_atlas_attributes` reads 
 
 Functions:
 
+- **`gov_expression_params`** –
+
+  The kind, attribute and `anyOf` a stored governance expression reads as (ASG-02, DD-533).
 - **`result_documents`** –
 
   The score documents of one run: one per scoring rule, plus the dataset's overall document (DQ-08).
@@ -950,6 +953,22 @@ SCORE_TYPE_NAME = 'm4i_dq_score'
 
 The document type a scanner writes for one rule's score over one dataset.
 
+### gov\_expression\_params
+
+```
+gov_expression_params(expression: Any) -> tuple[GovCheckKind, str, list[str]]
+```
+
+The kind, attribute and `anyOf` a stored governance expression reads as (ASG-02, DD-533).
+
+The expression is one part, or several joined by `|`, each `completeness('<name>')` or each `length('<name>', 1)`: the first part's name is the attribute, the others' the `anyOf`. The text is matched whole, never evaluated.
+
+Raises:
+
+- `QualityRuleError` –
+
+  no expression, or one of another shape, a mix of the two forms among them (DV-146).
+
 ### result\_documents
 
 ```
@@ -988,13 +1007,13 @@ Build a governance rule from the attributes of an `m4i_gov_data_quality` entity 
 
 `attributes` may carry the entity's `guid`; it travels onto the rule. The rule reads under the vocabulary names — `dqcheckkind`, `dqattribute`, `dqanyOf` — plus `name`, `qualityDimension`, and the rule's messages: `compliantMessage` and `nonCompliantMessage`, the corpus's lowercase `noncompliantMessage` spelling read as the fallback. Each value is read bare or as the webapp's `{"raw": ...}` wrapper.
 
-A rule with no `dqcheckkind` — a stored expression rule, the legacy shape — raises: the caller records it, nothing executes it (DV-146). The legacy `expression` is never read.
+A rule with no `dqcheckkind` — a stored expression rule, the legacy shape — reads from its `expression` when that is one of the corpus's two forms (:func:`gov_expression_params`, ASG-02, DD-533); any other expression raises: the caller records it, nothing executes it (DV-146).
 
 Raises:
 
 - `QualityRuleError` –
 
-  the entity names no kind of the governance vocabulary, or a parameter is missing or malformed (GQ-02).
+  the entity names no kind of the governance vocabulary nor an expression of the two forms, or a parameter is missing or malformed (GQ-02).
 
 ## aurelius\_atlas\_quality.checks
 
