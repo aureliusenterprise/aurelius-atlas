@@ -1577,7 +1577,7 @@ Methods:
   The active entities of m4i types with a document that have none, and those with a stale one, by GUID
 - **`without_embedding`** –
 
-  The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
+  The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436); with
 - **`write`** –
 
   One bulk request over the indices: `create` a new document, `index` or `delete` with `if_seq_no`.
@@ -1869,10 +1869,10 @@ The active entities of m4i types with a document that have none, and those with 
 #### without\_embedding
 
 ```
-without_embedding(model: str, limit: int) -> list[VersionedEntity]
+without_embedding(model: str, limit: int, *, wait_for_documents: bool = False) -> list[VersionedEntity]
 ```
 
-The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436).
+The entities without an embedding of `model`, internal types left out, by GUID (VEC-06, DD-436); with `wait_for_documents`, also those awaiting their App Search document (EMC-04, DD-540).
 
 #### write
 
@@ -2018,7 +2018,7 @@ Methods:
   Up to `limit` entities that should have an App Search document and have none, or a stale one (ASD-04,
 - **`without_embedding`** –
 
-  Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
+  Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436);
 - **`write`** –
 
   Write and remove entities and linked documents, new (no version) or at the version given.
@@ -2274,10 +2274,10 @@ Up to `limit` entities that should have an App Search document and have none, or
 #### without\_embedding
 
 ```
-without_embedding(model: str, limit: int) -> list[VersionedEntity]
+without_embedding(model: str, limit: int, *, wait_for_documents: bool = False) -> list[VersionedEntity]
 ```
 
-Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436).
+Up to `limit` entities without an embedding of `model`, internal types left out (VEC-06, DD-436); with `wait_for_documents`, also those awaiting their App Search document (EMC-04, DD-540).
 
 #### write
 
