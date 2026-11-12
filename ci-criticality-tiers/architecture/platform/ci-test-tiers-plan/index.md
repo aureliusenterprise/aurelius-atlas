@@ -87,7 +87,7 @@ Unit suites (`test` targets, 40 server files, 62 webapp `.spec.ts`) stay whole i
 
 Scores are the sweep's starting point, read off the matrix. The landed tree then went through a per-scenario audit: every marker carries its own pair, and files that mix scenario kinds split (the webapp main file spans all four levels). Counts below are test functions; parametrization adds a few runnables.
 
-| Project | `critical` (PR + main, 84) | `high` (PR + main, 38) | `medium` / `low` (weekly / dispatch, 29 + 6) |
+| Project | `critical` (PR + main, 85) | `high` (PR + main, 38) | `medium` / `low` (weekly / dispatch, 29 + 6) |
 | --- | --- | --- | --- |
 | `aurelius-atlas-server` e2e | search, scenarios (parity), the load file's percentile test (severe, churn) | cleanup, export, admin audits, restore, dashboards (severe, low churn) | mixed-load run medium (severe, low; cost-capped from `high`) |
 | `aurelius-atlas-webapp` e2e | editor, search, seeded details, reader gate, the boot/sign-in proofs (16) | entry/locale routing, api proxy, config bootstrap, 404 details, banner, field rules, explore (15) | shell chrome, locale/telemetry probes, drawer resilience (24); links, footer, greeting, mistyped path (4) |
