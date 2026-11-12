@@ -132,25 +132,29 @@ in pull-request CI and stay unclassified: they always run everywhere, so a
 criticality marker there would decide nothing. The classification applies to
 `e2e` targets only.
 
-Scores are the sweep's starting point, read off the matrix; the PR that lands
-the sweep adjusts any pair with git churn to show.
+Scores are the sweep's starting point, read off the matrix. The landed tree
+then went through a per-scenario audit: every marker carries its own pair, and
+files that mix scenario kinds split (the webapp main file spans all four
+levels). Counts below are test functions; parametrization adds a few runnables.
 
-| Project                          | `critical` (PR gate)                                                            | `high` (main + weekly)                                                 | `medium` (weekly)                                        |
-| -------------------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------------------------- |
-| `aurelius-atlas-server` e2e      | search, scenarios (parity), the load file's percentile test (severe, churn)     | cleanup, export, admin audits, restore, dashboards (severe, low churn) | mixed-load run (severe, low; cost-capped from `high`)    |
-| `aurelius-atlas-webapp` e2e      | login, search, details (severe, churn); person-details (promoted for increment) | lineage-model, quality-rules screens (major, churn)                    | resilience, edge-tracing (minor, medium: fragile probes) |
-| `aurelius-atlas-core` e2e        | all 19 files (severe: the store spine; churn keeps likelihood high)             | none                                                                   | none                                                     |
-| `aurelius-atlas-embedder`        | all (8 tests; severe: the component is its promise. high: only proof)           | none                                                                   | none                                                     |
-| `aurelius-atlas-kafka-scanner`   | all (7 tests; same pair)                                                        | none                                                                   | none                                                     |
-| `aurelius-atlas-lineage-model`   | all (6 tests; same pair)                                                        | none                                                                   | none                                                     |
-| `aurelius-atlas-quality-scanner` | all (5 tests; same pair)                                                        | none                                                                   | none                                                     |
-| `aurelius-atlas-validate-entity` | all (5 tests; same pair)                                                        | none                                                                   | none                                                     |
-| `aurelius-atlas-db-scanner`      | all (3 tests; same pair)                                                        | none                                                                   | none                                                     |
-| `aurelius-atlas-data2model`      | all (4 tests; same pair)                                                        | none                                                                   | none                                                     |
+| Project                          | `critical` (PR gate, 84 tests)                                                    | `high` (main + weekly, 38)                                                                        | `medium` / `low` (weekly / dispatch, 29 + 6)                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `aurelius-atlas-server` e2e      | search, scenarios (parity), the load file's percentile test (severe, churn)       | cleanup, export, admin audits, restore, dashboards (severe, low churn)                            | mixed-load run medium (severe, low; cost-capped from `high`)                                              |
+| `aurelius-atlas-webapp` e2e      | editor, search, seeded details, reader gate, the boot/sign-in proofs (16)         | entry/locale routing, api proxy, config bootstrap, 404 details, banner, field rules, explore (15) | shell chrome, locale/telemetry probes, drawer resilience (24); links, footer, greeting, mistyped path (4) |
+| `aurelius-atlas-core` e2e        | all 19 files (severe: the store spine; churn keeps likelihood high)               | none                                                                                              | none                                                                                                      |
+| `aurelius-atlas-embedder`        | the ranking proofs (severe for the product: bad vectors poison search-by-meaning) | batch-padding and input_type invariants (major, only proof)                                       | refusals/model list/pinned files medium; liveness low (healthcheck backstop)                              |
+| `aurelius-atlas-kafka-scanner`   | all (7 tests; severe: only proof, young path)                                     | none                                                                                              | none                                                                                                      |
+| `aurelius-atlas-lineage-model`   | all (6 tests; severe: only proof, young chain)                                    | none                                                                                              | none                                                                                                      |
+| `aurelius-atlas-quality-scanner` | the scan's own-identity round trip (severe: wrong scores lie in the catalog)      | idempotent re-run, dry run, error entity, audit trail (severe/major, low-med churn)               | none                                                                                                      |
+| `aurelius-atlas-validate-entity` | none (the aux's answers ride the webapp's banner suite)                           | the gate 401, seeded verdicts, rule-selection walk (major, young)                                 | error body medium; liveness low (healthcheck backstop)                                                    |
+| `aurelius-atlas-db-scanner`      | all (3 tests; severe: only proof, young path)                                     | none                                                                                              | none                                                                                                      |
+| `aurelius-atlas-data2model`      | all (4 tests; severe: only proof, young chain)                                    | none                                                                                              | none                                                                                                      |
 
-No test is `low` today. A minor-impact, low-likelihood scenario is rare in an
-e2e suite this young; a future full-fleet perf soak is the expected first
-member.
+The webapp file's demotions name their catcher: a collector/CSP/chrome break
+lands on the push to main at worst (`high`) or the weekly Scan (`medium`), each
+with the pair beside the marker. The aux suites lost their blanket `critical`
+because `nx affected` already runs them only when they change; the level now
+states how soon a silent break must surface, per scenario.
 
 Two rules govern future changes to this table.
 
@@ -231,8 +235,8 @@ configuration silently falls to its `defaultConfiguration`, which sent
 WebKit leaves the pull-request gate with pytest's own `-k "not webkit"`, not
 with a target configuration: the webapp suite's Playwright instances carry
 the browser in the test id (`test__x[webkit]`), so the keyword filter drops
-exactly the WebKit legs (verified through the Nx target: 147/180 critical
-instances become 98). The other suites have no webkit scenarios, so the
+exactly the WebKit legs (verified through the Nx target: the webapp's
+critical gate is 32 of its 180 instances once WebKit leaves). The other suites have no webkit scenarios, so the
 filter is a no-op there. The hand-written webapp target keeps its one
 all-browsers command for local and weekly use. Browser trimming and
 criticality stay separate levers: WebKit leaves PR CI for every level,
@@ -347,8 +351,7 @@ classification change and its first real fix. The main run on the merge commit
   `critical` shows its score pair.
 - Level 1: `nx test aurelius-atlas-server -c ci` stays green (units unchanged).
 - Level 2: `nx e2e aurelius-atlas-webapp -c ci -- -m critical -k "not webkit"
---collect-only -q` proves the flags reach pytest through the target: 98 of
-  180 instances (critical, no WebKit legs). A full
+--collect-only -q` proves the flags reach pytest through the target: 32 of
   `nx affected -t e2e -c ci -- -m critical` locally is the dry run of the new
   gate.
 

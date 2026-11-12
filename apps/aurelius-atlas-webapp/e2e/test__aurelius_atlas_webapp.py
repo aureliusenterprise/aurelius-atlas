@@ -24,7 +24,8 @@ EN_PLACEHOLDER = (
 NL_PLACEHOLDER = "Welkom bij Aurelius Atlas! We helpen u graag op weg. Kies hieronder uw interessegebied."
 
 
-@pytest.mark.critical
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 def test__root_redirects_to_preferred_locale(page: Page, root_url: str) -> None:
     """The image redirects the root to the supported preferred locale (SHL-11)."""
     response = page.request.get(
@@ -35,7 +36,8 @@ def test__root_redirects_to_preferred_locale(page: Page, root_url: str) -> None:
     assert response.headers["location"].endswith("/nl-NL/?redirect-check=1")
 
 
-@pytest.mark.critical
+# impact=severe, likelihood=low (the spine path moves rarely between increments)
+@pytest.mark.high
 @pytest.mark.parametrize("locale", ["en-US", "nl-NL"])
 def test__locale_routes_fall_back_to_localized_app(page: Page, root_url: str, locale: str) -> None:
     """Client-side routes serve the index belonging to their locale."""
@@ -50,7 +52,8 @@ def test__locale_routes_fall_back_to_localized_app(page: Page, root_url: str, lo
     assert f'lang="{locale}"' in body
 
 
-@pytest.mark.critical
+# impact=severe, likelihood=low (bootstrap stops the app; the boot test is the backstop)
+@pytest.mark.high
 def test__config_json_is_served_at_the_origin_root(page: Page, root_url: str) -> None:
     """Bootstrap's runtime configuration is reachable at /config.json (SHL-02)."""
     response = page.request.get(urljoin(root_url, "/config.json"))
@@ -75,7 +78,8 @@ def test__browse_placeholder_renders_in_every_browser(authenticated: Page) -> No
     expect(authenticated.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the locale promise in its own shell)
+@pytest.mark.medium
 def test__locale_switch_shows_localized_shell(authenticated: Page, root_url: str) -> None:
     """Switching to the nl-NL locale serves the localised shell (SHL-12).
 
@@ -90,7 +94,8 @@ def test__locale_switch_shows_localized_shell(authenticated: Page, root_url: str
     assert authenticated.url.rstrip("/").endswith("/nl-NL/search/browse")
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=low (a rare mistyped path)
+@pytest.mark.low
 def test__unknown_path_falls_back_to_the_app(authenticated: Page, base_url: str) -> None:
     """An unknown client-side path serves the app, whose router redirects to browse (SHL-05)."""
     authenticated.goto(urljoin(base_url, "topic-does-not-exist"))
@@ -98,7 +103,8 @@ def test__unknown_path_falls_back_to_the_app(authenticated: Page, base_url: str)
     expect(authenticated.locator("#browse-placeholder")).to_have_text(EN_PLACEHOLDER)
 
 
-@pytest.mark.critical
+# impact=severe, likelihood=low (all api traffic; every signed-in suite is the backstop)
+@pytest.mark.high
 def test__api_proxy_forwards_to_the_atlas_server(page: Page, root_url: str) -> None:
     """The nginx /api/ proxy forwards to the Atlas server with the prefix intact (APC-08, DD-139).
 
@@ -128,7 +134,8 @@ def test__unauthenticated_visit_redirects_to_keycloak(page: Page, base_url: str)
     expect(page.locator("#username")).to_be_visible()
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a tracing probe, the only proof of the /otel/ leg)
+@pytest.mark.medium
 def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_token: str) -> None:
     """The nginx /otel/ proxy forwards to the collector with the prefix stripped (SHL-11, CIA-02).
 
@@ -148,7 +155,8 @@ def test__otel_proxy_forwards_to_the_collector(page: Page, root_url: str, user_t
     assert response.status in (200, 202, 400, 415)
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a tracing auth probe, the only proof)
+@pytest.mark.medium
 def test__otel_proxy_passes_authorization_through(page: Page, root_url: str) -> None:
     """The /otel/ proxy injects nothing: a token-less push is the collector's 401 (CIA-01, CIA-02).
 
@@ -166,7 +174,8 @@ def test__otel_proxy_passes_authorization_through(page: Page, root_url: str) -> 
     assert response.status == 401
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (an ingest posture probe, no backstop)
+@pytest.mark.medium
 def test__collector_rejects_unauthenticated_ingest(page: Page) -> None:
     """The collector's browser leg (OIDC) demands the user's token (CIA-01).
 
@@ -184,7 +193,8 @@ def test__collector_rejects_unauthenticated_ingest(page: Page) -> None:
     assert response.status == 401
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (an ingest posture probe, no backstop)
+@pytest.mark.medium
 def test__collector_accepts_a_user_token_on_the_browser_leg(page: Page, user_token: str) -> None:
     """A Keycloak-minted user token authenticates the browser leg (CIA-01, positive control).
 
@@ -201,7 +211,8 @@ def test__collector_accepts_a_user_token_on_the_browser_leg(page: Page, user_tok
     assert response.status in (200, 202, 400, 415)
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a telemetry stamp probe, no backstop)
+@pytest.mark.medium
 def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: str) -> None:
     """A browser-leg push carries the token's `sub` onto the telemetry (CIA-05, DD-194).
 
@@ -277,7 +288,8 @@ def test__collector_stamps_the_user_onto_the_telemetry(page: Page, user_token: s
     pytest.fail(f"Tempo never returned the probe trace attributed to {sub} — the sub claim was not stamped")
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a leg-isolation probe, no backstop)
+@pytest.mark.medium
 def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, ingest_token: str) -> None:
     """The service credential does not open the browser leg (CIA-01).
 
@@ -295,7 +307,8 @@ def test__collector_rejects_the_shared_token_on_the_browser_leg(page: Page, inge
     assert response.status == 401
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a leg-isolation probe, no backstop)
+@pytest.mark.medium
 def test__collector_rejects_the_shared_token_on_the_service_leg(page: Page, ingest_token: str) -> None:
     """The shared token does not open the per-service leg (CIA-06, CIA-08).
 
@@ -313,7 +326,8 @@ def test__collector_rejects_the_shared_token_on_the_service_leg(page: Page, inge
     assert response.status == 401
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a leg-isolation probe, no backstop)
+@pytest.mark.medium
 def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: str) -> None:
     """A Keycloak JWT does not open the legacy leg (CIA-08).
 
@@ -330,7 +344,8 @@ def test__collector_rejects_a_jwt_on_the_legacy_leg(page: Page, service_token: s
     assert response.status == 401
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (a leg-auth probe, no backstop)
+@pytest.mark.medium
 def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> None:
     """A client-credentials JWT authenticates the per-service leg, stamped by client (CIA-06, CIA-07, CIA-09).
 
@@ -406,7 +421,8 @@ def test__collector_accepts_a_service_jwt(page: Page, service_token: str) -> Non
     )
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the one-data-plane promise weakens; the header moves rarely)
+@pytest.mark.medium
 def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
     """The CSP on the served document keeps connect-src 'self' (SHL-11)."""
     response = page.request.get(urljoin(root_url, "/en-US/"))
@@ -416,7 +432,8 @@ def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
     assert "frame-ancestors 'none'" in csp
 
 
-@pytest.mark.critical
+# impact=severe, likelihood=low (the screen after sign-in; a stable template, boot has a backstop)
+@pytest.mark.high
 def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page) -> None:
     """The landing renders the hero and the three context cards, issuing no /api requests (BRW-01, BRW-04, BRW-07).
 
@@ -439,7 +456,8 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
     assert [url for url in api_requests if "/api/" in url] == []
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (a modal in its own screen)
+@pytest.mark.medium
 def test__info_modal_opens_and_closes(authenticated: Page) -> None:
     """A card's info icon opens its modal with the legacy rows; closing returns to the landing (BRW-03, BRW-07).
 
@@ -459,7 +477,8 @@ def test__info_modal_opens_and_closes(authenticated: Page) -> None:
     expect(modal).to_be_hidden()
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the locale strings of the landing)
+@pytest.mark.medium
 def test__landing_renders_dutch_card_titles(authenticated: Page, root_url: str) -> None:
     """The nl-NL locale renders the Dutch landing strings through the bridge (BRW-02, BRW-07)."""
     authenticated.goto(urljoin(root_url, "/nl-NL/search/browse"))
@@ -468,7 +487,8 @@ def test__landing_renders_dutch_card_titles(authenticated: Page, root_url: str) 
     expect(card_titles).to_have_text(["Business context", "Technische context", "Data governance organisatie"])
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=low (a greeting line)
+@pytest.mark.low
 def test__navbar_greets_the_signed_in_user(authenticated: Page) -> None:
     """The account dropdown's welcome line shows the Keycloak identity (SHC-05, SHC-09).
 
@@ -481,7 +501,8 @@ def test__navbar_greets_the_signed_in_user(authenticated: Page) -> None:
     expect(welcome).to_have_text("Logged in as aurelius-writer")
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the locale switch in the settings panel)
+@pytest.mark.medium
 def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Page) -> None:
     """Choosing nl-NL in the settings panel lands on the Dutch bundle (SHC-04, SPL-06, SHC-09).
 
@@ -507,7 +528,8 @@ def test__settings_panel_language_navigates_to_the_dutch_build(authenticated: Pa
     expect(card_titles).to_have_text(["Business context", "Technische context", "Data governance organisatie"])
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=low (footer text from config)
+@pytest.mark.low
 def test__footer_shows_the_runtime_config_values(authenticated: Page) -> None:
     """The footer renders copyright year, app name, and version from /config.json (SHC-06, SHC-09)."""
     footer = authenticated.locator("footer.footer")
@@ -519,7 +541,8 @@ def test__footer_shows_the_runtime_config_values(authenticated: Page) -> None:
     expect(footer.locator(".level-left .icon svg")).to_be_visible()  # faCopyright
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=low (an outbound link)
+@pytest.mark.low
 def test__documentation_link_points_at_the_aurelius_docs(authenticated: Page) -> None:
     """The navbar's Documentation link opens the Aurelius docs safely (SHC-03, SHC-09)."""
     link = authenticated.locator('a[target="_blank"]')
@@ -529,7 +552,8 @@ def test__documentation_link_points_at_the_aurelius_docs(authenticated: Page) ->
     expect(link).to_have_text("Documentation")
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (the mobile door to logout; the viewport emulation is fragile)
+@pytest.mark.medium
 def test__burger_menu_opens_the_dropdown_with_the_logout_entry(authenticated: Page) -> None:
     """The mobile burger opens the menu: the session's Logout is reachable (SHC-05, DD-153).
 
@@ -547,7 +571,8 @@ def test__burger_menu_opens_the_dropdown_with_the_logout_entry(authenticated: Pa
     expect(logout).to_be_visible()
 
 
-@pytest.mark.critical
+# impact=major, likelihood=high (the dead-link answer; the details screen churns)
+@pytest.mark.high
 def test__details_screen_answers_a_404_deep_link_with_the_empty_state(authenticated: Page, root_url: str) -> None:
     """A direct visit to /search/details/<unknown guid> renders the empty screen (DET-07, DET-13).
 
@@ -573,7 +598,8 @@ def test__details_screen_answers_a_404_deep_link_with_the_empty_state(authentica
     expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(0)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the locale chrome of the details)
+@pytest.mark.medium
 def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: str) -> None:
     """The nl-NL locale renders the Dutch details chrome through the bridge (DET-04, DET-07)."""
     authenticated.goto(urljoin(root_url, "/nl-NL/search/details/7a1b-2c3d"))
@@ -1294,7 +1320,8 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=high (a rules box in a young screen, churn on its path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["DET-35", "DET-36"])
 def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_url: str, user_token: str) -> None:
     """The field page's rules box, stat, and link over a seeded rule (DET-35, DET-36).
@@ -1396,7 +1423,8 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
             _purge_type(authenticated, root_url, user_token, type_name)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=medium (the glossary promise in browse; churn on the search path)
+@pytest.mark.high
 def test__business_explore_lists_glossary_entities_without_a_url_query(
     authenticated: Page, root_url: str, user_token: str
 ) -> None:
@@ -1437,7 +1465,8 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(
     expect(authenticated.locator(".result-row")).not_to_have_count(1)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the empty-result pair; a stable screen)
+@pytest.mark.medium
 def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_url: str) -> None:
     """A query with no hits renders the legacy no-results card (SRH-06).
 
@@ -1547,7 +1576,8 @@ def test__the_editor_edits_a_seeded_entity(authenticated: Page, root_url: str, u
         _delete_entity(authenticated, root_url, user_token, guid)
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (the preview render inside the drawer; the save is proven by the editor suite)
+@pytest.mark.medium
 def test__the_editor_previews_markdown_it_saves(authenticated: Page, root_url: str, user_token: str) -> None:
     """The description's markdown previews in the drawer and renders on details (EDT-20).
 
@@ -1978,7 +2008,8 @@ def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, 
     return response.json()["guidAssignments"]["-0"]
 
 
-@pytest.mark.critical
+# impact=major, likelihood=high (a banner verdict is a young promise with churn on its path)
+@pytest.mark.high
 @pytest.mark.covers(rules=["EDT-24"])
 def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: str, user_token: str) -> None:
     """The drawer validates the draft and paints the live verdict lines (EDT-23, EDT-24, VEV-02).
@@ -2053,7 +2084,8 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
             _delete_entity(authenticated, root_url, user_token, rule_guid)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (the drawer survives a dead call; a contained resilience path)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["EDT-23"])
 def test__an_aborted_validation_leaves_the_drawer_usable(authenticated: Page, root_url: str, user_token: str) -> None:
     """A validation call that never answers keeps the drawer whole (EDT-23).

@@ -63,7 +63,8 @@ def test__a_query_ranks_texts_of_its_meaning_above_an_unrelated_one_also_in_dutc
     assert _cosine(query, dutch) > _cosine(query, unrelated)
 
 
-@pytest.mark.critical
+# impact=major, likelihood=medium (the input_type prefixes: a ranking-quality promise, the only proof)
+@pytest.mark.high
 @pytest.mark.covers(rules=["EMB-03"])
 def test__a_query_and_a_passage_of_one_text_differ(client: httpx.Client) -> None:
     """``input_type`` reaches the model: the prefixes give one text two embeddings."""
@@ -73,7 +74,8 @@ def test__a_query_and_a_passage_of_one_text_differ(client: httpx.Client) -> None
     assert as_query != as_passage
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (a batch-padding invariant; the only proof, moves rarely)
+@pytest.mark.high
 @pytest.mark.covers(rules=["EMB-04"])
 def test__a_text_s_embedding_does_not_depend_on_its_batch(client: httpx.Client) -> None:
     """Alone, or padded beside a long text, a text gets the same vector."""
@@ -83,7 +85,8 @@ def test__a_text_s_embedding_does_not_depend_on_its_batch(client: httpx.Client) 
     assert beside == pytest.approx(alone, abs=1e-5)
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=medium (an error-shape contract for bad input)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["EMB-05"])
 @pytest.mark.parametrize(
     ("body", "status", "param"),
@@ -106,7 +109,8 @@ def test__refusals_answer_in_openai_s_error_shape(
     assert response.json()["error"]["param"] == param
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=low (a pinned-metadata claim, the only proof)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["EMB-06"])
 def test__the_model_list_names_the_shipped_model(client: httpx.Client) -> None:
     """The pinned model, its revision and its 384 dimensions."""
@@ -124,7 +128,8 @@ def test__the_model_list_names_the_shipped_model(client: httpx.Client) -> None:
     ]
 
 
-@pytest.mark.critical
+# impact=minor, likelihood=low (framework liveness; the compose healthcheck is the backstop)
+@pytest.mark.low
 @pytest.mark.covers(rules=["EMB-07"])
 def test__the_probes_answer_204_without_credentials(client: httpx.Client) -> None:
     """Liveness and readiness, over TLS."""
@@ -132,7 +137,8 @@ def test__the_probes_answer_204_without_credentials(client: httpx.Client) -> Non
     assert client.get("/readiness").status_code == 204
 
 
-@pytest.mark.critical
+# impact=major, likelihood=low (a wrong pinned file gives wrong vectors; it moves rarely)
+@pytest.mark.medium
 @pytest.mark.covers(rules=["EMB-10"])
 def test__the_image_holds_the_pinned_model_files(compose: DockerCompose) -> None:
     """Each file the image fetched has its pinned SHA-256; the hardened image has Python but no shell."""
