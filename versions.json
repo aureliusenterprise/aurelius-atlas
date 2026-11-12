@@ -10,6 +10,11 @@
     "aliases": []
   },
   {
+    "version": "feat-scanner-cronjob-charts",
+    "title": "feat-scanner-cronjob-charts",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
