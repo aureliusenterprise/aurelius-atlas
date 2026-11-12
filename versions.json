@@ -65,6 +65,11 @@
     "aliases": []
   },
   {
+    "version": "ci-criticality-tiers",
+    "title": "ci-criticality-tiers",
+    "aliases": []
+  },
+  {
     "version": "chore-remove-template-example-stack",
     "title": "chore-remove-template-example-stack",
     "aliases": []
