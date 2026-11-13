@@ -7722,6 +7722,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>Several isolated tenants on one deployment (ADR 063, DD-563, DD-564); off by default, when nothing deviates</td>
 <td>15.1</td>
 </tr>
+<tr>
+<td>DV-164</td>
+<td>Tenancy</td>
+<td>One catalogue: every request reads and writes the same types, entities, relationships, classifications and audits</td>
+<td>With tenancy on, each tenant other than the operator organization has its own indices, <code>aurelius-atlas-tenant-&lt;alias&gt;-*</code>, and its own type registry; a request reads and writes its tenant's alone, and the operator organization keeps the default indices (TSS-02 to TSS-06)</td>
+<td>Isolation by construction, no filter to forget (ADR 063, DD-568, DD-570); off by default, when nothing deviates</td>
+<td>15.2</td>
+</tr>
 </tbody>
 </table>
 
