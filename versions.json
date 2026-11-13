@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "feat-15-1-tenant-claims",
+    "title": "feat-15-1-tenant-claims",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
