@@ -15,6 +15,7 @@ from fastapi.responses import JSONResponse
 from aurelius_atlas_server.authorization import AtlasPrivilege, is_access_allowed
 from aurelius_atlas_server.models import AppSearchAnswer, AppSearchRequest
 from aurelius_atlas_server.openapi import json_response, request_body
+from aurelius_atlas_server.tenant_stores import stores
 
 APP_SEARCH = APIRouter(prefix="/api/as/v1", tags=["App Search"])
 
@@ -42,7 +43,7 @@ async def search(engine: str, request: Request) -> JSONResponse:
             body = json.loads(raw) if raw.strip() else {}
         except ValueError as error:
             raise AppSearchError(400, NOT_JSON) from error
-        answer = await AppSearchEngine(request.app.state.entity_documents, found).search(body)
+        answer = await AppSearchEngine(stores(request).documents, found).search(body)
     except AppSearchError as refusal:
         return JSONResponse(refusal.to_json(), status_code=refusal.status)
     return JSONResponse(answer)

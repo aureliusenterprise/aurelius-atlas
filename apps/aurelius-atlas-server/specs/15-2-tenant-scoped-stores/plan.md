@@ -6,11 +6,12 @@ The rules are TSS-01 to TSS-09 of [the spec](./spec.md), the design DD-568 to DD
 
 - **The stores take a prefix already:** `ElasticsearchEntityDocuments(client, prefix)` names the entities,
   unique values, journal, relationships, classifications, tasks and governance verdicts under it;
-  `ElasticsearchEntityAuditRepository(client, prefix)` the audit alias; `ElasticsearchTypedefDocument(client,
-index)` takes the typedef index whole, `aurelius-atlas-typedefs` by default, which is `<prefix>-typedefs`.
+  `ElasticsearchEntityAuditRepository(client, prefix)` the audit alias; and
+  `ElasticsearchTypedefDocument(client, index)` takes the typedef index whole, `aurelius-atlas-typedefs` by
+  default, which is `<prefix>-typedefs`.
 - **The start:** the lifespan in `app.py` builds the documents, the entity store, the audits, the typedef store
-  and the task management, loads the models and recovers. That sequence becomes `open_stores(client, settings,
-prefix)`, run for the default and for each tenant.
+  and the task management, loads the models and recovers. That sequence becomes
+  `open_stores(store, prefix, ...)`, run for the default and for each tenant.
 - **The routes:** `routes/entity.py::entity_store` and `routes/types.py::typedef_store` are the dependencies
   nearly every route uses; direct `app.state` reads are in `entity.py` (audits), `admin.py` (patches, audit
   details, tasks) and `app_search.py` (documents). Readiness and metrics read `app.state.store`, the cluster,

@@ -59,6 +59,10 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
   default, offered from 15.4 only, DD-566), `user_of` reads the request's one tenant from the token's
   organization claim and its roles from that organization's groups, or refuses with 403 (TEN-01 to TEN-07,
   ADR 063). The tenant is on `request.state.tenant` and the core's `RequestContext` (TEN-08)
+- `aurelius_atlas_server/tenant_stores.py` — `TenantStores`, `open_stores`, `stores`: the default store set and,
+  with tenancy on, each provisioned tenant's (`aurelius-atlas-tenant-<alias>-*`), opened at start and kept in
+  `app.state.tenant_stores` (TSS-03, TSS-04). **A route reads its stores through `stores(request)`**, never
+  from `app.state`, which keeps the default set for the workers alone (TSS-06, TSS-07, DD-570)
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)

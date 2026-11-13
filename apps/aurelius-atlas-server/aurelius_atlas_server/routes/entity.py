@@ -63,6 +63,7 @@ from aurelius_atlas_server.openapi import (
     request_body,
 )
 from aurelius_atlas_server.openapi import no_content as no_content_response
+from aurelius_atlas_server.tenant_stores import stores
 
 ENTITY = APIRouter(prefix="/api/atlas/v2/entity", tags=["Entity"])
 
@@ -70,10 +71,10 @@ READ_ENTITY_GUID = "read entity: guid="
 
 
 async def entity_store(request: Request) -> EntityStore:
-    """The server's entity store, its registry refreshed when due (ERD-10, TDS-13)."""
-    await request.app.state.typedef_store.refresh()
-    store: EntityStore = request.app.state.entity_store
-    return store
+    """The entity store of the request's tenant, its registry refreshed when due (ERD-10, TDS-13, TSS-06)."""
+    found = stores(request)
+    await found.typedef_store.refresh()
+    return found.entity_store
 
 
 type Store = Annotated[EntityStore, Depends(entity_store)]
@@ -106,7 +107,7 @@ def tasks_enabled(request: Request) -> bool:
 
 def notifier(request: Request, store: EntityStore) -> EntityChangeNotifier:
     """The change notifier of a request: its changes recorded in the server's audit (DD-084)."""
-    return EntityChangeNotifier(store, [EntityAuditListener(request.app.state.entity_audits, store.now)])
+    return EntityChangeNotifier(store, [EntityAuditListener(stores(request).entity_audits, store.now)])
 
 
 def writer(request: Request, store: EntityStore) -> EntityWriter:
@@ -823,7 +824,7 @@ async def get_audit_events(guid: str, request: Request, store: Store) -> AtlasJS
             a parameter that is no value of its type (DV-39), ``UNAUTHORIZED_ACCESS``.
     """
     validate_guid("guid", guid)
-    audits: EntityAuditRepository = request.app.state.entity_audits
+    audits: EntityAuditRepository = stores(request).entity_audits
     asked = read_query(EntityAuditParams, request)
     action, count, offset = asked.audit_action, asked.count, asked.offset
     sort_by, sort_order = asked.sort_by, asked.sort_order
@@ -858,7 +859,7 @@ async def get_entity_headers(request: Request, store: Store) -> AtlasJSONRespons
     """
     end = store.now()
     start = read_query(EntityHeadersParams, request).checked(end)
-    headers = await ClassificationRetriever(store, request.app.state.entity_audits).get(start, end)
+    headers = await ClassificationRetriever(store, stores(request).entity_audits).get(start, end)
     return _json(headers.to_json())
 
 

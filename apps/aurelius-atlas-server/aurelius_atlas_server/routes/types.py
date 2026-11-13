@@ -16,6 +16,7 @@ from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, veri
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.openapi import array_of, json_response, request_body
 from aurelius_atlas_server.openapi import no_content as no_content_response
+from aurelius_atlas_server.tenant_stores import stores
 
 TYPES = APIRouter(prefix="/api/atlas/v2/types", tags=["Types"])
 
@@ -31,8 +32,8 @@ KIND_PATHS = {
 
 
 async def typedef_store(request: Request) -> TypedefStore:
-    """The server's typedef store, its registry refreshed when due (TYR-12, TDS-13)."""
-    store: TypedefStore = request.app.state.typedef_store
+    """The typedef store of the request's tenant, its registry refreshed when due (TYR-12, TDS-13, TSS-06)."""
+    store = stores(request).typedef_store
     await store.refresh()
     return store
 
