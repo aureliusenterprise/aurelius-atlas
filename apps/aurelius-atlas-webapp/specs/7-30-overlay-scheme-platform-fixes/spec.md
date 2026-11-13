@@ -1,7 +1,7 @@
 # 7.30 Overlay and scheme platform fixes
 
 - **Status:** in review
-- **Pull request:** — (this increment's PR)
+- **Pull request:** [#336](https://github.com/aureliusenterprise/aurelius-atlas/pull/336)
 - **Records:** DD-542 (the `color-scheme` meta for the theme override, SPL-15/SPL-16),
   DD-543 (the `Modal` on the native `<dialog>`, UIC-40), DD-544 (scroll containment for the
   overlay layers, UIC-41), DD-545 (the drawer keeps `aria-modal` and marks the background inert,
