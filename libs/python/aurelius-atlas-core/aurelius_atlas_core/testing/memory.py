@@ -14,6 +14,7 @@ from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_core.app_search_document import (
     GOV_RULE_TYPE,
     SCORE_TYPE,
+    StoredVerdict,
     awaits_document,
     named_guids,
     with_current_app_search,
@@ -112,7 +113,7 @@ class MemoryEntityDocuments:
             kind: {} for kind in LinkedKind
         }
         self.unique_values: dict[str, Reservation] = {}
-        self.verdicts: dict[str, dict[str, Any]] = {}
+        self.verdicts: dict[str, StoredVerdict] = {}
         self.journal_entries: dict[str, dict[str, object]] = {}
         self.prepared = False
         self.fail: dict[str, str] = {}
@@ -441,12 +442,12 @@ class MemoryEntityDocuments:
                 found.append(versioned)
         return found[:limit]
 
-    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None:
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None:
         """Each entity's verdicts in place of those it had (DD-534)."""
         for guid in verdicts:
-            for verdict_id in [key for key, held in self.verdicts.items() if held["entity_guid"] == guid]:
+            for verdict_id in [key for key, held in self.verdicts.items() if held.entity_guid == guid]:
                 del self.verdicts[verdict_id]
-        self.verdicts.update((str(verdict["id"]), dict(verdict)) for found in verdicts.values() for verdict in found)
+        self.verdicts.update((verdict.id, verdict) for found in verdicts.values() for verdict in found)
 
     def _all_versioned(self) -> list[VersionedEntity]:
         found = []

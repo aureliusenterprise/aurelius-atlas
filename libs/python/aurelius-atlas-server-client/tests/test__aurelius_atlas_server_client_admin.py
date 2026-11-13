@@ -12,6 +12,8 @@ from typing import Any
 
 import httpx2 as httpx
 import pytest
+from aurelius_atlas_model.atlas_audit import AuditSearchParameters
+from aurelius_atlas_model.audit_reduction import AuditReductionCriteria
 from aurelius_atlas_model.impexp import AtlasExportRequest, AtlasImportRequest
 from aurelius_atlas_model.instance import AtlasObjectId
 from aurelius_atlas_server_client.client import AtlasClient
@@ -204,3 +206,176 @@ async def test__the_task_verbs_send_each_guid_as_a_repeated_parameter(recorder: 
     assert delete_request.method == "DELETE"
     assert delete_request.url.path == f"{ROOT}/tasks"
     assert _params(delete_request) == [("guids", G_ONE), ("guids", G_TWO)]
+
+
+METRICS_ANSWER: dict[str, Any] = {"data": {"general": {"collectionTime": 1_700_000_000_000}}}
+STAT_ANSWER: dict[str, Any] = {"metricsId": "atlas_metrics_1@ns", "collectionTime": 1_700_000_000_000, "typeData": None}
+AUDIT_ANSWER: dict[str, Any] = {"guid": "a-1", "userName": "alice", "operation": "EXPORT", "resultCount": 2}
+EXPIMP_ANSWER: dict[str, Any] = {
+    "guid": "e-1",
+    "userName": "alice",
+    "operation": "EXPORT",
+    "sourceServerName": "s1",
+    "targetServerName": "s2",
+}
+AGEOUT_ANSWER: dict[str, Any] = {"guid": G_ONE, "type": "ENTITY_AUDIT_AGEOUT", "status": "PENDING"}
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.metrics", rules=["CLW-08"])
+async def test__metrics_returns_the_groups(recorder: Recorder) -> None:
+    """``GET /metrics`` answers the groups of metrics (MET-01..MET-04)."""
+    recorder.answer(200, METRICS_ANSWER)
+
+    found = await _client(recorder).admin.metrics()
+
+    sent = recorder.sent()
+    assert sent.method == "GET"
+    assert sent.url.path == f"{ROOT}/metrics"
+    assert found.numeric_metric("general", "collectionTime") == 1_700_000_000_000
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.metrics_stats", rules=["CLW-08"])
+async def test__metrics_stats_always_sends_mininfo(recorder: Recorder) -> None:
+    """``mininfo`` travels on every call, true and false alike (MHS-02, DD-561)."""
+    recorder.answer(200, [STAT_ANSWER])
+    recorder.answer(200, [STAT_ANSWER])
+    client = _client(recorder)
+
+    found = await client.admin.metrics_stats()
+    without = await client.admin.metrics_stats(min_info=False)
+
+    default_request, false_request = recorder.requests
+    assert _params(default_request) == [("mininfo", "true")]
+    assert _params(false_request) == [("mininfo", "false")]
+    assert found[0].collection_time == 1_700_000_000_000
+    assert without[0].metrics is None
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.metrics_stat", rules=["CLW-09"])
+async def test__metrics_stat_puts_the_collection_time_in_the_path(recorder: Recorder) -> None:
+    """``GET /metricsstat/{collectionTime}``: the long rides the path (MHS-02)."""
+    recorder.answer(200, STAT_ANSWER)
+
+    found = await _client(recorder).admin.metrics_stat(1_700_000_000_000)
+
+    sent = recorder.sent()
+    assert sent.method == "GET"
+    assert sent.url.path == f"{ROOT}/metricsstat/1700000000000"
+    assert found.metrics_id == "atlas_metrics_1@ns"
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.metrics_in_range", rules=["CLW-09"])
+async def test__metrics_in_range_sends_the_times_and_each_type_name(recorder: Recorder) -> None:
+    """``GET /metricsstats/range``: the two times and each type name as a repeated ``typeName`` (MHS-03)."""
+    recorder.answer(200, [STAT_ANSWER])
+
+    await _client(recorder).admin.metrics_in_range(1, 2, type_names=["Table", "_ALL_ENTITY_TYPES"])
+
+    sent = recorder.sent()
+    assert sent.url.path == f"{ROOT}/metricsstats/range"
+    assert _params(sent) == [
+        ("startTime", "1"),
+        ("endTime", "2"),
+        ("typeName", "Table"),
+        ("typeName", "_ALL_ENTITY_TYPES"),
+    ]
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.metrics_charts", rules=["CLW-09"])
+async def test__metrics_charts_answers_the_map_by_type_name(recorder: Recorder) -> None:
+    """``GET /metricsstats/charts`` answers the map of per-state counts (MHS-04)."""
+    recorder.answer(200, {"Table": [{"key": "Active", "values": [[1, 2]]}]})
+
+    found = await _client(recorder).admin.metrics_charts(1, 2, type_names=["Table"])
+
+    assert _params(recorder.sent()) == [("startTime", "1"), ("endTime", "2"), ("typeName", "Table")]
+    assert found.root["Table"][0].values == [[1, 2]]
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.audit_details", rules=["CLW-10"])
+async def test__audit_details_pages_the_headers(recorder: Recorder) -> None:
+    """``GET /audit/{guid}/details``: the page parameters as the route reads them (ADA-05)."""
+    recorder.answer(200, [{"guid": G_ONE, "displayText": "t"}])
+
+    found = await _client(recorder).admin.audit_details("a-1", limit=5, offset=10)
+
+    sent = recorder.sent()
+    assert sent.url.path == f"{ROOT}/audit/a-1/details"
+    assert _params(sent) == [("limit", "5"), ("offset", "10")]
+    assert found[0].guid == G_ONE
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.server", rules=["CLW-10"])
+async def test__server_reads_the_catalogue_by_full_name(recorder: Recorder) -> None:
+    """``GET /server/{serverName}``: the ``AtlasServer`` of the full name (REP-01)."""
+    recorder.answer(200, {"name": "s1", "fullName": "s1.example", "urls": ["https://s1.example"]})
+
+    found = await _client(recorder).admin.server("s1.example")
+
+    sent = recorder.sent()
+    assert sent.url.path == f"{ROOT}/server/s1.example"
+    assert found.full_name == "s1.example"
+    assert found.urls == ["https://s1.example"]
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.export_import_audit", rules=["CLW-10"])
+async def test__export_import_audit_sends_the_values_given(recorder: Recorder) -> None:
+    """``GET /expimp/audit``: the seven optional parameters, Java defaults left out (REP-05)."""
+    recorder.answer(200, [EXPIMP_ANSWER])
+
+    found = await _client(recorder).admin.export_import_audit(
+        server_name="s1", operation="EXPORT", start_time=5, limit=50
+    )
+
+    sent = recorder.sent()
+    assert sent.url.path == f"{ROOT}/expimp/audit"
+    assert _params(sent) == [("serverName", "s1"), ("operation", "EXPORT"), ("startTime", "5"), ("limit", "50")]
+    assert found[0].source_server_name == "s1"
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.audits", rules=["CLW-11"])
+async def test__audits_sends_the_search_parameters_or_nothing(recorder: Recorder) -> None:
+    """``POST /audits``: a body of ``AuditSearchParameters``, or no body for every entry (ADA-04)."""
+    recorder.answer(200, [AUDIT_ANSWER])
+    recorder.answer(200, [AUDIT_ANSWER])
+    client = _client(recorder)
+
+    found = await client.admin.audits(AuditSearchParameters(limit=10))
+    await client.admin.audits()
+
+    with_body, without_body = recorder.requests
+    assert with_body.url.path == f"{ROOT}/audits"
+    assert _body(with_body)["limit"] == 10
+    assert without_body.content == b""
+    assert found[0].user_name == "alice"
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.ageout_audits", rules=["CLW-11"])
+async def test__ageout_audits_sends_the_criteria_and_the_config_flag(recorder: Recorder) -> None:
+    """``POST /audits/ageout``: the criteria body; ``useAuditConfig=true`` only when set (AGE-01..AGE-03)."""
+    recorder.answer(200, [AGEOUT_ANSWER])
+    recorder.answer(200, [AGEOUT_ANSWER])
+    client = _client(recorder)
+
+    found = await client.admin.ageout_audits(AuditReductionCriteria(default_ageout_enabled=True))
+    by_config = await client.admin.ageout_audits(use_audit_config=True)
+
+    criteria_request, config_request = recorder.requests
+    assert _body(criteria_request)["defaultAgeoutEnabled"] is True
+    assert _params(criteria_request) == []
+    assert _params(config_request) == [("useAuditConfig", "true")]
+    assert found is not None
+    assert found[0].type == "ENTITY_AUDIT_AGEOUT"
+    assert by_config is not None
+    assert by_config[0].status is not None
+    assert by_config[0].status.value == "PENDING"
+
+
+@pytest.mark.covers("aurelius_atlas_server_client.client.AdminApi.ageout_audits", rules=["CLW-11"])
+async def test__an_ageout_that_queued_nothing_is_none(recorder: Recorder) -> None:
+    """The 204 of no queued aging answers ``None``, not ``[]`` (AGE-03, DD-561, CSD-03's rule)."""
+    recorder.answer(204)
+
+    found = await _client(recorder).admin.ageout_audits()
+
+    assert found is None

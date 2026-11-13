@@ -4,7 +4,7 @@ privilege it needs, and a refused body (ASE-01, ASE-02, ASE-04, ASQ-01, ASG-01),
 
 import httpx2 as httpx
 import pytest
-from aurelius_atlas_core.app_search_document import own_document
+from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.stored_entity import StoredEntity, StoredQualityResult
 from aurelius_atlas_store_es.testing.fake import FakeClient
@@ -66,7 +66,7 @@ async def test__the_governance_engine_answers_its_verdicts_on_both_paths(
 ) -> None:
     """An entity's missed rules by ``entity_guid`` and ``compliant``, the card list's filter; ``id`` the pair."""
     verdicts = [
-        {"id": f"d--{rule}", "guid": rule, "name": rule.title(), "entity_guid": "d", "compliant": compliant}
+        StoredVerdict(id=f"d--{rule}", guid=rule, name=rule.title(), entity_guid="d", compliant=compliant)
         for rule, compliant in (("named", "1"), ("owned", "0"))
     ]
     await ElasticsearchEntityDocuments(fake_es).replace_verdicts({"d": verdicts})  # type: ignore[arg-type]

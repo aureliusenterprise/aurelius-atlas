@@ -24,7 +24,13 @@ from aurelius_atlas_quality.rule import QualityRuleError
 from aurelius_atlas_typesystem.array_type import ArrayType
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
-from aurelius_atlas_core.app_search_document import GOV_RULE_TYPE, attribute_value, document_name, governance_source
+from aurelius_atlas_core.app_search_document import (
+    GOV_RULE_TYPE,
+    StoredVerdict,
+    attribute_value,
+    document_name,
+    governance_source,
+)
 from aurelius_atlas_core.entity_documents import EntityDocuments, LinkedKind, VersionedEntity
 from aurelius_atlas_core.graph_helper import collection_elements, referenced_end
 from aurelius_atlas_core.stored_entity import StoredEntity
@@ -149,12 +155,12 @@ class GovernanceIndexer:
 
     async def verdicts(
         self, entities: Sequence[StoredEntity], rules: Mapping[str, Sequence[GovernanceRule]]
-    ) -> dict[str, list[dict[str, Any]]]:
+    ) -> dict[str, list[StoredVerdict]]:
         """Each entity's verdicts by GUID, one per rule of its type; none for an entity not judged (ASG-03, ASG-04)."""
         judged = [entity for entity in entities if _judged(entity, rules)]
         wanted = [guid for entity in judged for guid in entity.relationship_guids or []]
         linked = await self._documents.get_linked(LinkedKind.RELATIONSHIP, wanted) if wanted else {}
-        found: dict[str, list[dict[str, Any]]] = {entity.guid: [] for entity in entities}
+        found: dict[str, list[StoredVerdict]] = {entity.guid: [] for entity in entities}
         for entity in judged:
             edges = [
                 relationship
@@ -212,15 +218,17 @@ class GovernanceIndexer:
         return sum(1 for result in results if result.written)
 
 
-def _verdict(rule: GovernanceRule, entity: StoredEntity, values: Mapping[str, Any]) -> dict[str, Any]:
+def _verdict(rule: GovernanceRule, entity: StoredEntity, values: Mapping[str, Any]) -> StoredVerdict:
     """The rule's verdict for the entity, as the engine's document (ASG-03)."""
     pair = f"{entity.guid}--{rule.fields['guid']}"
     compliant = evaluate_gov_entity(rule.check, values).compliant
-    return {
-        "id": pair,
-        "qualifiedname": pair,
-        **rule.fields,
-        "dataqualityruletypename": entity.type_name,
-        "entity_guid": entity.guid,
-        "compliant": "1" if compliant else "0",
-    }
+    return StoredVerdict.model_validate(
+        {
+            **rule.fields,
+            "id": pair,
+            "qualifiedname": pair,
+            "dataqualityruletypename": entity.type_name,
+            "entity_guid": entity.guid,
+            "compliant": "1" if compliant else "0",
+        }
+    )

@@ -3,8 +3,11 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { AdminService, AtlasSession, AtlasStatus, AtlasVersion } from "./admin.service";
 import { API_BASE_URL, provideApiBaseUrl } from "../api-config";
-import type { AtlasImportResult } from "./atlas-impexp";
+import type { AtlasAuditEntry, AuditSearchParameters } from "./atlas-audit";
+import type { AtlasImportResult, AtlasServer, ExportImportAuditEntry } from "./atlas-impexp";
+import type { AtlasMetrics, AtlasMetricsCharts, AtlasMetricsStat } from "./atlas-metrics";
 import type { AtlasPatch } from "./atlas-patches";
+import type { AtlasEntityHeader } from "./atlas-search";
 import type { AtlasTask } from "./atlas-tasks";
 import { atlasErrorFrom } from "./atlas-error";
 
@@ -409,6 +412,278 @@ describe("AdminService", () => {
 
             const req = httpMock.expectOne("/api/atlas/admin/tasks?guids=g-1");
             expect(req.request.method).toBe("DELETE");
+            req.flush(null, { status: 204, statusText: "No Content" });
+        }));
+
+    it("metrics answers the server's counts (MET-01, AAC-08)", () =>
+        new Promise<void>((done, fail) => {
+            const metrics = { data: { general: { "entity.total": 3 } } } satisfies AtlasMetrics;
+
+            service.metrics().subscribe({
+                next: (result) => {
+                    expect(result).toEqual(metrics);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/metrics");
+            expect(req.request.method).toBe("GET");
+            req.flush(metrics);
+        }));
+
+    it("metricsStats always sends mininfo: true by default, false when asked (MHS-02, AAC-08, DD-561)", () =>
+        new Promise<void>((done, fail) => {
+            const stat = {
+                guid: "s-1",
+                metricsId: "m-1",
+                collectionTime: 1_700_000_000_000,
+            } satisfies AtlasMetricsStat;
+
+            service.metricsStats(false).subscribe({
+                next: (result) => {
+                    expect(result).toEqual([stat]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/metricsstats?mininfo=false");
+            expect(req.request.method).toBe("GET");
+            req.flush([stat]);
+        }));
+
+    it("metricsStats sends mininfo=true by default (MHS-02, AAC-08, DD-561)", () =>
+        new Promise<void>((done, fail) => {
+            service.metricsStats().subscribe({
+                next: (result) => {
+                    expect(result).toEqual([]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/metricsstats?mininfo=true");
+            req.flush([]);
+        }));
+
+    it("metricsStat reads the metric stored at that collection time (MHS-02, AAC-09)", () =>
+        new Promise<void>((done, fail) => {
+            const stat = {
+                guid: "s-1",
+                metricsId: "m-1",
+                collectionTime: 1_700_000_000_000,
+            } satisfies AtlasMetricsStat;
+
+            service.metricsStat(1_700_000_000_000).subscribe({
+                next: (result) => {
+                    expect(result).toEqual(stat);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/metricsstat/1700000000000");
+            expect(req.request.method).toBe("GET");
+            req.flush(stat);
+        }));
+
+    it("metricsInRange sends the times and the repeated typeName (MHS-03, AAC-09)", () =>
+        new Promise<void>((done, fail) => {
+            service.metricsInRange(1000, 2000, ["Table", "Dataset"]).subscribe({
+                next: (result) => {
+                    expect(result).toEqual([]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne(
+                (request) =>
+                    request.url === "/api/atlas/admin/metricsstats/range" &&
+                    request.params.get("startTime") === "1000" &&
+                    request.params.get("endTime") === "2000" &&
+                    JSON.stringify(request.params.getAll("typeName")) === JSON.stringify(["Table", "Dataset"]),
+            );
+            expect(req.request.method).toBe("GET");
+            req.flush([]);
+        }));
+
+    it("metricsCharts answers the chart series keyed by type name (MHS-04, AAC-09)", () =>
+        new Promise<void>((done, fail) => {
+            const charts = {
+                Table: [{ key: "ACTIVE", values: [[1000, 2]] }],
+            } satisfies AtlasMetricsCharts;
+
+            service.metricsCharts(1000, 2000, ["Table"]).subscribe({
+                next: (result) => {
+                    expect(result).toEqual(charts);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne(
+                "/api/atlas/admin/metricsstats/charts?startTime=1000&endTime=2000&typeName=Table",
+            );
+            expect(req.request.method).toBe("GET");
+            req.flush(charts);
+        }));
+
+    it("auditDetails sends only a non-default limit or offset (ADA-05, AAC-09)", () =>
+        new Promise<void>((done, fail) => {
+            const header = { guid: "e-1", typeName: "Table", status: "DELETE_PENDING" } satisfies AtlasEntityHeader;
+
+            service.auditDetails("a-1", 0, 20).subscribe({
+                next: (result) => {
+                    expect(result).toEqual([header]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/audit/a-1/details?offset=20");
+            expect(req.request.method).toBe("GET");
+            req.flush([header]);
+        }));
+
+    it("auditDetails with the defaults sends limit=10 only (ADA-05, AAC-09)", () =>
+        new Promise<void>((done, fail) => {
+            service.auditDetails("a-1").subscribe({
+                next: (result) => {
+                    expect(result).toEqual([]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/audit/a-1/details?limit=10");
+            req.flush([]);
+        }));
+
+    it("server reads the catalogue of the full name (REP-01, AAC-10)", () =>
+        new Promise<void>((done, fail) => {
+            const server = {
+                name: "srv-1",
+                fullName: "cluster1:srv-1",
+                urls: ["http://s:21000"],
+            } satisfies AtlasServer;
+
+            service.server("cluster1:srv-1").subscribe({
+                next: (result) => {
+                    expect(result).toEqual(server);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/server/cluster1%3Asrv-1");
+            expect(req.request.method).toBe("GET");
+            req.flush(server);
+        }));
+
+    it("exportImportAudit sends the values given and skips the rest (REP-05, AAC-10)", () =>
+        new Promise<void>((done, fail) => {
+            service.exportImportAudit({ serverName: "s", userName: "u", operation: "EXPORT" }).subscribe({
+                next: (result) => {
+                    expect(result).toEqual([]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/expimp/audit?serverName=s&userName=u&operation=EXPORT");
+            expect(req.request.method).toBe("GET");
+            req.flush([]);
+        }));
+
+    it("exportImportAudit with no query sends no parameter (REP-05, AAC-10)", () =>
+        new Promise<void>((done, fail) => {
+            const entry = {
+                guid: "x-1",
+                userName: "u",
+                operation: "EXPORT",
+                startTime: 1000,
+            } satisfies ExportImportAuditEntry;
+
+            service.exportImportAudit().subscribe({
+                next: (result) => {
+                    expect(result).toEqual([entry]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/expimp/audit");
+            expect(req.request.params.keys()).toEqual([]);
+            req.flush([entry]);
+        }));
+
+    it("audits posts the search parameters (ADA-04, AAC-11)", () =>
+        new Promise<void>((done, fail) => {
+            const parameters = { limit: 5, offset: 0 } satisfies AuditSearchParameters;
+            const entry = { guid: "a-1", userName: "u", operation: "PURGE" } satisfies AtlasAuditEntry;
+
+            service.audits(parameters).subscribe({
+                next: (result) => {
+                    expect(result).toEqual([entry]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/audits");
+            expect(req.request.method).toBe("POST");
+            expect(req.request.body).toEqual(parameters);
+            req.flush([entry]);
+        }));
+
+    it("audits with no parameters asks for every entry with no body (ADA-04, AAC-11)", () =>
+        new Promise<void>((done, fail) => {
+            service.audits().subscribe({
+                next: (result) => {
+                    expect(result).toEqual([]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/audits");
+            expect(req.request.body).toBeNull();
+            req.flush([]);
+        }));
+
+    it("ageoutAudits answers the queued tasks and sends useAuditConfig only when set (AGE-01, AAC-11)", () =>
+        new Promise<void>((done, fail) => {
+            const task = { type: "ENTITY_AGEOUT", guid: "t-1", status: "PENDING" } satisfies AtlasTask;
+
+            service.ageoutAudits({ auditAgingEnabled: true }, true).subscribe({
+                next: (result) => {
+                    expect(result).toEqual([task]);
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/audits/ageout?useAuditConfig=true");
+            expect(req.request.method).toBe("POST");
+            expect(req.request.body).toEqual({ auditAgingEnabled: true });
+            req.flush([task]);
+        }));
+
+    it("ageoutAudits keeps the 204 of an aging that queued nothing as null, not [] (AGE-03, AAC-11, DD-561)", () =>
+        new Promise<void>((done, fail) => {
+            service.ageoutAudits().subscribe({
+                next: (result) => {
+                    expect(result).toBeNull();
+                    done();
+                },
+                error: fail,
+            });
+
+            const req = httpMock.expectOne("/api/atlas/admin/audits/ageout");
+            expect(req.request.body).toBeNull();
+            expect(req.request.params.keys()).toEqual([]);
             req.flush(null, { status: 204, statusText: "No Content" });
         }));
 

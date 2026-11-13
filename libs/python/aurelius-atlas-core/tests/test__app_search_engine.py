@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from aurelius_atlas_core.app_search_document import own_document
+from aurelius_atlas_core.app_search_document import StoredVerdict, own_document
 from aurelius_atlas_core.app_search_engine import (
     ATLAS_DEV,
     ATLAS_DEV_GOV_QUALITY,
@@ -546,36 +546,39 @@ def test__a_details_card_s_filter_finds_what_atlas_dev_held() -> None:
     assert guids(answer) == expected
 
 
-def verdict(entity: str, rule: str, compliant: str, **fields: str) -> dict[str, Any]:
+def verdict(entity: str, rule: str, compliant: str, **fields: str) -> StoredVerdict:
     """The verdict of ``rule`` on ``entity``, named ``Rule <rule>``, of the completeness dimension unless given."""
     pair = f"{entity}--{rule}"
-    return {
-        "id": pair,
-        "qualifiedname": pair,
-        "guid": rule,
-        "qualityqualifiedname": f"m4i_dataset--{rule}",
-        "name": f"Rule {rule}",
-        "expression": f"completeness('{rule}')",
-        "dataqualitytype": "attribute",
-        "dataqualityruledescription": f"About {rule}",
-        "dataqualityruledimension": "completeness",
-        "noncompliant_message": f"Misses {rule}",
-        "usedattributes": [rule],
-        "dataqualityruletypename": "m4i_dataset",
-        "entity_guid": entity,
-        "compliant": compliant,
-        "result_id": "0",
-        "business_rule_id": "1",
-    } | fields
+    return StoredVerdict.model_validate(
+        {
+            "id": pair,
+            "qualifiedname": pair,
+            "guid": rule,
+            "qualityqualifiedname": f"m4i_dataset--{rule}",
+            "name": f"Rule {rule}",
+            "expression": f"completeness('{rule}')",
+            "dataqualitytype": "attribute",
+            "dataqualityruledescription": f"About {rule}",
+            "dataqualityruledimension": "completeness",
+            "noncompliant_message": f"Misses {rule}",
+            "usedattributes": [rule],
+            "dataqualityruletypename": "m4i_dataset",
+            "entity_guid": entity,
+            "compliant": compliant,
+            "result_id": "0",
+            "business_rule_id": "1",
+        }
+        | fields
+    )
 
 
-async def gov_engine(*verdicts: dict[str, Any]) -> AppSearchEngine:
+async def gov_engine(*verdicts: StoredVerdict) -> AppSearchEngine:
     """``atlas-dev-gov-quality`` over the verdicts, written to a fake store."""
     documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
     await documents.prepare()
-    by_entity: dict[str, list[dict[str, Any]]] = {}
+    by_entity: dict[str, list[StoredVerdict]] = {}
     for found in verdicts:
-        by_entity.setdefault(found["entity_guid"], []).append(found)
+        by_entity.setdefault(found.entity_guid, []).append(found)
     await documents.replace_verdicts(by_entity)
     return AppSearchEngine(documents, ATLAS_DEV_GOV_QUALITY)
 

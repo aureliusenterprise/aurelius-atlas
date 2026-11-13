@@ -9,8 +9,13 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
 - `aurelius_atlas_server_client/models.py` — admin DTOs and `AtlasErrorInfo`
 - `aurelius_atlas_server_client/lineage.py` — the `api/atlas/v2/lineage/{guid}`
   body models (`LineageInfo` et al., moved here from the 8.2 app by CL-12)
+- `aurelius_atlas_server_client/aurelius.py` — the client-side shapes of the
+  Aurelius-native routes (`SemanticSearchParameters`, `QualityKind`,
+  `QualityVocabulary`, `QualityRuleCheck`, CAV-01..CAV-04, DD-562). The server
+  keeps its own copies in `aurelius_atlas_server/models.py`
 - `aurelius_atlas_server_client/client.py` — `AtlasClient` (`admin` / `types` /
-  `entity` / `glossary` / `relationship` / `search` / `lineage` / `with_token`,
+  `entity` / `glossary` / `relationship` / `search` / `lineage` / `aurelius` /
+  `with_token`,
   plus the `get_lineage` alias of `lineage.get`), `AtlasClientError`,
   `KIND_PATHS`;
   `search` mirrors `routes/discovery.py` (CL-13 by 8.4, plus CSD-01..CSD-06,
@@ -27,8 +32,14 @@ root `AGENTS.md` and `libs/python/AGENTS.md`. See `README.md` for what it is.
   `relationship` mirrors `routes/relationship.py` (CLR-01..CLR-04, 8.11);
   `admin` mirrors `routes/admin.py` (the five 8.4 reads plus CLW-01..CLW-07,
   8.11 — the export/import ZIP pair as bytes per DD-310, the import's
-  `request` part as a form field per DD-313);
-  `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8)
+  `request` part as a form field per DD-313 — plus CLW-08..CLW-12, 8.24: the
+  metrics reads, the audit pair and the replication reads; `mininfo` travels
+  on every `metricsstats` call per DD-561, and the 204 of an aging that
+  queued nothing reads as `None`);
+  `lineage` mirrors `routes/lineage.py` (CL-61..CL-63, 8.8);
+  `aurelius` mirrors `routes/quality.py` and `routes/search_by_meaning.py`
+  (CAV-01..CAV-04, 8.24 — bodies from `aurelius.py`, DD-562; its Angular
+  twins are `SearchByMeaningService` and `QualityRuleService`)
 - `specs/<increment>/spec.md` — the per-module coverage matrices (DD-307): a
   change to a server `routes/*.py` updates its spec's matrix in the same PR.
 

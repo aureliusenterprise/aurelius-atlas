@@ -31,6 +31,7 @@ from aurelius_atlas_core.app_search_document import (
     SOURCE_HASH_FIELD,
     STALE_FIELD,
     WITHOUT_DOCUMENT,
+    StoredVerdict,
     app_search_mapping,
     quality_result_mapping,
     quality_totals_mapping,
@@ -277,11 +278,13 @@ class VersionedClassification:
     version: DocumentVersion
 
 
-@dataclass(frozen=True)
-class Reservation:
-    """A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045)."""
+class Reservation(AtlasModel):
+    """A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
 
-    key: str
+    ``key`` is the document's id, not part of its source, so it stays out of ``to_json`` (DD-560).
+    """
+
+    key: str = Field(exclude=True)
     guid: str
     write_id: str
 
@@ -484,7 +487,7 @@ class EntityDocuments(Protocol):
         """  # noqa: D205 - one sentence
         ...
 
-    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None:
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None:
         """Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534)."""
         ...
 
@@ -777,7 +780,7 @@ class ElasticsearchEntityDocuments:
             await self._client.index(
                 index=self._unique_values,
                 id=reservation.key,
-                document=codec.dumps({"guid": reservation.guid, "writeId": reservation.write_id}),  # type: ignore[arg-type]
+                document=codec.dumps(reservation.to_json()),  # type: ignore[arg-type]
                 op_type="create",
             )
         except ConflictError:
@@ -791,7 +794,7 @@ class ElasticsearchEntityDocuments:
             return {}
         response = await self._client.mget(index=self._unique_values, ids=list(keys))
         return {
-            doc["_id"]: Reservation(doc["_id"], doc["_source"]["guid"], doc["_source"]["writeId"])
+            doc["_id"]: Reservation.model_validate({"key": doc["_id"], **doc["_source"]})
             for doc in response["docs"]
             if doc.get("found")
         }
@@ -1074,15 +1077,18 @@ class ElasticsearchEntityDocuments:
             for hit in response["hits"]["hits"]
         ]
 
-    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None:
+    async def replace_verdicts(self, verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None:
         """One bulk request: each verdict indexed, each other one of these entities deleted (DD-534)."""
         if not verdicts:
             return
-        wanted = {str(verdict["id"]): verdict for found in verdicts.values() for verdict in found}
+        wanted = {verdict.id: verdict for found in verdicts.values() for verdict in found}
         held = await self._verdict_ids(list(verdicts))
         lines: list[bytes] = []
         for verdict_id, verdict in wanted.items():
-            lines += [codec.dumps({"index": {"_index": self._verdicts, "_id": verdict_id}}), codec.dumps(verdict)]
+            lines += [
+                codec.dumps({"index": {"_index": self._verdicts, "_id": verdict_id}}),
+                codec.dumps(verdict.to_json()),
+            ]
         lines += [
             codec.dumps({"delete": {"_index": self._verdicts, "_id": verdict_id}})
             for verdict_id in held

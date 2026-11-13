@@ -23,9 +23,12 @@ entity routes of ``routes/entity.py`` under ``/api/atlas/v2/entity``
 ``routes/relationship.py`` under ``/api/atlas/v2/relationship``
 (CLR-01..CLR-04, 8.11), the discovery routes of
 ``routes/discovery.py`` under ``/api/atlas/v2/search`` (the seven 8.4 searches,
-CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), and
-the lineage feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage``
-(CL-60..CL-63, 8.8).
+CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), the
+lineage feed of ``routes/lineage.py`` under ``/api/atlas/v2/lineage``
+(CL-60..CL-63, 8.8), the Aurelius-native routes of ``routes/quality.py`` and
+``routes/search_by_meaning.py`` under ``/api/aurelius/v1``
+(CAV-01..CAV-04, 8.24), and the ten admin routes of 6.3 and 6.4 that joined
+``routes/admin.py`` after 8.11 (CLW-08..CLW-12, 8.24).
 """
 
 import json
@@ -35,7 +38,9 @@ from typing import Any, Literal
 from uuid import UUID
 
 import httpx2 as httpx
+from aurelius_atlas_model.atlas_audit import AtlasAuditEntry, AuditSearchParameters
 from aurelius_atlas_model.audit import EntityAuditActionV2, EntityAuditEventV2
+from aurelius_atlas_model.audit_reduction import AuditReductionCriteria
 from aurelius_atlas_model.bulk_import import BulkImportResponse
 from aurelius_atlas_model.discovery import (
     AtlasQuickSearchResult,
@@ -57,6 +62,8 @@ from aurelius_atlas_model.impexp import (
     AtlasExportRequest,
     AtlasImportRequest,
     AtlasImportResult,
+    AtlasServer,
+    ExportImportAuditEntry,
 )
 from aurelius_atlas_model.instance import (
     AtlasClassification,
@@ -72,6 +79,7 @@ from aurelius_atlas_model.instance import (
     EntityMutationResponse,
 )
 from aurelius_atlas_model.lineage import LineageOnDemandConstraints
+from aurelius_atlas_model.metrics import AtlasMetrics, AtlasMetricsCharts, AtlasMetricsStat
 from aurelius_atlas_model.patches import AtlasPatch
 from aurelius_atlas_model.profile import AtlasUserSavedSearch
 from aurelius_atlas_model.tasks import AtlasTask
@@ -89,6 +97,11 @@ from aurelius_atlas_model.typedef import (
 )
 from pydantic import ValidationError
 
+from aurelius_atlas_server_client.aurelius import (
+    QualityRuleCheck,
+    QualityVocabulary,
+    SemanticSearchParameters,
+)
 from aurelius_atlas_server_client.lineage import Direction, LineageInfo
 from aurelius_atlas_server_client.models import (
     AtlasErrorInfo,
@@ -115,9 +128,11 @@ ENTITY_ROOT = "api/atlas/v2/entity"
 GLOSSARY_ROOT = "api/atlas/v2/glossary"
 RELATIONSHIP_ROOT = "api/atlas/v2/relationship"
 LINEAGE_ROOT = "api/atlas/v2/lineage"
+AURELIUS_ROOT = "api/aurelius/v1"
 """The route prefixes of the server's resources (``routes/admin.py``, ``routes/types.py``,
 ``routes/discovery.py``, ``routes/entity.py``, ``routes/glossary.py``,
-``routes/relationship.py``, ``routes/lineage.py``).
+``routes/relationship.py``, ``routes/lineage.py``, and the Aurelius-native
+``routes/quality.py`` and ``routes/search_by_meaning.py``, CAV-01).
 
 Relative to the httpx client's base URL (CL-01): httpx appends them, so the base
 URL the app passes — trailing slash included, as a pydantic ``HttpUrl`` renders
@@ -334,6 +349,117 @@ class AdminApi:
     async def delete_tasks(self, guids: Sequence[str]) -> None:
         """``DELETE /tasks``: the tasks of the guids given, removed (TSK-06, CLW-06). Answers 204."""
         await self._api.request("DELETE", f"{ADMIN_ROOT}/tasks", params=[("guids", guid) for guid in guids])
+
+    async def metrics(self) -> AtlasMetrics:
+        """``GET /metrics``: the counts and the server's stats (MET-01..MET-04, CLW-08)."""
+        return AtlasMetrics.model_validate(await self._api.json("GET", f"{ADMIN_ROOT}/metrics"))
+
+    async def metrics_stats(self, *, min_info: bool = True) -> list[AtlasMetricsStat]:
+        """``GET /metricsstats``: every stored metric, the latest first (MHS-02, CLW-08).
+
+        ``mininfo`` travels on every call, true or false: the route's Java default
+        is true, so an absent parameter would answer the full statistics when the
+        caller asked without them (DD-561).
+        """
+        answer = await self._api.json("GET", f"{ADMIN_ROOT}/metricsstats", params={"mininfo": min_info})
+        return [AtlasMetricsStat.model_validate(stat) for stat in answer]
+
+    async def metrics_stat(self, collection_time: int) -> AtlasMetricsStat:
+        """``GET /metricsstat/{collectionTime}``: the metric stored at that time (MHS-02, CLW-09)."""
+        return AtlasMetricsStat.model_validate(
+            await self._api.json("GET", f"{ADMIN_ROOT}/metricsstat/{collection_time}")
+        )
+
+    async def metrics_in_range(
+        self, start_time: int, end_time: int, *, type_names: Sequence[str] = ()
+    ) -> list[AtlasMetricsStat]:
+        """``GET /metricsstats/range``: the metrics stored in the range (MHS-03, CLW-09).
+
+        Each type name travels as a repeated ``typeName``.
+        """
+        params: list[tuple[str, Any]] = [("startTime", start_time), ("endTime", end_time)]
+        params += [("typeName", name) for name in type_names]
+        answer = await self._api.json("GET", f"{ADMIN_ROOT}/metricsstats/range", params=params)
+        return [AtlasMetricsStat.model_validate(stat) for stat in answer]
+
+    async def metrics_charts(
+        self, start_time: int, end_time: int, type_names: Sequence[str] = ()
+    ) -> AtlasMetricsCharts:
+        """``GET /metricsstats/charts``: per type name, its counts in the range by state (MHS-04, CLW-09)."""
+        params: list[tuple[str, Any]] = [("startTime", start_time), ("endTime", end_time)]
+        params += [("typeName", name) for name in type_names]
+        answer = await self._api.json("GET", f"{ADMIN_ROOT}/metricsstats/charts", params=params)
+        return AtlasMetricsCharts.model_validate(answer)
+
+    async def audit_details(self, audit_guid: str, *, limit: int = 10, offset: int = 0) -> list[AtlasEntityHeader]:
+        """``GET /audit/{auditGuid}/details``: the entity headers a purge's audit names (ADA-05, CLW-10).
+
+        The route reads no admin privilege, only the entity read of each entry; the
+        client sends no more than the token it was given (DD-307).
+        """
+        answer = await self._api.json(
+            "GET", f"{ADMIN_ROOT}/audit/{audit_guid}/details", params=_present(limit=limit, offset=offset)
+        )
+        return [AtlasEntityHeader.model_validate(header) for header in answer]
+
+    async def server(self, server_name: str) -> AtlasServer:
+        """``GET /server/{serverName}``: the catalogue of the full name, with its replication (REP-01, CLW-10)."""
+        return AtlasServer.model_validate(await self._api.json("GET", f"{ADMIN_ROOT}/server/{server_name}"))
+
+    async def export_import_audit(  # noqa: PLR0913 - the GET route's seven parameters, as routes/admin.py reads them
+        self,
+        *,
+        server_name: str | None = None,
+        user_name: str | None = None,
+        operation: str | None = None,
+        start_time: int | None = None,
+        end_time: int | None = None,
+        limit: int = 0,
+        offset: int = 0,
+    ) -> list[ExportImportAuditEntry]:
+        """``GET /expimp/audit``: the audit entries of the values given (REP-05, CLW-10).
+
+        The server matches the server name at either end; a value left out
+        matches any entry on it.
+        """
+        params = _present(
+            serverName=server_name,
+            userName=user_name,
+            operation=operation,
+            startTime=start_time,
+            endTime=end_time,
+            limit=limit,
+            offset=offset,
+        )
+        answer = await self._api.json("GET", f"{ADMIN_ROOT}/expimp/audit", params=params)
+        return [ExportImportAuditEntry.model_validate(entry) for entry in answer]
+
+    async def audits(self, parameters: AuditSearchParameters | None = None) -> list[AtlasAuditEntry]:
+        """``POST /audits``: the admin audits the search parameters find (ADA-04, CLW-11).
+
+        No parameter asks for every entry: the client sends no body then. It needs
+        the ``ADMIN_AUDITS`` privilege, which the server checks.
+        """
+        body = None if parameters is None else parameters.to_json()
+        answer = await self._api.json("POST", f"{ADMIN_ROOT}/audits", body=body)
+        return [AtlasAuditEntry.model_validate(entry) for entry in answer]
+
+    async def ageout_audits(
+        self, criteria: AuditReductionCriteria | None = None, *, use_audit_config: bool = False
+    ) -> list[AtlasTask] | None:
+        """``POST /audits/ageout``: the agings the criteria ask for, queued as tasks (AGE-01..AGE-03, CLW-11).
+
+        ``use_audit_config`` sends ``useAuditConfig=true`` — the configuration's
+        aging, its criteria ignored — and travels only when set. The 204 of an
+        aging that queued nothing returns ``None``; ``None`` and ``[]`` stay apart
+        (CSD-03's rule, taken up for the same reason, DD-561).
+        """
+        params = {"useAuditConfig": True} if use_audit_config else None
+        body = None if criteria is None else criteria.to_json()
+        response = await self._api.request("POST", f"{ADMIN_ROOT}/audits/ageout", params=params, body=body)
+        if response.status_code == NO_CONTENT:
+            return None
+        return [AtlasTask.model_validate(task) for task in response.json()]
 
 
 class TypesApi:
@@ -1340,6 +1466,69 @@ class LineageApi:
         )
 
 
+class AureliusApi:
+    """The Aurelius-native resource of an :class:`AtlasClient` (CAV-01..CAV-04): ``client.aurelius``.
+
+    The paths mirror ``routes/search_by_meaning.py`` and ``routes/quality.py``,
+    the Aurelius-only endpoints beside the Atlas ones (SBM, QRE). The bodies the
+    Atlas routes share are ``aurelius-atlas-model``'s, reused whole (DD-309);
+    the four Aurelius-only shapes are this library's (DD-562), the ``lineage.py``
+    precedent (CL-12).
+    """
+
+    def __init__(self, api: _Api) -> None:
+        self._api = api
+
+    async def semantic_search(self, parameters: SemanticSearchParameters) -> AtlasQuickSearchResult:
+        """``POST /search/semantic``: the quick search by meaning (SBM-01..SBM-04, SBM-06, SBM-07, CAV-02).
+
+        The ``semantic``/``hybrid`` mode rides the body. The client validates no
+        mode and no query (CL-12): the server answers ``BAD_REQUEST`` for another
+        mode, an empty query, or a ``sortBy``.
+        """
+        return AtlasQuickSearchResult.model_validate(
+            await self._api.json("POST", f"{AURELIUS_ROOT}/search/semantic", body=parameters.to_json())
+        )
+
+    async def similar_entities(
+        self,
+        guid: str,
+        *,
+        type_name: str | None = None,
+        exclude_deleted_entities: bool = False,
+        limit: int = 0,
+        offset: int = 0,
+    ) -> AtlasQuickSearchResult:
+        """``GET /entity/guid/{guid}/similar``: the entities nearest to the entity's embedding (SBM-05, SBM-07, CAV-03).
+
+        The entity itself is left out by the server.
+        """
+        params = _present(
+            typeName=type_name,
+            excludeDeletedEntities=exclude_deleted_entities,
+            limit=limit,
+            offset=offset,
+        )
+        return AtlasQuickSearchResult.model_validate(
+            await self._api.json("GET", f"{AURELIUS_ROOT}/entity/guid/{guid}/similar", params=params)
+        )
+
+    async def quality_kinds(self) -> QualityVocabulary:
+        """``GET /quality/kinds``: the closed rule vocabulary of the engine (QRE-01, DD-475, CAV-04)."""
+        return QualityVocabulary.model_validate(await self._api.json("GET", f"{AURELIUS_ROOT}/quality/kinds"))
+
+    async def validate_quality_rule(self, attributes: Mapping[str, Any]) -> QualityRuleCheck:
+        """``POST /quality/rules/validate``: a draft rule through the server's parser (QRE-02, QRE-03, DD-476, CAV-04).
+
+        Both answers are 200s (CAV-04): the rule the vocabulary cannot read is
+        the endpoint's product, and its ``{valid: false, reason}`` arrives as the
+        check's ``reason``, raised by no client method.
+        """
+        return QualityRuleCheck.model_validate(
+            await self._api.json("POST", f"{AURELIUS_ROOT}/quality/rules/validate", body=dict(attributes))
+        )
+
+
 def _present(**params: Any) -> dict[str, Any]:  # noqa: ANN401 - the query parameter values
     """The endpoint's query parameters: a given value, its Java defaults left out.
 
@@ -1415,6 +1604,7 @@ class AtlasClient:
         self.relationship = RelationshipApi(api)
         self.search = SearchApi(api)
         self.lineage = LineageApi(api)
+        self.aurelius = AureliusApi(api)
 
     def with_token(self, token: TokenSource) -> AtlasClient:
         """The same client speaking with ``token`` — sharing the connection pool (CL-03, LM-04).
