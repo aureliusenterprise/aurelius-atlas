@@ -5,11 +5,6 @@
     "aliases": []
   },
   {
-    "version": "kafka-e2e-stack",
-    "title": "kafka-e2e-stack",
-    "aliases": []
-  },
-  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
