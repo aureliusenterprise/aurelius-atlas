@@ -2,6 +2,7 @@ import { TestBed } from "@angular/core/testing";
 import { provideRouter, Routes } from "@angular/router";
 import Keycloak from "keycloak-js";
 
+import { AlertsService } from "./alerts/alerts.service";
 import { AppConfig } from "./config";
 import { APP_CONFIG } from "./tokens";
 import { App } from "./app.component";
@@ -33,6 +34,24 @@ describe("App", () => {
         expect(TestBed.createComponent(App).componentInstance).toBeTruthy();
     });
 
+    it("LR-003: the announcer names the newest alert, and says nothing without one", () => {
+        const fixture = TestBed.createComponent(App);
+        const app = fixture.componentInstance;
+        const alerts = TestBed.inject(AlertsService);
+
+        // The empty store: the persistent region rests silent.
+        expect(app["alertAnnouncement"]()).toBe("");
+
+        // An arrival enters the store once per new group (ALR-03 merges do
+        // not re-announce): the line carries its severity and message.
+        alerts.add({ severity: "error", message: "Search failed", source: "search" });
+        expect(app["alertAnnouncement"]()).toBe("New error alert - Search failed");
+
+        // A different alert becomes the newest; the line follows it.
+        alerts.add({ severity: "warning", message: "Slow response", source: "http" });
+        expect(app["alertAnnouncement"]()).toBe("New warning alert - Slow response");
+    });
+
     it("renders the shell chrome around the router outlet (SHC-01)", () => {
         const fixture = TestBed.createComponent(App);
         fixture.detectChanges();
@@ -53,7 +72,7 @@ describe("App", () => {
             "aurelius-atlas-webapp-nav-loading-bar",
             "main",
             "aurelius-atlas-webapp-footer",
-            "p",
+            "output",
             "router-outlet",
         ]);
 

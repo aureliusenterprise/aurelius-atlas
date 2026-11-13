@@ -223,7 +223,7 @@ export class Drawer {
             return;
         }
         const first = focusables[0];
-        const last = focusables[focusables.length - 1];
+        const last = focusables.at(-1) ?? first;
         const current = document.activeElement;
         if (event.shiftKey && (current === first || current === panel)) {
             event.preventDefault();

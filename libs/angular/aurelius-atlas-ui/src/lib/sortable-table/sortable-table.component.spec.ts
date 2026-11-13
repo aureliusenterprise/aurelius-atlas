@@ -94,7 +94,9 @@ describe("SortableTable", () => {
     });
 
     function liveRegion(): HTMLElement | null {
-        return root().querySelector(`aurelius-atlas-ui-sortable-table > [role="status"]`);
+        // The persistent region is a native <output> — implicit status
+        // role, polite live region (S6819, DD-549).
+        return root().querySelector(`aurelius-atlas-ui-sortable-table > output`);
     }
 
     it("marks every header cell scope=col (TABLE-001)", () => {
@@ -303,7 +305,9 @@ describe("SortableTable", () => {
         fixture.detectChanges();
         await fixture.whenStable();
 
-        expect(root().querySelector("output")).toBeTruthy();
+        // The spinner block (not the always-present live region, which is
+        // an <output> too since DD-549).
+        expect(root().querySelector("output.block")).toBeTruthy();
         expect(root().querySelector("table")).toBeNull();
     });
 });

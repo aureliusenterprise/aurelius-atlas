@@ -27,8 +27,10 @@
             the scroll chain).
         -->
         <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
-        <div class="modal-background" (click)="onBackdropClick()"></div>
+        <!-- The scrim is the pointer path by design; Escape on the dialog is the keyboard
+             path. The NOSONAR inside the tag suppresses S1077 and
+             Web:MouseEventWithoutKeyboardEquivalentCheck on this line. -->
+        <div class="modal-background" (click)="onBackdropClick()"><!-- NOSONAR --></div>
         <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <div [class]="_isCard ? 'modal-card' : 'modal-content'">
             @if (_isCard) {

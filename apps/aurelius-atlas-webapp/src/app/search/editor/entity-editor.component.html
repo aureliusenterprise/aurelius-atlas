@@ -72,8 +72,9 @@
     <!-- The commit outcome (LR-005): the same persistent-region shape —
          the save/delete success paths fill this line just before the
          navigation takes the drawer away, so the outcome is said and not
-         only acted on. -->
-    <p class="is-sr-only aurelius-editor-outcome" role="status">{{ outcomeLine() }}</p>
+         only acted on. The native <output> carries the status role and
+         the polite live region implicitly (DD-549). -->
+    <output class="is-sr-only aurelius-editor-outcome">{{ outcomeLine() }}</output>
 
     <!-- Create mode: the type field over the shipped entity typedefs
          (EDT-04, DD-330). It stays above the form after the pick — the

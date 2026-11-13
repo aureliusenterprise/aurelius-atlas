@@ -180,7 +180,7 @@ describe("LineageBrowseTab (LDG-23)", () => {
             expect(wrapper.hasAttribute("aria-selected")).toBe(false);
         }
         const items = [...compiled.querySelectorAll(".aurelius-browse-tree button")];
-        expect(items.length).toBe(wrappers.length);
+        expect(items).toHaveLength(wrappers.length);
         for (const item of items) {
             expect(item.getAttribute("role")).toBe("treeitem");
         }

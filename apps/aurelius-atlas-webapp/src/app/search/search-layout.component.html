@@ -47,5 +47,7 @@
 </section>
 <!-- LR-001 (WCAG 4.1.3): the persistent status — the count, loading,
      and no-results changes the store makes are announced from here,
-     never from a region created alongside the news. -->
-<p class="is-sr-only" role="status">{{ searchStatus() }}</p>
+     never from a region created alongside the news. The native <output>
+     carries the status role and the polite live region implicitly
+     (DD-549). -->
+<output class="is-sr-only">{{ searchStatus() }}</output>

@@ -2,8 +2,7 @@
 import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, input, model } from "@angular/core";
 
-/** Instance counter for the range line's id (TABLE-004): two bars on one page must not share it. */
-let paginationInstances = 0;
+import { nextInstanceId } from "../next-instance-id";
 
 @Component({
     selector: "aurelius-atlas-ui-pagination",
@@ -17,7 +16,7 @@ export class Pagination {
      * TABLE-004: per-instance id of the "Showing X to Y of Z" line, so a
      * page with two bars still has unique ids.
      */
-    readonly rangeId = `aurelius-pagination-range-${(paginationInstances += 1)}`;
+    readonly rangeId = `aurelius-pagination-range-${nextInstanceId()}`;
 
     /**
      * The index of the current page (0-based).

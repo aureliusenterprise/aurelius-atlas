@@ -219,3 +219,27 @@ opt in, and a future caller gets the mixed layout by default.
 drawer or a split view stacks correctly with no host wiring. The container threshold is a component
 fact (768px, the width a moderate title needs beside the control pair), noted here because the media
 query it replaces named Bulma's breakpoint instead.
+
+### DD-549. Live regions are native output elements
+
+- **Status:** Accepted
+- **Increment:** 7.30
+- **Date:** 2026-11-13
+
+**Decision.** The six persistent live regions this increment shipped (LR-001, LR-003, LR-004, LR-005,
+TABLE-004, TABLE-005) are `<output>` elements instead of `<p role="status" aria-live="polite">`. The
+status role and the polite live region are `<output>`'s implicit semantics, so the attributes are
+dropped and the specs select the region by its tag. The spec's `role="status"` wording stands as the
+semantic contract: an `<output>` answers to that role.
+
+**Reason.** SonarCloud's rule Web:S6819 (MAJOR, new code on PR 336) flags the explicit role. The ARIA
+`status` role maps inconsistently across screen readers on a generic host, while a native `<output>`
+carries the same role through the platform's own mapping.
+
+**Alternatives.** Suppress the rule at each site: six suppressions for a change that swaps one tag.
+Move each region into its component's template: the regions already are per-component, and the role
+attribute was the only finding.
+
+**Consequences.** `<output>` defaults to `display: inline`. The regions sit in the `is-sr-only` clip
+pattern, so the box model changes nothing. A reader who looks up a spec rule for a persistent status
+region finds the element in the component's own spec.

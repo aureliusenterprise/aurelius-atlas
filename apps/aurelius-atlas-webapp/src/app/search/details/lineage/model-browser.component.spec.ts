@@ -285,6 +285,33 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         });
     });
 
+    it("TAB-PANEL-WIRING: Enter and Space on a tab activate it; other keys do not", () => {
+        const { compiled, navigate } = setup({ tab: "browse", selected: PROCESS });
+        const tablist = compiled.querySelector("[role='tablist']") as HTMLElement;
+
+        // Enter/Space ride the anchor's own bindings (the arrow keys above
+        // ride the strip's); a focused inactive tab activates on either.
+        const model = [...compiled.querySelectorAll<HTMLElement>(".aurelius-model-browser-tab")].find((tab) =>
+            tab.textContent?.includes("Model"),
+        );
+        model!.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true }));
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "model"] } }], {
+            scroll: "manual",
+        });
+        model!.dispatchEvent(new KeyboardEvent("keydown", { key: " ", bubbles: true, cancelable: true }));
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "model"] } }], {
+            scroll: "manual",
+        });
+
+        // A key that is neither an arrow nor an activation: the strip's
+        // handler leaves it alone (no navigation, no preventDefault).
+        const before = navigate.mock.calls.length;
+        const event = new KeyboardEvent("keydown", { key: "Home", bubbles: true, cancelable: true });
+        tablist.dispatchEvent(event);
+        expect(navigate).toHaveBeenCalledTimes(before);
+        expect(event.defaultPrevented).toBe(false);
+    });
+
     it("LDG-25: a tree leaf click re-routes the Selection tab to that concept", () => {
         // The Browse tab's organization tree holds the process leaf; its
         // click is the legacy's selectEntity — the selection follows and the

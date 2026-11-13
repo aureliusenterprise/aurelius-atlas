@@ -16,11 +16,9 @@ import {
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faArrowsUpDown, faArrowDown, faArrowUp, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
+import { nextInstanceId } from "../next-instance-id";
 import { Pagination } from "../pagination/pagination.component";
 import { SortDirection, TableColumn, TableRow } from "./table-column";
-
-/** Instance counter for the row-select hint's id (TABLE-003): two tables on one page must not share it. */
-let sortableTableInstances = 0;
 
 /**
  * The Aurelius sortable table (`sortable-table-shell` + `sortable-table`),
@@ -141,7 +139,7 @@ export class SortableTable<T extends Record<string, unknown>> {
     readonly pageChanged = output<number>();
 
     /** TABLE-003: per-instance id of the hidden hint the focusable rows point at. */
-    protected readonly selectHintId = `aurelius-sortable-table-select-hint-${(sortableTableInstances += 1)}`;
+    protected readonly selectHintId = `aurelius-sortable-table-select-hint-${nextInstanceId()}`;
 
     /**
      * TABLE-005: the text of the persistent live region (WCAG 4.1.3) — the

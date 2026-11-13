@@ -9,8 +9,9 @@
     <p class="aurelius-pagination-range is-size-7 has-text-grey" id="{{ rangeId }}">{{ rangeText() }}</p>
 }
 <!-- TABLE-004 (WCAG 4.1.3): the persistent live region — always in the DOM,
-     a page change only swaps its text. -->
-<p class="is-sr-only" role="status" aria-live="polite">{{ pageAnnouncement() }}</p>
+     a page change only swaps its text. The native <output> carries the
+     status role and polite live region implicitly (S6819). -->
+<output class="is-sr-only">{{ pageAnnouncement() }}</output>
 
 <nav
     class="pagination"

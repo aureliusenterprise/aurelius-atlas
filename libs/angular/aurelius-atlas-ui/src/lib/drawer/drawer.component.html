@@ -13,8 +13,10 @@
             Bulma's overlay layers have no focusable scrim element).
         -->
         <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
-        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()"></div>
+        <!-- The scrim is the pointer path by design; Escape on the dialog is the keyboard
+             path. The NOSONAR inside the tag suppresses S1077 and
+             Web:MouseEventWithoutKeyboardEquivalentCheck on this line. -->
+        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()"><!-- NOSONAR --></div>
         <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <!-- The panel is a native <dialog> (its role needs no ARIA). It is
              never opened modally — the `open` attribute keeps it in this

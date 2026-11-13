@@ -201,9 +201,11 @@ describe("Pagination", () => {
     it("announces the page position through a persistent live region (TABLE-004)", () => {
         // The region is in the DOM from the start (a region that arrives
         // with the change cannot announce it); its text is the position.
-        const region = fixture.nativeElement.querySelector('[role="status"]');
+        // The native <output> carries the status role and the polite live
+        // region implicitly (S6819, DD-549).
+        const region: HTMLElement = fixture.nativeElement.querySelector("output");
+        expect(region.tagName).toBe("OUTPUT");
         expect(region.classList.contains("is-sr-only")).toBe(true);
-        expect(region.getAttribute("aria-live")).toBe("polite");
         expect(region.textContent.trim()).toBe("");
 
         fixture.componentRef.setInput("totalItems", 25);

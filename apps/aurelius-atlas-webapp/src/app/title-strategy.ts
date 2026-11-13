@@ -50,7 +50,7 @@ export class AtlasTitleStrategy extends TitleStrategy {
  */
 function deepestTitle(route: ActivatedRouteSnapshot): string | undefined {
     const child = route.firstChild;
-    if (child && child.outlet === "primary") {
+    if (child?.outlet === "primary") {
         return deepestTitle(child) ?? (route.data["title"] as string | undefined);
     }
     return route.data["title"] as string | undefined;

@@ -134,7 +134,10 @@ export const Loading: Story = {
     }),
     play: async ({ canvasElement }) => {
         const canvas = within(canvasElement);
-        await expect(canvas.getByRole("status")).toBeInTheDocument();
+        // Two elements carry the status role while loading: the persistent
+        // live region (TABLE-005) and the spinner block. Both are <output>
+        // (implicit status, DD-549), so the assertion reads the set.
+        await expect(canvas.getAllByRole("status")).toHaveLength(2);
     },
 };
 
