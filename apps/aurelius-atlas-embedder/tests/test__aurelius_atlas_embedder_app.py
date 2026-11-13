@@ -41,6 +41,27 @@ def test__a_model_that_cannot_load_stops_the_start(settings: EmbedderSettings) -
         pass
 
 
+@pytest.mark.covers(
+    "aurelius_atlas_embedder.app.create_app",
+    "aurelius_atlas_embedder.settings.EmbedderSettings.is_development",
+    rules=["AUX-07"],
+)
+def test__the_openapi_surface_answers_only_under_development(settings: EmbedderSettings, model: Model) -> None:
+    """Production serves no spec and no docs page; the dev environment does (AUX-07, DD-557)."""
+    production = create_app(settings, loader=lambda _settings: model)
+    development = create_app(settings.model_copy(update={"environment": "development"}), loader=lambda _settings: model)
+
+    assert (production.openapi_url, production.docs_url) == (None, None)
+    assert (development.openapi_url, development.docs_url) == ("/openapi.json", "/docs")
+    assert development.redoc_url is None
+    with TestClient(development) as client:
+        assert client.get("/openapi.json").status_code == 200
+        assert client.get("/docs").status_code == 200
+    with TestClient(production) as client:
+        assert client.get("/openapi.json").status_code == 404
+        assert client.get("/docs").status_code == 404
+
+
 @pytest.mark.covers("aurelius_atlas_embedder.settings.EmbedderSettings.tls", rules=["EMB-09"])
 def test__the_settings_read_their_prefix_and_default_to_the_shipped_model(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

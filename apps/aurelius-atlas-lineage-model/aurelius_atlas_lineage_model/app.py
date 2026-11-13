@@ -16,6 +16,7 @@ own pool (DD-205).
 from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from importlib.metadata import version
+from typing import Any
 
 import httpx2 as httpx
 from aurelius_atlas_auth import KeycloakAuth
@@ -62,13 +63,15 @@ def create_app(
     verifier = auth if auth is not None else build_auth(settings)
     atlas_client, d2m_client, upstream_pools = build_upstreams(settings, atlas, d2m)
 
+    # The OpenAPI surface answers only under development (the dev .env sets it); production
+    # serves no spec and no docs page (AUX-07, DD-557 — the server's SRV-08 posture).
     app = FastAPI(
         title=NAME,
         version=version(NAME),
         lifespan=_lifespan(upstream_pools),
-        docs_url=None,
+        docs_url="/docs" if settings.is_development else None,
         redoc_url=None,
-        openapi_url=None,
+        openapi_url="/openapi.json" if settings.is_development else None,
     )
     app.state.settings = settings
     app.state.auth = verifier
@@ -80,8 +83,48 @@ def create_app(
     app.include_router(build_router(verifier))
     app.include_router(HEALTH)
     _setup_error_handlers(app)
+    _install_openapi(app)
     configure_telemetry(app, settings)
     return app
+
+
+ATLAS_ERROR_BODY: dict[str, object] = {
+    "type": "object",
+    "properties": {"errorCode": {"type": "string"}, "errorMessage": {"type": "string"}},
+    "required": ["errorCode", "errorMessage"],
+}
+"""The Atlas error body every rejection of this app answers with (LM-07, DV-72's posture)."""
+
+BAD_QUERY = {
+    "description": "A query the app will not process: the Atlas error body (LM-07, DV-72/DV-73).",
+    "content": {"application/json": {"schema": ATLAS_ERROR_BODY}},
+}
+
+
+def _install_openapi(app: FastAPI) -> None:
+    """Make the document state what the app answers, not what FastAPI would (AUX-06, DD-559).
+
+    A query the app will not process (a guid that is no UUID, a depth below 1) is a 400
+    answered in the Atlas error body by the root's handler. FastAPI's generator promises
+    its own 422 validation body instead; that entry leaves the document and the honest 400
+    takes its place, with the two validation schemas no route answers.
+    """
+    original = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        spec = original()
+        for item in spec.get("paths", {}).values():
+            for operation in item.values():
+                responses = operation.get("responses", {})
+                if "422" in responses:
+                    responses.pop("422")
+                    responses["400"] = dict(BAD_QUERY)
+        schemas = spec.get("components", {}).get("schemas", {})
+        for name in ("HTTPValidationError", "ValidationError"):
+            schemas.pop(name, None)
+        return spec
+
+    app.openapi = openapi
 
 
 def _lifespan(pools: list[httpx.AsyncClient]) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:

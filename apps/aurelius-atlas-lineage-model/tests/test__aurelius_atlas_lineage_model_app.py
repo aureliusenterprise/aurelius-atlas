@@ -196,7 +196,22 @@ def test__the_app_is_built_from_the_settings(settings: Any) -> None:  # noqa: AN
 
     assert app.state.settings is settings
     assert app.title == "aurelius-atlas-lineage-model"
-    assert app.docs_url is None  # an auxiliary API publishes no docs surface
+    assert app.docs_url is None  # production publishes no docs surface (AUX-07)
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_lineage_model.app.create_app",
+    "aurelius_atlas_lineage_model.settings.LineageModelSettings.is_development",
+    rules=["AUX-07"],
+)
+def test__the_development_environment_serves_the_openapi_surface(settings: Any) -> None:  # noqa: ANN401
+    """Under development the spec and the docs page answer (AUX-07): the dev surface, DD-557."""
+    development = settings.model_copy(update={"environment": "development"})
+    app = create_app(development)
+
+    assert app.openapi_url == "/openapi.json"
+    assert app.docs_url == "/docs"
+    assert app.redoc_url is None
 
 
 @pytest.mark.covers("aurelius_atlas_lineage_model.app.create_app", rules=["LM-01", "CL-50"])

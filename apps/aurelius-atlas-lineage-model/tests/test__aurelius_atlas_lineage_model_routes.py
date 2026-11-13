@@ -2,6 +2,7 @@
 
 import pytest
 from aurelius_atlas_auth import KeycloakAuth
+from aurelius_atlas_data2model_client.models import ExtractionResponse
 from aurelius_atlas_lineage_model.routes import HEALTH, build_router
 from aurelius_atlas_lineage_model.routes.health import liveness
 from aurelius_atlas_lineage_model.routes.lineage import LINEAGE
@@ -22,7 +23,9 @@ def test__the_lineage_router_carries_the_endpoint_and_its_gate(auth: KeycloakAut
     assert route.path == "/"
     assert sorted(route.methods or ()) == ["GET"]
     assert build_router(auth).tags == [LINEAGE]
-    assert route.response_model is None  # the answer is built by hand, verbatim (LM-01)
+    # Since 8.23 the answer's model is declared for the OpenAPI document (AUX-06); the route
+    # returns a Response (the 200 model or the 204), so the bytes stay verbatim (LM-01, CL-50).
+    assert route.response_model is ExtractionResponse
     assert route.dependant.dependencies  # the gate rides the route
 
 

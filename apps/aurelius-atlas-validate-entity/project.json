@@ -12,6 +12,38 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_validate_entity",
     "tags": [],
     "targets": {
+        "e2e": {
+            "configurations": {
+                "ci": {
+                    "junitxml": "junit-e2e.xml",
+                    "trace-json": "trace-e2e.json"
+                }
+            },
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "target": "certgen" },
+                { "target": "docker-build" },
+                { "projects": ["aurelius-atlas-server"], "target": "docker-build" },
+                {
+                    "projects": [
+                        "aurelius-atlas-dev-keycloak",
+                        "aurelius-atlas-dev-observability",
+                        "aurelius-atlas-dev-elasticsearch"
+                    ],
+                    "target": "up"
+                }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "E2E: the image beside a real server on the dev store (the 12.7 chain, DD-200's sibling); the chain's store and server image are named here because the inferred target's dependency list would miss them when this suite runs alone"
+            },
+            "options": {
+                "command": "uv run pytest e2e",
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-validate-entity/.env"
+            },
+            "parallelism": false
+        },
         "serve": {
             "continuous": true,
             "dependsOn": [

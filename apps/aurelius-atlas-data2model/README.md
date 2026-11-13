@@ -19,6 +19,10 @@ engine directly), and a thin composition root in `app.py`.
 | `POST /extract` | Keycloak bearer | `{metadata: […], model: "<ar3 JSON string>"}` (DTM-01) |
 | `GET /liveness` | –               | `204` while the app runs (the container healthcheck)   |
 
+The app answers its OpenAPI document at `/openapi.json` and the Swagger UI at `/docs` under
+development only (`AURELIUS_ATLAS_DATA2MODEL_ENVIRONMENT=development`, which the dev `.env` sets),
+so `npx nx serve` shows both (AUX-07, 8.23). Production answers `404`.
+
 ## Run
 
 ```bash

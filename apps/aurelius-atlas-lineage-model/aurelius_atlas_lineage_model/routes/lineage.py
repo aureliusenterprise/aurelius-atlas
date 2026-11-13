@@ -8,7 +8,7 @@ failure to the :class:`UpstreamError` of the status the caller gets (LM-05,
 LM-07, LM-12) — the root's handlers turn it into the Atlas-shaped answer.
 """
 
-from typing import Annotated
+from typing import Annotated, Any
 from uuid import UUID
 
 from aurelius_atlas_auth import KeycloakAuth
@@ -36,6 +36,12 @@ from aurelius_atlas_lineage_model.lineage import LINEAGE_RULES, flatten_relation
 LINEAGE = "lineage"
 """The router's tag: the app's one use case."""
 
+LINEAGE_ANSWER: dict[int | str, dict[str, Any]] = {
+    200: {"description": "The extracted model of the entity's lineage (LM-01, CL-20)."},
+    204: {"description": "The empty graph: no lineage, or no relations (LM-05, LM-06)."},
+}
+"""The OpenAPI answers of ``GET /``: the model or the empty graph, stated apart from the route's body."""
+
 
 def build_router(auth: KeycloakAuth) -> APIRouter:
     """The lineage router, gated by the app's verifier (LM-08, DV-74).
@@ -45,7 +51,12 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     """
     router = APIRouter(tags=[LINEAGE])
 
-    @router.get("/", dependencies=[auth.require_auth])
+    @router.get(
+        "/",
+        response_model=ExtractionResponse,
+        responses=LINEAGE_ANSWER,
+        dependencies=[auth.require_auth],
+    )
     async def lineage_model(
         request: Request,
         guid: UUID,
@@ -59,7 +70,10 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
         forwarded raw to both upstreams (LM-04) — the legacy's design: the
         upstream services accept the browser's own token. An empty graph (no
         lineage, no relations) is the 204 of LM-05/LM-06; failures arrive as
-        ``UpstreamError`` for the root's handlers (LM-07, LM-12).
+        ``UpstreamError`` for the root's handlers (LM-07, LM-12). ``response_model``
+        documents the 200 body for the OpenAPI surface (AUX-06); the route returns a
+        ``Response``, so the bytes stay the client model's dump (CL-50) and nothing
+        is re-serialised.
         """
         state = request.app.state
         info = await _fetch(state.atlas, state.atlas_breaker, guid, depth, direction, token)

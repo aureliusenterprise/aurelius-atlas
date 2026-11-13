@@ -269,4 +269,19 @@ def test__the_app_is_built_from_the_settings(settings: ValidateEntitySettings) -
     assert app.state.engine is not None
     assert app.state.server_breaker.name == "validate_entity_server"
     assert app.title == "aurelius-atlas-validate-entity"
-    assert app.docs_url is None  # an auxiliary API publishes no docs surface
+    assert app.docs_url is None  # production publishes no docs surface (AUX-07)
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.app.create_app",
+    "aurelius_atlas_validate_entity.settings.ValidateEntitySettings.is_development",
+    rules=["AUX-07"],
+)
+def test__the_development_environment_serves_the_openapi_surface(settings: ValidateEntitySettings) -> None:
+    """Under development the spec and the docs page answer (AUX-07): the dev surface, DD-557."""
+    development = settings.model_copy(update={"environment": "development"})
+    app = create_app(development)
+
+    assert app.openapi_url == "/openapi.json"
+    assert app.docs_url == "/docs"
+    assert app.redoc_url is None
