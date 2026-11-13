@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "feat-rest-requests-as-models",
+    "title": "feat-rest-requests-as-models",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
