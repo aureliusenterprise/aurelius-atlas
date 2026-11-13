@@ -8,6 +8,22 @@
     width: 100%;
 }
 
+/* The create `+` stays inside the hero at every width (DD-550). Bulma pins a
+   `.level-item` to its content: flex-grow and flex-shrink are 0, and a flex
+   item's automatic minimum size is its content width. From the 769px
+   breakpoint to about 950px, the hero's columns sit side by side, the
+   after-title column is narrower than the field plus the button, and
+   `.is-mobile` keeps the row on one line there. The row rides out of the
+   hero. The field takes the column (`flex-grow: 1`) and gives way when the
+   column is tight (`min-width: 0`). The `+` keeps its size. */
+.hero-controls {
+    .level-item {
+        flex-grow: 1;
+        flex-shrink: 1;
+        min-width: 0;
+    }
+}
+
 .search-content {
     padding-bottom: 3rem;
     padding-top: 1.5rem;

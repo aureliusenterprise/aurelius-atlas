@@ -42,10 +42,12 @@
         @if (items().length > visibleCount) {
             <li>
                 <!-- The legacy read-more link (UIC-34): the caller's
-                     localised labels, the component's own open state. -->
-                <a href="#" class="read-more" (click)="$event.preventDefault(); toggleShowMore()">
+                     localised labels, the component's own open state.
+                     A real button (ARIA minor): the legacy anchor's
+                     href="#" was a preventDefault'd button in disguise. -->
+                <button type="button" class="read-more" (click)="toggleShowMore()">
                     {{ showAll() ? showLessLabel() : showMoreLabel() }}
-                </a>
+                </button>
             </li>
         }
     </ul>

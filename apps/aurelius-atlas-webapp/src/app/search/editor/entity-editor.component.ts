@@ -27,9 +27,11 @@ import {
 } from "aurelius-atlas-data-access";
 
 import { nameDisplay } from "../meta/type-display";
+import { ALERT_CLOCK, AlertsService } from "../../alerts/alerts.service";
 import { canWriteEntities } from "./can-write-entities";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
+import { EntitySaved } from "./entity-saved";
 import {
     type EditorField,
     type EditorLabels,
@@ -116,6 +118,17 @@ export class EntityEditor {
     private readonly validateEntity = inject(ValidateEntityService);
 
     private readonly qualityRule = inject(QualityRuleService);
+
+    /** The saved-tick bus (DD-327): its write is the save's success, heard
+     * here to fill the outcome line (LR-005). */
+    private readonly entitySaved = inject(EntitySaved);
+
+    /** The alerts store — the delete's refusal lands here (LR-005, see the effect). */
+    private readonly alerts = inject(AlertsService);
+
+    /** The alerts store's own clock — the refusal test reads the same clock
+     * the store stamps its groups with (LR-005). */
+    private readonly alertClock = inject(ALERT_CLOCK);
 
     /** The quality form, once the quality-mode branch renders it (EDT-25,
      * DD-477). The drawer owns the Save button, so it reads the child's
@@ -439,6 +452,35 @@ export class EntityEditor {
     /** The foot's status line: whichever write is in flight names itself. */
     protected readonly busyLine = computed(() => (this.state.deleting() ? this.deletingLine : this.savingLine));
 
+    /**
+     * The loading line's text (LR-002): the live region above the form is
+     * always mounted — only its text comes and goes — so a screen reader
+     * already watches a region before the line lands in it, instead of one
+     * created and filled in the same frame.
+     */
+    protected readonly loadingText = computed(() =>
+        this.state.loading() && this.state.entity() === null ? this.loadingLine : "",
+    );
+
+    /**
+     * The commit outcome (LR-005): the save/delete success paths fill the
+     * editor's persistent status line just before they navigate away, so
+     * the outcome is said aloud and not only acted on.
+     */
+    protected readonly outcomeLine = signal("");
+
+    protected readonly savedLine = $localize`:@@search.components.editor.saved:Entity saved`;
+
+    protected readonly deletedLine = $localize`:@@ENTITY_DELETE:Entity deleted`;
+
+    /** The wall-clock ms the running delete hold started, null while no
+     * delete is in flight — the refusal test's lower bound (LR-005). */
+    private deleteStartedAt: number | null = null;
+
+    /** The save-bus sequence last consumed — a tick from an earlier drawer
+     * is not this editor's outcome (LR-005). */
+    private initialSaveSeq = this.entitySaved.latest()?.seq ?? 0;
+
     /** The field-set signature the last build used (the rebuild guard). */
     private builtSignature = "";
 
@@ -488,6 +530,40 @@ export class EntityEditor {
                     Object.entries(seedRelationshipValues(this.state.entity() ?? {}, this.relationshipFields())),
                 );
                 this.relationshipValues.set(seeded);
+            }
+        });
+
+        // The delete's outcome (LR-005): the store owns the delete, alerts
+        // on refusal (drawer open, EDT-08's shape), and navigates on
+        // success — so the editor reads the answer off the alerts store.
+        // A delete-line alert stamped at or after the hold's start is this
+        // drawer's refusal (the clock test survives a merged repeat);
+        // an ended delete with no such alert is the success, filled before
+        // the navigation takes the drawer away.
+        effect(() => {
+            const deleting = this.state.deleting();
+            const groups = this.alerts.alerts();
+            const started = this.deleteStartedAt;
+            if (deleting || started === null) {
+                return;
+            }
+            const refusal = groups.some((group) => group.message === this.deletingLine && group.lastSeen >= started);
+            this.deleteStartedAt = null;
+            if (!refusal) {
+                this.outcomeLine.set(this.deletedLine);
+            }
+        });
+
+        // The save's outcome (LR-005): the store posts, fires the saved
+        // tick (DD-327), and navigates — the tick is the success signal
+        // that reaches the drawer before its view goes away (a refusal
+        // rides no tick). The sequence guard skips a tick from an earlier
+        // drawer.
+        effect(() => {
+            const latest = this.entitySaved.latest();
+            if (latest && latest.seq > this.initialSaveSeq) {
+                this.initialSaveSeq = latest.seq;
+                this.outcomeLine.set(this.savedLine);
             }
         });
 
@@ -947,6 +1023,9 @@ export class EntityEditor {
     protected deleteHeld(confirmed: boolean): void {
         const guid = this.state.entity()?.guid;
         if (confirmed && guid) {
+            // LR-005: the clock stamp lets the effect tell a refusal of
+            // this drawer's own delete from any older alert on file.
+            this.deleteStartedAt = this.alertClock();
             this.state.delete(guid);
         }
     }

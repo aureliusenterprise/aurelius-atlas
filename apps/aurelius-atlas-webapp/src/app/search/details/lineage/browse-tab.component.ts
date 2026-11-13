@@ -21,6 +21,10 @@ type TreeRow = {
     readonly label: string;
     /** A leaf's concept id; null for a folder. */
     readonly conceptId: string | null;
+    /** The sibling position among the visible rows of the same parent (TREEITEM-WRAPPER). */
+    readonly posinset: number;
+    /** The sibling count among the visible rows of the same parent (TREEITEM-WRAPPER). */
+    readonly setsize: number;
 };
 
 /**
@@ -42,8 +46,13 @@ type TreeRow = {
  * renders no row of its own: its children sit at the top, as the legacy's
  * tree did. A leaf shows its entity's name (falling back to the id) and marks
  * the current selection; clicking it selects the concept (LDG-25's drawer-side
- * rule) or, for a view, chooses it — draw and close (LDG-23's rule).
- */
+ * rule) or, for a view, chooses it — draw and close (LDG-23's rule). *
+ * TREEITEM-WRAPPER: the row's semantics live on the focusable element, not a
+ * wrapper — each row's <button> carries `role="treeitem"` with
+ * `aria-level`/`aria-setsize`/`aria-posinset` (and `aria-expanded` for a
+ * folder, `aria-selected` for the active leaf), and the <li> is `role="none"`
+ * so the tree's items are the buttons a keyboard reader actually lands on.
+ * The visual markup (the li, the indents, the chevron) is unchanged. */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-browse-tab",
     changeDetection: ChangeDetectionStrategy.OnPush,
@@ -65,13 +74,20 @@ type TreeRow = {
             <p class="label aurelius-browse-tree-label">{{ treeLabel }}</p>
             <ul class="aurelius-browse-tree" role="tree">
                 @for (row of treeRows(); track row.key) {
-                    <li role="treeitem" [attr.aria-selected]="row.conceptId === selectedConcept()">
+                    <!-- TREEITEM-WRAPPER: role="none" — the li is layout,
+                         the button below is the treeitem the reader lands on. -->
+                    <li role="none">
                         @if (row.folder) {
                             <button
                                 type="button"
+                                role="treeitem"
                                 class="aurelius-browse-tree-folder"
                                 [style.padding-left.em]="0.5 + row.depth * 1.25"
                                 [attr.aria-expanded]="!collapsed().has(row.key)"
+                                aria-selected="false"
+                                [attr.aria-level]="row.depth + 1"
+                                [attr.aria-setsize]="row.setsize"
+                                [attr.aria-posinset]="row.posinset"
                                 (click)="toggle(row.key)"
                             >
                                 <span class="icon is-small" aria-hidden="true">
@@ -84,8 +100,13 @@ type TreeRow = {
                         } @else {
                             <button
                                 type="button"
+                                role="treeitem"
                                 class="aurelius-browse-tree-leaf"
                                 [class.is-active]="row.conceptId === selectedConcept()"
+                                [attr.aria-selected]="selectedConcept() !== null && row.conceptId === selectedConcept()"
+                                [attr.aria-level]="row.depth + 1"
+                                [attr.aria-setsize]="row.setsize"
+                                [attr.aria-posinset]="row.posinset"
                                 [style.padding-left.em]="1.75 + row.depth * 1.25"
                                 [title]="row.label"
                                 (click)="onLeafClicked(row)"
@@ -198,7 +219,11 @@ export class LineageBrowseTab {
      * no name exists for it).
      */
     protected readonly treeRows = computed<TreeRow[]>(() => {
-        const rows: TreeRow[] = [];
+        // The walk builds the rows with their parent key; the sibling
+        // positions (TREEITEM-WRAPPER's setsize/posinset) are numbered in a
+        // second pass over the visible rows, so a closed folder shrinks its
+        // parent's set exactly as it shrinks the list.
+        const rows: (Omit<TreeRow, "posinset" | "setsize"> & { parentKey: string })[] = [];
         const collapsed = this.collapsed();
         const entities = this.entities();
         const walk = (nodes: readonly Ar3Organization[], depth: number, parentKey: string): void => {
@@ -212,6 +237,7 @@ export class LineageBrowseTab {
                         folder: false,
                         label: entity === undefined || entity.name === "" ? node.ref : entity.name,
                         conceptId: node.ref,
+                        parentKey,
                     });
                     return;
                 }
@@ -219,7 +245,7 @@ export class LineageBrowseTab {
                 // reopen affordance) — only the branch below it disappears.
                 const shown = node.label !== "";
                 if (shown) {
-                    rows.push({ key, depth, folder: true, label: node.label, conceptId: null });
+                    rows.push({ key, depth, folder: true, label: node.label, conceptId: null, parentKey });
                 }
                 if (collapsed.has(key)) {
                     return;
@@ -230,7 +256,17 @@ export class LineageBrowseTab {
             });
         };
         walk(this.organizations(), 0, "");
-        return rows;
+        const setsize = new Map<string, number>();
+        for (const row of rows) {
+            setsize.set(row.parentKey, (setsize.get(row.parentKey) ?? 0) + 1);
+        }
+        const seen = new Map<string, number>();
+        return rows.map((row) => {
+            const posinset = (seen.get(row.parentKey) ?? 0) + 1;
+            seen.set(row.parentKey, posinset);
+            const { parentKey, ...rest } = row;
+            return { ...rest, posinset, setsize: setsize.get(parentKey) ?? 1 };
+        });
     });
 
     protected toggle(key: string): void {

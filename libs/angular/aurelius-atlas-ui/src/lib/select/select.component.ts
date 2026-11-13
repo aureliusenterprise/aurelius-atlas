@@ -89,6 +89,14 @@ export class Select<T extends Record<string, unknown> = Record<string, unknown>>
     readonly invalid = input(false);
 
     /**
+     * Mark the control required (FORM-STATE-001) — the caller's rule, the
+     * legacy form's `required` validator projected to an input. The control
+     * carries `aria-required`; nothing is painted for it (the legacy shell
+     * marked required fields in the label, which the caller owns).
+     */
+    readonly required = input(false);
+
+    /**
      * Whether the search button shows the loading spinner — the legacy
      * modal's `isLoading`. The button is `aria-busy` and inert while set.
      */

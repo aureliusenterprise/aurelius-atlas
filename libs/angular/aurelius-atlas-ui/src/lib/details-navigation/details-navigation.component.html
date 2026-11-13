@@ -7,21 +7,31 @@
 -->
 <div class="details-navigation">
     <div class="box is-paddingless">
-        <div class="dropdown is-up is-right" [class.is-active]="isOpen()">
+        <!-- DETAILS-NAV-FOCUS (2.4.7): Escape anywhere in the open dropdown
+             closes it and the focus lands back on the trigger. -->
+        <!-- NOSONAR S1077: the wrapper is not a control — the Escape
+             listener is the dialog's keyboard path (the drawer scrim's
+             precedent), reached by keys bubbling from the focusable items
+             inside; the wrapper itself never takes focus. -->
+        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+        <div class="dropdown is-up is-right" [class.is-active]="isOpen()" (keydown.escape)="onEscape()">
             <div class="dropdown-trigger">
                 <button
+                    #trigger
                     class="button is-text is-large"
                     type="button"
                     [attr.aria-label]="toggleLabel()"
                     [attr.aria-expanded]="isOpen()"
-                    (click)="onToggleClick($event)"
+                    (click)="onToggleClick()"
                 >
                     <span class="icon has-text-link">
                         <fa-icon [icon]="toggleIcon()"></fa-icon>
                     </span>
                 </button>
             </div>
-            <div class="dropdown-menu" role="menu">
+            <!-- ROLE-MENU-MISUSE: no role="menu" — the container holds plain
+                 links, not menuitems; Bulma's CSS never read the role. -->
+            <div class="dropdown-menu">
                 <div class="dropdown-content">
                     <div class="dropdown-item">
                         <nav class="menu">

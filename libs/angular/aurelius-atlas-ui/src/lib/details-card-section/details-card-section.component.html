@@ -11,7 +11,9 @@
 <div class="level is-widescreen aurelius-card-section-level">
     <div class="level-left">
         <div>
-            <h3 class="title is-3">{{ title() }}</h3>
+            <!-- HEADING-002: the section title is an h2 under the page's
+                 single h1; the Bulma classes keep the pixels. -->
+            <h2 class="title is-3">{{ title() }}</h2>
             <h6 class="subtitle is-6 aurelius-card-section-count">
                 <a href="#" class="aurelius-card-section-reset" (click)="onCountClick($event)"
                     >{{ filtered() ? filteredCount() : count() }} {{ resultWord() }}</a

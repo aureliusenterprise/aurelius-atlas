@@ -97,7 +97,24 @@ describe("InfiniteScrollContainer", () => {
 
     it("removes the sentinel row when every page is loaded (UIC-21)", () => {
         setNativeInput("allLoaded", true);
+        // The sentinel row is the only <p> left when every page is in —
+        // the LR-004 region is a sibling <output>.
         expect(fixture.nativeElement.querySelector("p")).toBeNull();
+    });
+
+    it("keeps a persistent status region naming the in-flight page (LR-004)", () => {
+        // The native <output> carries the status role and the polite live
+        // region implicitly (S6819, DD-549).
+        const region: HTMLElement = fixture.nativeElement.querySelector("output");
+        expect(region.tagName).toBe("OUTPUT");
+        expect(region.classList.contains("is-sr-only")).toBe(true);
+        expect(region.textContent.trim()).toBe("");
+
+        setNativeInput("loading", true);
+        expect(region.textContent.trim()).toBe("Loading more results");
+
+        setNativeInput("loading", false);
+        expect(region.textContent.trim()).toBe("");
     });
 
     it("watches the sentinel and emits nextPage when it enters the viewport (UIC-22)", () => {

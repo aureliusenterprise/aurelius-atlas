@@ -18,6 +18,8 @@ type Row = { name: string; size: number };
             [rows]="rows()"
             [pageSize]="pageSize()"
             [loading]="loading()"
+            [caption]="caption()"
+            [rowsSelectable]="rowsSelectable()"
             (rowClicked)="clicked.push($event)"
             (rowSelected)="selected.push($event)"
             (rowDeselected)="deselected.set(deselected() + 1)"
@@ -43,6 +45,8 @@ class Host {
 
     readonly pageSize = signal(10);
     readonly loading = signal(false);
+    readonly caption = signal<string | undefined>(undefined);
+    readonly rowsSelectable = signal(true);
     readonly deselected = signal(0);
     readonly clicked: Row[] = [];
     readonly selected: Row[] = [];
@@ -89,9 +93,115 @@ describe("SortableTable", () => {
         expect(cellTexts(0)).toEqual(["beta", "2", "–"]);
     });
 
+    function liveRegion(): HTMLElement | null {
+        // The persistent region is a native <output> — implicit status
+        // role, polite live region (S6819, DD-549).
+        return root().querySelector(`aurelius-atlas-ui-sortable-table > output`);
+    }
+
+    it("marks every header cell scope=col (TABLE-001)", () => {
+        expect(headers().map((th) => th.getAttribute("scope"))).toEqual(["col", "col", "col"]);
+    });
+
+    it("renders a hidden caption only when caption is set (TABLE-001)", () => {
+        expect(root().querySelector("caption")).toBeNull();
+
+        host.caption.set("Governance owners");
+        fixture.detectChanges();
+
+        const caption = root().querySelector("caption");
+        expect(caption?.classList.contains("is-sr-only")).toBe(true);
+        expect(caption?.textContent?.trim()).toBe("Governance owners");
+    });
+
+    it("marks the selected row with aria-selected (TABLE-002)", async () => {
+        expect(bodyRows()[0].getAttribute("aria-selected")).toBe("false");
+
+        bodyRows()[0].click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(bodyRows()[0].getAttribute("aria-selected")).toBe("true");
+        expect(bodyRows()[1].getAttribute("aria-selected")).toBe("false");
+
+        bodyRows()[0].click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(bodyRows()[0].getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("omits aria-selected for non-selectable rows (TABLE-002)", async () => {
+        host.rowsSelectable.set(false);
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(bodyRows()[0].hasAttribute("aria-selected")).toBe(false);
+        expect(bodyRows()[0].hasAttribute("aria-describedby")).toBe(false);
+    });
+
+    it("describes each focusable row with the hidden select hint (TABLE-003)", () => {
+        const hint = root().querySelector("p.is-sr-only[id]");
+        expect(hint?.textContent?.trim()).toBe("Press Enter to select this row");
+        for (const row of bodyRows()) {
+            expect(row.getAttribute("aria-describedby")).toBe(hint?.id);
+        }
+    });
+
+    it("announces the selection through the live region (TABLE-003, TABLE-005)", async () => {
+        expect(liveRegion()?.textContent?.trim()).toBe("");
+
+        bodyRows()[0].click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(liveRegion()?.textContent?.trim()).toBe("Row selected");
+
+        bodyRows()[0].click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(liveRegion()?.textContent?.trim()).toBe("Selection cleared");
+    });
+
+    it("announces the sort change through the live region (TABLE-005)", async () => {
+        await clickHeader(0);
+        expect(liveRegion()?.textContent?.trim()).toBe("Sorted by Name, ascending");
+
+        await clickHeader(0);
+        expect(liveRegion()?.textContent?.trim()).toBe("Sorted by Name, descending");
+    });
+
+    it("announces the empty state when the rows run out (TABLE-005)", async () => {
+        host.rows.set([]);
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(liveRegion()?.textContent?.trim()).toBe("No data available");
+    });
+
+    it("announces the loaded count when a load finishes with rows (TABLE-005)", async () => {
+        host.loading.set(true);
+        fixture.detectChanges();
+        await fixture.whenStable();
+        host.loading.set(false);
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(liveRegion()?.textContent?.trim()).toBe("3 rows loaded");
+    });
+
     it("keeps the source order while unsorted (UIC-05)", () => {
         expect(cellTexts(0)[0]).toBe("beta");
-        expect(headers()[0].getAttribute("aria-sort")).toBe("none");
+        expect(headers()[0].getAttribute("aria-sort")).toBeNull();
+    });
+
+    it("omits aria-sort on the inactive columns (TABLE-006)", async () => {
+        // TABLE-006: only the active column carries aria-sort — a `none` on
+        // every header turns a screen-reader column sweep into noise.
+        await clickHeader(0);
+
+        expect(headers()[0].getAttribute("aria-sort")).toBe("ascending");
+        expect(headers()[1].hasAttribute("aria-sort")).toBe(false);
+        expect(headers()[2].hasAttribute("aria-sort")).toBe(false);
     });
 
     it("sorts ascending on the first header click (UIC-05)", async () => {
@@ -99,7 +209,7 @@ describe("SortableTable", () => {
 
         expect(cellTexts(0)[0]).toBe("alpha");
         expect(headers()[0].getAttribute("aria-sort")).toBe("ascending");
-        expect(headers()[1].getAttribute("aria-sort")).toBe("none");
+        expect(headers()[1].hasAttribute("aria-sort")).toBe(false);
     });
 
     it("cycles to descending on the second click, like matSort (UIC-05)", async () => {
@@ -195,7 +305,9 @@ describe("SortableTable", () => {
         fixture.detectChanges();
         await fixture.whenStable();
 
-        expect(root().querySelector("output")).toBeTruthy();
+        // The spinner block (not the always-present live region, which is
+        // an <output> too since DD-549).
+        expect(root().querySelector("output.block")).toBeTruthy();
         expect(root().querySelector("table")).toBeNull();
     });
 });

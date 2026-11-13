@@ -22,6 +22,31 @@
             "next": "Volgende pagina",
             "noData": "Geen gegevens beschikbaar",
             "previous": "Vorige"
+        },
+        "darkMode": {
+            "toggle": "Thema wisselen (huidig: {{mode}})"
+        },
+        "pagination": {
+            "range": "Toont {{start}} tot {{end}} van {{total}} resultaten",
+            "navigation": "Paginering",
+            "pageOf": "Pagina {{page}} van {{total}}",
+            "page": "Pagina {{page}}",
+            "goToPage": "Ga naar pagina {{page}}"
+        },
+        "sortableTable": {
+            "rowsLoaded": "{{count}} rijen geladen",
+            "selectionCleared": "Selectie gewist",
+            "rowSelected": "Rij geselecteerd",
+            "sortedBy": "Gesorteerd op {{header}}, {{direction}}",
+            "ascending": "oplopend",
+            "descending": "aflopend",
+            "selectRowHint": "Druk op Enter om deze rij te selecteren"
+        },
+        "infiniteScrollContainer": {
+            "loadingMore": "Meer resultaten laden"
+        },
+        "dataQualityPie": {
+            "label": "Datakwaliteitsscore {{value}}%"
         }
     }
 }

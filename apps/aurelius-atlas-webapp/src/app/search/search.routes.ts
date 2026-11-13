@@ -23,14 +23,20 @@ export const SEARCH_ROUTES: Routes = [
             {
                 path: "browse",
                 loadComponent: () => import("./browse/browse.component").then((m) => m.Browse),
+                // TITLE-001 (WCAG 2.4.2): the route's page title, read by
+                // AtlasTitleStrategy; the drawer aux routes carry none so
+                // the underlying page's title stays while a drawer is open.
+                data: { title: $localize`:@@shell.title.browse:Browse` },
             },
             {
                 path: "results",
                 loadComponent: () => import("./results/results.component").then((m) => m.Results),
+                data: { title: $localize`:@@shell.title.results:Search results` },
             },
             {
                 path: "details/:guid",
                 loadComponent: () => import("./details/details.component").then((m) => m.Details),
+                data: { title: $localize`:@@shell.title.details:Details` },
             },
         ],
     },

@@ -1,5 +1,5 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectionStrategy, Component, input, model, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, ElementRef, input, model, output, viewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faSearch } from "@fortawesome/free-solid-svg-icons";
@@ -65,6 +65,9 @@ export class SearchField {
      */
     protected readonly faSearch = faSearch;
 
+    /** The text input — the clear handler's focus landing spot (below). */
+    private readonly inputRef = viewChild<ElementRef<HTMLInputElement>>("field");
+
     /**
      * Handle input: store the query, normalising the empty string to `null`
      * as the Aurelius valueChanges pipe did.
@@ -84,9 +87,19 @@ export class SearchField {
     /**
      * Clear the query and re-submit, as `clearQuery` did — the Aurelius
      * clear path emitted `querySubmitted` with `null`.
+     *
+     * The clear button renders only while a query stands, so clearing
+     * destroys the element a keyboard activation was riding: when the click
+     * landed on the focused button, focus moves to the text input (the
+     * browser would drop it to the body, stranding the Tab position).
+     * @param event The button's click event.
      */
-    protected clearQuery(): void {
+    protected clearQuery(event: MouseEvent): void {
+        const focusWasOnButton = event.target === document.activeElement;
         this.query.set(null);
         this.querySubmitted.emit(null);
+        if (focusWasOnButton) {
+            this.inputRef()?.nativeElement.focus();
+        }
     }
 }

@@ -12,10 +12,18 @@
                 </div>
                 <div class="column">
                     @if (_title) {
-                        <h1 class="title is-1 is-spaced has-text-light">{{ _title }}</h1>
+                        @if (titleLevel() === 2) {
+                            <h2 class="title is-1 is-spaced has-text-light">{{ _title }}</h2>
+                        } @else {
+                            <h1 class="title is-1 is-spaced has-text-light">{{ _title }}</h1>
+                        }
                     }
                     @if (_subtitle) {
-                        <h2 class="subtitle is-4 is-spaced has-text-light">{{ _subtitle }}</h2>
+                        @if (titleLevel() === 2) {
+                            <h3 class="subtitle is-4 is-spaced has-text-light">{{ _subtitle }}</h3>
+                        } @else {
+                            <h2 class="subtitle is-4 is-spaced has-text-light">{{ _subtitle }}</h2>
+                        }
                     }
                 </div>
                 <div class="column">
@@ -25,7 +33,7 @@
         </div>
     </div>
     <div class="hero-foot">
-        <nav class="tabs is-boxed is-fullwidth navigation">
+        <nav class="tabs is-boxed is-fullwidth navigation" [attr.aria-label]="navigationLabel() ?? null">
             <div class="container">
                 <ul>
                     <ng-content select="[navigation]"></ng-content>

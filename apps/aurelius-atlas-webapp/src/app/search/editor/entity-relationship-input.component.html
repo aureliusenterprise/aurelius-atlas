@@ -30,6 +30,10 @@
         ></aurelius-atlas-ui-classification-chip>
     }
     @if (!singleFull()) {
+        <!-- FORM-ERR-002: the editor's error line under this picker carries
+             the matching id (the same parent-paired idiom as the label,
+             EDT-17), so while the required error shows the combobox names
+             its reason. -->
         <input
             type="text"
             [id]="inputId()"
@@ -38,6 +42,7 @@
             [attr.placeholder]="field().single ? singlePlaceholder : placeholder"
             [attr.aria-labelledby]="labelId()"
             [attr.aria-invalid]="invalid() ? 'true' : null"
+            [attr.aria-describedby]="invalid() ? 'editor-relationship-' + field().name + '-error' : null"
             [attr.aria-expanded]="panelShown()"
             [attr.aria-autocomplete]="'list'"
             [attr.aria-controls]="panelShown() ? listboxId() : null"

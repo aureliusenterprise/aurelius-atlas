@@ -78,6 +78,14 @@ describe("Modal", () => {
             expect(fixture.nativeElement.querySelectorAll(".modal-card-foot .button")).toHaveLength(2);
         });
 
+        it("names the dialog through its title heading (DLG-HEAD-001)", () => {
+            const dialog = fixture.nativeElement.querySelector("dialog.aurelius-modal");
+            const heading = dialog.querySelector(".modal-card-title");
+            expect(heading.tagName).toBe("H2");
+            expect(dialog.getAttribute("aria-labelledby")).toBe(heading.id);
+            expect(dialog.hasAttribute("aria-label")).toBe(false);
+        });
+
         it("emits confirm from the confirm button and stays open (UIC-01)", () => {
             const confirms: void[] = [];
             component.confirmRequested.subscribe(() => confirms.push(undefined));
@@ -130,17 +138,39 @@ describe("Modal", () => {
             expect(component.active()).toBe(false);
         });
 
-        it("dismisses on Escape, the dialog's keyboard path (UIC-01)", () => {
+        it("dismisses on the dialog's cancel event, the platform Escape path (UIC-01, UIC-40)", () => {
             const cancels: void[] = [];
             component.cancelRequested.subscribe(() => cancels.push(undefined));
+            component.open();
+            fixture.detectChanges();
 
-            fixture.nativeElement
-                .querySelector(".modal-card")
-                .dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+            const dialog = fixture.nativeElement.querySelector("dialog.aurelius-modal") as HTMLDialogElement;
+            const event = new Event("cancel", { cancelable: true });
+            dialog.dispatchEvent(event);
 
+            // The handler prevents the bare close: dismissal stays the
+            // card anatomy's cancelRequested path (the model drives the
+            // real close through the effect).
+            expect(event.defaultPrevented).toBe(true);
             expect(cancels).toHaveLength(1);
             expect(component.active()).toBe(false);
         });
+    });
+
+    it("restores focus to the opener when the layer closes (UIC-40)", () => {
+        const opener = document.createElement("button");
+        document.body.append(opener);
+        opener.focus();
+        expect(document.activeElement).toBe(opener);
+
+        component.open();
+        fixture.detectChanges();
+
+        component.close();
+        fixture.detectChanges();
+        expect(document.activeElement).toBe(opener);
+
+        opener.remove();
     });
 
     it("ignores backdrop clicks in the plain anatomy, as existing callers manage closing (UIC-09)", () => {
@@ -153,5 +183,48 @@ describe("Modal", () => {
 
         expect(cancels).toHaveLength(0);
         expect(component.active()).toBe(true);
+    });
+
+    it("lets Escape close the plain anatomy (MODAL-ESC-001)", () => {
+        component.open();
+        fixture.detectChanges();
+        const cancels: void[] = [];
+        component.cancelRequested.subscribe(() => cancels.push(undefined));
+
+        const dialog = fixture.nativeElement.querySelector("dialog.aurelius-modal") as HTMLDialogElement;
+        const event = new Event("cancel", { cancelable: true });
+        dialog.dispatchEvent(event);
+
+        // No preventDefault: the platform owns the close (in a browser the
+        // dialog itself closes, and the close event mirrors it into the
+        // model). Here the handler emits nothing and blocks nothing.
+        expect(event.defaultPrevented).toBe(false);
+        expect(cancels).toHaveLength(0);
+        expect(component.active()).toBe(true);
+    });
+
+    it("mirrors a native close into the model (MODAL-ESC-001)", () => {
+        component.open();
+        fixture.detectChanges();
+
+        // The plain anatomy's Escape path in a browser: cancel goes
+        // unprevented, the dialog closes natively, and the close event
+        // brings the model along so the layer and the caller's binding
+        // stay in step.
+        const dialog = fixture.nativeElement.querySelector("dialog.aurelius-modal") as HTMLDialogElement;
+        dialog.dispatchEvent(new Event("close"));
+        fixture.detectChanges();
+
+        expect(component.active()).toBe(false);
+    });
+
+    it("names the plain anatomy from the label input (MODAL-NAME-001)", () => {
+        fixture.componentRef.setInput("label", "Cookie consent");
+        component.open();
+        fixture.detectChanges();
+
+        const dialog = fixture.nativeElement.querySelector("dialog.aurelius-modal");
+        expect(dialog.getAttribute("aria-label")).toBe("Cookie consent");
+        expect(dialog.hasAttribute("aria-labelledby")).toBe(false);
     });
 });

@@ -39,16 +39,17 @@ describe("DarkMode", () => {
         expect(component).toBeTruthy();
     });
 
-    it("names the current theme in the button title (SPL-03)", () => {
-        expect(button().title).toBe("The current theme is auto");
+    it("names the current theme in the button's accessible name (SPL-03)", () => {
+        expect(button().getAttribute("aria-label")).toBe("Switch theme (current: auto)");
+        expect(button().title).toBe("Switch theme (current: auto)");
 
         service.setMode("dark");
         fixture.detectChanges();
-        expect(button().title).toBe("The current theme is dark");
+        expect(button().getAttribute("aria-label")).toBe("Switch theme (current: dark)");
 
         service.setMode("light");
         fixture.detectChanges();
-        expect(button().title).toBe("The current theme is light");
+        expect(button().getAttribute("aria-label")).toBe("Switch theme (current: light)");
     });
 
     it("cycles auto -> dark -> light -> auto on click (SPL-03)", async () => {

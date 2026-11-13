@@ -1,5 +1,8 @@
+/// <reference types="@angular/localize" />
 import { CommonModule } from "@angular/common";
 import { ChangeDetectionStrategy, Component, computed, input, model } from "@angular/core";
+
+import { nextInstanceId } from "../next-instance-id";
 
 @Component({
     selector: "aurelius-atlas-ui-pagination",
@@ -9,6 +12,12 @@ import { ChangeDetectionStrategy, Component, computed, input, model } from "@ang
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Pagination {
+    /**
+     * TABLE-004: per-instance id of the "Showing X to Y of Z" line, so a
+     * page with two bars still has unique ids.
+     */
+    readonly rangeId = `aurelius-pagination-range-${nextInstanceId()}`;
+
     /**
      * The index of the current page (0-based).
      */
@@ -41,6 +50,58 @@ export class Pagination {
         }
         return Math.min(this.pageIndex() + 1, totalPages);
     });
+
+    /**
+     * The first item of the current page, 1-based — the start of the
+     * "Showing X to Y of Z" line (TABLE-004, WCAG 1.3.1). With no items the
+     * line is hidden, so the empty range is never shown.
+     */
+    readonly rangeStart = computed(() => (this.currentPageDisplay() - 1) * this.pageSize() + 1);
+
+    /**
+     * The last item of the current page, 1-based, clamped to the total.
+     */
+    readonly rangeEnd = computed(() => Math.min(this.currentPageDisplay() * this.pageSize(), this.totalItems()));
+
+    /**
+     * The visible range line's text (TABLE-004): localised here, with named
+     * placeholders, so the dictionary's `{{start}}`-style markers match.
+     */
+    readonly rangeText = computed(
+        () =>
+            $localize`:@@components.pagination.range:Showing ${this.rangeStart()}:start: to ${this.rangeEnd()}:end: of ${this.totalItems()}:total: results`,
+    );
+
+    /**
+     * TABLE-004 (WCAG 4.1.3): the persistent live region's text — the page
+     * position. Empty while there are no items; a page change swaps the
+     * text, which is what a live region announces. The region itself never
+     * leaves the DOM.
+     */
+    readonly pageAnnouncement = computed(() =>
+        this.totalPages() === 0
+            ? ""
+            : $localize`:@@components.pagination.pageOf:Page ${this.currentPageDisplay()}:page: of ${this.totalPages()}:total:`,
+    );
+
+    /**
+     * The accessible name of the current page's button (TABLE-004's i18n
+     * marker — the expression was a bare concat before).
+     * @param token The 1-based page token.
+     * @returns The localised label.
+     */
+    pageLabel(token: number): string {
+        return $localize`:@@components.pagination.page:Page ${token}:page:`;
+    }
+
+    /**
+     * The accessible name of a non-current page's button.
+     * @param token The 1-based page token.
+     * @returns The localised label.
+     */
+    goToPageLabel(token: number): string {
+        return $localize`:@@components.pagination.goToPage:Go to page ${token}:page:`;
+    }
 
     /**
      * An array of page tokens to display in the pagination controls.

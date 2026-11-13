@@ -1,8 +1,9 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import { Router, provideRouter } from "@angular/router";
+import { NavigationEnd, Router, provideRouter } from "@angular/router";
 import Keycloak from "keycloak-js";
+import { Subject } from "rxjs";
 import { vi } from "vitest";
 
 import { AppConfig } from "../config";
@@ -25,8 +26,13 @@ const config: AppConfig = {
  * `hasResourceRole` answers `canWrite` for the hero's `+` — granted unless
  * a test passes `atlasWrite: false`.
  */
-function setup({ atlasWrite = true }: { atlasWrite?: boolean } = {}) {
+function setup({ atlasWrite = true, url = "/search/browse" }: { atlasWrite?: boolean; url?: string } = {}) {
     const navigate = vi.fn().mockResolvedValue(true);
+    // The fake router's event stream stays open: the layout watches
+    // NavigationEnd for the hero's heading level (HEADING-001), so a test
+    // can push one (the real router emits it on every navigation).
+    const events = new Subject<unknown>();
+    const fake = { navigate, events, url };
     TestBed.configureTestingModule({
         imports: [SearchLayout],
         providers: [
@@ -35,7 +41,7 @@ function setup({ atlasWrite = true }: { atlasWrite?: boolean } = {}) {
             provideHttpClientTesting(),
             { provide: APP_CONFIG, useValue: config },
             SearchState,
-            { provide: Router, useValue: { navigate } },
+            { provide: Router, useValue: fake },
             {
                 provide: Keycloak,
                 useValue: {
@@ -45,7 +51,14 @@ function setup({ atlasWrite = true }: { atlasWrite?: boolean } = {}) {
             },
         ],
     });
-    return { navigate, httpMock: TestBed.inject(HttpTestingController) };
+    return {
+        navigate,
+        httpMock: TestBed.inject(HttpTestingController),
+        events,
+        // The mutable handle on the fake: `Router.url` is read-only in the
+        // type, but the fake is a plain object and the layout reads it.
+        router: fake as { url: string },
+    };
 }
 
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
@@ -133,6 +146,21 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         expect((fixture.nativeElement as HTMLElement).querySelector("button.aurelius-create-entity")).toBeNull();
     });
 
+    it("the hero controls row carries the class that shrinks it (DD-550)", () => {
+        setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        // The scss rule that hooks on this class is what keeps the field and
+        // the `+` inside the hero between 769px and ~830px (DD-550). Pin the
+        // hook itself, not the pixels (repo rule: layout ships as structure).
+        const level = compiled.querySelector("div.level.hero-controls");
+        expect(level).toBeTruthy();
+        expect(level?.querySelector(".level-item .input-bar")).toBeTruthy();
+        expect(level?.querySelector(".level-right .aurelius-create-entity")).toBeTruthy();
+    });
+
     it("the `+` opens the create-mode editor drawer (EDT-01, DD-322)", () => {
         const { navigate } = setup();
         const fixture = TestBed.createComponent(SearchLayout);
@@ -142,5 +170,83 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-create-entity")!.click();
 
         expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create"] } }]);
+    });
+
+    it("LR-001: the persistent status states searching, the settled count, or no results", () => {
+        setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+        const region: HTMLElement = compiled.querySelector("output")!;
+        const store = fixture.debugElement.injector.get(SearchState);
+        const text = () => region.textContent?.trim();
+
+        // Nothing has run (words mode, empty query): the store reads as an
+        // empty search and the region says so; a live region only speaks on
+        // CHANGE, so the resting text is never announced.
+        expect(text()).toBe("No results found");
+
+        // An in-flight search (the count line steps aside for it).
+        store.loading.set(true);
+        fixture.detectChanges();
+        expect(text()).toBe("Searching");
+
+        // Settled with results (words mode counts what the server said,
+        // SRH-04): the count branch.
+        store.loading.set(false);
+        store.approximateCount.set(12);
+        store.entries.set([{ guid: "g1" } as never, { guid: "g2" } as never]);
+        fixture.detectChanges();
+        expect(text()).toBe("12 results");
+
+        // The server counted rows the page has not listed yet: neither
+        // quiet line fits and the region stays silent (the count names
+        // only what is on screen).
+        store.approximateCount.set(5);
+        store.entries.set([]);
+        fixture.detectChanges();
+        expect(text()).toBe("");
+
+        // A settled search that lists rows the server did not count: the
+        // count line needs listed rows, so it stays quiet here too.
+        store.approximateCount.set(0);
+        store.entries.set([{ guid: "g1" } as never]);
+        fixture.detectChanges();
+        expect(text()).toBe("");
+    });
+
+    it("HEADING-001: the hero steps down to an h2 on the details screen", () => {
+        // The details route renders the entity name as the page's h1, so
+        // the chrome band yields the h1 spot (the browse landing keeps it).
+        setup({ url: "/search/details/00000000-0000-4000-8000-000000000001" });
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        expect(compiled.querySelector("aurelius-atlas-ui-hero h1")).toBeNull();
+        expect(compiled.querySelector("aurelius-atlas-ui-hero h2.title")?.textContent?.trim()).toBe("Atlas");
+    });
+
+    it("HEADING-001: the hero follows the URL on navigation, in both directions", () => {
+        // The heading level reads the router's events, not the URL it came
+        // up with: browse -> details steps down, details -> browse steps
+        // back up (the chrome band keeps the page's single h1).
+        const { events, router } = setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        const heroTitleTag = () => compiled.querySelector("aurelius-atlas-ui-hero .title")?.tagName;
+        expect(heroTitleTag()).toBe("H1");
+
+        router.url = "/search/details/00000000-0000-4000-8000-000000000001";
+        events.next(new NavigationEnd(1, "/search/browse", router.url));
+        fixture.detectChanges();
+        expect(heroTitleTag()).toBe("H2");
+
+        router.url = "/search/results";
+        events.next(new NavigationEnd(2, router.url, "/search/results"));
+        fixture.detectChanges();
+        expect(heroTitleTag()).toBe("H1");
     });
 });

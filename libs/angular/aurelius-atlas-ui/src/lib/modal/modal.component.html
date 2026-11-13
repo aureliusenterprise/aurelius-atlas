@@ -3,30 +3,44 @@
 @let _isCard = _title !== undefined;
 
 @if (_active) {
-    <div class="modal is-active">
+    <!--
+        The layer is a native <dialog> opened with showModal() (UIC-40,
+        DD-543): the browser moves it to the top layer, keeps focus inside
+        the dialog, marks the page behind inert, and answers Escape with
+        the `cancel` event. The Bulma `.modal is-active` classes ride the
+        dialog so the layer geometry and the card anatomy keep Bulma's
+        CSS; the scss resets the UA sheet, like the drawer panel's (DD-162).
+    -->
+    <dialog
+        #host
+        class="modal is-active aurelius-modal"
+        [attr.aria-labelledby]="_isCard ? headingId : null"
+        [attr.aria-label]="_isCard ? null : label()"
+        (cancel)="onCancel($event)"
+        (close)="onNativeClose()"
+    >
         <!--
-            Backdrop dismissal is a pointer affordance; the keyboard path is
-            the Escape handler on the dialog and the close/cancel buttons.
-            A11y rules want a focusable keyboard element on the backdrop
-            itself, and Bulma's modal has none — Escape is the dialog's.
+            Backdrop dismissal is a control, so the scrim is a native
+            <button>: Enter/Space on it is the keyboard equivalent the
+            linters ask for, and it answers the pointer as before. It stays
+            out of the tab order and the accessibility tree (tabindex -1,
+            aria-hidden), because the dialog's Escape and the card's close
+            button are the keyboard and screen-reader paths. The scrim
+            paints the layer, so the UA `::backdrop` stays transparent (the
+            scss keeps it out of the scroll chain). The plain anatomy's
+            handler ignores the click (UIC-09), but keeps the element.
         -->
-        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- NOSONAR S1077: the backdrop is the pointer path by design; Escape on the dialog is the keyboard path. -->
-        <div class="modal-background" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
-        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- The Escape handler catches keydowns bubbling from the dialog's
-             focused descendants; the container itself needs no focus, and a
-             tabindex here would add a tab stop the modal does not want. -->
-        <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
-        <div
-            [class]="_isCard ? 'modal-card' : 'modal-content'"
-            [attr.role]="_isCard ? 'dialog' : null"
-            [attr.aria-label]="_title"
-            (keydown.escape)="onEscape()"
-        >
+        <button
+            type="button"
+            class="modal-background"
+            tabindex="-1"
+            aria-hidden="true"
+            (click)="onBackdropClick()"
+        ></button>
+        <div [class]="_isCard ? 'modal-card' : 'modal-content'">
             @if (_isCard) {
                 <header class="modal-card-head">
-                    <p class="modal-card-title">{{ _title }}</p>
+                    <h2 [id]="headingId" class="modal-card-title">{{ _title }}</h2>
                     <button type="button" class="delete" [attr.aria-label]="ariaLabel()" (click)="dismiss()"></button>
                 </header>
             }
@@ -61,5 +75,5 @@
                 (click)="close()"
             ></button>
         }
-    </div>
+    </dialog>
 }

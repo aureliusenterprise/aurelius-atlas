@@ -5,12 +5,25 @@
   `.is-tall-container` (SHM-05, SHM-07): a full viewport tall, so the footer
   starts below the fold (DD-150).
 -->
+<!-- The skip link (LANDMARK-002, WCAG 2.4.1): the first stop, off-screen
+     until focused, jumping past the navbar to the routed content. -->
+<a class="skip-link" href="#main" i18n="@@shell.skipToMain">Skip to main content</a>
 <aurelius-atlas-webapp-header />
 <aurelius-atlas-webapp-nav-loading-bar />
-<div class="is-tall-container has-background">
+<!-- The main landmark (LANDMARK-001, WCAG 1.3.1): the routed band carries
+     the id the skip link targets; the legacy tall-band styling moves with
+     it (SHM-05, SHM-07, DD-150). -->
+<main id="main" class="is-tall-container has-background">
     <router-outlet />
-</div>
+</main>
 <aurelius-atlas-webapp-footer />
+<!-- LR-003 (WCAG 4.1.3): the global alert announcer. Persistent (never
+     created with its news), polite, outside the drawer - the bell dot is
+     aria-hidden, so without this a screen-reader user never hears an
+     error the HTTP interceptor or the error handler raised. The native
+     <output> carries the status role and the polite live region
+     implicitly (DD-549). -->
+<output class="is-sr-only">{{ alertAnnouncement() }}</output>
 <!--
     The drawer aux outlet (SPL-14, DD-166): routed overlays — the settings
     panel today, the alerts drawer a future slice. Fixed-position layers

@@ -1,37 +1,45 @@
-<!-- UIC-26: Bulma's tabs anatomy (nav.tabs > ul > li > a), carrying the
-     tablist roles the plain Bulma markup omits. Both panes stay mounted and
-     the inactive one hides (DD-352): a switch re-parses nothing and the
-     textarea keeps its caret and undo history. The labels and the placeholder
-     are caller inputs (UIC-04, DD-136). -->
+<!-- UIC-26: Bulma's tabs anatomy (nav.tabs > ul > li), carrying the
+     tablist roles the plain Bulma markup omits. The tabs are native
+     buttons (FORM-CUSTOM-002): activation is free (click, Space, Enter)
+     and the tablist's keydown handler walks the pair with Left/Right
+     (plus Home/End) on a roving tabindex — the active tab 0, the other
+     -1. Both panes stay mounted and the inactive one hides (DD-352): a
+     switch re-parses nothing and the textarea keeps its caret and undo
+     history. The labels and the placeholder are caller inputs (UIC-04,
+     DD-136). -->
 <div class="tabs aurelius-markdown-editor-tabs" role="tablist">
     <ul>
         <li>
-            <a
+            <button
+                #writeTab
+                type="button"
                 role="tab"
-                tabindex="0"
+                [attr.tabindex]="tab() === 'write' ? 0 : -1"
                 [id]="writeTabId()"
                 [class.is-active]="tab() === 'write'"
                 [attr.aria-selected]="tab() === 'write'"
                 [attr.aria-controls]="writePaneId()"
                 (click)="showTab('write')"
-                (keydown.enter)="showTab('write')"
-                (keydown.space)="showTab('write'); $event.preventDefault()"
-                >{{ writeLabel() }}</a
+                (keydown)="onTabKeys($event)"
             >
+                {{ writeLabel() }}
+            </button>
         </li>
         <li>
-            <a
+            <button
+                #previewTab
+                type="button"
                 role="tab"
-                tabindex="0"
+                [attr.tabindex]="tab() === 'preview' ? 0 : -1"
                 [id]="previewTabId()"
                 [class.is-active]="tab() === 'preview'"
                 [attr.aria-selected]="tab() === 'preview'"
                 [attr.aria-controls]="previewPaneId()"
                 (click)="showTab('preview')"
-                (keydown.enter)="showTab('preview')"
-                (keydown.space)="showTab('preview'); $event.preventDefault()"
-                >{{ previewLabel() }}</a
+                (keydown)="onTabKeys($event)"
             >
+                {{ previewLabel() }}
+            </button>
         </li>
     </ul>
 </div>
@@ -49,6 +57,9 @@
         [attr.placeholder]="placeholder()"
         [class.is-danger]="danger()"
         [disabled]="disabled()"
+        [required]="required()"
+        [attr.aria-invalid]="invalid() ? 'true' : null"
+        [attr.aria-describedby]="describedBy()"
         (input)="typed($event)"
         (blur)="touch.emit()"
     ></textarea>

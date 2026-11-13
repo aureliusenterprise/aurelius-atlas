@@ -697,7 +697,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(compiled.querySelector("#related-attributes")).toBeTruthy();
         expect(compiled.querySelector("#related-entities")).toBeTruthy();
         expect(compiled.querySelector("#people-details")).toBeTruthy();
-        expect(normalize(compiled.querySelector("#people-details h3")?.textContent)).toBe("People");
+        expect(normalize(compiled.querySelector("#people-details h2")?.textContent)).toBe("People");
         // No typedef read: the name is one of the seven (DET-15's direct hit).
         httpMock.verify();
     });
@@ -1118,7 +1118,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         // legacy page both); with no people ends it shows the empty line.
         expect(compiled.querySelector("#people-details")).toBeTruthy();
         expect(normalize(compiled.querySelector(".aurelius-people-empty")?.textContent)).toBe("No people assigned.");
-        expect(normalize(compiled.querySelector("#related-fields h3")?.textContent)).toBe("Fields");
+        expect(normalize(compiled.querySelector("#related-fields h2")?.textContent)).toBe("Fields");
         expect(compiled.querySelectorAll("#related-fields aurelius-atlas-ui-entity-card")).toHaveLength(1);
     });
 
@@ -1178,8 +1178,8 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const consumers = compiled.querySelector("#related-consumers");
         expect(producers).toBeTruthy();
         expect(consumers).toBeTruthy();
-        expect(normalize(producers?.querySelector("h3")?.textContent)).toBe("Producers");
-        expect(normalize(consumers?.querySelector("h3")?.textContent)).toBe("Consumers");
+        expect(normalize(producers?.querySelector("h2")?.textContent)).toBe("Producers");
+        expect(normalize(consumers?.querySelector("h2")?.textContent)).toBe("Consumers");
         expect(compiled.querySelectorAll("#related-producers aurelius-atlas-ui-entity-card")).toHaveLength(1);
         expect(compiled.querySelectorAll("#related-consumers aurelius-atlas-ui-entity-card")).toHaveLength(1);
         expect(normalize(producers?.querySelector("aurelius-atlas-ui-entity-card")?.textContent)).toContain(
@@ -1255,9 +1255,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
 
         // DET-33: the three section boxes with the legacy anchors; no
         // People box (the legacy page has none — DET-23's field case).
-        expect(normalize(compiled.querySelector("#related-systems h3")?.textContent)).toBe("Systems");
-        expect(normalize(compiled.querySelector("#related-inputs h3")?.textContent)).toBe("Inputs");
-        expect(normalize(compiled.querySelector("#related-outputs h3")?.textContent)).toBe("Outputs");
+        expect(normalize(compiled.querySelector("#related-systems h2")?.textContent)).toBe("Systems");
+        expect(normalize(compiled.querySelector("#related-inputs h2")?.textContent)).toBe("Inputs");
+        expect(normalize(compiled.querySelector("#related-outputs h2")?.textContent)).toBe("Outputs");
         expect(compiled.querySelector("#people-details")).toBeNull();
         expect(compiled.querySelectorAll("#related-systems aurelius-atlas-ui-entity-card")).toHaveLength(1);
         expect(compiled.querySelectorAll("#related-inputs aurelius-atlas-ui-entity-card")).toHaveLength(1);
@@ -1534,7 +1534,7 @@ describe("Details person page (DET-39..DET-43)", () => {
         httpMock.expectOne("/validate-entity/").flush({}, { status: 500, statusText: "Server Error" });
         fixture.detectChanges();
 
-        expect(normalize(compiled.querySelector("#gov-quality h3")?.textContent)).toBe("Governance Quality Rules");
+        expect(normalize(compiled.querySelector("#gov-quality h2")?.textContent)).toBe("Governance Quality Rules");
         expect(compiled.querySelectorAll("#gov-quality aurelius-atlas-ui-entity-card")).toHaveLength(0);
         expect(add).not.toHaveBeenCalled();
         httpMock.verify();

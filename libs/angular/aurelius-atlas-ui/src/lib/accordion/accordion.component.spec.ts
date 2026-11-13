@@ -64,4 +64,26 @@ describe("Accordion", () => {
         expect(component.expanded()).toBe(true);
         expect(fixture.nativeElement.querySelector(".card-content")).toBeTruthy();
     });
+
+    it("states the toggle button's expanded state (FORM-CUSTOM-001)", () => {
+        const button: HTMLElement = fixture.nativeElement.querySelector(".card-header-icon");
+
+        // Collapsed: the state is said, and no aria-controls dangles at the
+        // content div, which only exists while open.
+        expect(button.getAttribute("aria-expanded")).toBe("false");
+        expect(button.hasAttribute("aria-controls")).toBe(false);
+
+        component.expand();
+        fixture.detectChanges();
+
+        const content = fixture.nativeElement.querySelector(".card-content") as HTMLElement;
+        expect(button.getAttribute("aria-expanded")).toBe("true");
+        expect(button.getAttribute("aria-controls")).toBe(content.id);
+
+        component.collapse();
+        fixture.detectChanges();
+
+        expect(button.getAttribute("aria-expanded")).toBe("false");
+        expect(button.hasAttribute("aria-controls")).toBe(false);
+    });
 });

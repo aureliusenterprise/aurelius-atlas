@@ -32,7 +32,13 @@
             <!-- Language. -->
             <span i18n="@@shell.settings.language">Language</span>
         </p>
-        <fieldset class="buttons has-addons settings-language-group" aria-labelledby="settings-language-heading">
+        <!-- FORM-HELP-001: the hint travels with the group — the fieldset
+             carries it as the group's description, beside its name. -->
+        <fieldset
+            class="buttons has-addons settings-language-group"
+            aria-labelledby="settings-language-heading"
+            aria-describedby="settings-language-help"
+        >
             @for (locale of settings.locale.locales; track locale) {
                 <a
                     class="button is-small"
@@ -44,7 +50,7 @@
                 >
             }
         </fieldset>
-        <p class="help">
+        <p class="help" id="settings-language-help">
             <!-- Switching language reloads the page in that language. -->
             <span i18n="@@shell.settings.languageHint">Switching language reloads the page in that language.</span>
         </p>
@@ -118,8 +124,11 @@
             type="checkbox"
             [ngModel]="settings.telemetry()"
             (ngModelChange)="settings.setTelemetry($event)"
+            aria-describedby="settings-telemetry-help"
         />
-        <p class="help">
+        <!-- FORM-HELP-001: the checkbox names this line, so the hint is
+             read with the toggle, not only after it. -->
+        <p class="help" id="settings-telemetry-help">
             <!-- Turns collection of usage and performance data on or off. Turning it on takes effect after a reload. -->
             <span i18n="@@shell.settings.telemetryHint">
                 Turns collection of usage and performance data on or off. Turning it on takes effect after a reload.

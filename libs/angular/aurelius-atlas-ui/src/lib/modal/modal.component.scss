@@ -1,0 +1,68 @@
+/*
+ * The modal's native dialog host (UIC-40, DD-543). The element carries
+ * Bulma's `.modal is-active` classes, so the layer geometry, the card
+ * anatomy and the scrim recipe stay Bulma's; this sheet only resets the
+ * UA sheet the `<dialog>` brings — a border, an auto margin, padding, its
+ * own ink and a fit-content box (the drawer panel's reset, DD-162) — and
+ * keeps the UA `::backdrop` out of the way: the `.modal-background` scrim
+ * inside the dialog paints the dimming, so the backdrop stays transparent.
+ *
+ * Scroll containment (prevent-page-scroll-under-modal-dialog): with the
+ * dialog in the top layer, scroll gestures over the scrim or inside the
+ * dialog would still chain to the page behind. `overscroll-behavior:
+ * contain` on the dialog traps them; the backdrop needs `overflow: hidden`
+ * to become a scroll container at all, per the CSS Overscroll Behavior
+ * spec. Browsers without the non-scrollable-container rule keep the chain
+ * only for the no-overflow case — the containment is a progressive
+ * enhancement, and no `overflow: hidden` goes on `<body>` (that would
+ * shift the layout when the scrollbar disappears).
+ */
+.aurelius-modal {
+    background: transparent;
+    border: 0;
+    color: inherit;
+    // The layer geometry: the UA centres a modal dialog on its content
+    // box; Bulma's `.modal` is the full-viewport flex layer instead, and
+    // the scrim's inset (Bulma's is-overlay group) measures from this
+    // box. The explicit pin keeps that viewport fill even where the UA
+    // `:modal` rule does not apply (the fallbacks without `showModal`).
+    height: auto;
+    inset: 0;
+    margin: 0;
+    max-height: none;
+    max-width: none;
+    padding: 0;
+    position: fixed;
+    width: auto;
+
+    // Scroll containment (UIC-40): the dialog is a scroll container (the
+    // UA gives it overflow: auto), so its gestures stop at its boundary
+    // instead of chaining to the page behind. Spelled on the class, not
+    // `:modal`, so the no-top-layer fallback keeps it.
+    overscroll-behavior: contain;
+
+    // Focus lands on the dialog or its first control; the dialog's own
+    // outline would ring the whole viewport (the drawer panel's rule).
+    &:focus-visible {
+        outline: none;
+    }
+
+    // The scrim is a dismiss <button> (DD-551): the UA paints a button
+    // border and padding a flat overlay must not carry, so they reset here.
+    // The -webkit spelling is the search field's precedent (Safari's button
+    // face). The dimming stays Bulma's `.modal-background` recipe — an
+    // author rule already beats the UA `buttonface` background, so this
+    // block sets no background of its own.
+    .modal-background {
+        -webkit-appearance: none;
+        appearance: none;
+        border: 0;
+        padding: 0;
+    }
+
+    &::backdrop {
+        background: transparent;
+        overflow: hidden;
+        overscroll-behavior: contain;
+    }
+}

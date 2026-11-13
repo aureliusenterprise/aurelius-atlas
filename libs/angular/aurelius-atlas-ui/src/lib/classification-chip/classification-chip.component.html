@@ -47,7 +47,10 @@
                         <fa-icon [icon]="propagatedIcon"></fa-icon>
                     </span>
                 </div>
-                <div class="dropdown-menu" role="menu">
+                <!-- ROLE-MENU-MISUSE: no role="menu" — the sources are
+                     read-only rows, not menuitems; Bulma's CSS never read
+                     the role. -->
+                <div class="dropdown-menu">
                     <div class="dropdown-content">
                         <div class="dropdown-item">
                             <strong>{{ label() }}</strong>

@@ -10,4 +10,37 @@
 
 .aurelius-markdown-editor-tabs {
     margin-bottom: 0.75rem;
+
+    /* FORM-CUSTOM-002: the tabs are native buttons, so Bulma's `.tabs a`
+       rule misses them — the same rules, read from Bulma's own custom
+       properties, land on `button` instead. No colour of the component's
+       own (UIC-03): the tokens are Bulma's. */
+    button[role="tab"] {
+        align-items: center;
+        background: none;
+        border: 0;
+        border-bottom-color: var(--bulma-tabs-border-bottom-color);
+        border-bottom-style: solid;
+        border-bottom-width: var(--bulma-tabs-border-bottom-width);
+        color: var(--bulma-tabs-link-color);
+        cursor: pointer;
+        display: flex;
+        font-size: inherit;
+        justify-content: center;
+        margin-bottom: calc(-1 * var(--bulma-tabs-border-bottom-width));
+        padding: var(--bulma-tabs-link-padding);
+        transition-duration: var(--bulma-duration);
+        transition-property: background-color, border-color, color;
+        vertical-align: top;
+
+        &:hover {
+            border-bottom-color: var(--bulma-tabs-link-hover-border-bottom-color);
+            color: var(--bulma-tabs-link-hover-color);
+        }
+    }
+
+    li.is-active button[role="tab"] {
+        border-bottom-color: var(--bulma-tabs-link-active-border-bottom-color);
+        color: var(--bulma-tabs-link-active-color);
+    }
 }

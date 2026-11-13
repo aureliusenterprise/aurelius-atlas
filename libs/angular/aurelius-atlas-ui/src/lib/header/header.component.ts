@@ -1,9 +1,10 @@
 import { CommonModule } from "@angular/common";
 import { booleanAttribute, ChangeDetectionStrategy, Component, input, model } from "@angular/core";
+import { RouterLink } from "@angular/router";
 
 @Component({
     selector: "aurelius-atlas-ui-header",
-    imports: [CommonModule],
+    imports: [CommonModule, RouterLink],
     templateUrl: "./header.component.html",
     styleUrl: "./header.component.scss",
     changeDetection: ChangeDetectionStrategy.OnPush,

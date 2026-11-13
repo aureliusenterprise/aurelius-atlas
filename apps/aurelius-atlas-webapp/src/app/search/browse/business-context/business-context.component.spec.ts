@@ -51,13 +51,13 @@ describe("BusinessContext", () => {
         expect(normalize(compiled.querySelector("article.media:nth-of-type(1) .title.is-6")?.textContent)).toBe(
             "I'm searching for the meaning of data within a specific business context",
         );
-        expect(normalize(compiled.querySelector("article.media:nth-of-type(1) p")?.textContent)).toBe(
+        expect(normalize(compiled.querySelector("article.media:nth-of-type(1) p:not(.title)")?.textContent)).toBe(
             "Search for keywords related to the data domain or data entity that you are looking for.",
         );
         expect(normalize(compiled.querySelector("article.media:nth-of-type(2) .title.is-6")?.textContent)).toBe(
             "I'm exploring the meaning of data in a business context",
         );
-        expect(normalize(compiled.querySelector("article.media:nth-of-type(2) p")?.textContent)).toBe(
+        expect(normalize(compiled.querySelector("article.media:nth-of-type(2) p:not(.title)")?.textContent)).toBe(
             "Click the button below to see a list of all data domains.",
         );
     });

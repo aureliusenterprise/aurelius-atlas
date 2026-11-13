@@ -16,3 +16,14 @@
     border-radius: 0;
     margin: 0;
 }
+
+/*
+ * The resting bar must actually disappear (LR-006 keeps it in the DOM,
+ * hidden by attribute). The `[hidden]` rule lives in the user-agent
+ * stylesheet, and any author rule on the element wins over it, so Bulma's
+ * `.progress { display: block }` beats it and the bar stays painted. This
+ * author rule (specificity 0-2-0) restores the hiding.
+ */
+.progress[hidden] {
+    display: none;
+}

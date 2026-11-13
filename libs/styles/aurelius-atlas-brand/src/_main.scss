@@ -144,6 +144,32 @@
 }
 
 /*
+ * The platform color scheme (SPL-15, DD-542). Native controls, scrollbars,
+ * form-field pickers and the UA canvas (the overscroll flash, the address
+ * bar) key off the CSS `color-scheme` property, which no Bulma rule sets.
+ * `DarkModeService` and the head's pre-render keep the
+ * `<meta name="color-scheme">` in step with the `data-theme` attribute; the
+ * meta alone is only a presentational hint, out-cascaded by any author
+ * `color-scheme`, so the mapping below reads it back onto the property for
+ * native UI. A `light dark` meta (no script, no stored choice) follows the
+ * OS; the app's light default rides the pre-rendered `light` value, so the
+ * rule never hardcodes `light` or `dark` as the root default. The app's own
+ * surfaces keep following `data-theme` (DD-156's ramp); this governs only
+ * the UA-drawn parts.
+ */
+:root {
+    color-scheme: light dark;
+
+    &:has(> head > meta[name="color-scheme"][content="dark"]) {
+        color-scheme: dark;
+    }
+
+    &:has(> head > meta[name="color-scheme"][content="light"]) {
+        color-scheme: light;
+    }
+}
+
+/*
  * The legacy hero band (DD-374, demo-measured): Bulma 0.9.4's is-bold
  * gradient darkens/saturates toward the start and lightens toward the end
  * (#009e6c → primary → #00e7eb). Bulma 1 rebuilt it as fixed HSL offsets

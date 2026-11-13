@@ -1,5 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject } from "@angular/core";
-import { Router, RouterOutlet } from "@angular/router";
+import { ChangeDetectionStrategy, Component, computed, inject } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { NavigationEnd, Router, RouterOutlet } from "@angular/router";
+import { filter, map, startWith } from "rxjs";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPlus } from "@fortawesome/free-solid-svg-icons";
 import { Hero, SearchField } from "aurelius-atlas-ui";
@@ -52,6 +54,43 @@ export class SearchLayout {
 
     /** The `+`'s accessible name — the catalogue's create label (EDT-11). */
     protected readonly createLabel = $localize`:@@search.createEntity.newEntity:Create new entity`;
+
+    /** The route's URL, current after every navigation (the signals below read it). */
+    private readonly url = toSignal(
+        this.router.events.pipe(
+            filter((event): event is NavigationEnd => event instanceof NavigationEnd),
+            map(() => this.router.url),
+            startWith(this.router.url),
+        ),
+        { initialValue: this.router.url },
+    );
+
+    /**
+     * The hero title's heading level (HEADING-001): the details screen
+     * renders the entity name as the page's h1, so the chrome band steps
+     * down to an h2 there and the page keeps one h1.
+     */
+    protected readonly heroTitleLevel = computed(() => (this.url().includes("/details/") ? 2 : 1));
+
+    /**
+     * The search status announced to screen readers (LR-001, WCAG 4.1.3):
+     * the persistent status region in the template reads this — loading,
+     * the settled count, or the no-results line. Only text changes are
+     * announced, so the browse landing and detail visits stay quiet.
+     */
+    protected readonly searchStatus = computed(() => {
+        if (this.search.loading()) {
+            return $localize`:@@search.layout.status.searching:Searching`;
+        }
+        if (this.search.noResults()) {
+            return $localize`:@@search.layout.status.noResults:No results found`;
+        }
+        const count = this.search.shownCount();
+        if (count > 0 && this.search.entries().length > 0) {
+            return $localize`:@@search.layout.status.count:${count}:count: results`;
+        }
+        return "";
+    });
 
     /**
      * The hero field's submit (SRH-01, SRH-08): run the search, carry the

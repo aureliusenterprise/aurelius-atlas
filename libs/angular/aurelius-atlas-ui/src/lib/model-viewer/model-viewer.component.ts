@@ -6,7 +6,9 @@ import {
     effect,
     input,
     output,
+    signal,
     viewChild,
+    viewChildren,
     type ElementRef,
 } from "@angular/core";
 import { select } from "d3-selection";
@@ -34,6 +36,23 @@ import {
     type Ar3ViewConnection,
     type Ar3ViewNode,
 } from "./ar3-types";
+
+/** The direction an arrow key names on the canvas (KEY-GRAPHIC-CLICK-NO-KEYBOARD). */
+type CanvasDirection = "left" | "right" | "up" | "down";
+
+/** The arrow key → direction map the focused node's traversal reads. */
+const ARROW_DIRECTIONS: Readonly<Record<string, CanvasDirection | undefined>> = {
+    ArrowLeft: "left",
+    ArrowRight: "right",
+    ArrowUp: "up",
+    ArrowDown: "down",
+};
+
+/** The keyboard pan step, in screen pixels (SVG-001: arrows pan with root focus). */
+const KEY_PAN_STEP = 40;
+
+/** The keyboard zoom factor per +/- press (SVG-001). */
+const KEY_ZOOM_STEP = 1.2;
 
 /** The drawn node: a view node with its resolved shape (LDG-12/LDG-13/LDG-33). */
 interface DrawnNode {
@@ -102,13 +121,39 @@ interface DrawnConnection {
  * PNG. This canvas is the picture both serve, reusable wherever a model
  * needs drawing — the name says "model", not "lineage", because an archimate
  * document draws here just as well (DD-419).
+ *
+ * The keyboard model (KEY-GRAPHIC-CLICK-NO-KEYBOARD, SVG-001, DD under this
+ * audit): the {@link canvasLabel} (or, without one, "<view name> lineage
+ * model") names the svg root, which is a tab stop with `role="group"`. With
+ * the root focused, the arrow keys pan the viewport in the pressed direction
+ * and +/- (also =/-) zoom, all through the same d3-zoom behaviour the mouse
+ * rides (LDG-16) — so keyboard and pointer never disagree. The nodes are one
+ * roving tab stop: exactly one carries tabindex 0 (the active node, the
+ * first by default, a clicked one thereafter); on a focused node the arrow
+ * keys move the active node to its nearest neighbour in the pressed
+ * direction (by model coordinates, so the order matches the picture), and
+ * Enter or Space emits exactly what a click emits. Each node is a
+ * `role="button"` named by its drawn label — the concept id when the shape
+ * carries no name (a junction). Connections keep the pointer-only affordance
+ * the legacy edge had: the audit's keyboard finding named the nodes, and a
+ * connection is reachable through its endpoints. The pointer behaviour is
+ * unchanged throughout.
  */
 @Component({
     selector: "aurelius-atlas-ui-model-viewer",
     changeDetection: ChangeDetectionStrategy.OnPush,
     imports: [NgClass],
     template: `
-        <svg class="lineage-svg" #svg>
+        <!-- SVG-001: the canvas is a named group and a tab stop; with root
+             focus the arrows pan and +/- zoom (onCanvasKeydown). -->
+        <svg
+            class="lineage-svg"
+            #svg
+            tabindex="0"
+            role="group"
+            [attr.aria-label]="svgAccessibleName()"
+            (keydown)="onCanvasKeydown($event)"
+        >
             <!-- LDG-14/LDG-36: the marker set — the legacy defs loop over
                  ar3RelationDef, each path keeping the legacy's
                  stroke-dasharray="999" so a dashed connection never dashes
@@ -143,20 +188,29 @@ interface DrawnConnection {
                  transform to the whole #modelview group — same DOM here). -->
             <svg:g class="lineage-zoom" #zoomTarget>
                 <svg:g class="lineage-bounds" [attr.transform]="boundsTransform()">
-                    @for (drawn of nodes(); track drawn.node.id) {
+                    @for (drawn of nodes(); track drawn.node.id; let nodeIndex = $index) {
                         <!-- LDG-12/LDG-13: the node — the shape path from
                              x,y,w,h translated to the bounds-normalised
                              position, the type-class fill, the 16x16 icon
                              floated right, the clipped name (the legacy's
-                             foreignObject label, LDG-13/LDG-33..35). -->
+                             foreignObject label, LDG-13/LDG-33..35).
+                             KEY-GRAPHIC-CLICK-NO-KEYBOARD: the node is the
+                             button — the roving tabindex, the accessible
+                             name from its label (the concept when the shape
+                             draws no name), Enter/Space what click does. -->
                         <svg:g
+                            #nodeEls
                             class="node"
+                            role="button"
+                            [attr.tabindex]="nodeIndex === tabStopIndex() ? 0 : -1"
+                            [attr.aria-label]="drawn.name === '' ? drawn.concept : drawn.name"
                             [ngClass]="drawn.shapeClass"
                             [class.is-selected]="isSelected(drawn.concept)"
                             [class.is-highlighted]="isHighlighted(drawn)"
                             [attr.transform]="drawn.transform"
                             [attr.data-concept]="drawn.concept"
-                            (click)="conceptSelected.emit(drawn.concept)"
+                            (click)="onNodeClick(nodeIndex)"
+                            (keydown)="onNodeKeydown($event, nodeIndex)"
                         >
                             <svg:clipPath [attr.id]="'clip-' + drawn.node.id">
                                 <svg:path [attr.d]="drawn.shape"></svg:path>
@@ -166,8 +220,17 @@ interface DrawnConnection {
                                 <svg:foreignObject [attr.width]="drawn.node.width" [attr.height]="drawn.node.height">
                                     <xhtml:div xmlns="http://www.w3.org/1999/xhtml" class="node-content">
                                         @if (drawn.showIcon && drawn.icon) {
+                                            <!-- SVG-002: the glyph repeats what the
+                                                 name and the shape already say —
+                                                 hidden from assistive tech. -->
                                             <xhtml:span class="node-icon">
-                                                <svg width="16px" height="16px" viewBox="0 0 16 16">
+                                                <svg
+                                                    width="16px"
+                                                    height="16px"
+                                                    viewBox="0 0 16 16"
+                                                    aria-hidden="true"
+                                                    focusable="false"
+                                                >
                                                     <path [attr.d]="drawn.icon" [class]="drawn.iconColor"></path>
                                                 </svg>
                                             </xhtml:span>
@@ -327,6 +390,12 @@ interface DrawnConnection {
             /* The same fixed dark ink as the node names — see .node-text. */
             fill: #000000;
         }
+        g.node:focus-visible {
+            /* KEY-GRAPHIC-CLICK-NO-KEYBOARD: the active node's ring — the
+               drawing keeps a fixed ink (DD-419), so the ring does too. */
+            outline: 2px solid #1779ba;
+            outline-offset: 2px;
+        }
         /* LDG-34/LDG-35 (DD-418): the archimate fills — archimate3.scss's
            node block and archimate-icon.component.scss's glyph block. The
            builder drops an imported constant interpolated into a component's
@@ -425,6 +494,12 @@ export class ModelViewer {
         repaints with it (the legacy's `updateLegendColor`). */
     readonly categoryColors = input<CategoryMap | null>(null);
 
+    /** SVG-001: what this canvas is, for assistive tech — the svg's
+        `aria-label` reads "<view name> <canvasLabel>", the name dropped
+        when the view carries none. A chrome string like the lib's others
+        (DD-136): the caller may replace the whole phrase. */
+    readonly canvasLabel = input("lineage model");
+
     /** A node or connection was clicked, with the concept it stands for
         (LDG-17: `ref ?? id`). The caller decides what selection means. */
     readonly conceptSelected = output<string>();
@@ -440,6 +515,27 @@ export class ModelViewer {
 
     private readonly svgRef = viewChild.required<ElementRef<SVGSVGElement>>("svg");
     private readonly zoomTarget = viewChild.required<ElementRef<SVGGElement>>("zoomTarget");
+
+    /** The rendered node groups, in {@link nodes} order (KEY-GRAPHIC-CLICK-NO-KEYBOARD). */
+    private readonly nodeEls = viewChildren<ElementRef<SVGGElement>>("nodeEls");
+
+    /**
+     * The active node (KEY-GRAPHIC-CLICK-NO-KEYBOARD): the roving tabindex's
+     * 0-holder — the first node until a click or an arrow moves it.
+     */
+    private readonly activeNodeIndex = signal(0);
+
+    /** The roving 0, clamped into the drawn nodes (a view change shrinks it). */
+    protected readonly tabStopIndex = computed(() =>
+        Math.min(this.activeNodeIndex(), Math.max(this.nodes().length - 1, 0)),
+    );
+
+    /** SVG-001: the svg's accessible name — the view's name in front of the
+        canvas's kind word, the name dropped when there is none. */
+    protected readonly svgAccessibleName = computed(() => {
+        const name = this.view()?.name ?? "";
+        return name === "" ? this.canvasLabel() : `${name} ${this.canvasLabel()}`;
+    });
 
     /** The d3 zoom behaviour, attached once the SVG is in the DOM (LDG-16). */
     private zoomBehavior: ZoomBehavior<SVGSVGElement, unknown> | null = null;
@@ -602,6 +698,66 @@ export class ModelViewer {
         return this.svgRef().nativeElement;
     }
 
+    /**
+     * A node click (LDG-17) or its Enter/Space twin: the active node follows
+     * the pointer, so tabbing back in returns to the last node touched
+     * (KEY-GRAPHIC-CLICK-NO-KEYBOARD), and the concept emits as before.
+     * @param index the clicked/activated node's index
+     */
+    protected onNodeClick(index: number): void {
+        this.activeNodeIndex.set(index);
+        const drawn = this.nodes()[index];
+        if (drawn !== undefined) {
+            this.conceptSelected.emit(drawn.concept);
+        }
+    }
+
+    /**
+     * Keys on a focused node (KEY-GRAPHIC-CLICK-NO-KEYBOARD): arrows move
+     * the active node to its nearest neighbour in the pressed direction,
+     * Enter/Space activate it. The event stops here so the root's pan/zoom
+     * (below) does not double-fire; unhandled keys bubble unchanged.
+     * @param event the keydown
+     * @param index the focused node's index
+     */
+    protected onNodeKeydown(event: KeyboardEvent, index: number): void {
+        const direction = ARROW_DIRECTIONS[event.key];
+        if (direction !== undefined) {
+            event.preventDefault();
+            event.stopPropagation();
+            this.moveActiveNode(index, direction);
+            return;
+        }
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            event.stopPropagation();
+            this.onNodeClick(index);
+        }
+    }
+
+    /**
+     * Keys on the svg root (SVG-001): arrows pan the viewport, +/- zoom it,
+     * all through the same d3-zoom behaviour the pointer rides (LDG-16) so
+     * the two can never disagree. Node keydowns stop below and never reach
+     * this handler, which is what keeps the two keyboard halves apart.
+     * @param event the keydown that reached the root
+     */
+    protected onCanvasKeydown(event: KeyboardEvent): void {
+        const direction = ARROW_DIRECTIONS[event.key];
+        if (direction !== undefined) {
+            event.preventDefault();
+            this.pan(direction);
+            return;
+        }
+        if (event.key === "+" || event.key === "=") {
+            event.preventDefault();
+            this.zoomBy(KEY_ZOOM_STEP);
+        } else if (event.key === "-" || event.key === "_") {
+            event.preventDefault();
+            this.zoomBy(1 / KEY_ZOOM_STEP);
+        }
+    }
+
     /** Whether a drawn element holds the selection (LDG-17). */
     protected isSelected(concept: string): boolean {
         return this.selected() === concept;
@@ -614,5 +770,93 @@ export class ModelViewer {
     protected isHighlighted(drawn: DrawnNode): boolean {
         const guid = this.highlightedGuid();
         return guid !== null && guid !== "" && (drawn.node.ref === guid || drawn.node.id === guid);
+    }
+
+    /**
+     * Pan the viewport by one step in the pressed direction (SVG-001): the
+     * arrow reveals what lies that way, so the drawing slides the other
+     * way. The step is divided by the current scale so a pan is the same
+     * screen distance at every zoom, and the move rides d3-zoom so the
+     * pointer transform and the keyboard transform stay one transform.
+     * @param direction the pressed arrow
+     */
+    private pan(direction: CanvasDirection): void {
+        const step = KEY_PAN_STEP / this.currentTransform.k;
+        let dx = 0;
+        let dy = 0;
+        if (direction === "left") {
+            dx = step;
+        } else if (direction === "right") {
+            dx = -step;
+        } else if (direction === "up") {
+            dy = step;
+        } else {
+            dy = -step;
+        }
+        this.zoomBehavior?.translateBy(select(this.svgRef().nativeElement), dx, dy);
+    }
+
+    /**
+     * Zoom by a factor around the viewport centre (SVG-001), through the
+     * same d3-zoom behaviour as the wheel (LDG-16); the [0.5, 3] extent
+     * clamps it exactly as it clamps the pointer.
+     * @param factor the scale multiplier
+     */
+    private zoomBy(factor: number): void {
+        this.zoomBehavior?.scaleBy(select(this.svgRef().nativeElement), factor);
+    }
+
+    /**
+     * Move the active node one step in the pressed direction
+     * (KEY-GRAPHIC-CLICK-NO-KEYBOARD): the nearest other node whose centre
+     * lies in that direction of the current one (model coordinates, so the
+     * order matches the picture), by centre-to-centre distance. No node in
+     * that direction: the active node stays. Focus follows the tab stop, so
+     * the next key press arrives on the new node.
+     * @param from the focused node's index
+     * @param direction the pressed arrow
+     */
+    private moveActiveNode(from: number, direction: CanvasDirection): void {
+        const nodes = this.nodes();
+        const current = nodes[from];
+        if (current === undefined) {
+            return;
+        }
+        const centre = (drawn: DrawnNode) => ({
+            x: drawn.node.x + drawn.node.width / 2,
+            y: drawn.node.y + drawn.node.height / 2,
+        });
+        const fromCentre = centre(current);
+        const liesThatWay = (drawn: DrawnNode): boolean => {
+            const at = centre(drawn);
+            if (direction === "left") {
+                return at.x < fromCentre.x;
+            }
+            if (direction === "right") {
+                return at.x > fromCentre.x;
+            }
+            if (direction === "up") {
+                return at.y < fromCentre.y;
+            }
+            return at.y > fromCentre.y;
+        };
+        let bestIndex = -1;
+        let bestDistance = Number.POSITIVE_INFINITY;
+        nodes.forEach((drawn, index) => {
+            if (index === from || !liesThatWay(drawn)) {
+                return;
+            }
+            const at = centre(drawn);
+            const distance = Math.hypot(at.x - fromCentre.x, at.y - fromCentre.y);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                bestIndex = index;
+            }
+        });
+        if (bestIndex === -1) {
+            return;
+        }
+        this.activeNodeIndex.set(bestIndex);
+        this.nodeEls()[bestIndex]?.nativeElement.focus();
     }
 }

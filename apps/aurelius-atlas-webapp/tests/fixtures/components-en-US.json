@@ -22,6 +22,31 @@
             "next": "Next page",
             "noData": "No data available",
             "previous": "Previous"
+        },
+        "darkMode": {
+            "toggle": "Switch theme (current: {{mode}})"
+        },
+        "pagination": {
+            "range": "Showing {{start}} to {{end}} of {{total}} results",
+            "navigation": "Pagination",
+            "pageOf": "Page {{page}} of {{total}}",
+            "page": "Page {{page}}",
+            "goToPage": "Go to page {{page}}"
+        },
+        "sortableTable": {
+            "rowsLoaded": "{{count}} rows loaded",
+            "selectionCleared": "Selection cleared",
+            "rowSelected": "Row selected",
+            "sortedBy": "Sorted by {{header}}, {{direction}}",
+            "ascending": "ascending",
+            "descending": "descending",
+            "selectRowHint": "Press Enter to select this row"
+        },
+        "infiniteScrollContainer": {
+            "loadingMore": "Loading more results"
+        },
+        "dataQualityPie": {
+            "label": "Data quality score {{value}}%"
         }
     }
 }

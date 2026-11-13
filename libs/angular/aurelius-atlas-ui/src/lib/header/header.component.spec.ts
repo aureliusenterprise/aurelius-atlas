@@ -1,6 +1,7 @@
 import { Component } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { provideRouter } from "@angular/router";
 import { Header } from "./header.component";
 
 describe("Header", () => {
@@ -10,6 +11,9 @@ describe("Header", () => {
     beforeEach(async () => {
         await TestBed.configureTestingModule({
             imports: [Header],
+            // The brand anchor carries RouterLink; the directive injects
+            // Router, so every Header fixture needs one.
+            providers: [provideRouter([])],
         }).compileComponents();
 
         fixture = TestBed.createComponent(Header);
@@ -29,7 +33,9 @@ describe("Header", () => {
         const link = fixture.nativeElement.querySelector(".navbar-brand a.navbar-item");
         const img = link?.querySelector("img");
 
-        expect(link.getAttribute("routerLink")).toBe("/");
+        // RouterLink owns the anchor: the directive serialises its target
+        // into the href, no raw routerLink attribute survives.
+        expect(link.getAttribute("href")).toBe("/");
         expect(img.getAttribute("src")).toBe("assets/aurelius-atlas-logo.png");
         expect(img.getAttribute("alt")).toBe("Aurelius Atlas Data Governance");
     });

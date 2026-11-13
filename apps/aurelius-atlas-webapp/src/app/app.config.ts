@@ -8,7 +8,7 @@ import {
     provideBrowserGlobalErrorListeners,
     provideZonelessChangeDetection,
 } from "@angular/core";
-import { provideRouter, withComponentInputBinding, withInMemoryScrolling } from "@angular/router";
+import { provideRouter, TitleStrategy, withComponentInputBinding, withInMemoryScrolling } from "@angular/router";
 import {
     provideApiBaseUrl,
     provideLineageModelBaseUrl,
@@ -31,6 +31,7 @@ import {
 import Keycloak, { type KeycloakInitOptions } from "keycloak-js";
 
 import { AppConfig, parseAppConfig } from "./config";
+import { AtlasTitleStrategy } from "./title-strategy";
 import { alertsErrorHandlerFactory } from "./alerts/alerts-error-handler";
 import { alertsHttpInterceptor } from "./alerts/alerts-http.interceptor";
 import { retryHttpInterceptor } from "./http/retry-http.interceptor";
@@ -230,6 +231,10 @@ export async function initialize(): Promise<ApplicationConfig> {
                 // ride the router and the address carries the section.
                 withInMemoryScrolling({ anchorScrolling: "enabled", scrollPositionRestoration: "enabled" }),
             ),
+            // The document title follows the route (TITLE-001, WCAG 2.4.2)
+            // instead of staying the static index.html string; the strategy
+            // reads each route's data.title (routes.ts).
+            { provide: TitleStrategy, useClass: AtlasTitleStrategy },
             // The navbar's height on the anchor jump (DD-381): the scroller's
             // option does not reach this path, so the offset is set where the
             // jump reads it.

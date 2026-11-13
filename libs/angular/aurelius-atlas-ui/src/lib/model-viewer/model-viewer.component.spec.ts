@@ -395,6 +395,127 @@ describe("ModelViewer (LDG-12..LDG-18)", () => {
     });
 });
 
+describe("ModelViewer's keyboard model (KEY-GRAPHIC-CLICK-NO-KEYBOARD, SVG-001, SVG-002)", () => {
+    /** A plain keydown, as a keyboard reader dispatches it. */
+    function key(target: Element, keyName: string): KeyboardEvent {
+        const event = new KeyboardEvent("keydown", { key: keyName, bubbles: true, cancelable: true });
+        target.dispatchEvent(event);
+        return event;
+    }
+
+    /** Click a node the pointer way (a KeyboardEvent click would not fire SVG handlers). */
+    function clickNode(node: Element): void {
+        node.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    }
+
+    it("names the canvas and makes it a tab stop (SVG-001)", () => {
+        const { compiled } = setup(lineageModel());
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+
+        // The view is "Lineage", so the accessible name reads "<name> lineage model".
+        expect(svg.getAttribute("aria-label")).toBe("Lineage lineage model");
+        expect(svg.getAttribute("role")).toBe("group");
+        expect(svg.getAttribute("tabindex")).toBe("0");
+    });
+
+    it("gives each node button semantics with a name from its label (KEY-GRAPHIC-CLICK-NO-KEYBOARD)", () => {
+        const { compiled } = setup(archimateModel());
+        const nodes = [...compiled.querySelectorAll("g.node")];
+
+        expect(nodes.map((node) => node.getAttribute("role"))).toEqual(["button", "button", "button"]);
+        // The named nodes carry their drawn name; the junction draws none, so
+        // its concept id names it.
+        expect(nodes.map((node) => node.getAttribute("aria-label"))).toEqual(["Reduce Cost", "junction", "Invoices"]);
+    });
+
+    it("makes exactly one node the tab stop and moves it with the arrows (KEY-GRAPHIC-CLICK-NO-KEYBOARD)", () => {
+        const { created, compiled } = setup(lineageModel());
+        created.detectChanges();
+        const nodes = [...compiled.querySelectorAll("g.node")];
+
+        // Roving tabindex: one 0, the rest -1 — Tab reaches the canvas once.
+        expect(nodes.map((node) => node.getAttribute("tabindex"))).toEqual(["0", "-1", "-1"]);
+
+        // ArrowRight from the first node lands on its nearest right neighbour
+        // (the process at x=320, not the far dataset), and the tab stop follows.
+        key(nodes[0]!, "ArrowRight");
+        created.detectChanges();
+        expect(nodes.map((node) => node.getAttribute("tabindex"))).toEqual(["-1", "0", "-1"]);
+
+        // ArrowLeft walks back; ArrowDown has no neighbour below the row and
+        // leaves the active node where it is.
+        key(nodes[1]!, "ArrowLeft");
+        created.detectChanges();
+        expect(nodes[0]?.getAttribute("tabindex")).toBe("0");
+        key(nodes[0]!, "ArrowDown");
+        created.detectChanges();
+        expect(nodes[0]?.getAttribute("tabindex")).toBe("0");
+    });
+
+    it("opens a node with Enter, and Space, as the click does (KEY-GRAPHIC-CLICK-NO-KEYBOARD)", () => {
+        const { created, compiled } = setup(lineageModel());
+        const emits: string[] = [];
+        created.componentInstance.conceptSelected.subscribe((concept) => emits.push(concept));
+        const nodes = [...compiled.querySelectorAll("g.node")];
+
+        key(nodes[0]!, "Enter");
+        key(nodes[0]!, " ");
+        expect(emits).toEqual([DATASET_ONE, DATASET_ONE]);
+
+        // The pointer path is unchanged (LDG-17), and it moves the active
+        // node so tabbing back in returns to the last node touched.
+        clickNode(nodes[2]!);
+        expect(emits).toEqual([DATASET_ONE, DATASET_ONE, "ds-2"]);
+        created.detectChanges();
+        expect(nodes.map((node) => node.getAttribute("tabindex"))).toEqual(["-1", "-1", "0"]);
+    });
+
+    it("a node's arrows do not reach the root's pan handler (KEY-GRAPHIC-CLICK-NO-KEYBOARD)", () => {
+        const { compiled } = setup(lineageModel());
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+        stubSvgExtent(svg);
+        const zoomGroup = compiled.querySelector("svg.lineage-svg > g") as SVGGElement;
+
+        const nodes = [...compiled.querySelectorAll("g.node")];
+        const event = key(nodes[0]!, "ArrowRight");
+        expect(event.defaultPrevented).toBe(true);
+        // The node consumed it: the zoom group never received a pan.
+        expect(zoomGroup.hasAttribute("transform")).toBe(false);
+    });
+
+    it("the root pans with the arrows and zooms with +/- (SVG-001)", () => {
+        const { compiled } = setup(lineageModel());
+        const svg = compiled.querySelector("svg.lineage-svg") as SVGSVGElement;
+        stubSvgExtent(svg);
+        const zoomGroup = compiled.querySelector("svg.lineage-svg > g") as SVGGElement;
+
+        // ArrowRight reveals what lies right: the drawing slides left.
+        key(svg, "ArrowRight");
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(-40,0) scale(1)");
+        key(svg, "ArrowDown");
+        expect(zoomGroup.getAttribute("transform")).toBe("translate(-40,-40) scale(1)");
+
+        // + zooms in, - zooms out, clamped by the same [0.5, 3] extent as the
+        // wheel (LDG-16): 1 → ×1.2, and out past the floor lands on 0.5.
+        key(svg, "=");
+        expect(zoomGroup.getAttribute("transform")).toContain("scale(1.2)");
+        for (let i = 0; i < 13; i += 1) {
+            key(svg, "-");
+        }
+        expect(zoomGroup.getAttribute("transform")).toContain("scale(0.5)");
+    });
+
+    it("hides the decorative 16x16 type glyph from assistive tech (SVG-002)", () => {
+        const { compiled } = setup(lineageModel());
+        const icons = [...compiled.querySelectorAll(".node-icon svg")];
+        expect(icons.length).toBeGreaterThan(0);
+        for (const icon of icons) {
+            expect(icon.getAttribute("aria-hidden")).toBe("true");
+            expect(icon.getAttribute("focusable")).toBe("false");
+        }
+    });
+});
+
 describe("ModelViewer over an archimate document (LDG-33..LDG-36, DD-418)", () => {
     it("LDG-36: the defs carry all eight legacy markers, dash-proof", () => {
         const { compiled } = setup(archimateModel());

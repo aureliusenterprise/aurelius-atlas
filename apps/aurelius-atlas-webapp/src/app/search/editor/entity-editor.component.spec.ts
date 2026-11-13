@@ -865,7 +865,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
         expect(httpMock.match((request) => request.method === "POST" || request.method === "PUT")).toHaveLength(0);
         const block = compiled.querySelector<HTMLElement>('[data-field="model"]')!;
-        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model (Process) *");
+        // FORM-REQ-001: the red asterisk is silent on its own, so the block label
+        // carries the word too.
+        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model (Process) *(required)");
         expect(normalize(block.querySelector(".aurelius-editor-error")?.textContent)).toBe("Name is required.");
         expect(block.querySelector(".aurelius-relationship-box")?.classList.contains("is-danger")).toBe(true);
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
@@ -905,6 +907,196 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
         expect(compiled.querySelector(".aurelius-editor-notification")).toBeTruthy();
+    });
+
+    it("a required field is announced, not painted (FORM-REQ-001)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        // The native flag rides the schema rule, so browsers and readers see
+        // it (the signal form writes it for required fields).
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        expect(nameInput.required).toBe(true);
+        const nameBlock = compiled.querySelector<HTMLElement>('[data-field="name"]')!;
+        // The red star stays for the eye, aria-hidden; the words carry the
+        // fact into the label a reader hears.
+        expect(normalize(nameBlock.querySelector("label.label")?.textContent)).toBe("Name *(required)");
+        expect(nameBlock.querySelector("label .has-text-danger")?.getAttribute("aria-hidden")).toBe("true");
+
+        // An optional field gets neither.
+        const ownerBlock = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
+        expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.required).toBe(false);
+        expect(normalize(ownerBlock.querySelector("label.label")?.textContent)).toBe("owner");
+    });
+
+    it("a required multi group names its rows and says required (FORM-REQ-001)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        const typedefs: AtlasTypesDef = {
+            ...TYPEDEFS,
+            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                def.name === "Asset"
+                    ? {
+                          ...def,
+                          attributeDefs: [
+                              ...def.attributeDefs!,
+                              { name: "tags", typeName: "array<string>", cardinality: "SET", isOptional: false },
+                          ],
+                      }
+                    : def,
+            ),
+        };
+        arrive(fixture, httpMock, ANSWER, typedefs);
+
+        const block = compiled.querySelector<HTMLElement>('[data-field="tags"]')!;
+        expect(normalize(block.querySelector("label.label")?.textContent)).toBe("tags *(required)");
+        expect(block.querySelector("label .has-text-danger")?.getAttribute("aria-hidden")).toBe("true");
+        // The rows have no label of their own: the field name is each row's
+        // accessible name.
+        const row = block.querySelector<HTMLInputElement>("#editor-tags-0")!;
+        expect(row.getAttribute("aria-label")).toBe("tags");
+    });
+
+    it("an error line travels with its control (FORM-ERR-002)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs(true));
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        // While the reason shows, the control names its line and says it is
+        // invalid — not just red paint.
+        expect(nameInput.getAttribute("aria-invalid")).toBe("true");
+        expect(nameInput.getAttribute("aria-describedby")).toBe("editor-name-error");
+        expect(normalize(compiled.querySelector("#editor-name-error")?.textContent)).toBe("Name is required.");
+
+        // The picker's combobox names the line under it — the same convention
+        // the parent-paired label already uses (EDT-17).
+        const pickerInput = compiled.querySelector<HTMLInputElement>(
+            '[data-field="model"] .aurelius-relationship-input',
+        )!;
+        expect(pickerInput.getAttribute("aria-invalid")).toBe("true");
+        expect(pickerInput.getAttribute("aria-describedby")).toBe("editor-relationship-model-error");
+        expect(normalize(compiled.querySelector("#editor-relationship-model-error")?.textContent)).toBe(
+            "Name is required.",
+        );
+    });
+
+    it("the markdown field passes the required and error wiring through (FORM-ERR-002, FORM-REQ-001)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        const typedefs: AtlasTypesDef = {
+            ...TYPEDEFS,
+            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                def.name === "Asset"
+                    ? {
+                          ...def,
+                          attributeDefs: def.attributeDefs!.map((attribute) =>
+                              attribute.name === "description" ? { ...attribute, isOptional: false } : attribute,
+                          ),
+                      }
+                    : def,
+            ),
+        };
+        arrive(fixture, httpMock, ANSWER, typedefs);
+
+        const area = compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")!;
+        // The schema's required rule reaches the textarea through the
+        // component's `required` input (the custom-control path never writes
+        // the native property itself).
+        expect(area.required).toBe(true);
+
+        area.value = "";
+        area.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        expect(area.getAttribute("aria-invalid")).toBe("true");
+        expect(area.getAttribute("aria-describedby")).toBe("editor-description-error");
+        expect(normalize(compiled.querySelector("#editor-description-error")?.textContent)).toBe("Name is required.");
+    });
+
+    it("the loading region is mounted before the read answers (LR-002)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arriveTypeDefs(fixture, httpMock);
+
+        // The entity read is still open: the region was mounted from the
+        // first paint and now carries the line — a reader already watches
+        // the place the text lands in.
+        const region = compiled.querySelector("output.aurelius-editor-loading");
+        expect(region).toBeTruthy();
+        expect(normalize(region?.textContent)).toBe("Retrieving the entity details");
+
+        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        fixture.detectChanges();
+        flushValidation(httpMock); // the open round the visible form fires (EDT-23)
+
+        // The answer clears the text, not the region: the node is the same
+        // element, only emptied.
+        expect(compiled.querySelector("output.aurelius-editor-loading")).toBe(region);
+        expect(normalize(region?.textContent)).toBe("");
+    });
+
+    it("the save's outcome is announced, not just acted on (LR-005)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        // The store navigates on success; the spy keeps the empty test-bed
+        // route table from rejecting (the navigation itself is EDT-06's).
+        vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "renamed_variants";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        fixture.detectChanges();
+        // The outcome rides an effect, which fills the line at the end of the
+        // tick it was scheduled in — one more pass lets the binding re-read.
+        fixture.detectChanges();
+
+        // The persistent status line holds the outcome the navigation acted
+        // on, so the reader hears it before the drawer goes away.
+        expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent)).toBe("Entity saved");
+    });
+
+    it("the delete's outcome is announced, not just acted on (LR-005)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        // The store navigates on success; the spy keeps the empty test-bed
+        // route table from rejecting (the navigation itself is EDT-19's).
+        vi.spyOn(TestBed.inject(Router), "navigate");
+
+        holdDirective(fixture).held.emit(true);
+        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        request.flush({ guidAssignments: {} });
+        fixture.detectChanges();
+        fixture.detectChanges(); // the outcome effect fills at the tick's end
+
+        expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent)).toBe("Entity deleted");
+    });
+
+    it("a refused delete fills no outcome line (LR-005: the alerts carry it)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+
+        holdDirective(fixture).held.emit(true);
+        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        request.flush(
+            { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
+            { status: 403, statusText: "Forbidden" },
+        );
+        fixture.detectChanges();
+        fixture.detectChanges();
+
+        // The refusal is an alert (EDT-08's shape), not an "Entity deleted"
+        // lie on the outcome line.
+        expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
+        expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent ?? "")).toBe("");
     });
 
     it("a refused save adds one alert and keeps the drawer (EDT-08)", () => {

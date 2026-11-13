@@ -1,5 +1,7 @@
 import { CommonModule } from "@angular/common";
-import { ChangeDetectionStrategy, Component, input, model, output } from "@angular/core";
+import { ChangeDetectionStrategy, Component, ElementRef, effect, input, model, output, viewChild } from "@angular/core";
+
+let nextModalId = 0;
 
 @Component({
     selector: "aurelius-atlas-ui-modal",
@@ -56,6 +58,14 @@ export class Modal {
     readonly ariaLabel = input("Close");
 
     /**
+     * Accessible name of the layer for the plain content anatomy (title
+     * unset), where no visible title exists to name the dialog
+     * (MODAL-NAME-001). Plain-anatomy callers must set it; the card anatomy
+     * is named by its header heading instead and ignores this input.
+     */
+    readonly label = input<string>();
+
+    /**
      * Emits when the user presses the confirm button (card anatomy). Named
      * `confirmRequested` — `confirm` is a standard DOM event name, which the
      * Angular ESLint rule bans for outputs.
@@ -69,6 +79,60 @@ export class Modal {
      * reacts to this to clear its own state.
      */
     readonly cancelRequested = output<void>();
+
+    /**
+     * The id of the card header's title heading, so the dialog can name
+     * itself through aria-labelledby (DLG-HEAD-001). Angular 22 has no
+     * public id generator, so a module counter pairs them, as the select's
+     * label does.
+     */
+    protected readonly headingId = `aurelius-atlas-ui-modal-heading-${nextModalId++}`;
+
+    /** The native dialog element, once the layer renders. */
+    private readonly host = viewChild<ElementRef<HTMLDialogElement>>("host");
+
+    /** What was focused when the modal opened, to restore focus on close. */
+    private opener: HTMLElement | null = null;
+
+    constructor() {
+        // The dialog's open choreography (UIC-40, DD-543): while `active`
+        // is set the effect records the focused element as the opener and
+        // calls showModal() on the rendered dialog (top layer, focus
+        // confined, the page behind inert); the cleanup closes the dialog
+        // and restores focus when the layer goes away. The guards keep a
+        // dialog the platform already opened, or one without the API (the
+        // jsdom unit suite), from throwing — there the Bulma layer renders
+        // in place of the top layer, and only the focus work is skipped.
+        // The `active()` and `host()` reads make the effect re-run when the
+        // flag flips and when the panel appears (the drawer's pattern).
+        effect((onCleanup) => {
+            if (!this.active()) {
+                return;
+            }
+            this.opener ??= document.activeElement instanceof HTMLElement ? document.activeElement : null;
+            const dialog = this.host()?.nativeElement;
+            if (!dialog) {
+                return;
+            }
+            if (!dialog.open) {
+                if (typeof dialog.showModal === "function") {
+                    dialog.showModal();
+                } else {
+                    // No top-layer API (the jsdom unit suite): the open
+                    // attribute shows the Bulma layer in place — the
+                    // drawer's fallback path — with the focus work skipped.
+                    dialog.open = true;
+                }
+            }
+            onCleanup(() => {
+                if (dialog.open && typeof dialog.close === "function") {
+                    dialog.close();
+                }
+                this.opener?.focus();
+                this.opener = null;
+            });
+        });
+    }
 
     /**
      * Close the modal.
@@ -113,12 +177,30 @@ export class Modal {
     }
 
     /**
-     * Handle Escape: dismisses the card anatomy, whose `role="dialog"` makes
-     * it the expected keyboard path (the backdrop is the pointer path).
-     * Ignored by the plain anatomy, as with backdrop clicks.
+     * Handle the dialog's `cancel` (the platform's Escape path, UIC-40):
+     * prevent the bare close only for the card anatomy, so dismissal stays
+     * its `cancelRequested` path. The plain anatomy lets the browser close
+     * the dialog (MODAL-ESC-001 — preventing there killed Escape for it
+     * too); its callers learn of the close through the `close` event, and
+     * emit nothing, as with backdrop clicks.
+     * @param event the cancel event, cancellable
      */
-    protected onEscape(): void {
-        this.onBackdropClick();
+    protected onCancel(event: Event): void {
+        if (this.title() !== undefined) {
+            event.preventDefault();
+            this.dismiss();
+        }
+    }
+
+    /**
+     * Handle the dialog's `close` (a native close, from the platform Escape
+     * path on the plain anatomy): mirror it into the `active` model so the
+     * layer and the caller's state stay in step. The card anatomy's Escape
+     * and the component's own close paths go through the model, where the
+     * effect already closes the dialog.
+     */
+    protected onNativeClose(): void {
+        this.active.set(false);
     }
 
     /**

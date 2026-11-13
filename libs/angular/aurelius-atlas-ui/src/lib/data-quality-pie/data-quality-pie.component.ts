@@ -106,4 +106,18 @@ export class DataQualityPie {
     protected get title(): string {
         return `${this.value()}%`;
     }
+
+    /**
+     * ALT-001 (WCAG 1.1.1): the ring is a graphic that carries the score,
+     * so it is exposed as a named image — the tooltip alone never reaches
+     * a screen reader.
+     */
+    @HostBinding("attr.role")
+    protected readonly role = "img";
+
+    /** ALT-001: the announced name, the percent in words. */
+    @HostBinding("attr.aria-label")
+    protected get ariaLabel(): string {
+        return $localize`:@@components.dataQualityPie.label:Data quality score ${this.value()}:value:%`;
+    }
 }

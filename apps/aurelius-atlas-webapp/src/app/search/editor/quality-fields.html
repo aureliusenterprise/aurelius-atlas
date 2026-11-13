@@ -188,6 +188,7 @@
                     [attr.max]="thresholdMax()"
                     step="0.05"
                     [value]="thresholdSliderValue()"
+                    [attr.aria-valuetext]="thresholdPercentValue() + '%'"
                     (input)="thresholdChanged($any($event.target).value)"
                 />
                 <div class="control has-icons-right aurelius-quality-threshold-number">

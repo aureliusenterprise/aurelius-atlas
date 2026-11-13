@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, ElementRef, input, signal, viewChild } from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faBars, type IconDefinition } from "@fortawesome/free-solid-svg-icons";
 
@@ -48,12 +48,28 @@ export class DetailsNavigation {
      */
     protected readonly isOpen = signal(false);
 
+    /** The toggle button — Escape hands the focus back to it (2.4.7). */
+    protected readonly trigger = viewChild.required<ElementRef<HTMLButtonElement>>("trigger");
+
     /**
-     * Toggle the dropdown and drop the button's focus, as the legacy
-     * `toggleIsActive` blurred — the focus ring is not the open state.
+     * Toggle the dropdown, keeping the button's focus (DETAILS-NAV-FOCUS):
+     * the legacy `toggleIsActive` blurred, which dropped keyboard readers
+     * on the floor between clicks; the focus stays on the trigger, whose
+     * `aria-expanded` is the state the reader announces.
      */
-    protected onToggleClick(event: Event): void {
+    protected onToggleClick(): void {
         this.isOpen.update((open) => !open);
-        (event.currentTarget as HTMLButtonElement).blur();
+    }
+
+    /**
+     * Escape closes an open dropdown and returns the focus to the trigger
+     * (DETAILS-NAV-FOCUS, 2.4.7) — the menu's links are projected content,
+     * so the keydown is caught on the dropdown wrapper, wherever it began.
+     */
+    protected onEscape(): void {
+        if (this.isOpen()) {
+            this.isOpen.set(false);
+            this.trigger().nativeElement.focus();
+        }
     }
 }

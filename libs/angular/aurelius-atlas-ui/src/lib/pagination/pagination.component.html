@@ -3,7 +3,22 @@
 @let _hasNextPage = hasNextPage();
 @let _pageTokens = pageTokens();
 
-<nav class="pagination" role="navigation" aria-label="pagination">
+<!-- TABLE-004 (WCAG 1.3.1): the visible range line — where in the result
+     set this page sits, not just which buttons are lit. -->
+@if (totalItems() > 0) {
+    <p class="aurelius-pagination-range is-size-7 has-text-grey" id="{{ rangeId }}">{{ rangeText() }}</p>
+}
+<!-- TABLE-004 (WCAG 4.1.3): the persistent live region — always in the DOM,
+     a page change only swaps its text. The native <output> carries the
+     status role and polite live region implicitly (S6819). -->
+<output class="is-sr-only">{{ pageAnnouncement() }}</output>
+
+<nav
+    class="pagination"
+    aria-label="pagination"
+    i18n-aria-label="@@components.pagination.navigation"
+    [attr.aria-describedby]="totalItems() > 0 ? rangeId : null"
+>
     <!-- Previous/next labels: Aurelius table shell chrome (DD-136). The i18n id
          must equal the dictionary path exactly — a `|description` suffix joins
          the extracted id, and the key-keyed bridge would not match it. -->
@@ -38,7 +53,7 @@
                         type="button"
                         class="pagination-link"
                         [class.is-current]="token === _currentPageDisplay"
-                        [attr.aria-label]="token === _currentPageDisplay ? 'Page ' + token : 'Go to page ' + token"
+                        [attr.aria-label]="token === _currentPageDisplay ? pageLabel(token) : goToPageLabel(token)"
                         [attr.aria-current]="token === _currentPageDisplay ? 'page' : null"
                         (click)="goToPage(token - 1)"
                     >
