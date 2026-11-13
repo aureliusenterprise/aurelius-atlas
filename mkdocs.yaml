@@ -181,6 +181,7 @@ nav:
                 - 060. The App Search API returns: architecture/adr/060-the-app-search-api-returns-as-a-view-over-the-one-store.md
                 - 061. The governance banner answers live verdicts: architecture/adr/061-the-governance-banner-answers-live-verdicts.md
                 - 062. The pull-request gate proves the critical and high scenarios: architecture/adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md
+                - 063. Each tenant is an organization with its own store: architecture/adr/063-each-tenant-is-an-organization-with-its-own-store.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md
