@@ -4,7 +4,7 @@ Apache Atlas has no tenants (ADR 063); the expected answers are the spec's. Toke
 provider (``fake_issuer``), with the organization claim Keycloak's Organization Group Membership mapper writes.
 """
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
@@ -36,16 +36,22 @@ async def tenant_seen(request: Request) -> dict[str, str | None]:
 
 
 def serve(settings: ServerSettings, *, enabled: bool) -> FastAPI:
-    """The application with tenancy on or off, acme and globex provisioned, and a route showing the tenant."""
-    app = create_app(settings.model_copy(update={"tenancy_enabled": enabled, "tenancy_tenants": ["acme", "globex"]}))
+    """The application with tenancy on or off, reading the tenants index at every request, and a route showing the
+    tenant.
+    """  # noqa: D205 - one sentence
+    app = create_app(settings.model_copy(update={"tenancy_enabled": enabled, "tenancy_refresh_seconds": 0}))
     app.router.routes.insert(0, APIRoute(TENANT, tenant_seen, methods=["GET"]))
     return app
 
 
 @pytest.fixture
-async def tenanted(settings: ServerSettings, fake_es: FakeClient) -> AsyncIterator[httpx.AsyncClient]:
-    """A client without credentials of the started application with tenancy on, keeping cookies."""
-    _ = fake_es
+async def tenanted(
+    settings: ServerSettings, record_tenants: Callable[..., Awaitable[None]]
+) -> AsyncIterator[httpx.AsyncClient]:
+    """A client without credentials of the started application with tenancy on, acme and globex provisioned,
+    keeping cookies.
+    """  # noqa: D205 - one sentence
+    await record_tenants("acme", "globex")
     app = serve(settings, enabled=True)
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)

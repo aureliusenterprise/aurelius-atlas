@@ -11,6 +11,7 @@ from aurelius_atlas_server.authentication import (
     SESSION_COOKIE,
     Login,
     SessionStore,
+    current_tenancy,
     set_session_cookie,
 )
 from aurelius_atlas_server.errors import AtlasError, atlas_error_handler
@@ -46,6 +47,7 @@ async def login(request: Request) -> Response:
         login_state = None if session is None else session.login
         if session is None or login_state is None or params.get("state") != login_state.state or "error" in params:
             return PlainTextResponse(SIGN_IN_FAILED, status_code=401)
+        await current_tenancy(request)  # the sign-in names its user by the latest provisioned tenants (TPR-07)
         try:
             await oidc.sign_in(session, login_state, params["code"], redirect_uri)
         except SignInError:

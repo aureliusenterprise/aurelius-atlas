@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable, Sequence
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
@@ -62,7 +62,9 @@ from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.snapshot_watcher import SnapshotWatcher
 from aurelius_atlas_server.task_worker import TaskWorker
-from aurelius_atlas_server.tenant_stores import TenantStores, index_prefix, open_stores
+from aurelius_atlas_server.tenancy import Tenancy
+from aurelius_atlas_server.tenant_stores import TenantStores, TenantStoreSets, index_prefix, open_stores
+from aurelius_atlas_server.tenants import TenantDirectory, TenantsIndex
 
 NAME = "aurelius-atlas-server"
 LOGGER = logging.getLogger(NAME)
@@ -99,15 +101,23 @@ def build_auth(settings: ServerSettings, http: httpx.Client | None = None) -> Ke
     )
 
 
-def build_oidc(settings: ServerSettings, auth: KeycloakAuth, http: httpx.AsyncClient | None = None) -> OidcClient:
-    """The server's client at the provider, which browsers sign in with (AUT-05)."""
+def build_oidc(
+    settings: ServerSettings,
+    auth: KeycloakAuth,
+    http: httpx.AsyncClient | None = None,
+    *,
+    tenancy: Callable[[], Tenancy | None] | None = None,
+) -> OidcClient:
+    """The server's client at the provider, which browsers sign in with (AUT-05); ``tenancy`` answers the latest
+    provisioned tenants while tenancy is on (TPR-07).
+    """  # noqa: D205 - one sentence
     return OidcClient(
         auth,
         client_id=settings.auth_client_id,
         client_secret=settings.auth_client_secret.get_secret_value(),
         principal_claim=settings.auth_principal_claim,
         groups_claim=settings.auth_groups_claim,
-        tenancy=settings.tenancy(),
+        tenancy=tenancy,
         ca_file=None if settings.auth_ca_file is None else str(settings.auth_ca_file),
         http=http,
     )
@@ -136,7 +146,13 @@ def create_app(
     SNP-03).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
-    auth, oidc, sessions = _authentication(settings, auth, oidc_http)
+    tenancy = settings.tenancy()
+    directory = (
+        None
+        if tenancy is None
+        else TenantDirectory(tenancy, TenantsIndex(store), refresh_seconds=settings.tenancy_refresh_seconds)
+    )
+    auth, oidc, sessions = _authentication(settings, auth, oidc_http, directory)
     metrics_util = AtlasMetricsUtil()
 
     @asynccontextmanager
@@ -150,7 +166,7 @@ def create_app(
         ] = []
         await store.open()
         try:
-            opened = await _open_store_sets(store, settings)
+            opened = await _open_store_sets(store, settings, directory)
             app.state.tenant_stores = opened
             default = opened[INDEX_PREFIX]
             # the default store set, which the workers and the start audit run on alone until 15.4 (TSS-07, DD-571)
@@ -198,8 +214,9 @@ def create_app(
     app.state.store = store
     app.state.metrics_util = metrics_util
     app.state.embedder = None  # the embeddings client, once embedding is on and the server has started (DD-443)
-    # the tenancy is None while it is off: no request has a tenant (TEN-01)
-    app.state.auth, app.state.oidc, app.state.sessions, app.state.tenancy = auth, oidc, sessions, settings.tenancy()
+    # the tenancy and its directory are None while it is off: no request has a tenant (TEN-01, TPR-09)
+    app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
+    app.state.tenancy, app.state.tenant_directory = tenancy, directory
     _mount(app, settings)
 
     _telemetry(app, settings)
@@ -291,27 +308,45 @@ async def _close(auth: KeycloakAuth, oidc: OidcClient) -> None:
 
 
 def _authentication(
-    settings: ServerSettings, auth: KeycloakAuth | None, oidc_http: httpx.AsyncClient | None
+    settings: ServerSettings,
+    auth: KeycloakAuth | None,
+    oidc_http: httpx.AsyncClient | None,
+    directory: TenantDirectory | None,
 ) -> tuple[KeycloakAuth, OidcClient, SessionStore]:
-    """The verifier, the sign-in client and the sessions (AUT-02 to AUT-06)."""
+    """The verifier, the sign-in client naming users by the directory's tenants, and the sessions (AUT-02 to
+    AUT-06, TPR-07).
+    """  # noqa: D205 - one sentence
     verifier = auth if auth is not None else build_auth(settings)
-    return verifier, build_oidc(settings, verifier, oidc_http), SessionStore(settings.session_timeout_seconds)
+    tenancy = None if directory is None else (lambda: directory.tenancy)
+    oidc = build_oidc(settings, verifier, oidc_http, tenancy=tenancy)
+    return verifier, oidc, SessionStore(settings.session_timeout_seconds)
 
 
-async def _open_store_sets(store: ElasticsearchStore, settings: ServerSettings) -> dict[str, TenantStores]:
-    """The default store set and, with tenancy on, each provisioned tenant's, by index prefix (TSS-01, TSS-04)."""
-    tenancy = settings.tenancy()
-    tenants = [] if tenancy is None else sorted(tenancy.tenants)
-    opened: dict[str, TenantStores] = {}
-    for prefix in [INDEX_PREFIX, *(index_prefix(tenant, tenancy) for tenant in tenants)]:
-        opened[prefix] = await open_stores(
+async def _open_store_sets(
+    store: ElasticsearchStore, settings: ServerSettings, directory: TenantDirectory | None
+) -> TenantStoreSets:
+    """The default store set and, with tenancy on, each provisioned tenant's, by index prefix, the models loaded
+    (TSS-01, TSS-04, TPR-08); a tenant provisioned later opens on demand, without them.
+    """  # noqa: D205 - one sentence
+
+    async def opened(prefix: str, models_dirs: Sequence[Path] = ()) -> TenantStores:
+        return await open_stores(
             store,
             prefix,
-            models_dirs=settings.model_dirs,
+            models_dirs=models_dirs,
             embedding_dimensions=_dimensions(settings),
             typedef_refresh_seconds=settings.typedef_refresh_seconds,
         )
-    return opened
+
+    tenancy = None
+    if directory is not None:
+        await directory.index.prepare()
+        tenancy = await directory.load()
+    tenants = [] if tenancy is None else sorted(tenancy.tenants)
+    sets: dict[str, TenantStores] = {}
+    for prefix in [INDEX_PREFIX, *(index_prefix(tenant, tenancy) for tenant in tenants)]:
+        sets[prefix] = await opened(prefix, settings.model_dirs)
+    return TenantStoreSets(sets, opened)
 
 
 def _start(metrics_util: AtlasMetricsUtil) -> None:

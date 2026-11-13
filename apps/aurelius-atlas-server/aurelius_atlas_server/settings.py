@@ -1,14 +1,14 @@
 """The server's settings, read once at start-up from the environment (SRV-01, SRV-03, SRV-06)."""
 
 from pathlib import Path
-from typing import Literal, Self
+from typing import Literal
 
 from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
 from aurelius_atlas_store_es.snapshots import SnapshotPolicy
-from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr, model_validator
+from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from aurelius_atlas_server.tenancy import Tenancy
@@ -322,26 +322,20 @@ class ServerSettings(StoreAccessSettings):
     tenancy_operator_role: str = "atlas-operator"
     """The realm role that marks an operator, who holds at most ``atlas-read`` in other tenants (TEN-06)."""
 
-    tenancy_tenants: list[str] = Field(default_factory=list)
-    """The provisioned tenants beside the operator organization, until 15.3's tenants index (TEN-04, DD-565)."""
-
-    @model_validator(mode="after")
-    def _operators_are_not_a_tenant(self) -> Self:
-        """The operator organization is never among ``tenancy_tenants`` (DD-567)."""
-        if self.tenancy_operator_organization in self.tenancy_tenants:
-            msg = f"tenancy_tenants must not name the operator organization {self.tenancy_operator_organization}"
-            raise ValueError(msg)
-        return self
+    tenancy_refresh_seconds: float = Field(default=30, ge=0)
+    """How long the server serves its last read of the tenants index before it reads it again, and how long
+    ``provisioning remove`` waits before it deletes a tenant's indices (TPR-05, TPR-07, DD-575)."""
 
     def tenancy(self) -> Tenancy | None:
-        """How tenancy reads a token while ``tenancy_enabled``, else None: no request has a tenant (TEN-01)."""
+        """How tenancy reads a token while ``tenancy_enabled``, else None: no request has a tenant (TEN-01). The
+        provisioned tenants come from the tenants index (TPR-07), so none are listed here.
+        """  # noqa: D205 - one sentence
         if not self.tenancy_enabled:
             return None
         return Tenancy(
             organization_claim=self.auth_organization_claim,
             operator_organization=self.tenancy_operator_organization,
             operator_role=self.tenancy_operator_role,
-            tenants=frozenset(self.tenancy_tenants),
         )
 
     @property

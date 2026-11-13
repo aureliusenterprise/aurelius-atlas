@@ -47,7 +47,8 @@ class OidcClient:
     """The client ``client_id`` with ``client_secret`` at the provider ``auth`` verifies tokens of.
 
     ``principal_claim`` and ``groups_claim`` name a user from their access token (AUT-03), and ``tenancy``, while
-    it is on, the tenant they act in and their roles there (TEN-03 to TEN-06).
+    it is on, the tenant they act in and their roles there, as its latest provisioned tenants say (TEN-03 to
+    TEN-06, TPR-07).
     """
 
     def __init__(  # noqa: PLR0913 - the client's identity and how it names users
@@ -58,7 +59,7 @@ class OidcClient:
         client_secret: str,
         principal_claim: str,
         groups_claim: str,
-        tenancy: Tenancy | None = None,
+        tenancy: Callable[[], Tenancy | None] | None = None,
         ca_file: str | None = None,
         http: httpx.AsyncClient | None = None,
         clock: Callable[[], float] = time.time,
@@ -158,7 +159,7 @@ class OidcClient:
             principal_claim=self._principal_claim,
             groups_claim=self._groups_claim,
             client_id=self._client_id,
-            tenancy=self._tenancy,
+            tenancy=None if self._tenancy is None else self._tenancy(),
         )
         session.access_token = tokens.access_token
         session.access_expires = self._clock() + tokens.expires_in

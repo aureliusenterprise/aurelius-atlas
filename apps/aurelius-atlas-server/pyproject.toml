@@ -6,6 +6,7 @@ dependencies = [
     "aurelius-atlas-otel",
     "aurelius-atlas-quality",
     "aurelius-atlas-store-es",
+    "elasticsearch[async]>=9.5.1,<10",
     "fastapi>=0.162.0",
     "httpx2>=2.0.0",
     "opentelemetry-instrumentation-fastapi>=0.65b0",

@@ -4,7 +4,7 @@ Apache Atlas has no tenants (ADR 063); the expected answers are the spec's. Toke
 provider (``fake_issuer``), with the organization claim Keycloak's Organization Group Membership mapper writes.
 """
 
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from types import SimpleNamespace
 from typing import Any
 
@@ -13,7 +13,8 @@ import pytest
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server.tenancy import Tenancy
-from aurelius_atlas_server.tenant_stores import index_prefix, stores
+from aurelius_atlas_server.tenant_stores import index_prefix, store_aliases, stores
+from aurelius_atlas_server.tenants import TENANTS_INDEX
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from fake_issuer import FakeIssuer
 from fastapi import FastAPI
@@ -28,10 +29,12 @@ TENANCY = Tenancy(tenants=frozenset({"acme", "globex"}))
 
 
 @pytest.fixture
-async def served(settings: ServerSettings, fake_es: FakeClient) -> AsyncIterator[tuple[FastAPI, httpx.AsyncClient]]:
+async def served(
+    settings: ServerSettings, record_tenants: Callable[..., Awaitable[None]]
+) -> AsyncIterator[tuple[FastAPI, httpx.AsyncClient]]:
     """The started application with tenancy on, acme and globex provisioned, and a client without credentials."""
-    _ = fake_es
-    app = create_app(settings.model_copy(update={"tenancy_enabled": True, "tenancy_tenants": ["acme", "globex"]}))
+    await record_tenants("acme", "globex")
+    app = create_app(settings.model_copy(update={"tenancy_enabled": True}))
     async with app.router.lifespan_context(app):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url="https://aurelius-atlas") as client:
@@ -44,7 +47,7 @@ def member(issuer: FakeIssuer, tenant: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
 
 
-@pytest.mark.covers(f"{S}.index_prefix", rules=["TSS-01", "TSS-02", "TSS-03"])
+@pytest.mark.covers(f"{S}.index_prefix", f"{S}.tenant_prefix", rules=["TSS-01", "TSS-02", "TSS-03"])
 def test__a_tenants_indices_carry_its_alias_and_the_operators_keep_the_default() -> None:
     """No tenancy, no tenant and the operator organization: the default prefix; another tenant: its own."""
     assert index_prefix("acme", None) == index_prefix(None, TENANCY) == INDEX_PREFIX == "aurelius-atlas"
@@ -52,14 +55,18 @@ def test__a_tenants_indices_carry_its_alias_and_the_operators_keep_the_default()
     assert index_prefix("acme", TENANCY) == "aurelius-atlas-tenant-acme"
 
 
-@pytest.mark.covers(f"{S}.open_stores", f"{S}.load_models", rules=["TSS-03", "TSS-04"])
+@pytest.mark.covers(f"{S}.open_stores", f"{S}.load_models", f"{S}.store_aliases", rules=["TSS-03", "TSS-04", "TPR-05"])
 async def test__each_provisioned_tenant_gets_every_default_index_at_start(
     served: tuple[FastAPI, httpx.AsyncClient], fake_es: FakeClient
 ) -> None:
     """Every alias of the default store set, and the index behind it, exists under each tenant's prefix alone."""
     app, _ = served
-    default = {alias: index for alias, index in fake_es.aliases.items() if f"{INDEX_PREFIX}-tenant-" not in alias}
-    assert {f"{INDEX_PREFIX}-entities", f"{INDEX_PREFIX}-typedefs", f"{INDEX_PREFIX}-entity-audits"} <= set(default)
+    default = {
+        alias: index
+        for alias, index in fake_es.aliases.items()
+        if f"{INDEX_PREFIX}-tenant-" not in alias and alias != TENANTS_INDEX
+    }
+    assert sorted(default) == sorted(store_aliases(INDEX_PREFIX))  # removal knows every index (DD-574)
     for tenant in ("acme", "globex"):
         tenant_prefix = f"{INDEX_PREFIX}-tenant-{tenant}"
         for alias, index in default.items():

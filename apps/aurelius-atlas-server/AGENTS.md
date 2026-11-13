@@ -60,9 +60,17 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
   organization claim and its roles from that organization's groups, or refuses with 403 (TEN-01 to TEN-07,
   ADR 063). The tenant is on `request.state.tenant` and the core's `RequestContext` (TEN-08)
 - `aurelius_atlas_server/tenant_stores.py` — `TenantStores`, `open_stores`, `stores`: the default store set and,
-  with tenancy on, each provisioned tenant's (`aurelius-atlas-tenant-<alias>-*`), opened at start and kept in
-  `app.state.tenant_stores` (TSS-03, TSS-04). **A route reads its stores through `stores(request)`**, never
-  from `app.state`, which keeps the default set for the workers alone (TSS-06, TSS-07, DD-570)
+  with tenancy on, each provisioned tenant's (`aurelius-atlas-tenant-<alias>-*`), opened at start, or on its
+  first request when provisioned later, and kept in `app.state.tenant_stores` (TSS-03, TSS-04, TPR-08). **A
+  route reads its stores through `stores(request)`**, never from `app.state`, which keeps the default set for
+  the workers alone (TSS-06, TSS-07, DD-570). A new index of a store set joins `STORE_SUFFIXES`, or removal
+  leaves it behind (DD-574); a test fails until it does
+- `aurelius_atlas_server/tenants.py` — `TenantsIndex`, `TenantDirectory`: the tenants' records in
+  `aurelius-atlas-tenants` and the provisioned tenants the server reads from them, again every
+  `tenancy_refresh_seconds` (TPR-01, TPR-07, DD-575). Tests record tenants with the `record_tenants` fixture
+- `aurelius_atlas_server/provisioning.py` — the command `python -m aurelius_atlas_server.provisioning
+provision|trust|list|remove`, reading the server's settings: a tenant's indices, models and sample made by the
+  server's own start sequence and import, its record kept (TPR-02 to TPR-06, DD-573)
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)
