@@ -8,16 +8,22 @@
          must stay out of the tab order and off the click path. -->
     <div class="aurelius-drawer" [class.is-closing]="closing()" [attr.inert]="closing() ? '' : null">
         <!--
-            Scrim dismissal is a pointer affordance; the keyboard path is
-            the Escape handler on the dialog (the Modal's S1077 precedent —
-            Bulma's overlay layers have no focusable scrim element).
+            The scrim is the dismiss control, so it is a native <button>:
+            Enter/Space on it is the keyboard equivalent the linters ask
+            for, and it answers the pointer the same way. It stays out of
+            the tab order and the accessibility tree (tabindex -1,
+            aria-hidden), because the dialog's Escape and the head's close
+            button are the keyboard and screen-reader paths. A focused
+            invisible scrim would trap the Tab ring. The scss resets the
+            button chrome to the flat Bulma scrim.
         -->
-        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- The scrim is the pointer path by design; Escape on the dialog is the keyboard
-             path. The NOSONAR inside the tag suppresses S1077 and
-             Web:MouseEventWithoutKeyboardEquivalentCheck on this line. -->
-        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()"><!-- NOSONAR --></div>
-        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <button
+            type="button"
+            class="aurelius-drawer-scrim"
+            tabindex="-1"
+            aria-hidden="true"
+            (click)="onBackdropClick()"
+        ></button>
         <!-- The panel is a native <dialog> (its role needs no ARIA). It is
              never opened modally — the `open` attribute keeps it in this
              element's stacking context beside the scrim, where the slide-out

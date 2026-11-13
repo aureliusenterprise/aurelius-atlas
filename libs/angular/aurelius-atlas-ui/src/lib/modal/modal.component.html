@@ -20,18 +20,23 @@
         (close)="onNativeClose()"
     >
         <!--
-            Backdrop dismissal stays the pointer affordance it was (the
-            S1077 precedent): the scrim div is the click target, Escape on
-            the dialog the keyboard path. The scrim paints the layer, so
-            the UA `::backdrop` stays transparent (the scss keeps it out of
-            the scroll chain).
+            Backdrop dismissal is a control, so the scrim is a native
+            <button>: Enter/Space on it is the keyboard equivalent the
+            linters ask for, and it answers the pointer as before. It stays
+            out of the tab order and the accessibility tree (tabindex -1,
+            aria-hidden), because the dialog's Escape and the card's close
+            button are the keyboard and screen-reader paths. The scrim
+            paints the layer, so the UA `::backdrop` stays transparent (the
+            scss keeps it out of the scroll chain). The plain anatomy's
+            handler ignores the click (UIC-09), but keeps the element.
         -->
-        <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
-        <!-- The scrim is the pointer path by design; Escape on the dialog is the keyboard
-             path. The NOSONAR inside the tag suppresses S1077 and
-             Web:MouseEventWithoutKeyboardEquivalentCheck on this line. -->
-        <div class="modal-background" (click)="onBackdropClick()"><!-- NOSONAR --></div>
-        <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
+        <button
+            type="button"
+            class="modal-background"
+            tabindex="-1"
+            aria-hidden="true"
+            (click)="onBackdropClick()"
+        ></button>
         <div [class]="_isCard ? 'modal-card' : 'modal-content'">
             @if (_isCard) {
                 <header class="modal-card-head">

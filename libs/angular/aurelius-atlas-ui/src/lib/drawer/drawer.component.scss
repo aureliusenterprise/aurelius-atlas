@@ -52,6 +52,12 @@ $aurelius-drawer-motion-duration: 200ms;
 
 .aurelius-drawer-scrim {
     animation: aurelius-drawer-fade-in $aurelius-drawer-motion-duration ease-out;
+    // The scrim is a dismiss <button> (DD-551): the UA paints a button face,
+    // a border, and padding a flat overlay must not carry, so the resets
+    // leave Bulma's scrim recipe the only visual. The -webkit spelling is
+    // the search field's precedent (Safari's button face).
+    -webkit-appearance: none;
+    appearance: none;
     // Bulma's modal-background recipe (modal.scss), spelled from the root
     // scheme ramp — the token itself is .modal-scoped and undefined here
     // (DD-163).
@@ -59,6 +65,7 @@ $aurelius-drawer-motion-duration: 200ms;
         --bulma-modal-background-background-color,
         hsla(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-invert-l), 0.86)
     );
+    border: 0;
     inset: 0;
     // Scroll containment (UIC-41): the scrim becomes a non-scrollable
     // scroll container (overflow: hidden) that traps its gestures
@@ -66,6 +73,7 @@ $aurelius-drawer-motion-duration: 200ms;
     // scrolls the page behind the open drawer.
     overflow: hidden;
     overscroll-behavior: contain;
+    padding: 0;
     position: absolute;
 }
 

@@ -47,6 +47,19 @@
         outline: none;
     }
 
+    // The scrim is a dismiss <button> (DD-551): the UA paints a button
+    // border and padding a flat overlay must not carry, so they reset here.
+    // The -webkit spelling is the search field's precedent (Safari's button
+    // face). The dimming stays Bulma's `.modal-background` recipe — an
+    // author rule already beats the UA `buttonface` background, so this
+    // block sets no background of its own.
+    .modal-background {
+        -webkit-appearance: none;
+        appearance: none;
+        border: 0;
+        padding: 0;
+    }
+
     &::backdrop {
         background: transparent;
         overflow: hidden;

@@ -270,3 +270,40 @@ it fixes the same window, but the class rule needs no breakpoint to remember.
 **Consequences.** The field narrows to about 250px at the tightest width, which still shows the
 placeholder. The unit spec pins the `hero-controls` hook, not the pixels (repo rule: layout ships
 as structure). The live browser check covers 420px to 1280px.
+
+### DD-551. The overlay scrims are native dismiss buttons
+
+- **Status:** Accepted
+- **Increment:** 7.30
+- **Date:** 2026-11-13
+
+**Decision.** The drawer scrim and the modal scrim become `<button type="button">` elements
+instead of `<div>` elements with a click handler. Each carries `tabindex="-1"` and
+`aria-hidden="true"`, so it stays out of the tab order and out of the accessibility tree. The
+component SCSS resets the UA button chrome (appearance, border, padding) so the flat Bulma scrim
+look is unchanged. The earlier `<!-- NOSONAR -->` comments and the ESLint disable blocks are
+deleted.
+
+**Reason.** SonarCloud's Web:MouseEventWithoutKeyboardEquivalentCheck flagged the two scrims
+(MAJOR, new code on PR 336) and dropped the ui-lib gate to B. A `<div>` click target has no
+keyboard equivalent, and the rule names the fix: use a button. The NOSONAR comments added first
+never worked: the Web analyzer does not read them inside Angular templates, and both issues stayed
+OPEN on the server. A button is the honest element, since the scrim is a dismiss control. The
+scrim stays out of the tab order on purpose: the dialog owns the keyboard path (Escape, plus the
+visible close button), and an invisible full-viewport tab stop would trap the Tab ring. The pair
+`tabindex="-1"` and `aria-hidden="true"` is the sanctioned pattern (WAI-ARIA APG practice 6.3),
+and Sonar's own aria-hidden rule (S6825) exempts it because a negative tabindex makes the element
+non-focusable.
+
+**Alternatives.** Mark the issues not-a-problem in the SonarCloud UI: the suppression lives on the
+server, invisible to a reader of the code. Keep NOSONAR: the analyzer ignores it in Angular
+templates, proven by the two OPEN issues. `role="button"` on the div: sonar-html still asks for
+key handlers on an explicit button role, and it is a worse element than the native one. A real
+`aria-label` without the aria-hidden: the screen reader then announces a second, nameless-looking
+"close" control beside the real close button, and the tab ring gains an invisible stop.
+
+**Consequences.** The click path is the same `(click)` binding, so the specs and the lineage e2e
+select the scrim by its unchanged class. The dismiss stays mouse-and-pointer-driven like a native
+backdrop: Enter and Space dismiss only when the scrim is focused, which the tabindex prevents,
+because Escape is the keyboard path. A future scrim restyle must keep the button-chrome reset (the
+UA paints a button face otherwise, and Bulma resets only the margin).
