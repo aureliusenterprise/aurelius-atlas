@@ -72,7 +72,9 @@ describe("ShellHeader", () => {
         const brand = render().querySelector<HTMLAnchorElement>(".navbar-brand a.navbar-item");
         const img = brand?.querySelector("img");
 
-        expect(brand?.getAttribute("routerLink")).toBe("/");
+        // RouterLink is live in the ui-lib Header: the directive owns the
+        // anchor and serialises the home target into its href.
+        expect(brand?.getAttribute("href")).toBe("/");
         expect(img?.getAttribute("src")).toBe("assets/aurelius-atlas-logo.png");
         expect(img?.getAttribute("alt")).toBe(config.appName);
         expect(img?.getAttribute("class")).toBe("logo");

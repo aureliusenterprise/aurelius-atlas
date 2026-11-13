@@ -188,3 +188,34 @@ spec pins the wrap-free nearest-neighbour walk and the Enter/Space action. Conne
 pointer-only contract (DD-348's intent, reported not changed): their action is a pan-to, which a
 reader can reach through the endpoints. The webapp passes the view name into `canvasLabel`;
 Storybook's stories carry their own labels.
+
+### DD-548. The details section header stacks on its own width
+
+- **Status:** Accepted
+- **Increment:** 7.30
+- **Date:** 2026-11-13
+
+**Decision.** `DetailsCardSection` hosts itself as a CSS size container
+(`container: aurelius-card-section / inline-size`). The stacked control layout, which the media query
+ran below a 768px viewport, runs below a 768px container instead, and the level and the control row
+gain the `flex-direction: column` the viewport-based Bulma rules do not apply at a wide viewport. The
+control row also shrinks into the width that is there (`flex-shrink: 1`, `min-width: 0`, above
+Bulma's pinned `.level > .level-right`), so a long title never pushes it out of the box.
+
+**Reason.** Found on the booted dev server: between a 769px viewport and about 830px, a section's
+control row (sort pair plus search box, roughly 526px of content) rode out of its card, because
+Bulma pins the row to its content and stacks only on the viewport. The cards are much narrower than
+the viewport and their titles differ in length, so wrapping the row produced a half-state no design
+has: the short-title sections kept the row beside the title while a long-title one wrapped the
+search box below it. A container query makes every section on the page jump to the stacked layout at
+the same moment, because they share one width. The 768px threshold stays Bulma's own number.
+
+**Alternatives.** Raise the viewport media breakpoint: the mixed layout survives whenever one title
+is long, at any viewport. `flex-wrap` alone (the first fix, replaced): stops the overflow but is the
+half-state itself. An `@container` on the webapp's page column: the ui-lib then needs the host to
+opt in, and a future caller gets the mixed layout by default.
+
+**Consequences.** The section's layout rides its own box, so a details screen rendered in a narrow
+drawer or a split view stacks correctly with no host wiring. The container threshold is a component
+fact (768px, the width a moderate title needs beside the control pair), noted here because the media
+query it replaces named Bulma's breakpoint instead.

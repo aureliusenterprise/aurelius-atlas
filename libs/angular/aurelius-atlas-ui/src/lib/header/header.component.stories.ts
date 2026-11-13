@@ -1,4 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/angular";
+import { applicationConfig } from "@storybook/angular";
+import { provideRouter } from "@angular/router";
 import { expect } from "storybook/test";
 import { Header } from "./header.component";
 
@@ -10,6 +12,9 @@ import { Header } from "./header.component";
 const meta: Meta<Header> = {
     component: Header,
     title: "Header",
+    // The brand anchor (and the story links) carry RouterLink, whose
+    // directive injects Router; the canvas needs one.
+    decorators: [applicationConfig({ providers: [provideRouter([])] })],
 };
 export default meta;
 

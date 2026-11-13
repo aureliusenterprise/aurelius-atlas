@@ -27,9 +27,23 @@
  * the input. The old 12px right margin indented the select off the
  * search box's edge when the row stacks. The row owns its spacing
  * instead: an explicit gap, and the field's stray margin off.
+ *
+ * The row also refuses to ride out of the card: Bulma's
+ * `.level > .level-right` pins it to its content (`flex-shrink: 0`, and
+ * the flex automatic minimum size on top of that), so a long section
+ * title pushed it past the box edge. The pair shrinks into the width
+ * that is there instead — `min-width: 0` on the row and the search
+ * wrapper lets the input give way (the selector doubles the class
+ * specificity to outrank Bulma's rule).
  */
-.level-right {
+.aurelius-card-section-level > .level-right {
+    flex-shrink: 1;
     gap: 0.75rem;
+    min-width: 0;
+}
+
+.aurelius-card-section-search {
+    min-width: 0;
 }
 
 .aurelius-card-section-controls {
@@ -37,23 +51,45 @@
 }
 
 /*
- * Stacked (Bulma 1's own level breakpoint — the `is-widescreen` class the
- * legacy markup carries is dead in Bulma 1: the level stacks below 769px,
- * not below the widescreen width). Stacked, Bulma centers every group in
- * the box; here they use the width instead — the header and control
- * groups stretch across it, the title and count sit flush left as blocks,
- * and the sort select grows so its row spans like the search box under it
- * (the legacy's stacked control field carried `is-expanded`). The demo's
- * narrow layout centers and its cards overflow the screen (DD-376: the
- * centered look is the demo's broken half, left behind by choice).
+ * Stacked. The host is a size container so the section flips to the
+ * stacked layout on its own width, not the viewport's: the boxes share
+ * the width that is there and the titles differ, and Bulma's viewport
+ * breakpoint let a page show a row-beside-title section next to a
+ * wrapped one (the half-state nobody designed). The container threshold
+ * is Bulma's own number — 768px, the width a title of moderate length
+ * needs beside the ~526px control pair — so every section on the page
+ * jumps to the mobile look at the same moment.
+ *
+ * Stacked, Bulma centers every group in the box; here they use the width
+ * instead — the header and control groups stretch across it, the title
+ * and count sit flush left as blocks, and the sort select grows so its
+ * row spans like the search box under it (the legacy's stacked control
+ * field carried `is-expanded`). The demo's narrow layout centers and its
+ * cards overflow the screen (DD-376: the centered look is the demo's
+ * broken half, left behind by choice). The `is-widescreen` class the
+ * legacy markup carries is dead in Bulma 1.
  */
-@media screen and (max-width: 768px) {
+:host {
+    container: aurelius-card-section / inline-size;
+    display: block;
+}
+
+@container aurelius-card-section (max-width: 768px) {
     .aurelius-card-section-level {
         align-items: stretch;
+        flex-direction: column;
+        gap: 1rem;
 
+        /* Bulma's stacked level is viewport-based (`display: block`); at a
+           desktop viewport around a narrow box only this query runs, so the
+           two groups column themselves here. */
         .level-left,
         .level-right {
             align-items: stretch;
+        }
+
+        .level-right {
+            flex-direction: column;
         }
 
         .aurelius-card-section-controls {

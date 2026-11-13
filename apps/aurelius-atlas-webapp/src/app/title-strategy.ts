@@ -1,4 +1,4 @@
-import { inject } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { Title } from "@angular/platform-browser";
 import { TitleStrategy, RouterStateSnapshot, ActivatedRouteSnapshot } from "@angular/router";
 
@@ -21,6 +21,7 @@ import { APP_CONFIG } from "./tokens";
  * the title itself through Angular's Title service once the data lands;
  * the strategy owns the navigation moment, the component the data moment.
  */
+@Injectable({ providedIn: "root" })
 export class AtlasTitleStrategy extends TitleStrategy {
     private readonly title = inject(Title);
 
