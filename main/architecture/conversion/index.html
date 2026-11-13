@@ -7587,6 +7587,13 @@ checks a PR must pass:</p>
 <td>done</td>
 </tr>
 <tr>
+<td>8.23</td>
+<td>Aux API OpenAPI contracts</td>
+<td>AUX-06/07 (DD-557..559): every body and answer of the four auxiliary APIs (data2model, lineage-model, validate-entity, embedder) is named by a model in the app's OpenAPI document, each failure response states the body the app answers, and the spec and Swagger UI answer under development only — the server's posture of PR #337, ported to the aux apps</td>
+<td>Aurelius server <code>openapi.py</code> and the development-only spec surface (PR #337)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>9.1</td>
 <td>Targeted resilience e2e</td>
 <td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>
