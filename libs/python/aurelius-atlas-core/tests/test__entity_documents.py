@@ -5,8 +5,13 @@ from typing import Any, cast
 
 import pytest
 from aurelius_atlas_core import entity_documents
+from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, verdict_mapping
 from aurelius_atlas_core.entity_documents import (
+    CLASSIFICATION_MAPPING,
     ENTITY_FIELD_LIMIT,
+    ENTITY_MAPPING,
+    RELATIONSHIP_MAPPING,
+    TASK_MAPPING,
     ElasticsearchEntityDocuments,
     EntityDocuments,
     JournalEntry,
@@ -23,6 +28,7 @@ from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_core.typedef_document import DocumentVersion
+from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_model.discovery import Condition
 from aurelius_atlas_model.instance import EntityStatus
 from aurelius_atlas_model.tasks import TaskStatus
@@ -31,6 +37,34 @@ from elasticsearch import AsyncElasticsearch
 
 D = "aurelius_atlas_core.entity_documents"
 E = f"{D}.ElasticsearchEntityDocuments"
+
+
+def _wire_names(model: type[AtlasModel]) -> set[str]:
+    """The names the model's fields answer to on the wire."""
+    return {info.alias or name for name, info in model.model_fields.items()}
+
+
+INDEXED = [
+    ("entities", ENTITY_MAPPING, StoredEntity, {"attributes", "customAttributes", "search"}),
+    ("relationships", RELATIONSHIP_MAPPING, StoredRelationship, {"attributes"}),
+    ("classifications", CLASSIFICATION_MAPPING, StoredClassification, {"attributes"}),
+    ("tasks", TASK_MAPPING, StoredTask, set()),
+    ("gov-quality", verdict_mapping(), StoredVerdict, set()),
+]
+"""Each index's mapping, the model its documents are read as, and the fields that hold untyped values."""
+
+
+@pytest.mark.parametrize("index", INDEXED, ids=[item[0] for item in INDEXED])
+def test__every_mapped_field_is_a_field_of_the_stored_model(
+    index: tuple[str, dict[str, Any], type[AtlasModel], set[str]],
+) -> None:
+    """The stored index's fields and the model's names are one contract: an index maps no field the model
+    lacks, so a read of a document the store wrote never loses one (DD-560).
+    """  # noqa: D205 - one sentence
+    _, mapping, model, untyped = index
+    mapped = set(mapping["properties"]) - untyped
+
+    assert mapped - _wire_names(model) == set()
 
 
 @pytest.fixture
@@ -135,10 +169,10 @@ async def test__a_reservation_is_create_only_and_released_by_its_holder(
 
     Reservations carry no refresh: ``mget`` reads them in real time (ENS-11, ENS-04).
     """
-    first = Reservation("k", "a", "w1")
+    first = Reservation.model_validate({"key": "k", "guid": "a", "write_id": "w1"})
 
     assert await documents.reserve(first) is None
-    assert await documents.reserve(Reservation("k", "b", "w2")) == first
+    assert await documents.reserve(Reservation.model_validate({"key": "k", "guid": "b", "write_id": "w2"})) == first
     assert await documents.reservations(["k", "missing"]) == {"k": first}
     await documents.release("k", "b")
     assert await documents.reservations(["k"]) == {"k": first}
@@ -415,6 +449,16 @@ async def test__a_search_query_selects_in_elasticsearch_what_it_selects_in_memor
         if selects(query, item.search or {})
     ]
     assert ([item.guid for item in found], total) == (expected, len(expected))
+
+
+@pytest.mark.covers("aurelius_atlas_core.app_search_document.verdict_mapping", rules=["ASG-03"])
+def test__a_verdict_s_document_is_the_legacy_document_s_fields() -> None:
+    """The model's wire names are exactly the fields the verdicts' index maps (DD-560)."""
+    verdict = StoredVerdict.model_validate(
+        {name: ("x" if name != "usedattributes" else ["x"]) for name in VERDICT_FIELDS}
+    )
+
+    assert set(verdict.to_json()) == set(VERDICT_FIELDS)
 
 
 @pytest.mark.covers(f"{E}.prepare", rules=["IDX-02"])

@@ -439,7 +439,8 @@ class EntityStore:
     async def _reserve(self, needed: Sequence[tuple[UniqueKey, str]], write_id: str) -> UniqueValueTakenError | None:
         """Reserve each value; the error for the first one another entity holds, else None."""
         for key, guid in needed:
-            holder = await self._documents.reserve(Reservation(key.id, guid, write_id))
+            wanted = Reservation.model_validate({"key": key.id, "guid": guid, "write_id": write_id})
+            holder = await self._documents.reserve(wanted)
             if holder is not None and holder.guid != guid:
                 return UniqueValueTakenError(key, holder.guid)
         return None

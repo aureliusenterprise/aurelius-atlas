@@ -10,7 +10,7 @@ from collections import Counter
 from typing import Any
 
 import pytest
-from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, own_document, verdict_mapping
+from aurelius_atlas_core.app_search_document import VERDICT_FIELDS, StoredVerdict, own_document, verdict_mapping
 from aurelius_atlas_core.app_search_governance import GovernanceIndexer, governance_rule, rules_digest
 from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
@@ -363,9 +363,9 @@ async def test__the_memory_documents_list_and_replace_as_elasticsearch_s() -> No
     lost = indexed_entity("l").model_copy(update={"state": EntityStatus.DELETED, "governed": True})
     await documents.write([(stored_rule("r"), None), (judged, None), (current, None), (lost, None)])
     await documents.replace_verdicts(
-        {"j": [{"id": "j--r", "entity_guid": "j"}], "l": [{"id": "l--r", "entity_guid": "l"}]}
+        {"j": [StoredVerdict(id="j--r", entity_guid="j")], "l": [StoredVerdict(id="l--r", entity_guid="l")]}
     )
-    await documents.replace_verdicts({"j": [{"id": "j--s", "entity_guid": "j"}]})
+    await documents.replace_verdicts({"j": [StoredVerdict(id="j--s", entity_guid="j")]})
 
     assert [found.entity.guid for found in await documents.governance_rules()] == ["r"]
     assert [found.entity.guid for found in await documents.to_govern({"m4i_data_domain": "new"}, 10)] == ["j", "l"]

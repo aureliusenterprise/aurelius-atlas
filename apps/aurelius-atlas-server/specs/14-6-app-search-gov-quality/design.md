@@ -143,3 +143,36 @@ the core; the server already depends on the library.
 - The round in the server: the App Search rounds split across two projects.
 
 **Consequences.** The core's environment installs polars, which the library's dataset half imports.
+
+### DD-560. Every stored Elasticsearch document is a pydantic model
+
+- **Status:** Accepted
+- **Increment:** 14.6
+- **Date:** 2026-11-13
+- **Supersedes:** none
+
+**Decision.** Each document the store keeps is one pydantic model, read with `model_validate` and written
+with `to_json`. The verdicts join the entities, relationships, classification instances, tasks, journal
+entries and audit events: `StoredVerdict` (the legacy `atlas-dev-gov-quality` field names, kept verbatim,
+so the model config turns the camelCase alias generator off) replaces the plain dicts the governance round
+built and `replace_verdicts` wrote. `VERDICT_FIELDS` is derived from the model, and the mapping of the
+verdicts' index is built from it. `Reservation` becomes a model too: `key` is the document's id and stays
+out of its source. A test checks that every mapped property of an index names a field of the model that
+index is read as (its untyped value fields aside).
+
+**Reason.** The store read every document through a model but wrote two of them as hand-built dicts, so a
+renamed or dropped field failed no check and simply vanished from the index or appeared as an unmapped
+one. One model per document makes the index contract reviewable as code: the fields, their defaults, and
+the wire names sit in one class, the mapping cannot list a field the model lacks, and the drift check
+catches the other direction (DD-039's digit-preserving codec path is unchanged).
+
+**Alternatives.**
+
+- Keep the dicts and check only the mapping against a hand-written field list: the list and the writer
+  stay two sources of truth.
+- Generate the whole mapping from the models: the mapping also holds search shape (text sub-fields,
+  `ignore_above`, dynamic templates) that the models do not speak, so only the field names are shared.
+
+**Consequences.** A verdict's fields all have defaults, so a minimal replacement document (`id` and
+`entity_guid`) stays legal, as the replacement tests build it. The drift test covers the five mapped
+indices; the reservations' and journal's mappings stay checked by their write and read tests.

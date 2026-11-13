@@ -11,7 +11,9 @@ import hashlib
 import json
 from typing import Any
 
+from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_model.instance import EntityStatus
+from pydantic import ConfigDict, Field
 
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 
@@ -100,24 +102,37 @@ GOVERNED_BY_FIELD = f"{APP_SEARCH_FIELD}.governedBy"
 GOVERNED_FIELD = "governed"
 """The entity document's field set while the entity has governance verdicts (DD-535)."""
 
-VERDICT_FIELDS = (
-    "id",
-    "qualifiedname",
-    "guid",
-    "qualityqualifiedname",
-    "name",
-    "expression",
-    "dataqualitytype",
-    "dataqualityruledescription",
-    "dataqualityruledimension",
-    "noncompliant_message",
-    "usedattributes",
-    "dataqualityruletypename",
-    "entity_guid",
-    "compliant",
-    "result_id",
-    "business_rule_id",
-)
+
+class StoredVerdict(AtlasModel):
+    """One document of the verdicts' index: a rule's judgement of one entity (ASG-03, DD-534).
+
+    The legacy engine's field names, underscores and all, so the index's mapping and the webapp's reads stay
+    those of ``atlas-dev-gov-quality``; the model's own names are the wire names (DD-560). ``compliant`` is
+    ``"1"`` or ``"0"``, as the legacy documents hold it. The fields a verdict copies from its rule default to
+    what a rule without them answers, so a verdict names the rule, the entity and the judgement at least.
+    """
+
+    model_config = ConfigDict(alias_generator=None)
+
+    id: str
+    entity_guid: str
+    qualifiedname: str = ""
+    guid: str = ""
+    name: str = ""
+    compliant: str = ""
+    qualityqualifiedname: str = ""
+    expression: str = ""
+    dataqualitytype: str = ""
+    dataqualityruledescription: str = ""
+    dataqualityruledimension: str = ""
+    noncompliant_message: str = ""
+    usedattributes: list[str] = Field(default_factory=list)
+    dataqualityruletypename: str = ""
+    result_id: str = "0"
+    business_rule_id: str = "1"
+
+
+VERDICT_FIELDS = tuple(StoredVerdict.model_fields)
 """A governance verdict's fields, each a document's field of the verdicts' index (LAS-13, ASG-03, DD-534)."""
 
 TECHNICAL = frozenset({"m4i_system", "m4i_collection", "m4i_dataset", "m4i_field"})
