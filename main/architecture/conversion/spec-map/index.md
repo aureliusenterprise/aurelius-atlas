@@ -77,6 +77,7 @@ This table is the reference for a move: it fixes the home before files are touch
 | 7.21b | Details sections: the entity datasets walk | `apps/aurelius-atlas-webapp` | DET |
 | 7.21c | Details sections: producers, consumers, the process page | `apps/aurelius-atlas-webapp` | DET |
 | 7.23 | Webapp Sonar findings | `apps/aurelius-atlas-webapp` | – (no new ids, except CHT-112; DD-428) |
+| 7.30 | Overlay, scheme and accessibility platform fixes | `apps/aurelius-atlas-webapp` + `libs/angular/aurelius-atlas-ui` | SPL-15/16, UIC-40/41, a11y sweep (DD-542..547) |
 | 8.0 | Auxiliary API foundation | `libs/python/aurelius-atlas-auth` + `libs/python/aurelius-atlas-otel` | AUX |
 | 8.1 | data2model API | `apps/aurelius-atlas-data2model` | DTM |
 | 8.2 | lineage-model API | `apps/aurelius-atlas-lineage-model` | LM |
