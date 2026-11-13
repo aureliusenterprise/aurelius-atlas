@@ -2130,6 +2130,8 @@
       
         
       
+        
+      
     
     
     
@@ -3875,6 +3877,33 @@
     
   
   062. The pull-request gate proves the critical and high scenarios
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/063-each-tenant-is-an-organization-with-its-own-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  063. Each tenant is an organization with its own store
 
     
   </span>
@@ -7684,6 +7713,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A GUID a write body names must be UUID text or a placeholder (text starting with <code>-</code>), or the request is refused 400 (<code>ATLAS-400-00-021</code>, <code>ObjectId is not valid {0}</code>). A lookup body (an export request, a saved search, set-classifications headers) keeps any text, as it finds an entity or names none</td>
 <td>Every GUID Aurelius Atlas mints is a UUID (DV-161), and a placeholder names only an entity of the same request. The replacement of a placeholder stays in the write pipeline, which records each one's real GUID in <code>guidAssignments</code>. Validation checks the shape, never the meaning (DD-553)</td>
 <td>7.30</td>
+</tr>
+<tr>
+<td>DV-163</td>
+<td>Authorization</td>
+<td>Every authenticated user acts in the one catalogue, with the privileges their roles grant</td>
+<td>With tenancy on, a request acts in the one provisioned Keycloak organization its token names, with the roles of that organization's own groups, and an operator with read access at most outside the operator organization; a token naming none, several or an unprovisioned one answers 403 <code>AURELIUS-403-00-001</code> to <code>-003</code> (TEN-03 to TEN-05)</td>
+<td>Several isolated tenants on one deployment (ADR 063, DD-563, DD-564); off by default, when nothing deviates</td>
+<td>15.1</td>
 </tr>
 </tbody>
 </table>

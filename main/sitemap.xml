@@ -271,6 +271,9 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/template/</loc>
       </url>
       <url>

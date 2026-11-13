@@ -566,6 +566,33 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "exclusiveMinimum": 0,
 >       "title": "Session Timeout Seconds",
 >       "type": "integer"
+>     },
+>     "auth_organization_claim": {
+>       "default": "organization",
+>       "title": "Auth Organization Claim",
+>       "type": "string"
+>     },
+>     "tenancy_enabled": {
+>       "default": false,
+>       "title": "Tenancy Enabled",
+>       "type": "boolean"
+>     },
+>     "tenancy_operator_organization": {
+>       "default": "operators",
+>       "title": "Tenancy Operator Organization",
+>       "type": "string"
+>     },
+>     "tenancy_operator_role": {
+>       "default": "atlas-operator",
+>       "title": "Tenancy Operator Role",
+>       "type": "string"
+>     },
+>     "tenancy_tenants": {
+>       "items": {
+>         "type": "string"
+>       },
+>       "title": "Tenancy Tenants",
+>       "type": "array"
 >     }
 >   },
 >   "required": [
@@ -661,6 +688,15 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `auth_groups_claim` (`str`)
 > - `auth_ca_file` (`FilePath | None`)
 > - `session_timeout_seconds` (`int`)
+> - `auth_organization_claim` (`str`)
+> - `tenancy_enabled` (`bool`)
+> - `tenancy_operator_organization` (`str`)
+> - `tenancy_operator_role` (`str`)
+> - `tenancy_tenants` (`list[str]`)
+>
+> Validators:
+>
+> - `_operators_are_not_a_tenant`
 >
 > ### app\_search\_batch\_size
 >
@@ -877,6 +913,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The claim a user's groups are read from, else the realm roles: `atlas.authentication.method.keycloak .groups_claim` (AUT-03).
+>
+> ### auth\_organization\_claim
+>
+> ```
+> auth_organization_claim: str = 'organization'
+> ```
+>
+> The claim a token names its organizations in, as Keycloak's `organization` scope writes it (TEN-02).
 >
 > ### auth\_principal\_claim
 >
@@ -1276,6 +1320,38 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > Whether propagation is deferred to tasks a worker runs after the request: `atlas.tasks.enabled` (TSK-02, DD-081).
 >
+> ### tenancy\_enabled
+>
+> ```
+> tenancy_enabled: bool = False
+> ```
+>
+> Whether a request acts in the one organization its token names (TEN-01, TEN-03). Off by default, and not to be turned on before each tenant has its own stores (DD-566).
+>
+> ### tenancy\_operator\_organization
+>
+> ```
+> tenancy_operator_organization: str = 'operators'
+> ```
+>
+> The organization whose members run the platform; always provisioned (TEN-04, DD-567).
+>
+> ### tenancy\_operator\_role
+>
+> ```
+> tenancy_operator_role: str = 'atlas-operator'
+> ```
+>
+> The realm role that marks an operator, who holds at most `atlas-read` in other tenants (TEN-06).
+>
+> ### tenancy\_tenants
+>
+> ```
+> tenancy_tenants: list[str]
+> ```
+>
+> The provisioned tenants beside the operator organization, until 15.3's tenants index (TEN-04, DD-565).
+>
 > ### tls
 >
 > ```
@@ -1331,6 +1407,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The settings of the Elasticsearch store.
+>
+> ### tenancy
+>
+> ```
+> tenancy() -> Tenancy | None
+> ```
+>
+> How tenancy reads a token while `tenancy_enabled`, else None: no request has a tenant (TEN-01).
 
 ## Design
 

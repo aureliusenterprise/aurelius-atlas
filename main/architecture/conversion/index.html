@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios/">
+        <link rel="prev" href="../adr/063-each-tenant-is-an-organization-with-its-own-store/">
       
       
         <link rel="next" href="./design-log/">
@@ -2130,6 +2130,8 @@
       
         
       
+        
+      
     
     
     
@@ -3875,6 +3877,33 @@
     
   
   062. The pull-request gate proves the critical and high scenarios
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/063-each-tenant-is-an-organization-with-its-own-store/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  063. Each tenant is an organization with its own store
 
     
   </span>
@@ -7941,7 +7970,49 @@ checks a PR must pass:</p>
 <td>The derived documents in the embedding</td>
 <td>The breadcrumb and derived relations' names join the text an entity's embedding is made of, after its classifications, and the hash it is checked by; an entity waits for its document before it is embedded (ADR 059, EMC-01..05, DD-538..540)</td>
 <td>none</td>
+<td>done</td>
+</tr>
+<tr>
+<td>15.1</td>
+<td>Tenant claims</td>
+<td>With tenancy on, a request's tenant is the one Keycloak organization its token names, and its roles are that organization's own groups; a missing, ambiguous or unprovisioned tenant answers 403; the operator organization's members only read in other tenants; off by default (ADR 063, TEN-01..09, DD-563..567)</td>
+<td>none</td>
 <td>in progress</td>
+</tr>
+<tr>
+<td>15.2</td>
+<td>Tenant-scoped stores</td>
+<td>Each tenant's own index set, <code>aurelius-atlas-tenant-&lt;alias&gt;-*</code>, and type registry; the operator organization keeps today's <code>aurelius-atlas-*</code>; the routes and the App Search engines read the request's tenant's stores; the default tenant keeps today's names (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>15.3</td>
+<td>Tenant provisioning</td>
+<td>The tenants index; the CLI that creates a tenant's indices, loads Atlas's and the m4i models into it, imports the sample data if asked, records whether it trusts the operators (by default it does), and removes a tenant (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>15.4</td>
+<td>Workers per tenant</td>
+<td>The task, App Search, embedding, audit-aging and metrics workers per tenant; the per-tenant import and export lock; tenancy offered in the chart and the standalone stack (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>15.5</td>
+<td>Tenants in the realm</td>
+<td>The operator organization and realm role, the tenants' organizations and their role groups, the organization group mapper and each tenant's delegated administrator in the dev, standalone and chart realms; the operators made members of each trusting tenant with read access, kept in step; the operators' read role on every index in the store; the server login's organization scope; the service clients' tenant mappers (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>15.6</td>
+<td>The webapp's tenant</td>
+<td>The webapp's organization scope, its current tenant shown, and switching tenant by signing in again (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
 </tr>
 </tbody>
 </table>
