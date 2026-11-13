@@ -50,6 +50,11 @@
     "aliases": []
   },
   {
+    "version": "dependabot-devcontainers-all-2026c8d377",
+    "title": "dependabot-devcontainers-all-2026c8d377",
+    "aliases": []
+  },
+  {
     "version": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
     "title": "dependabot-pre_commit-prettier-plugin-toml-4.1.0",
     "aliases": []
