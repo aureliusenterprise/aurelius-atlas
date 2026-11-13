@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from pydantic import Field
+from pydantic import Field, RootModel
 
 from aurelius_atlas_model.base import AtlasModel, JavaBool, JavaInt
 from aurelius_atlas_model.instance import AtlasEntityHeader
@@ -23,6 +23,14 @@ class LineageOnDemandConstraints(AtlasModel):
     input_relations_limit: JavaInt = 0
     output_relations_limit: JavaInt = 0
     depth: JavaInt = 0
+
+
+class LineageConstraintsByGuid(RootModel[dict[str, LineageOnDemandConstraints]]):
+    """The body of lineage on demand (LIN-06).
+
+    The constraints per entity GUID, Java's ``Map<String, LineageOnDemandConstraints>`` of
+    ``LineageREST#getLineageGraph``.
+    """
 
 
 class LineageRelation(AtlasModel):

@@ -126,13 +126,14 @@ async def test__one_definition_is_read_with_type_read(client: httpx.AsyncClient,
 @pytest.mark.covers("aurelius_atlas_server.routes.admin.purge_by_ids", rules=["AUZ-05"])
 async def test__purging_needs_the_admin_role(client: httpx.AsyncClient, issuer: FakeIssuer) -> None:
     """``purge entity: guids=[...]`` needs ``ADMIN_PURGE``; an empty list fails first, as Atlas checks it first."""
+    g1, g2 = "11111111-1111-4111-8111-111111111111", "22222222-2222-4222-8222-222222222222"
     writer = as_roles(issuer, "writer", "atlas-read", "atlas-write")
-    assert refusal(await client.put("/api/atlas/admin/purge", json=["g1", "g2"], headers=writer))[2] == (
-        "writer is not authorized to perform purge entity: guids=[g1, g2]"
+    assert refusal(await client.put("/api/atlas/admin/purge", json=[g1, g2], headers=writer))[2] == (
+        f"writer is not authorized to perform purge entity: guids=[{g1}, {g2}]"
     )
     assert (await client.put("/api/atlas/admin/purge", json=[], headers=writer)).status_code == 400
     admin = as_roles(issuer, "admin", "atlas-admin")
-    assert (await client.put("/api/atlas/admin/purge", json=["g1"], headers=admin)).status_code == 200
+    assert (await client.put("/api/atlas/admin/purge", json=[g1], headers=admin)).status_code == 200
 
 
 @pytest.mark.covers("aurelius_atlas_server.routes.admin.get_session", rules=["AUZ-06"])
@@ -187,7 +188,9 @@ async def test__entities_are_read_with_entity_read(client: httpx.AsyncClient, is
     ):
         assert refusal(await client.get(url, headers=nobody))[2] == f"nobody is not authorized to perform {action}"
         assert (await client.get(url, headers=reader)).status_code == 200
-    assert (await client.get(f"{ENTITY}/guid/missing", headers=nobody)).status_code == 404
+    absent = "99999999-9999-4999-8999-999999999999"
+    assert (await client.get(f"{ENTITY}/guid/{absent}", headers=nobody)).status_code == 404
+    assert (await client.get(f"{ENTITY}/guid/missing", headers=nobody)).status_code == 400  # no GUID text (DV-161)
     assert (await client.delete(f"{ENTITY}/guid/{guid}")).status_code == 200
     assert (await client.put("/api/atlas/admin/purge", json=[guid])).status_code == 200
     assert refusal(await client.get(f"{ENTITY}/{guid}/audit", headers=nobody))[2] == (
@@ -225,7 +228,7 @@ async def test__a_reader_changes_nothing(client: httpx.AsyncClient, issuer: Fake
         "reader is not authorized to perform create entity: type=__AtlasUserProfile"
     )
     assert (await client.get(f"{ENTITY}/guid/{guid}/classifications", headers=reader)).status_code == 200
-    gone = await client.delete("/api/atlas/v2/relationship/guid/missing", headers=reader)
+    gone = await client.delete("/api/atlas/v2/relationship/guid/99999999-9999-4999-8999-999999999999", headers=reader)
     assert gone.status_code == 404
 
 

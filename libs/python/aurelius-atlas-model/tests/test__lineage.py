@@ -3,6 +3,7 @@
 import pytest
 from aurelius_atlas_model.lineage import (
     AtlasLineageInfo,
+    LineageConstraintsByGuid,
     LineageDirection,
     LineageInfoOnDemand,
     LineageOnDemandConstraints,
@@ -38,3 +39,11 @@ def test__constraints_read_nulls_as_java_defaults() -> None:
     """A null or missing limit or depth is 0, a missing direction none; unknown fields are ignored."""
     found = LineageOnDemandConstraints.model_validate({"inputRelationsLimit": None, "depth": 4, "other": 1})
     assert (found.direction, found.input_relations_limit, found.output_relations_limit, found.depth) == (None, 0, 0, 4)
+
+
+@pytest.mark.covers(rules=["LIN-06"])
+def test__constraints_are_read_per_entity_guid() -> None:
+    """The lineage-on-demand body: Java's map of GUID to constraints, each read by ``LineageOnDemandConstraints``."""
+    body = LineageConstraintsByGuid.model_validate({"g": {"depth": 2}, "h": {}})
+
+    assert (body.root["g"].depth, body.root["h"].depth, body.root["h"].direction) == (2, 0, None)

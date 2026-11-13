@@ -66,6 +66,10 @@ class ServerSettings(StoreAccessSettings):
     log_level: LogLevel = "info"
     """The lowest level of log record the server and uvicorn emit."""
 
+    environment: Literal["production", "development"] = "production"
+    """What the server runs in: the image ships production; the dev arrangement sets development in ``.env``,
+    which turns on the dev-only surfaces (``is_development``)."""
+
     tls_cert_file: FilePath
     """PEM certificate to serve HTTPS with (SRV-06, DD-234): required — the server never serves plaintext,
     the way the store's password is required (SRV-01, SRV-02)."""
@@ -302,6 +306,11 @@ class ServerSettings(StoreAccessSettings):
 
     session_timeout_seconds: int = Field(default=3600, gt=0)
     """How long a browser session lasts unused: Atlas's ``web.xml`` session timeout, 60 minutes (AUT-06)."""
+
+    @property
+    def is_development(self) -> bool:
+        """Whether ``environment`` is set to development: the dev-only surfaces answer, production's do not."""
+        return self.environment == "development"
 
     @property
     def tls(self) -> tuple[Path, Path]:

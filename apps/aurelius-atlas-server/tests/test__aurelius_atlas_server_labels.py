@@ -35,7 +35,7 @@ async def labels_of(client: httpx.AsyncClient, guid: str) -> list[str]:
 
 @pytest.mark.covers(
     f"{R}.labels",
-    f"{R}.labels_body",
+    "aurelius_atlas_model.lists.Labels._json_array_of_labels",
     f"{R}.set_labels",
     f"{R}.add_labels",
     f"{R}.remove_labels",
@@ -88,7 +88,7 @@ async def test__labels_are_changed_by_unique_attributes(client: httpx.AsyncClien
     assert (unknown.status_code, unknown.json()["errorCode"]) == (400, "ATLAS-400-00-014")
 
 
-@pytest.mark.covers(f"{R}.labels_body", rules=["LBL-01"])
+@pytest.mark.covers("aurelius_atlas_model.lists.Labels._json_array_of_labels", rules=["LBL-01"])
 async def test__a_body_that_is_no_array_of_labels_is_refused(client: httpx.AsyncClient) -> None:
     """``BAD_REQUEST`` (DV-10); an empty array to add is ``INVALID_PARAMETERS``."""
     guid = await entity(client)
@@ -97,7 +97,9 @@ async def test__a_body_that_is_no_array_of_labels_is_refused(client: httpx.Async
         assert (await client.put(url, json=body)).status_code == 400
     empty = await client.put(url, json=[])
     assert (empty.status_code, empty.json()["errorMessage"]) == (400, "invalid parameters: labels is null/empty")
-    assert (await client.post(f"{ENTITY}/guid/nope/labels", json=["a"])).status_code == 404
+    absent = "99999999-9999-4999-8999-999999999999"
+    assert (await client.post(f"{ENTITY}/guid/{absent}/labels", json=["a"])).status_code == 404
+    assert (await client.post(f"{ENTITY}/guid/nope/labels", json=["a"])).status_code == 400  # no GUID text (DV-161)
 
 
 @pytest.mark.covers(f"{R}.labels", rules=["AUZ-16"])

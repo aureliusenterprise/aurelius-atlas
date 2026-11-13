@@ -51,6 +51,7 @@ from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingWorker, em
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
 from aurelius_atlas_server.metrics_scheduler import MetricsScheduler
 from aurelius_atlas_server.oidc_client import OidcClient
+from aurelius_atlas_server.openapi import install as install_openapi
 from aurelius_atlas_server.request_context import RequestContextMiddleware
 from aurelius_atlas_server.routes import (
     ADMIN,
@@ -200,14 +201,17 @@ def create_app(
             await _close(auth, oidc)
             LOGGER.info("Stopped %s", app.title)
 
+    # The OpenAPI surface answers only under development (the dev .env sets it); production serves no spec
+    # and no documents (SRV-08's closed surface). The docs page fetches the spec by root-relative path,
+    # so it is a root-served dev convenience, not a root_path (proxy-prefix) surface (DD-363).
     app = FastAPI(
         title=NAME,
         version=version(NAME),
         lifespan=lifespan,
         default_response_class=AtlasJSONResponse,
-        docs_url=None,
+        docs_url="/api/atlas/docs" if settings.is_development else None,
         redoc_url=None,
-        openapi_url=None,
+        openapi_url="/api/atlas/openapi.json" if settings.is_development else None,
     )
     # one export or import at a time (EXP-01, DD-304)
     app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
@@ -256,7 +260,11 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
     # Security response headers on every answer — the API and the dashboards
     # alike (SRV-08, DD-236). Added before the routers mount, so it wraps
     # them all; the instrumentor below wraps this middleware.
-    app.add_middleware(SecurityHeadersMiddleware, hsts_enabled=settings.hsts_enabled)
+    app.add_middleware(
+        SecurityHeadersMiddleware,
+        hsts_enabled=settings.hsts_enabled,
+        dev_docs_enabled=settings.is_development,
+    )
     app.add_exception_handler(AtlasError, atlas_error_handler)
     for router in (
         ADMIN,
@@ -272,6 +280,7 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
         APP_SEARCH,
     ):
         app.include_router(router)
+    install_openapi(app)
     if settings.dashboard_dir is not None:
         mount_dashboards(app, settings.dashboard_dir)
 

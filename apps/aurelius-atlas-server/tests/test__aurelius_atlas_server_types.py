@@ -73,7 +73,7 @@ async def test__each_kind_has_its_own_lookups(client: httpx.AsyncClient, path: s
 async def test__a_lookup_value_over_4096_characters_is_refused(
     client: httpx.AsyncClient, path: str, param: str
 ) -> None:
-    """``Servlets.validateQueryParamLength`` runs before the lookup; 4096 characters is still a lookup."""
+    """``Servlets.validateQueryParamLength`` runs before the lookup (TYR-04); a full-length GUID is no UUID (DV-161)."""
     too_long = await client.get(f"{TYPES}/{path}/{'x' * 4097}")
     longest = await client.get(f"{TYPES}/{path}/{'x' * 4096}")
 
@@ -82,7 +82,7 @@ async def test__a_lookup_value_over_4096_characters_is_refused(
         "errorCode": "ATLAS-400-00-057",
         "errorMessage": f"Length of query param {param} exceeds the limit",
     }
-    assert longest.status_code == 404
+    assert longest.status_code == (404 if param == "name" else 400)
 
 
 @pytest.mark.covers(

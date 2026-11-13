@@ -23,6 +23,7 @@ from aurelius_atlas_typesystem.values import relationship_type_of
 
 from aurelius_atlas_core.entity_documents import VersionedEntity
 from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.guids import AssignedGuid, as_assigned_guid
 
 CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH = 50
 """``atlas.custom.attribute.key.max.length``'s default."""
@@ -70,16 +71,17 @@ class DiscoveryContext:
 
     referenced_guids: list[str | None] = field(default_factory=list)
     referenced_by_unique: list[AtlasObjectId] = field(default_factory=list)
-    resolved_guids: dict[str | None, str] = field(default_factory=dict)
-    resolved_by_unique: list[tuple[AtlasObjectId, str]] = field(default_factory=list)
+    resolved_guids: dict[str | None, AssignedGuid] = field(default_factory=dict)
+    """What each GUID a request names resolves to: an assigned GUID, never a placeholder (DV-162)."""
+    resolved_by_unique: list[tuple[AtlasObjectId, AssignedGuid]] = field(default_factory=list)
     local_guids: set[str | None] = field(default_factory=set)
     stored: dict[str, VersionedEntity] = field(default_factory=dict)
 
-    def add_resolved_by_unique(self, object_id: AtlasObjectId, guid: str) -> None:
+    def add_resolved_by_unique(self, object_id: AtlasObjectId, guid: AssignedGuid) -> None:
         """Record that ``object_id`` names the entity with ``guid``."""
         self.resolved_by_unique.append((_plain(object_id), guid))
 
-    def resolved_object_id(self, object_id: AtlasObjectId, sub_types: Sequence[str]) -> str | None:
+    def resolved_object_id(self, object_id: AtlasObjectId, sub_types: Sequence[str]) -> AssignedGuid | None:
         """``getResolvedEntityVertex(AtlasObjectId)``: its entity, also when recorded for one of ``sub_types``."""
         wanted = _plain(object_id)
         candidates = [wanted] + [
@@ -265,7 +267,7 @@ class EntityDiscovery:
                     raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
             if found is not None:
                 context.stored[found.entity.guid] = found
-                context.resolved_guids[guid] = found.entity.guid
+                context.resolved_guids[guid] = as_assigned_guid(found.entity.guid)
             elif is_assigned_guid(guid) and not self._importing:
                 raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid)
             else:
@@ -279,7 +281,7 @@ class EntityDiscovery:
             if found is None:
                 raise AtlasError(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, object_id)
             self.context.stored[found.entity.guid] = found
-            self.context.add_resolved_by_unique(object_id, found.entity.guid)
+            self.context.add_resolved_by_unique(object_id, as_assigned_guid(found.entity.guid))
 
 
 def process_dynamic_attributes(entity: AtlasEntity, entity_type: EntityType) -> None:

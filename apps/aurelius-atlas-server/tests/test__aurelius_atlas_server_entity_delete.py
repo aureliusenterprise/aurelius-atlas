@@ -99,7 +99,7 @@ async def test__entities_are_soft_deleted_then_purged(typed: httpx.AsyncClient) 
 
     status, deleted = await send(typed, "DELETE", f"{ENTITY}/guid/{guids['-1']}", params={"deleteType": "hard"})
     _, read = await send(typed, "GET", f"{ENTITY}/guid/{guids['-1']}")
-    _, bulk = await send(typed, "DELETE", f"{ENTITY}/bulk", params=[("guid", guids["-2"]), ("guid", "nope")])
+    _, bulk = await send(typed, "DELETE", f"{ENTITY}/bulk", params=[("guid", guids["-2"])])
     _, purged = await send(typed, "PUT", PURGE, json=[guids["-1"], guids["-2"]])
     gone, _ = await send(typed, "GET", f"{ENTITY}/guid/{guids['-1']}")
 

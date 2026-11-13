@@ -1,13 +1,13 @@
 """``AtlasEntity.AtlasEntityExtInfo``: the entities a request or response refers to, by GUID (ENT-10)."""
 
-from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.base import AtlasModel, BodyGuidText
 from aurelius_atlas_model.instance.entity import AtlasEntity
 
 
 class AtlasEntityExtInfo(AtlasModel):
     """``referredEntities``: the entities that the main entity or entities refer to, by their GUIDs."""
 
-    referred_entities: dict[str, AtlasEntity] | None = None
+    referred_entities: dict[BodyGuidText, AtlasEntity] | None = None
 
     def add_referred_entity(self, entity: AtlasEntity) -> None:
         """Refer to ``entity`` under its own GUID (``addReferredEntity(AtlasEntity)``)."""

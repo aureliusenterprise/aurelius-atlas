@@ -8,7 +8,7 @@ import itertools
 import time
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, RootModel
 
 from aurelius_atlas_model.base import AtlasModel, JavaInt
 
@@ -141,6 +141,14 @@ class AtlasMetricsMapToChart(AtlasModel):
 
     key: str
     values: list[list[int]]
+
+
+class AtlasMetricsCharts(RootModel[dict[str, list[AtlasMetricsMapToChart]]]):
+    """What ``admin/metricsstats/charts`` answers (MHS-04).
+
+    Per type name, its counts in the range by state; the Java
+    ``AdminResource#getMetricsForChartByTypeNames`` returns its ``Map<String, List<...>>``.
+    """
 
 
 def _all_types(counts: dict[str, Any] | None) -> int:

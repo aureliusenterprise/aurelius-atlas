@@ -87,7 +87,7 @@ async def test__a_purged_entity_keeps_its_audit_and_an_unknown_one_has_none(
 
     assert purged.status_code == 200
     assert (status, listed[:2]) == (200, ["ENTITY_PURGE", "ENTITY_DELETE"])
-    assert (await actions(client, "nope"))[1]["errorCode"] == "ATLAS-404-00-005"
+    assert (await actions(client, "99999999-9999-4999-8999-999999999999"))[1]["errorCode"] == "ATLAS-404-00-005"
 
 
 @pytest.mark.covers(f"{E}.get_entity_headers", f"{E}.classifications", rules=["CAU-02", "CAU-07", "CAU-08"])

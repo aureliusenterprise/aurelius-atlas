@@ -49,8 +49,8 @@ async def business(client: httpx.AsyncClient, guid: str) -> dict[str, Any] | Non
 
 @pytest.mark.covers(
     f"{R}.business_metadata",
-    f"{R}.business_attributes_body",
-    f"{R}.attributes_body",
+    "aurelius_atlas_model.maps.BusinessAttributesMap._json_object_of_value_maps",
+    "aurelius_atlas_model.maps.AttributeValues._json_object",
     f"{R}.add_or_update_business_attributes",
     f"{R}.remove_business_attributes",
     f"{R}.add_or_update_business_attributes_of",
@@ -79,7 +79,11 @@ async def test__business_attributes_are_set_and_removed(client: httpx.AsyncClien
     assert len(details) == 6
 
 
-@pytest.mark.covers(f"{R}.business_attributes_body", f"{R}.attributes_body", rules=["BMD-01"])
+@pytest.mark.covers(
+    "aurelius_atlas_model.maps.BusinessAttributesMap._json_object_of_value_maps",
+    "aurelius_atlas_model.maps.AttributeValues._json_object",
+    rules=["BMD-01"],
+)
 async def test__a_body_that_is_no_map_of_values_is_refused(client: httpx.AsyncClient) -> None:
     """``BAD_REQUEST`` (DV-10); an empty map is ``INVALID_PARAMETERS``; an invalid value every message."""
     guid = await entity(client)
@@ -91,7 +95,9 @@ async def test__a_body_that_is_no_map_of_values_is_refused(client: httpx.AsyncCl
     assert empty.json()["errorMessage"] == "invalid parameters: businessAttributes is null/empty"
     invalid = await client.post(url, json={"bm_a": {"s": "x" * 21}, "nope": {}})
     assert (invalid.status_code, invalid.json()["errorCode"]) == (404, "ATLAS-404-00-007")
-    assert (await client.post(f"{ENTITY}/guid/missing/businessmetadata", json={"bm_a": {}})).status_code == 404
+    absent = "99999999-9999-4999-8999-999999999999"
+    assert (await client.post(f"{ENTITY}/guid/{absent}/businessmetadata", json={"bm_a": {}})).status_code == 404
+    assert (await client.post(f"{ENTITY}/guid/missing/businessmetadata", json={"bm_a": {}})).status_code == 400
 
 
 @pytest.mark.covers(f"{R}.business_metadata", rules=["AUZ-17"])

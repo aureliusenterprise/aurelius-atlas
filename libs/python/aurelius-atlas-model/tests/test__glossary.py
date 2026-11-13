@@ -12,6 +12,8 @@ from aurelius_atlas_model.glossary import (
     AtlasRelatedCategoryHeader,
     AtlasRelatedTermHeader,
     AtlasTermCategorizationHeader,
+    RelatedCategories,
+    RelatedTerms,
     Relation,
 )
 from aurelius_atlas_model.instance import AtlasRelatedObjectId
@@ -132,3 +134,26 @@ def test__a_term_takes_partial_updates_and_compares_as_atlas() -> None:
     two.synonyms = [AtlasRelatedTermHeader(term_guid="other")]
     assert not one.same_as(two)
     assert not one.same_as(AtlasGlossaryTerm(name="n", examples=["b", "a"]))
+
+
+@pytest.mark.covers(rules=["GTM-06"])
+def test__related_terms_are_a_map_of_headers_by_relation_name() -> None:
+    """``getRelatedTerms``: the relation attribute name to its term headers, dumped as the wire map."""
+    related = RelatedTerms.model_validate({"seeAlso": [{"termGuid": "t", "displayText": "T"}]})
+
+    assert related.root["seeAlso"][0].term_guid == "t"
+    assert related.model_dump(mode="python", by_alias=True, exclude_none=True) == {
+        "seeAlso": [{"termGuid": "t", "displayText": "T"}]
+    }
+
+
+@pytest.mark.covers(rules=["GCT-07"])
+def test__related_categories_are_keyed_parent_and_children() -> None:
+    """``getRelatedCategories``: the keys ``parent`` and ``children``, each only when there is one."""
+    related = RelatedCategories.model_validate({"parent": [{"categoryGuid": "p"}], "children": [{"categoryGuid": "c"}]})
+
+    assert list(related.root) == ["parent", "children"]
+    assert related.model_dump(mode="python", by_alias=True, exclude_none=True) == {
+        "parent": [{"categoryGuid": "p"}],
+        "children": [{"categoryGuid": "c"}],
+    }

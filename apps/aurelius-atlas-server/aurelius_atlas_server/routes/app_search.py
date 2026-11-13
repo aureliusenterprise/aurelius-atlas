@@ -13,6 +13,8 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 
 from aurelius_atlas_server.authorization import AtlasPrivilege, is_access_allowed
+from aurelius_atlas_server.models import AppSearchAnswer, AppSearchRequest
+from aurelius_atlas_server.openapi import json_response, request_body
 
 APP_SEARCH = APIRouter(prefix="/api/as/v1", tags=["App Search"])
 
@@ -21,8 +23,13 @@ NOT_READABLE = "The user is not authorized to read entities"
 NOT_JSON = "The request body must be valid JSON"
 
 
-@APP_SEARCH.post("/engines/{engine}/search")
-@APP_SEARCH.post("/engines/{engine}/search.json")
+APP_SEARCH_RESULT = json_response(AppSearchAnswer, description="The App Search answer: meta, results, and facets.")
+
+APP_SEARCH_BODY = request_body(AppSearchRequest, required=False, description="The App Search query document.")
+
+
+@APP_SEARCH.post("/engines/{engine}/search", responses=APP_SEARCH_RESULT, **APP_SEARCH_BODY)
+@APP_SEARCH.post("/engines/{engine}/search.json", responses=APP_SEARCH_RESULT, **APP_SEARCH_BODY)
 async def search(engine: str, request: Request) -> JSONResponse:
     """App Search's search of ``engine``: ``atlas-dev`` or ``atlas-dev-quality``, until 14.6 adds the third."""
     try:

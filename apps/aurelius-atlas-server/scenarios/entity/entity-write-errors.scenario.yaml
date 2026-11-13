@@ -41,14 +41,14 @@ stages:
     - name: one attribute of an entity that does not exist
       request:
           method: PUT
-          url: /api/atlas/v2/entity/guid/scenario_none_{run}
+          url: /api/atlas/v2/entity/guid/cccccccc-cccc-4ccc-8ccc-cccccccccccc
           params: { name: qualifiedName }
           json: x
       response:
           status: 404
           json:
               errorCode: ATLAS-404-00-005
-              errorMessage: "Given instance guid scenario_none_{run} is invalid/not found"
+              errorMessage: "Given instance guid cccccccc-cccc-4ccc-8ccc-cccccccccccc is invalid/not found"
     - name: a partial update of a type that does not exist
       request:
           method: PUT

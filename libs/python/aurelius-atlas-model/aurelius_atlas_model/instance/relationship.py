@@ -2,7 +2,7 @@
 
 from pydantic import Field
 
-from aurelius_atlas_model.base import Timestamp
+from aurelius_atlas_model.base import BodyGuid, Timestamp
 from aurelius_atlas_model.instance.classification import AtlasClassification
 from aurelius_atlas_model.instance.entity import next_internal_id
 from aurelius_atlas_model.instance.object_id import AtlasObjectId
@@ -18,7 +18,7 @@ class AtlasRelationship(AtlasStruct):
     ``propagateTags`` and ``status`` (REL-01).
     """
 
-    guid: str | None = Field(default_factory=next_internal_id)
+    guid: BodyGuid = Field(default_factory=next_internal_id)
     home_id: str | None = None
     provenance_type: int | None = 0
     end1: AtlasObjectId | None = None

@@ -38,6 +38,9 @@ OPEN_PATHS = frozenset(
         "/migration-status.html",
         LOGIN_PATH,
         LOGOUT_PATH,
+        # The dev OpenAPI surface (create_app serves it only under development; these paths 404 elsewhere).
+        "/api/atlas/docs",
+        "/api/atlas/openapi.json",
     }
 )
 OPEN_PREFIXES = ("/css/", "/n/css/", "/img/", "/n/img/", "/libs/", "/n/libs/", "/js/", "/n/js/")

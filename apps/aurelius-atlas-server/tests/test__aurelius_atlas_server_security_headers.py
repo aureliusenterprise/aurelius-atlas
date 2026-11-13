@@ -136,6 +136,34 @@ async def test__hsts_off_leaves_localhost_free(
     assert response.headers["x-content-type-options"] == "nosniff"
 
 
+@pytest.mark.covers("aurelius_atlas_server.security_headers.SecurityHeadersMiddleware.__call__", rules=["SRV-08"])
+async def test__the_openapi_surface_answers_only_in_development(
+    fake_es: FakeClient, settings: ServerSettings, auth_headers: dict[str, str]
+) -> None:
+    """Production serves no spec and no docs page; the dev environment does, with a Swagger-UI CSP (SRV-08)."""
+    _ = fake_es
+    production = create_app(settings)
+    development = create_app(settings.model_copy(update={"environment": "development"}))
+
+    for app, docs in ((production, False), (development, True)):
+        async with app.router.lifespan_context(app):
+            transport = httpx.ASGITransport(app=app)
+            async with httpx.AsyncClient(
+                transport=transport, base_url="https://aurelius-atlas", headers=auth_headers
+            ) as client:
+                spec = await client.get("/api/atlas/openapi.json")
+                page = await client.get("/api/atlas/docs")
+
+        assert spec.status_code == page.status_code == (200 if docs else 404)
+        if docs:
+            assert spec.json()["info"]["title"] == "aurelius-atlas-server"
+            csp = page.headers["content-security-policy"]
+            assert "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net" in csp
+            assert page.headers["cache-control"] == "no-store"
+        else:
+            assert "cdn.jsdelivr.net" not in page.headers["content-security-policy"]
+
+
 @pytest.mark.covers("aurelius_atlas_server.security_headers.SecurityHeadersMiddleware.__call__", rules=["SRV-11"])
 async def test__the_dashboards_may_run_blob_workers_as_atlas_allows(dashboard_client: httpx.AsyncClient) -> None:
     """Jstree's tree worker, ``blob:`` images and ``data:`` fonts, as Atlas's ``HeadersUtil`` policy allows them;

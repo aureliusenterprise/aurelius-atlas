@@ -10,6 +10,7 @@ from collections.abc import Iterable, Mapping
 from datetime import UTC, datetime
 from decimal import Decimal
 from enum import Enum
+from uuid import UUID
 
 _PLACEHOLDER = re.compile(r"\{(\d+)\}")
 
@@ -597,3 +598,71 @@ class AtlasError(Exception):
         error.message = message
         error.args = (message,)
         return error
+
+
+QUERY_PARAM_MAX_LENGTH = 4096
+"""``Servlets.MAXIMUM_PARAM_LENGTH``: the most characters a request's name or text may hold."""
+
+MAX_QUERY_LENGTH = 4096
+"""``atlas.graph.fulltext-max-query-str-length``'s default: the most characters a free-text query may hold."""
+
+
+def validate_param_length(name: str, value: str) -> None:
+    """``Servlets.validateQueryParamLength``: at most ``QUERY_PARAM_MAX_LENGTH`` characters (TYR-04).
+
+    Raises:
+        AtlasError: ``INVALID_QUERY_PARAM_LENGTH`` naming the parameter.
+    """
+    if len(value) > QUERY_PARAM_MAX_LENGTH:
+        raise AtlasError(AtlasErrorCode.INVALID_QUERY_PARAM_LENGTH, name)
+
+
+def validate_guid(name: str, value: str) -> None:
+    """A GUID as the endpoints read one: within the parameter limit, then UUID text (DV-161).
+
+    The length is checked first, as ``Servlets.validateQueryParamLength`` runs before anything else.
+    Every GUID Aurelius Atlas mints is a UUID and a REST create mints a fresh one, so a request naming
+    an entity by GUID names one as UUID text; other text names no entity and is refused as invalid.
+
+    Raises:
+        AtlasError: ``INVALID_QUERY_PARAM_LENGTH`` naming the parameter, or ``INVALID_OBJECT_ID``
+            for text that is no UUID.
+    """
+    validate_param_length(name, value)
+    try:
+        UUID(value)
+    except ValueError as error:
+        raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value) from error
+
+
+ATLAS_REQUEST = "atlas_request"
+"""The context key the server sets when it reads a request body; a model validates a GUID only then (DV-162)."""
+
+
+def validate_body_guid(value: str | None) -> None:
+    """A GUID a request body names, as the models read one: a placeholder, or UUID text (DV-162).
+
+    A create names the entities of the same request by a placeholder GUID, which is text that is not
+    empty and starts with ``-``: what ``AtlasTypeUtil.isAssignedGuid`` calls unassigned. Every other
+    GUID names a stored object, and Aurelius Atlas mints every stored GUID as a UUID (DV-161). A null
+    GUID is left to the endpoint's own rule, as Java reads a body's null GUID per field.
+
+    Raises:
+        AtlasError: ``INVALID_OBJECT_ID`` for text that is neither a placeholder nor a UUID.
+    """
+    if value is None or value.startswith("-"):
+        return
+    try:
+        UUID(value)
+    except ValueError as error:
+        raise AtlasError(AtlasErrorCode.INVALID_OBJECT_ID, value) from error
+
+
+def validate_query_length(query: str | None) -> None:
+    """A free-text query of at most ``atlas.graph.fulltext-max-query-str-length`` characters (FTX-01).
+
+    Raises:
+        AtlasError: ``INVALID_QUERY_LENGTH``.
+    """
+    if query and len(query) > MAX_QUERY_LENGTH:
+        raise AtlasError(AtlasErrorCode.INVALID_QUERY_LENGTH, "atlas.graph.fulltext-max-query-str-length")

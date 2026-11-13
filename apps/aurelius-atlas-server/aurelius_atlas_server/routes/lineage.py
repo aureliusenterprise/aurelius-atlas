@@ -1,27 +1,31 @@
 """The lineage endpoints of ``LineageREST`` under ``/api/atlas/v2/lineage`` (LIN-01 to LIN-06)."""
 
+from typing import Annotated
+
 from aurelius_atlas_core.entity_lineage_service import LINEAGE_ON_DEMAND_ENABLED, EntityLineageService
 from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_model.lineage import LineageDirection, LineageOnDemandConstraints
-from fastapi import APIRouter, Request
+from aurelius_atlas_model.errors import validate_param_length
+from aurelius_atlas_model.lineage import (
+    AtlasLineageInfo,
+    LineageConstraintsByGuid,
+    LineageDirection,
+    LineageOnDemandConstraints,
+)
+from aurelius_atlas_model.params import LineageParams, read_params
+from fastapi import APIRouter, Depends, Request
 
 from aurelius_atlas_server.authorization import authorizer
+from aurelius_atlas_server.bodies import json_root
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
-from aurelius_atlas_server.routes.entity import (
-    INT_RANGE,
-    Body,
-    Store,
-    first_value,
-    guid_by_unique_attributes,
-    java_number,
-    parsed_value,
-)
-from aurelius_atlas_server.routes.types import validate_param_length
+from aurelius_atlas_server.openapi import json_response, request_body
+from aurelius_atlas_server.routes.entity import Store, guid_by_unique_attributes
 
 LINEAGE = APIRouter(prefix="/api/atlas/v2/lineage", tags=["Lineage"])
 
-DEFAULT_DIRECTION = LineageDirection.BOTH
-DEFAULT_DEPTH = 3
+CONSTRAINTS = json_root(LineageConstraintsByGuid)
+"""``getLineageGraph`` on demand: the constraints per entity GUID, each validated (LIN-06)."""
+
+type ConstraintsBody = Annotated[dict[str, LineageOnDemandConstraints] | None, Depends(CONSTRAINTS)]
 
 
 def lineage_service(request: Request, store: EntityStore) -> EntityLineageService:
@@ -38,12 +42,20 @@ def lineage_service(request: Request, store: EntityStore) -> EntityLineageServic
 
 def direction_and_depth(request: Request) -> tuple[LineageDirection, int]:
     """``direction`` (``BOTH``) and ``depth`` (3) as JAX-RS converts them; ``BAD_REQUEST`` when it cannot (DV-39)."""
-    value = first_value(request, "direction")
-    direction = DEFAULT_DIRECTION if value is None else parsed_value("direction", value, LineageDirection)
-    return direction, java_number(request, "depth", DEFAULT_DEPTH, INT_RANGE)
+    asked = read_params(LineageParams, request.query_params)
+    return asked.direction, asked.depth
 
 
-@LINEAGE.get("/{guid}")
+LINEAGE_INFO = json_response(AtlasLineageInfo, description="The lineage graph.")
+
+CONSTRAINTS_BODY = request_body(
+    LineageConstraintsByGuid,
+    required=False,
+    description="The constraints per entity GUID; needs lineage_on_demand_enabled.",
+)
+
+
+@LINEAGE.get("/{guid}", responses=LINEAGE_INFO)
 async def get_lineage_graph(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
     """``getLineageGraph``: the entity's lineage in ``direction``, ``depth`` deep (LIN-01 to LIN-05)."""
     validate_param_length("guid", guid)
@@ -52,22 +64,20 @@ async def get_lineage_graph(guid: str, request: Request, store: Store) -> AtlasJ
     return AtlasJSONResponse(content=info.to_json())
 
 
-@LINEAGE.post("/{guid}")
-async def get_lineage_graph_on_demand(guid: str, request: Request, body: Body, store: Store) -> AtlasJSONResponse:
+@LINEAGE.post("/{guid}", responses=LINEAGE_INFO, **CONSTRAINTS_BODY)
+async def get_lineage_graph_on_demand(
+    guid: str, request: Request, constraints_body: ConstraintsBody, store: Store
+) -> AtlasJSONResponse:
     """``getLineageGraph`` on demand: within the constraints per GUID of the body (LIN-06, LIN-07)."""
     if not request.app.state.settings.lineage_on_demand_enabled:
         raise AtlasError(AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED, LINEAGE_ON_DEMAND_ENABLED)
     validate_param_length("guid", guid)
-    constraints = (
-        {key: LineageOnDemandConstraints.model_validate(value or {}) for key, value in dict(body).items()}
-        if body
-        else None
-    )
-    info = await lineage_service(request, store).get_atlas_lineage_info_on_demand(guid, constraints)
+    constraints = {key: value or LineageOnDemandConstraints() for key, value in (constraints_body or {}).items()}
+    info = await lineage_service(request, store).get_atlas_lineage_info_on_demand(guid, constraints or None)
     return AtlasJSONResponse(content=info.to_json())
 
 
-@LINEAGE.get("/uniqueAttribute/type/{type_name}")
+@LINEAGE.get("/uniqueAttribute/type/{type_name}", responses=LINEAGE_INFO)
 async def get_lineage_by_unique_attribute(type_name: str, request: Request, store: Store) -> AtlasJSONResponse:
     """``getLineageByUniqueAttribute``: the lineage of the entity holding the ``attr:`` values (LIN-01)."""
     validate_param_length("typeName", type_name)

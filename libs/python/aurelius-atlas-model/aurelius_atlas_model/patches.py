@@ -42,3 +42,13 @@ class AtlasPatch(AtlasModel):
         default=None,
         description="How the patch ended: UNKNOWN, APPLIED, SKIPPED, or FAILED.",
     )
+
+
+class AtlasPatches(AtlasModel):
+    """``AtlasPatch.AtlasPatches``: the list ``admin/patches`` answers (ENS-10, DV-14).
+
+    ``intg/src/main/java/org/apache/atlas/model/patches/AtlasPatch.java#AtlasPatches``; Aurelius Atlas
+    lists the typedef patches only.
+    """
+
+    patches: list[AtlasPatch] = Field(default_factory=list)

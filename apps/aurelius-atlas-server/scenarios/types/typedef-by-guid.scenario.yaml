@@ -63,10 +63,14 @@ stages:
               subTypes: []
           volatile: ["$.createTime", "$.updateTime"]
     - name: an unknown GUID
-      request: { method: GET, url: /api/atlas/v2/types/typedef/guid/scenario-by-guid-missing }
+      request: { method: GET, url: /api/atlas/v2/types/typedef/guid/dddddddd-dddd-4ddd-8ddd-dddddddddddd }
       response:
           status: 404
-          json: { errorCode: ATLAS-404-00-002, errorMessage: Given type guid scenario-by-guid-missing was invalid }
+          json:
+              {
+                  errorCode: ATLAS-404-00-002,
+                  errorMessage: Given type guid dddddddd-dddd-4ddd-8ddd-dddddddddddd was invalid,
+              }
     - name: clean up
       request: { method: DELETE, url: /api/atlas/v2/types/typedef/name/scenario_by_guid_pii }
       response: { status: 204 }

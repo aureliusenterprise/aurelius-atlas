@@ -66,9 +66,28 @@ ASSET_CACHE_CONTROL = "public, max-age=31536000, immutable"
 HSTS_HEADER: tuple[Header, ...] = (("strict-transport-security", "max-age=31536000; includeSubDomains"),)
 """One year, all subdomains — the same pin Keycloak's realm header uses (browserSecurityHeaders)."""
 
+DOCS_PATH = "/api/atlas/docs"
+"""The Swagger UI page of the dev OpenAPI surface: served only under development (create_app), a 404 elsewhere."""
+
+DOCS_CSP = (
+    "default-src 'self'; base-uri 'none'; frame-ancestors 'none'"
+    "; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+    "; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net"
+    "; img-src 'self' data: https://fastapi.tiangolo.com"
+    "; font-src https://cdn.jsdelivr.net"
+)
+"""Swagger UI is a document: FastAPI's page loads its bundle from jsdelivr, boots with an inline script,
+and takes the spec from 'self'. Development only — the surface answers on no production server."""
+
+DOCS_HEADERS: tuple[Header, ...] = tuple(
+    ("content-security-policy", DOCS_CSP) if name == "content-security-policy" else (name, value)
+    for name, value in API_SECURITY_HEADERS
+)
+"""The API headers with the docs CSP swapped in: everything else (no-store, nosniff, framing) stays closed."""
+
 
 def _is_api_path(path: str) -> bool:
-    """The Atlas API namespace, including the OpenAPI-free ``/api/atlas`` tree."""
+    """The Atlas API namespace, the ``/api/atlas`` tree."""
     return path == "/api" or path.startswith("/api/")
 
 
@@ -82,11 +101,15 @@ class SecurityHeadersMiddleware:
 
     :param app: the wrapped ASGI application
     :param hsts_enabled: serve ``Strict-Transport-Security`` (``ServerSettings.hsts_enabled``)
+    :param dev_docs_enabled: the dev OpenAPI surface is served (``ServerSettings.is_development``), so the
+        docs page carries its own CSP; off, every API path shares the strict one
     """
 
-    def __init__(self, app: ASGIApp, *, hsts_enabled: bool = True) -> None:
+    def __init__(self, app: ASGIApp, *, hsts_enabled: bool = True, dev_docs_enabled: bool = False) -> None:
         self._app = app
         self._hsts = HSTS_HEADER if hsts_enabled else ()
+        # Off, the docs path is a plain API answer (a 404) under the strict CSP.
+        self._docs_headers = DOCS_HEADERS if dev_docs_enabled else API_SECURITY_HEADERS
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         """Stamp on ``http.response.start``, so every answer of the wrapped app carries the headers."""
@@ -96,7 +119,8 @@ class SecurityHeadersMiddleware:
 
         path = site_path(scope)
         if _is_api_path(path):
-            stamped: tuple[Header, ...] = API_SECURITY_HEADERS + self._hsts
+            api = self._docs_headers if path == DOCS_PATH else API_SECURITY_HEADERS
+            stamped: tuple[Header, ...] = api + self._hsts
             cache_assets = False
         else:
             stamped = DASHBOARD_SECURITY_HEADERS + self._hsts

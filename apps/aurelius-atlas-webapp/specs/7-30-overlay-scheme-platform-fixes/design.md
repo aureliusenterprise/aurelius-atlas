@@ -307,3 +307,73 @@ select the scrim by its unchanged class. The dismiss stays mouse-and-pointer-dri
 backdrop: Enter and Space dismiss only when the scrim is focused, which the tabindex prevents,
 because Escape is the keyboard path. A future scrim restyle must keep the button-chrome reset (the
 UA paints a button face otherwise, and Bulma resets only the margin).
+
+### DD-552. A GUID that names a stored object must be UUID text
+
+- **Status:** Accepted
+- **Increment:** 7.30
+- **Date:** 2026-11-13
+
+**Decision.** Every entity, relationship, lineage and typedef endpoint that names a stored object
+by GUID reads its path or query parameter as UUID text. Text that is no UUID is refused 400
+(`ATLAS-400-00-021`, `ObjectId is not valid {0}`). The length check runs first, so text beyond the
+parameter limit is refused 400 (`ATLAS-400-00-057`) as before. A UUID no object has answers 404 as
+Atlas answers it. The purge endpoint checks access before it checks the GUIDs, as Atlas checks the
+role first. A saved search and an audit entry keep taking any text, because their ids are a
+client-chosen name and a server-minted id that is looked up, not named in a path the client round-trips.
+
+**Reason.** Aurelius Atlas mints every stored GUID as a UUID (the entity store, the typedef store,
+the audit repository and the relationship store), and a REST create mints a fresh one even when the
+body names a GUID, so every GUID a client reads back is UUID text. No client round-trips other text
+through these endpoints. An early 400 tells the caller its id is malformed, instead of hiding that
+mistake in a lookup miss. The strict rule is a deliberate move away from Apache Atlas, which takes a
+GUID as any text (DV-161).
+
+**Alternatives.** Keep Java's any-text rule: the reviewer chose a validation error over strict
+parity for this input. Pydantic's `UUID` type as the field type: FastAPI would answer 422 with a
+body that is no Atlas error body, and it normalizes braced or odd-cased input silently. A 404
+(`INSTANCE_GUID_NOT_FOUND`) for malformed text: considered first, because a malformed GUID names no
+entity. Rejected, because a wrong id from the caller is a client error and deserves its own signal.
+
+**Consequences.** The fixtures and the parity scenarios that named an entity no store has now name
+it with a well-formed UUID and still expect the same 404, so the scenarios keep pinning Java's
+behaviour for the case Java answers. The 400 for malformed text is pinned by unit tests only.
+Request bodies are untouched: GUID fields in bodies stay open text, and the same rule for them,
+together with the unassigned `-1` GUIDs a create body uses to reference entities of the same
+request, is the next step.
+
+### DD-553. A write body names a GUID as a placeholder or UUID text
+
+- **Status:** Accepted
+- **Increment:** 7.30
+- **Date:** 2026-11-13
+
+**Decision.** A create or update body that names an entity gives it a GUID that is UUID text, or a
+placeholder for an entity of the same request. A placeholder is text starting with `-`, the unassigned
+GUID Apache Atlas uses in its own tests. Other text is refused 400 (`ATLAS-400-00-021`, `ObjectId is
+not valid {0}`). The rule covers an entity's own GUID, a relationship's GUID and its two ends, the
+keys of `referredEntities`, and the GUID list of the bulk classification request. A body that looks an
+object up keeps any text, as Apache Atlas does: an export request, a saved search, and the headers of
+`setClassifications` find an entity by values or name none. The replacement of a placeholder stays
+where it is today, in the write pipeline, which answers each placeholder's real GUID in
+`guidAssignments`.
+
+**Reason.** A validator cannot replace a placeholder, because only resolution knows the answer. A
+placeholder that matches a stored entity's unique attributes names an update, not a create, and an
+import keeps the GUIDs its file gives. A Pydantic validator is synchronous and sees one field, so it
+cannot read the store or the rest of the request. Checking the shape is the stateless half of the same
+rule, and it tells the caller about a wrong id at once. Past discovery, the type `AssignedGuid` marks
+the resolved GUIDs, so no code can hand a placeholder to a mapper or a stored document by accident.
+
+**Alternatives.** Resolve the placeholders during validation: ruled out by the two facts above. A
+model of the resolved request with a `UUID` GUID: an import legitimately keeps text GUIDs, and the
+pipeline would walk the entity graph a second time. One accessor that always answers a GUID: every
+read of the resolved map has a case where no answer is right, an entity yet to create or a reference
+an import leaves dangling, so each read keeps its own absence branch.
+
+**Consequences.** The check runs only where the server reads a request body, through a Pydantic
+context. Internal code, response building, and the models that default a GUID to `-1` for a stored
+record see no rule. A relationship create that gives its own text GUID, which Aurelius Atlas stored
+as Apache Atlas stores it, is now refused. That GUID was unreadable anyway, since the endpoints name
+an object by UUID text (DV-161). A GUID inside an attribute value stays outside the rule, as the
+attributes map holds any JSON, and the write answers it when it resolves the reference.
