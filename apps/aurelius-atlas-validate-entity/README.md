@@ -28,6 +28,10 @@ The rules read signs as the app's **own** service identity (VEV-04), never the c
 and the catalogue leg travels one circuit breaker: an unreachable or refusing catalogue —
 or a cluster without the realm join — answers `502`, never a no-rules answer (VEV-06).
 
+The app answers its OpenAPI document at `/openapi.json` and the Swagger UI at `/docs` under
+development only (`AURELIUS_ATLAS_VALIDATE_ENTITY_ENVIRONMENT=development`, which the dev `.env`
+sets), so `npx nx serve` shows both (AUX-07, 8.23). Production answers `404`.
+
 ## Run
 
 ```bash

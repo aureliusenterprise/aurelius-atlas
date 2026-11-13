@@ -46,14 +46,15 @@ Python 3.14, since ONNX Runtime has no wheels for 3.15 yet (DD-433).
 
 ## Settings
 
-| Variable                                                 | Default                                    | What it sets                          |
-| -------------------------------------------------------- | ------------------------------------------ | ------------------------------------- |
-| `AURELIUS_ATLAS_EMBEDDER_MODEL_DIR`                      | `/model` in the image                      | The model's directory; never fetched  |
-| `AURELIUS_ATLAS_EMBEDDER_MODEL_ID`                       | `intfloat/multilingual-e5-small`           | The id a request's `model` must match |
-| `AURELIUS_ATLAS_EMBEDDER_MODEL_REVISION`                 | `614241f622f53c4eeff9890bdc4f31cfecc418b3` | The revision `/v1/models` reports     |
-| `AURELIUS_ATLAS_EMBEDDER_MAX_TOKENS`                     | `512`                                      | Tokens a text is cut at               |
-| `AURELIUS_ATLAS_EMBEDDER_THREADS`                        | `0`: ONNX Runtime chooses                  | Threads per inference                 |
-| `AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE`, `_TLS_KEY_FILE` | unset: plain HTTP                          | The certificate pair to serve HTTPS   |
-| `AURELIUS_ATLAS_EMBEDDER_HOST`, `_PORT`, `_LOG_LEVEL`    | `localhost`, `21004`, `info`               | Where it listens, and its logging     |
+| Variable                                                 | Default                                    | What it sets                                                                               |
+| -------------------------------------------------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------ |
+| `AURELIUS_ATLAS_EMBEDDER_MODEL_DIR`                      | `/model` in the image                      | The model's directory; never fetched                                                       |
+| `AURELIUS_ATLAS_EMBEDDER_MODEL_ID`                       | `intfloat/multilingual-e5-small`           | The id a request's `model` must match                                                      |
+| `AURELIUS_ATLAS_EMBEDDER_MODEL_REVISION`                 | `614241f622f53c4eeff9890bdc4f31cfecc418b3` | The revision `/v1/models` reports                                                          |
+| `AURELIUS_ATLAS_EMBEDDER_MAX_TOKENS`                     | `512`                                      | Tokens a text is cut at                                                                    |
+| `AURELIUS_ATLAS_EMBEDDER_THREADS`                        | `0`: ONNX Runtime chooses                  | Threads per inference                                                                      |
+| `AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE`, `_TLS_KEY_FILE` | unset: plain HTTP                          | The certificate pair to serve HTTPS                                                        |
+| `AURELIUS_ATLAS_EMBEDDER_HOST`, `_PORT`, `_LOG_LEVEL`    | `localhost`, `21004`, `info`               | Where it listens, and its logging                                                          |
+| `AURELIUS_ATLAS_EMBEDDER_ENVIRONMENT`                    | `production`                               | `development` serves `/openapi.json` and `/docs` (AUX-07, 8.23); the serve command sets it |
 
 The image takes about 800 MB of memory once the model has loaded, and embeds 64 short texts in about 0.2 s.

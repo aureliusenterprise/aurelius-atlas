@@ -34,6 +34,10 @@ class Data2ModelSettings(BaseSettings):
     log_level: LogLevel = "info"
     """The lowest level of log record the app and uvicorn emit."""
 
+    environment: Literal["production", "development"] = "production"
+    """What the app runs in: the image ships production; the dev arrangement sets development in
+    ``.env``, which turns on the dev-only OpenAPI surface (AUX-07, DD-557)."""
+
     tls_cert_file: FilePath | None = None
     """PEM certificate to serve HTTPS with; requires ``tls_key_file``."""
 
@@ -82,3 +86,8 @@ class Data2ModelSettings(BaseSettings):
         if self.tls_cert_file is None or self.tls_key_file is None:
             return None
         return Path(self.tls_cert_file), Path(self.tls_key_file)
+
+    @property
+    def is_development(self) -> bool:
+        """Whether ``environment`` is set to development: the dev OpenAPI surface answers, production's does not."""
+        return self.environment == "development"

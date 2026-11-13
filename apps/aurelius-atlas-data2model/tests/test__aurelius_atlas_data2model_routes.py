@@ -5,6 +5,7 @@ from aurelius_atlas_auth import KeycloakAuth
 from aurelius_atlas_data2model.routes import HEALTH, build_router
 from aurelius_atlas_data2model.routes.extract import EXTRACT
 from aurelius_atlas_data2model.routes.health import liveness
+from aurelius_atlas_data2model_client.models import ExtractionResponse
 from fastapi import APIRouter
 from fastapi.routing import APIRoute
 
@@ -22,7 +23,9 @@ def test__the_extract_router_carries_the_endpoint_and_its_gate(auth: KeycloakAut
     assert route.path == "/extract"
     assert sorted(route.methods or ()) == ["POST"]
     assert build_router(auth).tags == [EXTRACT]
-    assert route.response_model is None  # the answer is built by hand, verbatim (DTM-01, CL-50)
+    # Since 8.23 the answer's model is declared for the OpenAPI document (AUX-06); the route
+    # returns a Response, so FastAPI never serialises through it and the bytes stay verbatim (CL-50).
+    assert route.response_model is ExtractionResponse
     assert route.dependant.dependencies  # the gate rides the route
 
 

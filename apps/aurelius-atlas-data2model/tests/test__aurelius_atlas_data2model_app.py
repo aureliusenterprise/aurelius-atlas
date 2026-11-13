@@ -187,10 +187,28 @@ async def test__an_empty_body_yields_the_empty_model_skeleton(
     assert ar3["ar3_model"]["ar3_relationships"] == {"ar3_relationship": []}
 
 
-@pytest.mark.covers("aurelius_atlas_data2model.app.create_app")
+@pytest.mark.covers("aurelius_atlas_data2model.app.create_app", rules=["AUX-07"])
 def test__the_app_publishes_no_openapi_docs_or_redoc(settings: Data2ModelSettings, auth: KeycloakAuth) -> None:
-    """The auxiliary API publishes no OpenAPI, docs, or redoc (DD-197, as the server)."""
+    """Production publishes no OpenAPI, docs, or redoc (AUX-07, DD-557 — the server's posture)."""
     app = create_app(settings, auth=auth)
+
     assert app.openapi_url is None
     assert app.docs_url is None
+    assert app.redoc_url is None
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_data2model.app.create_app",
+    "aurelius_atlas_data2model.settings.Data2ModelSettings.is_development",
+    rules=["AUX-07"],
+)
+def test__the_development_environment_serves_the_openapi_surface(
+    settings: Data2ModelSettings, auth: KeycloakAuth
+) -> None:
+    """Under development the spec and the docs page answer (AUX-07): the dev surface, DD-557."""
+    development = settings.model_copy(update={"environment": "development"})
+    app = create_app(development, auth=auth)
+
+    assert app.openapi_url == "/openapi.json"
+    assert app.docs_url == "/docs"
     assert app.redoc_url is None

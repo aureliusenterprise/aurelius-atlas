@@ -1,5 +1,7 @@
 """``POST /v1/embeddings`` and ``GET /v1/models`` (EMB-01, EMB-02, EMB-05, EMB-06)."""
 
+from typing import Any
+
 from fastapi import APIRouter, Request
 from starlette.concurrency import run_in_threadpool
 
@@ -12,6 +14,26 @@ EMBEDDINGS = APIRouter(prefix="/v1")
 """The embeddings router."""
 
 NOT_FOUND = 404
+
+OPENAI_ERROR_REF = {"$ref": "#/components/schemas/ErrorResponse"}
+"""The OpenAI error body of EMB-05, named once; ``app`` puts the model in the document."""
+
+OPENAI_ERROR_MEDIA = {"application/json": {"schema": OPENAI_ERROR_REF}}
+"""The media type object of an OpenAI refusal, used by every refusal below and by ``app``."""
+
+EMBEDDINGS_ANSWER: dict[int | str, dict[str, Any]] = {
+    404: {
+        "description": "A ``model`` other than the served one (EMB-05).",
+        "content": OPENAI_ERROR_MEDIA,
+    },
+    503: {"description": "The model has not loaded yet (EMB-07).", "content": OPENAI_ERROR_MEDIA},
+}
+"""The refusals of ``POST /v1/embeddings`` beside the 200 and the automatic 422."""
+
+MODELS_ANSWER: dict[int | str, dict[str, Any]] = {
+    503: {"description": "The model has not loaded yet (EMB-07).", "content": OPENAI_ERROR_MEDIA},
+}
+"""The refusal of ``GET /v1/models`` beside the 200."""
 
 
 def ready_model(request: Request) -> Model:
@@ -26,7 +48,7 @@ def ready_model(request: Request) -> Model:
     return model
 
 
-@EMBEDDINGS.post("/embeddings")
+@EMBEDDINGS.post("/embeddings", responses=EMBEDDINGS_ANSWER)
 async def create_embeddings(body: EmbeddingRequest, request: Request) -> EmbeddingResponse:
     """One embedding per text, in the order sent (EMB-01, EMB-02); the model runs off the event loop."""
     model = ready_model(request)
@@ -41,7 +63,7 @@ async def create_embeddings(body: EmbeddingRequest, request: Request) -> Embeddi
     )
 
 
-@EMBEDDINGS.get("/models")
+@EMBEDDINGS.get("/models", responses=MODELS_ANSWER)
 def list_models(request: Request) -> ModelList:
     """The served model, its dimensions and its revision (EMB-06)."""
     model = ready_model(request)

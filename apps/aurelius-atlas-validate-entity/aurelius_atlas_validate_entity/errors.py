@@ -1,4 +1,9 @@
-"""The app's error contract: the catalogue failure and the Atlas-shaped body (VEV-01, VEV-06)."""
+"""The app's error contract: the catalogue failure and the Atlas-shaped body (VEV-06).
+
+Since 8.23 the rejected draft is not an exception of this module: the body parses
+as ``models.DraftEntity``, and the root's ``RequestValidationError`` handler answers
+a parse failure with ``atlas_error`` (VEV-01, DD-558).
+"""
 
 from fastapi.responses import JSONResponse
 
@@ -16,14 +21,6 @@ class UpstreamError(Exception):
         super().__init__(message)
         self.status_code = status_code
         """The HTTP status the route answers with: the 502 of VEV-06."""
-
-
-class DraftRejectedError(Exception):
-    """A draft the app will not read (VEV-01): the handler answers it 400.
-
-    The legacy Flask service crashed on such a body — a 500; the port states
-    the 400 of DV-79's posture, in the Atlas error body.
-    """
 
 
 def atlas_error(status_code: int, message: str) -> JSONResponse:

@@ -16,6 +16,7 @@ when it stops; an injected client brings its own pool (DD-205's pattern, 8.2's).
 from collections.abc import AsyncGenerator, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from importlib.metadata import version
+from typing import Any
 
 import httpx2 as httpx
 from aurelius_atlas_auth import KeycloakAuth
@@ -24,7 +25,7 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
-from aurelius_atlas_validate_entity.errors import DraftRejectedError, UpstreamError, atlas_error
+from aurelius_atlas_validate_entity.errors import UpstreamError, atlas_error
 from aurelius_atlas_validate_entity.globals import BAD_GATEWAY, BAD_REQUEST, LOGGER, NAME
 from aurelius_atlas_validate_entity.providers import build_auth, build_upstreams, configure_telemetry, server_breaker
 from aurelius_atlas_validate_entity.routes import HEALTH, build_router
@@ -59,13 +60,15 @@ def create_app(
     breaker = server_breaker(settings)
     engine = VerdictEngine(atlas_client, breaker, settings.rules_cache_seconds)
 
+    # The OpenAPI surface answers only under development (the dev .env sets it); production
+    # serves no spec and no docs page (AUX-07, DD-557 — the server's SRV-08 posture).
     app = FastAPI(
         title=NAME,
         version=version(NAME),
         lifespan=_lifespan(upstream_pools),
-        docs_url=None,
+        docs_url="/docs" if settings.is_development else None,
         redoc_url=None,
-        openapi_url=None,
+        openapi_url="/openapi.json" if settings.is_development else None,
     )
     app.state.settings = settings
     app.state.auth = verifier
@@ -76,8 +79,48 @@ def create_app(
     app.include_router(build_router(verifier))
     app.include_router(HEALTH)
     _setup_error_handlers(app)
+    _install_openapi(app)
     configure_telemetry(app, settings)
     return app
+
+
+ATLAS_ERROR_BODY: dict[str, object] = {
+    "type": "object",
+    "properties": {"errorCode": {"type": "string"}, "errorMessage": {"type": "string"}},
+    "required": ["errorCode", "errorMessage"],
+}
+"""The Atlas error body every rejection of this app answers with (VEV-01, DV-79's posture)."""
+
+BAD_DRAFT = {
+    "description": "A draft the app will not read: the Atlas error body (VEV-01, DV-79).",
+    "content": {"application/json": {"schema": ATLAS_ERROR_BODY}},
+}
+
+
+def _install_openapi(app: FastAPI) -> None:
+    """Make the document state what the app answers, not what FastAPI would (AUX-06, DD-558).
+
+    A draft the app cannot parse or read is the 400 of VEV-01, answered in the Atlas error
+    body by the root's handler. FastAPI's generator promises its own 422 validation body
+    instead; that entry leaves the document and the honest 400 takes its place, with the
+    two validation schemas no route answers.
+    """
+    original = app.openapi
+
+    def openapi() -> dict[str, Any]:
+        spec = original()
+        for item in spec.get("paths", {}).values():
+            for operation in item.values():
+                responses = operation.get("responses", {})
+                if "422" in responses:
+                    responses.pop("422")
+                    responses["400"] = dict(BAD_DRAFT)
+        schemas = spec.get("components", {}).get("schemas", {})
+        for name in ("HTTPValidationError", "ValidationError"):
+            schemas.pop(name, None)
+        return spec
+
+    app.openapi = openapi
 
 
 def _lifespan(pools: list[httpx.AsyncClient]) -> Callable[[FastAPI], AbstractAsyncContextManager[None]]:
@@ -112,18 +155,15 @@ def _setup_error_handlers(app: FastAPI) -> None:
         LOGGER.warning("Catalogue %s unreachable: %s", error.request.url, error)
         return atlas_error(BAD_GATEWAY, "the catalogue is unreachable")
 
-    @app.exception_handler(DraftRejectedError)
-    def draft_rejected(_request: Request, error: DraftRejectedError) -> JSONResponse:
-        """A draft the app will not read is a 400 with an Atlas-shaped error body (VEV-01, DV-79)."""
-        return atlas_error(BAD_REQUEST, str(error))
-
     @app.exception_handler(RequestValidationError)
     def validation_error(_request: Request, error: RequestValidationError) -> JSONResponse:
-        """A body that is not JSON at all is a 400 with an Atlas-shaped error body (VEV-01, DV-79).
+        """A draft the app cannot parse or read is a 400 with an Atlas-shaped error body (VEV-01, DV-79).
 
-        The legacy let Flask crash on such a body — a 500; the port states 400,
-        the same posture lineage-model keeps for its query rejections (DV-73's
-        sibling).
+        Since 8.23 this covers both halves of VEV-01's rejection: a body that is
+        not JSON at all, and a JSON body that fails the ``DraftEntity`` model
+        (DD-558). The legacy let Flask crash on either — a 500; the port states
+        400, the same posture lineage-model keeps for its query rejections
+        (DV-73's sibling).
         """
         first = error.errors()[0] if error.errors() else {}
         message = f"invalid validation request: {first.get('msg', 'malformed body')}"

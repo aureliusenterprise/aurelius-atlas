@@ -28,6 +28,10 @@ root in `app.py`.
 | `GET /`         | Keycloak bearer | `502` fast, without the upstream call, while a circuit is open (8.5)       |
 | `GET /liveness` | –               | `204` while the app runs (the container healthcheck)                       |
 
+The app answers its OpenAPI document at `/openapi.json` and the Swagger UI at `/docs` under
+development only (`AURELIUS_ATLAS_LINEAGE_MODEL_ENVIRONMENT=development`, which the dev `.env`
+sets), so `npx nx serve` shows both (AUX-07, 8.23). Production answers `404`.
+
 ## Run
 
 ```bash
