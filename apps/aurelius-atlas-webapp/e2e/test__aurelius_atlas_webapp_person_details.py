@@ -235,7 +235,7 @@ def test__the_person_page_shows_the_quality_rules_with_verdicts(
         _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guid}"))
 
         box = authenticated.locator("#gov-quality")
-        expect(box.locator("h3")).to_have_text("Governance Quality Rules")
+        expect(box.locator("h2")).to_have_text("Governance Quality Rules")
 
         # DET-42: the run's rule draws its card — name as the title, the
         # stored description line, and the warning icon of a refusal

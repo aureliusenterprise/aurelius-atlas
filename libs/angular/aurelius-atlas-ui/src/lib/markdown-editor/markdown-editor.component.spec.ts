@@ -181,4 +181,68 @@ describe("MarkdownEditor (UIC-26)", () => {
         expect(tab.getAttribute("aria-controls")).toBe(area.id);
         expect(area.id).toMatch(/^aurelius-markdown-editor-\d+-write$/);
     });
+
+    it("runs the tab pair as native buttons with a roving tabindex (FORM-CUSTOM-002)", () => {
+        const [write, preview] = tabs();
+
+        // A real button needs no key handlers of its own — activation is the
+        // element's; the inactive tab sits out of the tab order.
+        expect(write.tagName).toBe("BUTTON");
+        expect(write.getAttribute("type")).toBe("button");
+        expect(preview.tagName).toBe("BUTTON");
+        expect(write.getAttribute("tabindex")).toBe("0");
+        expect(preview.getAttribute("tabindex")).toBe("-1");
+
+        preview.click();
+        fixture.detectChanges();
+
+        expect(write.getAttribute("tabindex")).toBe("-1");
+        expect(tabs()[1].getAttribute("tabindex")).toBe("0");
+    });
+
+    it("walks the tab pair with the arrow keys, carrying focus (FORM-CUSTOM-002)", () => {
+        const press = (key: string) => {
+            tabs()
+                .find((tab) => tab.getAttribute("aria-selected") === "true")!
+                .dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true }));
+            fixture.detectChanges();
+        };
+
+        press("ArrowRight");
+        expect(tabs()[1].getAttribute("aria-selected")).toBe("true");
+        expect(document.activeElement).toBe(tabs()[1]);
+
+        // Right wraps to the first tab; Left wraps back to the last.
+        press("ArrowRight");
+        expect(tabs()[0].getAttribute("aria-selected")).toBe("true");
+        expect(document.activeElement).toBe(tabs()[0]);
+        press("ArrowLeft");
+        expect(tabs()[1].getAttribute("aria-selected")).toBe("true");
+
+        // Home/End jump the ends.
+        press("Home");
+        expect(tabs()[0].getAttribute("aria-selected")).toBe("true");
+        press("End");
+        expect(tabs()[1].getAttribute("aria-selected")).toBe("true");
+        expect(document.activeElement).toBe(tabs()[1]);
+    });
+
+    it("carries the caller's required and error-line ids onto the textarea (FORM-REQ-001, FORM-ERR-002)", () => {
+        const bare = TestBed.createComponent(MarkdownEditor);
+        bare.detectChanges();
+        const area = () => bare.nativeElement.querySelector("textarea") as HTMLTextAreaElement;
+
+        expect(area().required).toBe(false);
+        expect(area().hasAttribute("aria-describedby")).toBe(false);
+        expect(area().getAttribute("aria-invalid")).toBeNull();
+
+        bare.componentRef.setInput("required", true);
+        bare.componentRef.setInput("describedBy", "editor-description-error");
+        bare.componentRef.setInput("invalid", true);
+        bare.detectChanges();
+
+        expect(area().required).toBe(true);
+        expect(area().getAttribute("aria-describedby")).toBe("editor-description-error");
+        expect(area().getAttribute("aria-invalid")).toBe("true");
+    });
 });

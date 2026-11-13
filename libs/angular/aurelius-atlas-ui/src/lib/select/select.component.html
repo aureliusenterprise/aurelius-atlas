@@ -19,8 +19,10 @@
                 [ngModel]="controlValue()"
                 (ngModelChange)="onValueChange($event)"
                 [disabled]="disabled()"
-                [attr.aria-labelledby]="inputId + '-label'"
-                aria-required="true"
+                [attr.aria-labelledby]="_label ? inputId + '-label' : null"
+                [attr.aria-required]="required() ? 'true' : null"
+                [attr.aria-invalid]="invalid() ? 'true' : null"
+                [attr.aria-describedby]="invalid() ? inputId + '-error' : null"
             >
                 <!-- The placeholder's empty value is a static attribute, not a
                      [value] binding: the binding leaves no content attribute,
@@ -46,7 +48,9 @@
             </span>
         }
         @if (invalid()) {
-            <p class="help is-danger">{{ requiredErrorMessage() }}</p>
+            <!-- The control names this line (FORM-ERR-001): a reader hears
+                 the reason with the field, not only the red paint. -->
+            <p class="help is-danger" [id]="inputId + '-error'">{{ requiredErrorMessage() }}</p>
         }
     </div>
     @if (searchVisible()) {

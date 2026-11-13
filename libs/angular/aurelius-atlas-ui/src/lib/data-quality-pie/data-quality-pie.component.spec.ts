@@ -53,4 +53,13 @@ describe("DataQualityPie", () => {
         expect((fixture.nativeElement as HTMLElement).getAttribute("title")).toBe("73.5%");
         expect(component.value()).toBe(73.5);
     });
+
+    it("is a named image, not a bare div (ALT-001)", () => {
+        fixture.componentRef.setInput("value", 82);
+        fixture.detectChanges();
+
+        const host = fixture.nativeElement as HTMLElement;
+        expect(host.getAttribute("role")).toBe("img");
+        expect(host.getAttribute("aria-label")).toBe("Data quality score 82%");
+    });
 });

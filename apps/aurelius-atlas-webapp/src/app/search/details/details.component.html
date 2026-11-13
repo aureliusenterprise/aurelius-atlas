@@ -81,7 +81,10 @@
     <div class="columns">
         <div class="column">
             <div id="description-details" class="box">
-                <h3 class="title is-3">{{ descriptionTitle() }}</h3>
+                <!-- HEADING-002: the section titles sit one level under
+                     the entity h1 (was h3, a skipped level); the Bulma
+                     classes keep the pixels. -->
+                <h2 class="title is-3">{{ descriptionTitle() }}</h2>
                 <!-- The legacy description component (DET-10, DD-321):
                          the text renders as markdown, and an empty
                          description shows its italic centered placeholder
@@ -98,7 +101,7 @@
         @if (layout()?.peopleBox) {
             <div class="column">
                 <div id="people-details" class="box aurelius-details-people">
-                    <h3 class="title is-3">{{ layout()?.peopleTitle }}</h3>
+                    <h2 class="title is-3">{{ layout()?.peopleTitle }}</h2>
                     <!-- The People box (DET-23, UIC-28): the three labelled
                          rows of the opened entity, deduped and filtered
                          app-side; a person link routes the screen. -->
@@ -260,9 +263,9 @@
          shape (DD-521's quiet swallow). -->
     @if (layout()?.govQualityBox) {
         <div id="gov-quality" class="box aurelius-details-gov-quality">
-            <h3 class="title is-3" i18n="@@search.details.components.governanceQualityCards.title">
+            <h2 class="title is-3" i18n="@@search.details.components.governanceQualityCards.title">
                 Governance Quality Rules
-            </h3>
+            </h2>
             <aurelius-atlas-webapp-gov-quality-cards [rows]="govRows()" (ruleClicked)="onCardClick($event)" />
         </div>
     }
@@ -270,7 +273,7 @@
 
 <aurelius-atlas-ui-accordion id="properties-details" class="block" [expanded]="true">
     <ng-container header>
-        <h3 class="title is-3 aurelius-details-properties-title">{{ propertiesTitle() }}</h3>
+        <h2 class="title is-3 aurelius-details-properties-title">{{ propertiesTitle() }}</h2>
     </ng-container>
     <ng-container content>
         <!-- The legacy `sortable-table-shell` swap (DET-11): with

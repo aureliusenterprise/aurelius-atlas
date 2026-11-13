@@ -13,9 +13,11 @@
         border-radius: 100%;
     }
 
-    .button:focus,
+    /* DETAILS-NAV-FOCUS (2.4.7): the old rule killed the outline on
+       :focus, erasing the toggle's focus ring for keyboard readers. The
+       hover transparency stays (the legacy's flat toggle); the focus ring
+       is Bulma's own. */
     .button:hover {
-        outline: none;
         background-color: transparent;
     }
 }

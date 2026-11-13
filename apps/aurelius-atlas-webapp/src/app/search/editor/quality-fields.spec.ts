@@ -428,6 +428,24 @@ describe("QualityFields (EDT-25, EDT-26, EDT-27, EDT-29, EDT-31, EDT-32)", () =>
         expect(box.value).toBe("0");
     });
 
+    it("the threshold slider says its value as a percent (FORM-VALUE-001)", () => {
+        const { fixture } = setupCreate();
+        arrive(fixture);
+
+        // A raw 0–1 slider is meaningless to a reader; the percent naming
+        // travels with every position.
+        const slider = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+            "#editor-threshold-slider",
+        )!;
+        // The empty threshold rests at the engine's default, named as such.
+        expect(slider.getAttribute("aria-valuetext")).toBe("100%");
+
+        slider.value = "0.75";
+        slider.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        expect(slider.getAttribute("aria-valuetext")).toBe("75%");
+    });
+
     it("active defaults checked on create and seeds from the entity on edit (EDT-27, EDT-29)", () => {
         const { fixture } = setupCreate();
         arrive(fixture);

@@ -230,6 +230,61 @@ describe("LineageModelBrowser — routed drawer (LDG-19, LDG-25, DD-415)", () =>
         });
     });
 
+    it("TAB-PANEL-WIRING: the active tab controls a labelled, focusable tabpanel", () => {
+        const { compiled } = setup({ tab: "browse", selected: PROCESS });
+
+        const active = compiled.querySelector(".aurelius-model-browser-tab.is-active") as HTMLElement;
+        const controls = active.getAttribute("aria-controls");
+        expect(controls).toBeTruthy();
+        const panel = compiled.querySelector(`[role='tabpanel']`);
+        expect(panel?.id).toBe(controls);
+        expect(panel?.getAttribute("aria-labelledby")).toBe(active.id);
+        expect(panel?.getAttribute("tabindex")).toBe("0");
+        // The panel holds the active tab's body — the Browse tab's tree label.
+        expect(panel?.textContent).toContain("Model tree");
+
+        // An inactive tab names no panel: the strip renders one panel at a
+        // time (@switch), so a dead aria-controls would point at nothing.
+        const inactive = [...compiled.querySelectorAll(".aurelius-model-browser-tab")].find(
+            (tab) => !tab.classList.contains("is-active"),
+        );
+        expect(inactive?.hasAttribute("aria-controls")).toBe(false);
+    });
+
+    it("TAB-PANEL-WIRING: ArrowRight/ArrowLeft on the tablist switch to the neighbour tab", () => {
+        const { created, compiled, navigate, paramMap } = setup({ tab: "browse", selected: PROCESS });
+
+        // ArrowRight from Browse moves to Model — the same route navigation
+        // a click makes (DD-415) — and focuses the new tab.
+        const tablist = compiled.querySelector("[role='tablist']") as HTMLElement;
+        tablist.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true, cancelable: true }));
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "model"] } }], {
+            scroll: "manual",
+        });
+        expect(document.activeElement?.classList.contains("aurelius-model-browser-tab")).toBe(true);
+
+        // The route answers: the strip re-reads and the panel follows.
+        paramMap.next(convertToParamMap({ tab: "model" }));
+        created.detectChanges();
+        expect(activeTab(compiled)).toBe("Model");
+        expect(compiled.querySelector("[role='tabpanel']")?.getAttribute("aria-labelledby")).toBe(
+            "aurelius-model-browser-tab-model",
+        );
+
+        // ArrowLeft walks back; from the first tab it wraps to the last
+        // (Selection, with the concept it always carries).
+        tablist.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }));
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "browse"] } }], {
+            scroll: "manual",
+        });
+        paramMap.next(convertToParamMap({ tab: "browse" }));
+        created.detectChanges();
+        tablist.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowLeft", bubbles: true, cancelable: true }));
+        expect(navigate).toHaveBeenLastCalledWith([{ outlets: { drawer: ["lineage", "selection", PROCESS] } }], {
+            scroll: "manual",
+        });
+    });
+
     it("LDG-25: a tree leaf click re-routes the Selection tab to that concept", () => {
         // The Browse tab's organization tree holds the process leaf; its
         // click is the legacy's selectEntity — the selection follows and the

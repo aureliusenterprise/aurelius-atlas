@@ -58,13 +58,13 @@ describe("TechnicalContext", () => {
         expect(normalize(compiled.querySelector("article.media:nth-of-type(1) .title.is-6")?.textContent)).toBe(
             "I'm searching for which data is stored on a specific technical environment",
         );
-        expect(normalize(compiled.querySelector("article.media:nth-of-type(1) p")?.textContent)).toBe(
+        expect(normalize(compiled.querySelector("article.media:nth-of-type(1) p:not(.title)")?.textContent)).toBe(
             "Search for keywords related to the technical metadata that you are looking for.",
         );
         expect(normalize(compiled.querySelector("article.media:nth-of-type(2) .title.is-6")?.textContent)).toBe(
             "I'm exploring the technical environments on which data is stored",
         );
-        expect(normalize(compiled.querySelector("article.media:nth-of-type(2) p")?.textContent)).toBe(
+        expect(normalize(compiled.querySelector("article.media:nth-of-type(2) p:not(.title)")?.textContent)).toBe(
             "Search for keywords related to the system, collection or dataset that you are looking for.",
         );
     });

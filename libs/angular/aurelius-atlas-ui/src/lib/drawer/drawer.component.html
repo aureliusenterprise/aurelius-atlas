@@ -3,7 +3,10 @@
     animationend handler on the panel removes it once the exit is done.
 -->
 @if (active() || closing()) {
-    <div class="aurelius-drawer" [class.is-closing]="closing()">
+    <!-- While sliding out the layer is inert (MODAL-CLOSE-001): focus has
+         already returned to the opener, and the exiting panel's controls
+         must stay out of the tab order and off the click path. -->
+    <div class="aurelius-drawer" [class.is-closing]="closing()" [attr.inert]="closing() ? '' : null">
         <!--
             Scrim dismissal is a pointer affordance; the keyboard path is
             the Escape handler on the dialog (the Modal's S1077 precedent —
@@ -11,7 +14,7 @@
         -->
         <!-- eslint-disable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <!-- NOSONAR S1077: the scrim is the pointer path by design; Escape on the dialog is the keyboard path. -->
-        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()" (keydown.escape)="onBackdropClick()"></div>
+        <div class="aurelius-drawer-scrim" (click)="onBackdropClick()"></div>
         <!-- eslint-enable @angular-eslint/template/click-events-have-key-events, @angular-eslint/template/interactive-supports-focus -->
         <!-- The panel is a native <dialog> (its role needs no ARIA). It is
              never opened modally — the `open` attribute keeps it in this
@@ -23,13 +26,15 @@
             class="aurelius-drawer-panel"
             open
             aria-modal="true"
-            [attr.aria-label]="label()"
+            [attr.aria-labelledby]="title() ? headingId : null"
             tabindex="-1"
             (keydown.escape)="onEscape()"
+            (keydown.tab)="onPanelTab($event)"
+            (keydown.shift.tab)="onPanelTab($event)"
             (animationend)="onAnimationEnd($event)"
         >
             <header class="aurelius-drawer-head">
-                <p class="aurelius-drawer-title">{{ title() }}</p>
+                <h2 [id]="headingId" class="aurelius-drawer-title">{{ title() }}</h2>
                 <!--
                     The head's action slot (DD-176): content actions with the
                     `drawer-actions` attribute sit between the title and the

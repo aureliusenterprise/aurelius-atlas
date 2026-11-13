@@ -109,7 +109,63 @@ describe("Drawer", () => {
         // The native <dialog> carries the dialog role implicitly (S6819).
         expect(panel.tagName).toBe("DIALOG");
         expect(panel.getAttribute("aria-modal")).toBe("true");
-        expect(panel.getAttribute("aria-label")).toBe("Settings");
+        // The title is a heading and names the panel (DLG-HEAD-002).
+        const heading = fixture.nativeElement.querySelector(".aurelius-drawer-title");
+        expect(heading.tagName).toBe("H2");
+        expect(panel.getAttribute("aria-labelledby")).toBe(heading.id);
+        expect(panel.hasAttribute("aria-label")).toBe(false);
+    });
+
+    it("marks the background inert while open, clearing it on close (MODAL-TRAP-001)", () => {
+        const blocker = document.createElement("div");
+        document.body.append(blocker);
+
+        component.open();
+        fixture.detectChanges();
+        expect(blocker.hasAttribute("inert")).toBe(true);
+        // The drawer's own chain never gets marked.
+        expect(fixture.nativeElement.querySelector(".aurelius-drawer").hasAttribute("inert")).toBe(false);
+
+        component.close();
+        fixture.detectChanges();
+        expect(blocker.hasAttribute("inert")).toBe(false);
+
+        blocker.remove();
+    });
+
+    it("wraps Tab inside the open panel (MODAL-TRAP-001)", () => {
+        const hosted = TestBed.createComponent(FooterHostComponent);
+        hosted.detectChanges();
+        hosted.componentInstance.drawer.open();
+        hosted.detectChanges();
+
+        const panel = hosted.nativeElement.querySelector(".aurelius-drawer-panel") as HTMLElement;
+        const first = panel.querySelector(".delete") as HTMLElement;
+        const last = panel.querySelector(".aurelius-editor-save") as HTMLElement;
+
+        // Tab from the last focusable wraps to the first (focus stays on
+        // the last without the handler — jsdom moves nothing on its own).
+        last.focus();
+        panel.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+        expect(document.activeElement).toBe(first);
+
+        // Shift+Tab from the panel landing (the open focus target) goes
+        // to the last.
+        panel.focus();
+        panel.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", shiftKey: true, bubbles: true }));
+        expect(document.activeElement).toBe(last);
+    });
+
+    it("keeps the sliding-out layer inert (MODAL-CLOSE-001)", () => {
+        component.open();
+        fixture.detectChanges();
+
+        component.close();
+        fixture.detectChanges();
+        const layer = fixture.nativeElement.querySelector(".aurelius-drawer");
+        expect(layer.hasAttribute("inert")).toBe(true);
+
+        finishExit(fixture);
     });
 
     it("projects content into the body (SPL-02)", () => {

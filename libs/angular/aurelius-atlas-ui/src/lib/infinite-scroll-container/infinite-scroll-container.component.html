@@ -1,6 +1,15 @@
 <!-- The projected list (UIC-21). -->
 <ng-content></ng-content>
 
+<!-- LR-004 (WCAG 4.1.3): the persistent live region — always in the DOM; it
+     names the page fetch while one is in flight and is silent otherwise
+     (a region that appeared with the fetch could not announce it). -->
+<p class="is-sr-only" role="status" aria-live="polite">
+    @if (loading()) {
+        <span i18n="@@components.infiniteScrollContainer.loadingMore">Loading more results</span>
+    }
+</p>
+
 <!--
     The sentinel row (UIC-22): the legacy `*ngIf`'s twin — the row exists
     only while pages remain. Its #sentinel ref appears/disappears with the

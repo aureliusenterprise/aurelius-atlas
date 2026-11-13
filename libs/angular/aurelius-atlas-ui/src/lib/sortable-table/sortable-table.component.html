@@ -1,7 +1,11 @@
 @let _loading = loading();
 @let _pageRows = pageRows();
 @let _emptyLabel = emptyLabel();
+@let _caption = caption();
 
+<!-- TABLE-005 (WCAG 4.1.3): the persistent live region — always in the DOM,
+     only its text changes (sort, loading, empty, selection). -->
+<p class="is-sr-only" role="status" aria-live="polite">{{ liveMessage() }}</p>
 @if (_loading) {
     <output class="block has-text-centered p-6">
         <span class="icon is-medium has-text-info">
@@ -32,16 +36,35 @@
             ></aurelius-atlas-ui-pagination>
         </div>
     }
+    @if (rowsSelectable()) {
+        <!-- TABLE-003 (WCAG 4.1.2): the focusable rows are selectable but
+             undiscoverable; this hidden hint is what each row's
+             aria-describedby points at (outside the <table> — a stray
+             element in table markup is not renderable). -->
+        <p class="is-sr-only" id="{{ selectHintId }}" i18n="@@components.sortableTable.selectRowHint">
+            Press Enter to select this row
+        </p>
+    }
     <!-- The Bulma table-container scrolls wide tables horizontally; it can clip
          dropdowns (bulma#1655), so the Aurelius `enableTableContainer` opt-out
          is kept. -->
     <div [class.table-container]="enableTableContainer()">
         <table class="table is-striped is-hoverable is-fullwidth">
+            @if (_caption) {
+                <!-- TABLE-001: a real caption, hidden visually but read as the
+                     table's accessible description. -->
+                <caption class="is-sr-only">
+                    {{
+                        _caption
+                    }}
+                </caption>
+            }
             <thead>
                 <tr>
                     @for (column of headerColumns(); track column.headerTemplate) {
                         @if (column.sortBy()) {
                             <th
+                                scope="col"
                                 [attr.aria-sort]="ariaSort(column.sortBy())"
                                 [attr.title]="column.title()"
                                 [class.is-narrow]="column.isNarrow()"
@@ -64,6 +87,7 @@
                             </th>
                         } @else {
                             <th
+                                scope="col"
                                 [attr.title]="column.title()"
                                 [class.is-narrow]="column.isNarrow()"
                                 class="has-background-dark has-text-light"
@@ -78,6 +102,8 @@
                 @for (row of _pageRows; track $index) {
                     <tr
                         [attr.tabindex]="rowsSelectable() ? 0 : null"
+                        [attr.aria-selected]="rowsSelectable() ? row === selectedRow() : null"
+                        [attr.aria-describedby]="rowsSelectable() ? selectHintId : null"
                         [class.is-selected]="row === selectedRow()"
                         (click)="onRowClicked(row)"
                         (keydown.enter)="onRowClicked(row)"

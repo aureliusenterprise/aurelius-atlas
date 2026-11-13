@@ -1,10 +1,26 @@
+/// <reference types="@angular/localize" />
 import { CommonModule } from "@angular/common";
-import { ChangeDetectionStrategy, Component, computed, contentChildren, input, model, output } from "@angular/core";
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    contentChildren,
+    ElementRef,
+    effect,
+    inject,
+    input,
+    model,
+    output,
+    signal,
+} from "@angular/core";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faArrowsUpDown, faArrowDown, faArrowUp, faSpinner } from "@fortawesome/free-solid-svg-icons";
 
 import { Pagination } from "../pagination/pagination.component";
 import { SortDirection, TableColumn, TableRow } from "./table-column";
+
+/** Instance counter for the row-select hint's id (TABLE-003): two tables on one page must not share it. */
+let sortableTableInstances = 0;
 
 /**
  * The Aurelius sortable table (`sortable-table-shell` + `sortable-table`),
@@ -97,6 +113,14 @@ export class SortableTable<T extends Record<string, unknown>> {
     readonly emptyLabel = input("No data available");
 
     /**
+     * A short table caption for screen readers (TABLE-001), rendered as a
+     * visually-hidden `<caption>`. Unset renders no caption element at all
+     * — the header row is already the table's accessible structure. Like
+     * the other chrome labels, a caller passes a localised string.
+     */
+    readonly caption = input<string>();
+
+    /**
      * Emits the row when a row is clicked, the Aurelius `rowClicked`.
      */
     readonly rowClicked = output<T>();
@@ -116,10 +140,46 @@ export class SortableTable<T extends Record<string, unknown>> {
      */
     readonly pageChanged = output<number>();
 
+    /** TABLE-003: per-instance id of the hidden hint the focusable rows point at. */
+    protected readonly selectHintId = `aurelius-sortable-table-select-hint-${(sortableTableInstances += 1)}`;
+
+    /**
+     * TABLE-005: the text of the persistent live region (WCAG 4.1.3) — the
+     * empty state, the loaded count, the sort change, and the selection.
+     * Empty until something happens; the region itself never leaves the DOM.
+     */
+    protected readonly liveMessage = signal("");
+
+    private readonly element = inject(ElementRef);
+
     protected readonly faArrowDown = faArrowDown;
     protected readonly faArrowUp = faArrowUp;
     protected readonly faArrowsUpDown = faArrowsUpDown;
     protected readonly faSpinner = faSpinner;
+
+    constructor() {
+        // TABLE-005: `loading` and `rows` flip under the caller's hand, so
+        // those announcements come from an effect comparing the previous
+        // run (the first run stays quiet); sort and selection announce
+        // through the handlers below.
+        let first = true;
+        let wasLoading = false;
+        let wasCount = 0;
+        effect(() => {
+            const loading = this.loading();
+            const count = this.rows().length;
+            if (!first && !loading) {
+                if (count === 0 && (wasLoading || wasCount > 0)) {
+                    this.liveMessage.set(this.emptyLabel());
+                } else if (wasLoading && count > 0) {
+                    this.liveMessage.set($localize`:@@components.sortableTable.rowsLoaded:${count}:count: rows loaded`);
+                }
+            }
+            first = false;
+            wasLoading = loading;
+            wasCount = count;
+        });
+    }
 
     protected readonly headerColumns = contentChildren(TableColumn, { descendants: true, read: TableColumn });
     protected readonly rowTemplates = contentChildren(TableRow, { descendants: true, read: TableRow });
@@ -182,9 +242,12 @@ export class SortableTable<T extends Record<string, unknown>> {
         if (this.selectedRow() === row) {
             this.selectedRow.set(undefined);
             this.rowDeselected.emit();
+            // TABLE-003: the live region says what the class swap cannot.
+            this.liveMessage.set($localize`:@@components.sortableTable.selectionCleared:Selection cleared`);
         } else {
             this.selectedRow.set(row);
             this.rowSelected.emit(row);
+            this.liveMessage.set($localize`:@@components.sortableTable.rowSelected:Row selected`);
         }
     }
 
@@ -203,17 +266,39 @@ export class SortableTable<T extends Record<string, unknown>> {
         } else {
             this.sortDirection.update((direction) => (direction === "asc" ? "desc" : "asc"));
         }
+        // TABLE-005: say what the header click did.
+        this.liveMessage.set(this.sortAnnouncement(key));
+    }
+
+    /**
+     * The live-region line for a sort change (TABLE-005). The column's own
+     * header text is read back from the rendered `<th>` so the announcement
+     * names what the user sees, with the property key as the fallback.
+     * @param key The column just sorted.
+     * @returns The localised announcement.
+     */
+    private sortAnnouncement(key: string): string {
+        const index = this.headerColumns().findIndex((column) => column.sortBy() === key);
+        const cell = (this.element.nativeElement as HTMLElement).querySelectorAll("thead th")[index];
+        const header = cell?.textContent?.trim() || key;
+        const direction =
+            this.sortDirection() === "asc"
+                ? $localize`:@@components.sortableTable.ascending:ascending`
+                : $localize`:@@components.sortableTable.descending:descending`;
+        return $localize`:@@components.sortableTable.sortedBy:Sorted by ${header}:header:, ${direction}:direction:`;
     }
 
     /**
      * The `aria-sort` value of a column's header cell, the ARIA form of the
-     * `matSort` state.
+     * `matSort` state. TABLE-006: only the active column carries it — a
+     * `none` on every other header turns a screen-reader column sweep into
+     * noise, and omitting the attribute is the ARIA-accurate "no sort".
      * @param key The column's `sortBy`.
-     * @returns `ascending`, `descending`, or `none`.
+     * @returns `ascending` or `descending` for the active column, `null` to omit.
      */
-    protected ariaSort(key: string | undefined): "ascending" | "descending" | "none" {
+    protected ariaSort(key: string | undefined): "ascending" | "descending" | null {
         if (!key || this.sortBy() !== key) {
-            return "none";
+            return null;
         }
         return this.sortDirection() === "asc" ? "ascending" : "descending";
     }

@@ -63,9 +63,17 @@
         </div>
     </div>
 
-    @if (state.loading() && !state.entity()) {
-        <output class="help aurelius-editor-loading">{{ loadingLine }}</output>
-    }
+    <!-- The loading line (LR-002): the region stays mounted and only its
+         text comes and goes, so the reader already watches the place the
+         line lands in — an <output> created and filled in one frame can be
+         missed. Empty text, empty announcement. -->
+    <output class="help aurelius-editor-loading">{{ loadingText() }}</output>
+
+    <!-- The commit outcome (LR-005): the same persistent-region shape —
+         the save/delete success paths fill this line just before the
+         navigation takes the drawer away, so the outcome is said and not
+         only acted on. -->
+    <p class="is-sr-only aurelius-editor-outcome" role="status">{{ outcomeLine() }}</p>
 
     <!-- Create mode: the type field over the shipped entity typedefs
          (EDT-04, DD-330). It stays above the form after the pick — the
@@ -144,12 +152,23 @@
                             [label]="field.label"
                             [value]="enumSelected(field)"
                             [invalid]="showError(field)"
+                            [required]="field.required"
                             [requiredErrorMessage]="nameRequired"
                             [searchVisible]="false"
                             (valueChange)="enumPicked(field, $event)"
                         ></aurelius-atlas-ui-select>
                     } @else if (field.kind === "multi") {
-                        <label class="label" [for]="'editor-' + field.name + '-0'">{{ field.label }}</label>
+                        <label class="label" [for]="'editor-' + field.name + '-0'">
+                            {{ field.label }}
+                            @if (field.required) {
+                                <!-- FORM-REQ-001: the star stays the sighted
+                                     mark, the words are the announced one. -->
+                                <span class="has-text-danger" aria-hidden="true">*</span>
+                                <span class="is-sr-only" i18n="@@search.components.editor.attribute.requiredMark"
+                                    >(required)</span
+                                >
+                            }
+                        </label>
                         <div class="control aurelius-editor-multi">
                             @for (row of multiRows(field.name); track row; let i = $index) {
                                 <div class="aurelius-editor-multi-row">
@@ -158,6 +177,10 @@
                                         class="input"
                                         [id]="'editor-' + field.name + '-' + i"
                                         [attr.aria-label]="field.label"
+                                        [attr.aria-invalid]="showError(field) ? 'true' : null"
+                                        [attr.aria-describedby]="
+                                            showError(field) ? 'editor-' + field.name + '-error' : null
+                                        "
                                         [class.is-danger]="showError(field)"
                                         [formField]="row"
                                     />
@@ -176,7 +199,13 @@
                         <label class="label" [for]="'editor-' + field.name">
                             {{ field.label }}
                             @if (field.required) {
-                                <span class="has-text-danger">*</span>
+                                <!-- FORM-REQ-001: the red star is paint only
+                                     (aria-hidden); the words beside it carry
+                                     the fact to a reader. -->
+                                <span class="has-text-danger" aria-hidden="true">*</span>
+                                <span class="is-sr-only" i18n="@@search.components.editor.attribute.requiredMark"
+                                    >(required)</span
+                                >
                             }
                         </label>
                         <div class="control">
@@ -197,6 +226,7 @@
                                         [writeLabel]="markdownWriteLabel"
                                         [previewLabel]="markdownPreviewLabel"
                                         [placeholder]="markdownPlaceholder"
+                                        [describedBy]="showError(field) ? 'editor-' + field.name + '-error' : undefined"
                                     ></aurelius-atlas-ui-markdown-editor>
                                 }
                                 @case ("number") {
@@ -205,6 +235,10 @@
                                         class="input"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
+                                        [attr.aria-invalid]="showError(field) ? 'true' : null"
+                                        [attr.aria-describedby]="
+                                            showError(field) ? 'editor-' + field.name + '-error' : null
+                                        "
                                         [formField]="numberField(field.name)"
                                     />
                                 }
@@ -214,6 +248,10 @@
                                         class="input"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
+                                        [attr.aria-invalid]="showError(field) ? 'true' : null"
+                                        [attr.aria-describedby]="
+                                            showError(field) ? 'editor-' + field.name + '-error' : null
+                                        "
                                         [formField]="textField(field.name)"
                                     />
                                 }
@@ -223,6 +261,10 @@
                                         class="input aurelius-editor-text"
                                         [class.is-danger]="showError(field)"
                                         [id]="'editor-' + field.name"
+                                        [attr.aria-invalid]="showError(field) ? 'true' : null"
+                                        [attr.aria-describedby]="
+                                            showError(field) ? 'editor-' + field.name + '-error' : null
+                                        "
                                         [formField]="textField(field.name)"
                                     />
                                 }
@@ -231,9 +273,14 @@
                     }
                     <!-- The error line under the control (EDT-07). The enum
                          rides the Select's own help line (its `invalid`
-                         input, DD-332), so it is not duplicated here. -->
+                         input, DD-332), so it is not duplicated here. The
+                         line carries the id every control of this field
+                         names (FORM-ERR-002), so the reason travels with
+                         the field, not only as red paint. -->
                     @if (showError(field) && field.kind !== "enum") {
-                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                        <p class="help is-danger aurelius-editor-error" [id]="'editor-' + field.name + '-error'">
+                            {{ nameRequired }}
+                        </p>
                     }
                     <!-- The governance banner lines under the control (EDT-24,
                          DD-446), rendered by the one template below. -->
@@ -255,7 +302,13 @@
                     <p class="label" [id]="'editor-relationship-' + field.name + '-label'">
                         {{ field.label }}
                         @if (field.required) {
-                            <span class="has-text-danger">*</span>
+                            <!-- FORM-REQ-001: the picker's label is a <p>,
+                                 so the star gets the same hidden treatment
+                                 and the words join the combobox's name. -->
+                            <span class="has-text-danger" aria-hidden="true">*</span>
+                            <span class="is-sr-only" i18n="@@search.components.editor.attribute.requiredMark"
+                                >(required)</span
+                            >
                         }
                     </p>
                     <div class="control">
@@ -270,7 +323,14 @@
                         ></aurelius-atlas-webapp-entity-relationship-input>
                     </div>
                     @if (relationshipErrorShown(field)) {
-                        <p class="help is-danger aurelius-editor-error">{{ nameRequired }}</p>
+                        <!-- FORM-ERR-002: the picker's input names this line
+                             while the error shows. -->
+                        <p
+                            class="help is-danger aurelius-editor-error"
+                            [id]="'editor-relationship-' + field.name + '-error'"
+                        >
+                            {{ nameRequired }}
+                        </p>
                     }
                     <!-- The governance banner lines under the picker, the same
                          rule as the plain controls (EDT-24), rendered by the

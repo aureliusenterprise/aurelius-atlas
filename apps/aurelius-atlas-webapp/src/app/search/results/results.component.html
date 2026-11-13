@@ -29,13 +29,14 @@
         </aside>
         <div class="column results-column">
             <div class="box results-box">
-                <!-- The count header inside the box, the legacy
-                     `h6.title.is-6` (results.component.html). -->
-                <h6 class="title is-6 results-count">
+                <!-- The count header inside the box: the legacy
+                     `h6.title.is-6`, promoted to the h2 the outline needs
+                     (HEADING-003) — the Bulma classes keep the pixels. -->
+                <h2 class="title is-6 results-count">
                     <!-- By meaning the count is of the entities shown, as closest
                          matches: a search by meaning has no total (SBW-04, DD-479). -->
                     {{ search.shownCount() }} <span>{{ search.byMeaning() ? closestWord : resultsWord }}</span>
-                </h6>
+                </h2>
                 <!-- The scroll owner is the container, not the box (the
                      legacy split: the box is the 80vh flex column, the
                      container scrolls inside it). -->
@@ -77,14 +78,18 @@
         <div class="card-content">
             <div class="media">
                 <div class="media-content">
-                    <p class="title is-4 no-results">{{ noResultsMessage }}</p>
+                    <!-- HEADING-003: the message is the screen's h2 under
+                         the hero's h1 (was p.title.is-4), the advice its
+                         paragraph (was h6.title.is-6). Bulma classes keep
+                         the look; the e2e anchors on the classes. -->
+                    <h2 class="title is-4 no-results">{{ noResultsMessage }}</h2>
                 </div>
             </div>
             <article class="media">
                 <div class="media-left"></div>
                 <div class="media-content">
                     <div class="content">
-                        <h6 class="title is-6 another-query">{{ anotherQueryMessage }}</h6>
+                        <p class="title is-6 another-query">{{ anotherQueryMessage }}</p>
                     </div>
                 </div>
             </article>

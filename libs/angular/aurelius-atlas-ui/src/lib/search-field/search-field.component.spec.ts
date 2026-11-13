@@ -74,6 +74,52 @@ describe("SearchField", () => {
         expect(submitted).toEqual(["branch"]);
     });
 
+    it("submits on Enter in every browser (FORM-KBD-001)", () => {
+        const submitted: (string | null)[] = [];
+        component.querySubmitted.subscribe((query) => submitted.push(query));
+        component.query.set("branch");
+        fixture.detectChanges();
+
+        // Firefox fires no search event for Enter — the keydown path is the
+        // cross-browser submit; its preventDefault keeps Chrome's own search
+        // event from adding a second emit.
+        const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+        input().dispatchEvent(event);
+
+        expect(submitted).toEqual(["branch"]);
+        expect(event.defaultPrevented).toBe(true);
+    });
+
+    it("keeps focus on the input when the clear button destroys itself (FORM-KBD-001)", () => {
+        component.query.set("branch");
+        fixture.detectChanges();
+
+        const clearButton = fixture.nativeElement.querySelector("button.delete") as HTMLElement;
+        clearButton.focus();
+        clearButton.click();
+        fixture.detectChanges();
+
+        // The button is gone with the query (@if); focus lands on the input
+        // instead of the body.
+        expect(component.query()).toBeNull();
+        expect(fixture.nativeElement.querySelector("button.delete")).toBeNull();
+        expect(document.activeElement).toBe(input());
+    });
+
+    it("leaves focus alone when the clear was a pointer click (no focus to save)", () => {
+        component.query.set("branch");
+        fixture.detectChanges();
+
+        // A mouse click on an unfocused button (jsdom: activeElement stays
+        // the body) — nothing steals focus to the input from where the
+        // user's tab order stands.
+        (fixture.nativeElement.querySelector("button.delete") as HTMLElement).click();
+        fixture.detectChanges();
+
+        expect(component.query()).toBeNull();
+        expect(document.activeElement).not.toBe(input());
+    });
+
     it("emits querySubmitted from the submit button (UIC-01)", () => {
         const submitted: (string | null)[] = [];
         component.querySubmitted.subscribe((query) => submitted.push(query));

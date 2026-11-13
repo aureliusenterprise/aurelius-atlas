@@ -223,4 +223,48 @@ describe("Select", () => {
         expect(fixture.nativeElement.querySelector("label.label")).toBeNull();
         expect(fixture.nativeElement.querySelector(".field.is-marginless")).toBeTruthy();
     });
+
+    it("drops the dangling label reference when the label is empty (FORM-LABEL-001)", () => {
+        fixture.componentRef.setInput("label", "");
+        fixture.detectChanges();
+
+        // The label element only renders with a label; the reference must
+        // leave with it, or a reader lands on an id that is not in the DOM.
+        expect(control().hasAttribute("aria-labelledby")).toBe(false);
+
+        fixture.componentRef.setInput("label", "Title");
+        fixture.detectChanges();
+
+        expect(control().getAttribute("aria-labelledby")).toBe(control().getAttribute("id") + "-label");
+    });
+
+    it("marks the control required only when the caller requires it (FORM-STATE-001)", () => {
+        fixture.detectChanges();
+
+        // An optional dropdown carries nothing — the hard-coded
+        // aria-required="true" lied for every field.
+        expect(control().getAttribute("aria-required")).toBeNull();
+
+        fixture.componentRef.setInput("required", true);
+        fixture.detectChanges();
+
+        expect(control().getAttribute("aria-required")).toBe("true");
+    });
+
+    it("announces the required error line (FORM-ERR-001)", () => {
+        fixture.componentRef.setInput("options", rows);
+        fixture.detectChanges();
+
+        // A valid control names no error line.
+        expect(control().getAttribute("aria-invalid")).toBeNull();
+        expect(control().getAttribute("aria-describedby")).toBeNull();
+
+        fixture.componentRef.setInput("invalid", true);
+        fixture.detectChanges();
+
+        expect(control().getAttribute("aria-invalid")).toBe("true");
+        const error = fixture.nativeElement.querySelector("p.help.is-danger") as HTMLElement;
+        expect(control().getAttribute("aria-describedby")).toBe(error.id);
+        expect(error.id).toBe(control().getAttribute("id") + "-error");
+    });
 });

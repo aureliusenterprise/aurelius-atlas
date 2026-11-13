@@ -70,12 +70,49 @@ describe("DetailsNavigation", () => {
         expect(dropdown()!.classList.contains("is-active")).toBe(false);
     });
 
-    it("drops the button's focus on toggle, as the legacy blur did (UIC-18)", () => {
+    it("keeps the toggle's focus across a toggle (DETAILS-NAV-FOCUS)", () => {
+        // The legacy blurred on toggle; a keyboard reader lost its place.
+        // The focus must stay on the trigger, whose aria-expanded is the
+        // state the reader announces.
         button().focus();
         button().click();
         fixture.detectChanges();
+        expect(document.activeElement).toBe(button());
 
-        expect(document.activeElement).not.toBe(button());
+        button().click();
+        fixture.detectChanges();
+        expect(document.activeElement).toBe(button());
+        expect(dropdown()!.classList.contains("is-active")).toBe(false);
+    });
+
+    it("closes on Escape and returns the focus to the toggle (DETAILS-NAV-FOCUS, 2.4.7)", () => {
+        button().click();
+        fixture.detectChanges();
+        expect(dropdown()!.classList.contains("is-active")).toBe(true);
+
+        // The keydown starts on a projected item, as it does for a reader
+        // tabbing the open menu.
+        const link = fixture.nativeElement.querySelector(".menu-list a") as HTMLElement;
+        link.focus();
+        link.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true, cancelable: true }));
+        fixture.detectChanges();
+
+        expect(dropdown()!.classList.contains("is-active")).toBe(false);
+        expect(button().getAttribute("aria-expanded")).toBe("false");
+        expect(document.activeElement).toBe(button());
+    });
+
+    it("is not a menu to assistive tech — the container carries no role=menu (ROLE-MENU-MISUSE)", () => {
+        // The dropdown's container once claimed role="menu" while holding
+        // plain links, so screen readers announced a menu with no items.
+        button().click();
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector("[role='menu']")).toBeNull();
+        expect(fixture.nativeElement.querySelector("[role='menuitem']")).toBeNull();
+        // The menu stays what the shell always was: a labelled nav of links.
+        expect(fixture.nativeElement.querySelector("nav.menu")).toBeTruthy();
+        expect(fixture.nativeElement.querySelector(".menu-list a")).toBeTruthy();
     });
 
     it("localises the label from the caller (UIC-20, DD-136)", () => {

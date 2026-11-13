@@ -32,8 +32,8 @@ const host = (args: Record<string, unknown>) => ({ props: { ...args }, template 
 
 /**
  * The closed shell: the round bars toggle, sticky bottom-right. Clicking
- * it opens the menu upward; the toggle keeps no focus ring — the legacy
- * blur.
+ * it opens the menu upward and the focus stays on the toggle
+ * (DETAILS-NAV-FOCUS); Escape closes the menu and returns the focus to it.
  */
 export const Primary: Story = {
     args: {

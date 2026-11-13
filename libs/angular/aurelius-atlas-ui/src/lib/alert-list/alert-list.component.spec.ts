@@ -30,6 +30,24 @@ describe("AlertList (ALR-07, ALR-09, ALR-10)", () => {
         expect(fixture.nativeElement.querySelector(".notification")).toBeNull();
     });
 
+    it("watches the live region before the first alert arrives (LR-002)", () => {
+        // LR-002: the region existed only with alerts, so assistive tech
+        // never saw it arrive and the first alert went unannounced. It now
+        // rides from the first render; the empty line is its child.
+        const list = fixture.nativeElement.querySelector(".aurelius-alert-list");
+        expect(list.getAttribute("role")).toBe("log");
+        expect(list.getAttribute("aria-live")).toBe("polite");
+        expect(list.querySelector(".aurelius-alert-empty")).toBeTruthy();
+
+        fixture.componentRef.setInput("alerts", [group()]);
+        fixture.detectChanges();
+
+        // The first alert lands inside the same region — no swap.
+        expect(fixture.nativeElement.querySelector(".aurelius-alert-list")).toBe(list);
+        expect(list.querySelector(".notification")).toBeTruthy();
+        expect(list.querySelector(".aurelius-alert-empty")).toBeNull();
+    });
+
     it("uses the caller's empty label (ALR-08, ALR-10)", () => {
         fixture.componentRef.setInput("emptyLabel", "Geen meldingen");
         fixture.detectChanges();

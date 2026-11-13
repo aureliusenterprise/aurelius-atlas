@@ -3,6 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { TestBed } from "@angular/core/testing";
 import { Router, provideRouter } from "@angular/router";
 import Keycloak from "keycloak-js";
+import { EMPTY } from "rxjs";
 import { vi } from "vitest";
 
 import { AppConfig } from "../config";
@@ -35,7 +36,7 @@ function setup({ atlasWrite = true }: { atlasWrite?: boolean } = {}) {
             provideHttpClientTesting(),
             { provide: APP_CONFIG, useValue: config },
             SearchState,
-            { provide: Router, useValue: { navigate } },
+            { provide: Router, useValue: { navigate, events: EMPTY, url: "/search/browse" } },
             {
                 provide: Keycloak,
                 useValue: {

@@ -80,14 +80,14 @@ describe("FacetList", () => {
         const compiled = await setup(true);
 
         expect(compiled.textContent).not.toContain("Person");
-        const link = compiled.querySelector<HTMLAnchorElement>("a.read-more")!;
+        const link = compiled.querySelector<HTMLAnchorElement>("button.read-more")!;
         expect(link.textContent?.trim()).toBe("Show more");
 
         link.click();
         fixture.detectChanges();
 
         expect(compiled.textContent).toContain("Person");
-        const less = compiled.querySelector<HTMLAnchorElement>("a.read-more")!;
+        const less = compiled.querySelector<HTMLAnchorElement>("button.read-more")!;
         expect(less.textContent?.trim()).toBe("Show less");
 
         less.click();
@@ -103,7 +103,7 @@ describe("FacetList", () => {
         fixture.componentRef.setInput("showMoreLabel", "Meer weergeven");
         fixture.detectChanges();
 
-        const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>("a.read-more")!;
+        const link = (fixture.nativeElement as HTMLElement).querySelector<HTMLAnchorElement>("button.read-more")!;
         expect(link.textContent?.trim()).toBe("Meer weergeven");
     });
 
@@ -113,7 +113,7 @@ describe("FacetList", () => {
         fixture.componentRef.setInput("title", "Type");
         fixture.componentRef.setInput("items", items.slice(0, 5));
         fixture.detectChanges();
-        expect((fixture.nativeElement as HTMLElement).querySelector("a.read-more")).toBeNull();
+        expect((fixture.nativeElement as HTMLElement).querySelector("button.read-more")).toBeNull();
 
         fixture.componentRef.setInput("items", []);
         fixture.detectChanges();

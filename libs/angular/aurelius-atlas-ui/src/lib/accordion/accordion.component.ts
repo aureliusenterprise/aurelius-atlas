@@ -3,6 +3,9 @@ import { ChangeDetectionStrategy, Component, input, model } from "@angular/core"
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
 
+/** The next accordion's element-id suffix (toggle/content pairing, FORM-CUSTOM-001 — the select's counter idiom). */
+let nextAccordionId = 0;
+
 @Component({
     selector: "aurelius-atlas-ui-accordion",
     imports: [CommonModule, FontAwesomeModule],
@@ -29,6 +32,13 @@ export class Accordion {
      */
     protected readonly faChevronDown = faChevronDown;
     protected readonly faChevronUp = faChevronUp;
+
+    /**
+     * The content div's id, paired with the toggle button's `aria-controls`
+     * (FORM-CUSTOM-001): the button's `aria-expanded` states what the panel
+     * already is, so a reader hears the collapse/expand the chevron shows.
+     */
+    protected readonly contentId = `aurelius-atlas-ui-accordion-${nextAccordionId++}-content`;
 
     /**
      * Set the accordion to a collapsed state.

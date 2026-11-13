@@ -44,7 +44,7 @@ describe("DetailsCardSection", () => {
         fixture.componentRef.setInput("count", 27);
         fixture.detectChanges();
 
-        expect(fixture.nativeElement.querySelector("h3.title").textContent.trim()).toBe("Data Attributes");
+        expect(fixture.nativeElement.querySelector("h2.title").textContent.trim()).toBe("Data Attributes");
         expect(fixture.nativeElement.querySelector("h6.aurelius-card-section-count").textContent).toContain("27");
         expect(fixture.nativeElement.querySelector("h6.aurelius-card-section-count").textContent).toContain(
             "result(s)",

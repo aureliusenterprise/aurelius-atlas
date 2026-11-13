@@ -6,6 +6,13 @@
         <base href="/" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
+        <!-- The platform scheme's data model (SPL-15): native controls,
+          scrollbars and the UA canvas follow this meta until the brand CSS
+          arrives. "light dark" (follow the OS) is the no-script value; the
+          pre-render below and DarkModeService keep it in step with the
+          data-theme attribute.
+        -->
+        <meta name="color-scheme" content="light dark" />
         <!-- NOSONAR S125: a decision note, not commented-out code.
           The theme pre-render (DD-159, superseding SHM-01's html pin): the
           stored choice is applied before the first paint, so a returning
@@ -13,8 +20,10 @@
           stored the root is light under any OS preference (SPL-05). The
           static data-theme="light" pin is gone: it read as an explicit
           choice and outranked a stored Dark/Auto selection. Auto removes
-          the attribute so Bulma's :root:not([data-theme]) OS path applies;
-          the script's sha256 rides script-src in nginx.conf.template.
+          the attribute so Bulma's :root:not([data-theme]) OS path applies.
+          The same pass syncs the color-scheme meta (SPL-15, DD-542); with
+          nothing stored both say the app's light default. The script's
+          sha256 rides script-src in nginx.conf.template (CHT-112).
         -->
         <script>
             (function () {
@@ -22,7 +31,9 @@
                 try {
                     t = localStorage.getItem("data-theme");
                 } catch (e) {}
-                document.documentElement.dataset.theme = t === "dark" ? "dark" : "light";
+                var scheme = t === "dark" ? "dark" : "light";
+                document.documentElement.dataset.theme = scheme;
+                document.querySelector('meta[name="color-scheme"]').content = scheme;
             })();
         </script>
     </head>

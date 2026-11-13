@@ -66,13 +66,13 @@ describe("GovernanceResponsibilities", () => {
         expect(normalize(compiled.querySelector("article.media:nth-of-type(1) .title.is-6")?.textContent)).toBe(
             "I'm searching for the data governance responsibilities of a specific person",
         );
-        expect(normalize(compiled.querySelector("article.media:nth-of-type(1) p")?.textContent)).toBe(
+        expect(normalize(compiled.querySelector("article.media:nth-of-type(1) p:not(.title)")?.textContent)).toBe(
             "Search for the name or email address of the person you are looking for.",
         );
         expect(normalize(compiled.querySelector("article.media:nth-of-type(2) .title.is-6")?.textContent)).toBe(
             "I'm exploring who has data governance responsibilities within my organization",
         );
-        expect(normalize(compiled.querySelector("article.media:nth-of-type(2) p")?.textContent)).toBe(
+        expect(normalize(compiled.querySelector("article.media:nth-of-type(2) p:not(.title)")?.textContent)).toBe(
             "Click the button below to see a list of all people with data governance responsibilities.",
         );
     });

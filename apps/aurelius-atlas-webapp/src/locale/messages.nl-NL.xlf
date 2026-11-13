@@ -152,10 +152,25 @@
         <target>Inhoud weergeven</target>
         <note priority="1" from="description">Aurelius dictionary key: components.accordion.toggleContent</note>
       </trans-unit>
+      <trans-unit id="components.darkMode.toggle" datatype="html">
+        <source>Switch theme (current: <x id="mode" equiv-text="{{mode}}"/>)</source>
+        <target>Thema wisselen (huidig: <x id="mode"/>)</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.darkMode.toggle</note>
+      </trans-unit>
+      <trans-unit id="components.dataQualityPie.label" datatype="html">
+        <source>Data quality score <x id="value" equiv-text="{{value}}"/>%</source>
+        <target>Datakwaliteitsscore <x id="value"/>%</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.dataQualityPie.label</note>
+      </trans-unit>
       <trans-unit id="components.fuzzySearchInput.searchPlaceholder" datatype="html">
         <source>Search...</source>
         <target>Zoeken...</target>
         <note priority="1" from="description">Aurelius dictionary key: components.fuzzySearchInput.searchPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="components.infiniteScrollContainer.loadingMore" datatype="html">
+        <source>Loading more results</source>
+        <target>Meer resultaten laden</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.infiniteScrollContainer.loadingMore</note>
       </trans-unit>
       <trans-unit id="components.markdownEditor.placeholder" datatype="html">
         <source>Please type some markdown to get started...</source>
@@ -177,6 +192,31 @@
         <target>Sluiten</target>
         <note priority="1" from="description">Aurelius dictionary key: components.modal.close</note>
       </trans-unit>
+      <trans-unit id="components.pagination.goToPage" datatype="html">
+        <source>Go to page <x id="page" equiv-text="{{page}}"/></source>
+        <target>Ga naar pagina <x id="page"/></target>
+        <note priority="1" from="description">Aurelius dictionary key: components.pagination.goToPage</note>
+      </trans-unit>
+      <trans-unit id="components.pagination.navigation" datatype="html">
+        <source>Pagination</source>
+        <target>Paginering</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.pagination.navigation</note>
+      </trans-unit>
+      <trans-unit id="components.pagination.page" datatype="html">
+        <source>Page <x id="page" equiv-text="{{page}}"/></source>
+        <target>Pagina <x id="page"/></target>
+        <note priority="1" from="description">Aurelius dictionary key: components.pagination.page</note>
+      </trans-unit>
+      <trans-unit id="components.pagination.pageOf" datatype="html">
+        <source>Page <x id="page" equiv-text="{{page}}"/> of <x id="total" equiv-text="{{total}}"/></source>
+        <target>Pagina <x id="page"/> van <x id="total"/></target>
+        <note priority="1" from="description">Aurelius dictionary key: components.pagination.pageOf</note>
+      </trans-unit>
+      <trans-unit id="components.pagination.range" datatype="html">
+        <source>Showing <x id="start" equiv-text="{{start}}"/> to <x id="end" equiv-text="{{end}}"/> of <x id="total" equiv-text="{{total}}"/> results</source>
+        <target>Toont <x id="start"/> tot <x id="end"/> van <x id="total"/> resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.pagination.range</note>
+      </trans-unit>
       <trans-unit id="components.quickview.pinTooltip" datatype="html">
         <source>Pin to side</source>
         <target>Vastmaken aan zijkant</target>
@@ -186,6 +226,41 @@
         <source>Unpin from side</source>
         <target>Losmaken van zijkant</target>
         <note priority="1" from="description">Aurelius dictionary key: components.quickview.unpinTooltip</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.ascending" datatype="html">
+        <source>ascending</source>
+        <target>oplopend</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.ascending</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.descending" datatype="html">
+        <source>descending</source>
+        <target>aflopend</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.descending</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.rowSelected" datatype="html">
+        <source>Row selected</source>
+        <target>Rij geselecteerd</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.rowSelected</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.rowsLoaded" datatype="html">
+        <source><x id="count" equiv-text="{{count}}"/> rows loaded</source>
+        <target><x id="count"/> rijen geladen</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.rowsLoaded</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.selectRowHint" datatype="html">
+        <source>Press Enter to select this row</source>
+        <target>Druk op Enter om deze rij te selecteren</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.selectRowHint</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.selectionCleared" datatype="html">
+        <source>Selection cleared</source>
+        <target>Selectie gewist</target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.selectionCleared</note>
+      </trans-unit>
+      <trans-unit id="components.sortableTable.sortedBy" datatype="html">
+        <source>Sorted by <x id="header" equiv-text="{{header}}"/>, <x id="direction" equiv-text="{{direction}}"/></source>
+        <target>Gesorteerd op <x id="header"/>, <x id="direction"/></target>
+        <note priority="1" from="description">Aurelius dictionary key: components.sortableTable.sortedBy</note>
       </trans-unit>
       <trans-unit id="components.sortableTableShell.next" datatype="html">
         <source>Next page</source>
@@ -1134,6 +1209,11 @@ The technical data governance model consists of the following types of entities:
         <target>Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.notification</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.attribute.requiredMark" datatype="html">
+        <source>(required)</source>
+        <target>(verplicht)</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.attribute.requiredMark</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.attribute.typeAlias" datatype="html">
         <source>Type alias</source>
         <target>Type alias</target>
@@ -2008,6 +2088,11 @@ The technical data governance model consists of the following types of entities:
         <target>Opslaan</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.save</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.saved" datatype="html">
+        <source>Entity saved</source>
+        <target>Entiteit opgeslagen</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.saved</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.services.entityValidate.validate" datatype="html">
         <source>Validating the data governance quality</source>
         <target>Datagovernance kwaliteit wordt gevalideerd</target>
@@ -2872,6 +2957,26 @@ The technical data governance model consists of the following types of entities:
         <target>Entiteit bewerken</target>
         <note priority="1" from="description">Aurelius dictionary key: search.editEntity.editEntity</note>
       </trans-unit>
+      <trans-unit id="search.layout.region" datatype="html">
+        <source>Search</source>
+        <target>Zoeken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.layout.region</note>
+      </trans-unit>
+      <trans-unit id="search.layout.status.count" datatype="html">
+        <source><x id="count" equiv-text="{{count}}"/> results</source>
+        <target><x id="count"/> resultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.layout.status.count</note>
+      </trans-unit>
+      <trans-unit id="search.layout.status.noResults" datatype="html">
+        <source>No results found</source>
+        <target>Geen resultaten gevonden</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.layout.status.noResults</note>
+      </trans-unit>
+      <trans-unit id="search.layout.status.searching" datatype="html">
+        <source>Searching</source>
+        <target>Zoeken</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.layout.status.searching</note>
+      </trans-unit>
       <trans-unit id="search.mode.both" datatype="html">
         <source>Both</source>
         <target>Beide</target>
@@ -2951,6 +3056,11 @@ The technical data governance model consists of the following types of entities:
         <source>Retrieving the type definitions</source>
         <target>Typedefinities worden opgehaald</target>
         <note priority="1" from="description">Aurelius dictionary key: search.services.typeDefs.retrieve</note>
+      </trans-unit>
+      <trans-unit id="shell.alerts.announcement" datatype="html">
+        <source>New <x id="severity" equiv-text="{{severity}}"/> alert - <x id="message" equiv-text="{{message}}"/></source>
+        <target>Nieuw <x id="severity"/>-alarm - <x id="message"/></target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.alerts.announcement</note>
       </trans-unit>
       <trans-unit id="shell.alerts.clear" datatype="html">
         <source>Clear all</source>
@@ -3072,6 +3182,11 @@ The technical data governance model consists of the following types of entities:
         <target>Ingelogd als</target>
         <note priority="1" from="description">Aurelius dictionary key: shell.header.welcome</note>
       </trans-unit>
+      <trans-unit id="shell.loadingBar.label" datatype="html">
+        <source>Loading</source>
+        <target>Bezig met laden</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.loadingBar.label</note>
+      </trans-unit>
       <trans-unit id="shell.pipeline.error" datatype="html">
         <source>Something went wrong while</source>
         <target>Er is iets misgegaan tijden</target>
@@ -3166,6 +3281,26 @@ The technical data governance model consists of the following types of entities:
         <source>Version</source>
         <target>Versie</target>
         <note priority="1" from="description">Aurelius dictionary key: shell.settings.version</note>
+      </trans-unit>
+      <trans-unit id="shell.skipToMain" datatype="html">
+        <source>Skip to main content</source>
+        <target>Ga naar hoofdinhoud</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.skipToMain</note>
+      </trans-unit>
+      <trans-unit id="shell.title.browse" datatype="html">
+        <source>Browse</source>
+        <target>Bladeren</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.title.browse</note>
+      </trans-unit>
+      <trans-unit id="shell.title.details" datatype="html">
+        <source>Details</source>
+        <target>Details</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.title.details</note>
+      </trans-unit>
+      <trans-unit id="shell.title.results" datatype="html">
+        <source>Search results</source>
+        <target>Zoekresultaten</target>
+        <note priority="1" from="description">Aurelius dictionary key: shell.title.results</note>
       </trans-unit>
       <trans-unit id="sourcetype" datatype="html">
         <source>Source</source>

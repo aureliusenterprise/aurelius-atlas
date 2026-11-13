@@ -7,12 +7,21 @@ describe("DarkModeService", () => {
 
     const root = () => document.documentElement;
 
+    /** The host's scheme meta (SPL-15): the app's index.html ships one. */
+    const meta = () => document.querySelector('meta[name="color-scheme"]');
+
     /** Flush the service's effects (attribute + storage writes). */
     const settle = () => TestBed.flushEffects();
 
     beforeEach(() => {
         localStorage.clear();
         root().removeAttribute("data-theme");
+        if (!meta()) {
+            const created = document.createElement("meta");
+            created.setAttribute("name", "color-scheme");
+            created.setAttribute("content", "light dark");
+            document.head.append(created);
+        }
         service = TestBed.inject(DarkModeService);
         settle();
     });
@@ -20,6 +29,7 @@ describe("DarkModeService", () => {
     afterEach(() => {
         localStorage.clear();
         root().removeAttribute("data-theme");
+        meta()?.remove();
     });
 
     it("starts in auto with nothing stored (SPL-05)", () => {
@@ -76,6 +86,34 @@ describe("DarkModeService", () => {
         service.setMode(null);
         settle();
         expect(localStorage.getItem("data-theme")).toBeNull();
+    });
+
+    it("the color-scheme meta follows the mode (SPL-15, DD-542)", () => {
+        service.setMode("dark");
+        settle();
+        expect(meta()?.getAttribute("content")).toBe("dark");
+
+        service.setMode("light");
+        settle();
+        expect(meta()?.getAttribute("content")).toBe("light");
+    });
+
+    it("Auto answers the meta with 'light dark', the follow-the-OS value (SPL-15)", () => {
+        service.setMode("dark");
+        settle();
+        service.setMode(null);
+        settle();
+
+        expect(meta()?.getAttribute("content")).toBe("light dark");
+    });
+
+    it("a host without the meta still sets the attribute (SPL-15)", () => {
+        meta()?.remove();
+        expect(() => {
+            service.setMode("dark");
+            settle();
+        }).not.toThrow();
+        expect(root().getAttribute("data-theme")).toBe("dark");
     });
 
     it("next() cycles auto to dark to light to auto", () => {

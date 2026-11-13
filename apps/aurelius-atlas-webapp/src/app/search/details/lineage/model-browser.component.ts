@@ -66,6 +66,13 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
  * pinned panel makes no sense for a diagram overlay whose dismissal also
  * deselects (DD-403), and the drawer has no pin state (the deviation is
  * recorded in the spec).
+ *
+ * The tab strip is a wired ARIA tablist (TAB-PANEL-WIRING): each tab carries
+ * an id, the active one owns its panel through `aria-controls`, the drawn
+ * panel is a `role="tabpanel"` labelled by its tab and focusable, and
+ * ArrowLeft/ArrowRight on the strip move to the neighbour tab (with wrap),
+ * focusing the new tab. Switching stays the route navigation the strip
+ * always had (DD-415) — the wiring rides it, it does not replace it.
  */
 @Component({
     selector: "aurelius-atlas-webapp-lineage-model-browser",
@@ -86,7 +93,17 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
             <!-- DD-402: Bulma's is-fullwidth grows the tabs to equal widths
                  across the strip (li flex-grow) and each label centers in its
                  cell — the wide, balanced tab row the reader asked for. -->
-            <nav class="tabs is-fullwidth aurelius-model-browser-tabs" drawer-subhead role="tablist">
+            <!-- NOSONAR S1077: the tablist itself is not a focus target —
+                 its tabs are (the anchors below carry the tabindex); the
+                 keydown here only catches arrows bubbling from a tab
+                 (TAB-PANEL-WIRING), the drawer's scrim precedent. -->
+            <!-- eslint-disable-next-line @angular-eslint/template/interactive-supports-focus -->
+            <nav
+                class="tabs is-fullwidth aurelius-model-browser-tabs"
+                drawer-subhead
+                role="tablist"
+                (keydown)="onTabKeydown($event)"
+            >
                 <ul>
                     @for (tab of visibleTabs(); track tab.id) {
                         <!-- DD-416: Bulma paints the active tab from its
@@ -95,9 +112,15 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
                              rule never matched and the tab stayed grey. The
                              anchor keeps it as the reader's selector. -->
                         <li [class.is-active]="currentTab() === tab.id">
+                            <!-- TAB-PANEL-WIRING: the tab is named by id and
+                                 the active one points at its panel; only the
+                                 drawn panel exists, so an inactive tab points
+                                 at nothing (@switch renders one panel). -->
                             <a
                                 role="tab"
                                 tabindex="0"
+                                [id]="tabId(tab.id)"
+                                [attr.aria-controls]="currentTab() === tab.id ? panelId(tab.id) : null"
                                 [class.is-active]="currentTab() === tab.id"
                                 [attr.aria-selected]="currentTab() === tab.id"
                                 class="aurelius-model-browser-tab"
@@ -110,48 +133,59 @@ const DEFAULT_TAB: ModelBrowserTab = "browse";
                     }
                 </ul>
             </nav>
-            @switch (currentTab()) {
-                @case ("browse") {
-                    <aurelius-atlas-webapp-lineage-browse-tab
-                        [views]="viewEntities()"
-                        [entities]="entities()"
-                        [organizations]="organizations()"
-                        [drawnViewId]="state.activeView()?.id ?? null"
-                        [selectedConcept]="state.selected()"
-                        (viewChosen)="onViewChosen($event)"
-                        (conceptChosen)="chooseConcept($event)"
-                    />
+            <!-- TAB-PANEL-WIRING: the drawn tab's body is its panel —
+                 labelled by the tab that opened it, and a stop so keyboard
+                 readers can enter and scroll it. -->
+            <div
+                role="tabpanel"
+                tabindex="0"
+                class="aurelius-model-browser-panel"
+                [id]="panelId(currentTab())"
+                [attr.aria-labelledby]="tabId(currentTab())"
+            >
+                @switch (currentTab()) {
+                    @case ("browse") {
+                        <aurelius-atlas-webapp-lineage-browse-tab
+                            [views]="viewEntities()"
+                            [entities]="entities()"
+                            [organizations]="organizations()"
+                            [drawnViewId]="state.activeView()?.id ?? null"
+                            [selectedConcept]="state.selected()"
+                            (viewChosen)="onViewChosen($event)"
+                            (conceptChosen)="chooseConcept($event)"
+                        />
+                    }
+                    @case ("model") {
+                        <aurelius-atlas-webapp-lineage-model-tab
+                            [elements]="elementEntities()"
+                            [relations]="relationEntities()"
+                            [selectedEntity]="selectedEntity()"
+                            (conceptChosen)="chooseConcept($event)"
+                            (cleared)="clearSelection()"
+                        />
+                    }
+                    @case ("selection") {
+                        <aurelius-atlas-webapp-lineage-selection
+                            [entity]="selectedEntity()"
+                            [metadata]="metadata()"
+                            [indexes]="indexes()"
+                            [entities]="entities()"
+                            [drawnViewId]="state.activeView()?.id ?? null"
+                            (conceptChosen)="chooseConcept($event)"
+                            (viewChosen)="onViewChosen($event)"
+                        />
+                    }
+                    @case ("view") {
+                        <aurelius-atlas-webapp-lineage-view-tab
+                            [view]="activeViewEntity()"
+                            [metadata]="metadata()"
+                            [categories]="state.categories()"
+                            [categoryColors]="state.categoryColors()"
+                            (colorPicked)="onColorPicked($event)"
+                        />
+                    }
                 }
-                @case ("model") {
-                    <aurelius-atlas-webapp-lineage-model-tab
-                        [elements]="elementEntities()"
-                        [relations]="relationEntities()"
-                        [selectedEntity]="selectedEntity()"
-                        (conceptChosen)="chooseConcept($event)"
-                        (cleared)="clearSelection()"
-                    />
-                }
-                @case ("selection") {
-                    <aurelius-atlas-webapp-lineage-selection
-                        [entity]="selectedEntity()"
-                        [metadata]="metadata()"
-                        [indexes]="indexes()"
-                        [entities]="entities()"
-                        [drawnViewId]="state.activeView()?.id ?? null"
-                        (conceptChosen)="chooseConcept($event)"
-                        (viewChosen)="onViewChosen($event)"
-                    />
-                }
-                @case ("view") {
-                    <aurelius-atlas-webapp-lineage-view-tab
-                        [view]="activeViewEntity()"
-                        [metadata]="metadata()"
-                        [categories]="state.categories()"
-                        [categoryColors]="state.categoryColors()"
-                        (colorPicked)="onColorPicked($event)"
-                    />
-                }
-            }
+            </div>
             <!-- DD-410: the legacy quickview footer's Close button (its own
                  footer template's literal "Close" — the catalogue carries no
                  key for it, so the shared modal-close string stands in). -->
@@ -309,6 +343,44 @@ export class LineageModelBrowser {
     protected selectTab(id: ModelBrowserTab): void {
         const segments = id === "selection" ? ["lineage", "selection", this.state.selected() ?? ""] : ["lineage", id];
         void this.router.navigate([{ outlets: { drawer: segments } }], DRAWER_SCROLL);
+    }
+
+    /** The tab anchor's element id (TAB-PANEL-WIRING).
+     * @param id the tab
+     * @returns the id the anchor carries */
+    protected tabId(id: ModelBrowserTab): string {
+        return `aurelius-model-browser-tab-${id}`;
+    }
+
+    /** The panel's element id (TAB-PANEL-WIRING) — the active tab's
+     * `aria-controls` target.
+     * @param id the tab whose panel draws
+     * @returns the id the panel carries */
+    protected panelId(id: ModelBrowserTab): string {
+        return `aurelius-model-browser-panel-${id}`;
+    }
+
+    /**
+     * ArrowLeft/ArrowRight on the strip move to the neighbour tab, wrapping
+     * at the ends (TAB-PANEL-WIRING): the move is the same route navigation
+     * a click makes (DD-415), and focus follows to the new tab. Other keys
+     * (Enter/Space ride the anchor's own bindings) are left alone.
+     * @param event the keydown that reached the tablist
+     */
+    protected onTabKeydown(event: KeyboardEvent): void {
+        if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") {
+            return;
+        }
+        const tabs = this.visibleTabs();
+        if (tabs.length === 0) {
+            return;
+        }
+        const step = event.key === "ArrowRight" ? 1 : -1;
+        const current = tabs.findIndex((tab) => tab.id === this.currentTab());
+        const next = tabs[(current + step + tabs.length) % tabs.length];
+        event.preventDefault();
+        this.selectTab(next.id);
+        document.getElementById(this.tabId(next.id))?.focus();
     }
 
     /**

@@ -9,6 +9,8 @@
             class="card-header-icon"
             i18n="@@components.accordion.toggleContent"
             [attr.aria-label]="ariaLabel()"
+            [attr.aria-expanded]="_expanded"
+            [attr.aria-controls]="_expanded ? contentId : null"
             (click)="toggle()"
         >
             <span class="icon has-text-primary">
@@ -17,7 +19,10 @@
         </button>
     </header>
     @if (_expanded) {
-        <div class="card-content">
+        <!-- The panel exists only while open, so the button names it only
+             while open too (FORM-CUSTOM-001): a closed toggle's aria-controls
+             must not dangle at an absent id. -->
+        <div class="card-content" [id]="contentId">
             <ng-content select="[content]"></ng-content>
         </div>
     }

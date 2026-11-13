@@ -9,13 +9,20 @@
              search-string of that name. The left plate is the ControlShell's
              icon (the context's default `faSearch`, in the hero and every
              card); the demo renders it cyan (has-text-info). -->
+        <!-- FORM-KBD-001: Enter submits everywhere. Firefox never fires the
+             native search event for Enter, so the keydown path is the
+             cross-browser one; its preventDefault keeps Chrome from adding
+             its own search event on top (a double submit). The (search)
+             handler stays for the UA clear affordance. -->
         <input
+            #field
             class="input"
             type="search"
             [attr.placeholder]="_placeholder"
             [attr.aria-label]="submitLabel()"
             [ngModel]="_query"
             (ngModelChange)="onQueryChange($event)"
+            (keydown.enter)="submitQuery(); $event.preventDefault()"
             (search)="submitQuery()"
         />
         <span class="icon is-small is-left has-text-info">
@@ -27,7 +34,7 @@
                     type="button"
                     class="delete is-small"
                     [attr.aria-label]="clearLabel()"
-                    (click)="clearQuery()"
+                    (click)="clearQuery($event)"
                 ></button>
             </span>
         }

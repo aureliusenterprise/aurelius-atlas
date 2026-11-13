@@ -6,7 +6,7 @@
     the role gate 6.2). The field reads the store's query, so a
     back-navigation shows the query the URL carries (SRH-02).
 -->
-<aurelius-atlas-ui-hero [title]="heroTitle">
+<aurelius-atlas-ui-hero [title]="heroTitle" [titleLevel]="heroTitleLevel()">
     <ng-container after-title>
         <div class="level is-mobile">
             <div class="level-item">
@@ -40,8 +40,12 @@
 <!-- The routed screens' inset (DD-150, owned here per DD-218): the legacy
      hero wraps the outlet in `section.section > div.container` — the pages
      render top-level, the layout insets them. -->
-<section class="section search-content">
+<section class="section search-content" i18n-aria-label="@@search.layout.region" aria-label="Search">
     <div class="container">
         <router-outlet />
     </div>
 </section>
+<!-- LR-001 (WCAG 4.1.3): the persistent status — the count, loading,
+     and no-results changes the store makes are announced from here,
+     never from a region created alongside the news. -->
+<p class="is-sr-only" role="status">{{ searchStatus() }}</p>

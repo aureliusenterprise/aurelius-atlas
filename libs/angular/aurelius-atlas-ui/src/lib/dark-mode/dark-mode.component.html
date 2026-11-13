@@ -1,8 +1,13 @@
 @let _mode = darkModeService.mode();
 
+<!-- The icon-only button carries a real accessible name (the
+     title-only minor: a title is not a reliable name); the tooltip stays
+     as the visual hint. The name rides the current mode, so the control
+     announces what it is and what is set. -->
 <button
     class="button is-text"
-    title="The current theme is {{ _mode ? _mode : 'auto' }}"
+    [attr.aria-label]="themeLabel(_mode)"
+    [title]="themeLabel(_mode)"
     (click)="darkModeService.next()"
 >
     <span class="icon">

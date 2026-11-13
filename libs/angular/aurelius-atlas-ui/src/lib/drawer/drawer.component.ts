@@ -1,9 +1,9 @@
 import {
     ChangeDetectionStrategy,
     Component,
-    computed,
     ElementRef,
     effect,
+    inject,
     input,
     model,
     output,
@@ -19,6 +19,16 @@ import {
  * set copies the {@link Modal}'s card anatomy — backdrop click, close
  * button, Escape.
  */
+let nextDrawerId = 0;
+
+/**
+ * What Tab can land on inside the panel, for the focus wraparound
+ * (MODAL-TRAP-001). The panel itself (tabindex="-1") is the open landing
+ * and stays focusable programmatically, not through the tab order.
+ */
+const PANEL_FOCUSABLE =
+    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 @Component({
     selector: "aurelius-atlas-ui-drawer",
     imports: [],
@@ -76,10 +86,48 @@ export class Drawer {
     /** What was focused when the drawer opened, to restore focus on close. */
     private opener: HTMLElement | null = null;
 
-    /** The dialog's accessible name: the title. */
-    protected readonly label = computed(() => this.title());
+    /**
+     * The id of the head's title heading, so the dialog names itself
+     * through aria-labelledby (DLG-HEAD-002). A module counter pairs them,
+     * as the select's label does.
+     */
+    protected readonly headingId = `aurelius-atlas-ui-drawer-heading-${nextDrawerId++}`;
+
+    private readonly element = inject(ElementRef<HTMLElement>);
 
     constructor() {
+        // The aria-modal claim (MODAL-TRAP-001): while the drawer is open,
+        // everything outside its own element chain becomes inert — the
+        // page behind goes un-focusable and unannounced, which is what the
+        // panel's aria-modal="true" tells the screen reader anyway. The
+        // walk marks the siblings at every level up to <body>, so nested
+        // mounts (the webapp's aux outlet) still cover the whole shell.
+        // Declared before the focus effect so its cleanup removes the
+        // marks before focus returns to the opener. Unit hosts attach the
+        // fixture to <body>, where the marks land on the test's own
+        // siblings and unwind the same way.
+        effect((onCleanup) => {
+            if (!this.active()) {
+                return;
+            }
+            const marked: HTMLElement[] = [];
+            let node: HTMLElement | null = this.element.nativeElement;
+            while (node && node !== document.body) {
+                for (const sibling of Array.from(node.parentElement?.children ?? [])) {
+                    if (sibling !== node && sibling instanceof HTMLElement && !sibling.hasAttribute("inert")) {
+                        sibling.setAttribute("inert", "");
+                        marked.push(sibling);
+                    }
+                }
+                node = node.parentElement;
+            }
+            onCleanup(() => {
+                for (const markedElement of marked) {
+                    markedElement.removeAttribute("inert");
+                }
+            });
+        });
+
         // The drawer is an ARIA dialog: focus moves into the panel on open
         // (the modal leaves focus to its buttons; a drawer's form controls
         // need the panel itself) and back to the opener on close. The open
@@ -150,6 +198,40 @@ export class Drawer {
     /** Handle Escape on the panel — the dialog's keyboard dismissal path. */
     protected onEscape(): void {
         this.dismiss();
+    }
+
+    /**
+     * Keep Tab inside the open panel (MODAL-TRAP-001): from the last
+     * focusable, Tab wraps to the first; Shift+Tab from the first — or
+     * from the panel landing itself — wraps to the last. The background
+     * inert already blocks leaving the layer, but focus would otherwise
+     * stall at its edges instead of cycling. The parameter is the bare
+     * Event the template types for (keydown.tab); the key check makes the
+     * KeyboardEvent access safe.
+     * @param event the tab keydown, cancellable
+     */
+    protected onPanelTab(event: Event): void {
+        if (!(event instanceof KeyboardEvent)) {
+            return;
+        }
+        const panel = this.panel()?.nativeElement;
+        if (!panel) {
+            return;
+        }
+        const focusables = Array.from(panel.querySelectorAll<HTMLElement>(PANEL_FOCUSABLE));
+        if (focusables.length === 0) {
+            return;
+        }
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        const current = document.activeElement;
+        if (event.shiftKey && (current === first || current === panel)) {
+            event.preventDefault();
+            last.focus();
+        } else if (!event.shiftKey && current === last) {
+            event.preventDefault();
+            first.focus();
+        }
     }
 
     /**

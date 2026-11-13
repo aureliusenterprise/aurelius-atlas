@@ -53,4 +53,17 @@ describe("GovQualityList", () => {
         expect(items[1].querySelector("p")?.textContent?.trim()).toBe("attribute: businessOwner");
         expect(el.querySelectorAll("hr.dropdown-separator")).toHaveLength(1);
     });
+
+    it("is not a menu to assistive tech — the rows carry no menu roles (ROLE-MENU-MISUSE)", async () => {
+        // The dropdown's container once claimed role="menu" with no
+        // menuitem children, so screen readers announced a menu of nothing.
+        const el = await setup(nonCompliant);
+
+        expect(el.querySelector("[role='menu']")).toBeNull();
+        expect(el.querySelector("[role='menuitem']")).toBeNull();
+        // The list and its anchor are unchanged: same rows, same id.
+        const menu = el.querySelector(".dropdown-menu");
+        expect(menu?.getAttribute("id")).toBe("non-compliant");
+        expect(el.querySelectorAll(".dropdown-item")).toHaveLength(2);
+    });
 });

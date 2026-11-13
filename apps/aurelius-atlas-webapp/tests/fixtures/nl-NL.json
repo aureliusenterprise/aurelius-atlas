@@ -208,7 +208,8 @@
                     "nameWarning": "Het teken ’ (Unicode U+2019, Right Single Quotation Mark) kan weergaveproblemen veroorzaken. \n Vervang het vóór import door een standaardapostrof (').",
                     "notification": "Deze entiteit kan niet worden opgeslagen omdat één of meer verplichte velden ontbreken.",
                     "typeAlias": "Type alias",
-                    "typeAliasPlaceholder": "Type alias"
+                    "typeAliasPlaceholder": "Type alias",
+                    "requiredMark": "(verplicht)"
                 },
                 "collection": {
                     "datasets": "Datasets",
@@ -426,7 +427,8 @@
                     "subSystems": "Subsystemen",
                     "typeAlias": "Type alias",
                     "typeAliasPlaceholder": "Type alias"
-                }
+                },
+                "saved": "Entiteit opgeslagen"
             },
             "filter": {
                 "facet": {
@@ -731,6 +733,14 @@
             "meaning": "Betekenis",
             "both": "Beide",
             "unavailable": "Zoeken op betekenis is op deze server niet beschikbaar"
+        },
+        "layout": {
+            "region": "Zoeken",
+            "status": {
+                "searching": "Zoeken",
+                "noResults": "Geen resultaten gevonden",
+                "count": "{{count}} resultaten"
+            }
         }
     },
     "sourcetype": "Bron",

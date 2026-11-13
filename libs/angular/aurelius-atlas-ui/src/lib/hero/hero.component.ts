@@ -37,4 +37,18 @@ export class Hero {
      * when a page's routed content was empty.
      */
     readonly fullHeight = input(false);
+
+    /**
+     * The heading level of the title (HEADING-001): a host whose routed
+     * child renders its own h1 (the details screen's entity title) passes
+     * 2 so the page keeps one h1 — the chrome band steps down, the Bulma
+     * classes keep the pixels. Default 1, the page-title screen.
+     */
+    readonly titleLevel = input<1 | 2>(1);
+
+    /**
+     * The foot tab strip's accessible name (the unnamed-nav minor): the
+     * caller localises it, like the tab labels themselves (DD-136).
+     */
+    readonly navigationLabel = input<string>();
 }

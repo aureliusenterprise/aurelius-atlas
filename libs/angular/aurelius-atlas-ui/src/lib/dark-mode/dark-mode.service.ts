@@ -31,7 +31,7 @@ export class DarkModeService {
      */
     constructor() {
         effect(() => {
-            this.updateDataThemeAttribute(this.mode());
+            this.updateRootScheme(this.mode());
         });
 
         effect(() => {
@@ -77,17 +77,28 @@ export class DarkModeService {
     }
 
     /**
-     * Updates the HTML document's data-theme attribute based on the current
-     * mode. Auto removes the attribute: the empty string would keep Bulma's
-     * `:root:not([data-theme])` OS path from applying (DD-159).
+     * Updates the HTML document's data-theme attribute and the
+     * `color-scheme` meta based on the current mode. Auto removes the
+     * attribute — the empty string would keep Bulma's
+     * `:root:not([data-theme])` OS path from applying (DD-159) — and
+     * answers the meta with `light dark`, the follow-the-OS value (SPL-15,
+     * DD-542). Native controls, scrollbars and the UA canvas key off the
+     * CSS `color-scheme` property, which the brand sheet maps back onto
+     * this meta; the app's own surfaces keep following `data-theme`.
+     * Hosts without the meta (stories, unit tests) skip the sync.
      * @param mode The current mode of the application.
      */
-    private updateDataThemeAttribute(mode: Mode): void {
+    private updateRootScheme(mode: Mode): void {
         const htmlElement = this.document.documentElement;
         if (mode === null) {
             delete htmlElement.dataset["theme"];
         } else {
             htmlElement.dataset["theme"] = mode;
+        }
+
+        const meta = this.document.querySelector('meta[name="color-scheme"]');
+        if (meta) {
+            meta.setAttribute("content", mode ?? "light dark");
         }
     }
 

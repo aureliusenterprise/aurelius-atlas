@@ -29,7 +29,11 @@ describe("NavLoadingBar (SRH-09)", () => {
     it("is invisible at rest", () => {
         const { compiled } = setup();
 
-        expect(compiled.querySelector("progress")).toBeFalsy();
+        // LR-006: the bar stays in the DOM and hides through the hidden
+        // attribute, so AT can announce a slow route from a region that
+        // exists before the news.
+        expect(compiled.querySelector("progress")?.hasAttribute("hidden")).toBe(true);
+        expect(compiled.querySelector("progress")?.getAttribute("aria-label")).toBe("Loading");
     });
 
     it("shows the Bulma bar from NavigationStart to NavigationEnd (the legacy isNavigating)", () => {
@@ -38,12 +42,13 @@ describe("NavLoadingBar (SRH-09)", () => {
         emit(harness, new NavigationStart(1, "/search/results"));
         const bar = harness.compiled.querySelector("progress")!;
         expect(bar).toBeTruthy();
+        expect(bar.hasAttribute("hidden")).toBe(false);
         expect(bar.classList.contains("progress")).toBe(true);
         expect(bar.classList.contains("is-link")).toBe(true);
         expect(bar.getAttribute("max")).toBe("100");
 
         emit(harness, new NavigationEnd(1, "/search/results", "/search/results"));
-        expect(harness.compiled.querySelector("progress")).toBeFalsy();
+        expect(harness.compiled.querySelector("progress")?.hasAttribute("hidden")).toBe(true);
     });
 
     it("a NavigationError hides the bar", () => {
@@ -52,7 +57,7 @@ describe("NavLoadingBar (SRH-09)", () => {
         emit(harness, new NavigationStart(2, "/x"));
         emit(harness, new NavigationError(2, "/x", new Error("nope")));
 
-        expect(harness.compiled.querySelector("progress")).toBeFalsy();
+        expect(harness.compiled.querySelector("progress")?.hasAttribute("hidden")).toBe(true);
     });
 
     it("a NavigationCancel — a guard's redirect — hides the bar", () => {
@@ -61,6 +66,6 @@ describe("NavLoadingBar (SRH-09)", () => {
         emit(harness, new NavigationStart(3, "/x"));
         emit(harness, new NavigationCancel(3, "/x", "/search/browse"));
 
-        expect(harness.compiled.querySelector("progress")).toBeFalsy();
+        expect(harness.compiled.querySelector("progress")?.hasAttribute("hidden")).toBe(true);
     });
 });

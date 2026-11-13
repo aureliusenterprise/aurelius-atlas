@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, output, signal } from "@angular/core";
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    ElementRef,
+    input,
+    model,
+    output,
+    signal,
+    viewChild,
+} from "@angular/core";
 import { FormValueControl } from "@angular/forms/signals";
 
 import { Markdown } from "../markdown/markdown.component";
@@ -53,6 +63,17 @@ export class MarkdownEditor implements FormValueControl<string> {
      * (the same seam the relationship combobox carries, DD-335). */
     readonly textareaId = input<string | undefined>(undefined);
 
+    /** The id of the line describing the control (FORM-ERR-002): the caller's
+     * error line, carried to the textarea as `aria-describedby`; nothing
+     * rides when the caller names none. */
+    readonly describedBy = input<string | undefined>(undefined);
+
+    /** Whether the field must hold a value (FORM-REQ-001): bound through
+     * `[formField]`, Signal Forms mirrors the bound field's required rule
+     * here, and the control forwards it to the textarea as the native
+     * attribute, so a reader hears "required" from the field itself. */
+    readonly required = input(false);
+
     /**
      * The markdown source — the control's model, edited by the textarea.
      * The `FormValueControl` contract: bound to a field, the directive
@@ -103,9 +124,50 @@ export class MarkdownEditor implements FormValueControl<string> {
     /** The id stem: the caller's seat when given, else the counter fallback. */
     private readonly paneBase = computed(() => this.textareaId() ?? `aurelius-markdown-editor-${this.uid}`);
 
+    /** The tabs in display order — the pair the arrow keys walk (FORM-CUSTOM-002). */
+    private static readonly TAB_ORDER: readonly MarkdownEditorTab[] = ["write", "preview"];
+
+    /** The tab buttons, so an arrow-key switch carries focus with the active
+     * tab (the roving-tabindex pattern, FORM-CUSTOM-002). */
+    private readonly writeTabRef = viewChild<ElementRef<HTMLButtonElement>>("writeTab");
+    private readonly previewTabRef = viewChild<ElementRef<HTMLButtonElement>>("previewTab");
+
     /** Switch panes (the tab click; both panes stay mounted, UIC-26). */
     protected showTab(tab: MarkdownEditorTab): void {
         this.tab.set(tab);
+    }
+
+    /**
+     * The tablist's keys (FORM-CUSTOM-002): Left/Right move the active tab
+     * (wrapping), Home/End jump to the ends — the buttons carry the roving
+     * tabindex, so focus follows the active tab. Activation is the native
+     * button's (click/Space/Enter), nothing to re-implement here.
+     * @param event The keydown event bubbling from the active tab.
+     */
+    protected onTabKeys(event: KeyboardEvent): void {
+        const order = MarkdownEditor.TAB_ORDER;
+        const current = order.indexOf(this.tab());
+        let next: number;
+        switch (event.key) {
+            case "ArrowRight":
+                next = (current + 1) % order.length;
+                break;
+            case "ArrowLeft":
+                next = (current - 1 + order.length) % order.length;
+                break;
+            case "Home":
+                next = 0;
+                break;
+            case "End":
+                next = order.length - 1;
+                break;
+            default:
+                return;
+        }
+        event.preventDefault();
+        this.tab.set(order[next]);
+        const active = order[next] === "write" ? this.writeTabRef() : this.previewTabRef();
+        active?.nativeElement.focus();
     }
 
     /** The textarea's keystroke: the model rides the source string, live. */

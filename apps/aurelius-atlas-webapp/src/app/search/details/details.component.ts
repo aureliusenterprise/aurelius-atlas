@@ -1,6 +1,7 @@
 import { ViewportScroller } from "@angular/common";
 import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect, inject } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { Title } from "@angular/platform-browser";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
 import type { AtlasEntity } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
@@ -26,6 +27,7 @@ import { canWriteEntities } from "../editor/can-write-entities";
 import { EntitySaved } from "../editor/entity-saved";
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
+import { APP_CONFIG } from "../../tokens";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
 import { detailProperties } from "./property-filter";
@@ -146,6 +148,18 @@ export class Details {
             const guid = this.guid();
             if (guid !== "") {
                 this.state.load(guid);
+            }
+        });
+
+        // The document title names the entity once it answers (TITLE-001,
+        // WCAG 2.4.2): the title strategy set the route's fallback on
+        // arrival, and the data moment replaces it — the strategy owns
+        // navigation, this owns the entity (title-strategy.ts).
+        const titleService = inject(Title);
+        const appName = inject(APP_CONFIG).appName;
+        effect(() => {
+            if (this.entity()) {
+                titleService.setTitle(`${this.title()} - ${appName}`);
             }
         });
 

@@ -3,7 +3,7 @@
     heading's #target href is the keyboard path; the click handler emits
     and cancels the fragment jump (DD-154's pattern).
 -->
-<nav class="level">
+<nav class="level" [attr.aria-label]="ariaLabel()">
     @for (stat of items(); track stat.target) {
         <div class="level-item has-text-centered">
             <div>

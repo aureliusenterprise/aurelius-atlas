@@ -117,6 +117,18 @@ describe("ClassificationChip", () => {
         expect(rows[0].textContent).toBe("Source entity");
     });
 
+    it("is not a menu to assistive tech — the popover carries no menu roles (ROLE-MENU-MISUSE)", () => {
+        // The propagation popover once claimed role="menu" while holding
+        // read-only rows, so screen readers announced a menu with no items.
+        host.propagated.set(true);
+        fixture.detectChanges();
+
+        expect(fixture.nativeElement.querySelector("[role='menu']")).toBeNull();
+        expect(fixture.nativeElement.querySelector("[role='menuitem']")).toBeNull();
+        // The popover and its rows stay as they were (UIC-16).
+        expect(fixture.nativeElement.querySelector(".dropdown-menu .dropdown-item strong").textContent).toBe("PII");
+    });
+
     it("omits the delete control by default (UIC-24)", () => {
         expect(fixture.nativeElement.querySelector(".aurelius-classification-chip-delete")).toBeNull();
     });

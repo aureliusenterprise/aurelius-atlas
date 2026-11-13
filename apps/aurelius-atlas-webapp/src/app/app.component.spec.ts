@@ -39,25 +39,31 @@ describe("App", () => {
 
         const compiled = fixture.nativeElement as HTMLElement;
 
-        // The Aurelius root wraps its outlet in the shell chrome: header
-        // above, the sticky loading bar (SRH-09), footer below (SHL-03's
-        // bare-outlet reading is superseded here — the legacy root renders
-        // <models4insight-shell>). The outlet band is the legacy
+        // The Aurelius root wraps its outlet in the shell chrome: the skip
+        // link first (LANDMARK-002), header above, the sticky loading bar
+        // (SRH-09), footer below (SHL-03's bare-outlet reading is superseded
+        // here — the legacy root renders <models4insight-shell>). The outlet
+        // band is the main landmark (LANDMARK-001) wearing the legacy
         // .is-tall-container (flex + 100vh), so the footer begins below the
         // fold (SHM-05, SHM-07, DD-150). The named `drawer` outlet (SPL-14,
         // DD-166) is the root's last child.
         expect([...compiled.children].map((child) => child.tagName.toLowerCase())).toEqual([
+            "a",
             "aurelius-atlas-webapp-header",
             "aurelius-atlas-webapp-nav-loading-bar",
-            "div",
+            "main",
             "aurelius-atlas-webapp-footer",
+            "p",
             "router-outlet",
         ]);
 
-        const band = compiled.querySelector(":scope > div");
+        const band = compiled.querySelector(":scope > main");
 
         expect(band?.className).toBe("is-tall-container has-background");
+        expect(band?.getAttribute("id")).toBe("main");
         expect(band?.querySelector("router-outlet")).toBeTruthy();
         expect(compiled.querySelector(":scope > router-outlet")?.getAttribute("name")).toBe("drawer");
+        // The skip link targets the landmark (LANDMARK-002).
+        expect(compiled.querySelector("a.skip-link")?.getAttribute("href")).toBe("#main");
     });
 });

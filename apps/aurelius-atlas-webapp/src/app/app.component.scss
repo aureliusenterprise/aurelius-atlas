@@ -19,3 +19,30 @@
     flex: 1 1 auto;
     min-height: 100vh;
 }
+
+/*
+ * The skip link (LANDMARK-002): off-screen until focused, then a fixed
+ * pill above the pinned navbar (the 4.25rem bar, SRH-09) so it lands in
+ * view instead of under the chrome.
+ */
+.skip-link {
+    clip-path: inset(50%);
+    height: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+
+    &:focus {
+        background-color: var(--bulma-scheme-main);
+        clip-path: none;
+        color: var(--bulma-link);
+        height: auto;
+        left: 0.5rem;
+        padding: 0.5rem 0.75rem;
+        position: fixed;
+        top: 4.75rem;
+        width: auto;
+        z-index: 50;
+    }
+}

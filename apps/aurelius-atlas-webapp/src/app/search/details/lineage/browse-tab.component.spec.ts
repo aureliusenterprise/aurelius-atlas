@@ -167,4 +167,64 @@ describe("LineageBrowseTab (LDG-23)", () => {
         expect(compiled.querySelector(".aurelius-browse-tree")).toBeNull();
         expect(compiled.textContent).not.toContain("Model tree");
     });
+
+    it("TREEITEM-WRAPPER: every row's button is the treeitem and the wrapper is not", () => {
+        const { compiled } = setup([VIEW], "lineage_view", MODEL.organizations, ENTITIES);
+
+        // The reader lands on the focusable element: role="treeitem" rides
+        // the buttons, and the <li> is role="none" layout.
+        const wrappers = [...compiled.querySelectorAll(".aurelius-browse-tree > li")];
+        expect(wrappers.length).toBeGreaterThan(0);
+        for (const wrapper of wrappers) {
+            expect(wrapper.getAttribute("role")).toBe("none");
+            expect(wrapper.hasAttribute("aria-selected")).toBe(false);
+        }
+        const items = [...compiled.querySelectorAll(".aurelius-browse-tree button")];
+        expect(items.length).toBe(wrappers.length);
+        for (const item of items) {
+            expect(item.getAttribute("role")).toBe("treeitem");
+        }
+
+        // The folder keeps its fold state on the same element, and says it
+        // is not selectable (a treeitem's aria-selected is required, so the
+        // folder carries the literal false the old wrapper's null-equality
+        // bug used to compute).
+        const folder = compiled.querySelector(".aurelius-browse-tree-folder") as HTMLElement;
+        expect(folder.getAttribute("aria-expanded")).toBe("true");
+        expect(folder.getAttribute("aria-selected")).toBe("false");
+        const unselected = compiled.querySelector(".aurelius-browse-tree-leaf") as HTMLElement;
+        expect(unselected.getAttribute("aria-selected")).toBe("false");
+    });
+
+    it("TREEITEM-WRAPPER: rows carry their level and sibling position, and the selected leaf its flag", () => {
+        const { compiled } = setup(
+            [VIEW],
+            "lineage_view",
+            MODEL.organizations,
+            ENTITIES,
+            "00000000-0000-4000-8000-000000000002",
+        );
+
+        // The shipped tree: Other / Relations / Views at level 1 (three
+        // siblings), their leaves at level 2. "Other" opens its parent's run.
+        const other = [...compiled.querySelectorAll(".aurelius-browse-tree-folder")].find((node) =>
+            node.textContent?.includes("Other"),
+        ) as HTMLElement;
+        expect(other.getAttribute("aria-level")).toBe("1");
+        expect(other.getAttribute("aria-setsize")).toBe("3");
+        expect(other.getAttribute("aria-posinset")).toBe("1");
+
+        // "Load Job" — Other's second leaf — sits level 2 of a set of three,
+        // and carries the selection the wrapper used to hold.
+        const loadJob = [...compiled.querySelectorAll(".aurelius-browse-tree-leaf")].find((node) =>
+            node.textContent?.includes("Load Job"),
+        ) as HTMLElement;
+        expect(loadJob.getAttribute("aria-level")).toBe("2");
+        expect(loadJob.getAttribute("aria-setsize")).toBe("3");
+        expect(loadJob.getAttribute("aria-posinset")).toBe("2");
+        expect(loadJob.getAttribute("aria-selected")).toBe("true");
+
+        // Closing the folder re-runs its parent's set: with Other closed, its
+        // children leave the tree and Views moves to position 2 of 3.
+    });
 });

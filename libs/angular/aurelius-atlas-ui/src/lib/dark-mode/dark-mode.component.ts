@@ -18,6 +18,17 @@ export class DarkMode {
     protected readonly darkModeService = inject(DarkModeService);
 
     /**
+     * The toggle's accessible name (the title-only minor): the control's
+     * role plus the mode it is on, so a screen reader gets both from the
+     * name instead of a title tooltip.
+     * @param mode the current mode, null for auto
+     * @returns the name
+     */
+    protected themeLabel(mode: "light" | "dark" | null): string {
+        return $localize`:@@components.darkMode.toggle:Switch theme (current: ${mode ?? "auto"}:mode:)`;
+    }
+
+    /**
      * The FontAwesome icons used in the dark mode toggle.
      */
     protected readonly faCircleHalfStroke = faCircleHalfStroke;

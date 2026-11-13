@@ -40,6 +40,13 @@ export class SectionStats {
     readonly items = input<SectionStat[]>([]);
 
     /**
+     * The landmark's accessible name (the unnamed-nav minor): the bar is
+     * a navigation region among others on the page, so it answers what it
+     * jumps between. The caller localises it (the chrome-string rule).
+     */
+    readonly ariaLabel = input("Section counts");
+
+    /**
      * Emits the target of a clicked heading. The app scrolls; the lib
      * does not (DD-191's split).
      */

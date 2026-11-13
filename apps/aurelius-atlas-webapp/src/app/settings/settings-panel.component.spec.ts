@@ -278,6 +278,24 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(TestBed.inject(SettingsService).telemetry()).toBe(false);
     });
 
+    it("the help lines are wired to their controls (FORM-HELP-001)", async () => {
+        const { compiled } = await renderOpen();
+
+        // Telemetry: the checkbox names its hint line, which carries the id.
+        const telemetry = compiled.querySelector<HTMLInputElement>("#settings-telemetry")!;
+        const telemetryHelp = telemetry.getAttribute("aria-describedby");
+
+        expect(telemetryHelp).toBeTruthy();
+        expect(compiled.querySelector(`#${telemetryHelp}`)).toBe(compiled.querySelector("#settings-telemetry-help"));
+        expect(compiled.querySelector(`#${telemetryHelp}`)?.textContent).toContain("takes effect after a reload");
+
+        // Language: the fieldset carries the hint beside its heading.
+        const group = compiled.querySelector(".settings-language-group")!;
+
+        expect(group.getAttribute("aria-describedby")).toBe("settings-language-help");
+        expect(compiled.querySelector("#settings-language-help")?.textContent).toContain("reload");
+    });
+
     it("Search by offers Words, Meaning and Both, Words pressed; a click stores the mode (SBX-01)", async () => {
         const { fixture, compiled } = await renderOpen();
         const buttons = () => [...compiled.querySelectorAll<HTMLButtonElement>(".settings-search-mode button")];

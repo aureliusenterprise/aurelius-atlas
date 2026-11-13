@@ -17,7 +17,9 @@
                 <span>{{ nonCompliant().length }}x</span>
             </span>
         </div>
-        <div class="dropdown-menu" id="non-compliant" role="menu">
+        <!-- ROLE-MENU-MISUSE: no role="menu" — the rows are read-only
+             text, not menuitems; Bulma's CSS never read the role. -->
+        <div class="dropdown-menu" id="non-compliant">
             <div class="dropdown-content">
                 @for (row of nonCompliant(); track $index) {
                     <div class="dropdown-item">
