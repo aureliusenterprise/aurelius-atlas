@@ -580,9 +580,11 @@ def test__details_screen_answers_a_404_deep_link_with_the_empty_state(authentica
     guid (DET-08), the server answers 404 (the store owns it, DET-03), and
     the screen keeps the empty shape — the fallback title, zero rows — with
     no alert for the 404 (DET-13: the empty state answers it, ALR-05's
-    silence). The chrome strings ride the bridge (DET-04).
+    silence). The chrome strings ride the bridge (DET-04). The guid is
+    UUID text so the request reaches the store (DV-161): a malformed one
+    would be a 400 alert, which is the case the server suite pins.
     """
-    authenticated.goto(urljoin(root_url, "/en-US/search/details/7a1b-2c3d"))
+    authenticated.goto(urljoin(root_url, "/en-US/search/details/00000000-0000-0000-0000-000000000000"))
 
     expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entity type")
     expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Description")
@@ -602,7 +604,7 @@ def test__details_screen_answers_a_404_deep_link_with_the_empty_state(authentica
 @pytest.mark.medium
 def test__details_skeleton_renders_dutch_chrome(authenticated: Page, root_url: str) -> None:
     """The nl-NL locale renders the Dutch details chrome through the bridge (DET-04, DET-07)."""
-    authenticated.goto(urljoin(root_url, "/nl-NL/search/details/7a1b-2c3d"))
+    authenticated.goto(urljoin(root_url, "/nl-NL/search/details/00000000-0000-0000-0000-000000000000"))
 
     expect(authenticated.locator("h1.aurelius-details-title")).to_have_text("Entiteit type")
     expect(authenticated.locator("#description-details .title.is-3")).to_have_text("Beschrijving")
