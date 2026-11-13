@@ -1,15 +1,17 @@
 """The server's settings, read once at start-up from the environment (SRV-01, SRV-03, SRV-06)."""
 
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Self
 
 from aurelius_atlas_core.audit_reduction_service import AuditAgingConfig
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_core.model_loader import BUILTIN_MODELS_DIR, M4I_MODELS_DIR
 from aurelius_atlas_store_es import StoreSettings
 from aurelius_atlas_store_es.snapshots import SnapshotPolicy
-from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr
+from pydantic import DirectoryPath, Field, FilePath, HttpUrl, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from aurelius_atlas_server.tenancy import Tenancy
 
 ENV_PREFIX = "AURELIUS_ATLAS_SERVER_"
 """Every setting is an environment variable with this prefix, so other projects' variables never set it."""
@@ -306,6 +308,41 @@ class ServerSettings(StoreAccessSettings):
 
     session_timeout_seconds: int = Field(default=3600, gt=0)
     """How long a browser session lasts unused: Atlas's ``web.xml`` session timeout, 60 minutes (AUT-06)."""
+
+    auth_organization_claim: str = "organization"
+    """The claim a token names its organizations in, as Keycloak's ``organization`` scope writes it (TEN-02)."""
+
+    tenancy_enabled: bool = False
+    """Whether a request acts in the one organization its token names (TEN-01, TEN-03). Off by default, and not
+    to be turned on before each tenant has its own stores (DD-566)."""
+
+    tenancy_operator_organization: str = "operators"
+    """The organization whose members run the platform; always provisioned (TEN-04, DD-567)."""
+
+    tenancy_operator_role: str = "atlas-operator"
+    """The realm role that marks an operator, who holds at most ``atlas-read`` in other tenants (TEN-06)."""
+
+    tenancy_tenants: list[str] = Field(default_factory=list)
+    """The provisioned tenants beside the operator organization, until 15.3's tenants index (TEN-04, DD-565)."""
+
+    @model_validator(mode="after")
+    def _operators_are_not_a_tenant(self) -> Self:
+        """The operator organization is never among ``tenancy_tenants`` (DD-567)."""
+        if self.tenancy_operator_organization in self.tenancy_tenants:
+            msg = f"tenancy_tenants must not name the operator organization {self.tenancy_operator_organization}"
+            raise ValueError(msg)
+        return self
+
+    def tenancy(self) -> Tenancy | None:
+        """How tenancy reads a token while ``tenancy_enabled``, else None: no request has a tenant (TEN-01)."""
+        if not self.tenancy_enabled:
+            return None
+        return Tenancy(
+            organization_claim=self.auth_organization_claim,
+            operator_organization=self.tenancy_operator_organization,
+            operator_role=self.tenancy_operator_role,
+            tenants=frozenset(self.tenancy_tenants),
+        )
 
     @property
     def is_development(self) -> bool:

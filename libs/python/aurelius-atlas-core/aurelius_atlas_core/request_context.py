@@ -14,11 +14,15 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class RequestContext:
-    """The request's user, its client's address, and when it started in epoch milliseconds."""
+    """The request's user, its client's address, when it started in epoch milliseconds, and its tenant.
+
+    The tenant is the one organization the request's token names while tenancy is on, else None (TEN-08).
+    """
 
     user: str | None = None
     client_ip_address: str | None = None
     request_time: int = field(default_factory=lambda: int(time.time() * 1000))
+    tenant: str | None = None
 
 
 _CURRENT: ContextVar[RequestContext | None] = ContextVar("aurelius_atlas_request_context", default=None)
