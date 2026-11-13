@@ -48,8 +48,9 @@ shell history or a process listing (DD-472). The required one:
 The rest have defaults: `SERVER_URL` (the Atlas server to write to, default
 `https://localhost:21000`), `TOKEN_URL`, `CLIENT_ID` (default
 `aurelius-atlas-kafka-scanner`), `BOOTSTRAP_SERVERS` (default
-`localhost:29092`, the dev broker), `SCHEMA_REGISTRY_URL` (unset means every
-topic is sniffed, KSC-04), `SYSTEM_NAME` (default `Kafka Broker`, KSC-03),
+`localhost:29092`, the broker of the e2e stack), `SCHEMA_REGISTRY_URL`
+(unset means every topic is sniffed, KSC-04), `SYSTEM_NAME` (default
+`Kafka Broker`, KSC-03),
 `TOPICS` (a comma-separated list of case-insensitive name patterns, `*`
 standing for any run of characters, default `*`, KSC-02), `SNIFF_MESSAGES`,
 `POLL_TIMEOUT_SECONDS`, `ADMIN_REQUEST_TIMEOUT_MS` (the metadata timeout — the
@@ -71,9 +72,20 @@ of silently speaking the wrong protocol:
 ## Run in dev
 
 ```bash
-npx nx scan aurelius-atlas-kafka-scanner   # dev Keycloak, server, and [dev/kafka](../../dev/kafka/README.md) must be up
+npx nx scan aurelius-atlas-kafka-scanner   # dev Keycloak and the dev server must be up
 npx nx test aurelius-atlas-kafka-scanner -c ci
-npx nx e2e aurelius-atlas-kafka-scanner    # the scanner in-process against a real server image
+npx nx e2e aurelius-atlas-kafka-scanner    # the scanner in-process against a real server image and its own broker and Registry
+```
+
+The e2e stack starts its own broker, Schema Registry, and SCRAM user beside
+the server (DD-541, the disposable-database pattern of DD-507), and discards
+the cluster when the suite ends. In dev, point the scan at any broker you
+own:
+
+```bash
+AURELIUS_ATLAS_KAFKA_SCANNER_BOOTSTRAP_SERVERS='localhost:9092' \
+AURELIUS_ATLAS_KAFKA_SCANNER_SCHEMA_REGISTRY_URL='http://localhost:8081' \
+npx nx scan aurelius-atlas-kafka-scanner --dry-run
 ```
 
 The job has no port and no liveness endpoint: it runs to completion and exits,

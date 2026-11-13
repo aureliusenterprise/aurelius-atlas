@@ -17,8 +17,8 @@ whole (CHT-118..120).
 
 This increment does not deliver: the broker's own machine-identity credential
 as a first-class values block (DD-514's decision: `secretRefs` reaches it), or
-a Kafka broker in any umbrella install (the dev broker stays `dev/kafka`
-compose-only). The broker's transport TLS and the telemetry leg are both
+a Kafka broker in any umbrella install (the suite's broker stays
+compose-only, in the app's `e2e/` stack — DD-541). The broker's transport TLS and the telemetry leg are both
 optional like every other trust leg (CHT-121's `securityProtocol`, CHT-125): a
 deployment turns each on with its own values.
 

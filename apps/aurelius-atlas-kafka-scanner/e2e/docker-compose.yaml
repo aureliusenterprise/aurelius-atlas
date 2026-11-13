@@ -5,9 +5,10 @@ name: aurelius-atlas-kafka-scanner-e2e
 # service here — only the catalogue the job speaks to, the same server the
 # webapp e2e stack stands up (its env list mirrors that stack verbatim, with
 # the scanner's audience joined). The store and the collector ride the dev
-# networks; Keycloak is reached on the host, and the broker this suite scans
-# rides the dev Kafka stack (dev/kafka, started by the e2e target's up
-# dependency and by conftest as a guard).
+# networks; Keycloak is reached on the host. The broker and its Schema
+# Registry are this stack's own, started with it and discarded with it
+# (DD-541, the disposable-database pattern of DD-507): the suite seeds and
+# scans them over their published ports and rides no shared broker.
 services:
     atlas-server:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
@@ -67,6 +68,118 @@ services:
             - keycloak.localhost:host-gateway
         volumes:
             - ../certs:/certs:ro
+
+    broker:
+        # The cluster under scan (KSC-10, DD-541): the suite's own KRaft
+        # single node, started with the stack and discarded with it. Two
+        # client listeners (DD-469): the anonymous HOST listener the scan
+        # reads with when the cluster answers PLAINTEXT, and a SASL_PLAINTEXT
+        # listener carrying the SCRAM-SHA-512 user the sasl-init service
+        # below creates (KSC-10). The fixed ports repeat the advertised
+        # listeners verbatim, as db-scanner's Postgres does: the host-side
+        # door dials exactly what the broker advertises.
+        image: dhi.io/kafka:4.3-debian13
+        environment:
+            # KAFKA_* settings: the image entrypoint writes them into its own
+            # server.properties inside the container layer. INTERNAL serves
+            # the stack network, HOST and SASL serve the host, CONTROLLER is
+            # the KRaft plane, plain like the inter-broker hop.
+            KAFKA_BROKER_ID: "1"
+            KAFKA_PROCESS_ROLES: broker,controller
+            KAFKA_LISTENERS: INTERNAL://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093,HOST://0.0.0.0:9094,SASL://0.0.0.0:9095
+            KAFKA_ADVERTISED_LISTENERS: INTERNAL://broker:9092,HOST://localhost:29092,SASL://localhost:29095
+            KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT,SASL:SASL_PLAINTEXT
+            KAFKA_SASL_ENABLED_MECHANISMS: SCRAM-SHA-512
+            # The SASL listener's server-side login: the SCRAM handler, whose
+            # users live in the cluster metadata (the sasl-init service below
+            # writes this one) rather than in a JAAS user list, so the login
+            # line itself carries no secret. The name spells
+            # listener.name.sasl.scram-sha-512.sasl.jaas.config through the
+            # image's env mapping: _ a dot, ___ a hyphen.
+            KAFKA_LISTENER_NAME_SASL_SCRAM___SHA___512_SASL_JAAS_CONFIG: "org.apache.kafka.common.security.scram.ScramLoginModule required;"
+            KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+            KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+            KAFKA_CONTROLLER_QUORUM_VOTERS: 1@broker:9093
+            KAFKA_LOG_DIRS: /opt/kafka/logs
+            KAFKA_NUM_PARTITIONS: "3"
+            KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+            KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+            KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+            KAFKA_DEFAULT_REPLICATION_FACTOR: "1"
+            KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+        healthcheck:
+            # Healthy means the broker answers metadata over the INTERNAL
+            # listener: the same door the scanner's admin client walks.
+            test: ["CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --list --bootstrap-server broker:9092 || exit 1"]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 30s
+        ports:
+            # Loopback-pinned (CIA-03): the suite creates its topics and
+            # produces its records from the host. In-network consumers use
+            # broker:9092.
+            - "127.0.0.1:29092:9094"
+            - "127.0.0.1:29095:9095"
+
+    sasl-init:
+        # The SCRAM principal the SASL listener authenticates (KSC-10): one
+        # shot once the broker is healthy, then it exits. The credentials are
+        # the suite's own — the same pair the conftest's Settings read from
+        # this project's .env (Nx injects it; one value, two places, as
+        # db-scanner's Postgres password does).
+        image: dhi.io/kafka:4.3-debian13
+        depends_on:
+            broker:
+                condition: service_healthy
+        entrypoint: ["/opt/kafka/bin/kafka-configs.sh"]
+        command:
+            - --bootstrap-server
+            - broker:9092
+            - --alter
+            - --entity-type
+            - users
+            - --entity-name
+            - ${AURELIUS_ATLAS_KAFKA_SCANNER_SASL_USERNAME:?}
+            - --add-config
+            - SCRAM-SHA-512=[password=${AURELIUS_ATLAS_KAFKA_SCANNER_SASL_PASSWORD:?}]
+        restart: "no"
+
+    schema-registry:
+        # The Avro/JSON schema door (KSC-05): the scanner reads subjects here
+        # before it sniffs a topic's own messages. PLAINTEXT kafkastore to the
+        # broker's INTERNAL listener; schemas are metadata, not secrets, in
+        # the suite.
+        image: confluentinc/cp-schema-registry:8.2.1
+        depends_on:
+            broker:
+                condition: service_healthy
+        environment:
+            SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://broker:9092"
+            SCHEMA_REGISTRY_HOST_NAME: "schema-registry"
+            SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8081"
+        healthcheck:
+            # Tighter than the old dev-stack check (interval 30s): this stack
+            # starts per run, so up --wait rides the interval.
+            test:
+                [
+                    "CMD",
+                    "curl",
+                    "--output",
+                    "/dev/null",
+                    "--silent",
+                    "--head",
+                    "--fail",
+                    "http://schema-registry:8081/subjects",
+                ]
+            interval: 10s
+            timeout: 10s
+            retries: 12
+            start_period: 10s
+        ports:
+            # Loopback-pinned (CIA-03): the suite registers and deletes its
+            # subjects from the host.
+            - "127.0.0.1:28081:8081"
 
 networks:
     # The dev Elasticsearch stack (started by the e2e target's up dependency,

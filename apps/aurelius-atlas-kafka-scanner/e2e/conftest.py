@@ -1,12 +1,13 @@
-"""E2E fixtures: the real server, the real broker, and the scanner's own identity (KSC-09, KSC-10).
+"""E2E fixtures: the real server, the suite's own broker, and the scanner's identity (KSC-09, KSC-10).
 
 The suite drives the scanner in-process — the job is a batch CLI, not a service — against a
-stack whose only service is the Atlas server, on the dev store, the dev issuer, and the dev
-broker (dev/kafka). Seeding and cleanup ride the webapp suite's writer (the public client's
-password grant); every scan speaks as the scanner's own service identity, minted by client
-credentials (DD-469's pattern). Every topic the suite creates carries the run's ``zz<run>``
-prefix and is deleted at the end; the broker and the Registry ride the shared dev stack and are
-never restarted (DD-223).
+stack whose services are the Atlas server and one disposable broker and Schema Registry
+(DD-541, the pattern of db-scanner's Postgres, DD-507): the stack starts with the suite and
+discards its cluster data with it. The store and the issuer stay the dev ones. Seeding and
+cleanup ride the webapp suite's writer (the public client's password grant); every scan speaks
+as the scanner's own service identity, minted by client credentials (DD-469's pattern). Every
+topic the suite creates carries the run's ``zz<run>`` prefix and is deleted at the end, and no
+fixture here restarts a shared dev stack (DD-223).
 """
 
 import base64
@@ -42,6 +43,17 @@ CA_FILE = PROJECT / "certs" / "ca.pem"
 SERVER_HOST_PORT = 21006
 """The host port the e2e compose publishes the server on, loopback-pinned (CIA-03)."""
 
+BROKER_HOST_PORT = 29092
+"""The host port of the broker's plain listener, loopback-pinned (CIA-03). The compose file
+publishes the same number and the broker advertises it: the host door dials what the broker
+answers, the contract of the old dev stack's ports (DD-469) kept as this stack's literal."""
+
+SASL_HOST_PORT = 29095
+"""The host port of the broker's SASL listener, loopback-pinned (CIA-03)."""
+
+REGISTRY_HOST_PORT = 28081
+"""The host port of the Schema Registry, loopback-pinned (CIA-03)."""
+
 MINT_TIMEOUT_SECONDS = 120.0
 """How long to wait for the dev realm to serve tokens (a reused stack may be warming up)."""
 
@@ -75,11 +87,11 @@ class Settings(BaseSettings):
     """The secret of the scanner's own service client — the realm import's value."""
 
     sasl_username: str
-    """The SCRAM principal of the dev broker's SASL listener (KSC-10): the mirrored
-    value of dev/kafka's KAFKA_SASL_USER, injected by Nx from the project .env."""
+    """The SCRAM principal of the suite broker's SASL listener (KSC-10): injected by Nx from
+    the project .env, and the same value the compose's ``sasl-init`` reads for its guard."""
 
     sasl_password: SecretStr
-    """The secret of ``sasl_username`` — dev/kafka's KAFKA_SASL_SECRET, mirrored."""
+    """The secret of ``sasl_username`` — one value two places: Settings and the compose guard."""
 
     model_config = SettingsConfigDict(
         # Same prefix as the application's settings: the project .env Nx injects into the
@@ -131,20 +143,6 @@ def elasticsearch(observability: DockerCompose) -> DockerCompose:
     """The dev Elasticsearch stack, started and left running; the server's store."""
     _ = observability  # The stack external-attaches the observability network.
     context = WORKSPACE_ROOT / "dev" / "elasticsearch"
-    compose = DockerCompose(context=context)
-    compose.start()
-    return compose
-
-
-@pytest.fixture(scope="session")
-def kafka() -> DockerCompose:
-    """The dev Kafka stack, started and left running; the broker the scans read (KSC-10).
-
-    Started, never restarted (DD-223). The host publishes are loopback-pinned, and the
-    advertised HOST listener is ``localhost:29092``, so the host-side door dials exactly what
-    the broker advertises.
-    """
-    context = WORKSPACE_ROOT / "dev" / "kafka"
     compose = DockerCompose(context=context)
     compose.start()
     return compose
@@ -215,11 +213,13 @@ def _scanner_claims(settings: Settings, keycloak: DockerCompose) -> dict[str, An
 
 @pytest.fixture(scope="session")
 def server(keycloak: DockerCompose, elasticsearch: DockerCompose) -> Iterator[str]:
-    """The e2e Atlas server on the dev store, once healthy; its base URL.
+    """The e2e stack — the Atlas server beside its own broker and Registry — once healthy; its base URL.
 
-    ``docker compose up --wait`` returns when the image's own healthcheck passes (liveness
-    over TLS). The stack rides the dev store and issuer, started first by the fixtures and
-    left running (DD-223); only this stack's server stops at the end.
+    ``docker compose up --wait`` returns when every service's healthcheck passes: the server's
+    liveness over TLS, the broker's metadata answer, the Registry's subject list, and the
+    one-shot ``sasl-init`` exit. The stack rides the dev store and issuer, started first by the
+    fixtures and left running (DD-223); this whole stack comes down at the end, and the
+    broker's data with it (DD-541).
     """
     _ = keycloak, elasticsearch
     context = Path(__file__).parent.absolute()
@@ -228,7 +228,7 @@ def server(keycloak: DockerCompose, elasticsearch: DockerCompose) -> Iterator[st
 
 
 @pytest.fixture(scope="session")
-def scanner_settings(server: str, settings: Settings, keycloak: DockerCompose, kafka: DockerCompose) -> ScannerSettings:
+def scanner_settings(server: str, settings: Settings, keycloak: DockerCompose) -> ScannerSettings:
     """The scan's settings: this stack's server, broker, and Registry, and the scanner's identity.
 
     The realm is probed once, before any scan: a client the running realm does not know is
@@ -237,29 +237,26 @@ def scanner_settings(server: str, settings: Settings, keycloak: DockerCompose, k
     each scenario namespaces them to its run — through ``model_copy``.
     """
     _scanner_claims(settings, keycloak)
-    broker_port = kafka.get_service_port("broker", 9094)
-    registry_port = kafka.get_service_port("schema-registry", 8081)
     return ScannerSettings(
         server_url=cast("HttpUrl", server),  # pydantic validates the URL text at init
         client_secret=settings.client_secret,
         ca_file=str(CA_FILE),
-        bootstrap_servers=f"localhost:{broker_port}",
-        schema_registry_url=cast("HttpUrl", f"http://localhost:{registry_port}"),
+        bootstrap_servers=f"localhost:{BROKER_HOST_PORT}",
+        schema_registry_url=cast("HttpUrl", f"http://localhost:{REGISTRY_HOST_PORT}"),
     )
 
 
 @pytest.fixture(scope="session")
-def sasl_settings(scanner_settings: ScannerSettings, settings: Settings, kafka: DockerCompose) -> ScannerSettings:
+def sasl_settings(scanner_settings: ScannerSettings, settings: Settings) -> ScannerSettings:
     """The scan's settings on the broker's SASL listener: the same scan over SCRAM (KSC-10).
 
-    The dev broker's second host listener answers SASL_PLAINTEXT with SCRAM-SHA-512
-    (dev/kafka, DD-469's dev stand-in for auth'd customer clusters); the credentials are the
-    mirrored dev values the project environment carries.
+    The suite broker's second host listener answers SASL_PLAINTEXT with SCRAM-SHA-512
+    (DD-471's stand-in for auth'd customer clusters, now the stack's own); the credentials
+    are the values the project environment carries and ``sasl-init`` wrote into the cluster.
     """
-    sasl_port = kafka.get_service_port("broker", 9095)
     return scanner_settings.model_copy(
         update={
-            "bootstrap_servers": f"localhost:{sasl_port}",
+            "bootstrap_servers": f"localhost:{SASL_HOST_PORT}",
             "security_protocol": "SASL_PLAINTEXT",
             "sasl_mechanism": "SCRAM-SHA-512",
             "sasl_username": settings.sasl_username,
@@ -353,7 +350,7 @@ def run_token() -> str:
 
 @pytest.fixture
 def bootstrap(scanner_settings: ScannerSettings) -> str:
-    """The dev broker's bootstrap string, as the scan's settings name it."""
+    """The suite broker's bootstrap string, as the scan's settings name it."""
     return scanner_settings.bootstrap_servers
 
 
@@ -365,11 +362,11 @@ def registry_url(scanner_settings: ScannerSettings) -> str:
 
 @pytest.fixture
 def topics(bootstrap: str, run_token: str) -> Iterator[Callable[..., str]]:
-    """A topic factory on the dev broker: create one ``zz<run>``-named topic and remember it.
+    """A topic factory on the suite broker: create one ``zz<run>``-named topic and remember it.
 
     The returned callable answers the new topic's name (``zz<run><suffix>``); every created
-    topic is deleted when the test ends, whatever else cleanup did (DD-223: the shared broker
-    keeps nothing between tests).
+    topic is deleted when the test ends, whatever else cleanup did. The broker is discarded
+    with the stack, but the run never leaves its own topics lying around for the next one.
     """
     admin = KafkaAdminClient(bootstrap_servers=bootstrap)
     created: list[str] = []

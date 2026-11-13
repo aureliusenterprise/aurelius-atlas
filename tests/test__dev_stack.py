@@ -4,8 +4,8 @@ The dev compose stacks publish their ports on the host for loopback tools;
 the pentest's L2 half counted every one that binds ``0.0.0.0`` — on a shared
 or CI host that is the LAN serving the store and the metrics DBs. The rule
 is textual (compose is YAML + env interpolation, and no docker runs in this
-suite): every ``ports:`` entry in the observability, store, and Kafka compose
-files carries a loopback bind. In-network consumers (Grafana datasources, compose
+suite): every ``ports:`` entry in the observability and store compose files
+carries a loopback bind. In-network consumers (Grafana datasources, compose
 DNS names, the collector's exporter endpoints) never touch the host publish,
 which is why pinning all of them is zero-breakage. The Keycloak issuer and
 the template Postgres publishes are named-but-deferred in the increment
@@ -20,11 +20,7 @@ import yaml
 from conftest import WORKSPACE
 
 DEV_COMPOSES = sorted(
-    {
-        p
-        for stack in ("observability", "elasticsearch", "kafka")
-        for p in WORKSPACE.glob(f"dev/{stack}/docker-compose*.yaml")
-    }
+    {p for stack in ("observability", "elasticsearch") for p in WORKSPACE.glob(f"dev/{stack}/docker-compose*.yaml")}
 )
 
 LOOPBACKS = {"127.0.0.1", "localhost"}

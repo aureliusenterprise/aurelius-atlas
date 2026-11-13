@@ -1,14 +1,14 @@
 """E2E: the scanner against a real broker, Registry, and server (KSC-07, KSC-09, KSC-10).
 
 The suite drives the job in-process — the scanner is a batch CLI, not a service — on the
-stack of ``e2e/docker-compose.yaml`` plus the dev Kafka stack: a real Atlas server on the dev
-store, and the real broker and Schema Registry the scan reads (KSC-10: the door walks a live
+stack of ``e2e/docker-compose.yaml``: a real Atlas server on the dev store, and the suite's
+own real broker and Schema Registry the scan reads (DD-541, KSC-10: the door walks a live
 broker, no fakes). Every scan speaks as the scanner's own service client (KSC-09): the write
 rides its client-credentials token and the audit names it, so this is the spec's end-to-end
 proof that the identity answers read AND write in the real catalogue. Each scenario namespaces
 its topics and System to one ``zz<run>`` word, scans with a ``zz<run>*`` pattern so a foreign
-topic of the shared broker is never registered, deletes its topics and subjects at the end,
-and hard-deletes the entities it wrote (DD-223); nothing here restarts the store or the broker.
+topic is never registered, deletes its topics and subjects at the end, and hard-deletes the
+entities it wrote (DD-223); nothing here restarts the shared store.
 """
 
 import asyncio
@@ -153,7 +153,7 @@ def _collection_qualified(cluster_id: str | None, run: str) -> str:
 
 @pytest.fixture
 def run_cluster_id(scanner_settings: ScannerSettings) -> str | None:
-    """The dev broker's cluster id, as the scan's own door reads it (KSC-03)."""
+    """The suite broker's cluster id, as the scan's own door reads it (KSC-03)."""
     cluster = KafkaCluster(scanner_settings.bootstrap_servers)
     try:
         return cluster.cluster_id()
@@ -183,7 +183,7 @@ async def test__the_scanners_own_token_writes_the_tree_and_the_audit_names_it(
 ) -> None:
     """The scan as its own service identity over the real broker (KSC-09, KSC-02, KSC-10).
 
-    Two run-namespaced topics on the dev broker, one with a registered Avro subject; the scan
+    Two run-namespaced topics on the suite broker, one with a registered Avro subject; the scan
     admits both through the ``zz<run>*`` pattern (a foreign topic is never registered — KSC-02's
     patterns on a live broker), writes the tree with one bulk request, and the store holds the
     System, the Collection, both Datasets, and the fields. The dataset's create event names the
