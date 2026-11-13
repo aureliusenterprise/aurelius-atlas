@@ -146,6 +146,21 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         expect((fixture.nativeElement as HTMLElement).querySelector("button.aurelius-create-entity")).toBeNull();
     });
 
+    it("the hero controls row carries the class that shrinks it (DD-550)", () => {
+        setup();
+        const fixture = TestBed.createComponent(SearchLayout);
+        fixture.detectChanges();
+        const compiled = fixture.nativeElement as HTMLElement;
+
+        // The scss rule that hooks on this class is what keeps the field and
+        // the `+` inside the hero between 769px and ~830px (DD-550). Pin the
+        // hook itself, not the pixels (repo rule: layout ships as structure).
+        const level = compiled.querySelector("div.level.hero-controls");
+        expect(level).toBeTruthy();
+        expect(level?.querySelector(".level-item .input-bar")).toBeTruthy();
+        expect(level?.querySelector(".level-right .aurelius-create-entity")).toBeTruthy();
+    });
+
     it("the `+` opens the create-mode editor drawer (EDT-01, DD-322)", () => {
         const { navigate } = setup();
         const fixture = TestBed.createComponent(SearchLayout);

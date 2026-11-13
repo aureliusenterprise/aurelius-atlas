@@ -243,3 +243,30 @@ attribute was the only finding.
 **Consequences.** `<output>` defaults to `display: inline`. The regions sit in the `is-sr-only` clip
 pattern, so the box model changes nothing. A reader who looks up a spec rule for a persistent status
 region finds the element in the component's own spec.
+
+### DD-550. The hero keeps its create button inside the page
+
+- **Status:** Accepted
+- **Increment:** 7.30
+- **Date:** 2026-11-13
+
+**Decision.** The hero's controls row carries a `hero-controls` class. One rule in
+`search-layout.component.scss` gives that row's `.level-item` elements the room to change size
+(`flex-grow: 1`, `flex-shrink: 1`, `min-width: 0`, above Bulma's pinned `.level-item`). The search
+field takes the width the column has, and the `+` button keeps its own size.
+
+**Reason.** Found on the booted dev server. From a 769px viewport to about 950px, the hero's title
+column and after-title column sit side by side, and the after-title column is narrower than the
+search field plus the `+` button. Bulma pins a `.level-item` to its content, and `.is-mobile` keeps
+the row on one line at every width, so the row rode out of the hero and the `+` fell off the page.
+The same family as DD-548, found the same way.
+
+**Alternatives.** A container query like DD-548's: the hero is a full-width band, so its column
+width follows the viewport, and the stacked half-state DD-548 removed has no design here because
+`.is-mobile` already commits the row to one line. Dropping `.is-mobile`: below 769px the row would
+stack under the title, a change to every phone width to fix a tablet one. A viewport media query:
+it fixes the same window, but the class rule needs no breakpoint to remember.
+
+**Consequences.** The field narrows to about 250px at the tightest width, which still shows the
+placeholder. The unit spec pins the `hero-controls` hook, not the pixels (repo rule: layout ships
+as structure). The live browser check covers 420px to 1280px.
