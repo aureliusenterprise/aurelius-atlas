@@ -372,9 +372,7 @@ jobs:
             - name: Run integration tests
               env:
                   SOPS_AGE_KEY: ${{ secrets.AGE_SECRET_KEY }}
-              run: |
-                  npx nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit and not firefox"
-                  npx nx affected -t docker-build -c ci
+              run: npx nx affected -t e2e -c ci -- -m "critical or high" -k "not webkit and not firefox"
 
             # Collect container logs and status for debugging failed tests.
             # Same container, same dockerd as the step above, so this sees
