@@ -22,6 +22,7 @@
             "dependsOn": [
                 { "target": "decrypt" },
                 { "target": "certgen" },
+                { "target": "docker-build" },
                 { "projects": ["aurelius-atlas-server"], "target": "docker-build" },
                 {
                     "projects": [
