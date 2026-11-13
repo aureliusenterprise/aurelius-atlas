@@ -7594,6 +7594,20 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>8.24</td>
+<td>Client route coverage: admin completion and Aurelius routes</td>
+<td><code>AtlasClient.admin</code> completed (CLW-08..12, DD-561) and <code>AtlasClient.aurelius</code> added (CAV-01..04, DD-562): the ten admin routes of 6.3/6.4 that joined <code>routes/admin.py</code> after 8.11 — the metrics reads, the audit details, the server catalogue, the replication audit, the admin-audit pair — and the four Aurelius-native routes of <code>routes/quality.py</code> and <code>routes/search_by_meaning.py</code></td>
+<td>Aurelius <code>libs/atlas/api</code> <code>AdminClient</code> (the routes Java Atlas has no twin for stay twinless)</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>8.25</td>
+<td>Angular admin twin: the metrics and audit routes</td>
+<td><code>AdminService</code> completed (AAC-08..11): the same ten admin routes land on the Angular side — the metrics reads, the audit details, the server catalogue, the replication audit, the admin-audit pair — closing the CLW pair DD-217 opened; the Aurelius-native routes were already twin-covered by <code>SearchByMeaningService</code> and <code>QualityRuleService</code></td>
+<td>Aurelius <code>libs/atlas/api</code> <code>AdminClient</code> (Angular)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>9.1</td>
 <td>Targeted resilience e2e</td>
 <td>Real-container outages, three scenarios (DD-125): server down → alert + recovery in the browser, chain upstream down → 502 + recovery, logout round-trip at the real Idp (RSL-01..03)</td>

@@ -20739,12 +20739,7 @@ Documents go to Elasticsearch as the bytes of Atlas's JSON codec, so values keep
           </div>
         </li>
         <li class="doc-section-item field-body">
-          <b><code><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></code></b>
+          <b><code><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></code></b>
           –
           <div class="doc-md-description">
             <p>A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).</p>
@@ -22823,7 +22818,7 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.replace_verdicts" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">replace_verdicts</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.replace_verdicts(verdicts)">verdicts</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">replace_verdicts</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.replace_verdicts(verdicts)">verdicts</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="aurelius_atlas_core.app_search_document.StoredVerdict">StoredVerdict</span></span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -22847,12 +22842,7 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.reservations" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reservations</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.reservations(keys)">keys</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">]</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reservations</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.reservations(keys)">keys</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -22876,17 +22866,7 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.reserve" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reserve</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.reserve(reservation)">reservation</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span> <span class="o">|</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reserve</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.reserve(reservation)">reservation</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span> <span class="o">|</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -24355,7 +24335,7 @@ their verdicts' cause (ASG-06, DD-535).</p>
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.replace_verdicts" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">replace_verdicts</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.replace_verdicts(verdicts)">verdicts</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]]])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">replace_verdicts</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.replace_verdicts(verdicts)">verdicts</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="aurelius_atlas_core.app_search_document.StoredVerdict">StoredVerdict</span></span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -24379,12 +24359,7 @@ their verdicts' cause (ASG-06, DD-535).</p>
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.reservations" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reservations</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.reservations(keys)">keys</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">]</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reservations</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.reservations(keys)">keys</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Sequence">Sequence</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -24408,17 +24383,7 @@ their verdicts' cause (ASG-06, DD-535).</p>
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.EntityDocuments.reserve" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reserve</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.reserve(reservation)">reservation</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation
-
-
-  
-      dataclass
-   (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span> <span class="o">|</span> <span class="kc">None</span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">reserve</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.EntityDocuments.reserve(reservation)">reservation</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><a class="autorefs autorefs-internal" title="            Reservation (aurelius_atlas_core.entity_documents.Reservation)" href="./#aurelius_atlas_core.entity_documents.Reservation">Reservation</a></span> <span class="o">|</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
@@ -25556,19 +25521,22 @@ with <code>wait_for_documents</code>, also those awaiting their App Search docum
 <code class="doc-symbol doc-symbol-heading doc-symbol-class"></code>            <span class="doc doc-object-name doc-class-name">Reservation</span>
 
 
-  <span class="doc doc-labels">
-      <small class="doc doc-label doc-label-dataclass"><code>dataclass</code></small>
-  </span>
-
 <a href="#aurelius_atlas_core.entity_documents.Reservation" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">Reservation</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_core.entity_documents.Reservation(key)">key</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.Reservation(guid)">guid</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_core.entity_documents.Reservation(write_id)">write_id</span></span><span class="p">:</span> <span class="n"><span title="str">str</span></span><span class="p">)</span>
-</code></pre></div>
+
 
     <div class="doc doc-contents ">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="            AtlasModel
+
+
+  
+      pydantic-model
+   (aurelius_atlas_model.base.AtlasModel)" href="../aurelius-atlas-model/#aurelius_atlas_model.base.AtlasModel">AtlasModel</a></code></p>
 
 
 
         <p>A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).</p>
+<p><code>key</code> is the document's id, not part of its source, so it stays out of <code>to_json</code> (DD-560).</p>
 
 
 
@@ -25603,6 +25571,7 @@ with <code>wait_for_documents</code>, also those awaiting their App Search docum
 
 
   
+      class-attribute
       instance-attribute
    (aurelius_atlas_core.entity_documents.Reservation.key)" href="./#aurelius_atlas_core.entity_documents.Reservation.key">key</a></code></b>
               (<code><span title="str">str</span></code>)
@@ -25668,11 +25637,12 @@ with <code>wait_for_documents</code>, also those awaiting their App Search docum
 
 
   <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
       <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
   </span>
 
 <a href="#aurelius_atlas_core.entity_documents.Reservation.key" class="headerlink" title="Permanent link">&para;</a></h4>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">key</span><span class="p">:</span> <span class="n"><span title="str">str</span></span> <span class="o">=</span> <span class="n"><span title="pydantic.Field">Field</span></span><span class="p">(</span><span class="n"><span title="pydantic.Field(exclude)">exclude</span></span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

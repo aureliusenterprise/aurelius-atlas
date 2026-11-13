@@ -1757,7 +1757,7 @@ Delete the reservation when `guid` still holds it, guarded by its version.
 #### replace\_verdicts
 
 ```
-replace_verdicts(verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None
+replace_verdicts(verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None
 ```
 
 One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
@@ -2180,7 +2180,7 @@ Delete the reservation of `key` if `guid` holds it.
 #### replace\_verdicts
 
 ```
-replace_verdicts(verdicts: Mapping[str, Sequence[Mapping[str, Any]]]) -> None
+replace_verdicts(verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None
 ```
 
 Each entity's governance verdicts, by its GUID, in place of those it had (ASG-06, DD-534).
@@ -2453,11 +2453,11 @@ written: Sequence[tuple[Linked, DocumentVersion | None]] = ()
 
 ### Reservation
 
-```
-Reservation(key: str, guid: str, write_id: str)
-```
+Bases: `AtlasModel`
 
 A unique value held by an entity: the key's id, the holder's GUID and the write that reserved it (DD-045).
+
+`key` is the document's id, not part of its source, so it stays out of `to_json` (DD-560).
 
 Attributes:
 
@@ -2474,7 +2474,7 @@ guid: str
 #### key
 
 ```
-key: str
+key: str = Field(exclude=True)
 ```
 
 #### write\_id

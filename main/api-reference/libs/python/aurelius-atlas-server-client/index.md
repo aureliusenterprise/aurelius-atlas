@@ -365,15 +365,6 @@ The body of `GET /api/atlas/admin/version`.
 }
 ```
 
-Config:
-
-- `alias_generator`: `to_camel`
-- `validate_by_alias`: `True`
-- `validate_by_name`: `True`
-- `validate_assignment`: `True`
-- `extra`: `ignore`
-- `coerce_numbers_to_str`: `True`
-
 Fields:
 
 - `version` (`str`)
@@ -809,7 +800,7 @@ The async client for the Atlas metadata API (CL-01..CL-05, CL-11; DD-203, DD-204
 
 One client per server: constructed from an externally built `httpx.AsyncClient` and a token source, reading no environment variables (CL-01) — the app builds the httpx client from its own settings (TLS, timeout) and passes it in. The request paths are relative, appended to that client's base URL, so a URL with a trailing slash — the `str()` of a pydantic `HttpUrl` — works as given (CL-01); the builder closes the pool, the API client never touches its lifecycle. Because the client arrives from outside, tests hand over one built on a `MockTransport` and no socket opens (CL-02, the DD-200 seam made async). Every request carries `authorization: Bearer <token>` from the token source (CL-03); a non-2xx answer raises :class:`AtlasClientError` with the status and the server's `{errorCode, errorMessage}` when the body parses (CL-04); an unreachable upstream propagates as `httpx`'s own error — mapping it to an HTTP status is the app's job (LM-07's DV-80), not the client's (CL-05).
 
-The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin` (the 8.4 reads plus the 8.11 writes, CLW-01..CLW-07), `routes/types.py` under `/api/atlas/v2/types`, the entity routes of `routes/entity.py` under `/api/atlas/v2/entity` (CLE-01..CLE-12, 8.9), the glossary routes of `routes/glossary.py` under `/api/atlas/v2/glossary` (CLG-01..CLG-09, 8.10), the relationship routes of `routes/relationship.py` under `/api/atlas/v2/relationship` (CLR-01..CLR-04, 8.11), the discovery routes of `routes/discovery.py` under `/api/atlas/v2/search` (the seven 8.4 searches, CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), and the lineage feed of `routes/lineage.py` under `/api/atlas/v2/lineage` (CL-60..CL-63, 8.8).
+The paths mirror the server's routes verbatim: `routes/admin.py` under `/api/atlas/admin` (the 8.4 reads plus the 8.11 writes, CLW-01..CLW-07), `routes/types.py` under `/api/atlas/v2/types`, the entity routes of `routes/entity.py` under `/api/atlas/v2/entity` (CLE-01..CLE-12, 8.9), the glossary routes of `routes/glossary.py` under `/api/atlas/v2/glossary` (CLG-01..CLG-09, 8.10), the relationship routes of `routes/relationship.py` under `/api/atlas/v2/relationship` (CLR-01..CLR-04, 8.11), the discovery routes of `routes/discovery.py` under `/api/atlas/v2/search` (the seven 8.4 searches, CL-13, plus the DSL search and the saved searches, CSD-01..CSD-06, 8.12), the lineage feed of `routes/lineage.py` under `/api/atlas/v2/lineage` (CL-60..CL-63, 8.8), the Aurelius-native routes of `routes/quality.py` and `routes/search_by_meaning.py` under `/api/aurelius/v1` (CAV-01..CAV-04, 8.24), and the ten admin routes of 6.3 and 6.4 that joined `routes/admin.py` after 8.11 (CLW-08..CLW-12, 8.24).
 
 Type Aliases:
 
@@ -831,6 +822,9 @@ Classes:
 - **`AtlasClientError`** –
 
   A non-2xx answer from the Atlas server, with the status and the error body (CL-04).
+- **`AureliusApi`** –
+
+  The Aurelius-native resource of an :class:`AtlasClient` (CAV-01..CAV-04): `client.aurelius`.
 - **`EntityApi`** –
 
   The entity resource of an :class:`AtlasClient` (CLE-01..CLE-12): `client.entity`.
@@ -853,6 +847,9 @@ Classes:
 Attributes:
 
 - **`ADMIN_ROOT`** –
+- **`AURELIUS_ROOT`** –
+
+  The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`,
 - **`CLIENT_ERROR`** –
 
   The status where an answer becomes an error: the client-error boundary (CL-04).
@@ -866,8 +863,6 @@ Attributes:
 
   The path segment of each kind's lookups, mirroring `routes/types.py`'s `KIND_PATHS` (CL-11).
 - **`LINEAGE_ROOT`** –
-
-  The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`,
 - **`NO_CONTENT`** –
 
   The status a saved-searches read answers when the user has no profile (CSD-03, SVS-04).
@@ -879,6 +874,16 @@ Attributes:
 ```
 ADMIN_ROOT = 'api/atlas/admin'
 ```
+
+### AURELIUS\_ROOT
+
+```
+AURELIUS_ROOT = 'api/aurelius/v1'
+```
+
+The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`, `routes/discovery.py`, `routes/entity.py`, `routes/glossary.py`, `routes/relationship.py`, `routes/lineage.py`, and the Aurelius-native `routes/quality.py` and `routes/search_by_meaning.py`, CAV-01).
+
+Relative to the httpx client's base URL (CL-01): httpx appends them, so the base URL the app passes — trailing slash included, as a pydantic `HttpUrl` renders one — works as given. `LINEAGE_ROOT` carries the prefix too (CL-60): the server mounts its feed at `/api/atlas/v2/lineage`, as every other resource (DD-308).
 
 ### CLIENT\_ERROR
 
@@ -935,10 +940,6 @@ The path segment of each kind's lookups, mirroring `routes/types.py`'s `KIND_PAT
 LINEAGE_ROOT = 'api/atlas/v2/lineage'
 ```
 
-The route prefixes of the server's resources (`routes/admin.py`, `routes/types.py`, `routes/discovery.py`, `routes/entity.py`, `routes/glossary.py`, `routes/relationship.py`, `routes/lineage.py`).
-
-Relative to the httpx client's base URL (CL-01): httpx appends them, so the base URL the app passes — trailing slash included, as a pydantic `HttpUrl` renders one — works as given. `LINEAGE_ROOT` carries the prefix too (CL-60): the server mounts its feed at `/api/atlas/v2/lineage`, as every other resource (DD-308).
-
 ### NO\_CONTENT
 
 ```
@@ -989,12 +990,24 @@ The admin resource of an :class:`AtlasClient` (CL-11): `client.admin`.
 
 Methods:
 
+- **`ageout_audits`** –
+
+  `POST /audits/ageout`: the agings the criteria ask for, queued as tasks (AGE-01..AGE-03, CLW-11).
+- **`audit_details`** –
+
+  `GET /audit/{auditGuid}/details`: the entity headers a purge's audit names (ADA-05, CLW-10).
+- **`audits`** –
+
+  `POST /audits`: the admin audits the search parameters find (ADA-04, CLW-11).
 - **`delete_tasks`** –
 
   `DELETE /tasks`: the tasks of the guids given, removed (TSK-06, CLW-06). Answers 204.
 - **`export`** –
 
   `POST /export`: the export ZIP, as bytes and content type (EXP-01..EXP-06, CLW-03, DD-310).
+- **`export_import_audit`** –
+
+  `GET /expimp/audit`: the audit entries of the values given (REP-05, CLW-10).
 - **`import_data`** –
 
   `POST /import`: the export ZIP imported as the request asks (IMS-01..IMS-05, CLW-04, DD-310).
@@ -1004,6 +1017,21 @@ Methods:
 - **`liveness`** –
 
   `GET /api/atlas/admin/liveness` — the plain-text answer (ADM-03).
+- **`metrics`** –
+
+  `GET /metrics`: the counts and the server's stats (MET-01..MET-04, CLW-08).
+- **`metrics_charts`** –
+
+  `GET /metricsstats/charts`: per type name, its counts in the range by state (MHS-04, CLW-09).
+- **`metrics_in_range`** –
+
+  `GET /metricsstats/range`: the metrics stored in the range (MHS-03, CLW-09).
+- **`metrics_stat`** –
+
+  `GET /metricsstat/{collectionTime}`: the metric stored at that time (MHS-02, CLW-09).
+- **`metrics_stats`** –
+
+  `GET /metricsstats`: every stored metric, the latest first (MHS-02, CLW-08).
 - **`patches`** –
 
   `GET /patches`: the typedef patch records (ENS-10, CLW-01).
@@ -1013,6 +1041,9 @@ Methods:
 - **`readiness`** –
 
   `GET /api/atlas/admin/readiness` — the plain-text answer.
+- **`server`** –
+
+  `GET /server/{serverName}`: the catalogue of the full name, with its replication (REP-01, CLW-10).
 - **`session`** –
 
   `GET /api/atlas/admin/session` (ADM-05).
@@ -1025,6 +1056,38 @@ Methods:
 - **`version`** –
 
   `GET /api/atlas/admin/version` (ADM-01).
+
+#### ageout\_audits
+
+```
+ageout_audits(
+    criteria: AuditReductionCriteria | None = None, *, use_audit_config: bool = False
+) -> list[AtlasTask] | None
+```
+
+`POST /audits/ageout`: the agings the criteria ask for, queued as tasks (AGE-01..AGE-03, CLW-11).
+
+`use_audit_config` sends `useAuditConfig=true` — the configuration's aging, its criteria ignored — and travels only when set. The 204 of an aging that queued nothing returns `None`; `None` and `[]` stay apart (CSD-03's rule, taken up for the same reason, DD-561).
+
+#### audit\_details
+
+```
+audit_details(audit_guid: str, *, limit: int = 10, offset: int = 0) -> list[AtlasEntityHeader]
+```
+
+`GET /audit/{auditGuid}/details`: the entity headers a purge's audit names (ADA-05, CLW-10).
+
+The route reads no admin privilege, only the entity read of each entry; the client sends no more than the token it was given (DD-307).
+
+#### audits
+
+```
+audits(parameters: AuditSearchParameters | None = None) -> list[AtlasAuditEntry]
+```
+
+`POST /audits`: the admin audits the search parameters find (ADA-04, CLW-11).
+
+No parameter asks for every entry: the client sends no body then. It needs the `ADMIN_AUDITS` privilege, which the server checks.
 
 #### delete\_tasks
 
@@ -1043,6 +1106,25 @@ export(request: AtlasExportRequest | None = None) -> tuple[bytes, str]
 `POST /export`: the export ZIP, as bytes and content type (EXP-01..EXP-06, CLW-03, DD-310).
 
 No request is the empty one the server builds from a missing body (DV-120) — the client sends no options it was not given. The 204 the server answers for an empty export asked to omit its ZIP (EXP-05) returns `(b"", "")`.
+
+#### export\_import\_audit
+
+```
+export_import_audit(
+    *,
+    server_name: str | None = None,
+    user_name: str | None = None,
+    operation: str | None = None,
+    start_time: int | None = None,
+    end_time: int | None = None,
+    limit: int = 0,
+    offset: int = 0,
+) -> list[ExportImportAuditEntry]
+```
+
+`GET /expimp/audit`: the audit entries of the values given (REP-05, CLW-10).
+
+The server matches the server name at either end; a value left out matches any entry on it.
 
 #### import\_data
 
@@ -1071,6 +1153,50 @@ liveness() -> str
 ```
 
 `GET /api/atlas/admin/liveness` — the plain-text answer (ADM-03).
+
+#### metrics
+
+```
+metrics() -> AtlasMetrics
+```
+
+`GET /metrics`: the counts and the server's stats (MET-01..MET-04, CLW-08).
+
+#### metrics\_charts
+
+```
+metrics_charts(start_time: int, end_time: int, type_names: Sequence[str] = ()) -> AtlasMetricsCharts
+```
+
+`GET /metricsstats/charts`: per type name, its counts in the range by state (MHS-04, CLW-09).
+
+#### metrics\_in\_range
+
+```
+metrics_in_range(start_time: int, end_time: int, *, type_names: Sequence[str] = ()) -> list[AtlasMetricsStat]
+```
+
+`GET /metricsstats/range`: the metrics stored in the range (MHS-03, CLW-09).
+
+Each type name travels as a repeated `typeName`.
+
+#### metrics\_stat
+
+```
+metrics_stat(collection_time: int) -> AtlasMetricsStat
+```
+
+`GET /metricsstat/{collectionTime}`: the metric stored at that time (MHS-02, CLW-09).
+
+#### metrics\_stats
+
+```
+metrics_stats(*, min_info: bool = True) -> list[AtlasMetricsStat]
+```
+
+`GET /metricsstats`: every stored metric, the latest first (MHS-02, CLW-08).
+
+`mininfo` travels on every call, true or false: the route's Java default is true, so an absent parameter would answer the full statistics when the caller asked without them (DD-561).
 
 #### patches
 
@@ -1101,6 +1227,14 @@ readiness() -> str
 `GET /api/atlas/admin/readiness` — the plain-text answer.
 
 An `AtlasClientError` when the server is not ready (ADM-04).
+
+#### server
+
+```
+server(server_name: str) -> AtlasServer
+```
+
+`GET /server/{serverName}`: the catalogue of the full name, with its replication (REP-01, CLW-10).
 
 #### session
 
@@ -1169,6 +1303,7 @@ Methods:
 Attributes:
 
 - **`admin`** –
+- **`aurelius`** –
 - **`entity`** –
 - **`glossary`** –
 - **`lineage`** –
@@ -1180,6 +1315,12 @@ Attributes:
 
 ```
 admin = AdminApi(api)
+```
+
+#### aurelius
+
+```
+aurelius = AureliusApi(api)
 ```
 
 #### entity
@@ -1278,6 +1419,71 @@ status_code = status_code
 ```
 
 The HTTP status the server answered with.
+
+### AureliusApi
+
+```
+AureliusApi(api: _Api)
+```
+
+The Aurelius-native resource of an :class:`AtlasClient` (CAV-01..CAV-04): `client.aurelius`.
+
+The paths mirror `routes/search_by_meaning.py` and `routes/quality.py`, the Aurelius-only endpoints beside the Atlas ones (SBM, QRE). The bodies the Atlas routes share are `aurelius-atlas-model`'s, reused whole (DD-309); the four Aurelius-only shapes are this library's (DD-562), the `lineage.py` precedent (CL-12).
+
+Methods:
+
+- **`quality_kinds`** –
+
+  `GET /quality/kinds`: the closed rule vocabulary of the engine (QRE-01, DD-475, CAV-04).
+- **`semantic_search`** –
+
+  `POST /search/semantic`: the quick search by meaning (SBM-01..SBM-04, SBM-06, SBM-07, CAV-02).
+- **`similar_entities`** –
+
+  `GET /entity/guid/{guid}/similar`: the entities nearest to the entity's embedding (SBM-05, SBM-07, CAV-03).
+- **`validate_quality_rule`** –
+
+  `POST /quality/rules/validate`: a draft rule through the server's parser (QRE-02, QRE-03, DD-476, CAV-04).
+
+#### quality\_kinds
+
+```
+quality_kinds() -> QualityVocabulary
+```
+
+`GET /quality/kinds`: the closed rule vocabulary of the engine (QRE-01, DD-475, CAV-04).
+
+#### semantic\_search
+
+```
+semantic_search(parameters: SemanticSearchParameters) -> AtlasQuickSearchResult
+```
+
+`POST /search/semantic`: the quick search by meaning (SBM-01..SBM-04, SBM-06, SBM-07, CAV-02).
+
+The `semantic`/`hybrid` mode rides the body. The client validates no mode and no query (CL-12): the server answers `BAD_REQUEST` for another mode, an empty query, or a `sortBy`.
+
+#### similar\_entities
+
+```
+similar_entities(
+    guid: str, *, type_name: str | None = None, exclude_deleted_entities: bool = False, limit: int = 0, offset: int = 0
+) -> AtlasQuickSearchResult
+```
+
+`GET /entity/guid/{guid}/similar`: the entities nearest to the entity's embedding (SBM-05, SBM-07, CAV-03).
+
+The entity itself is left out by the server.
+
+#### validate\_quality\_rule
+
+```
+validate_quality_rule(attributes: Mapping[str, Any]) -> QualityRuleCheck
+```
+
+`POST /quality/rules/validate`: a draft rule through the server's parser (QRE-02, QRE-03, DD-476, CAV-04).
+
+Both answers are 200s (CAV-04): the rule the vocabulary cannot read is the endpoint's product, and its `{valid: false, reason}` arrives as the check's `reason`, raised by no client method.
 
 ### EntityApi
 
