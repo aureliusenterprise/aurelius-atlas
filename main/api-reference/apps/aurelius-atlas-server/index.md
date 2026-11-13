@@ -94,6 +94,15 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "$ref": "#/$defs/LogLevel",
 >       "default": "info"
 >     },
+>     "environment": {
+>       "default": "production",
+>       "enum": [
+>         "production",
+>         "development"
+>       ],
+>       "title": "Environment",
+>       "type": "string"
+>     },
 >     "tls_cert_file": {
 >       "format": "file-path",
 >       "title": "Tls Cert File",
@@ -583,6 +592,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `host` (`str`)
 > - `port` (`int`)
 > - `log_level` (`LogLevel`)
+> - `environment` (`Literal['production', 'development']`)
 > - `tls_cert_file` (`FilePath`)
 > - `tls_key_file` (`FilePath`)
 > - `hsts_enabled` (`bool`)
@@ -1004,6 +1014,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > The base of an OpenAI-compatible embeddings API, as the embedder of 11.2 serves one; unset, embedding is off: no vectors are mapped or computed (VEC-08, ADR 059).
 >
+> ### environment
+>
+> ```
+> environment: Literal['production', 'development'] = 'production'
+> ```
+>
+> What the server runs in: the image ships production; the dev arrangement sets development in `.env`, which turns on the dev-only surfaces (`is_development`).
+>
 > ### forwarded\_allow\_ips
 >
 > ```
@@ -1043,6 +1061,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The one folder `admin/importfile` reads export ZIPs from; none refuses every file (IMS-06, DV-125).
+>
+> ### is\_development
+>
+> ```
+> is_development: bool
+> ```
+>
+> Whether `environment` is set to development: the dev-only surfaces answer, production's do not.
 >
 > ### lineage\_max\_node\_count
 >
@@ -1548,6 +1574,10 @@ The admin endpoints of `AdminResource`: version, status, session, liveness, read
 
 ADM-01 to ADM-05, ENS-10, EDL-01 to EDL-08, TSK-06, EXP-01, IMS-01 to IMS-06, REP-01 to REP-05, MET-01 to MET-04, MHS-01 to MHS-04.
 
+Type Aliases:
+
+- **`PurgeBody`** –
+
 Functions:
 
 - **`ageout_audit_data`** –
@@ -1622,9 +1652,6 @@ Functions:
 
 Attributes:
 
-- **`ACTIVE`** –
-
-  The only service state: Aurelius Atlas has no high-availability states.
 - **`ADMIN`** –
 - **`DESCRIPTION`** –
 
@@ -1638,18 +1665,10 @@ Attributes:
 - **`OPERATION_STATUS`** –
 
   The option an export's or import's admin audit adds its status as (ADA-02).
+- **`PURGE_BODY`** –
+
+  `purgeByIds`: the GUIDs to purge, a JSON array of them (EDL-01, DV-10).
 - **`READY`** –
-- **`UI_SETTINGS`** (`dict[str, Any]`) –
-
-  The session's settings at the defaults of Atlas 2.4.0 (`AdminResource`, `AtlasCSRFPreventionFilter`,
-
-### ACTIVE
-
-```
-ACTIVE = 'ACTIVE'
-```
-
-The only service state: Aurelius Atlas has no high-availability states.
 
 ### ADMIN
 
@@ -1709,34 +1728,25 @@ OPERATION_STATUS = 'operationStatus'
 
 The option an export's or import's admin audit adds its status as (ADA-02).
 
+### PURGE\_BODY
+
+```
+PURGE_BODY = json_root(Guids)
+```
+
+`purgeByIds`: the GUIDs to purge, a JSON array of them (EDL-01, DV-10).
+
 ### READY
 
 ```
 READY = 'Service is ready to accept requests'
 ```
 
-### UI\_SETTINGS
+### PurgeBody
 
 ```
-UI_SETTINGS: dict[str, Any] = {
-    "atlas.rest-csrf.enabled": True,
-    "atlas.rest-csrf.browser-useragents-regex": "^Mozilla.*,^Opera.*,^Chrome",
-    "atlas.rest-csrf.methods-to-ignore": "GET,OPTIONS,HEAD,TRACE",
-    "atlas.rest-csrf.custom-header": "X-XSRF-HEADER",
-    "atlas.ui.editable.entity.types": "hdfs_path",
-    "atlas.ui.default.version": "v2",
-    "atlas.ui.date.timezone.format.enabled": True,
-    "atlas.ui.date.format": "MM/DD/YYYY hh:mm:ss A",
-    "atlas.debug.metrics.enabled": False,
-    "atlas.tasks.enabled": True,
-    "atlas.tasks.ui.tab.enabled": False,
-    "atlas.lineage.on.demand.enabled": False,
-    "atlas.lineage.on.demand.default.node.count": 3,
-    "atlas.relationship.search.enabled": False,
-}
+PurgeBody = list[str] | None
 ```
-
-The session's settings at the defaults of Atlas 2.4.0 (`AdminResource`, `AtlasCSRFPreventionFilter`, `AtlasConfiguration`).
 
 ### ageout\_audit\_data
 
@@ -1915,7 +1925,7 @@ The CSRF token is the session's, made on first ask; a request without a session 
 ### get\_status
 
 ```
-get_status() -> dict[str, str]
+get_status() -> dict[str, Any]
 ```
 
 The service state, which is always `ACTIVE` while the server runs (ADM-02).
@@ -1931,7 +1941,7 @@ get_task_status(request: Request) -> AtlasJSONResponse
 ### get\_version
 
 ```
-get_version(request: Request) -> dict[str, str]
+get_version(request: Request) -> dict[str, Any]
 ```
 
 The server's name, release and revision (ADM-01, DV-03).
@@ -1971,7 +1981,7 @@ Raises:
 ### purge\_by\_ids
 
 ```
-purge_by_ids(request: Request, store: Store, body: Body) -> AtlasJSONResponse
+purge_by_ids(request: Request, store: Store, guids_body: PurgeBody) -> AtlasJSONResponse
 ```
 
 `purgeByIds`: remove the `DELETED` entities of a JSON array of GUIDs (EDL-01 to EDL-03).

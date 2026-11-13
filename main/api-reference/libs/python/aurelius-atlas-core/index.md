@@ -864,10 +864,12 @@ Every task, or those `PENDING` or `IN_PROGRESS`, oldest first (TSK-04, TSK-06).
 #### new\_guid
 
 ```
-new_guid() -> str
+new_guid() -> AssignedGuid
 ```
 
 A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044).
+
+The minted text names a stored entity the moment it is handed out, so it is an `AssignedGuid`; a test store may count instead of randomise, which is still assigned text.
 
 #### now
 

@@ -7669,6 +7669,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A verdict out of step with its entity or rule shows a miss the record no longer has; nothing in the store is ever evaluated (DV-146), and the rules of another expression have no reading in the vocabulary</td>
 <td>14.6</td>
 </tr>
+<tr>
+<td>DV-161</td>
+<td>Entities</td>
+<td>Every endpoint takes a stored object's GUID as any text; text no entity has is answered 404 (<code>INSTANCE_GUID_NOT_FOUND</code>)</td>
+<td>Text that names a stored object (a path or query GUID, alone or in bulk) must be UUID text, or the request is refused 400 (<code>ATLAS-400-00-021</code>, <code>ObjectId is not valid {0}</code>); a UUID no object has is answered 404 as Atlas answers it</td>
+<td>Every GUID Aurelius Atlas mints is a UUID and a REST create mints a fresh one, so no client round-trips other text; an early 400 tells the caller its id is malformed instead of hiding it in a lookup miss (DD-552)</td>
+<td>7.30</td>
+</tr>
+<tr>
+<td>DV-162</td>
+<td>Entities</td>
+<td>A create or update body names entities by any text, and an entity of the same request by a placeholder GUID (<code>-1</code>, <code>-2</code>, …)</td>
+<td>A GUID a write body names must be UUID text or a placeholder (text starting with <code>-</code>), or the request is refused 400 (<code>ATLAS-400-00-021</code>, <code>ObjectId is not valid {0}</code>). A lookup body (an export request, a saved search, set-classifications headers) keeps any text, as it finds an entity or names none</td>
+<td>Every GUID Aurelius Atlas mints is a UUID (DV-161), and a placeholder names only an entity of the same request. The replacement of a placeholder stays in the write pipeline, which records each one's real GUID in <code>guidAssignments</code>. Validation checks the shape, never the meaning (DD-553)</td>
+<td>7.30</td>
+</tr>
 </tbody>
 </table>
 

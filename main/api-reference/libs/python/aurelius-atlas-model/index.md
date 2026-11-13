@@ -8311,6 +8311,9 @@ Classes:
 - **`AtlasPatch`** –
 
   The record of one applied typedef patch; the times are epoch milliseconds.
+- **`AtlasPatches`** –
+
+  `AtlasPatch.AtlasPatches`: the list `admin/patches` answers (ENS-10, DV-14).
 - **`PatchStatus`** –
 
   How a patch ended (`AtlasPatch.PatchStatus`).
@@ -8569,6 +8572,188 @@ The JSON Atlas writes for this model: Java names, null fields left out, empty on
 
 Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
 
+### AtlasPatches
+
+Bases: `AtlasModel`
+
+`AtlasPatch.AtlasPatches`: the list `admin/patches` answers (ENS-10, DV-14).
+
+`intg/src/main/java/org/apache/atlas/model/patches/AtlasPatch.java#AtlasPatches`; Aurelius Atlas lists the typedef patches only.
+
+**Show JSON schema:**
+
+```
+{
+  "$defs": {
+    "AtlasPatch": {
+      "description": "The record of one applied typedef patch; the times are epoch milliseconds.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The unique id of the patch.",
+          "title": "Id"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "A description of the patch.",
+          "title": "Description"
+        },
+        "type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The kind of patch; typedef patches use ``TYPEDEF_PATCH``.",
+          "title": "Type"
+        },
+        "action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The action the patch performs, e.g. ``ADD_ATTRIBUTE``.",
+          "title": "Action"
+        },
+        "updatedBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The user who applied the patch.",
+          "title": "Updatedby"
+        },
+        "createdBy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The user who defined the patch.",
+          "title": "Createdby"
+        },
+        "createdTime": {
+          "default": 0,
+          "description": "When the patch was defined, in epoch milliseconds.",
+          "title": "Createdtime",
+          "type": "integer"
+        },
+        "updatedTime": {
+          "default": 0,
+          "description": "When the patch was applied, in epoch milliseconds.",
+          "title": "Updatedtime",
+          "type": "integer"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PatchStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "How the patch ended: UNKNOWN, APPLIED, SKIPPED, or FAILED."
+        }
+      },
+      "title": "AtlasPatch",
+      "type": "object"
+    },
+    "PatchStatus": {
+      "description": "How a patch ended (``AtlasPatch.PatchStatus``).",
+      "enum": [
+        "UNKNOWN",
+        "APPLIED",
+        "SKIPPED",
+        "FAILED"
+      ],
+      "title": "PatchStatus",
+      "type": "string"
+    }
+  },
+  "description": "``AtlasPatch.AtlasPatches``: the list ``admin/patches`` answers (ENS-10, DV-14).\n\n``intg/src/main/java/org/apache/atlas/model/patches/AtlasPatch.java#AtlasPatches``; Aurelius Atlas\nlists the typedef patches only.",
+  "properties": {
+    "patches": {
+      "items": {
+        "$ref": "#/$defs/AtlasPatch"
+      },
+      "title": "Patches",
+      "type": "array"
+    }
+  },
+  "title": "AtlasPatches",
+  "type": "object"
+}
+```
+
+Fields:
+
+- `patches` (`list[AtlasPatch]`)
+
+#### model\_config
+
+```
+model_config = ConfigDict(
+    alias_generator=to_camel,
+    validate_by_alias=True,
+    validate_by_name=True,
+    validate_assignment=True,
+    extra="ignore",
+    coerce_numbers_to_str=True,
+)
+```
+
+#### patches
+
+```
+patches: list[AtlasPatch]
+```
+
+#### to\_json
+
+```
+to_json() -> dict[str, Any]
+```
+
+The JSON Atlas writes for this model: Java names, null fields left out, empty ones kept (TDM-02).
+
+Untyped values keep their Python types (`Decimal`, `datetime`) for `codec.dumps` (VAL-01, DD-039).
+
 ### PatchStatus
 
 Bases: `StrEnum`
@@ -8614,6 +8799,12 @@ Used by the typedef models (`typedef`) and the instance models (`instance`) alik
 
 Type Aliases:
 
+- **`BodyGuid`** –
+
+  A GUID a request body may name, or none: a placeholder or UUID text, checked only as a request (DV-162).
+- **`BodyGuidText`** –
+
+  A GUID a request body names where Java's field holds no null: a map key or a list element (DV-162).
 - **`JavaBool`** –
 
   A Java `boolean`: an explicit null reads as false (TDM-10).
@@ -8641,12 +8832,35 @@ Functions:
 - **`empty_when_null`** –
 
   Read a null list as empty: a field Java never leaves null (TDM-06).
+- **`is_atlas_request`** –
+
+  Whether a validation reads a request body, so the body-only rules of the models apply (DV-162).
 - **`new_model_guid`** –
 
   `AtlasBaseModelObject.init`: a new object's GUID, `-` and the next internal id (GLS-01, SVS-01).
 - **`null_when_empty`** –
 
   Read an empty list as null: a field Java leaves null when empty (TDM-11).
+
+### BodyGuid
+
+```
+BodyGuid = str | None
+```
+
+A GUID a request body may name, or none: a placeholder or UUID text, checked only as a request (DV-162).
+
+The models of the create and update bodies read their GUIDs as this type, so a request may name an entity of the same request by a placeholder (`-1`) or a stored one by UUID text. Java takes any text; the rule is a deliberate move away from it (DV-161, DV-162).
+
+### BodyGuidText
+
+```
+BodyGuidText = str
+```
+
+A GUID a request body names where Java's field holds no null: a map key or a list element (DV-162).
+
+The rule is `BodyGuid`'s; only the null differs, as it does in the Java field.
 
 ### JavaBool
 
@@ -8746,6 +8960,16 @@ empty_when_null(value: object) -> object
 ```
 
 Read a null list as empty: a field Java never leaves null (TDM-06).
+
+### is\_atlas\_request
+
+```
+is_atlas_request(context: object) -> bool
+```
+
+Whether a validation reads a request body, so the body-only rules of the models apply (DV-162).
+
+The server's body readers pass `{ATLAS_REQUEST: True}` as Pydantic's context. Internal code and response building validate without a context, where those rules stay silent and any GUID text passes.
 
 ### new\_model\_guid
 
@@ -9223,6 +9447,16 @@ Read with the defaults of Java's no-argument constructor, whose `init()` assigns
       "title": "AtlasTermAssignmentStatus",
       "type": "string"
     },
+    "BodyGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "EntityStatus": {
       "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
       "enum": [
@@ -9325,15 +9559,7 @@ Read with the defaults of Java's no-argument constructor, whose `init()` assigns
       "title": "Attributes"
     },
     "guid": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "title": "Guid"
+      "$ref": "#/$defs/BodyGuid"
     },
     "homeId": {
       "anyOf": [
@@ -9544,7 +9770,7 @@ Fields:
 
 - `type_name` (`str | None`)
 - `attributes` (`dict[str, Any] | None`)
-- `guid` (`str | None`)
+- `guid` (`BodyGuid`)
 - `home_id` (`str | None`)
 - `is_proxy` (`bool | None`)
 - `is_incomplete` (`bool | None`)
@@ -9602,7 +9828,7 @@ custom_attributes: dict[str, str] | None = None
 #### guid
 
 ```
-guid: str | None
+guid: BodyGuid
 ```
 
 #### home\_id
@@ -10005,15 +10231,7 @@ Bases: `AtlasModel`
           "title": "Attributes"
         },
         "guid": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Guid"
+          "$ref": "#/$defs/BodyGuid"
         },
         "homeId": {
           "anyOf": [
@@ -10362,6 +10580,19 @@ Bases: `AtlasModel`
       "title": "AtlasTermAssignmentStatus",
       "type": "string"
     },
+    "BodyGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "BodyGuidText": {
+      "type": "string"
+    },
     "EntityStatus": {
       "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
       "enum": [
@@ -10444,6 +10675,9 @@ Bases: `AtlasModel`
           "additionalProperties": {
             "$ref": "#/$defs/AtlasEntity"
           },
+          "propertyNames": {
+            "$ref": "#/$defs/BodyGuidText"
+          },
           "type": "object"
         },
         {
@@ -10461,7 +10695,7 @@ Bases: `AtlasModel`
 
 Fields:
 
-- `referred_entities` (`dict[str, AtlasEntity] | None`)
+- `referred_entities` (`dict[BodyGuidText, AtlasEntity] | None`)
 
 #### model\_config
 
@@ -10479,7 +10713,7 @@ model_config = ConfigDict(
 #### referred\_entities
 
 ```
-referred_entities: dict[str, AtlasEntity] | None = None
+referred_entities: dict[BodyGuidText, AtlasEntity] | None = None
 ```
 
 #### add\_referred\_entity
@@ -10715,15 +10949,7 @@ The body of a single-entity read or write: `entity` and `referredEntities`.
           "title": "Attributes"
         },
         "guid": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Guid"
+          "$ref": "#/$defs/BodyGuid"
         },
         "homeId": {
           "anyOf": [
@@ -11072,6 +11298,19 @@ The body of a single-entity read or write: `entity` and `referredEntities`.
       "title": "AtlasTermAssignmentStatus",
       "type": "string"
     },
+    "BodyGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "BodyGuidText": {
+      "type": "string"
+    },
     "EntityStatus": {
       "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
       "enum": [
@@ -11154,6 +11393,9 @@ The body of a single-entity read or write: `entity` and `referredEntities`.
           "additionalProperties": {
             "$ref": "#/$defs/AtlasEntity"
           },
+          "propertyNames": {
+            "$ref": "#/$defs/BodyGuidText"
+          },
           "type": "object"
         },
         {
@@ -11182,7 +11424,7 @@ The body of a single-entity read or write: `entity` and `referredEntities`.
 
 Fields:
 
-- `referred_entities` (`dict[str, AtlasEntity] | None`)
+- `referred_entities` (`dict[BodyGuidText, AtlasEntity] | None`)
 - `entity` (`AtlasEntity | None`)
 
 #### entity
@@ -11207,7 +11449,7 @@ model_config = ConfigDict(
 #### referred\_entities
 
 ```
-referred_entities: dict[str, AtlasEntity] | None = None
+referred_entities: dict[BodyGuidText, AtlasEntity] | None = None
 ```
 
 #### add\_referred\_entity
@@ -11443,15 +11685,7 @@ The body of a bulk read or write: `entities` and `referredEntities`.
           "title": "Attributes"
         },
         "guid": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "title": "Guid"
+          "$ref": "#/$defs/BodyGuid"
         },
         "homeId": {
           "anyOf": [
@@ -11800,6 +12034,19 @@ The body of a bulk read or write: `entities` and `referredEntities`.
       "title": "AtlasTermAssignmentStatus",
       "type": "string"
     },
+    "BodyGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "BodyGuidText": {
+      "type": "string"
+    },
     "EntityStatus": {
       "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
       "enum": [
@@ -11882,6 +12129,9 @@ The body of a bulk read or write: `entities` and `referredEntities`.
           "additionalProperties": {
             "$ref": "#/$defs/AtlasEntity"
           },
+          "propertyNames": {
+            "$ref": "#/$defs/BodyGuidText"
+          },
           "type": "object"
         },
         {
@@ -11914,7 +12164,7 @@ The body of a bulk read or write: `entities` and `referredEntities`.
 
 Fields:
 
-- `referred_entities` (`dict[str, AtlasEntity] | None`)
+- `referred_entities` (`dict[BodyGuidText, AtlasEntity] | None`)
 - `entities` (`list[AtlasEntity] | None`)
 
 #### entities
@@ -11939,7 +12189,7 @@ model_config = ConfigDict(
 #### referred\_entities
 
 ```
-referred_entities: dict[str, AtlasEntity] | None = None
+referred_entities: dict[BodyGuidText, AtlasEntity] | None = None
 ```
 
 #### add\_entity
@@ -12060,9 +12310,8 @@ An entity reference: its GUID, or its type name and the unique attribute values 
 
 ```
 {
-  "description": "An entity reference: its GUID, or its type name and the unique attribute values that identify it.",
-  "properties": {
-    "guid": {
+  "$defs": {
+    "BodyGuid": {
       "anyOf": [
         {
           "type": "string"
@@ -12070,9 +12319,14 @@ An entity reference: its GUID, or its type name and the unique attribute values 
         {
           "type": "null"
         }
-      ],
-      "default": null,
-      "title": "Guid"
+      ]
+    }
+  },
+  "description": "An entity reference: its GUID, or its type name and the unique attribute values that identify it.",
+  "properties": {
+    "guid": {
+      "$ref": "#/$defs/BodyGuid",
+      "default": null
     },
     "typeName": {
       "anyOf": [
@@ -12107,7 +12361,7 @@ An entity reference: its GUID, or its type name and the unique attribute values 
 
 Fields:
 
-- `guid` (`str | None`)
+- `guid` (`BodyGuid`)
 - `type_name` (`str | None`)
 - `unique_attributes` (`dict[str, Any] | None`)
 
@@ -12120,7 +12374,7 @@ __hash__ = None
 #### guid
 
 ```
-guid: str | None = None
+guid: BodyGuid = None
 ```
 
 #### model\_config
@@ -12243,6 +12497,16 @@ The other end of a relationship: the entity, its status and display text, and th
       "title": "AtlasStruct",
       "type": "object"
     },
+    "BodyGuid": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "EntityStatus": {
       "description": "Whether an entity is active, soft-deleted or purged (``AtlasEntity.Status``).",
       "enum": [
@@ -12266,16 +12530,8 @@ The other end of a relationship: the entity, its status and display text, and th
   "description": "The other end of a relationship: the entity, its status and display text, and the relationship.",
   "properties": {
     "guid": {
-      "anyOf": [
-        {
-          "type": "string"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Guid"
+      "$ref": "#/$defs/BodyGuid",
+      "default": null
     },
     "typeName": {
       "anyOf": [
@@ -12391,7 +12647,7 @@ The other end of a relationship: the entity, its status and display text, and th
 
 Fields:
 
-- `guid` (`str | None`)
+- `guid` (`BodyGuid`)
 - `type_name` (`str | None`)
 - `unique_attributes` (`dict[str, Any] | None`)
 - `entity_status` (`EntityStatus | None`)
@@ -12427,7 +12683,7 @@ entity_status: EntityStatus | None = None
 #### guid
 
 ```
-guid: str | None = None
+guid: BodyGuid = None
 ```
 
 #### model\_config
