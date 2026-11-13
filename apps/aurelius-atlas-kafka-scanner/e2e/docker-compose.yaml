@@ -150,7 +150,7 @@ services:
         # before it sniffs a topic's own messages. PLAINTEXT kafkastore to the
         # broker's INTERNAL listener; schemas are metadata, not secrets, in
         # the suite.
-        image: confluentinc/cp-schema-registry:8.2.1
+        image: confluentinc/cp-schema-registry:8.4.1
         depends_on:
             broker:
                 condition: service_healthy
