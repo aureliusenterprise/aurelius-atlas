@@ -24,8 +24,6 @@ from aurelius_atlas_core.export_import_audit_service import ExportImportAuditSer
 from aurelius_atlas_core.export_service import ExportService
 from aurelius_atlas_core.import_service import ImportService
 from aurelius_atlas_core.metrics_service import MetricsService
-from aurelius_atlas_core.task_management import TaskManagement
-from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_core.zip_sink import ZipSink
 from aurelius_atlas_model import codec
 from aurelius_atlas_model.admin import AtlasServiceStatus, AtlasSessionProfile, AtlasVersionInfo
@@ -75,6 +73,7 @@ from aurelius_atlas_server.routes.entity import INVALID_PARAMETER, Body, Store, 
 from aurelius_atlas_server.routes.types import typedef_store as refreshed_typedef_store
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.tenant_stores import stores
 
 OPERATION_STATUS = "operationStatus"
 """The option an export's or import's admin audit adds its status as (ADA-02)."""
@@ -168,7 +167,7 @@ async def get_session(request: Request) -> dict[str, Any]:
 )
 async def get_patches(request: Request) -> dict[str, Any]:
     """``getAtlasPatches``: the typedef patch records, sorted by id (ENS-10, DV-14)."""
-    typedef_store: TypedefStore = request.app.state.typedef_store
+    typedef_store = stores(request).typedef_store
     await typedef_store.refresh()
     return AtlasPatches(patches=typedef_store.patches()).to_json()
 
@@ -563,7 +562,7 @@ async def get_audit_details(audit_guid: str, request: Request, store: Store) -> 
     """
     page = read_params(AuditDetailsParams, request.query_params)
     service = AtlasAuditService(store, authorizer=authorizer(request))
-    found = await service.details(audit_guid, request.app.state.entity_audits, page.limit, page.offset)
+    found = await service.details(audit_guid, stores(request).entity_audits, page.limit, page.offset)
     return AtlasJSONResponse(content=[header.to_json() for header in found])
 
 
@@ -664,7 +663,7 @@ async def _exclusively(request: Request, *, exclusive: bool) -> AsyncIterator[No
 async def get_task_status(request: Request) -> AtlasJSONResponse:
     """``getTaskStatus``: the tasks of the ``guids`` given that exist, in their order, else every task (TSK-06)."""
     guids = request.query_params.getlist("guids")
-    management: TaskManagement = request.app.state.task_management
+    management = stores(request).task_management
     found = await management.get_by_guids(guids) if guids else await management.get_all()
     return AtlasJSONResponse(content=[task.to_json() for task in found])
 
@@ -674,6 +673,6 @@ async def delete_task(request: Request) -> Response:
     """``deleteTask``: remove the tasks of the ``guids`` given (TSK-06)."""
     guids = request.query_params.getlist("guids")
     if guids:
-        management: TaskManagement = request.app.state.task_management
+        management = stores(request).task_management
         await management.delete_by_guids(guids)
     return Response(status_code=NO_CONTENT)

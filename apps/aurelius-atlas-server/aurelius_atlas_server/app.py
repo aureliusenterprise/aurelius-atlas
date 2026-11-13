@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from importlib.metadata import version
 from pathlib import Path
@@ -15,19 +15,11 @@ from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
 from aurelius_atlas_core.app_search_quality import QualityIndexer
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
 from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
-from aurelius_atlas_core.entity_audit_listener import EntityAuditListener
-from aurelius_atlas_core.entity_audit_repository import ElasticsearchEntityAuditRepository
-from aurelius_atlas_core.entity_change_notifier import EntityChangeNotifier
-from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
+from aurelius_atlas_core.entity_documents import INDEX_PREFIX, ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.metrics_service import MetricsService
 from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
-from aurelius_atlas_core.model_loader import ModelLoader
-from aurelius_atlas_core.task_management import TaskManagement
-from aurelius_atlas_core.typedef_audit_listener import BufferedTypeDefAuditListener
-from aurelius_atlas_core.typedef_document import ElasticsearchTypedefDocument
-from aurelius_atlas_core.typedef_store import TypedefStore
 from aurelius_atlas_model.atlas_audit import AuditOperation
 from aurelius_atlas_otel import (
     ClientCredentialsTokenSource,
@@ -70,6 +62,7 @@ from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.snapshot_watcher import SnapshotWatcher
 from aurelius_atlas_server.task_worker import TaskWorker
+from aurelius_atlas_server.tenant_stores import TenantStores, index_prefix, open_stores
 
 NAME = "aurelius-atlas-server"
 LOGGER = logging.getLogger(NAME)
@@ -143,7 +136,6 @@ def create_app(
     SNP-03).
     """
     store = store if store is not None else ElasticsearchStore(settings.store_settings())
-    registry = TypeRegistry()
     auth, oidc, sessions = _authentication(settings, auth, oidc_http)
     metrics_util = AtlasMetricsUtil()
 
@@ -158,29 +150,16 @@ def create_app(
         ] = []
         await store.open()
         try:
-            documents = ElasticsearchEntityDocuments(store.client, embedding_dimensions=_dimensions(settings))
-            entity_store = EntityStore(registry, documents)
-            await entity_store.prepare()
-            app.state.entity_documents = documents
-            entity_audits = ElasticsearchEntityAuditRepository(store.client)
-            await entity_audits.prepare()
-            app.state.entity_audits = entity_audits
-            typedef_store = TypedefStore(
-                registry,
-                ElasticsearchTypedefDocument(store.client),
-                usage=entity_store.type_in_use,
-                refresh_seconds=settings.typedef_refresh_seconds,
-            )
-            await typedef_store.load()
-            admin_audits = AtlasAuditService(entity_store)
-            await _load_models(typedef_store, admin_audits, settings.model_dirs)
-            await entity_store.recover()
-            app.state.typedef_store = typedef_store
-            app.state.entity_store = entity_store
-            audit = EntityChangeNotifier(entity_store, [EntityAuditListener(entity_audits, entity_store.now)])
-            app.state.task_management = TaskManagement(entity_store, notifier=audit, audits=entity_audits)
+            opened = await _open_store_sets(store, settings)
+            app.state.tenant_stores = opened
+            default = opened[INDEX_PREFIX]
+            # the default store set, which the workers and the start audit run on alone until 15.4 (TSS-07, DD-571)
+            registry, documents, entity_store = default.registry, default.documents, default.entity_store
+            app.state.type_registry, app.state.entity_documents = registry, documents
+            app.state.entity_audits, app.state.typedef_store = default.entity_audits, default.typedef_store
+            app.state.entity_store, app.state.task_management = entity_store, default.task_management
             worker = _task_worker(app, settings, entity_store)
-            await _audit_server_status(admin_audits, started)
+            await _audit_server_status(default.admin_audits, started)
             schedules = [
                 scheduler
                 for scheduler in (
@@ -217,7 +196,7 @@ def create_app(
     # one export or import at a time (EXP-01, DD-304)
     app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
     app.state.store = store
-    app.state.type_registry, app.state.metrics_util = registry, metrics_util
+    app.state.metrics_util = metrics_util
     app.state.embedder = None  # the embeddings client, once embedding is on and the server has started (DD-443)
     # the tenancy is None while it is off: no request has a tenant (TEN-01)
     app.state.auth, app.state.oidc, app.state.sessions, app.state.tenancy = auth, oidc, sessions, settings.tenancy()
@@ -319,18 +298,20 @@ def _authentication(
     return verifier, build_oidc(settings, verifier, oidc_http), SessionStore(settings.session_timeout_seconds)
 
 
-async def _load_models(store: TypedefStore, audits: AtlasAuditService, models_dirs: Sequence[Path]) -> None:
-    """Load the models directories in order, changes audited, the start's writes held to one (ADA-03, DD-316, MDD-01).
-
-    One write per change adds a store refresh each to the start, minutes for Atlas's whole catalogue — long
-    enough for the container's health check to give up before the server answers.
-    """
-    boot_audits = BufferedTypeDefAuditListener(audits)
-    store.change_listeners.append(boot_audits)
-    loader = ModelLoader(store)
-    for models_dir in models_dirs:
-        await loader.load(models_dir)
-    await boot_audits.flush()
+async def _open_store_sets(store: ElasticsearchStore, settings: ServerSettings) -> dict[str, TenantStores]:
+    """The default store set and, with tenancy on, each provisioned tenant's, by index prefix (TSS-01, TSS-04)."""
+    tenancy = settings.tenancy()
+    tenants = [] if tenancy is None else sorted(tenancy.tenants)
+    opened: dict[str, TenantStores] = {}
+    for prefix in [INDEX_PREFIX, *(index_prefix(tenant, tenancy) for tenant in tenants)]:
+        opened[prefix] = await open_stores(
+            store,
+            prefix,
+            models_dirs=settings.model_dirs,
+            embedding_dimensions=_dimensions(settings),
+            typedef_refresh_seconds=settings.typedef_refresh_seconds,
+        )
+    return opened
 
 
 def _start(metrics_util: AtlasMetricsUtil) -> None:
