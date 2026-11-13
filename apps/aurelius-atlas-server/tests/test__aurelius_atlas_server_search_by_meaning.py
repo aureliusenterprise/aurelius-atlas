@@ -142,7 +142,7 @@ async def test__a_hybrid_search_adds_the_text_s_matches(searching: tuple[httpx.A
     assert "unembedded" not in names(semantic)
 
 
-@pytest.mark.covers(f"{R}.validate_search_by_meaning", rules=["SBM-04"])
+@pytest.mark.covers("aurelius_atlas_server.models.SemanticSearchParameters.checked", rules=["SBM-04"])
 @pytest.mark.parametrize(
     ("body", "message"),
     [
@@ -202,7 +202,7 @@ async def test__an_unknown_or_unembedded_entity_has_no_neighbours(
     client, guids = searching
     similar = "/api/aurelius/v1/entity/guid/{}/similar"
 
-    unknown = await client.get(similar.format("no-such-guid"))
+    unknown = await client.get(similar.format("99999999-9999-4999-8999-999999999999"))
     unembedded = await client.get(similar.format(guids["unembedded"]))
     negative = await client.get(similar.format(guids["orders"]), params={"offset": -1})
 
@@ -230,7 +230,7 @@ async def test__an_embedder_that_fails_answers_503(
 async def test__without_embedding_both_answer_404(client: httpx.AsyncClient) -> None:
     """The default server has no embedding: ``AURELIUS-404-00-001``."""
     searched = await client.post(SEARCH, json={"query": "purchases"})
-    similar = await client.get("/api/aurelius/v1/entity/guid/g/similar")
+    similar = await client.get("/api/aurelius/v1/entity/guid/11111111-1111-4111-8111-111111111111/similar")
 
     assert (searched.status_code, searched.json()["errorCode"]) == (404, "AURELIUS-404-00-001")
     assert (similar.status_code, similar.json()["errorCode"]) == (404, "AURELIUS-404-00-001")

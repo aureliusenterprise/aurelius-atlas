@@ -5,35 +5,29 @@ touched (ADR 046). The query is embedded through the embedder the indexer uses; 
 the entity's stored vector.
 """
 
-from typing import Any
+from typing import Annotated
 
 import httpx2 as httpx
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
-from aurelius_atlas_model.discovery import QuickSearchParameters
-from fastapi import APIRouter, Request
+from aurelius_atlas_model.discovery import AtlasQuickSearchResult, QuickSearchParameters
+from aurelius_atlas_model.errors import validate_guid
+from aurelius_atlas_model.params import SimilarSearchParams, read_params
+from fastapi import APIRouter, Depends, Request
 
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
+from aurelius_atlas_server.bodies import json_model
 from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingError
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
-from aurelius_atlas_server.routes.discovery import FILTERS_WITHOUT_TYPE, NEGATIVE_PAGE, validate_query_length
-from aurelius_atlas_server.routes.entity import (
-    INT_RANGE,
-    READ_ENTITY_GUID,
-    Body,
-    Store,
-    first_value,
-    flag,
-    java_number,
-    model_body,
-)
-from aurelius_atlas_server.routes.types import validate_param_length
+from aurelius_atlas_server.models import SemanticSearchParameters
+from aurelius_atlas_server.openapi import json_response, request_body
+from aurelius_atlas_server.routes.entity import READ_ENTITY_GUID, Store
 
 SEARCH_BY_MEANING = APIRouter(prefix="/api/aurelius/v1", tags=["Search by meaning"])
 
-MODES = ("semantic", "hybrid")
-NO_QUERY = "A search by meaning needs a query"
-NO_SORT = "A search by meaning is ordered by meaning: sortBy is not taken"
-UNKNOWN_MODE = "mode must be one of semantic, hybrid"
+MEANING_BODY = json_model(SemanticSearchParameters)
+"""``searchByMeaning``: quick search's parameters and the mode, validated by the model (SBM-01, SBM-04)."""
+
+type MeaningBody = Annotated[SemanticSearchParameters | None, Depends(MEANING_BODY)]
 
 
 def _embedder(request: Request) -> EmbeddingClient:
@@ -61,34 +55,19 @@ async def _query_vector(embedder: EmbeddingClient, query: str) -> list[float]:
     return vector
 
 
-def validate_search_by_meaning(parameters: QuickSearchParameters, body: dict[str, Any]) -> bool:
-    """Quick search's checks of a search by meaning, and its own; whether it is ``hybrid`` (SBM-04).
+QUICK_SEARCH_RESULT = json_response(AtlasQuickSearchResult, description="The search result, the facets included.")
 
-    Raises:
-        AtlasError: ``BAD_REQUEST`` without a query, with filters but no type, a negative page, a ``sortBy`` or
-            another ``mode``; ``INVALID_QUERY_LENGTH`` for a query of more than 4,096 characters.
-    """
-    mode = body.get("mode", "semantic")
-    if mode not in MODES:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, UNKNOWN_MODE)
-    if not parameters.query or not parameters.query.strip():
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, NO_QUERY)
-    validate_query_length(parameters.query)
-    if parameters.limit < 0 or parameters.offset < 0:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, NEGATIVE_PAGE)
-    if not parameters.type_name and parameters.entity_filters is not None:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, FILTERS_WITHOUT_TYPE)
-    if parameters.sort_by:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, NO_SORT)
-    return mode == "hybrid"
+SEMANTIC_BODY = request_body(
+    SemanticSearchParameters,
+    description="Quick search parameters and an optional mode, semantic (default) or hybrid. A query is required.",
+)
 
 
-@SEARCH_BY_MEANING.post("/search/semantic")
-async def search_by_meaning(request: Request, body: Body, store: Store) -> AtlasJSONResponse:
+@SEARCH_BY_MEANING.post("/search/semantic", responses=QUICK_SEARCH_RESULT, **SEMANTIC_BODY)
+async def search_by_meaning(request: Request, meaning_body: MeaningBody, store: Store) -> AtlasJSONResponse:
     """Quick search by meaning, ``semantic`` or ``hybrid`` (SBM-01 to SBM-04, SBM-06, SBM-07)."""
-    payload = body if isinstance(body, dict) else {}
-    parameters = model_body(QuickSearchParameters, payload) or QuickSearchParameters()
-    hybrid = validate_search_by_meaning(parameters, payload)
+    parameters = meaning_body or SemanticSearchParameters()
+    hybrid = parameters.checked()
     vector = await _query_vector(_embedder(request), str(parameters.query))
     weight = request.app.state.settings.hybrid_vector_weight if hybrid else 1.0
     result = await EntityDiscoveryService(store, authorizer=authorizer(request)).search_by_meaning(
@@ -97,7 +76,7 @@ async def search_by_meaning(request: Request, body: Body, store: Store) -> Atlas
     return AtlasJSONResponse(content=result.to_json())
 
 
-@SEARCH_BY_MEANING.get("/entity/guid/{guid}/similar")
+@SEARCH_BY_MEANING.get("/entity/guid/{guid}/similar", responses=QUICK_SEARCH_RESULT)
 async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
     """The entities nearest to one entity's embedding, itself left out (SBM-05 to SBM-07).
 
@@ -105,7 +84,7 @@ async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJS
         AtlasError: ``INSTANCE_GUID_NOT_FOUND`` for an unknown GUID; ``NO_EMBEDDING`` for an entity not yet
             embedded; ``EMBEDDING_OFF`` without embedding.
     """
-    validate_param_length("guid", guid)
+    validate_guid("guid", guid)
     _embedder(request)
     found = await store.get(guid)
     if found is None:
@@ -113,14 +92,14 @@ async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJS
     verify_access(request, AtlasPrivilege.ENTITY_READ, READ_ENTITY_GUID, guid)
     if found.entity.embedding is None:
         raise AtlasError(AtlasErrorCode.NO_EMBEDDING, guid)
+    asked = read_params(SimilarSearchParams, request.query_params)
+    asked.checked()
     parameters = QuickSearchParameters(
-        type_name=first_value(request, "typeName"),
-        exclude_deleted_entities=flag(request, "excludeDeletedEntities"),
-        offset=java_number(request, "offset", 0, INT_RANGE),
-        limit=java_number(request, "limit", 0, INT_RANGE),
+        type_name=asked.type_name,
+        exclude_deleted_entities=asked.exclude_deleted_entities,
+        offset=asked.offset,
+        limit=asked.limit,
     )
-    if parameters.limit < 0 or parameters.offset < 0:
-        raise AtlasError(AtlasErrorCode.BAD_REQUEST, NEGATIVE_PAGE)
     result = await EntityDiscoveryService(store, authorizer=authorizer(request)).search_by_meaning(
         parameters, found.entity.embedding.vector, exclude_guids=frozenset({guid})
     )

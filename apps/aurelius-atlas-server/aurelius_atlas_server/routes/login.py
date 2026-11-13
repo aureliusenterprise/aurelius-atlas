@@ -21,7 +21,16 @@ LOGIN = APIRouter(tags=["Login"])
 SIGN_IN_FAILED = "Sign-in failed"
 
 
-@LOGIN.get(LOGIN_PATH)
+@LOGIN.get(
+    LOGIN_PATH,
+    responses={
+        302: {"description": "To the provider's sign-in page, or to the page first asked once it returns."},
+        401: {
+            "description": "Sign-in failed.",
+            "content": {"text/plain; charset=utf-8": {"schema": {"type": "string"}}},
+        },
+    },
+)
 async def login(request: Request) -> Response:
     """Start a sign-in at the provider, or finish one on its return to the page first asked (AUT-05)."""
     sessions: SessionStore = request.app.state.sessions
@@ -49,7 +58,7 @@ async def login(request: Request) -> Response:
     return response
 
 
-@LOGIN.get("/logout.html")
+@LOGIN.get("/logout.html", responses={302: {"description": "To the provider's sign-out, then back to the dashboards."}})
 async def logout(request: Request) -> Response:
     """End the session and sign out at the provider, back to the dashboards (AUT-07)."""
     sessions: SessionStore = request.app.state.sessions

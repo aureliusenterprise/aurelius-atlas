@@ -17,6 +17,7 @@ from aurelius_atlas_core.entity_discovery import (
     validate_labels,
 )
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
+from aurelius_atlas_core.guids import as_assigned_guid
 from aurelius_atlas_core.testing.entity_samples import sample_entity, sample_registry
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
@@ -75,7 +76,7 @@ def test__an_object_id_resolves_also_through_a_sub_type() -> None:
     context = DiscoveryContext()
     values = {"qualifiedName": "t@cl"}
 
-    context.add_resolved_by_unique(AtlasObjectId(type_name="s_table", unique_attributes=values), "t")
+    context.add_resolved_by_unique(AtlasObjectId(type_name="s_table", unique_attributes=values), as_assigned_guid("t"))
 
     assert context.resolved_object_id(AtlasObjectId(type_name="s_ref", unique_attributes=values), ["s_table"]) == "t"
     assert context.resolved_object_id(AtlasObjectId(type_name="s_ref", unique_attributes=values), []) is None

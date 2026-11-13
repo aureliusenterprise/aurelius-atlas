@@ -6,7 +6,7 @@ from typing import Any
 
 from pydantic import AliasChoices, Field
 
-from aurelius_atlas_model.base import OptionalNameSet, Timestamp
+from aurelius_atlas_model.base import BodyGuid, OptionalNameSet, Timestamp
 from aurelius_atlas_model.instance.classification import AtlasClassification
 from aurelius_atlas_model.instance.entity_status import EntityStatus
 from aurelius_atlas_model.instance.struct import AtlasStruct
@@ -30,7 +30,7 @@ class AtlasEntity(AtlasStruct):
     clears ``status`` (ENT-04). ``isProxy`` is read under that name and written as ``proxy`` (ENT-05).
     """
 
-    guid: str | None = Field(default_factory=next_internal_id)
+    guid: BodyGuid = Field(default_factory=next_internal_id)
     home_id: str | None = None
     is_proxy: bool | None = Field(
         default=False, validation_alias=AliasChoices("isProxy", "is_proxy"), serialization_alias="proxy"

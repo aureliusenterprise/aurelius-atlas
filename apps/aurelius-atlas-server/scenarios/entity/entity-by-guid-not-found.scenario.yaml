@@ -11,33 +11,34 @@ covers:
     - aurelius_atlas_server.routes.entity.get_header_by_id
     - aurelius_atlas_server.routes.entity.get_by_guids
 stages:
+    # the GUIDs name no entity; Aurelius asks for UUID text for every GUID (DV-161), as every entity it holds has one
     - name: the entity
-      request: { method: GET, url: /api/atlas/v2/entity/guid/scenario-no-such-guid }
+      request: { method: GET, url: /api/atlas/v2/entity/guid/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa }
       response:
           status: 404
           headers: { content-type: "application/json; charset=UTF-8" }
           json:
               errorCode: ATLAS-404-00-005
-              errorMessage: Given instance guid scenario-no-such-guid is invalid/not found
+              errorMessage: Given instance guid aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa is invalid/not found
     - name: its header
-      request: { method: GET, url: /api/atlas/v2/entity/guid/scenario-no-such-guid/header }
+      request: { method: GET, url: /api/atlas/v2/entity/guid/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa/header }
       response:
           status: 404
           headers: { content-type: "application/json; charset=UTF-8" }
           json:
               errorCode: ATLAS-404-00-005
-              errorMessage: Given instance guid scenario-no-such-guid is invalid/not found
+              errorMessage: Given instance guid aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa is invalid/not found
     - name: in bulk
       request:
           method: GET
           url: /api/atlas/v2/entity/bulk
-          params: { guid: [scenario-no-such-guid, scenario-nor-this] }
+          params: { guid: [aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa, bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb] }
       response:
           status: 404
           headers: { content-type: "application/json; charset=UTF-8" }
           json:
               errorCode: ATLAS-404-00-005
-              errorMessage: Given instance guid scenario-no-such-guid is invalid/not found
+              errorMessage: Given instance guid aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa is invalid/not found
     - name: in bulk without a guid
       request: { method: GET, url: /api/atlas/v2/entity/bulk }
       response:

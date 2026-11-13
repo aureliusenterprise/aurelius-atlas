@@ -5,12 +5,50 @@ Used by the typedef models (``typedef``) and the instance models (``instance``) 
 
 import itertools
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Annotated, Any
 
-from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, PlainSerializer
+from pydantic import AfterValidator, BaseModel, BeforeValidator, ConfigDict, PlainSerializer, ValidationInfo
 from pydantic.alias_generators import to_camel
+
+from aurelius_atlas_model.errors import ATLAS_REQUEST, validate_body_guid
+
+
+def is_atlas_request(context: object) -> bool:
+    """Whether a validation reads a request body, so the body-only rules of the models apply (DV-162).
+
+    The server's body readers pass ``{ATLAS_REQUEST: True}`` as Pydantic's context. Internal code and
+    response building validate without a context, where those rules stay silent and any GUID text passes.
+    """
+    return isinstance(context, Mapping) and bool(context.get(ATLAS_REQUEST))
+
+
+def _body_guid(value: str | None, info: ValidationInfo) -> str | None:
+    if is_atlas_request(info.context):
+        validate_body_guid(value)
+    return value
+
+
+def _body_guid_key(value: str, info: ValidationInfo) -> str:
+    if is_atlas_request(info.context):
+        validate_body_guid(value)
+    return value
+
+
+type BodyGuid = Annotated[str | None, AfterValidator(_body_guid)]
+"""A GUID a request body may name, or none: a placeholder or UUID text, checked only as a request (DV-162).
+
+The models of the create and update bodies read their GUIDs as this type, so a request may name an entity
+of the same request by a placeholder (``-1``) or a stored one by UUID text. Java takes any text; the rule
+is a deliberate move away from it (DV-161, DV-162).
+"""
+
+type BodyGuidText = Annotated[str, AfterValidator(_body_guid_key)]
+"""A GUID a request body names where Java's field holds no null: a map key or a list element (DV-162).
+
+The rule is ``BodyGuid``'s; only the null differs, as it does in the Java field.
+"""
 
 _EPOCH = datetime(1970, 1, 1, tzinfo=UTC)
 _MILLISECOND = timedelta(milliseconds=1)

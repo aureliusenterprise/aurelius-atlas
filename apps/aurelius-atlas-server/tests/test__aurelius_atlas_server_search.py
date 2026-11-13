@@ -139,7 +139,9 @@ async def test__an_attribute_search_finds_values_by_prefix(client: httpx.AsyncCl
     assert tables
 
 
-@pytest.mark.covers(f"{D}.search_using_full_text", f"{D}.validate_query_length", rules=["FTX-01", "FTX-05"])
+@pytest.mark.covers(
+    f"{D}.search_using_full_text", "aurelius_atlas_model.errors.validate_query_length", rules=["FTX-01", "FTX-05"]
+)
 async def test__a_full_text_search_answers_scored_headers(client: httpx.AsyncClient, tables: list[str]) -> None:
     """Each table matching, with its score; a query over 4,096 characters fails here and in basic search."""
     status, found = await send(client, "GET", f"{SEARCH}/fulltext", params={"query": "two three", "limit": "5"})

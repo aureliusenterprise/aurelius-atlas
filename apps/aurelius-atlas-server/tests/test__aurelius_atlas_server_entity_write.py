@@ -44,7 +44,7 @@ def error(code: str, message: str) -> dict[str, str]:
     [
         ("/uniqueAttribute/type/{}", "typeName"),
         ("/guid/{}", "guid"),
-        ("/guid/g?name={}", "name"),
+        (f"/guid/{'11111111-1111-4111-8111-111111111111'}?name={{}}", "name"),
     ],
 )
 async def test__a_type_name_guid_or_name_over_4096_characters_is_refused(
@@ -57,7 +57,12 @@ async def test__a_type_name_guid_or_name_over_4096_characters_is_refused(
     )
 
 
-@pytest.mark.covers(f"{E}.create_or_update", f"{E}.json_body", f"{E}.model_body", rules=["EWR-02", "EWR-13"])
+@pytest.mark.covers(
+    f"{E}.create_or_update",
+    "aurelius_atlas_server.bodies.json_body",
+    "aurelius_atlas_server.bodies.model_body",
+    rules=["EWR-02", "EWR-13"],
+)
 async def test__an_entity_is_created_then_read_back(typed: httpx.AsyncClient) -> None:
     """``POST /``: the mutation response names the new GUID; the entity reads back as stored."""
     body = {"entity": {"typeName": "s_table", "guid": "-1", "attributes": {"qualifiedName": "t@cl", "sizes": [1.50]}}}
@@ -72,7 +77,11 @@ async def test__an_entity_is_created_then_read_back(typed: httpx.AsyncClient) ->
 
 
 @pytest.mark.covers(
-    f"{E}.create_or_update", f"{E}.create_or_update_bulk", f"{E}.json_body", f"{E}.model_body", rules=["EWR-02"]
+    f"{E}.create_or_update",
+    f"{E}.create_or_update_bulk",
+    "aurelius_atlas_server.bodies.json_body",
+    "aurelius_atlas_server.bodies.model_body",
+    rules=["EWR-02"],
 )
 async def test__a_request_without_entities_or_with_a_bad_body_fails(typed: httpx.AsyncClient) -> None:
     """No entity: ``INVALID_PARAMETERS``; a body that is not JSON or not the model: ``BAD_REQUEST`` (DV-10)."""
@@ -89,6 +98,23 @@ async def test__a_request_without_entities_or_with_a_bad_body_fails(typed: httpx
     status, bad = await send(typed, "POST", "/bulk", json={"entities": 5})
     assert (status, bad["errorCode"]) == (400, "ATLAS-400-00-029")
     assert bad["errorMessage"].startswith("Invalid AtlasEntitiesWithExtInfo: ")
+
+
+@pytest.mark.covers(f"{E}.create_or_update", "aurelius_atlas_server.bodies.json_model", rules=["DV-162"])
+async def test__a_write_body_names_every_guid_as_placeholder_or_uuid_text(typed: httpx.AsyncClient) -> None:
+    """A create names a stored entity by UUID text, or a request one by a placeholder; other text fails (DV-162)."""
+    assert await send(
+        typed, "POST", "", json={"entity": {"typeName": "s_table", "guid": "nope", "attributes": {"name": "n"}}}
+    ) == (400, error("ATLAS-400-00-021", "ObjectId is not valid nope"))
+    assert await send(
+        typed,
+        "POST",
+        "",
+        json={
+            "entity": {"typeName": "s_table", "guid": "-1", "attributes": {"name": "n"}},
+            "referredEntities": {"bad-key": {"typeName": "s_database", "guid": "-2"}},
+        },
+    ) == (400, error("ATLAS-400-00-021", "ObjectId is not valid bad-key"))
 
 
 @pytest.mark.covers(

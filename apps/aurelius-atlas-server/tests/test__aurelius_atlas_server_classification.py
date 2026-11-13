@@ -40,7 +40,7 @@ UNIQUE = {"attr:qualifiedName": "t@cl"}
     f"{E}.get_classification",
     f"{E}.update_classifications",
     f"{E}.delete_classification",
-    f"{E}.classifications_body",
+    "aurelius_atlas_server.bodies.json_model",
     f"{E}.ensure_classification_type",
     rules=["CLS-03", "CLS-04", "CLS-05", "CLS-08", "CLS-09"],
 )
@@ -140,6 +140,17 @@ async def test__one_classification_is_added_to_entities_by_guid_or_unique_attrib
     )
     names = (await send(client, "GET", f"{ENTITY}/guid/{table}/header"))[1]["classificationNames"]
     assert names == ["c_pii", "c_secret"]
+
+
+@pytest.mark.covers(f"{E}.add_classification", "aurelius_atlas_server.bodies.json_model", rules=["DV-162"])
+async def test__the_bulk_add_refuses_a_guid_that_is_no_uuid(client: httpx.AsyncClient) -> None:
+    """``bulk/classification`` names stored entities, so a GUID that is no UUID is refused (DV-162)."""
+    assert await send(
+        client,
+        "POST",
+        f"{ENTITY}/bulk/classification",
+        json={"classification": {"typeName": "c_pii"}, "entityGuids": ["nope"]},
+    ) == (400, {"errorCode": "ATLAS-400-00-021", "errorMessage": "ObjectId is not valid nope"})
 
 
 @pytest.mark.covers(f"{E}.set_classifications", rules=["CLA-01", "CLA-02", "CLA-03", "CLA-04"])

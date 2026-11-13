@@ -83,3 +83,19 @@ def test__tls_material_is_required(environment: pytest.MonkeyPatch, tls_pair: tu
     environment.delenv("AURELIUS_ATLAS_SERVER_TLS_KEY_FILE")
     with pytest.raises(ValidationError, match="tls_key_file"):
         ServerSettings()  # pyright: ignore[reportCallIssue]
+
+
+@pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.is_development", rules=["SRV-01"])
+def test__the_environment_defaults_to_production(environment: pytest.MonkeyPatch) -> None:
+    """Unset, the server runs in production: no dev-only surfaces. A bad value names itself."""
+    settings = ServerSettings()  # pyright: ignore[reportCallIssue] - read from the environment
+
+    assert settings.environment == "production"
+    assert settings.is_development is False
+
+    environment.setenv("AURELIUS_ATLAS_SERVER_ENVIRONMENT", "development")
+    assert ServerSettings().is_development is True  # pyright: ignore[reportCallIssue]
+
+    environment.setenv("AURELIUS_ATLAS_SERVER_ENVIRONMENT", "staging")
+    with pytest.raises(ValidationError, match="environment"):
+        ServerSettings()  # pyright: ignore[reportCallIssue]

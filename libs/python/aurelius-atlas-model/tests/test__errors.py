@@ -12,7 +12,23 @@ from aurelius_atlas_model.errors import (
     java_double_string,
     java_string,
     message_format,
+    validate_body_guid,
 )
+
+UUID_TEXT = "11111111-1111-4111-8111-111111111111"
+
+
+@pytest.mark.covers("aurelius_atlas_model.errors.validate_body_guid", rules=["DV-162"])
+def test__a_body_guid_is_a_placeholder_or_uuid_text() -> None:
+    """A body names a stored entity by UUID text, or one of the same request by a placeholder (DV-162)."""
+    assert validate_body_guid(UUID_TEXT) is None
+    assert validate_body_guid("-1") is None
+    assert validate_body_guid("-any-placeholder") is None
+    assert validate_body_guid(None) is None
+    with pytest.raises(AtlasError) as raised:
+        validate_body_guid("nope")
+    assert raised.value.code is AtlasErrorCode.INVALID_OBJECT_ID
+    assert raised.value.message == "ObjectId is not valid nope"
 
 
 @pytest.mark.covers("aurelius_atlas_model.errors.AtlasErrorCode.message", rules=["TRG-15"])

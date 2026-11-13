@@ -26,6 +26,7 @@ from aurelius_atlas_core.entity_documents import (
     VersionedRelationship,
     WriteResult,
 )
+from aurelius_atlas_core.guids import AssignedGuid
 from aurelius_atlas_core.search_fields import search_fields
 from aurelius_atlas_core.search_query import SearchHits, SearchQuery
 from aurelius_atlas_core.stored_classification import StoredClassification
@@ -143,9 +144,13 @@ class EntityStore:
         """Create the indices that are missing (ENS-01)."""
         await self._documents.prepare()
 
-    def new_guid(self) -> str:
-        """A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044)."""
-        return self._new_id()
+    def new_guid(self) -> AssignedGuid:
+        """A new entity's GUID: a random UUID in canonical lower-case text (ENS-02, DD-044).
+
+        The minted text names a stored entity the moment it is handed out, so it is an ``AssignedGuid``;
+        a test store may count instead of randomise, which is still assigned text.
+        """
+        return AssignedGuid(self._new_id())
 
     def now(self) -> int:
         """The current time in epoch milliseconds, as Atlas stores times."""

@@ -268,9 +268,9 @@ stages:
                 type: null
           volatile: ["$[*].timestamp", "$[*].eventKey", "$[*].details"]
     - name: no audit for a GUID no entity had
-      request: { method: GET, url: "/api/atlas/v2/entity/no-such-guid-{run}/audit" }
+      request: { method: GET, url: "/api/atlas/v2/entity/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee/audit" }
       response:
           status: 404
           json:
               errorCode: ATLAS-404-00-005
-              errorMessage: "Given instance guid no-such-guid-{run} is invalid/not found"
+              errorMessage: "Given instance guid eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee is invalid/not found"

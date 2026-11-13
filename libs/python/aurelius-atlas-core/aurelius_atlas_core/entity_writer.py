@@ -51,6 +51,7 @@ from aurelius_atlas_core.entity_store import (
     TaskChange,
     UniqueValueTakenError,
 )
+from aurelius_atlas_core.guids import AssignedGuid, as_assigned_guid
 from aurelius_atlas_core.hard_delete_handler import HardDeleteHandler
 from aurelius_atlas_core.relationship_mapper import RelationshipMapper
 from aurelius_atlas_core.soft_delete_handler import SoftDeleteHandler
@@ -72,28 +73,29 @@ class _Mutation:
 
     created: list[tuple[AtlasEntity, EntityType]] = field(default_factory=list)
     updated: list[tuple[AtlasEntity, EntityType, VersionedEntity]] = field(default_factory=list)
-    guid_assignments: dict[str, str] = field(default_factory=dict)
-    guids: dict[str | None, str] = field(default_factory=dict)
+    guid_assignments: dict[str, AssignedGuid] = field(default_factory=dict)
+    """What each placeholder GUID of the request became (ENT-17); assigned values only (DV-162)."""
+    guids: dict[str | None, AssignedGuid] = field(default_factory=dict)
     to_delete: list[str] = field(default_factory=list)
     """The entities an import gives ``DELETED`` that are ``ACTIVE`` (IMP-04)."""
     reactivated: set[str] = field(default_factory=set)
     """The ``DELETED`` entities an import gives ``ACTIVE`` (IMP-04)."""
 
     def add_created(self, request_guid: str | None, entity: AtlasEntity, entity_type: EntityType) -> None:
-        guid = str(entity.guid)
+        guid = as_assigned_guid(str(entity.guid))
         self.created.append((entity, entity_type))
         self._assign(request_guid, guid)
 
     def add_updated(
         self, request_guid: str | None, entity: AtlasEntity, entity_type: EntityType, stored: VersionedEntity
     ) -> None:
-        guid = str(entity.guid)
+        guid = as_assigned_guid(str(entity.guid))
         if request_guid in self.guids or guid in self.guids:
             return
         self.updated.append((entity, entity_type, stored))
         self._assign(request_guid, guid)
 
-    def _assign(self, request_guid: str | None, guid: str) -> None:
+    def _assign(self, request_guid: str | None, guid: AssignedGuid) -> None:
         self.guids[guid] = guid
         if request_guid != guid:
             self.guid_assignments[str(request_guid)] = guid
@@ -436,7 +438,7 @@ class EntityWriter:
         context = await discovery.discover()
         mutation = await self._prepare(discovery, context, partial=partial)
         self._import_deletions = mutation.to_delete
-        self._import_guids = {str(key): guid for key, guid in mutation.guids.items()}
+        self._import_guids = {str(key): str(guid) for key, guid in mutation.guids.items()}
         skipped = await self._unchanged(mutation)
         self._verify_changes(mutation, skipped)
         now = self._store.now()
@@ -646,14 +648,16 @@ class EntityWriter:
             else:
                 discovery.validate_and_normalize(entity, for_update=False)
                 kept = self._importing and entity.guid is not None and is_assigned_guid(entity.guid)
-                guid = str(entity.guid) if kept else self._store.new_guid()
+                guid = as_assigned_guid(str(entity.guid)) if kept else self._store.new_guid()
                 context.resolved_guids[request_guid] = guid
                 context.add_resolved_by_unique(_object_id(entity, entity_type), guid)
                 entity.guid = guid
                 mutation.add_created(request_guid, entity, entity_type)
         return mutation
 
-    def _resolved_entity(self, context: DiscoveryContext, entity: AtlasEntity, entity_type: EntityType) -> str | None:
+    def _resolved_entity(
+        self, context: DiscoveryContext, entity: AtlasEntity, entity_type: EntityType
+    ) -> AssignedGuid | None:
         """``getResolvedEntityVertex``: the stored entity the request's entity resolved to, by GUID or values."""
         object_id = _object_id(entity, entity_type)
         found = context.resolved_guids.get(entity.guid)
@@ -822,7 +826,7 @@ class EntityWriter:
         for guid in dict.fromkeys(reported):
             header = taken.get(guid) or await retriever.header(guid, classifications=False)  # as recorded before
             response.add_entity(operation, header)
-        response.guid_assignments = mutation.guid_assignments
+        response.guid_assignments = {key: str(guid) for key, guid in mutation.guid_assignments.items()}
         return response
 
 

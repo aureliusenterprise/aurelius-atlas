@@ -3,14 +3,14 @@
 from collections.abc import Mapping
 from typing import Any, Self
 
-from aurelius_atlas_model.base import AtlasModel
+from aurelius_atlas_model.base import AtlasModel, BodyGuid
 from aurelius_atlas_model.errors import java_string
 
 
 class AtlasObjectId(AtlasModel):
     """An entity reference: its GUID, or its type name and the unique attribute values that identify it."""
 
-    guid: str | None = None
+    guid: BodyGuid = None
     type_name: str | None = None
     unique_attributes: dict[str, Any] | None = None
 

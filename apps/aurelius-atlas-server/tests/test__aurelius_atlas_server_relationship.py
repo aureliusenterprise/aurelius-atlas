@@ -43,6 +43,21 @@ async def test__a_guid_over_4096_characters_is_refused(client: httpx.AsyncClient
     )
 
 
+@pytest.mark.covers(f"{R}.create", "aurelius_atlas_server.bodies.json_model", rules=["DV-162"])
+async def test__an_end_named_by_other_text_is_refused(client: httpx.AsyncClient) -> None:
+    """The ends of a relationship name stored entities, so their GUID is UUID text (DV-162)."""
+    body = {
+        "typeName": "s_table_home",
+        "end1": {"guid": "nope"},
+        "end2": {"guid": "22222222-2222-4222-8222-222222222222"},
+    }
+
+    assert await send(client, "POST", RELATIONSHIP, json=body) == (
+        400,
+        {"errorCode": "ATLAS-400-00-021", "errorMessage": "ObjectId is not valid nope"},
+    )
+
+
 @pytest.mark.covers(
     f"{R}.create",
     f"{R}.update",

@@ -1,7 +1,13 @@
 """``AtlasMetrics`` (MET-01), ``AtlasMetricsStat`` and ``AtlasMetricsMapToChart`` (MHS-01), as Apache Atlas 2.4.0."""
 
 import pytest
-from aurelius_atlas_model.metrics import AtlasMetrics, AtlasMetricsMapToChart, AtlasMetricsStat, new_guid
+from aurelius_atlas_model.metrics import (
+    AtlasMetrics,
+    AtlasMetricsCharts,
+    AtlasMetricsMapToChart,
+    AtlasMetricsStat,
+    new_guid,
+)
 
 
 @pytest.mark.covers("aurelius_atlas_model.metrics.AtlasMetrics.add_metric", rules=["MET-01"])
@@ -54,3 +60,15 @@ def test__a_chart_series_is_a_key_and_its_pairs() -> None:
     """``AtlasMetricsMapToChart``: the state and its ``[time, count]`` pairs."""
     chart = AtlasMetricsMapToChart(key="Active", values=[[1, 2]])
     assert chart.to_json() == {"key": "Active", "values": [[1, 2]]}
+
+
+@pytest.mark.covers(rules=["MHS-04"])
+def test__the_charts_answer_series_per_type_name() -> None:
+    """``metricsstats/charts``: Java's ``Map<String, List<AtlasMetricsMapToChart>>``, dumped as the wire map."""
+    charts = AtlasMetricsCharts.model_validate(
+        {"DataSet": [{"key": "Active", "values": [[1, 2]]}, {"key": "Deleted", "values": []}]}
+    )
+
+    assert charts.model_dump(mode="python", by_alias=True, exclude_none=True) == {
+        "DataSet": [{"key": "Active", "values": [[1, 2]]}, {"key": "Deleted", "values": []}]
+    }

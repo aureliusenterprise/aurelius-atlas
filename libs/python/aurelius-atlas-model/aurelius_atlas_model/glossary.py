@@ -8,7 +8,7 @@ import json
 from enum import Enum, StrEnum
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, RootModel
 
 from aurelius_atlas_model.base import AtlasModel, new_model_guid
 from aurelius_atlas_model.instance import AtlasClassification, AtlasRelatedObjectId
@@ -186,6 +186,22 @@ class AtlasGlossaryCategory(AtlasGlossaryBaseObject):
             and _keys(self.children_categories) == _keys(other.children_categories)
             and _keys(self.terms) == _keys(other.terms)
         )
+
+
+class RelatedCategories(RootModel[dict[str, list[AtlasRelatedCategoryHeader]]]):
+    """The map ``getRelatedCategories`` answers (GCT-07).
+
+    ``parent`` and ``children``, each only when there is one;
+    ``webapp/.../GlossaryCategoryREST.java#getRelatedCategories`` hands back the Java map.
+    """
+
+
+class RelatedTerms(RootModel[dict[str, list[AtlasRelatedTermHeader]]]):
+    """The map ``getRelatedTerms`` answers (GTM-06).
+
+    The related terms by relation attribute name, ``seeAlso``, ``synonyms`` and the rest;
+    ``webapp/.../GlossaryTermREST.java#getRelatedTerms``.
+    """
 
 
 class Relation(Enum):
