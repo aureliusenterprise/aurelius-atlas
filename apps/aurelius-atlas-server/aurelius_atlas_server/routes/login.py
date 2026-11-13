@@ -13,6 +13,7 @@ from aurelius_atlas_server.authentication import (
     SessionStore,
     set_session_cookie,
 )
+from aurelius_atlas_server.errors import AtlasError, atlas_error_handler
 from aurelius_atlas_server.oidc_client import OidcClient, SignInError
 from aurelius_atlas_server.root_path import under_root
 
@@ -29,10 +30,13 @@ SIGN_IN_FAILED = "Sign-in failed"
             "description": "Sign-in failed.",
             "content": {"text/plain; charset=utf-8": {"schema": {"type": "string"}}},
         },
+        403: {"description": "With tenancy on: the token names no organization, several, or one not provisioned."},
     },
 )
 async def login(request: Request) -> Response:
-    """Start a sign-in at the provider, or finish one on its return to the page first asked (AUT-05)."""
+    """Start a sign-in at the provider, or finish one on its return to the page first asked (AUT-05); a token that
+    names no tenant to act in signs nobody in (TEN-07).
+    """  # noqa: D205 - one sentence
     sessions: SessionStore = request.app.state.sessions
     oidc: OidcClient = request.app.state.oidc
     redirect_uri = f"{request.base_url}{LOGIN_PATH.lstrip('/')}"
@@ -46,6 +50,11 @@ async def login(request: Request) -> Response:
             await oidc.sign_in(session, login_state, params["code"], redirect_uri)
         except SignInError:
             return PlainTextResponse(SIGN_IN_FAILED, status_code=401)
+        except AtlasError as refused:  # no tenant to act in: the session is not kept (TEN-07)
+            sessions.remove(session.id)
+            response = await atlas_error_handler(request, refused)
+            response.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
+            return response
         session = sessions.renew(session)
         target, session.return_to = _local(session.return_to, under_root(request.scope, "/")), None
         response = RedirectResponse(target, status_code=302)

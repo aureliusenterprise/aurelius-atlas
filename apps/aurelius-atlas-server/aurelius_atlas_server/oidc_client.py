@@ -21,6 +21,8 @@ from fastapi import HTTPException
 from starlette.concurrency import run_in_threadpool
 
 from aurelius_atlas_server.authentication import EXPIRY_MARGIN_SECONDS, Login, Session, user_of
+from aurelius_atlas_server.errors import AtlasError
+from aurelius_atlas_server.tenancy import Tenancy
 
 LOGGER = logging.getLogger("aurelius-atlas-server")
 
@@ -44,7 +46,8 @@ class Tokens:
 class OidcClient:
     """The client ``client_id`` with ``client_secret`` at the provider ``auth`` verifies tokens of.
 
-    ``principal_claim`` and ``groups_claim`` name a user from their access token (AUT-03).
+    ``principal_claim`` and ``groups_claim`` name a user from their access token (AUT-03), and ``tenancy``, while
+    it is on, the tenant they act in and their roles there (TEN-03 to TEN-06).
     """
 
     def __init__(  # noqa: PLR0913 - the client's identity and how it names users
@@ -55,6 +58,7 @@ class OidcClient:
         client_secret: str,
         principal_claim: str,
         groups_claim: str,
+        tenancy: Tenancy | None = None,
         ca_file: str | None = None,
         http: httpx.AsyncClient | None = None,
         clock: Callable[[], float] = time.time,
@@ -64,6 +68,7 @@ class OidcClient:
         self._client_secret = client_secret
         self._principal_claim = principal_claim
         self._groups_claim = groups_claim
+        self._tenancy = tenancy
         self._clock = clock
         context = ssl.create_default_context(cafile=ca_file) if ca_file else ssl.create_default_context()
         self._http = http if http is not None else httpx.AsyncClient(timeout=HTTP_TIMEOUT_SECONDS, verify=context)
@@ -95,6 +100,7 @@ class OidcClient:
 
         Raises:
             SignInError: When the provider refuses the code or a token does not verify.
+            AtlasError: While tenancy is on, when the access token names no tenant to act in (TEN-07).
         """
         tokens = await self._token(
             {
@@ -117,7 +123,7 @@ class OidcClient:
     async def fresh(self, session: Session) -> bool:
         """Whether the session is still signed in, its access token refreshed when it expires (AUT-06).
 
-        A refresh the provider refuses signs the session out.
+        A refresh the provider refuses, or whose token names no tenant to act in (TEN-07), signs the session out.
         """
         if session.user is None:
             return False
@@ -128,7 +134,7 @@ class OidcClient:
             try:
                 refreshed = await self._token({"grant_type": "refresh_token", "refresh_token": session.refresh_token})
                 await self._apply(session, refreshed)
-            except SignInError:
+            except SignInError, AtlasError:
                 refreshed = None
         if refreshed is None:
             LOGGER.info("A session's refresh failed; it is signed out")
@@ -148,7 +154,11 @@ class OidcClient:
         """The session as its tokens make it: the access token's user, its expiry, the other tokens kept."""
         claims = await self._verify(tokens.access_token)
         session.user = user_of(
-            claims, principal_claim=self._principal_claim, groups_claim=self._groups_claim, client_id=self._client_id
+            claims,
+            principal_claim=self._principal_claim,
+            groups_claim=self._groups_claim,
+            client_id=self._client_id,
+            tenancy=self._tenancy,
         )
         session.access_token = tokens.access_token
         session.access_expires = self._clock() + tokens.expires_in

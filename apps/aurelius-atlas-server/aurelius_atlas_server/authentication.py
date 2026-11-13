@@ -18,7 +18,9 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from starlette.concurrency import run_in_threadpool
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
+from aurelius_atlas_server.errors import AtlasError, atlas_error_handler
 from aurelius_atlas_server.root_path import site_path, under_root
+from aurelius_atlas_server.tenancy import Tenancy, tenant_of, tenant_roles
 
 SESSION_COOKIE = "ATLASSESSIONID"
 """The session cookie's name, as Atlas's ``web.xml`` names it."""
@@ -66,23 +68,41 @@ EXPIRY_MARGIN_SECONDS = 10
 
 @dataclass(frozen=True)
 class User:
-    """An authenticated user: their name, groups (``Authentication``'s name and authorities) and roles (AUZ-01)."""
+    """An authenticated user: their name, groups (``Authentication``'s name and authorities), roles (AUZ-01), and
+    the tenant they act in while tenancy is on (TEN-03).
+    """  # noqa: D205 - one sentence
 
     name: str
     groups: tuple[str, ...] = ()
     roles: frozenset[str] = frozenset()
+    tenant: str | None = None
 
 
-def user_of(claims: dict[str, Any], *, principal_claim: str, groups_claim: str, client_id: str = "") -> User:
+def user_of(
+    claims: dict[str, Any],
+    *,
+    principal_claim: str,
+    groups_claim: str,
+    client_id: str = "",
+    tenancy: Tenancy | None = None,
+) -> User:
     """The user a token's claims name: the principal claim, falling back to ``sub``; the groups claim, else the
-    realm roles (AUT-03); the roles of the server's client ``client_id`` (AUZ-01).
+    realm roles (AUT-03). Without ``tenancy``, no tenant and the roles of the server's client ``client_id``
+    (AUZ-01, TEN-01); with it, the one tenant the token names and the roles of its own groups (TEN-02 to TEN-06).
+
+    Raises:
+        AtlasError: With ``tenancy``, when the token names no organization, several, or one not provisioned.
     """  # noqa: D205 - one sentence
-    name = claims.get(principal_claim) or claims.get("sub") or ""
+    name = str(claims.get(principal_claim) or claims.get("sub") or "")
     groups = claims.get(groups_claim)
     if not isinstance(groups, list):
         realm_access = claims.get("realm_access")
         groups = realm_access.get("roles") if isinstance(realm_access, dict) else None
-    return User(str(name), tuple(str(group) for group in groups or []), client_roles(claims, client_id))
+    named_groups = tuple(str(group) for group in groups or [])
+    if tenancy is None:
+        return User(name, named_groups, client_roles(claims, client_id))
+    tenant, entry = tenant_of(claims, tenancy, name)
+    return User(name, named_groups, tenant_roles(claims, tenancy, tenant, entry), tenant)
 
 
 def acting_user(request: Request) -> str | None:
@@ -190,9 +210,10 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        """Authenticate the request, then pass it on with ``request.state.user`` and ``request.state.session``."""
+        """Authenticate the request, then pass it on with ``request.state.user``, ``.session`` and ``.tenant``."""
         request.state.user = None
         request.state.session = None
+        request.state.tenant = None
         if is_open(site_path(request.scope)):
             return await call_next(request)
         authorization = request.headers.get("authorization")
@@ -204,6 +225,7 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
             if _csrf_refused(request, session):
                 return PlainTextResponse(CSRF_REFUSED, status_code=400)
             request.state.user, request.state.session = session.user, session
+            request.state.tenant = session.user.tenant
             return await call_next(request)
         return _unauthenticated(request, session)
 
@@ -218,12 +240,17 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         except HTTPException as error:
             return Response(status_code=error.status_code) if error.status_code != 401 else _unauthorized()  # noqa: PLR2004 - the issuer's outage stays 503
         settings = request.app.state.settings
-        request.state.user = user_of(
-            claims,
-            principal_claim=settings.auth_principal_claim,
-            groups_claim=settings.auth_groups_claim,
-            client_id=settings.auth_client_id,
-        )
+        try:
+            user = user_of(
+                claims,
+                principal_claim=settings.auth_principal_claim,
+                groups_claim=settings.auth_groups_claim,
+                client_id=settings.auth_client_id,
+                tenancy=request.app.state.tenancy,
+            )
+        except AtlasError as refused:  # no tenant to act in: refused before any route (TEN-07)
+            return await atlas_error_handler(request, refused)
+        request.state.user, request.state.tenant = user, user.tenant
         return await call_next(request)
 
 

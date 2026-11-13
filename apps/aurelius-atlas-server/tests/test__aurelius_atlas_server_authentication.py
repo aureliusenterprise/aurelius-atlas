@@ -15,16 +15,22 @@ from aurelius_atlas_server.authentication import (
     CSRF_REFUSED,
     SESSION_COOKIE,
     SessionStore,
+    User,
     is_browser,
     is_open,
     user_of,
 )
+from aurelius_atlas_server.authorization import ROLE_PRIVILEGES
+from aurelius_atlas_server.errors import AtlasError
+from aurelius_atlas_server.tenancy import TENANT_ROLES, Tenancy, organizations, tenant_of, tenant_roles
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fake_issuer import AUTHORIZATION_ENDPOINT, CLIENT_ID, END_SESSION_ENDPOINT, FakeIssuer
 from fastapi import FastAPI
 
 A = "aurelius_atlas_server.authentication"
+TN = "aurelius_atlas_server.tenancy"
+TENANCY = Tenancy(tenants=frozenset({"acme", "globex"}))
 L = "aurelius_atlas_server.routes.login"
 C = "aurelius_atlas_server.oidc_client.OidcClient"
 SESSION = "/api/atlas/admin/session"
@@ -264,3 +270,90 @@ async def test__the_provider_clients_follow_the_settings(app: FastAPI, settings:
             frozenset({"aurelius-atlas-server", "aurelius"}),
             "master",
         )
+
+
+def tenant_user(**claims: object) -> User:
+    """The user of a token of ``ann`` with these claims, while tenancy is on (TEN-02 to TEN-06)."""
+    return user_of(
+        {"preferred_username": "ann", **claims},
+        principal_claim="preferred_username",
+        groups_claim="groups",
+        client_id=CLIENT_ID,
+        tenancy=TENANCY,
+    )
+
+
+@pytest.mark.covers(f"{A}.user_of", rules=["TEN-01"])
+def test__without_tenancy_a_user_has_no_tenant_and_the_client_roles() -> None:
+    """The organization claim is not read; the roles are the server client's, as before."""
+    claims = {
+        "preferred_username": "ann",
+        "organization": {"acme": {"groups": ["/atlas-admin"]}},
+        "resource_access": {CLIENT_ID: {"roles": ["atlas-read"]}},
+    }
+    found = user_of(claims, principal_claim="preferred_username", groups_claim="groups", client_id=CLIENT_ID)
+    assert (found.tenant, found.roles) == (None, {"atlas-read"})
+
+
+@pytest.mark.covers(f"{TN}.organizations", rules=["TEN-02"])
+def test__the_organization_claim_names_the_organizations() -> None:
+    """A list's strings, an object's keys; a missing claim or another shape names none."""
+    assert organizations({"organization": ["acme", 7, "globex"]}, "organization") == {"acme": None, "globex": None}
+    assert organizations({"organization": {"acme": {"id": "1"}}}, "organization") == {"acme": {"id": "1"}}
+    assert organizations({"org": ["acme"]}, "org") == {"acme": None}
+    for claims in ({}, {"organization": "acme"}, {"organization": 1}, {"organization": None}):
+        assert organizations(claims, "organization") == {}
+
+
+@pytest.mark.covers(
+    f"{TN}.tenant_of", f"{TN}.Tenancy.is_provisioned", f"{A}.user_of", rules=["TEN-02", "TEN-03", "TEN-04"]
+)
+def test__a_user_acts_in_the_one_provisioned_organization_their_token_names() -> None:
+    """One organization, list or object, is the tenant; none, several or an unprovisioned one are refused."""
+    assert tenant_user(organization=["acme"]).tenant == "acme"
+    assert tenant_user(organization={"operators": {}}).tenant == "operators"
+
+    def refused(**claims: object) -> tuple[int, str, str]:
+        with pytest.raises(AtlasError) as error:
+            tenant_user(**claims)
+        return error.value.code.http_status, error.value.code.code, error.value.message
+
+    assert refused() == (403, "AURELIUS-403-00-001", "ann acts in no tenant: the token names no organization")
+    assert refused(organization="acme")[1] == "AURELIUS-403-00-001"
+    assert refused(organization=["acme", "globex"]) == (
+        403,
+        "AURELIUS-403-00-002",
+        "ann acts in no tenant: the token names 2 organizations",
+    )
+    assert refused(organization=["initech"]) == (403, "AURELIUS-403-00-003", "Tenant initech is not provisioned")
+    for alias in ("Acme", "-acme", "acme_corp", "a" * 64, "acme.corp", ""):
+        assert not TENANCY.is_provisioned(alias)
+    assert Tenancy(tenants=frozenset({"a" * 63, "0-x"})).is_provisioned("a" * 63)
+    with pytest.raises(AtlasError):
+        tenant_of({"organization": ["Acme"]}, Tenancy(tenants=frozenset({"Acme"})), "ann")
+
+
+@pytest.mark.covers(f"{TN}.tenant_roles", f"{A}.user_of", rules=["TEN-05"])
+def test__the_roles_in_a_tenant_are_its_own_top_level_role_groups() -> None:
+    """The tenant's ``/<role>`` groups grant; nested, unknown, realm groups and client roles grant nothing."""
+    found = tenant_user(
+        organization={"acme": {"groups": ["/atlas-write", "/atlas-read/team", "/other", "atlas-types", 3]}},
+        groups=["/atlas-admin"],
+        resource_access={CLIENT_ID: {"roles": ["atlas-admin"]}},
+    )
+    assert (found.tenant, found.roles, found.groups) == ("acme", {"atlas-write"}, ("/atlas-admin",))
+    assert tenant_user(organization=["acme"]).roles == frozenset()
+    assert tenant_user(organization={"acme": {"groups": "/atlas-read"}}).roles == frozenset()
+    assert set(ROLE_PRIVILEGES) == TENANT_ROLES
+
+
+@pytest.mark.covers(f"{TN}.tenant_roles", rules=["TEN-06"])
+def test__an_operator_only_reads_outside_the_operator_organization() -> None:
+    """The operator role caps another tenant's roles at ``atlas-read``; in the operator organization it doesn't."""
+    every = ["/atlas-read", "/atlas-write", "/atlas-types", "/atlas-admin"]
+    operator = {"roles": ["atlas-operator"]}
+    assert tenant_user(organization={"acme": {"groups": every}}, realm_access=operator).roles == {"atlas-read"}
+    assert tenant_user(organization={"acme": {"groups": ["/atlas-write"]}}, realm_access=operator).roles == set()
+    assert tenant_user(organization={"operators": {"groups": every}}, realm_access=operator).roles == TENANT_ROLES
+    assert tenant_user(organization={"acme": {"groups": every}}, realm_access={"roles": []}).roles == TENANT_ROLES
+    assert tenant_roles({"realm_access": "x"}, TENANCY, "acme", {"groups": every}) == TENANT_ROLES

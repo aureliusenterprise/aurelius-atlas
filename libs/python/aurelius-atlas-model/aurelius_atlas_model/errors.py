@@ -465,6 +465,10 @@ class AtlasErrorCode(Enum):
     EMBEDDING_OFF = (404, "AURELIUS-404-00-001", "Search by meaning is off: no embedding service is configured")
     NO_EMBEDDING = (409, "AURELIUS-409-00-001", "Entity {0} has no embedding yet")
     EMBEDDER_UNAVAILABLE = (503, "AURELIUS-503-00-001", "The embedding service could not embed the query: {0}")
+    # Aurelius's own, for a tenant a token doesn't name or isn't provisioned: Atlas has no tenants (TEN-03, TEN-04).
+    NO_TENANT = (403, "AURELIUS-403-00-001", "{0} acts in no tenant: the token names no organization")
+    SEVERAL_TENANTS = (403, "AURELIUS-403-00-002", "{0} acts in no tenant: the token names {1} organizations")
+    TENANT_NOT_PROVISIONED = (403, "AURELIUS-403-00-003", "Tenant {0} is not provisioned")
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK = (
         409,
         "ATLAS-500-00-006",

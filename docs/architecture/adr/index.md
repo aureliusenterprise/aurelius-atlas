@@ -73,6 +73,7 @@ area you are about to work in; the rest can wait.
 | [059](./059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site.md)     | The catalogue searches by meaning: each entity's embedding, computed by a model that runs on site, kept in the one store; Aurelius endpoints of their own, Atlas's API unchanged.                                                                         | Proposed          |
 | [060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)              | The original webapp's App Search API returns as a view over the one store, kept up to date by the server's tasks; no Enterprise Search, Kafka or Flink.                                                                                                   | Accepted          |
 | [061](./061-the-governance-banner-answers-live-verdicts.md)                          | The governance banner answers live verdicts: the validate-entity API reads the catalogue's ACTIVE governance rules and answers one boolean verdict per rule; ADR 055's verbatim-shape clause retires for that endpoint alone, DV-67 superseded by DV-153. | Proposed          |
+| [063](./063-each-tenant-is-an-organization-with-its-own-store.md)                    | One deployment serves several tenants: each is an identity-provider organization with its own indices, named by the token alone; an operator organization runs the platform and only reads the tenants that trust it.                                     | Proposed          |
 
 ## Why record decisions
 

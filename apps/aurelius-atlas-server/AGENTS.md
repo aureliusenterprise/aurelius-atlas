@@ -55,6 +55,10 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
 - `aurelius_atlas_server/root_path.py` — `site_path`, `under_root`: the server under a proxy's path prefix,
   uvicorn's `root_path` from `AURELIUS_ATLAS_SERVER_ROOT_PATH` (9.5, DD-363); the path checks read within it,
   the redirects lead under it
+- `aurelius_atlas_server/tenancy.py` — `Tenancy`, `tenant_of`, `tenant_roles`: with `tenancy_enabled` (off by
+  default, offered from 15.4 only, DD-566), `user_of` reads the request's one tenant from the token's
+  organization claim and its roles from that organization's groups, or refuses with 403 (TEN-01 to TEN-07,
+  ADR 063). The tenant is on `request.state.tenant` and the core's `RequestContext` (TEN-08)
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)

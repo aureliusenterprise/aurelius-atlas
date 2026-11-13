@@ -37,13 +37,15 @@ _KEY = rsa.generate_private_key(public_exponent=65537, key_size=2048)
 class FakeIssuer:
     """The provider: it signs tokens, answers discovery and keys, and grants codes and refresh tokens it issued.
 
-    ``codes`` maps a code to the nonce and user it signs in; ``lifetime`` is how long its access tokens last.
+    ``codes`` maps a code to the nonce and user it signs in; ``lifetime`` is how long its access tokens last;
+    ``claims_of`` holds further claims of a user's access tokens from the token endpoint, such as their organizations.
     """
 
     codes: dict[str, tuple[str, str]] = field(default_factory=dict)
     refresh_tokens: dict[str, str] = field(default_factory=dict)
     lifetime: int = 300
     grants: list[str] = field(default_factory=list)
+    claims_of: dict[str, dict[str, Any]] = field(default_factory=dict)
 
     def token(  # noqa: PLR0913 - the claims a test shapes
         self,
@@ -119,7 +121,7 @@ class FakeIssuer:
         refresh = secrets.token_urlsafe(8)
         self.refresh_tokens[refresh] = user
         body = {
-            "access_token": self.token(user, azp=CLIENT_ID),
+            "access_token": self.token(user, azp=CLIENT_ID, **self.claims_of.get(user, {})),
             "expires_in": self.lifetime,
             "refresh_token": refresh,
         }

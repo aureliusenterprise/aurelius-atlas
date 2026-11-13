@@ -114,6 +114,7 @@ def build_oidc(settings: ServerSettings, auth: KeycloakAuth, http: httpx.AsyncCl
         client_secret=settings.auth_client_secret.get_secret_value(),
         principal_claim=settings.auth_principal_claim,
         groups_claim=settings.auth_groups_claim,
+        tenancy=settings.tenancy(),
         ca_file=None if settings.auth_ca_file is None else str(settings.auth_ca_file),
         http=http,
     )
@@ -218,7 +219,8 @@ def create_app(
     app.state.store = store
     app.state.type_registry, app.state.metrics_util = registry, metrics_util
     app.state.embedder = None  # the embeddings client, once embedding is on and the server has started (DD-443)
-    app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
+    # the tenancy is None while it is off: no request has a tenant (TEN-01)
+    app.state.auth, app.state.oidc, app.state.sessions, app.state.tenancy = auth, oidc, sessions, settings.tenancy()
     _mount(app, settings)
 
     _telemetry(app, settings)
