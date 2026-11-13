@@ -19,10 +19,13 @@ only, never a subfolder path.
   GET parameters drop the Java defaults, as the routes read an absent parameter;
   `getSavedSearches` keeps the server's 204 as a `null` body (DD-314)
 - `src/lib/atlas/admin.service.ts` — `AdminService` (`/atlas/admin/**`, ADM-01..05,
-  AAC-01..07): version/status/session, the liveness/readiness texts, the patch
-  records, purge, export/import, and the task list — the twin of
-  `AtlasClient.admin` (CL-11, CLW-01..06); `export` answers the
-  `{ body, contentType }` pair of DD-315 where the twin returns a tuple
+  AAC-01..11): version/status/session, the liveness/readiness texts, the patch
+  records, purge, export/import, the task list, the metrics reads, the server
+  catalogue, the replication audit, and the admin-audit pair — the twin of
+  `AtlasClient.admin` (CL-11, CLW-01..12); `export` answers the
+  `{ body, contentType }` pair of DD-315 where the twin returns a tuple;
+  `metricsStats` sends `mininfo` on every call (DD-561) and `ageoutAudits`
+  keeps the server's 204 as a `null` body (DD-561, the pair of DD-314)
 - `src/lib/atlas/atlas-entities.service.ts` — `AtlasEntitiesService`
   (`/atlas/v2/entity/**`, DET-03, AEN-01..07, AEW-01..06, ACL-01..09 — the
   2.3+7.6 wiring's client, DD-187): all thirty-seven routes of
@@ -77,7 +80,8 @@ only, never a subfolder path.
   `src/lib/atlas/atlas-profile.ts` — the saved-search DTOs (`AtlasUserSavedSearch`,
   `SavedSearchType`, SVS-01); `src/lib/atlas/atlas-entity.ts` — the entity DTOs
   (with `AtlasObjectId`); `src/lib/atlas/atlas-impexp.ts` — the export/import DTOs
-  and `AtlasExportAnswer` (DD-315); `src/lib/atlas/atlas-mutation.ts` —
+  and `AtlasExportAnswer` (DD-315), plus the replication DTOs (`AtlasServer`,
+  `ExportImportAuditEntry`, REP-01/05, AAC-10); `src/lib/atlas/atlas-mutation.ts` —
   `EntityMutationResponse` (with `DeleteType`, DD-311's client-side vocabulary);
   `src/lib/atlas/atlas-patches.ts` / `atlas-tasks.ts` —
   the patch/task DTOs;
@@ -86,7 +90,11 @@ only, never a subfolder path.
   `src/lib/atlas/atlas-relationship.ts` — the relationship DTOs
   (`AtlasRelationship`, `AtlasRelationshipWithExtInfo`);
   `src/lib/atlas/atlas-audit.ts` — the entity-audit DTOs
-  (`EntityAuditEventV2`, `EntityAuditActionV2`, `EntityAuditType`);
+  (`EntityAuditEventV2`, `EntityAuditActionV2`, `EntityAuditType`) and the
+  admin-audit DTOs (`AtlasAuditEntry`, `AuditSearchParameters`,
+  `AuditReductionCriteria`, ADA-01/04, AGE-01, AAC-11);
+  `src/lib/atlas/atlas-metrics.ts` — the metrics DTOs (`AtlasMetrics`,
+  `AtlasMetricsStat`, `AtlasMetricsCharts`, MET/MHS, AAC-08/09);
   `src/lib/atlas/atlas-glossary.ts` — the glossary DTOs (`AtlasGlossary`,
   `AtlasGlossaryCategory`, `AtlasGlossaryTerm`, `AtlasGlossaryExtInfo`,
   `AtlasRelatedObjectId`, the header types, `GlossarySort`);

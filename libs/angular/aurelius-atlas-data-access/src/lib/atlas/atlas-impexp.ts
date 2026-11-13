@@ -104,3 +104,35 @@ export type BulkImportResponse = {
     failedImportInfoList?: ImportInfo[] | null;
     successImportInfoList?: ImportInfo[] | null;
 };
+
+/**
+ * `AtlasServer`: a catalogue an export or import names, and the replication it
+ * recorded (REP-01, AAC-10). The Python twin is `AtlasClient.admin.server`.
+ */
+export type AtlasServer = {
+    guid?: string | null;
+    name?: string | null;
+    fullName?: string | null;
+    displayName?: string | null;
+    additionalInfo?: Record<string, string> | null;
+    urls?: string[] | null;
+};
+
+/**
+ * `ExportImportAuditEntry`: one export or import, its user, servers, times and
+ * result (REP-02, REP-05, AAC-10). The Python twin is
+ * `AtlasClient.admin.export_import_audit`.
+ */
+export type ExportImportAuditEntry = {
+    guid?: string | null;
+    userName?: string | null;
+    operation?: string | null;
+    operationParams?: string | null;
+    /** Epoch milliseconds. */
+    startTime?: number | null;
+    /** Epoch milliseconds. */
+    endTime?: number | null;
+    resultSummary?: string | null;
+    sourceServerName?: string | null;
+    targetServerName?: string | null;
+};

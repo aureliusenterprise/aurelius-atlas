@@ -7,6 +7,7 @@ export * from "./lib/atlas/atlas-error";
 export * from "./lib/atlas/atlas-glossary";
 export * from "./lib/atlas/atlas-impexp";
 export * from "./lib/atlas/atlas-lineage";
+export * from "./lib/atlas/atlas-metrics";
 export * from "./lib/atlas/atlas-mutation";
 export * from "./lib/atlas/atlas-patches";
 export * from "./lib/atlas/atlas-profile";

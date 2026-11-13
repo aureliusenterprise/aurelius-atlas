@@ -2,9 +2,19 @@ import { HttpClient, HttpParams } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
 import { map, Observable } from "rxjs";
 import { API_BASE_URL } from "../api-config";
-import type { AtlasExportAnswer, AtlasExportRequest, AtlasImportRequest, AtlasImportResult } from "./atlas-impexp";
+import type { AtlasAuditEntry, AuditReductionCriteria, AuditSearchParameters } from "./atlas-audit";
+import type {
+    AtlasExportAnswer,
+    AtlasExportRequest,
+    AtlasImportRequest,
+    AtlasImportResult,
+    AtlasServer,
+    ExportImportAuditEntry,
+} from "./atlas-impexp";
+import type { AtlasMetrics, AtlasMetricsCharts, AtlasMetricsStat } from "./atlas-metrics";
 import type { EntityMutationResponse } from "./atlas-mutation";
 import type { AtlasPatch } from "./atlas-patches";
+import type { AtlasEntityHeader } from "./atlas-search";
 import type { AtlasTask } from "./atlas-tasks";
 
 /**
@@ -40,6 +50,22 @@ export type AtlasSession = {
 /** The bare-JSON answer of `GET /patches` before the list is unwrapped (AAC-02). */
 type PatchesEnvelope = {
     patches: AtlasPatch[];
+};
+
+/**
+ * What `exportImportAudit` filters on (REP-05, AAC-10): a value left out matches
+ * any entry on it, and the server name matches at either end of the move.
+ */
+export type ExportImportAuditQuery = {
+    serverName?: string | null;
+    userName?: string | null;
+    operation?: string | null;
+    /** Epoch milliseconds. */
+    startTime?: number | null;
+    /** Epoch milliseconds. */
+    endTime?: number | null;
+    limit?: number | null;
+    offset?: number | null;
 };
 
 /**
@@ -191,6 +217,177 @@ export class AdminService {
         return this.http.delete<void>(`${this.baseUrl}/atlas/admin/tasks`, {
             params: this.guidsParams(guids),
         });
+    }
+
+    /**
+     * The counts and the server's stats (MET-01..MET-04, CLW-08, AAC-08) —
+     * `metrics`, `GET /admin/metrics`.
+     * @returns the metrics under `data`
+     */
+    metrics(): Observable<AtlasMetrics> {
+        return this.http.get<AtlasMetrics>(`${this.baseUrl}/atlas/admin/metrics`);
+    }
+
+    /**
+     * Every stored metric, the latest first (MHS-02, CLW-08, AAC-08) —
+     * `metrics_stats`, `GET /admin/metricsstats`. `mininfo` travels on every
+     * call, true or false: the route's default is true, so an absent parameter
+     * would answer the full statistics when the caller asked without them
+     * (DD-561).
+     * @param minInfo whether to leave the full statistics out, true by default
+     * @returns the stored metrics
+     */
+    metricsStats(minInfo = true): Observable<AtlasMetricsStat[]> {
+        const params = new HttpParams().set("mininfo", `${minInfo}`);
+        return this.http.get<AtlasMetricsStat[]>(`${this.baseUrl}/atlas/admin/metricsstats`, { params });
+    }
+
+    /**
+     * The metric stored at that collection time (MHS-02, CLW-09, AAC-09) —
+     * `metrics_stat`, `GET /admin/metricsstat/{collectionTime}`.
+     * @param collectionTime the epoch milliseconds the metric was collected at
+     * @returns the stored metric
+     */
+    metricsStat(collectionTime: number): Observable<AtlasMetricsStat> {
+        return this.http.get<AtlasMetricsStat>(`${this.baseUrl}/atlas/admin/metricsstat/${collectionTime}`);
+    }
+
+    /**
+     * The metrics stored in the range (MHS-03, CLW-09, AAC-09) —
+     * `metrics_in_range`, `GET /admin/metricsstats/range`. Each type name
+     * travels as a repeated `typeName` parameter.
+     * @param startTime the first millisecond of the range
+     * @param endTime the last millisecond of the range
+     * @param typeNames the types whose counts are asked for
+     * @returns the stored metrics of the range
+     */
+    metricsInRange(startTime: number, endTime: number, typeNames: string[] = []): Observable<AtlasMetricsStat[]> {
+        return this.http.get<AtlasMetricsStat[]>(`${this.baseUrl}/atlas/admin/metricsstats/range`, {
+            params: this.rangeParams(startTime, endTime, typeNames),
+        });
+    }
+
+    /**
+     * Per type name, its counts in the range by state (MHS-04, CLW-09, AAC-09)
+     * — `metrics_charts`, `GET /admin/metricsstats/charts`.
+     * @param startTime the first millisecond of the range
+     * @param endTime the last millisecond of the range
+     * @param typeNames the types whose counts are asked for
+     * @returns the chart series, keyed by type name
+     */
+    metricsCharts(startTime: number, endTime: number, typeNames: string[] = []): Observable<AtlasMetricsCharts> {
+        return this.http.get<AtlasMetricsCharts>(`${this.baseUrl}/atlas/admin/metricsstats/charts`, {
+            params: this.rangeParams(startTime, endTime, typeNames),
+        });
+    }
+
+    /**
+     * The entity headers a purge's audit names (ADA-05, CLW-10, AAC-09) —
+     * `audit_details`, `GET /admin/audit/{auditGuid}/details`. Only a
+     * non-default `limit` or `offset` travels (the pair of the Python twin's
+     * `_present`).
+     * @param auditGuid the audit entry's guid
+     * @param limit how many entries to answer, the server's default 10 otherwise
+     * @param offset how many entries to skip, the server's default 0 otherwise
+     * @returns the entity headers the audit names
+     */
+    auditDetails(auditGuid: string, limit = 10, offset = 0): Observable<AtlasEntityHeader[]> {
+        let params = new HttpParams();
+        if (limit) {
+            params = params.set("limit", `${limit}`);
+        }
+        if (offset) {
+            params = params.set("offset", `${offset}`);
+        }
+        const path = `${this.baseUrl}/atlas/admin/audit/${encodeURIComponent(auditGuid)}/details`;
+        return this.http.get<AtlasEntityHeader[]>(path, { params });
+    }
+
+    /**
+     * The catalogue of the full name, with its replication (REP-01, CLW-10,
+     * AAC-10) — `server`, `GET /admin/server/{serverName}`.
+     * @param serverName the server's full name
+     * @returns the catalogue
+     */
+    server(serverName: string): Observable<AtlasServer> {
+        const path = `${this.baseUrl}/atlas/admin/server/${encodeURIComponent(serverName)}`;
+        return this.http.get<AtlasServer>(path);
+    }
+
+    /**
+     * The export and import audit entries the values given match (REP-05,
+     * CLW-10, AAC-10) — `export_import_audit`, `GET /admin/expimp/audit`. The
+     * server name matches at either end of the move; a value left out matches
+     * any entry on it, and only values that are not `null` or `0` travel.
+     * @param query the values to filter on
+     * @returns the audit entries
+     */
+    exportImportAudit(query: ExportImportAuditQuery = {}): Observable<ExportImportAuditEntry[]> {
+        const wire: Record<string, string | number | boolean | null | undefined> = {
+            serverName: query.serverName,
+            userName: query.userName,
+            operation: query.operation,
+            startTime: query.startTime,
+            endTime: query.endTime,
+            limit: query.limit,
+            offset: query.offset,
+        };
+        let params = new HttpParams();
+        for (const [key, value] of Object.entries(wire)) {
+            if (value != null && value !== false && value !== 0) {
+                params = params.set(key, `${value}`);
+            }
+        }
+        return this.http.get<ExportImportAuditEntry[]>(`${this.baseUrl}/atlas/admin/expimp/audit`, { params });
+    }
+
+    /**
+     * The admin audits the search parameters find (ADA-04, CLW-11, AAC-11) —
+     * `audits`, `POST /admin/audits`. No parameter asks for every entry: no
+     * body is sent then. It needs the `ADMIN_AUDITS` privilege, which the
+     * server checks (APC-04 through the error channel).
+     * @param parameters the filters, page and order, optional
+     * @returns the audit entries
+     */
+    audits(parameters?: AuditSearchParameters | null): Observable<AtlasAuditEntry[]> {
+        return this.http.post<AtlasAuditEntry[]>(`${this.baseUrl}/atlas/admin/audits`, parameters ?? null);
+    }
+
+    /**
+     * The agings the criteria ask for, queued as tasks (AGE-01..AGE-03,
+     * CLW-11, AAC-11) — `ageout_audits`, `POST /admin/audits/ageout`.
+     * `useAuditConfig` sends `useAuditConfig=true` — the configuration's aging,
+     * its criteria ignored — and travels only when set. The 204 of an aging
+     * that queued nothing answers a `null` body: `null` and `[]` stay apart on
+     * purpose (DD-561, the pair of DD-314's `null`).
+     * @param criteria the agings to run, optional
+     * @param useAuditConfig whether the configuration's aging runs instead
+     * @returns the queued tasks, or `null` when nothing was queued
+     */
+    ageoutAudits(criteria?: AuditReductionCriteria | null, useAuditConfig = false): Observable<AtlasTask[] | null> {
+        let params = new HttpParams();
+        if (useAuditConfig) {
+            params = params.set("useAuditConfig", "true");
+        }
+        return this.http.post<AtlasTask[] | null>(`${this.baseUrl}/atlas/admin/audits/ageout`, criteria ?? null, {
+            params,
+        });
+    }
+
+    /**
+     * The query of the two range routes (AAC-09): the times plus each type name
+     * as a repeated `typeName` parameter.
+     * @param startTime the first millisecond of the range
+     * @param endTime the last millisecond of the range
+     * @param typeNames the types whose counts are asked for
+     * @returns the query parameters to send
+     */
+    private rangeParams(startTime: number, endTime: number, typeNames: string[]): HttpParams {
+        let params = new HttpParams().set("startTime", `${startTime}`).set("endTime", `${endTime}`);
+        for (const typeName of typeNames) {
+            params = params.append("typeName", typeName);
+        }
+        return params;
     }
 
     /**

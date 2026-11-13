@@ -12,6 +12,7 @@
  */
 
 import type { AtlasEntity } from "./atlas-entity";
+import type { FilterCriteria, SortOrder } from "./atlas-search";
 
 /** What an audit event records (`EntityAuditEventV2.EntityAuditActionV2`). */
 export type EntityAuditActionV2 =
@@ -52,4 +53,73 @@ export type EntityAuditEventV2 = {
     eventKey?: string | null;
     entity?: AtlasEntity | null;
     type?: EntityAuditType | null;
+};
+
+/**
+ * What an admin audit records (`AuditOperation`, ADA-01): the operations of the
+ * admin endpoints, not the entity actions of {@link EntityAuditActionV2}.
+ */
+export type AuditOperation =
+    | "PURGE"
+    | "EXPORT"
+    | "IMPORT"
+    | "IMPORT_DELETE_REPL"
+    | "TYPE_DEF_CREATE"
+    | "TYPE_DEF_UPDATE"
+    | "TYPE_DEF_DELETE"
+    | "SERVER_START"
+    | "SERVER_STATE_ACTIVE";
+
+/**
+ * `AtlasAuditEntry`: one admin operation, its user, client, times, parameters
+ * and result (ADA-01, ADA-04, AAC-11). The Python twin is
+ * `AtlasClient.admin.audits`.
+ */
+export type AtlasAuditEntry = {
+    guid?: string | null;
+    userName?: string | null;
+    operation?: AuditOperation | null;
+    params?: string | null;
+    /** Epoch milliseconds. */
+    startTime?: number | null;
+    /** Epoch milliseconds. */
+    endTime?: number | null;
+    clientId?: string | null;
+    result?: string | null;
+    resultCount?: number | null;
+};
+
+/**
+ * `AuditSearchParameters`: the filters, page and order of an admin audit search
+ * (ADA-04, AAC-11). No body asks for every entry.
+ */
+export type AuditSearchParameters = {
+    auditFilters?: FilterCriteria | null;
+    limit?: number | null;
+    offset?: number | null;
+    sortBy?: string | null;
+    sortOrder?: SortOrder | null;
+};
+
+/**
+ * `AuditReductionCriteria`: the default, custom and sweep agings an
+ * `audits/ageout` asks for (AGE-01, AAC-11). The TTL keys keep the server's
+ * `TTL` capitalisation (`ignoreDefaultAgeoutTTL`, `defaultAgeoutTTLInDays`,
+ * `customAgeoutTTLInDays`).
+ */
+export type AuditReductionCriteria = {
+    auditAgingEnabled?: boolean | null;
+    defaultAgeoutEnabled?: boolean | null;
+    auditSweepoutEnabled?: boolean | null;
+    createEventsAgeoutAllowed?: boolean | null;
+    subTypesIncluded?: boolean | null;
+    ignoreDefaultAgeoutTTL?: boolean | null;
+    defaultAgeoutAuditCount?: number | null;
+    defaultAgeoutTTLInDays?: number | null;
+    customAgeoutAuditCount?: number | null;
+    customAgeoutTTLInDays?: number | null;
+    customAgeoutEntityTypes?: string | null;
+    customAgeoutActionTypes?: string | null;
+    sweepoutEntityTypes?: string | null;
+    sweepoutActionTypes?: string | null;
 };
