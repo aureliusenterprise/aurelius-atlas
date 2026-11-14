@@ -6,11 +6,13 @@ the entity document only: its own fields, its stored App Search document of 14.2
 Nothing is walked and nothing is joined — the breadcrumb and the derived relations are what the indexer
 stored (AVS-08), and a related end keeps the name its document gave it, none where the end went nameless
 (ASU-02). A door that read an end's entity passes it in ``ends``; the derivation itself reads nothing.
+``read_ends`` is that read, for the door that answers its entity's own relationship ends (VDR-02, DD-604).
 """
 
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from aurelius_atlas_model.instance import RelationshipStatus
 from aurelius_atlas_model.views import (
     CardBreadcrumb,
     CardQuality,
@@ -22,6 +24,8 @@ from aurelius_atlas_model.views import (
 from aurelius_atlas_typesystem.entity_type import EntityType
 
 from aurelius_atlas_core.app_search_document import RELATION_FIELDS, awaits_document
+from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
 from aurelius_atlas_core.search_fields import TRAIT_NAMES
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, StoredQualityTotals
 
@@ -165,16 +169,26 @@ def _business_metadata(stored: StoredEntity, entity_type: EntityType) -> dict[st
 
 
 def _sections(document: StoredAppSearch | None, ends: RelationEnds | None) -> list[EntityRelation]:
-    """One entry per attribute with ends: stored pairs first, read ends filling in, each end once (AVS-04).
+    """One entry per attribute with ends: stored pairs first, read ends filling in, each stored end once (AVS-04).
 
     A stored pair carries the name the document gave the end (none once the end went nameless, ASU-02); an end
-    the door read carries its type and state and wins the place, so a seen end never shows twice.
+    the door read carries its type and state and wins the place, so a stored end never shows twice. A read end
+    is keyed by relationship attribute and a stored pair by the end's type, so the two can name one GUID apart
+    (VDR-02, DD-604): an end a door read is dropped from any stored pair naming it, and the pair keeps its
+    other ends. Read sections keep every end the door read — one entity can sit under two attributes at once
+    (the process that is both producer and consumer of a dataset, REL-17), and each of them answers it.
     """
     sections: dict[str, dict[str, RelationEntity]] = {}
+    stored: dict[str, dict[str, RelationEntity]] = {}
     if document is not None:
         for relation in _relations(document):
             sections[relation.attribute] = {entity.guid: entity for entity in relation.entities}
+            stored[relation.attribute] = sections[relation.attribute]
     for attribute, entities in (ends or {}).items():
+        if attribute not in stored:  # the read end wins the GUID's stored place (VDR-02)
+            for pair in stored.values():
+                for entity in entities:
+                    pair.pop(entity.guid, None)
         merged = sections.setdefault(attribute, {})
         for entity in entities:
             merged[entity.guid] = RelationEntity.model_validate(
@@ -183,6 +197,7 @@ def _sections(document: StoredAppSearch | None, ends: RelationEnds | None) -> li
     return [
         EntityRelation.model_validate({"attribute": attribute, "entities": list(by_guid.values())})
         for attribute, by_guid in sections.items()
+        if by_guid
     ]
 
 
@@ -193,3 +208,34 @@ def _end_name(entity: StoredEntity) -> str | None:
         if value is not None:
             return str(value)
     return None
+
+
+async def read_ends(store: EntityStore, stored: StoredEntity, entity_type: EntityType) -> RelationEnds:
+    """The entities at the other ends of ``stored``'s relationship attributes, by attribute name (VDR-02, DD-604).
+
+    The 2.3 read's own machinery answers them (REL-17): the entity's listed relationships through
+    ``relationship_type_name`` and ``collection_elements``, so an edge belongs to an attribute exactly as the
+    Apache Atlas read says it does, and a ``DELETED`` edge answers nothing. Every end GUID of the entity is
+    read in one ``get_many`` — one entity, its own attributes, one round, not the walk ADR 064 R1 rejects. An
+    end the store no longer has is left out, as ``mapVertexToRelatedObjectId`` leaves it.
+    """
+    listed = stored.relationship_guids or []
+    found = await store.get_relationships(listed)
+    relationships = [found[guid].relationship for guid in listed if guid in found]
+    active = [edge for edge in relationships if edge.state is RelationshipStatus.ACTIVE]
+    guids_by_attribute: dict[str, list[str]] = {}
+    for name in entity_type.relationship_attributes:
+        type_name = relationship_type_name(stored.guid, relationships, entity_type, name)
+        attribute = entity_type.relationship_attribute(name, type_name)
+        if attribute is None:  # pragma: no cover - the registry added the attribute for this name
+            continue
+        ends = [other_end(edge, stored.guid) for edge in collection_elements(stored.guid, active, attribute)]
+        if ends:
+            guids_by_attribute[name] = ends
+    if not guids_by_attribute:
+        return {}
+    entities = await store.get_many([guid for ends in guids_by_attribute.values() for guid in ends])
+    return {
+        name: [found.entity for guid in dict.fromkeys(ends) if (found := entities.get(guid)) is not None]
+        for name, ends in guids_by_attribute.items()
+    }

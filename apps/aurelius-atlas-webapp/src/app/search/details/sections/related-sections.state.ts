@@ -1,9 +1,10 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
-import { AtlasEntitiesService, type AtlasEntity, type AtlasRelatedEntity } from "aurelius-atlas-data-access";
+import { AtlasEntitiesService, type AtlasEntity, type EntityView } from "aurelius-atlas-data-access";
 import type { CardSortOption } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../../alerts/alerts.service";
 import { cardDescription, cardDisplayText, cardTypeAlias } from "../shared/card";
+import { sectionEnds, type SectionEnd } from "../shared/people";
 import type { SectionDef, TypeLayout } from "./section-config";
 
 /** The bulk read's chunk size: a browser- and edge-sized URL (DD-368). */
@@ -108,15 +109,17 @@ const DEFAULT_SORT = "relevance";
  * seed, the chunked bulk resolve, and the client-side filter, sort, and
  * paging of every section of the entity's layout.
  *
- * The seed is the entity's own `relationshipAttributes` (DET-17): each
- * seed key's ACTIVE entries carrying a guid, in order, deduped by guid —
- * the EDT-15 rule shared with the editor's seed. The count is the seed
- * length and shows at once, before any card resolves. The guids resolve
- * through `getEntitiesByGuids` in chunks of 25 (DET-18); until a chunk
- * answers its cards show the loading row, a failed chunk alerts once and
- * drops its cards (the count keeps them), and a guid missing from the
- * answer is a deleted relation, not an error. Search, sort, and paging run
- * client-side over what the browser holds (DD-368).
+ * Since 16.5b the seed is the view's `sections` (VDR-03): each seed key's
+ * ACTIVE ends carrying a guid, in order, deduped by guid — the same
+ * {@link sectionEnds} rule the People box and the person stats count by, so
+ * a seed, a stat and a box can never disagree. The count is the seed length
+ * and shows at once, before any card resolves. The guids resolve through
+ * `getEntitiesByGuids` in chunks of 25 (DET-18, VDR-03 keeps the bulk
+ * Atlas read for card bodies): until a chunk answers its cards show the
+ * loading row, a failed chunk alerts once and drops its cards (the count
+ * keeps them), and a guid missing from the answer is a deleted relation,
+ * not an error. Search, sort, and paging run client-side over what the
+ * browser holds (DD-368).
  *
  * The store is per-screen (provided by `Details`): {@link seed} re-runs on
  * every entity arrival, including the editor's save re-read (DET-17), and
@@ -135,31 +138,31 @@ export class RelatedSectionsState {
     /** The resolve generation: a re-seed drops every in-flight answer. */
     private generation = 0;
 
-    /** The entity the last seed read ({@link endCount}'s source, DET-40). */
-    private lastSeed: { entity: AtlasEntity | null } = { entity: null };
+    /** The view the last seed read ({@link endCount}'s source, DET-40). */
+    private lastSeed: { view: EntityView | null } = { view: null };
 
     /** The sections as the renderer draws them, in layout order. */
     readonly views = computed<SectionView[]>(() => this.records().map((record) => this.viewOf(record)));
 
     /**
-     * (Re-)seed every section from the entity (DET-17): the count shows at
-     * once and the resolve starts. A null entity or layout clears the
-     * sections; a new layout or entity re-seeds from scratch — the editor's
-     * save re-read rides this entry (DD-327).
-     * @param entity the resolved entity, or null
+     * (Re-)seed every section from the view (DET-17, VDR-03): the count
+     * shows at once and the resolve starts. A null view or layout clears
+     * the sections; a new layout or view re-seeds from scratch — the
+     * editor's save re-read rides this entry (DD-327).
+     * @param view the read door's answer for the opened entity, or null
      * @param layout the entity's layout, or undefined for the default
      */
-    seed(entity: AtlasEntity | null, layout: TypeLayout | undefined): void {
+    seed(view: EntityView | null, layout: TypeLayout | undefined): void {
         this.generation++;
-        this.lastSeed = { entity };
-        if (entity === null || layout === undefined) {
+        this.lastSeed = { view };
+        if (view === null || layout === undefined) {
             this.records.set([]);
             return;
         }
 
         const records = layout.sections.map((def) => ({
             def,
-            seed: this.seedOf(entity, def),
+            seed: this.seedOf(view, def),
             resolved: new Map<string, AtlasEntity>(),
             failed: new Set<string>(),
             missing: new Set<string>(),
@@ -188,33 +191,17 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The count of one `relationshipAttributes` end (DET-40, DD-519): the
-     * person stats bar's per-end numbers, computed by the same seed rule
-     * the sections ride — ACTIVE entries carrying a guid, deduped by guid
-     * — so a stat and the merged box's cards can never disagree. The seed
-     * follows the entity, like {@link seed}: the count is read from the
-     * last entity passed to it.
-     * @param key the `relationshipAttributes` key to count
-     * @returns the deduped ACTIVE entry count, 0 with no entity or end
+     * The count of one relationship end (DET-40, DD-519, VDR-03): the
+     * person stats bar's per-end numbers, computed by the same
+     * {@link sectionEnds} rule the seed and the People box ride — ACTIVE
+     * ends carrying a guid, deduped by guid — so a stat and the merged
+     * box's cards can never disagree. The seed follows the view, like
+     * {@link seed}: the count is read from the last view passed to it.
+     * @param key the relationship attribute name to count
+     * @returns the deduped ACTIVE end count, 0 with no view or end
      */
     endCount(key: string): number {
-        const entity = this.lastSeed.entity;
-        if (entity === null) {
-            return 0;
-        }
-
-        const stored = entity.relationshipAttributes ?? {};
-        const seen = new Set<string>();
-        for (const row of asRelatedList(stored[key])) {
-            if (row.relationshipStatus !== undefined && row.relationshipStatus !== "ACTIVE") {
-                continue; // EDT-15: a DELETED edge counts nothing
-            }
-            if (typeof row.guid === "string" && row.guid !== "") {
-                seen.add(row.guid);
-            }
-        }
-
-        return seen.size;
+        return sectionEnds(this.lastSeed.view?.sections, [key]).length;
     }
 
     /**
@@ -288,31 +275,14 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The seed of one section (DET-17): the entity's ACTIVE relationship
-     * entries for the section's keys, in order, deduped by guid.
-     * @param entity the resolved entity
+     * The seed of one section (DET-17, VDR-03): the view's ACTIVE ends for
+     * the section's keys, in order, deduped by guid — {@link sectionEnds}.
+     * @param view the read door's answer for the opened entity
      * @param def the section's config
      * @returns the seed entries
      */
-    private seedOf(entity: AtlasEntity, def: SectionDef): SeedEntry[] {
-        const stored = entity.relationshipAttributes ?? {};
-        const entries: SeedEntry[] = [];
-        const seen = new Set<string>();
-
-        for (const key of def.seedKeys) {
-            for (const row of asRelatedList(stored[key])) {
-                if (row.relationshipStatus !== undefined && row.relationshipStatus !== "ACTIVE") {
-                    continue; // EDT-15: a DELETED edge seeds nothing
-                }
-                if (typeof row.guid !== "string" || row.guid === "" || seen.has(row.guid)) {
-                    continue;
-                }
-                seen.add(row.guid);
-                entries.push(seedEntry(row));
-            }
-        }
-
-        return entries;
+    private seedOf(view: EntityView, def: SectionDef): SeedEntry[] {
+        return sectionEnds(view.sections, def.seedKeys).map(seedEntry);
     }
 
     /**
@@ -491,43 +461,21 @@ function matches(card: SectionCard, term: string): boolean {
 }
 
 /**
- * The seed entry a relationship end becomes: its guid and display texts —
- * the loading card's title until the bulk answer resolves the entity.
- * @param row the relationship end
+ * The seed entry a view's section end becomes: its guid and texts — the
+ * loading card's title until the bulk answer resolves the entity. A view's
+ * end names itself (VDR-02): the name, the guid as the last resort.
+ * @param end the deduped ACTIVE end
  * @returns the seed entry
  */
-function seedEntry(row: AtlasRelatedEntity): SeedEntry {
-    let displayText = typeof row.guid === "string" ? row.guid : "";
-    if (typeof row.name === "string" && row.name !== "") {
-        displayText = row.name;
-    }
-    if (typeof row.displayText === "string" && row.displayText !== "") {
-        displayText = row.displayText;
-    }
+function seedEntry(end: SectionEnd): SeedEntry {
+    const name = typeof end.name === "string" && end.name !== "" ? end.name : undefined;
 
     return {
-        guid: row.guid as string,
-        displayText,
-        ...(typeof row.typeName === "string" && row.typeName !== "" ? { typeName: row.typeName } : {}),
-        ...(typeof row.name === "string" && row.name !== "" ? { name: row.name } : {}),
+        guid: end.guid,
+        displayText: name ?? end.guid,
+        ...(typeof end.typeName === "string" && end.typeName !== "" ? { typeName: end.typeName } : {}),
+        ...(name !== undefined ? { name } : {}),
     };
-}
-
-/**
- * A read's `relationshipAttributes` value as a list (the editor's twin:
- * a SET end answers as a list, a SINGLE end as one object).
- * @param value the raw value
- * @returns the related entities
- */
-function asRelatedList(value: unknown): AtlasRelatedEntity[] {
-    if (Array.isArray(value)) {
-        return value as AtlasRelatedEntity[];
-    }
-    if (value !== null && typeof value === "object") {
-        return [value as AtlasRelatedEntity];
-    }
-
-    return [];
 }
 
 /**
