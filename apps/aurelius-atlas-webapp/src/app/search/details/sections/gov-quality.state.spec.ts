@@ -1,7 +1,7 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import type { AtlasEntity } from "aurelius-atlas-data-access";
+import type { EntityView } from "aurelius-atlas-data-access";
 
 import { DetailsGovQualityState } from "./gov-quality.state";
 
@@ -15,10 +15,13 @@ import { DetailsGovQualityState } from "./gov-quality.state";
 const SEARCH_URL = "/api/atlas/v2/search/basic";
 const VALIDATE_URL = "/validate-entity/";
 
-/** The opened person: the prefix and the validate body both read it. */
-const PERSON: AtlasEntity = {
+/** The opened person, as the read door answers it (VDR-01): the prefix and the validate body both read it. */
+const PERSON: EntityView = {
     guid: "pe-1",
     typeName: "m4i_person",
+    displayText: "Ada",
+    status: "ACTIVE",
+    stale: false,
     attributes: { name: "Ada" },
 };
 
@@ -212,7 +215,7 @@ describe("Gov-quality store (DET-42)", () => {
         const staleSearch = httpMock.expectOne(SEARCH_URL);
         const staleValidate = httpMock.expectOne(VALIDATE_URL);
 
-        const next: AtlasEntity = { ...PERSON, guid: "pe-2", attributes: { name: "Lin" } };
+        const next: EntityView = { ...PERSON, guid: "pe-2", attributes: { name: "Lin" } };
         store.load(next);
         expect(store.rows()).toEqual([]); // the new round starts empty
         expect(store.loading()).toBe(true);

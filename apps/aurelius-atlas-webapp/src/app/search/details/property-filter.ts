@@ -1,4 +1,4 @@
-import type { AtlasEntity } from "aurelius-atlas-data-access";
+import type { EntityView } from "aurelius-atlas-data-access";
 import type { PropertiesItemLink } from "aurelius-atlas-ui";
 
 /**
@@ -133,27 +133,32 @@ function asScalar(value: unknown): string | number | boolean | null {
 }
 
 /**
- * The details properties of an entity (DET-11), the legacy
- * `FilteredPropertiesService` port: merge the entity's attributes with its
- * relationship attributes (the relationship value wins a key clash, the
- * legacy `{...attributes, ...relationshipAttributes}` spread order), drop
- * the keys on {@link LEGACY_PROPERTY_BLACKLIST}, the key the description box
- * shows, and the nil values, keep only renderable shapes, and order the rows
- * by key. The description drop (DD-320) is the legacy blacklist's own
- * mechanism: the legacy table drops `definition` because the description box
- * shows it, and this product's box shows `description` for the Atlas model
- * types (DET-10), so the shown key earns no row the same way.
- * @param entity the resolved entity
+ * The details properties of a view (VDR-04, 16.5b): the same rows the legacy
+ * `FilteredPropertiesService` port answered, built from the read door's shape —
+ * the view's `attributes` merged with one link array per section (a section's
+ * ends, each labelled by its name and the guid as the last resort), the
+ * relationship answer winning a key clash exactly as the legacy
+ * `{...attributes, ...relationshipAttributes}` spread order did. The view's
+ * attributes hold what the stored entity holds (AVS-04) and a section answers
+ * an end for every attribute the entity's own edges name (VDR-02), so the
+ * merged rows are the ones the Atlas entity GET answered. The drops are the
+ * legacy's: {@link LEGACY_PROPERTY_BLACKLIST}, the key the description box
+ * shows (DET-11, DD-320), the nil values and the shapes the renderer cannot
+ * show (DET-02's no-fake-data rule), ordered by key.
+ * @param view the read door's answer for the opened entity
  * @param shownDescription the attribute the description box shows, or null
  * @returns the rows, sorted by key
  */
-export function detailProperties(entity: AtlasEntity, shownDescription: string | null = null): DetailProperty[] {
-    const merged: Record<string, unknown> = {
-        ...entity.attributes,
-        ...entity.relationshipAttributes,
-    };
+export function viewProperties(view: EntityView, shownDescription: string | null = null): DetailProperty[] {
+    const links: Record<string, unknown> = {};
+    for (const section of view.sections ?? []) {
+        const entities = (section.entities ?? []).filter((end) => typeof end?.guid === "string");
+        if (entities.length > 0) {
+            links[section.attribute] = entities.map((end) => ({ guid: end.guid, name: end.name ?? undefined }));
+        }
+    }
     const rows: DetailProperty[] = [];
-    for (const [key, value] of Object.entries(merged)) {
+    for (const [key, value] of Object.entries({ ...view.attributes, ...links })) {
         if (value === null || value === undefined || LEGACY_PROPERTY_BLACKLIST.has(key) || key === shownDescription) {
             continue;
         }

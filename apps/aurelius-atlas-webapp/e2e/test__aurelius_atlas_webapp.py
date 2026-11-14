@@ -659,13 +659,7 @@ def _purge_type(page: Page, root_url: str, token: str, type_name: str) -> None:
     assert listing.status == 200, listing.text()
 
     for entity in listing.json().get("entities", []):
-        deleted = page.request.delete(
-            urljoin(root_url, "/api/atlas/v2/entity/bulk"),
-            params={"guid": entity["guid"]},
-            headers={"authorization": f"Bearer {token}"},
-        )
-
-        assert deleted.status == 200, deleted.text()
+        _delete_entity(page, root_url, token, entity["guid"])
 
 
 @pytest.mark.critical
@@ -793,12 +787,7 @@ def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user
         )
     finally:
         for guid in [*ds_guids.values(), *proc_guids.values()]:
-            deleted = authenticated.request.delete(
-                urljoin(root_url, "/api/atlas/v2/entity/bulk"),
-                params={"guid": guid},
-                headers={"authorization": f"Bearer {user_token}"},
-            )
-            assert deleted.status == 200, deleted.text()
+            _delete_entity(authenticated, root_url, user_token, guid)
 
 
 @pytest.mark.critical
@@ -1220,6 +1209,69 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
 
 
 @pytest.mark.critical
+def test__the_details_trail_follows_the_seeded_parentage(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The seeded entity's details show the filled trail, its own crumb active (VDR-06, DD-606).
+
+    16.5b fills the 7.20 seam (DD-317): the read door answers the view with
+    the index document's stored breadcrumb, and the screen renders it top
+    down with the opened entity's own crumb last and active. The mini-graph
+    parents the entity to its domain (the ``dataDomain`` edge), so the trail
+    is domain → entity. The document is the indexer worker's: the scenario
+    waits the door for its breadcrumb, bounded — the poll interval (10 s)
+    plus the document upkeep rides inside the wait. Self-cleaned by the
+    purge helper (DD-223: no shared service restarts, namespaced by the run
+    token).
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+
+    try:
+        # VDR-06's source is the stored document, not the entity: wait the
+        # read door until the indexer has derived the entity's breadcrumb.
+        deadline = time.monotonic() + 90
+        while True:
+            view = authenticated.request.get(
+                urljoin(root_url, f"/api/aurelius/v1/entity/guid/{guids['entity']}"),
+                headers={"authorization": f"Bearer {user_token}"},
+            ).json()
+            crumbs = [crumb["guid"] for crumb in view.get("breadcrumb", [])]
+            if crumbs == [guids["domain"]]:
+                break
+            assert time.monotonic() < deadline, f"the breadcrumb never arrived: {view.get('breadcrumb')}"
+            time.sleep(2)
+
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guids['entity']}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
+
+        # The stored trail top-down plus the opened entity's own crumb,
+        # marked active (VDR-06): the domain above, the entity last.
+        trail = authenticated.locator("nav.breadcrumb")
+        items = trail.locator("li")
+        expect(items).to_have_count(2)
+        expect(items.nth(0)).to_have_text(f"zz{run}domain")
+        expect(items.nth(1)).to_have_text(f"zz{run}entity")
+        expect(items.nth(1)).to_have_class(re.compile("is-active"))
+
+        # DET-06 on real crumbs: the parent crumb is a link that routes the
+        # screen to the domain's own details.
+        items.nth(0).locator("a").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guids['domain']}$"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}domain")
+    finally:
+        for type_name in [
+            "m4i_data_entity",
+            "m4i_data_attribute",
+            "m4i_data_domain",
+            "m4i_field",
+            "m4i_system",
+            "m4i_generic_process",
+            "m4i_dataset",
+            "m4i_person",
+        ]:
+            _purge_type(authenticated, root_url, user_token, type_name)
+
+
+@pytest.mark.critical
 def test__the_dataset_and_process_pages_render_their_lineage_sections(
     authenticated: Page, root_url: str, user_token: str
 ) -> None:
@@ -1542,12 +1594,26 @@ def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_ur
 
 
 def _delete_entity(page: Page, root_url: str, token: str, guid: str) -> None:
-    """Delete one entity by guid (the editor scenarios' self-cleaning, EDT-12)."""
-    deleted = page.request.delete(
-        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
-        params={"guid": guid},
-        headers={"authorization": f"Bearer {token}"},
-    )
+    """Delete one entity by guid (the scenarios' self-cleaning, EDT-12).
+
+    A just-seeded entity is still being written by the indexer worker when the
+    scenario finishes, and the soft delete can land mid-write: the server
+    answers 500 "changed by another write" (the store's version conflict).
+    That resolves as soon as the worker's own write lands, so the delete
+    retries it a few times before failing.
+    """
+    attempt = 0
+    while True:
+        deleted = page.request.delete(
+            urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+            params={"guid": guid},
+            headers={"authorization": f"Bearer {token}"},
+        )
+
+        if deleted.status == 200 or "changed by another write" not in deleted.text() or attempt == 10:
+            break
+        time.sleep(1 + attempt)
+        attempt += 1
 
     assert deleted.status == 200, deleted.text()
 

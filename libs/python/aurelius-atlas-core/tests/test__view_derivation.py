@@ -1,9 +1,10 @@
-"""The shared derivation of the card and the view, from the entity document alone (AVS-02..04, AVS-06, AVS-08).
+"""The shared derivation of the card and the view, from the entity document alone (AVS-02..04, AVS-06, AVS-08, VDR-02).
 
-Every test hands ``view_of`` a ``StoredEntity`` and an ``EntityType`` and nothing else: no store, no client, no
+Every ``view_of`` test hands it a ``StoredEntity`` and an ``EntityType`` and nothing else: no store, no client, no
 other entity (AVS-08). Some documents come from the real indexer (the fixture of 14.3) so the derived fields
 are the ones a worker writes; the last test derives every indexed document of the sample catalogue, the way
-the search door of 16.2 will.
+the search door of 16.2 will. The last section hands ``read_ends`` the in-memory store (DD-051): the read door
+of 16.5b passes it the entity's own edges, keyed by relationship attribute (VDR-02).
 """
 
 import asyncio
@@ -12,13 +13,23 @@ from typing import Any
 import pytest
 from aurelius_atlas_core.app_search_document import own_document
 from aurelius_atlas_core.app_search_engine import AppSearchEngine
+from aurelius_atlas_core.entity_store import EntityStore
+from aurelius_atlas_core.entity_writer import EntityWriter
+from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.stored_entity import (
     StoredDimensionTotals,
     StoredEntity,
     StoredQualityTotals,
 )
-from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, view_of
-from aurelius_atlas_model.instance import EntityStatus
+from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
+from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, read_ends, view_of
+from aurelius_atlas_model.instance import (
+    AtlasEntitiesWithExtInfo,
+    AtlasEntity,
+    AtlasObjectId,
+    AtlasRelationship,
+    EntityStatus,
+)
 from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_typesystem.entity_type import EntityType
 from aurelius_atlas_typesystem.registry import TypeRegistry
@@ -265,3 +276,162 @@ async def test__every_indexed_sample_document_derives_a_card_from_its_document_a
         assert stored.app_search is not None
         assert [crumb.guid for crumb in card.breadcrumb] == list(stored.app_search.breadcrumbguid)
         assert card.stale == stored.app_search.stale
+
+
+async def ends_store(m4i: TypeRegistry) -> EntityStore:
+    """A store of the data dictionary's types holding entity ``e``, domain ``d`` and person ``p``.
+
+    ``d`` owns ``e`` and ``p`` owns ``e`` as its business owner, so ``e`` answers two attributes and a
+    type with no edges of its own answers none.
+    """
+    store = EntityStore(m4i, MemoryEntityDocuments())
+    await EntityWriter(store, user="u").create_or_update(
+        AtlasEntitiesWithExtInfo(
+            entities=[
+                AtlasEntity(type_name="m4i_data_entity", attributes={"qualifiedName": "e", "name": "E"}),
+                AtlasEntity(type_name="m4i_data_domain", attributes={"qualifiedName": "d", "name": "D"}),
+                AtlasEntity(type_name="m4i_person", attributes={"qualifiedName": "p", "name": "P"}),
+            ],
+        )
+    )
+    return store
+
+
+async def guid_of(store: EntityStore, type_name: str, qualified_name: str) -> str:
+    """The GUID of the stored entity of ``type_name`` with that ``qualifiedName``."""
+    entity_type = store.registry.entity_type(type_name)
+    assert entity_type is not None
+    found = await store.find_by_unique_attributes(entity_type, {"qualifiedName": qualified_name})
+    assert found is not None
+    return found.entity.guid
+
+
+async def connect(store: EntityStore, type_name: str, end1: AtlasObjectId, end2: AtlasObjectId) -> str:
+    """The relationship ``end1``-``end2`` of ``type_name``, created through the store; its GUID back."""
+    created = await RelationshipStore(store, user="u").create(
+        AtlasRelationship(type_name=type_name, end1=end1, end2=end2)
+    )
+    assert created.guid is not None
+    return created.guid
+
+
+@pytest.mark.covers(f"{V}.read_ends", rules=["VDR-02"])
+async def test__read_ends_answer_the_active_edges_keyed_by_relationship_attribute(m4i: TypeRegistry) -> None:
+    """Each ACTIVE edge answers under its own attribute, with its end's name, type and state (VDR-02, DD-604)."""
+    store = await ends_store(m4i)
+    e, d, p = (
+        await guid_of(store, "m4i_data_entity", "e"),
+        await guid_of(store, "m4i_data_domain", "d"),
+        await guid_of(store, "m4i_person", "p"),
+    )
+    await connect(
+        store,
+        "m4i_data_entity_assignment",
+        AtlasObjectId(guid=d, type_name="m4i_data_domain"),
+        AtlasObjectId(guid=e, type_name="m4i_data_entity"),
+    )
+    await connect(
+        store,
+        "m4i_data_entity_business_owner_assignment",
+        AtlasObjectId(guid=p, type_name="m4i_person"),
+        AtlasObjectId(guid=e, type_name="m4i_data_entity"),
+    )
+    found = await store.get(e)
+    assert found is not None
+
+    ends = await read_ends(store, found.entity, type_of(m4i, "m4i_data_entity"))
+
+    assert {name: [(end.guid, end.type_name) for end in listed] for name, listed in ends.items()} == {
+        "dataDomain": [(d, "m4i_data_domain")],  # the end's own attribute name, not the type field
+        "businessOwner": [(p, "m4i_person")],
+    }
+
+
+@pytest.mark.covers(f"{V}.read_ends", rules=["VDR-02"])
+async def test__read_ends_answer_nothing_for_a_deleted_edge_or_an_entity_without_edges(m4i: TypeRegistry) -> None:
+    """A soft-deleted edge answers nothing (DD-604); an entity listing no relationships needs no read."""
+    store = await ends_store(m4i)
+    e, d = (
+        await guid_of(store, "m4i_data_entity", "e"),
+        await guid_of(store, "m4i_data_domain", "d"),
+    )
+    relationship = await connect(
+        store,
+        "m4i_data_entity_assignment",
+        AtlasObjectId(guid=d, type_name="m4i_data_domain"),
+        AtlasObjectId(guid=e, type_name="m4i_data_entity"),
+    )
+    await RelationshipStore(store, user="u").delete_by_id(relationship)
+    found = await store.get(e)
+    assert found is not None
+
+    assert await read_ends(store, found.entity, type_of(m4i, "m4i_data_entity")) == {}
+    domain = await store.get(d)
+    assert domain is not None
+    assert await read_ends(store, domain.entity, type_of(m4i, "m4i_data_domain")) == {}
+
+
+@pytest.mark.covers(f"{V}.read_ends", rules=["VDR-02"])
+async def test__the_view_sections_answer_the_read_ends_with_type_and_state(m4i: TypeRegistry) -> None:
+    """The door's shape: ends through ``view_of`` answer ``sections`` keyed by attribute, each end once."""
+    store = await ends_store(m4i)
+    e, d, p = (
+        await guid_of(store, "m4i_data_entity", "e"),
+        await guid_of(store, "m4i_data_domain", "d"),
+        await guid_of(store, "m4i_person", "p"),
+    )
+    await connect(
+        store,
+        "m4i_data_entity_assignment",
+        AtlasObjectId(guid=d, type_name="m4i_data_domain"),
+        AtlasObjectId(guid=e, type_name="m4i_data_entity"),
+    )
+    found = await store.get(e)
+    assert found is not None
+    entity_type = type_of(m4i, "m4i_data_entity")
+
+    view = view_of(found.entity, entity_type, ends=await read_ends(store, found.entity, entity_type))
+
+    entries = [(r.attribute, [(x.guid, x.name, x.type_name, x.status) for x in r.entities]) for r in view.sections]
+    assert entries == [("dataDomain", [(d, "D", "m4i_data_domain", EntityStatus.ACTIVE)])]
+    assert [r.attribute for r in view.relations] == []  # no document yet: the pairs wait for the worker (AVS-08)
+    assert p not in "".join(str(entry) for entry in entries)  # the unconnected person answers nothing
+
+
+@pytest.mark.covers(f"{V}.read_ends", rules=["VDR-02"])
+async def test__one_end_under_two_read_attributes_answers_under_both(m4i: TypeRegistry) -> None:
+    """The process that both feeds and comes out of a dataset answers Producers and Consumers alike (REL-17).
+
+    The read door must not answer one box by emptying the other: a read end is dropped only from the
+    document's stored pairs (VDR-02, DD-604), never from another section the read itself filled.
+    """
+    store = EntityStore(m4i, MemoryEntityDocuments())
+    await EntityWriter(store, user="u").create_or_update(
+        AtlasEntitiesWithExtInfo(
+            entities=[
+                AtlasEntity(type_name="m4i_dataset", attributes={"qualifiedName": "s", "name": "S"}),
+                AtlasEntity(type_name="m4i_generic_process", attributes={"qualifiedName": "x", "name": "X"}),
+            ],
+        )
+    )
+    s, x = await guid_of(store, "m4i_dataset", "s"), await guid_of(store, "m4i_generic_process", "x")
+    await connect(
+        store,
+        "dataset_process_inputs",
+        AtlasObjectId(guid=x, type_name="m4i_generic_process"),
+        AtlasObjectId(guid=s, type_name="m4i_dataset"),
+    )
+    await connect(
+        store,
+        "process_dataset_outputs",
+        AtlasObjectId(guid=x, type_name="m4i_generic_process"),
+        AtlasObjectId(guid=s, type_name="m4i_dataset"),
+    )
+    found = await store.get(s)
+    assert found is not None
+    entity_type = type_of(m4i, "m4i_dataset")
+
+    view = view_of(found.entity, entity_type, ends=await read_ends(store, found.entity, entity_type))
+
+    entries = {r.attribute: [e.guid for e in r.entities] for r in view.sections}
+    assert entries == {"inputToProcesses": [x], "outputFromProcesses": [x]}  # the one process answers both boxes
