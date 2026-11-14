@@ -16,7 +16,7 @@ from conftest import (
     TEMPO_PORT,
     _goto_app,
 )
-from playwright.sync_api import Locator, Page, expect
+from playwright.sync_api import Locator, Page, Route, expect
 
 EN_PLACEHOLDER = (
     "Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below."
@@ -2097,6 +2097,124 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         if created is not None:
             _delete_entity(authenticated, root_url, user_token, created)
         _delete_entity(authenticated, root_url, user_token, volume_guid)
+
+
+# impact=major, likelihood=high (the conflict re-edit is a young promise on the mutation door)
+@pytest.mark.high
+@pytest.mark.covers(rules=["VDE-07"])
+def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """A lost update answers the conflict line; saving again writes over the stored version (VDE-07, AVW-04).
+
+    The drawer reads once and keeps its answer, so when another hand changes
+    the entity while it is open the save is a lost update: the door answers 409
+    with the stored view beside it (AVW-04) and the editor re-seeds from that
+    view (VDE-07) — the typed edit survives, the untouched owner slot takes the
+    stored answer's new value, and the line above the fields says what
+    happened. The second Save rides the stored version and lands: the drawer
+    goes away and the details screen underneath shows the saved text.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}conflict"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+        drawer = authenticated.locator(".aurelius-drawer")
+        # The drawer's read has landed: the form carries the seeded name.
+        expect(authenticated.locator("#editor-name")).to_have_value(name)
+
+        # Another hand saves through the API while the drawer is open: the put
+        # sets a new updateTime, so the drawer now edits a stale view.
+        bumped = authenticated.request.put(
+            urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+            params={"name": "owner"},
+            data=json.dumps("ops-after-conflict"),
+            headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+        )
+        assert bumped.status == 200, bumped.text()
+
+        authenticated.locator("textarea#editor-description").fill("The kept edit.")
+        drawer.locator("button.aurelius-editor-save").click()
+
+        # The door refuses the lost update whole (AVW-04): the warning line
+        # appears, the drawer stays open, and the typed edit survives (VDE-07).
+        expect(drawer.locator(".aurelius-editor-conflict")).to_be_visible()
+        expect(authenticated.locator("textarea#editor-description")).to_have_value("The kept edit.")
+        expect(authenticated).to_have_url(re.compile(r"drawer:edit"))
+
+        # The re-seed (VDE-07): the untouched owner slot now carries the
+        # stored answer's new value; the typed description stayed.
+        expect(authenticated.locator("#editor-owner")).to_have_value("ops-after-conflict")
+
+        # Saving again rides the stored updateTime and lands (AVW-04): the
+        # drawer closes and the details screen shows the kept edit.
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
+        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-details-description")).to_have_text("The kept edit.")
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
+# impact=major, likelihood=low (the refusal path is young, but two creators colliding is rare)
+@pytest.mark.medium
+@pytest.mark.covers(rules=["VDE-08"])
+def test__the_editor_keeps_the_draft_when_the_name_is_taken(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """A create whose qualified name is held answers one line and keeps the draft (VDE-08, AVW-06).
+
+    The door answers 409 ``ENTITY_NAME_TAKEN`` for a create whose unique
+    ``qualifiedName`` another entity holds (AVW-06); the editor adds one alert
+    line, the drawer stays open, and the typed name survives (VDE-08) — no
+    conflict line, because the name-taken answer carries no stored view. The
+    form does not expose ``qualifiedName`` (the client sends a fresh uuid,
+    DD-592), so the scenario routes the door's POST and hands the server the
+    held qualified name in the browser's place: the 409 the page renders is the
+    real server's refusal.
+    """
+    run = secrets.token_hex(4)
+    held_name = f"zz{run}held"
+    draft_name = f"zz{run}draft"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [held_name])
+
+    def _hand_the_held_name(route: Route) -> None:
+        body = json.loads(route.request.post_data or "{}")
+        body.setdefault("attributes", {})["qualifiedName"] = held_name
+        route.continue_(post_data=json.dumps(body))
+
+    authenticated.route("**/api/aurelius/v1/entity", _hand_the_held_name)
+    try:
+        authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
+        authenticated.locator("button.aurelius-create-entity").click()
+        authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+        authenticated.locator("#editor-name").fill(draft_name)
+        drawer = authenticated.locator(".aurelius-drawer")
+        drawer.locator("button.aurelius-editor-save").click()
+
+        # The create is refused (AVW-06): the drawer stays open on the create
+        # route with the draft intact, and no conflict line shows (VDE-08).
+        expect(drawer.locator(".aurelius-editor-conflict")).to_have_count(0)
+        expect(authenticated).to_have_url(re.compile(r"drawer:create/DataSet"))
+        expect(authenticated.locator("#editor-name")).to_have_value(draft_name)
+        expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(1)  # the bell marks the alert unread
+
+        # The line itself, in the alerts feed: the bell's drawer names the
+        # refusal. The kept drawer rides the scrim that covers the navbar, so
+        # it goes first (16.5a's idiom) — pressed on a field, because the
+        # drawer listens for Escape on its panel and a failed Save leaves the
+        # focus on the body, where the keydown would die.
+        authenticated.locator("#editor-name").press("Escape")
+        authenticated.locator('a.navbar-item[aria-label="Alerts"]').click()
+        expect(authenticated.locator(".aurelius-alert-message")).to_have_text(
+            "That name is already held by another entity."
+        )
+    finally:
+        authenticated.unroute("**/api/aurelius/v1/entity")
+        _delete_entity(authenticated, root_url, user_token, guids["-0"])
 
 
 def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, str]) -> str:

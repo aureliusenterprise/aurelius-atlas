@@ -428,7 +428,9 @@
                     "typeAlias": "Type alias",
                     "typeAliasPlaceholder": "Type alias"
                 },
-                "saved": "Entity saved"
+                "saved": "Entity saved",
+                "conflict": "This entity changed since you opened it. Your edits are kept \u2014 save again to write them over the stored version.",
+                "nameTaken": "That name is already held by another entity."
             },
             "filter": {
                 "facet": {

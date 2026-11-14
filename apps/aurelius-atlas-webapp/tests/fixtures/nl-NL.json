@@ -428,7 +428,9 @@
                     "typeAlias": "Type alias",
                     "typeAliasPlaceholder": "Type alias"
                 },
-                "saved": "Entiteit opgeslagen"
+                "saved": "Entiteit opgeslagen",
+                "conflict": "Deze entiteit is gewijzigd sinds je hem opende. Je bewerkingen blijven behouden \u2014 sla opnieuw op om ze over de opgeslagen versie te schrijven.",
+                "nameTaken": "Die naam wordt al door een andere entiteit gebruikt."
             },
             "filter": {
                 "facet": {

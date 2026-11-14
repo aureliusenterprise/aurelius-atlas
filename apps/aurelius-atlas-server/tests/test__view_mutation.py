@@ -37,6 +37,21 @@ MODELS = (Path("0000-Area0") / "0010-base_model.json", Path("0000-Area0") / "001
 """The base and glossary models: the tests' terms need ``AtlasGlossary`` and its term type."""
 
 
+HOLDER_TYPES: dict[str, Any] = {
+    "entityDefs": [{"name": "v_held", "superTypes": ["Asset"]}],
+    "relationshipDefs": [
+        {
+            "name": "v_held_keeper",
+            "relationshipCategory": "ASSOCIATION",
+            "endDef1": {"type": "v_held", "name": "keeper", "cardinality": "SINGLE"},
+            "endDef2": {"type": "s_database", "name": "helds", "cardinality": "SET"},
+        }
+    ],
+}
+"""An ``Asset`` with a relationship attribute: one type that carries both section ends and term
+assignments, as every real editor type does."""
+
+
 @pytest.fixture
 def models_dir(tmp_path: Path) -> Path:
     """Atlas's base and glossary models alone (MDL-16)."""
@@ -148,6 +163,81 @@ async def test__a_create_naming_a_held_qualified_name_names_its_holder(typed: ht
     again = await save(typed, {"typeName": "s_database", "attributes": {"qualifiedName": "other@door"}})
     assert again.status_code == 200
     assert again.json()["guid"] != holder
+
+
+@pytest.mark.covers(D, rules=["AVW-05", "AVW-09"])
+async def test__a_create_with_a_mandatory_relationship_end_lands_the_edge(typed: httpx.AsyncClient) -> None:
+    """The create body carries its wanted ends, so a mandatory relationship attribute passes validation (DD-613).
+
+    ``r_part.whole`` is a COMPOSITION non-container end: mandatory, and 2.4's create validates it (EVL-08).
+    A create naming the end in its ``sections`` lands the edge in the one request, the answer carries it,
+    and a create without it stays refused as the create path always refused it.
+    """
+    node = await create(typed, "r_node", qualifiedName="node@mand")
+
+    refused = await save(typed, {"typeName": "r_part", "attributes": {"qualifiedName": "part@mand"}})
+    assert refused.status_code == 404
+    assert "whole: mandatory attribute value missing" in refused.json()["errorMessage"]
+
+    answer = await save(
+        typed,
+        {
+            "typeName": "r_part",
+            "attributes": {"qualifiedName": "part@with"},
+            "sections": [{"attribute": "whole", "entities": [node]}],
+        },
+    )
+    assert answer.status_code == 200, answer.text
+    created = answer.json()
+    assert {s["attribute"]: [e["guid"] for e in s["entities"]] for s in created["sections"]} == {"whole": [node]}
+    assert await relationship_end(typed, created["guid"], "whole") == node
+
+
+@pytest.mark.covers(D, rules=["VDE-06"])
+async def test__both_door_answers_carry_the_live_read_ends(typed: httpx.AsyncClient) -> None:
+    """The saved answer and the conflict's stored view carry the ends, as the read door answers them.
+
+    The editor re-edits from either answer without opening the read door again, so each must show what
+    the entity points at now — relationship ends and term assignments alike (VDE-06, DD-610).
+    """
+    registered = await typed.post("/api/atlas/v2/types/typedefs", json=HOLDER_TYPES)
+    assert registered.status_code == 200, registered.text
+    keeper = await create(typed, "s_database", qualifiedName="keeper@ends", title="Keeper")
+    debt = await make_term(typed, "Ends Debt")
+    guid = await create(typed, "v_held", qualifiedName="held@ends", name="Held")
+    answer = await save(
+        typed,
+        {
+            "typeName": "v_held",
+            "guid": guid,
+            "attributes": {"qualifiedName": "held@ends", "name": "Held"},
+            "updateTime": (await view_of(typed, guid))["updateTime"],
+            "sections": [{"attribute": "keeper", "entities": [keeper]}],
+            "meanings": [debt],
+        },
+    )
+    assert answer.status_code == 200, answer.text
+    saved = answer.json()
+    by_name = {section["attribute"]: [end["guid"] for end in section["entities"]] for section in saved["sections"]}
+    assert by_name == {"keeper": [keeper], "meanings": [debt]}
+    assert saved == await view_of(typed, guid)  # the saved answer IS the live read-door view (AVW-07, VDE-06)
+
+    conflict = await save(
+        typed,
+        {
+            "typeName": "v_held",
+            "guid": guid,
+            "attributes": {"qualifiedName": "held@ends", "name": "Held", "description": "too late"},
+            "updateTime": 1,
+        },
+    )
+    assert conflict.status_code == 409
+    stored = conflict.json()["view"]
+    stored_names = {
+        section["attribute"]: [end["guid"] for end in section["entities"]] for section in stored["sections"]
+    }
+    assert stored_names == {"keeper": [keeper], "meanings": [debt]}
+    assert stored["stale"] is False
 
 
 @pytest.mark.covers(f"{R}.write", f"{D}", rules=["AVW-04"])

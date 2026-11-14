@@ -6,8 +6,10 @@ now, diffs each set, and applies the difference through the same internals 2.4, 
 one request, no client sequence (DD-589). The store has no transactions (ADR 047), so the door records each
 written document's before-image as it applies and rewinds them when a later step fails, answering its refusal
 having applied nothing (DD-590). An update names the ``updateTime`` of the view it edited; a stored entity
-changed since is answered with the conflict and the stored view (DD-591). The change records (audits) ride the
-notifier only after the whole apply has succeeded, so a refused request leaves none (AVW-10).
+changed since is answered with the conflict and the stored view (DD-591). Both answers pass the entity's own
+relationship ends, so each is the live view as 16.2's read door answers it (AVW-07, VDE-06, DD-610). The change
+records (audits) ride the notifier only after the whole apply has succeeded, so a refused request leaves none
+(AVW-10).
 """
 
 from collections.abc import Mapping, Sequence
@@ -24,6 +26,7 @@ from aurelius_atlas_model.instance import (
     EntityOperation,
     RelationshipStatus,
 )
+from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_model.views import EntityView
 from aurelius_atlas_typesystem.attribute import AtlasAttribute
 from aurelius_atlas_typesystem.edge_direction import EdgeDirection
@@ -51,7 +54,7 @@ from aurelius_atlas_core.stored_classification import StoredClassification
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 from aurelius_atlas_core.stored_task import StoredTask
-from aurelius_atlas_core.view_derivation import view_of
+from aurelius_atlas_core.view_derivation import read_ends, view_of
 
 PLACEHOLDER = "-1"
 """The request GUID a create names its own entity by, before the server mints the real one (DV-162, AVW-06)."""
@@ -282,12 +285,18 @@ class ViewMutationDoor:
         return await self._update(write, str(write.guid))
 
     async def _create(self, write: _Write, entity_type: EntityType) -> EntityView:
-        """Create one entity: its unique values free, the server's GUID, its own fields as given (AVW-06)."""
+        """Create one entity: its unique values free, the server's GUID, its own fields as given (AVW-06).
+
+        The create body carries the wanted section ends as its relationship attributes (DD-613): 2.4's create
+        path creates the edges from them, as the Atlas POST one body did, and validation sees a mandatory
+        relationship attribute held (EVL-08). The door's own ``sections`` step runs after and keeps its
+        replace semantics (AVW-05).
+        """
         await self._check_taken(write, entity_type)
         rewind = RewindStore(self._store)
         buffer = _BufferedNotifier(self._notifier)
         try:
-            response = await self._writer(rewind, buffer).create_or_update(_entity_for_create(write))
+            response = await self._writer(rewind, buffer).create_or_update(_entity_for_create(write, entity_type))
             guid = _created_guid(response)
             await self._write_sets(rewind, buffer, guid, write, create=True)
         except Exception:
@@ -307,7 +316,10 @@ class ViewMutationDoor:
             _refuse(["An update through the view door names the updateTime of the view it edited"])
         if write.update_time != found.entity.update_time:
             stored_type = self._store.registry.entity_type(found.entity.type_name)
-            view = view_of(found.entity, stored_type) if stored_type else _bare_view(found.entity)
+            if stored_type is None:
+                raise ViewVersionConflictError(_bare_view(found.entity).model_copy(update={"stale": False}))
+            ends = await read_ends(self._store, found.entity, stored_type)
+            view = view_of(found.entity, stored_type, ends=ends)
             raise ViewVersionConflictError(view.model_copy(update={"stale": False}))
         rewind = RewindStore(self._store)
         buffer = _BufferedNotifier(self._notifier)
@@ -532,7 +544,8 @@ class ViewMutationDoor:
         entity_type = self._store.registry.entity_type(found.entity.type_name)
         if entity_type is None:  # pragma: no cover - the store only holds entities of known types
             raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {found.entity.type_name} of entity {guid}")
-        return view_of(found.entity, entity_type).model_copy(update={"stale": False})
+        ends = await read_ends(self._store, found.entity, entity_type)
+        return view_of(found.entity, entity_type, ends=ends).model_copy(update={"stale": False})
 
 
 def _is_pair(
@@ -581,8 +594,14 @@ def _relationship_type_name(
     return found
 
 
-def _entity_for_create(write: _Write) -> AtlasEntityWithExtInfo:
-    """The create body: the view's own fields, its read-only parts left out, the placeholder GUID (AVW-02, EWR-09)."""
+def _entity_for_create(write: _Write, entity_type: EntityType) -> AtlasEntityWithExtInfo:
+    """The create body: the view's own fields, its read-only parts left out, the placeholder GUID (AVW-02, EWR-09).
+
+    The wanted section ends ride it as ``relationshipAttributes`` (DD-613): the create path's own mapper
+    makes the edges from them and validation sees a mandatory relationship attribute held (EVL-08), which
+    a two-step create of the sets could not pass; a delete intent names nothing to create and rides only
+    the diff step (AVW-09).
+    """
     given: dict[str, Any] = {
         "guid": PLACEHOLDER,
         "typeName": write.type_name,
@@ -592,7 +611,27 @@ def _entity_for_create(write: _Write) -> AtlasEntityWithExtInfo:
         given["labels"] = write.labels
     if write.classifications is not None:
         given["classifications"] = [{"typeName": name} for name in write.classifications]
+    if write.sections is not None:
+        ends = _create_ends(write, entity_type)
+        if ends:
+            given["relationshipAttributes"] = ends
     return AtlasEntityWithExtInfo.model_validate({"entity": given})
+
+
+def _create_ends(write: _Write, entity_type: EntityType) -> dict[str, Any]:
+    """The create body's relationship attributes: each wanted section's live ends, by the attribute's kind."""
+    ends: dict[str, Any] = {}
+    for section in write.sections or []:
+        live = [end.guid for end in section.ends if not end.deleted]
+        if not live:
+            continue
+        attribute = _section_attribute(entity_type, section.attribute)
+        name = str(attribute.name)
+        if attribute.attribute_type.category is TypeCategory.OBJECT_ID_TYPE:
+            ends[name] = {"guid": live[0]}
+        else:
+            ends[name] = [{"guid": guid} for guid in live]
+    return ends
 
 
 def _entity_for_update(write: _Write) -> AtlasEntityWithExtInfo:
