@@ -33,7 +33,8 @@ from aurelius_atlas_core.app_search_document import (
     VERDICT_FIELDS,
 )
 from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, ElasticsearchEntityDocuments
-from aurelius_atlas_core.search_query import ACTIVE
+from aurelius_atlas_core.entity_embedding import VECTOR_FIELD
+from aurelius_atlas_core.search_query import ACTIVE, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
 ENGINE = "atlas-dev"
@@ -284,6 +285,9 @@ class Search:
     """The first hit's index, in place of ``current`` times ``size``: the view door pages by ``offset`` (AVR-07)."""
     result_fields: dict[str, _ResultField] | None = None
     search_fields: dict[str, float] | None = None
+    vector: VectorQuery | None = None
+    """The entities nearest to a vector, among those the engine holds and the filters allow (ASV-03, DD-596):
+    a ``knn`` search with the same filters inside it, its score added to the query's matches (DD-441, DD-442)."""
 
 
 class Errors:
@@ -611,8 +615,20 @@ def query_body(search: Search) -> dict[str, Any]:
         if fields[name].path is not None
         for index, facet in enumerate(facets)
     }
+    holds = [*search.engine.holds, *search.filters]
+    knn = None
+    if search.vector is not None:
+        knn = {
+            "field": VECTOR_FIELD,
+            "query_vector": list(search.vector.vector),
+            "k": search.vector.k,
+            "num_candidates": search.vector.num_candidates,
+            "filter": {"bool": {"filter": holds}},
+            "boost": search.vector.weight,
+        }
     return {
-        "query": {"bool": {"filter": [*search.engine.holds, *search.filters], "must": must}},
+        "query": None if knn is not None and not must else {"bool": {"filter": holds, "must": must}},
+        "knn": knn,
         "sort": sort_clauses(search.sort, fields, search.engine.id_field),
         "aggs": aggs,
         "from_": min(start, RESULT_WINDOW),

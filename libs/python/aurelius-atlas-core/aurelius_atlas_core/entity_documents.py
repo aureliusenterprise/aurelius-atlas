@@ -1119,19 +1119,22 @@ class ElasticsearchEntityDocuments:
     async def search_app_search(  # noqa: PLR0913 - Elasticsearch's search arguments, and the index
         self,
         *,
-        query: dict[str, Any],
+        query: dict[str, Any] | None,
         sort: list[dict[str, Any]],
         aggs: dict[str, Any],
         from_: int,
         size: int,
         index: str = ENTITY_DOCUMENTS,
+        knn: dict[str, Any] | None = None,
     ) -> Mapping[str, Any]:
         """One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact
-        total, the aggregations (DD-523). Writes refresh (ENS-11).
+        total, the aggregations (DD-523). A ``knn`` searches the nearest with its own filter inside, the scores
+        of both added (ASV-03, DD-596). Writes refresh (ENS-11).
         """  # noqa: D205 - one sentence
         response: Mapping[str, Any] = await self._client.search(  # pyright: ignore[reportAssignmentType]
             index=self._verdicts if index == GOV_QUALITY else self._entities,
             query=query,
+            knn=knn,
             sort=sort,
             aggs=aggs or None,
             from_=from_,
