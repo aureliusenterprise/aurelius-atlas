@@ -1863,7 +1863,7 @@ export(request: Request, store: Store, body: Body) -> Response
 
 `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
 
-One export or import runs at a time unless the request's options name `skipLineage` or `replicatedTo`.
+One export or import runs at a time in the request's store set (WPT-06) unless the request's options name `skipLineage` or `replicatedTo`.
 
 Raises:
 

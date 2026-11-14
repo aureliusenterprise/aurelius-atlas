@@ -78,6 +78,10 @@ CHT-04: **no chart names a cloud provider.** An environment is a values overlay,
 
 CI renders every chart against both overlays on every change (CHT-06), so "renders on a stock cluster" is a gate, not a hope.
 
+## Tenants
+
+Tenancy is off by default, and the server answers as Apache Atlas does. The server chart's `tenancy.enabled` turns it on (ADR 063, WPT-08). Each request then acts in the one Keycloak organization its token names, with that tenant's own indices and background work. Each tenant listed in `tenancy.tenants` is provisioned by a hook Job after every install and upgrade, and a tenant already there is left as it is (DD-579). A tenant is removed only by the server's command, `python -m aurelius_atlas_server.provisioning remove <alias>`, never by dropping it from the list. Until 15.5, the realm's organizations and their groups are set up by hand.
+
 ## Trust
 
 cert-manager signs every certificate (DD-286, corrected by DD-259). The default posture is the chart-created private root: a self-signed bootstrap `Issuer` signs one CA `Certificate` (its Secret is `global.trust.caSecretName`), and a CA-type `Issuer` of that CA — namespaced, since a `ClusterIssuer` cannot read a CA Secret the chart writes into the app namespace — signs every leaf, so every certificate descends from one root and each component's mounted `ca.crt` verifies every peer. A production deployment brings its own issuer (`global.trust.createIssuer: false`, `issuerRef` to the org's, typically a `ClusterIssuer`) and either the CA secret name or a literal CA bundle.

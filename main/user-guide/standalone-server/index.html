@@ -592,6 +592,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tenants
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-it-fits-together" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6568,6 +6579,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tenants
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#how-it-fits-together" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6790,10 +6812,31 @@ entities it finds by GUID, so running it again is safe. Other settings:</p>
 <td><code>true</code>: as Atlas</td>
 <td>Whether the task worker propagates classifications after the request</td>
 </tr>
+<tr>
+<td><code>ATLAS_TENANCY_ENABLED</code></td>
+<td><code>false</code>: as Atlas</td>
+<td>Whether the server serves several tenants (see Tenants below)</td>
+</tr>
 </tbody>
 </table>
 <p>An import's propagation runs once it ends (DD-361), so an entity shows what is propagated to it a little
 later.</p>
+<h2 id="tenants">Tenants<a class="headerlink" href="#tenants" title="Permanent link">&para;</a></h2>
+<p><code>ATLAS_TENANCY_ENABLED=true</code> serves several tenants from the one stack (ADR 063): a request acts in the one
+Keycloak organization its token names, and each tenant has its own indices and background work. The
+organization <code>operators</code> keeps the catalogue the stack has without tenancy. Off by default, the server answers
+as Apache Atlas does. A tenant is provisioned by the server's command, run in the server's image with its
+settings:</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>run<span class="w"> </span>--rm<span class="w"> </span>--no-deps<span class="w"> </span>--entrypoint<span class="w"> </span>python<span class="w"> </span>aurelius-atlas-server<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>-m<span class="w"> </span>aurelius_atlas_server.provisioning<span class="w"> </span>provision<span class="w"> </span>acme
+</code></pre></div>
+<p><code>list</code> shows the tenants, <code>trust acme off</code> closes a tenant to the operators, and <code>remove acme</code> deletes its
+indices, about a minute after it stops serving the tenant. The server picks up a new tenant within
+<code>tenancy_refresh_seconds</code>, 30 by default, without a restart. The demo realm has no organizations yet: until
+15.5, a tenant's organization, its <code>/atlas-*</code> groups and its members are set up by hand in Keycloak's admin
+console, and the server's client needs the <code>organization</code> scope.</p>
 <h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>nginx.conf</code>: TLS on port 9000 with the server's certificate. <code>/atlas2/</code> goes to the server without the

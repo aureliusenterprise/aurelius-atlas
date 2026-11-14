@@ -6520,6 +6520,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tenants
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#trust" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6870,6 +6881,17 @@ overlay, and the two shipped overlays are the tested shapes:</p>
 </ul>
 <p>CI renders every chart against both overlays on every change (CHT-06), so
 "renders on a stock cluster" is a gate, not a hope.</p>
+<h2 id="tenants">Tenants<a class="headerlink" href="#tenants" title="Permanent link">&para;</a></h2>
+<p>Tenancy is off by default, and the server answers as Apache Atlas does. The
+server chart's <code>tenancy.enabled</code> turns it on (ADR 063, WPT-08). Each request
+then acts in the one Keycloak organization its token names, with that
+tenant's own indices and background work. Each tenant listed in
+<code>tenancy.tenants</code> is provisioned by a hook Job after every install and
+upgrade, and a tenant already there is left as it is (DD-579). A tenant is
+removed only by the server's command, <code>python -m
+aurelius_atlas_server.provisioning remove &lt;alias&gt;</code>, never by dropping it from
+the list. Until 15.5, the realm's organizations and their groups are set up by
+hand.</p>
 <h2 id="trust">Trust<a class="headerlink" href="#trust" title="Permanent link">&para;</a></h2>
 <p>cert-manager signs every certificate (DD-286, corrected by DD-259). The
 default posture is the chart-created private root: a self-signed bootstrap

@@ -51,8 +51,22 @@ The server creates the m4i types of the samples at start-up (ADR 058), so an imp
 | `SAMPLE_DIR` | `data/atlas-sample/` | The sample folder; a relative path is read from this directory |
 | `SAMPLE_IMPORT_REQUEST` | `{}` | Atlas's `AtlasImportRequest` as JSON, such as its `options` |
 | `ATLAS_TASKS_ENABLED` | `true`: as Atlas | Whether the task worker propagates classifications after the request |
+| `ATLAS_TENANCY_ENABLED` | `false`: as Atlas | Whether the server serves several tenants (see Tenants below) |
 
 An import's propagation runs once it ends (DD-361), so an entity shows what is propagated to it a little later.
+
+## Tenants
+
+`ATLAS_TENANCY_ENABLED=true` serves several tenants from the one stack (ADR 063): a request acts in the one Keycloak organization its token names, and each tenant has its own indices and background work. The organization `operators` keeps the catalogue the stack has without tenancy. Off by default, the server answers as Apache Atlas does. A tenant is provisioned by the server's command, run in the server's image with its settings:
+
+```
+docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
+    --env-file apps/aurelius-atlas-server/.env --env-file dev/keycloak/.env \
+    run --rm --no-deps --entrypoint python aurelius-atlas-server \
+    -m aurelius_atlas_server.provisioning provision acme
+```
+
+`list` shows the tenants, `trust acme off` closes a tenant to the operators, and `remove acme` deletes its indices, about a minute after it stops serving the tenant. The server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, without a restart. The demo realm has no organizations yet: until 15.5, a tenant's organization, its `/atlas-*` groups and its members are set up by hand in Keycloak's admin console, and the server's client needs the `organization` scope.
 
 ## How it fits together
 
