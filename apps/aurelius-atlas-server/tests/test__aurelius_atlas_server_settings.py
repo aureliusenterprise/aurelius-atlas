@@ -101,25 +101,22 @@ def test__the_environment_defaults_to_production(environment: pytest.MonkeyPatch
         ServerSettings()  # pyright: ignore[reportCallIssue]
 
 
-@pytest.mark.covers(
-    "aurelius_atlas_server.settings.ServerSettings.tenancy",
-    "aurelius_atlas_server.settings.ServerSettings._operators_are_not_a_tenant",
-    rules=["TEN-01", "TEN-04"],
-)
-def test__tenancy_is_off_until_set_and_never_lists_the_operators(environment: pytest.MonkeyPatch) -> None:
-    """Off by default, no tenancy read; on, the claim, operators and tenants as set; the operators no tenant."""
+@pytest.mark.covers("aurelius_atlas_server.settings.ServerSettings.tenancy", rules=["TEN-01", "TPR-07"])
+def test__tenancy_is_off_until_set_and_lists_no_tenants(environment: pytest.MonkeyPatch) -> None:
+    """Off by default, no tenancy read; on, the claim and operators as set, the tenants left to the index."""
     assert ServerSettings().tenancy() is None  # pyright: ignore[reportCallIssue] - read from the environment
     environment.setenv("AURELIUS_ATLAS_SERVER_TENANCY_ENABLED", "true")
-    environment.setenv("AURELIUS_ATLAS_SERVER_TENANCY_TENANTS", '["acme"]')
     environment.setenv("AURELIUS_ATLAS_SERVER_AUTH_ORGANIZATION_CLAIM", "org")
-    tenancy = ServerSettings().tenancy()  # pyright: ignore[reportCallIssue] - read from the environment
+    settings = ServerSettings()  # pyright: ignore[reportCallIssue] - read from the environment
+    tenancy = settings.tenancy()
     assert tenancy is not None
     assert (tenancy.organization_claim, tenancy.operator_organization, tenancy.operator_role, tenancy.tenants) == (
         "org",
         "operators",
         "atlas-operator",
-        {"acme"},
+        frozenset(),
     )
-    environment.setenv("AURELIUS_ATLAS_SERVER_TENANCY_TENANTS", '["acme", "operators"]')
-    with pytest.raises(ValidationError, match="must not name the operator organization operators"):
+    assert settings.tenancy_refresh_seconds == 30
+    environment.setenv("AURELIUS_ATLAS_SERVER_TENANCY_REFRESH_SECONDS", "-1")
+    with pytest.raises(ValidationError, match="tenancy_refresh_seconds"):
         ServerSettings()  # pyright: ignore[reportCallIssue] - read from the environment

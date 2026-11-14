@@ -21,6 +21,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 from aurelius_atlas_server.errors import AtlasError, atlas_error_handler
 from aurelius_atlas_server.root_path import site_path, under_root
 from aurelius_atlas_server.tenancy import Tenancy, tenant_of, tenant_roles
+from aurelius_atlas_server.tenant_stores import open_request_stores
 
 SESSION_COOKIE = "ATLASSESSIONID"
 """The session cookie's name, as Atlas's ``web.xml`` names it."""
@@ -103,6 +104,19 @@ def user_of(
         return User(name, named_groups, client_roles(claims, client_id))
     tenant, entry = tenant_of(claims, tenancy, name)
     return User(name, named_groups, tenant_roles(claims, tenancy, tenant, entry), tenant)
+
+
+async def current_tenancy(request: Request) -> Tenancy | None:
+    """The provisioned tenants as the server last read them, read again when due; None while tenancy is off
+    (TPR-07, DD-575).
+    """  # noqa: D205 - one sentence
+    directory = request.app.state.tenant_directory
+    return None if directory is None else await directory.current()
+
+
+def tenancy_admits(tenancy: Tenancy | None, tenant: str) -> bool:
+    """Whether a session's tenant is still provisioned: always while tenancy is off (TPR-07)."""
+    return tenancy is None or tenancy.is_provisioned(tenant)
 
 
 def acting_user(request: Request) -> str | None:
@@ -216,20 +230,27 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
         request.state.tenant = None
         if is_open(site_path(request.scope)):
             return await call_next(request)
+        tenancy = await current_tenancy(request)
         authorization = request.headers.get("authorization")
         if authorization is not None:
-            return await self._bearer(request, authorization, call_next)
+            return await self._bearer(request, authorization, call_next, tenancy)
         state = request.app.state
         session = state.sessions.get(request.cookies.get(SESSION_COOKIE))
         if session is not None and session.user is not None and await state.oidc.fresh(session):
             if _csrf_refused(request, session):
                 return PlainTextResponse(CSRF_REFUSED, status_code=400)
+            if session.user.tenant is not None and not tenancy_admits(tenancy, session.user.tenant):
+                state.sessions.remove(session.id)  # its tenant is no longer provisioned (TPR-07)
+                return _unauthenticated(request, None)
             request.state.user, request.state.session = session.user, session
             request.state.tenant = session.user.tenant
+            await open_request_stores(request, tenancy)
             return await call_next(request)
         return _unauthenticated(request, session)
 
-    async def _bearer(self, request: Request, authorization: str, call_next: RequestResponseEndpoint) -> Response:
+    async def _bearer(
+        self, request: Request, authorization: str, call_next: RequestResponseEndpoint, tenancy: Tenancy | None
+    ) -> Response:
         """A request with an ``Authorization`` header: its bearer token alone authenticates it (AUT-02)."""
         scheme, _, token = authorization.partition(" ")
         if scheme.lower() != "bearer" or not token.strip():
@@ -246,11 +267,12 @@ class AuthenticationMiddleware(BaseHTTPMiddleware):
                 principal_claim=settings.auth_principal_claim,
                 groups_claim=settings.auth_groups_claim,
                 client_id=settings.auth_client_id,
-                tenancy=request.app.state.tenancy,
+                tenancy=tenancy,
             )
         except AtlasError as refused:  # no tenant to act in: refused before any route (TEN-07)
             return await atlas_error_handler(request, refused)
         request.state.user, request.state.tenant = user, user.tenant
+        await open_request_stores(request, tenancy)
         return await call_next(request)
 
 

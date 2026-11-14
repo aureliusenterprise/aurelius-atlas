@@ -1,13 +1,16 @@
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Awaitable, Callable
 from pathlib import Path
+from types import SimpleNamespace
+from typing import cast
 
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server import app as server_app
 from aurelius_atlas_server.settings import ENV_PREFIX
-from aurelius_atlas_store_es import store
+from aurelius_atlas_server.tenants import StoredTenant, TenantsIndex, TenantState
+from aurelius_atlas_store_es import ElasticsearchStore, store
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from fake_issuer import CLIENT_SECRET, SERVER_URL, WEBAPP, FakeIssuer
 from fastapi import FastAPI
@@ -89,7 +92,9 @@ def issuer(monkeypatch: pytest.MonkeyPatch) -> FakeIssuer:
     build_auth, build_oidc = server_app.build_auth, server_app.build_oidc
     monkeypatch.setattr(server_app, "build_auth", lambda settings, *_: build_auth(settings, fake.sync_client()))
     monkeypatch.setattr(
-        server_app, "build_oidc", lambda settings, auth, *_: build_oidc(settings, auth, fake.async_client())
+        server_app,
+        "build_oidc",
+        lambda settings, auth, *_, **options: build_oidc(settings, auth, fake.async_client(), **options),
     )
     return fake
 
@@ -111,6 +116,19 @@ def fake_es(monkeypatch: pytest.MonkeyPatch) -> FakeClient:
 
     monkeypatch.setattr(store, "AsyncElasticsearch", build)
     return fake
+
+
+@pytest.fixture
+def record_tenants(fake_es: FakeClient) -> Callable[..., Awaitable[None]]:
+    """Record tenants in the fake store's tenants index, ``active`` unless a test says otherwise (TPR-01)."""
+
+    async def record(*aliases: str, state: TenantState = TenantState.ACTIVE, **fields: object) -> None:
+        index = TenantsIndex(cast("ElasticsearchStore", SimpleNamespace(client=fake_es)))
+        await index.prepare()
+        for alias in aliases:
+            await index.put(StoredTenant.model_validate({"alias": alias, "state": state, **fields}))
+
+    return record
 
 
 @pytest.fixture
