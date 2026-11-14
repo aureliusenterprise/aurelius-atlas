@@ -10,7 +10,9 @@ from collections.abc import AsyncIterator
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
+from aurelius_atlas_core.relationship_store import RelationshipStore
 from aurelius_atlas_core.testing.entity_samples import SAMPLE_TYPES, sample_entity
+from aurelius_atlas_model.instance import AtlasObjectId, AtlasRelationship
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_store_es.testing.fake import FakeClient
 from fake_issuer import FakeIssuer
@@ -168,6 +170,37 @@ async def test__a_guid_without_an_entity_is_the_atlas_404(seeded: httpx.AsyncCli
 
     invalid = await seeded.get(f"{VIEW}/not-a-guid")
     assert (invalid.status_code, invalid.json()["errorCode"]) == (400, "ATLAS-400-00-021")
+
+
+@pytest.mark.covers(f"{R}.read", rules=["VDR-02"])
+async def test__the_read_door_answers_the_ends_of_its_entity_own_relationships(
+    seeded: httpx.AsyncClient, app: FastAPI
+) -> None:
+    """Each end answers under its relationship attribute, with its type and state; both ends see each other.
+
+    The table's ``home`` answers the database and the database's ``tables`` the table (VDR-02, DD-604); the
+    ends ride the entity's own edges, which the store lists, in one batched read.
+    """
+    store: EntityStore = app.state.entity_store
+    created = await RelationshipStore(store, user="u").create(
+        AtlasRelationship(
+            type_name="s_table_home",
+            end1=AtlasObjectId(guid=TABLE, type_name="s_table"),
+            end2=AtlasObjectId(guid=DB, type_name="s_database"),
+        )
+    )
+    assert created.guid is not None
+
+    view = (await seeded.get(f"{VIEW}/{TABLE}")).json()
+    assert view["sections"] == [
+        {"attribute": "home", "entities": [{"guid": DB, "typeName": "s_database", "status": "ACTIVE"}]}
+    ]
+    other = (await seeded.get(f"{VIEW}/{DB}")).json()
+    assert [(r["attribute"], [e["guid"] for e in r["entities"]]) for r in other["sections"]] == [("tables", [TABLE])]
+
+    await RelationshipStore(store, user="u").delete_by_id(created.guid)
+    after = (await seeded.get(f"{VIEW}/{TABLE}")).json()
+    assert after["sections"] == []  # a deleted edge answers nothing (DD-604)
 
 
 @pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10"])

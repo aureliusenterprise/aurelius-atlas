@@ -3,7 +3,8 @@ import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect
 import { toSignal } from "@angular/core/rxjs-interop";
 import { Title } from "@angular/platform-browser";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import type { AtlasEntity } from "aurelius-atlas-data-access";
+import type { Breadcrumb } from "aurelius-atlas-ui";
+import type { EntityView } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 import { map } from "rxjs";
@@ -30,7 +31,7 @@ import { typeIcon } from "../meta/type-icons";
 import { APP_CONFIG } from "../../tokens";
 import { DetailsBreadcrumbState } from "./details-breadcrumb-state";
 import { DetailsState } from "./details-state";
-import { detailProperties } from "./property-filter";
+import { viewProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
 import { CardContent } from "./sections/card-content.component";
@@ -40,7 +41,7 @@ import { DetailsLayoutState } from "./sections/layout.state";
 import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections/related-sections.state";
 import type { StatDef } from "./sections/section-config";
 import { cardTypeAlias } from "./shared/card";
-import { peopleRows } from "./shared/people";
+import { peopleRowsOfSections } from "./shared/people";
 
 /**
  * The entity details screen (DET-01, 7.6; the data spine 7.20): the Aurelius
@@ -103,7 +104,7 @@ export class Details {
     /** The read store (DET-08): the entity, and whether a load is in flight. */
     protected readonly state = inject(DetailsState);
 
-    /** The trail's app-side seam (DET-12, DD-317): empty until an API fills it. */
+    /** The trail the screen renders (DET-12, VDR-06): the view's stored breadcrumb. */
     protected readonly crumbs = inject(DetailsBreadcrumbState);
 
     /** The layout dispatch (DET-15, DD-366): the m4i layout, or the default. */
@@ -175,8 +176,23 @@ export class Details {
             const event = saved.latest();
             if (event !== null && event.guid === this.guid() && event.seq > consumedSeq) {
                 consumedSeq = event.seq;
-                this.state.load(event.guid);
+                this.state.reload(event.guid); // VDR-07: the saved view leaves the cache first (DD-605)
             }
+        });
+
+        // The trail follows the view (DET-12, DD-606): the door's stored
+        // breadcrumb, top down, with the opened entity's own crumb last —
+        // the seam of 7.20 (DD-317), filled since 16.5b. A crumb shows its
+        // name, or its type, or its guid (VDR-06: the stored name can be
+        // gone, ASU-02), and rides the app's type map for its icon, as the
+        // header badge's does (DET-26, DD-378).
+        effect(() => {
+            const view = this.entity();
+            if (view === null) {
+                this.crumbs.clear();
+                return;
+            }
+            this.crumbs.setTrail(trailOf(view, (typeName) => typeIcon(typeName)));
         });
 
         // The layout dispatch follows the entity (DET-15): a direct name
@@ -231,8 +247,8 @@ export class Details {
         });
     }
 
-    /** The resolved entity, or null in every no-entity state (DET-09). */
-    protected readonly entity = computed<AtlasEntity | null>(() => this.state.entity());
+    /** The resolved view, or null in every no-entity state (DET-09, VDR-01). */
+    protected readonly entity = computed<EntityView | null>(() => this.state.entity());
 
     /**
      * The m4i layout of the entity's type, or undefined for the DET-01
@@ -292,14 +308,16 @@ export class Details {
     }
 
     /**
-     * The classification chips' labels (DET-09, DD-379): the entity's
-     * classifications, each by its dictionary display name — the legacy
-     * chip's `name | translate`.
+     * The classification chips' labels (DET-09, DD-379, VDR-05): the view's
+     * attached classification names, each by its dictionary display name —
+     * the legacy chip's `name | translate`. Propagated tags are no longer
+     * shown (DV-166): the view answers owned names only, and the editor's
+     * box never let a propagated tag be edited (DD-326).
      */
     protected readonly classifications = computed(() =>
-        (this.entity()?.classifications ?? [])
-            .filter((classification) => typeof classification?.typeName === "string" && classification.typeName !== "")
-            .map((classification) => nameDisplay(classification.typeName as string)),
+        (this.entity()?.classificationNames ?? [])
+            .filter((name) => typeof name === "string" && name !== "")
+            .map((name) => nameDisplay(name)),
     );
 
     /**
@@ -330,10 +348,10 @@ export class Details {
         return key === null ? "" : (this.entity()?.attributes?.[key] as string);
     });
 
-    /** The properties rows (DET-11): the legacy filtered merge, sorted by key. */
+    /** The properties rows (DET-11, VDR-04): the view's merge, the legacy filter, sorted by key. */
     protected readonly properties = computed(() => {
-        const entity = this.entity();
-        return entity ? detailProperties(entity, this.descriptionKey()) : [];
+        const view = this.entity();
+        return view ? viewProperties(view, this.descriptionKey()) : [];
     });
 
     /** The count above the accordion (DET-11): the rendered row count. */
@@ -349,11 +367,8 @@ export class Details {
         return entity === null ? undefined : cardTypeAlias(entity);
     });
 
-    /** The People box's rows of the opened entity (DET-23). */
-    protected readonly people = computed(() => {
-        const entity = this.entity();
-        return entity === null ? [] : peopleRows(entity);
-    });
+    /** The People box's rows of the opened entity (DET-23, VDR-03): the view's sections. */
+    protected readonly people = computed(() => peopleRowsOfSections(this.entity()?.sections));
 
     /** The card sections as the store renders them (DET-17..DET-22). */
     protected readonly views = this.sections.views;
@@ -560,4 +575,29 @@ export class Details {
     protected onSectionPage(view: SectionView): void {
         this.sections.nextPage(view.anchor);
     }
+}
+
+/**
+ * The trail of one view (VDR-06, DD-606): the stored breadcrumb, top down,
+ * plus the opened entity's own crumb, which the breadcrumbs mark active.
+ * Each crumb shows its name, or its type, or its guid — the stored arrays
+ * can come apart or lose a name (ASU-02, LAS-04) — and takes its icon from
+ * the app's type map, as the badge's does (DET-26).
+ * @param view the read door's answer
+ * @param icon the type-to-icon resolver, injected to keep this pure
+ * @returns the crumbs, the opened entity's last
+ */
+export function trailOf(view: EntityView, icon: (typeName: string) => ReturnType<typeof typeIcon>): Breadcrumb[] {
+    const crumbs = [...(view.breadcrumb ?? []), { guid: view.guid, name: view.name, typeName: view.typeName }];
+    return crumbs.map((crumb) => {
+        const name = crumb.name || crumb.typeName || crumb.guid;
+        const typeName = crumb.typeName ?? "";
+        const found = icon(typeName);
+        return {
+            guid: crumb.guid,
+            name,
+            typeName,
+            ...(found !== undefined ? { icon: found.icon, iconClass: found.classIcon } : {}),
+        };
+    });
 }

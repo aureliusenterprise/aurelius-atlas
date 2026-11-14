@@ -18,6 +18,7 @@ export * from "./lib/atlas/atlas-typedef";
 export * from "./lib/atlas/atlas-view";
 export * from "./lib/aurelius/quality-rule.service";
 export * from "./lib/aurelius/search-by-meaning.service";
+export * from "./lib/aurelius/view-entity.service";
 export * from "./lib/aurelius/view-search.service";
 export * from "./lib/aux/aux-config";
 export * from "./lib/aux/lineage-model.service";

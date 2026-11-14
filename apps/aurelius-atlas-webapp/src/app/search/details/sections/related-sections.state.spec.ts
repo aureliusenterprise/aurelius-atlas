@@ -1,32 +1,41 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import type { AtlasEntitiesWithExtInfo, AtlasEntity } from "aurelius-atlas-data-access";
+import type { AtlasEntitiesWithExtInfo, EntityRelation, EntityView, RelationEntity } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../../alerts/alerts.service";
 import { LAYOUTS } from "./section-config";
 import { CHUNK_SIZE, PAGE_SIZE, RelatedSectionsState } from "./related-sections.state";
 
 /**
- * The card-section store (DET-17..DET-22, DD-365/DD-368): the seed off the
- * entity's `relationshipAttributes`, the chunked bulk resolve, and the
- * client-side filter, sort, and page. Specs ride the details screen's
- * idiom — `provideHttpClientTesting`, `expectOne` + `flush`.
+ * The card-section store (DET-17..DET-22, DD-365/DD-368, VDR-03): the seed
+ * off the view's `sections`, the chunked bulk resolve, and the client-side
+ * filter, sort, and page. Specs ride the details screen's idiom —
+ * `provideHttpClientTesting`, `expectOne` + `flush`.
  */
 const BULK_URL = "/api/atlas/v2/entity/bulk";
 
 /** The entity layout's sections: every section of one type at once. */
 const LAYOUT = LAYOUTS.m4i_data_entity;
 
-/** A related-entity end of `relationshipAttributes`. */
+/** A related-entity end of a view section. */
 function related(guid: string, displayText: string, status?: string): Record<string, unknown> {
     return {
         guid,
         displayText,
         typeName: "m4i_data_attribute",
         name: displayText,
-        ...(status === undefined ? {} : { relationshipStatus: status }),
+        ...(status === undefined ? {} : { status }),
     };
+}
+
+/**
+ * One view section carrying the given ends. The fixture ends stay loose
+ * (`Record<string, unknown>`) on purpose: the guidless and deleted entries
+ * the DET-17 rule drops are not representable as a `RelationEntity`.
+ */
+function ends(attribute: string, seed: readonly Record<string, unknown>[]): EntityRelation {
+    return { attribute, entities: seed as unknown as RelationEntity[] };
 }
 
 /** A resolved entity for the bulk answer. */
@@ -46,13 +55,16 @@ function resolved(
     };
 }
 
-/** An opened entity whose attribute section seeds the given ends. */
-function opened(seed: Record<string, unknown>[]): AtlasEntity {
+/** An opened entity whose `attributes` section seeds the given ends. */
+function opened(seed: Record<string, unknown>[]): EntityView {
     return {
         guid: "opened",
         typeName: "m4i_data_entity",
+        displayText: "opened",
+        status: "ACTIVE",
+        stale: false,
         attributes: { name: "opened" },
-        relationshipAttributes: { attributes: seed },
+        sections: [ends("attributes", seed)],
     };
 }
 
@@ -309,13 +321,16 @@ describe("Related sections store (DET-17..DET-22)", () => {
         store.seed(opened([related("a1", "Alpha")]), LAYOUT);
         const before = bulkRequests(httpMock);
 
-        // The editor's save re-read: a new entity arrives with new ends.
+        // The editor's save re-read: a new view arrives with new ends.
         store.seed(
             {
                 guid: "opened",
                 typeName: "m4i_data_entity",
+                displayText: "renamed",
+                status: "ACTIVE",
+                stale: false,
                 attributes: { name: "renamed" },
-                relationshipAttributes: { attributes: [related("b1", "New")] },
+                sections: [ends("attributes", [related("b1", "New")])],
             },
             LAYOUT,
         );
@@ -352,13 +367,16 @@ describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
     /** The field layout, with the DET-35 `related-rules` section. */
     const FIELD_LAYOUT = LAYOUTS.m4i_field;
 
-    /** An opened `m4i_field` whose `dataQuality` end seeds the given rules. */
-    function openedField(seed: Record<string, unknown>[]): AtlasEntity {
+    /** An opened `m4i_field` whose `dataQuality` section seeds the given rules. */
+    function openedField(seed: Record<string, unknown>[]): EntityView {
         return {
             guid: "field-1",
             typeName: "m4i_field",
+            displayText: "field-1",
+            status: "ACTIVE",
+            stale: false,
             attributes: { name: "field-1" },
-            relationshipAttributes: { dataQuality: seed },
+            sections: [ends("dataQuality", seed)],
         };
     }
 
@@ -392,9 +410,19 @@ describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
 });
 
 describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
-    /** An opened person carrying the given ends under their own keys. */
-    function openedPerson(seeds: Record<string, unknown[]>): AtlasEntity {
-        return { guid: "pe-1", typeName: "m4i_person", attributes: { name: "Ada" }, relationshipAttributes: seeds };
+    /** An opened person carrying the given ends as sections under their own keys. */
+    function openedPerson(seeds: Record<string, unknown[]>): EntityView {
+        return {
+            guid: "pe-1",
+            typeName: "m4i_person",
+            displayText: "Ada",
+            status: "ACTIVE",
+            stale: false,
+            attributes: { name: "Ada" },
+            sections: Object.entries(seeds).map(([attribute, seed]) =>
+                ends(attribute, seed as Record<string, unknown>[]),
+            ),
+        };
     }
 
     it("counts one end on its own, by the seed rule (DET-40)", () => {
