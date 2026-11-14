@@ -274,6 +274,9 @@
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/main/architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/main/architecture/adr/template/</loc>
       </url>
       <url>
