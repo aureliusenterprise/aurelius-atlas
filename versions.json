@@ -1,5 +1,10 @@
 [
   {
+    "version": "view-webapp-results",
+    "title": "view-webapp-results",
+    "aliases": []
+  },
+  {
     "version": "view-shape",
     "title": "view-shape",
     "aliases": []
