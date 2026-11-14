@@ -4,7 +4,7 @@ dependencies = [
     "aurelius-atlas-otel",
     "aurelius-atlas-server-client",
     "httpx2>=2.0.0",
-    "psycopg[binary]>=3.3.0",
+    "psycopg[binary]>=3.3.8",
     "pydantic>=2.14.2",
     "pydantic-settings>=2.15.0",
     "sqlalchemy>=2.0.44",
