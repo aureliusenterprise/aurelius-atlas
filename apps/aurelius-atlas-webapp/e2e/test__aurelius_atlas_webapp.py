@@ -673,9 +673,9 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     """The hero field searches: seeded hits, the count, the card → details link (SRH-01..SRH-05).
 
     A query submitted in the hero's search field runs POST
-    ``/api/atlas/v2/search/basic``, rides into ``search/results?query=``, and
-    renders a card per hit with the count above the box (the legacy
-    results screen, DD-218). Clicking a card deep-links the 2.3 skeleton with
+    ``/api/aurelius/v1/search`` (16.5a, VSR-03), rides into
+    ``search/results?query=``, and renders a card per hit with the count
+    above the box (the legacy results screen, DD-218). Clicking a card deep-links the 2.3 skeleton with
     that guid; the results URL survives so a reload re-runs the search
     (SRH-02). The nl-NL locale renders the Dutch word (SRH-10).
     """
@@ -719,29 +719,31 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
 
 @pytest.mark.critical
 def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user_token: str) -> None:
-    """The quick-search answer fills the facet sidebar; ticking a type narrows the list (SDX-02..08).
+    """The door's answer fills the facet sidebar; ticking a type narrows the list (SDX-02..08).
 
-    The 7.4b spine: one ``POST /api/atlas/v2/search/quick`` answers the hits and
-    the facets, so the sidebar renders a menu per non-empty facet in answer
-    order (SDX-02/03) — the type facet as checkboxes (SDX-04), ``__state`` as
-    read-only text (SDX-05). Ticking a type re-POSTs narrowed to it while the
-    seen-set keeps the other value visible with its last count (SDX-07,
-    DD-426); unticking broadens again. The hero's submit clears the tick
-    (SDX-06, DD-425). Two base-model types (``DataSet``, ``Process``, both
-    outside the name dictionary) keep the values raw and locale-stable; the
-    run token is the prefix the quick search appends ``*`` to (QSR-02), so a
-    single-word query matches this run's seeds alone. Namespaced and cleaned by
-    guid (DD-223's rule on the shared store).
+    The 7.4b spine on the view search door (16.5a, VSR-03/04/06): one
+    ``POST /api/aurelius/v1/search`` answers the hits and the four facets, so
+    the sidebar renders a menu per non-empty facet in answer order (SDX-02/03)
+    — the type facet as checkboxes (SDX-04), the state and service-type facets
+    as read-only text (SDX-05). Ticking a type re-POSTs narrowed to it (the
+    ``filters`` of VSR-04) while the seen-set keeps the other value visible
+    with its last count (SDX-07, DD-426); unticking broadens again. The hero's
+    submit clears the tick (SDX-06, DD-425). Two base-model types
+    (``DataSet``, ``Process``, both outside the name dictionary) keep the
+    values raw and locale-stable; the door matches whole words (AVR-04), so
+    the query names this run's seeds and matches those alone. Namespaced and
+    cleaned by guid (DD-223's rule on the shared store).
     """
     run = secrets.token_hex(4)
     prefix = f"zz{run}"
     datasets = [f"{prefix}alpha", f"{prefix}beta"]
     processes = [f"{prefix}proc"]
+    query = " ".join([*datasets, *processes])
     ds_guids = _seed_entities(authenticated, root_url, user_token, "DataSet", datasets)
     proc_guids = _seed_entities(authenticated, root_url, user_token, "Process", processes)
 
     try:
-        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={prefix}"))
+        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={quote(query)}"))
 
         # One answer feeds the list and the sidebar: three rows, and a menu per
         # non-empty facet in answer order — type, state, service type (SDX-02).
@@ -778,14 +780,14 @@ def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user
         dataset_box.check()
         expect(authenticated.locator(".result-row")).to_have_count(2)
         field = authenticated.locator(".hero aurelius-atlas-ui-search-field input")
-        field.fill(prefix)
+        field.fill(query)
         authenticated.locator(".hero aurelius-atlas-ui-search-field button.button.is-success").click()
         expect(dataset_box).not_to_be_checked()
         expect(authenticated.locator(".result-row")).to_have_count(3)
 
         # SDX-08: the same sidebar in Dutch — the titles ride the bridge
         # (nl-NL: Type, Status, Servicetype). The values stay raw (base-model names).
-        authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={prefix}"))
+        authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={quote(query)}"))
         expect(authenticated.locator(".column.is-one-third .menu-label")).to_have_text(
             ["Type", "Status", "Servicetype"]
         )
@@ -797,6 +799,58 @@ def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user
                 headers={"authorization": f"Bearer {user_token}"},
             )
             assert deleted.status == 200, deleted.text()
+
+
+@pytest.mark.critical
+def test__meaning_mode_falls_back_to_words_on_a_server_without_embedding(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """Choosing Meaning on a server with no embedder warns and lands on the words answer (VSR-08, SBW-06).
+
+    16.5a's door scenario: the results screen asks
+    ``POST /api/aurelius/v1/search`` (VSR-03), and this stack runs no embedder,
+    so the door refuses a meaning mode with 404 ``AURELIUS-404-00-001``
+    (ASV-09). Picking Meaning in the settings panel (SBX-01) restarts the
+    shown query (SBX-02, VSR-09), that request fails, and the known fallback
+    runs (SBW-06): a warning lands in the alerts feed and the mode stores back
+    to Words, whose change searches again — so the words answer renders the
+    seeded row and the panel reads Words again. The door's keyword answer is
+    what the rows come back on (VSR-03).
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}meaning"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+
+    try:
+        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={name}"))
+        expect(authenticated.locator(".result-row")).to_have_count(1)
+
+        gear = authenticated.locator('a.navbar-item[aria-label="Settings"]')
+        gear.click()
+        panel = authenticated.locator(".aurelius-drawer-panel")
+        expect(panel).to_be_visible()
+        panel.locator(".settings-search-mode button", has_text="Meaning").click()
+        # The panel stays open over the scrim, which covers the navbar: Escape
+        # dismisses it (the drawer's keyboard path) before the bell is clicked.
+        authenticated.keyboard.press("Escape")
+
+        # The failed meaning search warns (SBW-06): the alert feed carries the
+        # line, through the bell's drawer.
+        authenticated.locator('a.navbar-item[aria-label="Alerts"]').click()
+        expect(authenticated.locator(".aurelius-alert-message")).to_have_text(
+            "Search by meaning is not available on this server"
+        )
+
+        # The words answer the store fell back to is what renders: the seeded
+        # row (VSR-03), and the panel — reopened — reads Words as pressed
+        # again, the stored mode the fallback wrote (SBW-06, SBX-02).
+        expect(authenticated.locator(".result-row")).to_have_count(1)
+        authenticated.keyboard.press("Escape")
+        gear.click()
+        words = panel.locator(".settings-search-mode button", has_text="Words")
+        expect(words).to_have_attribute("aria-pressed", "true")
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guids["-0"])
 
 
 @pytest.mark.critical
@@ -1458,11 +1512,12 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(
     expect(rows.filter(has_text=name)).to_have_count(1)
 
     # The type filter is session state: reloading the bare results URL
-    # restarts from the URL alone — the empty query, which searches every
-    # entity (_ALL_ENTITY_TYPES, DD-221). The purged type holds exactly the
-    # seeded glossary, so a filtered re-run would show its one row; the
-    # every-entity search shows more (stack-size agnostic: on a fresh CI
-    # stack the few seeded entities, on a shared stack the full page of ten).
+    # restarts from the URL alone — the empty query with no filter, which the
+    # door answers with every entity (VSR-04, AVR-11). The purged type holds
+    # exactly the seeded glossary, so a filtered re-run would show its one
+    # row; the every-entity search shows more (stack-size agnostic: on a
+    # fresh CI stack the few seeded entities, on a shared stack the full page
+    # of ten).
     authenticated.reload()
     expect(authenticated.locator(".result-row")).not_to_have_count(1)
 

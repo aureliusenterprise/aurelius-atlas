@@ -363,3 +363,76 @@ def test__the_sample_answers_what_14_4_answered_plus_the_entities_it_left_out(
     for value, count in expected.items():
         assert counted[value] == count
     assert set(counted) - set(expected) == {"m4i_source"}
+
+
+@pytest.mark.covers(X, f"{V}.door_fields", f"{V}._service_types", rules=["VSR-01"])
+async def test__owner_counts_the_owners_and_service_type_sums_the_types_by_service(m4i: TypeRegistry) -> None:
+    """``owner`` counts Asset's owners; ``serviceType`` sums the type counts by service type.
+
+    Each is asked as any other facet; the roll-up counts every matched entity's type and not the page of
+    cards, most first, ties by name, a service type counted none left out; ``size`` caps each (VSR-01,
+    DD-093, DD-599).
+    """
+    door = await opened(
+        hold(m4i, "a-1", "Asset", owner="alice"),
+        hold(m4i, "g-1", "DataSet", owner="bob"),
+        hold(m4i, "w-1", "aws_s3_bucket"),
+        hold(m4i, "h-1", "hive_table"),
+        m4i=m4i,
+    )
+
+    assert (await door.search({"facets": ["owner"]}))["facets"]["owner"] == [
+        {"value": "alice", "count": 1},
+        {"value": "bob", "count": 1},
+    ]
+    roll_up = await door.search({"facets": ["serviceType"], "limit": 1})
+    assert roll_up["facets"]["serviceType"] == [
+        {"value": "atlas_core", "count": 2},
+        {"value": "aws", "count": 1},
+        {"value": "hive", "count": 1},
+    ]
+    short = await door.search({"facets": {"typeName": {"size": 1}, "serviceType": {"size": 2}}})
+    assert len(short["facets"]["typeName"]) == 1
+    assert short["facets"]["serviceType"] == [{"value": "atlas_core", "count": 2}, {"value": "aws", "count": 1}]
+
+
+@pytest.mark.covers(X, f"{V}._facets", rules=["VSR-01"])
+async def test__the_two_facet_names_are_always_accepted_and_answer_empty_where_there_is_nothing(
+    m4i: TypeRegistry,
+) -> None:
+    """The two names are always accepted and answer empty where the registry or the entities hold nothing.
+
+    A registry without Asset's owner attribute knows the name and counts no one, as DD-093 does; only the
+    asked size is ever refused, as with any facet (VSR-01, DD-599).
+    """
+    door = await opened(hold(m4i, "d-1"), m4i=m4i)
+    assert (await door.search({"facets": ["owner", "serviceType"]}))["facets"]["owner"] == []
+
+    documents = ElasticsearchEntityDocuments(FakeClient())  # type: ignore[arg-type]
+    await documents.prepare()
+    bare = await ViewSearchEngine(documents, TypeRegistry()).search({"facets": ["owner", "serviceType"]})
+    assert bare == {"cards": [], "facets": {"owner": [], "serviceType": []}, "total": 0}
+
+    assert await refused(door, {"facets": {"serviceType": {"size": 0}}}) == [
+        "Facet size for serviceType must be between 1 and 250"
+    ]
+    assert await refused(door, {"facets": {"owner": {"size": 251}}}) == [
+        "Facet size for owner must be between 1 and 250"
+    ]
+
+
+@pytest.mark.covers(X, rules=["VSR-02"])
+async def test__the_new_facet_names_leave_every_other_answer_as_it_was(m4i: TypeRegistry) -> None:
+    """The two new names change no card, no total and no other facet, and unknown names stay refused.
+
+    The same query asked with or without them answers the same cards; a name near them is still no field
+    of the door (VSR-02).
+    """
+    door = await opened(hold(m4i, "a-1", "Asset", owner="alice"), hold(m4i, "d-1"), m4i=m4i)
+
+    plain = await door.search({})
+    asked = await door.search({"facets": ["owner", "serviceType"]})
+    assert asked["cards"] == plain["cards"]
+    assert asked["total"] == plain["total"]
+    assert list(asked["facets"]) == ["owner", "serviceType"]
+    assert await refused(door, {"facets": ["ownern"]}) == ["Facets contains an unknown field: ownern"]

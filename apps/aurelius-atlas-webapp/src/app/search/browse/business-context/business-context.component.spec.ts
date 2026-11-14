@@ -35,9 +35,9 @@ function setup() {
  * answer it empty.
  */
 function expectSearch(httpMock: HttpTestingController, body: Record<string, unknown>) {
-    const request = httpMock.expectOne((req) => req.url === "/api/atlas/v2/search/quick" && req.method === "POST");
+    const request = httpMock.expectOne((req) => req.url === "/api/aurelius/v1/search" && req.method === "POST");
     expect(request.request.body).toMatchObject(body);
-    request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
+    request.flush({ cards: [], facets: {}, total: 0 });
 }
 
 describe("BusinessContext", () => {
@@ -127,7 +127,7 @@ describe("BusinessContext", () => {
         compiled.querySelector<HTMLButtonElement>("button.button.is-success[aria-label='Search']")!.click();
         fixture.detectChanges();
 
-        expectSearch(httpMock, { query: "domain", limit: 10, offset: 0, excludeDeletedEntities: true });
+        expectSearch(httpMock, { query: "domain", mode: "keyword", limit: 10, offset: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "domain" } });
     });
 
@@ -146,7 +146,13 @@ describe("BusinessContext", () => {
         // The legacy directToConceptual's filter read as Atlas's model
         // (DV-84): the empty query and typeName=AtlasGlossary ride the
         // session store, the URL carries nothing (DD-219).
-        expectSearch(httpMock, { query: "", typeName: "AtlasGlossary", limit: 10, offset: 0 });
+        expectSearch(httpMock, {
+            query: "",
+            mode: "keyword",
+            filters: { any: [{ typeName: ["AtlasGlossary"] }, { superTypeNames: ["AtlasGlossary"] }] },
+            limit: 10,
+            offset: 0,
+        });
         expect(navigate).toHaveBeenCalledWith(["/search/results"]);
     });
 });

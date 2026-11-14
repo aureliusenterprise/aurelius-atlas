@@ -96,9 +96,9 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.button.is-success[aria-label='Search']")!.click();
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/atlas/v2/search/quick");
-        expect(request.request.body).toMatchObject({ query: "genomic", limit: 10, offset: 0 });
-        request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
+        const request = httpMock.expectOne("/api/aurelius/v1/search");
+        expect(request.request.body).toMatchObject({ query: "genomic", mode: "keyword", limit: 10, offset: 0 });
+        request.flush({ cards: [], facets: {}, total: 0 });
 
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "genomic" } });
         // The store is the layout's component provider (SRH-02) — the element
@@ -119,9 +119,10 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         compiled.querySelector<HTMLButtonElement>("button.delete")!.click();
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/atlas/v2/search/quick");
-        expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "" });
-        request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
+        const request = httpMock.expectOne("/api/aurelius/v1/search");
+        expect(request.request.body).toMatchObject({ query: "" });
+        expect(request.request.body).not.toHaveProperty("filters");
+        request.flush({ cards: [], facets: {}, total: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: null } });
         expect(fixture.debugElement.injector.get(SearchState).queryText()).toBe("");
     });
@@ -194,7 +195,7 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         // Settled with results (words mode counts what the server said,
         // SRH-04): the count branch.
         store.loading.set(false);
-        store.approximateCount.set(12);
+        store.total.set(12);
         store.entries.set([{ guid: "g1" } as never, { guid: "g2" } as never]);
         fixture.detectChanges();
         expect(text()).toBe("12 results");
@@ -202,14 +203,14 @@ describe("SearchLayout (SRH-01, SRH-11)", () => {
         // The server counted rows the page has not listed yet: neither
         // quiet line fits and the region stays silent (the count names
         // only what is on screen).
-        store.approximateCount.set(5);
+        store.total.set(5);
         store.entries.set([]);
         fixture.detectChanges();
         expect(text()).toBe("");
 
         // A settled search that lists rows the server did not count: the
         // count line needs listed rows, so it stays quiet here too.
-        store.approximateCount.set(0);
+        store.total.set(0);
         store.entries.set([{ guid: "g1" } as never]);
         fixture.detectChanges();
         expect(text()).toBe("");
