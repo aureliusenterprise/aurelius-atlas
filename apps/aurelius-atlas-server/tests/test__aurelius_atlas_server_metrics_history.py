@@ -8,9 +8,9 @@ from pathlib import Path
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_core.metrics_service import MetricsService
-from aurelius_atlas_server.app import _metrics_schedule
 from aurelius_atlas_server.metrics_scheduler import MetricsScheduler
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.tenant_workers import metrics_schedule
 from base_models import base_models
 from fastapi import FastAPI
 
@@ -130,12 +130,13 @@ async def test__the_metrics_are_saved_and_purged_on_the_multiples_of_the_interva
     assert calls[:4] == ["save False", "purge", "save False", "purge"]
 
 
-@pytest.mark.covers("aurelius_atlas_server.app._metrics_schedule", rules=["MHS-05"])
+@pytest.mark.covers("aurelius_atlas_server.tenant_workers.metrics_schedule", rules=["MHS-05"])
 async def test__an_interval_of_zero_stores_no_metrics(app: FastAPI, settings: ServerSettings) -> None:
     """Off at 0, else started on the store's health."""
     async with app.router.lifespan_context(app):
-        off = _metrics_schedule(app, settings.model_copy(update={"metrics_persist_interval_minutes": 0}), None)  # type: ignore[arg-type]
-        on = _metrics_schedule(app, settings, app.state.entity_store)
+        unscheduled = settings.model_copy(update={"metrics_persist_interval_minutes": 0})
+        off = metrics_schedule(unscheduled, app.state.store, app.state.metrics_util, app.state.entity_store)
+        on = metrics_schedule(settings, app.state.store, app.state.metrics_util, app.state.entity_store)
         assert off is None
         assert on is not None
         await on.stop()

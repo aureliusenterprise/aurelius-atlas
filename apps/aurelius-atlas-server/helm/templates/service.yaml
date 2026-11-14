@@ -1,7 +1,9 @@
 {{/*
 The ClusterIP Service (CHT-20) on the settings port. The name is what the
 webapp's nginx dials and what its proxy_ssl_name pins (DD-142's tested data
-path), so it is a contract, not a detail.
+path), so it is a contract, not a detail. It selects the server's component
+too, so the tenant provisioning Job's pod, which carries the server's name and
+instance for the store's network policy, never receives traffic (WPT-09).
 */}}
 apiVersion: v1
 kind: Service
@@ -19,3 +21,4 @@ spec:
           protocol: TCP
     selector:
         {{- include "atlas-server.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}

@@ -161,3 +161,50 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- $node -}}
 {{- end -}}
 {{- end -}}
+
+{{/*
+The tenancy settings (WPT-08): rendered only with tenancy.enabled, so a
+release without it sets nothing and the server answers as before (WPT-11).
+*/}}
+{{- define "atlas-server.tenancyEnv" -}}
+{{- if .Values.tenancy.enabled }}
+- name: AURELIUS_ATLAS_SERVER_TENANCY_ENABLED
+  value: "true"
+- name: AURELIUS_ATLAS_SERVER_TENANCY_OPERATOR_ORGANIZATION
+  value: {{ .Values.tenancy.operatorOrganization | quote }}
+- name: AURELIUS_ATLAS_SERVER_TENANCY_REFRESH_SECONDS
+  value: {{ .Values.tenancy.refreshSeconds | quote }}
+{{- end }}
+{{- end -}}
+
+
+{{/*
+The provisioning command's settings (WPT-08): the store join and password,
+the server's config, its secret references and extra env, and the tenancy
+settings, so the command opens a tenant as the server opens one.
+*/}}
+{{- define "atlas-server.provisioningEnv" -}}
+{{- $root := .root -}}
+- name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS
+  value: {{ printf "[\"https://%s:%d\"]" .store (int $root.Values.store.port) | quote }}
+- name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD
+  valueFrom:
+      secretKeyRef:
+          name: {{ .esSecret }}
+          key: elastic-password
+{{- range $key, $value := $root.Values.config }}
+- name: {{ $key }}
+  value: {{ $value | quote }}
+{{- end }}
+{{- range $root.Values.secretRefs }}
+- name: {{ .name }}
+  valueFrom:
+      secretKeyRef:
+          name: {{ .secret }}
+          key: {{ .key }}
+{{- end }}
+{{- with $root.Values.extraEnv }}
+{{ toYaml . }}
+{{- end }}
+{{- include "atlas-server.tenancyEnv" $root }}
+{{- end -}}

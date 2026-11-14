@@ -339,7 +339,8 @@ async def purge_by_ids(request: Request, store: Store, guids_body: PurgeBody) ->
 async def export(request: Request, store: Store, body: Body) -> Response:
     """``export``: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
 
-    One export or import runs at a time unless the request's options name ``skipLineage`` or ``replicatedTo``.
+    One export or import runs at a time in the request's store set (WPT-06) unless the request's options name
+    ``skipLineage`` or ``replicatedTo``.
 
     Raises:
         AtlasError: ``UNAUTHORIZED_ACCESS``; ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`` while another runs;
@@ -350,7 +351,7 @@ async def export(request: Request, store: Store, body: Body) -> Response:
     exclusive = (
         OPTION_SKIP_LINEAGE not in export_request.options and OPTION_KEY_REPLICATED_TO not in export_request.options
     )
-    lock = request.app.state.import_export_lock
+    lock = stores(request).import_export_lock
     if exclusive:
         if lock.locked():
             raise AtlasError(AtlasErrorCode.FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK)
@@ -639,12 +640,13 @@ def _who(request: Request) -> tuple[str | None, str, str]:
 
 @asynccontextmanager
 async def _exclusively(request: Request, *, exclusive: bool) -> AsyncIterator[None]:
-    """``acquireExportImportLock``: when ``exclusive``, the one export or import running (DD-304).
+    """``acquireExportImportLock``: when ``exclusive``, the one export or import running in the request's store set
+    (DD-304, WPT-06).
 
     Raises:
         AtlasError: ``FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK`` while another runs.
-    """
-    lock = request.app.state.import_export_lock
+    """  # noqa: D205 - one sentence
+    lock = stores(request).import_export_lock
     if not exclusive:
         yield
         return

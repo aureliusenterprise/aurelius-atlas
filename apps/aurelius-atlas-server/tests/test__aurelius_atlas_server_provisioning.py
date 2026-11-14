@@ -144,11 +144,11 @@ async def test__provisioning_refuses_bad_and_taken_aliases_and_carries_on_an_int
     assert (stored["state"], stored["createdAt"]) == ("active", 7)
 
 
-@pytest.mark.covers(f"{P}.Provisioner.remove", rules=["TPR-05"])
+@pytest.mark.covers(f"{P}.Provisioner.remove", rules=["TPR-05", "WPT-05"])
 async def test__removal_deletes_the_tenants_indices_and_record_but_no_other_tenants(
     command: Command, fake_es: FakeClient
 ) -> None:
-    """After the servers' refresh, the indices behind acme's aliases go; acme-corp's, which its prefix matches,
+    """After twice the servers' refresh, the indices behind acme's aliases go; acme-corp's, which its prefix matches,
     stay; the operator organization and an unknown alias are refused.
     """  # noqa: D205 - one sentence
     await command("provision", "acme")
@@ -156,7 +156,7 @@ async def test__removal_deletes_the_tenants_indices_and_record_but_no_other_tena
     kept = alias_indices(fake_es, "acme-corp")
     removed = alias_indices(fake_es, "acme")
     assert await command("remove", "acme") == [f"Removed acme: {len(removed)} indices deleted"]
-    assert command.waits == [5]
+    assert command.waits == [10]
     assert alias_indices(fake_es, "acme") == []
     assert not any(name in fake_es.documents for name in removed)
     assert alias_indices(fake_es, "acme-corp") == kept
@@ -202,3 +202,17 @@ def test__the_command_exits_1_with_the_reason_when_it_refuses(
     assert capsys.readouterr().err == "python -m aurelius_atlas_server.provisioning: tenant acme is active\n"
     monkeypatch.setattr(f"{P}.run", done)
     assert main(["list"]) == 0
+
+
+@pytest.mark.covers(f"{P}.Provisioner.provision", f"{P}.parser", rules=["WPT-07"])
+async def test__with_existing_ok_an_active_tenant_is_left_as_it_is(
+    command: Command, fake_es: FakeClient, record_tenants: Callable[..., Awaitable[None]]
+) -> None:
+    """A second ``provision --existing-ok`` changes nothing and says so; a ``removing`` tenant is still refused."""
+    await command("provision", "acme", "--existing-ok")
+    before = await record(fake_es, "acme")
+    assert await command("provision", "acme", "--existing-ok", "--no-operator-trust") == ["acme is already provisioned"]
+    assert await record(fake_es, "acme") == before
+    await record_tenants("initech", state=TenantState.REMOVING)
+    with pytest.raises(ProvisioningError, match="tenant initech is removing"):
+        await command("provision", "initech", "--existing-ok")

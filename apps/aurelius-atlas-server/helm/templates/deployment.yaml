@@ -68,6 +68,7 @@ spec:
                                   key: elastic-password
                         - name: AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS
                           value: {{ .Values.forwardedAllowIps | quote }}
+                        {{- include "atlas-server.tenancyEnv" . | nindent 24 }}
                         {{- /* The auth join (CHT-108, 6.1a/DD-250): the
                         settings are required since 6.1a — a pod without them
                         fails at boot — so the block renders unconditionally.
