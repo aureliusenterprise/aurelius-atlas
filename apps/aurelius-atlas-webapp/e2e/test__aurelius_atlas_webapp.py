@@ -693,6 +693,15 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     for name in names:
         expect(rows.filter(has_text=name)).to_have_count(1)
 
+    # VCF-02 (16.5d): the rich results card carries the trail — the door's
+    # stored breadcrumb plus the card's own active crumb. These seeds have
+    # no parent, so the trail is the one crumb: the entity's own name,
+    # marked active — the same rule the details header renders (VDR-06).
+    trail = rows.filter(has_text=names[0]).locator(".aurelius-card-trail")
+    expect(trail.locator("li")).to_have_count(1)
+    expect(trail.locator("li").first).to_have_text(names[0])
+    expect(trail.locator("li").first).to_have_class(re.compile("is-active"))
+
     # The card → details deep link (SRH-05): the clicked guid rides the URL,
     # and the header renders the live entity the read answers (7.20, DET-09).
     clicked = names[0]
@@ -1011,6 +1020,32 @@ def _active_edge(entity: dict, key: str, guid: str) -> bool:
     )
 
 
+def _wait_search_cards(page: Page, root_url: str, token: str, guids: list[str], *, timeout: float = 90) -> None:
+    """Ask the search door until it carries every guid (bounded).
+
+    The section cards and the results rows ride the view search door's
+    answer (16.5d, DD-615/DD-616), and the door's cards are the indexer
+    worker's derived documents: the read door answers a just-seeded entity
+    right away, while the search door can still answer without its card —
+    and DET-18 quietly drops a relation whose card is missing. A scenario
+    that asserts card bodies therefore waits the door's beat first, the
+    propagation-retry idiom of ``_wait_entity_read`` (CLS-12's sibling)
+    on the slower indexer.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        answer = page.request.post(
+            urljoin(root_url, "/api/aurelius/v1/search"),
+            data=json.dumps({"filters": {"guid": guids}, "limit": len(guids)}),
+            headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        ).json()
+        found = {card["guid"] for card in answer.get("cards", [])}
+        if set(guids) <= found:
+            return
+        assert time.monotonic() < deadline, f"the search door never carried the cards: missing {set(guids) - found}"
+        time.sleep(2)
+
+
 def _jump_with_side_navigation(page: Page) -> None:
     """The floating side navigation jumps within the details page (DET-25, DD-381).
 
@@ -1133,6 +1168,10 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
             alpha_guid,
             predicate=lambda entity: _active_edge(entity, "fields", guids["field"]),
         )
+        # The section cards ride the search door (16.5d, DD-615): wait its
+        # beat until it carries the attribute pair the boxes resolve, so
+        # DET-18 never drops a card the indexer has not derived yet.
+        _wait_search_cards(authenticated, root_url, user_token, [alpha_guid, guids["beta"]])
 
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{entity_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
@@ -1176,6 +1215,8 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         # edge read back at the attribute end, one resolved card. The layout
         # table gives the attribute a People box too (DET-16); the attribute
         # holds no people ends, so its empty placeholder line renders (DET-23).
+        # The field card rides the door too (DD-615): wait it before opening.
+        _wait_search_cards(authenticated, root_url, user_token, [guids["field"]])
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{alpha_guid}"))
         fields = authenticated.locator("#related-fields")
         expect(fields).to_be_visible()
@@ -1244,8 +1285,10 @@ def test__the_details_trail_follows_the_seeded_parentage(authenticated: Page, ro
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
 
         # The stored trail top-down plus the opened entity's own crumb,
-        # marked active (VDR-06): the domain above, the entity last.
-        trail = authenticated.locator("nav.breadcrumb")
+        # marked active (VDR-06): the domain above, the entity last. The
+        # header's own trail — since 16.5d the rich section cards carry a
+        # trail too (VCF-05), so the locator names the header's.
+        trail = authenticated.locator(".aurelius-details-header .aurelius-details-trail")
         items = trail.locator("li")
         expect(items).to_have_count(2)
         expect(items.nth(0)).to_have_text(f"zz{run}domain")
@@ -1319,6 +1362,10 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
                 and _active_edge(entity, "outputs", dataset_guid)
             ),
         )
+        # The lineage boxes' and the process page's cards ride the search
+        # door (16.5d, DD-615): wait its beat for every card the scenario
+        # asserts — the producer, the system, and the dataset.
+        _wait_search_cards(authenticated, root_url, user_token, [process_guid, guids["system"], dataset_guid])
 
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{dataset_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}warehouse")
@@ -1483,6 +1530,9 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
             field_guid,
             predicate=lambda entity: _active_edge(entity, "dataQuality", rule_guid),
         )
+        # The rules box card rides the search door (16.5d, DD-615): wait its
+        # beat before the screen resolves the box.
+        _wait_search_cards(authenticated, root_url, user_token, [rule_guid])
 
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{field_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}field")

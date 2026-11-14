@@ -2,11 +2,10 @@ import { ChangeDetectionStrategy, Component, effect, inject } from "@angular/cor
 import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
 import { EntityCard as ViewCard } from "aurelius-atlas-data-access";
-import { EntityCard, FacetList, InfiniteScrollContainer } from "aurelius-atlas-ui";
+import { FacetList, InfiniteScrollContainer } from "aurelius-atlas-ui";
 import { map } from "rxjs";
 
-import { nameDisplay } from "../meta/type-display";
-import { typeIcon } from "../meta/type-icons";
+import { CatalogueCard } from "../shared/catalogue-card.component";
 import { SearchState } from "../search-state";
 
 /**
@@ -28,7 +27,7 @@ import { SearchState } from "../search-state";
  * the guid, routing is the app's (DD-154).
  */
 @Component({
-    imports: [EntityCard, FacetList, InfiniteScrollContainer],
+    imports: [CatalogueCard, FacetList, InfiniteScrollContainer],
     selector: "aurelius-atlas-webapp-search-results",
     templateUrl: "./results.component.html",
     styleUrl: "./results.component.scss",
@@ -56,27 +55,6 @@ export class Results {
 
     /** The filter shell's line (SRH-07, the legacy `#noFilters` twin). */
     protected readonly noFilters = $localize`:@@search.components.filter.notAvailable:No filters available.`;
-
-    /**
-     * Resolve a card's badge icon from the hit's type name (DET-26,
-     * DD-378): the app's type-to-icon map — the legacy card badge led
-     * with it, and a type outside the map (a `DataSet`) renders none.
-     * @param typeName the hit's type name, or nothing
-     */
-    protected iconFor(typeName: string | null | undefined) {
-        return typeIcon(typeName ?? undefined);
-    }
-
-    /**
-     * Resolve a card's badge name from the hit's type name (SRH-05,
-     * DD-379): the dictionary display name — the legacy card badge's
-     * `typeName | translate`. A name outside the dictionary (a `DataSet`)
-     * stays raw, as the legacy's missing key did.
-     * @param typeName the hit's type name, or nothing
-     */
-    protected nameFor(typeName: string | null | undefined) {
-        return nameDisplay(typeName ?? undefined);
-    }
 
     /** The no-results heading (SRH-06, the legacy `search.results.noResults`). */
     protected readonly noResultsMessage = $localize`:@@search.results.noResults:No results found`;
@@ -106,17 +84,6 @@ export class Results {
      */
     protected onFacetToggled(event: { value: string; checked: boolean }): void {
         this.search.toggleType(event.value, event.checked);
-    }
-
-    /**
-     * The card's title (SRH-05, DV-83, VSR-07): the card's display text — the
-     * name, or the qualified name when there is no name (AVS-03) — rendered
-     * straight from the card, no per-card fetch.
-     * @param card the result card
-     * @returns the name to show
-     */
-    protected displayName(card: ViewCard): string {
-        return card.displayText;
     }
 
     /**

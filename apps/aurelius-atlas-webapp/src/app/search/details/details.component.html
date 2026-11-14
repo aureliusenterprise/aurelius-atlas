@@ -177,8 +177,9 @@
 <!-- The layout's card sections (DET-17..DET-22): the box carries the
          legacy anchor id so the stats bar's and the navigation's `#href`s
          land; the section chrome is the ui part (UIC-27) and every card is
-         the 7.13 `entity-card` (DET-19: quality column off, no badge icon,
-         DET-26 alias with the base type beside it). -->
+         the shared rich card of both screens (VCF-05, DD-616: trail, chips,
+         description, flat people — the same component the results row
+         mounts); the loading row stays the plain ui card's (DET-18). -->
 @if (layout()) {
     @for (view of views(); track view.anchor) {
         <div [id]="view.anchor" class="box aurelius-details-section">
@@ -221,22 +222,13 @@
                                 [loadingLabel]="loadingText(card.displayText)"
                             />
                         } @else {
-                            <aurelius-atlas-ui-entity-card
-                                [guid]="card.guid"
-                                [name]="card.displayText"
-                                [typeName]="nameFor(card.entity.typeName)"
-                                [typeAlias]="card.alias"
-                                [typeIcon]="iconFor(card.entity.typeName)?.icon"
-                                [typeIconClass]="iconFor(card.entity.typeName)?.classIcon"
-                                [showQuality]="false"
-                                (entityClicked)="onCardClick($event)"
-                            >
-                                <aurelius-atlas-webapp-card-content
-                                    card-content
-                                    [entity]="card.entity"
-                                    (personClicked)="onCardClick($event)"
-                                />
-                            </aurelius-atlas-ui-entity-card>
+                            <!-- The shared rich card (VCF-05, DD-616): the
+                                 same component the results row mounts —
+                                 trail, chips, description, flat people. -->
+                            <aurelius-atlas-webapp-catalogue-card
+                                [card]="card.card"
+                                (cardClicked)="onCardClick($event)"
+                            />
                         }
                     </div>
                 }

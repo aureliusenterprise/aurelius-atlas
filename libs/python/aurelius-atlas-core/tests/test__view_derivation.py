@@ -137,6 +137,23 @@ def test__a_stored_document_becomes_crumbs_relations_and_the_business_metadata(m
     assert view.attributes == {"qualifiedName": "a", "name": "A", "definition": "An attribute"}
 
 
+@pytest.mark.covers(f"{V}._card_definition", rules=["AVS-03", "DD-614"])
+def test__the_card_description_falls_back_to_the_description_attribute(m4i: TypeRegistry) -> None:
+    """The definition when it is there, the description when there is none, none when neither is (DD-614)."""
+    entity_type = type_of(m4i, "m4i_dataset")
+
+    only_definition = hand("m4i_dataset", entity_type, qualifiedName="s", definition="Defined")
+    only_description = hand("m4i_dataset", entity_type, qualifiedName="s", description="Described")
+    both = hand("m4i_dataset", entity_type, qualifiedName="s", definition="Defined", description="Described")
+
+    assert view_of(only_definition, entity_type).definition == "Defined"
+    assert view_of(only_description, entity_type).definition == "Described"
+    assert view_of(both, entity_type).definition == "Defined"
+    assert view_of(hand("m4i_dataset", entity_type, qualifiedName="s"), entity_type).definition is None
+    # the fallback never touches the attributes: the view's attributes are the stored ones (AVS-01)
+    assert "description" not in view_of(only_definition, entity_type).attributes
+
+
 @pytest.mark.covers(f"{V}.view_of", rules=["AVS-02"])
 def test__an_entity_without_a_document_answers_empty_and_unmarked() -> None:
     """No document: breadcrumb, relations and quality empty; no governed key; not stale (AVS-02)."""

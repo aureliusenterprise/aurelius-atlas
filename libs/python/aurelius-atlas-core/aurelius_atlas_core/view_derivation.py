@@ -58,7 +58,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
         "name": _text(stored.attributes, entity_type, "name"),
         "qualified_name": _text(stored.attributes, entity_type, "qualifiedName"),
         "display_text": _display_text(stored, entity_type),
-        "definition": _text(stored.attributes, entity_type, "definition"),
+        "definition": _card_definition(stored, entity_type),
         "status": stored.state,
         "create_time": stored.create_time,
         "update_time": stored.update_time,
@@ -89,6 +89,16 @@ def _text(attributes: dict[str, Any], entity_type: EntityType, name: str) -> str
 def _display_text(stored: StoredEntity, entity_type: EntityType) -> str:
     """The name, or the qualified name when there is no name (AVS-03)."""
     return _text(stored.attributes, entity_type, "name") or _text(stored.attributes, entity_type, "qualifiedName") or ""
+
+
+def _card_definition(stored: StoredEntity, entity_type: EntityType) -> str | None:
+    """The card's description text (AVS-03, DD-614): ``definition``, else ``description``, else none.
+
+    The body rule reads definition then description (DET-10/DD-320); the m4i types store their
+    text under ``definition`` and the Apache Atlas model types under ``description``, and the card
+    carries one field for both. The view's ``attributes`` keep each value as the store holds it.
+    """
+    return _text(stored.attributes, entity_type, "definition") or _text(stored.attributes, entity_type, "description")
 
 
 def _classification_names(stored: StoredEntity) -> list[str]:

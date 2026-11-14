@@ -3,7 +3,6 @@ import { afterRenderEffect, ChangeDetectionStrategy, Component, computed, effect
 import { toSignal } from "@angular/core/rxjs-interop";
 import { Title } from "@angular/platform-browser";
 import { ActivatedRoute, Router, RouterLink } from "@angular/router";
-import type { Breadcrumb } from "aurelius-atlas-ui";
 import type { EntityView } from "aurelius-atlas-data-access";
 import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
@@ -34,7 +33,7 @@ import { DetailsState } from "./details-state";
 import { viewProperties } from "./property-filter";
 import { LineageModel } from "./lineage/lineage-model.component";
 import { LineageModelState } from "./lineage/lineage-state";
-import { CardContent } from "./sections/card-content.component";
+import { CatalogueCard } from "../shared/catalogue-card.component";
 import { DetailsGovQualityState } from "./sections/gov-quality.state";
 import { GovQualityCards } from "./sections/gov-quality-cards.component";
 import { DetailsLayoutState } from "./sections/layout.state";
@@ -42,6 +41,7 @@ import { loadingLabel, RelatedSectionsState, type SectionView } from "./sections
 import type { StatDef } from "./sections/section-config";
 import { cardTypeAlias } from "./shared/card";
 import { peopleRowsOfSections } from "./shared/people";
+import { trailOf } from "../shared/trail";
 
 /**
  * The entity details screen (DET-01, 7.6; the data spine 7.20): the Aurelius
@@ -68,7 +68,7 @@ import { peopleRowsOfSections } from "./shared/people";
     imports: [
         Accordion,
         Breadcrumbs,
-        CardContent,
+        CatalogueCard,
         ClassificationChip,
         DetailsCardSection,
         DetailsNavigation,
@@ -287,25 +287,6 @@ export class Details {
      * `*ngIf` did.
      */
     protected readonly typeIconDef = computed(() => typeIcon(this.typeName()));
-
-    /**
-     * Resolve a card's badge icon (DET-19, DD-378): the same map lookup,
-     * per card entity. The ui card takes icon and class as inputs (UIC-15).
-     * @param typeName the card entity's type name, or nothing
-     */
-    protected iconFor(typeName: string | null | undefined) {
-        return typeIcon(typeName ?? undefined);
-    }
-
-    /**
-     * Resolve a card badge's type name (DET-19, DET-26, DD-379): the
-     * dictionary display name, per card entity — the same resolver the
-     * header badge rides. The ui card takes display strings as inputs (UIC-15).
-     * @param typeName the card entity's type name, or nothing
-     */
-    protected nameFor(typeName: string | null | undefined) {
-        return nameDisplay(typeName ?? undefined);
-    }
 
     /**
      * The classification chips' labels (DET-09, DD-379, VDR-05): the view's
@@ -575,29 +556,4 @@ export class Details {
     protected onSectionPage(view: SectionView): void {
         this.sections.nextPage(view.anchor);
     }
-}
-
-/**
- * The trail of one view (VDR-06, DD-606): the stored breadcrumb, top down,
- * plus the opened entity's own crumb, which the breadcrumbs mark active.
- * Each crumb shows its name, or its type, or its guid — the stored arrays
- * can come apart or lose a name (ASU-02, LAS-04) — and takes its icon from
- * the app's type map, as the badge's does (DET-26).
- * @param view the read door's answer
- * @param icon the type-to-icon resolver, injected to keep this pure
- * @returns the crumbs, the opened entity's last
- */
-export function trailOf(view: EntityView, icon: (typeName: string) => ReturnType<typeof typeIcon>): Breadcrumb[] {
-    const crumbs = [...(view.breadcrumb ?? []), { guid: view.guid, name: view.name, typeName: view.typeName }];
-    return crumbs.map((crumb) => {
-        const name = crumb.name || crumb.typeName || crumb.guid;
-        const typeName = crumb.typeName ?? "";
-        const found = icon(typeName);
-        return {
-            guid: crumb.guid,
-            name,
-            typeName,
-            ...(found !== undefined ? { icon: found.icon, iconClass: found.classIcon } : {}),
-        };
-    });
 }
