@@ -1,10 +1,5 @@
 [
   {
-    "version": "view-webapp-results",
-    "title": "view-webapp-results",
-    "aliases": []
-  },
-  {
     "version": "view-semantic-door",
     "title": "view-semantic-door",
     "aliases": []
