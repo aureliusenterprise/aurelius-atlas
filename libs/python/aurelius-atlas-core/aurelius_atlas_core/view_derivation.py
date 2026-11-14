@@ -21,7 +21,7 @@ from aurelius_atlas_model.views import (
 )
 from aurelius_atlas_typesystem.entity_type import EntityType
 
-from aurelius_atlas_core.app_search_document import RELATION_FIELDS
+from aurelius_atlas_core.app_search_document import RELATION_FIELDS, awaits_document
 from aurelius_atlas_core.search_fields import TRAIT_NAMES
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity, StoredQualityTotals
 
@@ -46,6 +46,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
     document's stored pairs only (AVS-08).
     """
     document = stored.app_search
+    stale = bool(document.stale) if document else awaits_document(stored)
     fields: dict[str, Any] = {
         "guid": stored.guid,
         "type_name": stored.type_name,
@@ -65,7 +66,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
         "relations": _relations(document) if document else [],
         "quality": _quality(stored.quality_totals) if stored.quality_totals else [],
         "governed": stored.governed,
-        "stale": bool(document.stale) if document else False,
+        "stale": stale,
         "attributes": _own_attributes(stored, entity_type),
         "business_metadata": _business_metadata(stored, entity_type),
         "sections": _sections(document, ends),

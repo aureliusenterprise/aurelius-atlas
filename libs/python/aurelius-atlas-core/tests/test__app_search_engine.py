@@ -318,7 +318,7 @@ async def test__facets_count_the_matches_values_most_first_or_by_value() -> None
 
 
 @pytest.mark.covers(X, rules=["ASE-08"])
-@pytest.mark.covers(f"{E}._sort_clauses", rules=["ASE-08"])
+@pytest.mark.covers(f"{E}.sort_clauses", rules=["ASE-08"])
 async def test__a_sort_orders_by_fields_or_score_arrays_by_their_ends_ties_by_id() -> None:
     """By name both ways; an array by its least ascending and greatest descending; a constant sorts nothing."""
     engine = await engine_of(
@@ -389,7 +389,7 @@ async def test__a_field_page_s_request_answers_the_field_s_results() -> None:
 
 
 @pytest.mark.covers(X, rules=["ASQ-04", "ASQ-06"])
-@pytest.mark.covers(f"{E}._sort_clauses", rules=["ASQ-06"])
+@pytest.mark.covers(f"{E}.sort_clauses", rules=["ASQ-06"])
 async def test__the_score_fields_read_filter_facet_and_sort_with_and_without_totals() -> None:
     """``a`` holds totals; ``b`` none, read, filtered, faceted and sorted as 0 (DD-530)."""
     engine = await engine_of(with_totals(stored("a"), 1.5, 2, ["r"]), stored("b"))
