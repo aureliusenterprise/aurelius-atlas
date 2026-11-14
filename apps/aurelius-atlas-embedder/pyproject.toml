@@ -4,7 +4,7 @@ dependencies = [
     "numpy>=2.5.4",
     # No wheels for Python 3.15 yet; the app imports it only to load the model (DD-433).
     "onnxruntime>=1.31.1; python_version < '3.15'",
-    "pydantic>=2.14.1",
+    "pydantic>=2.14.3",
     "pydantic-settings>=2.15.0",
     "tokenizers>=0.23.3",
     "uvicorn[standard]>=0.54.0",
