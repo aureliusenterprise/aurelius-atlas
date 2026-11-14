@@ -64,6 +64,7 @@ class Kind(StrEnum):
 
     TEXT = "text"
     NUMBER = "number"
+    BOOL = "boolean"
 
 
 @dataclass(frozen=True)
@@ -80,7 +81,11 @@ class EngineField:
     constant: Any = None
     text: str | None = None
     read: Callable[[Mapping[str, Any]], Any] | None = None
-    missing: float | None = None
+    missing: Any = None
+    """The value a document without the index field holds; a bool field's may be ``None`` (the field absent)."""
+    paths: tuple[str, ...] | None = None
+    """The index paths of a field stored per entity type (the view door's ``name``, DD-586): a filter holds
+    a value of any one of them, and only filtering and matching reach such a field."""
 
     def value(self, source: Mapping[str, Any]) -> Any:  # noqa: ANN401 - a field's JSON value
         """The field's value in a hit's source."""
@@ -246,7 +251,7 @@ class AppSearchError(Exception):
 
 
 @dataclass
-class _Facet:
+class Facet:
     """One facet of a field: the most frequent values first, or by value."""
 
     size: int
@@ -271,15 +276,17 @@ class Search:
     engine: Engine = ATLAS_DEV
     query: str = ""
     filters: list[dict[str, Any]] = field(default_factory=list)
-    facets: dict[str, list[_Facet]] = field(default_factory=dict)
+    facets: dict[str, list[Facet]] = field(default_factory=dict)
     sort: list[tuple[str, str]] = field(default_factory=list)
     current: int = 1
     size: int = 10
+    start: int | None = None
+    """The first hit's index, in place of ``current`` times ``size``: the view door pages by ``offset`` (AVR-07)."""
     result_fields: dict[str, _ResultField] | None = None
     search_fields: dict[str, float] | None = None
 
 
-class _Errors:
+class Errors:
     """The problems found in a request, raised together."""
 
     def __init__(self, fields: Mapping[str, EngineField]) -> None:
@@ -287,9 +294,11 @@ class _Errors:
         self.messages: list[str] = []
 
     def add(self, message: str) -> None:
+        """One more problem found in the request."""
         self.messages.append(message)
 
     def raise_any(self) -> None:
+        """Refuse with every problem found, if any; App Search's one 400 for all of them."""
         if self.messages:
             raise AppSearchError(400, *self.messages)
 
@@ -303,7 +312,7 @@ def parse(body: object, engine: Engine = ATLAS_DEV) -> Search:
     """  # noqa: D205 - one sentence
     if not isinstance(body, dict):
         raise AppSearchError(400, "The request body must be a JSON object")
-    errors = _Errors(engine.fields)
+    errors = Errors(engine.fields)
     search = Search(engine)
     query = body.get("query", "")
     if isinstance(query, str):
@@ -311,11 +320,11 @@ def parse(body: object, engine: Engine = ATLAS_DEV) -> Search:
     elif query is not None:
         errors.add("Query must be a string")
     if (filters := body.get("filters")) is not None:
-        search.filters = [_filter(filters, errors, "Filters")]
+        search.filters = [filter_clauses(filters, errors, "Filters")]
     if (facets := body.get("facets")) is not None:
         search.facets = _facets(facets, errors)
     if (sort := body.get("sort")) is not None:
-        search.sort = _sort(sort, errors)
+        search.sort = parse_sort(sort, errors)
     if (page := body.get("page")) is not None:
         search.current, search.size = _page(page, errors)
     if (result_fields := body.get("result_fields")) is not None:
@@ -326,7 +335,7 @@ def parse(body: object, engine: Engine = ATLAS_DEV) -> Search:
     return search
 
 
-def _known(name: object, errors: _Errors, what: str) -> EngineField | None:
+def known(name: object, errors: Errors, what: str) -> EngineField | None:
     """The engine's field of that name, or a problem named after ``what``."""
     found = errors.fields.get(name) if isinstance(name, str) else None
     if found is None:
@@ -338,7 +347,7 @@ _ALL = {"match_all": {}}
 _NONE = {"match_none": {}}
 
 
-def _filter(node: object, errors: _Errors, what: str) -> dict[str, Any]:
+def filter_clauses(node: object, errors: Errors, what: str) -> dict[str, Any]:
     """A filter object: its fields and its ``all``, ``any`` and ``none`` lists, joined as ``all`` (ASE-06)."""
     if not isinstance(node, dict):
         errors.add(f"{what} must be an object")
@@ -349,24 +358,31 @@ def _filter(node: object, errors: _Errors, what: str) -> dict[str, Any]:
             if not isinstance(value, list):
                 errors.add(f"{what} {key} must be a list of filters")
                 continue
-            nested = [_filter(item, errors, what) for item in value]
+            nested = [filter_clauses(item, errors, what) for item in value]
             if key == "all":
                 clauses.append({"bool": {"filter": nested}})
             elif key == "any":
                 clauses.append({"bool": {"should": nested, "minimum_should_match": 1}} if nested else _NONE)
             else:
                 clauses.append({"bool": {"must_not": nested}})
-        elif (engine_field := _known(key, errors, what)) is not None:
-            clauses.append(_field_filter(key, engine_field, value, errors))
+        elif (engine_field := known(key, errors, what)) is not None:
+            clauses.append(field_filter(key, engine_field, value, errors))
     return {"bool": {"filter": clauses}}
 
 
-def _field_filter(name: str, engine_field: EngineField, value: object, errors: _Errors) -> dict[str, Any]:
-    """A field's value filter, any of a list, or a number field's range from included to not (ASE-06)."""
+def field_filter(name: str, engine_field: EngineField, value: object, errors: Errors) -> dict[str, Any]:
+    """A field's value filter, any of a list, or a number field's range from included to not (ASE-06).
+
+    A field stored per entity type (``paths``) filters as any one of its paths holding a value: a document
+    of one type has the value under its own path alone (DD-586).
+    """
     if isinstance(value, dict):
-        return _range_filter(name, engine_field, value, errors)
+        return range_filter(name, engine_field, value, errors)
     values = value if isinstance(value, list) else [value]
-    wanted = [_filter_value(name, engine_field, item, errors) for item in values]
+    wanted = [filter_value(name, engine_field, item, errors) for item in values]
+    if engine_field.paths is not None:
+        terms = [{"terms": {path: [item for item in wanted if item is not None]}} for path in engine_field.paths]
+        return {"bool": {"should": terms, "minimum_should_match": 1}} if terms else _NONE
     if engine_field.path is None:
         held = engine_field.constant if isinstance(engine_field.constant, list) else [engine_field.constant]
         return _ALL if any(item in held for item in wanted if item is not None) else _NONE
@@ -381,17 +397,23 @@ def _or_missing(engine_field: EngineField, clause: dict[str, Any]) -> dict[str, 
     return {"bool": {"should": [clause, absent], "minimum_should_match": 1}}
 
 
-def _filter_value(name: str, engine_field: EngineField, value: object, errors: _Errors) -> object:
-    """A filter value of the field's kind: a string for text, a number for a number field."""
+_KIND_WORDS = {Kind.TEXT: "string", Kind.NUMBER: "number", Kind.BOOL: "boolean"}
+"""What a refusal calls a field's kind, in a filter message."""
+
+
+def filter_value(name: str, engine_field: EngineField, value: object, errors: Errors) -> object:
+    """A filter value of the field's kind: a string for text, a number for a number field, a bool for a flag."""
     if engine_field.kind is Kind.TEXT and isinstance(value, str):
         return value
     if engine_field.kind is Kind.NUMBER and _is_number(value):
         return value
-    errors.add(f"Filter value for {name} must be a {'string' if engine_field.kind is Kind.TEXT else 'number'}")
+    if engine_field.kind is Kind.BOOL and isinstance(value, bool):
+        return value
+    errors.add(f"Filter value for {name} must be a {_KIND_WORDS[engine_field.kind]}")
     return None
 
 
-def _range_filter(name: str, engine_field: EngineField, bounds: dict[str, Any], errors: _Errors) -> dict[str, Any]:
+def range_filter(name: str, engine_field: EngineField, bounds: dict[str, Any], errors: Errors) -> dict[str, Any]:
     """``{from, to}`` of a number field: from included, to not."""
     if engine_field.kind is not Kind.NUMBER:
         errors.add(f"Filter for {name} must be a value or a list of values: it is a text field")
@@ -417,24 +439,24 @@ def _is_number(value: object) -> bool:
     return isinstance(value, int | float) and not isinstance(value, bool)
 
 
-def _facets(facets: object, errors: _Errors) -> dict[str, list[_Facet]]:
+def _facets(facets: object, errors: Errors) -> dict[str, list[Facet]]:
     """Each field's value facets: ``size`` 1 to 250, sorted by count or value (ASE-07)."""
     if not isinstance(facets, dict):
         errors.add("Facets must be an object")
         return {}
-    parsed: dict[str, list[_Facet]] = {}
+    parsed: dict[str, list[Facet]] = {}
     for name, value in facets.items():
-        if _known(name, errors, "Facets") is None:
+        if known(name, errors, "Facets") is None:
             continue
         parsed[name] = [_facet(name, item, errors) for item in (value if isinstance(value, list) else [value])]
     return parsed
 
 
-def _facet(name: str, facet: object, errors: _Errors) -> _Facet:
+def _facet(name: str, facet: object, errors: Errors) -> Facet:
     """One facet: its type must be ``value``; a range facet is refused (DV-158)."""
     if not isinstance(facet, dict):
         errors.add(f"Facet for {name} must be an object")
-        return _Facet(0, {})
+        return Facet(0, {})
     if facet.get("type") == "range":
         errors.add(f"Range facets are not supported: {name}")
     elif facet.get("type") != "value":
@@ -453,10 +475,10 @@ def _facet(name: str, facet: object, errors: _Errors) -> _Facet:
                 errors.add(f"Facet sort for {name} must be asc or desc")
         else:
             errors.add(f"Facet sort for {name} must be by count or by value")
-    return _Facet(size, order)
+    return Facet(size, order)
 
 
-def _sort(sort: object, errors: _Errors) -> list[tuple[str, str]]:
+def parse_sort(sort: object, errors: Errors) -> list[tuple[str, str]]:
     """A field or ``_score`` with its direction, or a list of them (ASE-08)."""
     clauses = sort if isinstance(sort, list) else [sort]
     parsed = []
@@ -467,12 +489,12 @@ def _sort(sort: object, errors: _Errors) -> list[tuple[str, str]]:
         ((name, direction),) = clause.items()
         if direction not in _DIRECTIONS:
             errors.add(f"Sort direction for {name} must be asc or desc")
-        elif name == "_score" or _known(name, errors, "Sort") is not None:
+        elif name == "_score" or known(name, errors, "Sort") is not None:
             parsed.append((name, direction))
     return parsed
 
 
-def _page(page: object, errors: _Errors) -> tuple[int, int]:
+def _page(page: object, errors: Errors) -> tuple[int, int]:
     """``current`` 1 to 100 and ``size`` 1 to 1,000 (ASE-09)."""
     if not isinstance(page, dict):
         errors.add("Page must be an object")
@@ -487,14 +509,14 @@ def _page(page: object, errors: _Errors) -> tuple[int, int]:
     return current, size
 
 
-def _result_fields(result_fields: object, errors: _Errors) -> dict[str, _ResultField]:
+def _result_fields(result_fields: object, errors: Errors) -> dict[str, _ResultField]:
     """Each field's raw value and snippet, with their sizes (ASE-10)."""
     if not isinstance(result_fields, dict):
         errors.add("Result fields must be an object")
         return {}
     parsed = {}
     for name, options in result_fields.items():
-        engine_field = _known(name, errors, "Result fields")
+        engine_field = known(name, errors, "Result fields")
         if engine_field is None:
             continue
         if not isinstance(options, dict):
@@ -521,21 +543,21 @@ def _result_fields(result_fields: object, errors: _Errors) -> dict[str, _ResultF
     return parsed
 
 
-def _size(value: object, what: str, least: int, most: int | None, errors: _Errors) -> int:
+def _size(value: object, what: str, least: int, most: int | None, errors: Errors) -> int:
     if not isinstance(value, int) or isinstance(value, bool) or value < least or (most is not None and value > most):
         errors.add(f"{what} must be at least {least}" + (f" and at most {most}" if most is not None else ""))
         return least
     return value
 
 
-def _search_fields(search_fields: object, errors: _Errors) -> dict[str, float]:
+def _search_fields(search_fields: object, errors: Errors) -> dict[str, float]:
     """The text fields a query's words are matched in, each with its weight (ASE-05)."""
     if not isinstance(search_fields, dict):
         errors.add("Search fields must be an object")
         return {}
     parsed = {}
     for name, options in search_fields.items():
-        engine_field = _known(name, errors, "Search fields")
+        engine_field = known(name, errors, "Search fields")
         if engine_field is None:
             continue
         if engine_field.kind is not Kind.TEXT:
@@ -550,17 +572,19 @@ def _search_fields(search_fields: object, errors: _Errors) -> dict[str, float]:
 
 
 def _matched_fields(search: Search) -> list[str]:
-    """The index fields a query's words are matched in, with their weights (DD-525): the stored text fields."""
+    """The index fields a query's words are matched in, with their weights (DD-525): the stored text fields.
+
+    ``search_fields`` names the engine's fields, or—as the view door passes them—index paths used as they
+    are: the door's query fields are typed per entity type and never rows of one table (DD-586).
+    """
     weights = search.search_fields or dict.fromkeys(search.engine.fields, 1.0)
     fields = []
     for name, weight in weights.items():
-        engine_field = search.engine.fields[name]
-        target = engine_field.text or engine_field.path
-        if (
-            engine_field.kind is Kind.TEXT
-            and target is not None
-            and target not in (spec.split("^")[0] for spec in fields)
-        ):
+        engine_field = search.engine.fields.get(name)
+        if engine_field is not None and engine_field.kind is not Kind.TEXT:
+            continue
+        target = (engine_field.text or engine_field.path) if engine_field is not None else name
+        if target is not None and target not in (spec.split("^")[0] for spec in fields):
             fields.append(target if weight == 1 else f"{target}^{weight:g}")
     return fields
 
@@ -579,17 +603,17 @@ def query_body(search: Search) -> dict[str, Any]:
                 }
             }
         )
-    start = (search.current - 1) * search.size
+    start = search.start if search.start is not None else (search.current - 1) * search.size
     fields = search.engine.fields
     aggs = {
-        f"{name}#{index}": {"terms": _facet_terms(fields[name], facet)}
+        f"{name}#{index}": {"terms": facet_terms(fields[name], facet)}
         for name, facets in search.facets.items()
         if fields[name].path is not None
         for index, facet in enumerate(facets)
     }
     return {
         "query": {"bool": {"filter": [*search.engine.holds, *search.filters], "must": must}},
-        "sort": _sort_clauses(search.sort, fields, search.engine.id_field),
+        "sort": sort_clauses(search.sort, fields, search.engine.id_field),
         "aggs": aggs,
         "from_": min(start, RESULT_WINDOW),
         "size": max(0, min(search.size, RESULT_WINDOW - start)),
@@ -597,20 +621,18 @@ def query_body(search: Search) -> dict[str, Any]:
     }
 
 
-def _facet_terms(engine_field: EngineField, facet: _Facet) -> dict[str, Any]:
+def facet_terms(engine_field: EngineField, facet: Facet) -> dict[str, Any]:
     """A facet's ``terms``: one more value than asked, to drop an empty one; missing values counted (DD-530)."""
-    terms = {"field": engine_field.path, "size": facet.size + 1, "order": _facet_order(facet)}
+    terms = {"field": engine_field.path, "size": facet.size + 1, "order": facet_order(facet)}
     return terms if engine_field.missing is None else terms | {"missing": engine_field.missing}
 
 
-def _facet_order(facet: _Facet) -> list[dict[str, str]]:
+def facet_order(facet: Facet) -> list[dict[str, str]]:
     """A facet's order; ties of counts by value (ASE-07)."""
     return [facet.order, {"_key": "asc"}] if "_count" in facet.order else [facet.order]
 
 
-def _sort_clauses(
-    sort: list[tuple[str, str]], fields: Mapping[str, EngineField], id_field: str
-) -> list[dict[str, Any]]:
+def sort_clauses(sort: list[tuple[str, str]], fields: Mapping[str, EngineField], id_field: str) -> list[dict[str, Any]]:
     """The sort, constants dropped, a missing number as its ``missing`` value, ties by ``id`` (ASE-08, DD-530)."""
     clauses: list[dict[str, Any]] = []
     for name, direction in sort or [("_score", "desc")]:
@@ -667,7 +689,7 @@ def _result(hit: Mapping[str, Any], search: Search) -> dict[str, Any]:
     result: dict[str, Any] = {"id": {"raw": document_id}}
     words = [word.lower() for word in _WORD.findall(search.query)]
     for name, options in asked.items():
-        value = _plain(fields[name].value(source))
+        value = plain(fields[name].value(source))
         answered: dict[str, Any] = {}
         if options.raw:
             answered["raw"] = _cut(value, options.raw_size)
@@ -678,12 +700,12 @@ def _result(hit: Mapping[str, Any], search: Search) -> dict[str, Any]:
     return result
 
 
-def _plain(value: Any) -> Any:  # noqa: ANN401 - a field's JSON value
+def plain(value: Any) -> Any:  # noqa: ANN401 - a field's JSON value
     """The value as JSON answers it: a number the store reads as a ``Decimal`` a float, in a list too."""
     if isinstance(value, Decimal):
         return float(value)
     if isinstance(value, list):
-        return [_plain(item) for item in value]
+        return [plain(item) for item in value]
     return value
 
 
@@ -735,7 +757,7 @@ def _answered_facets(search: Search, aggregations: Mapping[str, Any], total: int
             else:
                 buckets = aggregations[f"{name}#{index}"]["buckets"]
                 data = [
-                    {"value": _plain(bucket["key"]), "count": bucket["doc_count"]}
+                    {"value": plain(bucket["key"]), "count": bucket["doc_count"]}
                     for bucket in buckets
                     if bucket["key"] not in ("", None)
                 ][: facet.size]
