@@ -144,3 +144,32 @@ record (16.5), which AVW-11's stable response makes safe.
 def is one type; 6.2a's check is the same call 2.3's header read makes). A form built from the
 slice must render inherited attributes exactly as the walk did; 7.7a's spec rows (EDT-04..07)
 re-run against it in 16.5.
+
+### DD-594. The write's answer is fresh by the write itself: `stale` false
+
+- **Status:** Proposed
+- **Increment:** 16.3
+- **Date:** 2026-11-14
+- **Supersedes:** none
+
+**Decision.** The door derives the answer from the state its request just wrote and answers
+`stale` false (AVW-07), whatever the stored document says at that moment. The read door keeps
+AVS-06's derivation; only the mutation door overrides the one field.
+
+**Reason.** AVS-06's staleness tells a reader its card may lag a write the derived document has
+not caught up with. The mutation door's caller is that write: its own apply just stored the
+entity, so no write of its own can be the lag it would be warned about, and an editor told to
+re-read after its own save is a loop with no exit. The rest of the view stays the derivation's,
+so the answer equals the read door's for every other field (AVW-07's equality).
+
+**Alternatives.**
+
+- Keep the derivation's `stale`: the answer to a save says "this may be behind your save",
+  which is false for the saver and pushes a re-read onto every write's happy path.
+- Wait for the derived document before answering: the door takes the search pipeline's timing
+  into the write's latency (ADR 047 keeps them apart).
+
+**Consequences.** One field differs between the two doors by design, in the caller's favour and
+recorded here; 16.5's editor trusts the answer and re-reads only on the 409. If a future
+increment makes the derived document part of the write, this entry is superseded and the
+override goes away.

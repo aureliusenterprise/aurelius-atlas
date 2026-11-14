@@ -472,6 +472,16 @@ class AtlasErrorCode(Enum):
     TENANT_NOT_PROVISIONED = (403, "AURELIUS-403-00-003", "Tenant {0} is not provisioned")
     # Aurelius's own, for a door of the view family whose caller may not read (AVR-01, AVR-10, DD-588).
     VIEW_FORBIDDEN = (403, "AURELIUS-403-00-004", "{0} is not authorized to read the catalogue")
+    # Aurelius's own, for the mutation door's conflicts (AVW-04, AVW-06) and its caller who may not write (AVW-01).
+    # The conflict codes are the names the spec pins, not Atlas's or Aurelius's numbered shape: the door answers
+    # them itself, with the stored view beside the conflict (DD-591), where the handler's body has no place for one.
+    ENTITY_VERSION_CONFLICT = (
+        409,
+        "ENTITY_VERSION_CONFLICT",
+        "Entity {0} changed since the view of it was read: the answer carries the stored view",
+    )
+    ENTITY_NAME_TAKEN = (409, "ENTITY_NAME_TAKEN", "The qualified name {0} is held by entity {1}")
+    VIEW_FORBIDDEN_WRITE = (403, "AURELIUS-403-00-005", "{0} is not authorized to write the catalogue")
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK = (
         409,
         "ATLAS-500-00-006",

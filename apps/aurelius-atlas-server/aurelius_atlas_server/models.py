@@ -169,3 +169,14 @@ class ViewSearchAnswer(AtlasModel):
     cards: list[dict[str, Any]] = Field(default_factory=list)
     facets: dict[str, Any] = Field(default_factory=dict)
     total: int = 0
+
+
+class ViewForTypeAnswer(AtlasModel):
+    """The answer of ``GET /api/aurelius/v1/types/for-type/{name}`` (AVW-11).
+
+    ``type`` holds the named entity type and ``superTypes`` each supertype in
+    the chain, every one a whole Atlas typedef with the attributes it declares.
+    """
+
+    type: dict[str, Any] = Field(default_factory=dict)
+    super_types: list[dict[str, Any]] = Field(default_factory=list)
