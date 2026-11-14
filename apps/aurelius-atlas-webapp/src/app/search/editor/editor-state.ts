@@ -1,21 +1,28 @@
+import { HttpErrorResponse } from "@angular/common/http";
 import { Injectable, computed, inject, signal } from "@angular/core";
 import { Router } from "@angular/router";
-import { Observable, forkJoin } from "rxjs";
 import {
     AtlasEntitiesService,
     TypeDefsService,
-    type AtlasClassification,
+    ViewEntityService,
+    ViewSaveService,
+    ViewTypeService,
+    isAtlasErrorBody,
+    viewConflictFrom,
     type AtlasClassificationDef,
     type AtlasEntity,
     type AtlasEntityDef,
     type AtlasEnumDef,
-    type AtlasTypesDef,
+    type AtlasTypeDefHeader,
+    type EntityView,
+    type ViewSaveRequest,
 } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
 
 import { EntitySaved } from "./entity-saved";
+import { entityFromView, tagsAfterConflict } from "./view-as-entity";
 
 /** The editor's mode, read off its own route segment (EDT-01, DD-325). */
 export type EditorMode = "edit" | "create";
@@ -23,25 +30,33 @@ export type EditorMode = "edit" | "create";
 /** A picker row: the type name and the label to show (EDT-04). */
 export type PickerType = { name: string; label: string };
 
+/** What a conflict replaced (VDE-07, DD-610): the view held before it, and the stored one. */
+export type ConflictEvent = { from: EntityView | null; to: EntityView };
+
 /**
- * The editor drawer's store (EDT-02..EDT-06, DD-325, DD-326): the entity
- * read the drawer owns (EDT-02, DD-322 — no shared store with the screen
- * underneath), the one typedefs call the picker, the field resolver, and the
- * classification box all read (EDT-04), the chosen classifications (EDT-05),
- * and the two-request save (EDT-06).
+ * The editor drawer's store on the view doors (VDE-01..VDE-10, DD-608..DD-612):
+ * the entity read the drawer owns (EDT-02, DD-322 kept — no shared store with
+ * the screen underneath) now rides the read door (VDE-01, DD-608); the form's
+ * type material comes from the for-type chain and three small slices, cached
+ * by name (VDE-02, DD-611); the tag box starts at the view's own tags
+ * (VDE-03 — the client's DD-326 filter retires); and a save is one door POST
+ * (VDE-05, DD-609), whose conflict re-edits from the stored view (VDE-07,
+ * DD-610). The delete stays Atlas's (VDE-11) — the door does not delete.
  *
- * The save is the entity POST, then the classification diff: one
- * `POST .../guid/{guid}/classifications` for the added tags and one
- * `DELETE .../classification/{name}` per removal (DD-326 — the legacy
- * diff; the CLS-08 replace call cannot attach a new tag or detach one,
- * live-probed). A create payload carries a negative numeric temporary guid
- * and a uuid `qualifiedName`, and the navigation uses the real guid from
- * the mutation answer's `guidAssignments` (DD-325, live-probed: a uuid guid
- * reads as a reference and the server refuses it).
+ * The create seeds no temporary guid (VDE-05, DD-592): the draft carries the
+ * qualified name the client generates, the body names no guid, and the
+ * answer's view carries the server's (AVW-06) — the `guidAssignments` remap
+ * of DD-325 retires.
  */
 @Injectable()
 export class EditorState {
     private readonly entities = inject(AtlasEntitiesService);
+
+    private readonly views = inject(ViewEntityService);
+
+    private readonly saves = inject(ViewSaveService);
+
+    private readonly types = inject(ViewTypeService);
 
     private readonly typedefs = inject(TypeDefsService);
 
@@ -55,20 +70,46 @@ export class EditorState {
     /** The editor's mode, set once by the route component from its route. */
     readonly mode = signal<EditorMode>("edit");
 
-    /** The entity being edited (edit mode), or null before/without a read. */
-    readonly entity = signal<AtlasEntity | null>(null);
+    /**
+     * The view the save merges onto (DD-608): the read door's answer, or — after
+     * a conflict — the stored view the answer carried (VDE-07, DD-610). Null
+     * before the read, on a failed read, and through create (the draft below).
+     */
+    readonly view = signal<EntityView | null>(null);
 
-    /** The whole typedefs answer (EDT-04's single call). */
-    readonly typedefsDef = signal<AtlasTypesDef | null>(null);
+    /** The create-mode draft (VDE-05, DD-592): the type and the client's qualified name. */
+    private readonly draft = signal<AtlasEntity | null>(null);
+
+    /** The entity the editor renders (VDE-01, DD-608): the view's draft, or the create seed. */
+    readonly entity = computed(() => this.viewedEntity() ?? this.draft());
+
+    /** The view's draft, kept as a computed so the view read and the draft stay apart. */
+    private readonly viewedEntity = computed(() => {
+        const view = this.view();
+
+        return view === null ? null : entityFromView(view);
+    });
 
     /** The create-mode type the picker chose (EDT-04), null before the pick. */
     readonly selectedTypeName = signal<string | null>(null);
 
-    /** The classifications the tag box holds (EDT-05). */
-    readonly chosen = signal<readonly AtlasClassification[]>([]);
+    /** The classification names the tag box holds (EDT-05, VDE-03). */
+    readonly chosen = signal<readonly string[]>([]);
 
-    /** The own-classification names the read seeded the box with (DD-326's diff base). */
-    private initialOwnNames = new Set<string>();
+    /** The entity type chain of the type being edited (VDE-02, AVW-11), through the door's client cache. */
+    readonly chainDefs = signal<readonly AtlasEntityDef[]>([]);
+
+    /** The classification defs the tag box offers (VDE-02, DD-611's slice). */
+    readonly classificationDefs = signal<readonly AtlasClassificationDef[]>([]);
+
+    /** The enum defs the form's enum fields read (VDE-02, DD-611's slice). */
+    readonly enumDefs = signal<readonly AtlasEnumDef[]>([]);
+
+    /** The entity typedef headers the create picker lists (VDE-02, TYR-08). */
+    readonly entityHeaders = signal<readonly AtlasTypeDefHeader[]>([]);
+
+    /** The conflict the component must re-seed from, or null (VDE-07, DD-610). */
+    readonly conflict = signal<ConflictEvent | null>(null);
 
     /** Whether the entity read is in flight (EDT-02's loading line). */
     readonly loading = signal(false);
@@ -84,127 +125,156 @@ export class EditorState {
         this.mode() === "create" ? this.selectedTypeName() : (this.entity()?.typeName ?? null),
     );
 
-    /** Every entity definition by name (the supertype walk's lookup). */
+    /**
+     * The chain's entity definitions by name (VDE-02): the walked type and its
+     * supertypes, each typedef whole from the for-type door — enough for
+     * `buildFields` and `buildRelationshipFields` to walk unchanged.
+     */
     readonly entityDefsByName = computed(() => {
         const byName = new Map<string, AtlasEntityDef>();
-        for (const def of this.typedefsDef()?.entityDefs ?? []) {
+        for (const def of this.chainDefs()) {
             if (def.name) {
                 byName.set(def.name, def);
             }
         }
+
         return byName;
     });
 
-    /** Every enum definition by name (EDT-03's enum lookup + values). */
+    /** Every enum definition by name (EDT-03's enum lookup + values, VDE-02). */
     readonly enumsByName = computed(() => {
         const byName = new Map<string, AtlasEnumDef>();
-        for (const def of this.typedefsDef()?.enumDefs ?? []) {
+        for (const def of this.enumDefs()) {
             if (def.name) {
                 byName.set(def.name, def);
             }
         }
+
         return byName;
     });
 
     /**
-     * The create-mode picker list (EDT-04): every entity typedef except the
-     * glossary types and the `__`-prefixed internals, labelled by alias else
-     * the dictionary display name, sorted. The legacy row label is
+     * The create-mode picker list (EDT-04, VDE-02): every entity typedef header
+     * except the glossary types and the `__`-prefixed internals, labelled by
+     * alias else the dictionary display name, sorted. The legacy row label is
      * `translate.instant(entityDef.name)` (`type-select.component.ts:116`);
-     * the store ships no typedef `displayName`, so the label is the
-     * `nameDisplay` of the name — raw for a type the dictionary never saw
-     * (DD-379). The order is the labels' (DD-497): a picker a person reads
-     * is a word list, so the rows sort by the text they show, not by the
-     * raw names the legacy sorted (`type-select.component.ts:31`).
+     * headers carry no `displayName`, so the label is the `nameDisplay` of the
+     * name (DD-379 kept). The order is the labels' (DD-497): a picker a person
+     * reads is a word list, so the rows sort by the text they show.
      */
     readonly pickerTypes = computed<readonly PickerType[]>(() => {
         const rows: PickerType[] = [];
-        for (const def of this.typedefsDef()?.entityDefs ?? []) {
-            const name = def.name ?? "";
+        for (const header of this.entityHeaders()) {
+            const name = header.name ?? "";
             if (name === "" || name.startsWith("__") || name.startsWith("AtlasGlossary")) {
                 continue;
             }
-            rows.push({ name, label: def.options?.["displayName"] ?? nameDisplay(name) });
+            rows.push({ name, label: nameDisplay(name) });
         }
+
         return rows.sort((a, b) => a.label.localeCompare(b.label));
     });
 
     /**
-     * The classification types the tag box offers (EDT-05): the defs whose
-     * `entityTypes` include the entity's type or one of its supertypes, minus
-     * the chosen ones.
+     * The classification types the tag box offers (EDT-05, VDE-02): the defs
+     * whose `entityTypes` include the entity's type or one of its supertypes
+     * — the chain's own names answer the lineage (AVW-11) — minus the chosen
+     * ones.
      */
     readonly applicableClassifications = computed<readonly AtlasClassificationDef[]>(() => {
         const typeName = this.typeName();
         if (!typeName) {
             return [];
         }
-        const lineage = this.typeLineage(typeName);
-        const chosenNames = new Set(this.chosen().map((tag) => tag.typeName));
+        const lineage = new Set(
+            this.chainDefs()
+                .map((def) => def.name ?? "")
+                .filter((name) => name !== ""),
+        );
+        const chosenNames = new Set(this.chosen());
 
-        return (this.typedefsDef()?.classificationDefs ?? []).filter((def) => {
+        return this.classificationDefs().filter((def) => {
             if (!def.name || chosenNames.has(def.name)) {
                 return false;
             }
             const applies = def.entityTypes ?? [];
 
-            return applies.length === 0 ? false : applies.some((type) => lineage.has(type));
+            return applies.some((type) => lineage.has(type));
         });
     });
 
-    /** The type and its transitive supertypes (EDT-05's applicability rule). */
-    private typeLineage(typeName: string): ReadonlySet<string> {
-        const lineage = new Set<string>([typeName]);
-        const defs = this.entityDefsByName();
-        const queue = [typeName];
-
-        while (queue.length > 0) {
-            const current = defs.get(queue.shift() as string);
-            for (const superName of current?.superTypes ?? []) {
-                if (!lineage.has(superName)) {
-                    lineage.add(superName);
-                    queue.push(superName);
-                }
-            }
-        }
-
-        return lineage;
+    /**
+     * A classification type's description for the chip tooltip (UIC-16): the
+     * classification slice answers it (DD-612 — the whole-typedefs dump retired).
+     * @param typeName the tag's type
+     */
+    classificationDescription(typeName: string): string | undefined {
+        return this.classificationDefs().find((def) => def.name === typeName)?.description ?? undefined;
     }
 
-    /** Fetch the whole typedefs answer once (EDT-04's single call). */
-    loadTypeDefs(): void {
-        this.typedefs.getTypedefs({}).subscribe({
-            next: (answer) => this.typedefsDef.set(answer),
-            error: () =>
-                this.alerts.add({
-                    severity: "error",
-                    message: $localize`:@@search.components.classification.retrieve:Retrieving the classification type definition`,
-                    source: "search",
-                }),
+    /**
+     * The chain for the type being edited (VDE-02): the for-type door's client
+     * caches it by name (DD-611), so a re-pick of the same type asks nothing.
+     * @param typeName the type to build a form for
+     */
+    loadChain(typeName: string): void {
+        if (this.chainDefs().some((def) => def.name === typeName)) {
+            return; // already asked for this chain (a re-pick of the same type)
+        }
+        this.types.forType(typeName).subscribe({
+            next: (answer) => this.chainDefs.set([answer.type as AtlasEntityDef, ...answer.superTypes]),
+            error: () => this.typesFailed(),
         });
     }
 
     /**
-     * Fetch the entity being edited (EDT-02): the answer seeds the type, and
-     * the tag box starts at the entity's own classifications (DD-326 — only
-     * the ones the entity carries itself, so the save's diff can never touch
-     * a propagated tag). A failed read (a 404 among them) alerts and leaves
-     * the form empty; the drawer stays open.
+     * Fetch the three small slices the form's material rides (VDE-02, DD-611):
+     * the classification defs, the enum defs, and the entity headers — once,
+     * on the editor's open. A failed slice alerts with the retrieval line
+     * EDT-04 kept and leaves its list empty; the drawer stays usable.
+     */
+    loadSlices(): void {
+        this.typedefs.getTypedefs({ type: "CLASSIFICATION" }).subscribe({
+            next: (answer) => this.classificationDefs.set(answer.classificationDefs ?? []),
+            error: () => this.typesFailed(),
+        });
+        this.typedefs.getTypedefs({ type: "ENUM" }).subscribe({
+            next: (answer) => this.enumDefs.set(answer.enumDefs ?? []),
+            error: () => this.typesFailed(),
+        });
+        this.typedefs.getTypedefHeaders({ type: "ENTITY" }).subscribe({
+            next: (headers) => this.entityHeaders.set(headers),
+            error: () => this.typesFailed(),
+        });
+    }
+
+    /** The type-material failure line (EDT-04 kept): one alert, the drawer stays open. */
+    private typesFailed(): void {
+        this.alerts.add({
+            severity: "error",
+            message: $localize`:@@search.components.classification.retrieve:Retrieving the classification type definition`,
+            source: "search",
+        });
+    }
+
+    /**
+     * Fetch the entity being edited through the read door (VDE-01, DD-608):
+     * the view answers the type, the tag box starts at its own
+     * `classificationNames` (VDE-03 — propagated ones never enter, so
+     * DD-326's filter retires), and the pickers seed from its `sections`
+     * (VDE-04). The GUID cache (DD-605) serves a drawer opened from the
+     * details screen with no request at all (VDR-07). A failed read (a 404
+     * among them) alerts and leaves the form empty; the drawer stays open
+     * (EDT-02's shape).
      * @param guid the route's entity address
      */
     loadEntity(guid: string): void {
         this.loading.set(true);
-        this.entities.getEntityByGuid(guid).subscribe({
-            next: (answer) => {
+        this.views.view(guid).subscribe({
+            next: (view) => {
                 this.loading.set(false);
-                const entity = answer.entity ?? null;
-                const own = ownClassifications(entity, guid);
-
-                this.entity.set(entity);
-                this.chosen.set(own);
-                this.initialOwnNames = new Set(
-                    own.map((tag) => tag.typeName).filter((name): name is string => Boolean(name)),
-                );
+                this.view.set(view);
+                this.chosen.set(view.classificationNames ?? []);
             },
             error: () => {
                 this.loading.set(false);
@@ -218,85 +288,95 @@ export class EditorState {
     }
 
     /**
-     * Save (EDT-06): merge, POST the entity, then apply the classification
-     * diff — one POST-add for the tags the box gained, one DELETE per tag it
-     * lost (DD-326); tags the box kept are never re-sent, so the server's
-     * replace-validation (CLS-08 changes attached tags only) never sees a
-     * create-mode attachment or a removed tag. Then close the drawer on the
-     * entity's details. A refused save (a 403 among them) adds one alert and
-     * keeps the drawer and the edits (EDT-08) — the navigation never runs.
-     * @param entity the merged entity (create: seeded, EDT-06/DD-325)
-     * @param guid the entity's guid (edit: the route's; create: the temp one)
+     * Save through the mutation door (VDE-05, DD-609): one POST carries the
+     * attributes, the tag box's names, the picker ends, and the meanings
+     * (VDE-03/04); an update names the base view's `updateTime` (AVW-04). The
+     * answer is the entity's live view (AVW-07, VDE-06). The success evicts
+     * the saved guid from the read cache before firing the tick, so the
+     * details re-read asks the door (VDE-10, VDR-07), and lands on the
+     * entity's details (EDT-06 kept). A conflict re-edits from the stored
+     * view (VDE-07); a taken name answers its own line (VDE-08); anything
+     * else is EDT-08's single alert (VDE-09). The navigation never runs on a
+     * failed save.
+     * @param body the entity's desired state as a door body (`bodyFromEdits`)
      */
-    save(entity: AtlasEntity, guid: string): void {
+    save(body: ViewSaveRequest): void {
         if (this.saving()) {
             return;
         }
         this.saving.set(true);
-        this.entities.createOrUpdateEntity({ entity }).subscribe({
+        this.saves.save(body).subscribe({
             next: (answer) => {
-                const realGuid = this.mode() === "create" ? (answer.guidAssignments?.[guid] ?? "") : guid;
-                if (realGuid === "") {
-                    this.saveFailed();
+                this.saving.set(false);
+                // The screen underneath may be this very entity's details,
+                // still mounted (EDT-01): evict first so its re-read asks the
+                // door (DD-608), then the tick re-fires it (DD-327), then land
+                // on the details with the drawer outlet cleared through the
+                // commands array (NavigationExtras has no `outlets` key).
+                this.views.evict(answer.guid);
+                this.entitySaved.notify(answer.guid);
+                // The root compound form (DD-322): a string-command array
+                // with a trailing {outlets} applies the outlet instruction
+                // inside the primary child group, not the root where the
+                // drawer lives — the drawer segment survives it (live-probed
+                // in the e2e). The compound is how settings and alerts close
+                // their drawer.
+                void this.router.navigate([{ outlets: { primary: ["search", "details", answer.guid], drawer: null } }]);
+            },
+            error: (error: HttpErrorResponse) => {
+                this.saving.set(false);
+                const conflict = viewConflictFrom(error);
+                if (conflict !== null) {
+                    this.applyConflict(conflict.view);
 
                     return;
                 }
-                this.applyClassifications(realGuid).subscribe({
-                    next: () => {
-                        this.saving.set(false);
-                        // The screen underneath may be this very entity's
-                        // details, still mounted (EDT-01): the tick re-fires
-                        // its read (DD-327), then land on the details with
-                        // the drawer outlet cleared through the commands
-                        // array (NavigationExtras has no `outlets` key).
-                        this.entitySaved.notify(realGuid);
-                        // The root compound form (DD-322): a string-command
-                        // array with a trailing {outlets} applies the outlet
-                        // instruction inside the primary child group, not the
-                        // root where the drawer lives — the drawer segment
-                        // survives it (live-probed in the e2e). The compound
-                        // is how settings and alerts close their drawer.
-                        void this.router.navigate([
-                            { outlets: { primary: ["search", "details", realGuid], drawer: null } },
-                        ]);
-                    },
-                    error: () => this.saveFailed(),
-                });
+                if (this.isNameTaken(error)) {
+                    this.nameTaken();
+
+                    return;
+                }
+                this.saveFailed();
             },
-            error: () => this.saveFailed(),
         });
     }
 
-    /**
-     * The classification diff (DD-326): the box's added tags ride one
-     * `POST .../classifications`, its removed ones one DELETE each — the two
-     * name-sets are disjoint, so the writes run together. Added tags are
-     * stamped with the real guid (a create-mode tag carries the temporary
-     * one, and the attach names its entity). Unchanged tags send nothing.
-     * @param realGuid the entity's server guid (create: the assignment)
-     * @returns an observable that answers when every write has
-     */
-    private applyClassifications(realGuid: string): Observable<unknown[]> {
-        const finalTags = this.chosen()
-            .filter((tag): tag is AtlasClassification & { typeName: string } => Boolean(tag.typeName))
-            .map((tag) => ({ ...tag, entityGuid: realGuid }));
-        const finalNames = new Set(finalTags.map((tag) => tag.typeName));
-        const added = finalTags.filter((tag) => !this.initialOwnNames.has(tag.typeName));
-        const removed = [...this.initialOwnNames].filter((name) => !finalNames.has(name));
-
-        const calls: Observable<unknown>[] = removed.map((name) => this.entities.deleteClassification(realGuid, name));
-
-        if (added.length > 0) {
-            calls.push(this.entities.addClassifications(realGuid, added));
-        }
-
-        // forkJoin needs a non-empty array; an empty diff answers at once.
-        return calls.length > 0 ? forkJoin(calls) : new Observable<[]>((subscriber) => subscriber.next([]));
+    /** The name-taken answer of a create (AVW-06): the Atlas error body carrying that code. */
+    private isNameTaken(error: HttpErrorResponse): boolean {
+        return error.status === 409 && isAtlasErrorBody(error.error) && error.error.errorCode === "ENTITY_NAME_TAKEN";
     }
 
-    /** The refused-save path (EDT-08): one alert, drawer open, edits kept. */
+    /**
+     * The conflict's re-edit (VDE-07, DD-610): the base becomes the stored
+     * view, the tag box re-answers it for what the person never touched, and
+     * the component re-seeds the controls and pickers from the event. No
+     * alert, no navigation (DD-591's reload-and-reedit path); a second Save
+     * rides the stored `updateTime`, because it merges onto the new base.
+     * @param stored the stored view the conflict answer carried
+     */
+    private applyConflict(stored: EntityView): void {
+        const before = this.view();
+        this.view.set(stored);
+        this.chosen.set(tagsAfterConflict(before, stored, this.chosen()));
+        this.conflict.set({ from: before, to: stored });
+    }
+
+    /** The component has re-seeded from the conflict (VDE-07): the event is spent. */
+    conflictHandled(): void {
+        this.conflict.set(null);
+    }
+
+    /** The name-taken line (VDE-08): one alert, drawer open, edits kept. */
+    private nameTaken(): void {
+        this.alerts.add({
+            severity: "error",
+            message: $localize`:@@search.components.editor.nameTaken:That name is already held by another entity.`,
+            source: "search",
+        });
+    }
+
+    /** The refused-save path (EDT-08, VDE-09): one alert, drawer open, edits kept. */
     private saveFailed(): void {
-        this.saving.set(false);
         this.alerts.add({
             severity: "error",
             message: $localize`:@@search.services.entityUpdate.save:Saving the entity`,
@@ -305,7 +385,7 @@ export class EditorState {
     }
 
     /**
-     * Delete the entity (EDT-19, DD-347): one `DELETE .../guid/{guid}` —
+     * Delete the entity (EDT-19, DD-347, VDE-11): one `DELETE .../guid/{guid}` —
      * the hold-to-confirm lives at the button, so the store trusts its
      * caller. No `deleteType` rides: the server's own strategy answers
      * (EDL-04, the reference's shape). Success closes the drawer and lands
@@ -339,22 +419,15 @@ export class EditorState {
     }
 
     /**
-     * Add a classification tag (EDT-05): the legacy shape the server expects.
+     * Add a classification tag (EDT-05, VDE-03): the box holds names — the
+     * door's `classifications` key takes the full desired set of names.
      * @param typeName the classification type chosen in the box
      */
     addClassification(typeName: string): void {
-        // The owner is the entity's own guid — in create mode the seeded
-        // temporary one, which the server re-keys through guidAssignments
-        // (DD-325).
-        const owner = this.entity()?.guid ?? "";
-        const exists = this.chosen().some((tag) => tag.typeName === typeName);
-        if (exists || typeName === "") {
+        if (typeName === "" || this.chosen().includes(typeName)) {
             return;
         }
-        this.chosen.update((tags) => [
-            ...tags,
-            { typeName, entityGuid: owner, propagate: true, removePropagationsOnEntityDelete: true },
-        ]);
+        this.chosen.update((tags) => [...tags, typeName]);
     }
 
     /**
@@ -362,47 +435,19 @@ export class EditorState {
      * @param typeName the tag to drop
      */
     removeClassification(typeName: string): void {
-        this.chosen.update((tags) => tags.filter((tag) => tag.typeName !== typeName));
+        this.chosen.update((tags) => tags.filter((tag) => tag !== typeName));
     }
 
     /**
-     * Seed the create-mode entity (DD-325): a negative numeric temporary guid
-     * (the server's create idiom — the e2e seed sends the same shape; a uuid
-     * guid reads as a reference and is refused) and a uuid `qualifiedName`
-     * (the server does not invent one). The stored entity exists so the tag
-     * box has an `entityGuid` before the save; the save's merge starts here.
+     * Seed the create-mode entity (VDE-05, DD-592): the type and a uuid
+     * `qualifiedName` the client generates (the server does not invent one).
+     * No temporary guid rides (DD-325's seed retires): the save body names no
+     * guid, and the answer's view carries the server's (AVW-06).
      * @param typeName the type the picker chose
-     * @returns the seeded entity's temporary guid
      */
-    beginCreate(typeName: string): string {
-        // The temporary guid is a client-side placeholder key the server re-keys
-        // through guidAssignments (DD-325); it only has to be negative numeric.
-        // Drawn from crypto (same source as the qualifiedName uuid below) so
-        // two tabs seeding at once cannot collide on the same placeholder.
-        const [high, low] = crypto.getRandomValues(new Uint32Array(2));
-        const temporaryGuid = String(-((high % 1e8) * 1e7 + (low % 1e7) + 1));
-
+    beginCreate(typeName: string): void {
         this.selectedTypeName.set(typeName);
-        this.entity.set({
-            guid: temporaryGuid,
-            typeName,
-            attributes: { qualifiedName: crypto.randomUUID() },
-        });
+        this.draft.set({ typeName, attributes: { qualifiedName: crypto.randomUUID() } });
         this.chosen.set([]);
-        this.initialOwnNames = new Set();
-
-        return temporaryGuid;
     }
-}
-
-/**
- * The entity's own classifications (DD-326): the tags whose `entityGuid` is
- * the entity's own guid — the propagated ones never enter the box, so the
- * replace call cannot sever them.
- * @param entity the read entity
- * @param guid the entity's guid
- * @returns the own-classification tags
- */
-function ownClassifications(entity: AtlasEntity | null, guid: string): AtlasClassification[] {
-    return (entity?.classifications ?? []).filter((tag) => tag.entityGuid === guid || tag.entityGuid == null);
 }

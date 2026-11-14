@@ -9,6 +9,7 @@
  */
 
 import { AtlasEntityStatus } from "./atlas-entity";
+import { AtlasTypeDef } from "./atlas-typedef";
 
 /** One crumb of a card's trail (`CardBreadcrumb`, AVS-01). */
 export type CardBreadcrumb = {
@@ -126,4 +127,54 @@ export type ViewSearchAnswer = {
     cards: EntityCard[];
     facets: Record<string, FacetEntry[]>;
     total: number;
+};
+
+/**
+ * One `sections` entry of a mutation-door body (AVW-09, VDE-04): the relationship
+ * attribute and its full desired end list. Each end is its GUID, or a `{guid,
+ * status: "DELETED"}` remove intent (the door reads a DELETED status as removal).
+ */
+export type ViewSectionInput = {
+    attribute: string;
+    entities: Array<string | { guid: string; status?: string | null }>;
+};
+
+/**
+ * A mutation-door body (AVW-02, VDE-05): one entity's desired state as a view.
+ * `typeName` and `attributes` are required; `guid` makes it an update and `updateTime`
+ * names the view it edited (AVW-04). The sets are complete desired states — a set the
+ * body omits is left unchanged (AVW-05) — the tags as names, the term assignments as
+ * term GUIDs, and the ends as {@link ViewSectionInput} entries. The door ignores what
+ * a view carries but a write cannot set (the breadcrumb, quality, `stale`).
+ */
+export type ViewSaveRequest = {
+    guid?: string | null;
+    typeName: string;
+    attributes: Record<string, unknown>;
+    updateTime?: number | null;
+    classifications?: string[];
+    labels?: string[];
+    meanings?: string[];
+    sections?: ViewSectionInput[];
+};
+
+/**
+ * A lost-update conflict (AVW-04, DD-591): the door's answer when the stored entity
+ * changed since the edited view was read. Besides the error code it carries the
+ * stored view — the material the editor re-edits from (VDE-07). It rides a 409, so
+ * the client surfaces it apart from {@link AtlasErrorBody}.
+ */
+export type ViewConflict = {
+    errorCode: string;
+    view: EntityView;
+};
+
+/**
+ * The answer of the form-slice door `GET /api/aurelius/v1/types/for-type/{name}`
+ * (AVW-11, VDE-02): the named entity type and its supertype chain, each one a whole
+ * typedef with the attributes it declares — enough to build one type's form.
+ */
+export type ViewForTypeAnswer = {
+    type: AtlasTypeDef;
+    superTypes: AtlasTypeDef[];
 };

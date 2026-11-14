@@ -1,14 +1,16 @@
 /**
- * The entity editor drawer (EDT-01..EDT-08, EDT-10, DD-322, DD-325, DD-326):
- * the routed panel's own wiring. The specs ride the details screen's idiom:
- * a fake `ActivatedRoute` (paramMap + snapshot data carry the mode, DD-355), the real
- * http client through HttpTestingController, and a spy on the Router. The
- * field builder and the merge are specced at their owner (form-fields);
- * here: the read (EDT-02), the picker (EDT-04), the tag box (EDT-05), the
- * save's two requests and navigation (EDT-06, DD-326), the invalid save
- * (EDT-07), the failed save (EDT-08), dismissal (EDT-01), and the commit
- * foot (EDT-10 amended by EDT-19, DD-347 — Delete + Save in the foot, the
- * hold mechanic specced at the directive).
+ * The entity editor drawer (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-11):
+ * the routed panel's own wiring on the view doors (16.5c). The specs ride the
+ * details screen's idiom: a fake `ActivatedRoute` (paramMap + snapshot data
+ * carry the mode, DD-355), the real http client through HttpTestingController,
+ * and a spy on the Router. The field builder and the merge are specced at
+ * their owner (form-fields); the door store at its owner (editor-state); here:
+ * the read (EDT-02, VDE-01), the picker (EDT-04, VDE-02), the tag box
+ * (EDT-05, VDE-03), the pickers and their door body (EDT-13..EDT-16, VDE-04,
+ * VDE-05), the conflict re-edit and the name-taken line (VDE-07, VDE-08), the
+ * invalid save (EDT-07), the failed save (EDT-08, VDE-09), dismissal (EDT-01),
+ * and the commit foot (EDT-10 amended by EDT-19, DD-347 — Delete + Save in the
+ * foot, the hold mechanic specced at the directive).
  */
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -21,7 +23,15 @@ import { Subject, of } from "rxjs";
 
 import { Holdable } from "aurelius-atlas-ui";
 
-import type { AtlasEntityWithExtInfo, AtlasTypesDef } from "aurelius-atlas-data-access";
+import {
+    ViewEntityService,
+    type AtlasEntityDef,
+    type AtlasTypeDefHeader,
+    type AtlasTypesDef,
+    type EntityView,
+    type ViewForTypeAnswer,
+    type ViewSaveRequest,
+} from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { APP_CONFIG } from "../../tokens";
@@ -38,30 +48,53 @@ import { EntityEditor } from "./entity-editor.component";
 })
 class DrawerTestHost {}
 
-const ENTITY_URL = "/api/atlas/v2/entity/guid/";
+/** The read door (VDE-01, DD-608): `GET /api/aurelius/v1/entity/guid/{guid}`. */
+const VIEW_URL = "/api/aurelius/v1/entity/guid/";
+/** The mutation door (VDE-05, DD-609): `POST /api/aurelius/v1/entity`. */
+const VIEW_POST_URL = "/api/aurelius/v1/entity";
+/** The form-slice door (VDE-02, AVW-11): `GET /api/aurelius/v1/types/for-type/{name}`. */
+const CHAIN_URL = "/api/aurelius/v1/types/for-type/";
+/** The Atlas typedef door the three small slices ride (VDE-02, DD-611). */
 const TYPEDEFS_URL = "/api/atlas/v2/types/typedefs";
-const ENTITY_POST_URL = "/api/atlas/v2/entity";
+const CLASSIFICATION_SLICE_URL = `${TYPEDEFS_URL}?type=CLASSIFICATION`;
+const ENUM_SLICE_URL = `${TYPEDEFS_URL}?type=ENUM`;
+const ENTITY_HEADERS_URL = `${TYPEDEFS_URL}/headers?type=ENTITY`;
+/** The delete stays Atlas's (VDE-11): `DELETE /api/atlas/v2/entity/guid/{guid}`. */
+const ATLAS_ENTITY_URL = "/api/atlas/v2/entity/guid/";
 const VALIDATE_URL = "/validate-entity/";
 
-/** The edit-mode entity: a DataSet with the Asset/Referenceable fields. */
-const ANSWER: AtlasEntityWithExtInfo = {
-    entity: {
-        guid: "7a1b",
-        typeName: "DataSet",
-        attributes: {
-            name: "genomic_variants",
-            qualifiedName: "genomic_variants@cluster",
-            description: "Curated variant calls.",
-            owner: "analyst-3",
-            displayName: "Genomic Variants",
-        },
-        relationshipAttributes: {},
-        classifications: [{ typeName: "PII", entityGuid: "7a1b" }],
+/**
+ * The edit-mode view of the DataSet (VDE-01): the read door's answer — the
+ * card fields, its own values, its own tag names, and (in the RA fixtures)
+ * its sections. The unique qualifiedName rides the card, not `attributes`;
+ * `entityFromView` folds it back in for the form (VDE-01, DD-608).
+ */
+const ANSWER: EntityView = {
+    guid: "7a1b",
+    typeName: "DataSet",
+    superTypeNames: ["Asset", "Referenceable"],
+    name: "genomic_variants",
+    qualifiedName: "genomic_variants@cluster",
+    displayText: "genomic_variants",
+    status: "ACTIVE",
+    createTime: 1_700_000_000_000,
+    updateTime: 1_700_000_021_000,
+    createdBy: "analyst-3",
+    updatedBy: "analyst-3",
+    classificationNames: ["PII"],
+    stale: false,
+    attributes: {
+        name: "genomic_variants",
+        description: "Curated variant calls.",
+        owner: "analyst-3",
+        displayName: "Genomic Variants",
     },
-    referredEntities: {},
+    sections: [],
 };
 
-/** The typedefs the picker, the supertype walk, and the tag box read. */
+/** The type defs the chain answers, the tag-box slice, and the picker slice
+ * are all built from this bag. The supertype walk reads the chain the for-type
+ * door answers (VDE-02, AVW-11), not the whole-typedefs dump of before. */
 const TYPEDEFS: AtlasTypesDef = {
     entityDefs: [
         {
@@ -79,9 +112,7 @@ const TYPEDEFS: AtlasTypesDef = {
             ],
         },
         { name: "DataSet", superTypes: ["Asset"], attributeDefs: [] },
-        // The displayName option stands for an alias: DD-497 sorts the picker
-        // by the label shown, so this row lands under "B", not under "P".
-        { name: "Process", superTypes: ["Asset"], attributeDefs: [], options: { displayName: "Business Process" } },
+        { name: "Process", superTypes: ["Asset"], attributeDefs: [] },
         { name: "AtlasGlossary", attributeDefs: [] },
         { name: "__AtlasHauskeeping", attributeDefs: [] },
     ],
@@ -96,36 +127,69 @@ const TYPEDEFS: AtlasTypesDef = {
     relationshipDefs: [],
 };
 
-/** The edit-mode entity for the relationship pickers (EDT-13..EDT-17): one
- * ACTIVE edge, one DELETED tombstone, a stale `attributes` mirror of the
- * relationship key (the server's compactAttributes copy, DD-340), and an
- * empty SINGLE slot. */
-const RA_ANSWER: AtlasEntityWithExtInfo = {
-    entity: {
-        guid: "7a1b",
-        typeName: "DataSet",
-        attributes: {
-            name: "genomic_variants",
-            qualifiedName: "genomic_variants@cluster",
-            owner: "analyst-3",
-            inputToProcesses: [{ guid: "p1", typeName: "Process" }],
-        },
-        relationshipAttributes: {
-            inputToProcesses: [
-                { guid: "p1", typeName: "Process", displayText: "load_events", relationshipStatus: "ACTIVE" },
-                { guid: "p9", typeName: "Process", relationshipStatus: "DELETED" },
-            ],
-            model: null,
-        },
-        classifications: [],
+/** The classification slice the tag box reads (VDE-02, DD-611). */
+const CLASSIFICATION_SLICE = { classificationDefs: TYPEDEFS.classificationDefs };
+/** The enum slice the form's enum fields read (VDE-02, DD-611): none shipped. */
+const ENUM_SLICE = { enumDefs: [] };
+
+/** The create picker's rows come from the entity typedef headers (VDE-02):
+ * names only — headers carry no display name, so every label is the
+ * `nameDisplay` of the name (DD-379 kept, DD-497's alias order mooted). */
+const ENTITY_HEADERS: AtlasTypeDefHeader[] = (TYPEDEFS.entityDefs ?? []).map((def) => ({ name: def.name }));
+
+/** The supertype chain of one type, flattened the way the for-type door
+ * answers it (`[name, *all_super_types]`, AVW-11): the whole typedefs, each
+ * with the attributes it declares. */
+function chainFor(defs: AtlasTypesDef, name: string): ViewForTypeAnswer {
+    const byName = new Map((defs.entityDefs ?? []).map((def) => [def.name, def]));
+    const supertypes: AtlasEntityDef[] = [];
+    const walk = (def: AtlasEntityDef): void => {
+        for (const superName of def.superTypes ?? []) {
+            const supertype = byName.get(superName);
+            if (supertype !== undefined && !supertypes.includes(supertype) && supertype.name !== name) {
+                supertypes.push(supertype);
+                walk(supertype);
+            }
+        }
+    };
+    const type = byName.get(name);
+    if (type === undefined) {
+        throw new Error(`no fixture def for ${name}`);
+    }
+    walk(type);
+
+    return { type, superTypes: supertypes };
+}
+
+/** The chain answer the DataSet drawer reads (edit and create share it). */
+const DATASET_CHAIN = chainFor(TYPEDEFS, "DataSet");
+
+/** The edit-mode view for the relationship pickers (EDT-13..EDT-17, VDE-04):
+ * one ACTIVE end, one end on a non-ACTIVE entity (never seeded, EDT-15), and
+ * an empty `model` section. The door carries the ends in `sections` only — no
+ * stale `attributes` mirror (DD-340 retired with the Atlas read, VDE-04). */
+const RA_ANSWER: EntityView = {
+    ...ANSWER,
+    attributes: {
+        name: "genomic_variants",
+        owner: "analyst-3",
     },
-    referredEntities: {},
+    sections: [
+        {
+            attribute: "inputToProcesses",
+            entities: [
+                { guid: "p1", name: "load_events", typeName: "Process", status: "ACTIVE" },
+                { guid: "p9", typeName: "Process", status: "DELETE_PENDING" },
+            ],
+        },
+        { attribute: "model", entities: [] },
+    ],
 };
 
-/** The typedefs with the derived relationship attributes (EDT-13): the
- * server mounts these on the defs from the shipped relationship types. */
-function raTypeDefs(modelRequired = false): AtlasTypesDef {
-    return {
+/** The DataSet chain carrying the derived relationship attributes (EDT-13):
+ * the door answers them on the whole typedef (AVW-11). */
+function raChain(modelRequired = false): ViewForTypeAnswer {
+    const defs: AtlasTypesDef = {
         ...TYPEDEFS,
         entityDefs: TYPEDEFS.entityDefs!.map((def) =>
             def.name === "DataSet"
@@ -144,14 +208,16 @@ function raTypeDefs(modelRequired = false): AtlasTypesDef {
                 : def,
         ),
     };
+
+    return chainFor(defs, "DataSet");
 }
 
 /**
  * Bring the drawer up in edit mode at the given guid (or create mode with
- * `create: true`): the route parts arrive through the fake ActivatedRoute,
- * the first `detectChanges` lets the effects fire the reads. The drawer's
- * body appears only after the drawer component renders the panel, so
- * `arrive` flushes both reads and settles the screen.
+ * `create: true`): the route parts arrive through the fake ActivatedRoute, the
+ * first `detectChanges` lets the effects fire the reads. The drawer's body
+ * appears only after the drawer component renders the panel, so `arrive`
+ * flushes the reads and settles the screen.
  */
 function setup({
     guid = "7a1b",
@@ -231,14 +297,11 @@ function flushValidation(httpMock: HttpTestingController, body = VALIDATION): vo
     }
 }
 
-/** Flush the typedefs read (every mode makes it) and settle. */
-function arriveTypeDefs(
-    fixture: { detectChanges: () => void },
-    httpMock: HttpTestingController,
-    body = TYPEDEFS,
-    validate = true,
-) {
-    httpMock.expectOne(TYPEDEFS_URL).flush(body);
+/** Flush the three slices the editor reads on open (VDE-02, DD-611) and settle. */
+function arriveSlices(fixture: { detectChanges: () => void }, httpMock: HttpTestingController, validate = true) {
+    httpMock.expectOne(CLASSIFICATION_SLICE_URL).flush(CLASSIFICATION_SLICE);
+    httpMock.expectOne(ENUM_SLICE_URL).flush(ENUM_SLICE);
+    httpMock.expectOne(ENTITY_HEADERS_URL).flush(ENTITY_HEADERS);
     fixture.detectChanges();
     if (validate) {
         flushValidation(httpMock);
@@ -246,21 +309,56 @@ function arriveTypeDefs(
     }
 }
 
-/** Flush both reads (edit mode) and settle the drawer. */
-function arrive(
+/** Flush the chain read for one type (VDE-02): the for-type door's answer. */
+function arriveChain(httpMock: HttpTestingController, typeName: string, chain: ViewForTypeAnswer): void {
+    httpMock.expectOne(`${CHAIN_URL}${typeName}`).flush(chain);
+}
+
+/** Flush the slices and (create mode with a type) the chain: every mode's
+ * type material, settled. */
+function arriveTypeDefs(
     fixture: { detectChanges: () => void },
     httpMock: HttpTestingController,
-    body = ANSWER,
-    typedefs = TYPEDEFS,
+    createType = "",
+    chain: ViewForTypeAnswer = DATASET_CHAIN,
     validate = true,
 ) {
-    arriveTypeDefs(fixture, httpMock, typedefs, validate);
-    httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(body);
+    arriveSlices(fixture, httpMock, false);
+    if (createType !== "") {
+        arriveChain(httpMock, createType, chain);
+    }
     fixture.detectChanges();
     if (validate) {
         flushValidation(httpMock);
         fixture.detectChanges();
     }
+}
+
+/** Flush every read of edit mode (VDE-01, VDE-02) and settle the drawer: the
+ * slices, the view (the chain follows from its type), and the open validation. */
+function arrive(
+    fixture: { detectChanges: () => void },
+    httpMock: HttpTestingController,
+    view: EntityView = ANSWER,
+    chain: ViewForTypeAnswer = DATASET_CHAIN,
+    validate = true,
+) {
+    arriveSlices(fixture, httpMock, false);
+    httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(view);
+    // The chain is asked from the view's type (VDE-02): the effect fires on
+    // the tick the answer lands on, so the request appears one settle later.
+    fixture.detectChanges();
+    arriveChain(httpMock, view.typeName, chain);
+    fixture.detectChanges();
+    if (validate) {
+        flushValidation(httpMock);
+        fixture.detectChanges();
+    }
+}
+
+/** The door's answer to a save: the entity's live view (AVW-07, VDE-06). */
+function savedView(overrides: Partial<EntityView> = {}): EntityView {
+    return { ...ANSWER, updateTime: 1_700_000_090_000, ...overrides };
 }
 
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
@@ -274,25 +372,30 @@ function holdDirective(fixture: ComponentFixture<EntityEditor>): Holdable {
     return fixture.debugElement.query(By.directive(Holdable)).injector.get(Holdable);
 }
 
-describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
-    it("fetches its own entity and the typedefs on arrival (EDT-02, EDT-04)", () => {
+describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => {
+    it("fetches its own view and its type material on arrival (EDT-02, EDT-04, VDE-01, VDE-02)", () => {
         const { fixture, httpMock } = setup();
 
-        const entityRequest = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
-        expect(entityRequest.request.method).toBe("GET");
-        const typedefsRequest = httpMock.expectOne(TYPEDEFS_URL);
-        expect(typedefsRequest.request.method).toBe("GET");
-        typedefsRequest.flush(TYPEDEFS);
-        entityRequest.flush(ANSWER);
+        const viewRequest = httpMock.expectOne("/api/aurelius/v1/entity/guid/7a1b");
+        expect(viewRequest.request.method).toBe("GET");
+        // The three small slices replace the whole-typedefs dump (VDE-02, DD-611).
+        expect(httpMock.expectOne(CLASSIFICATION_SLICE_URL).request.method).toBe("GET");
+        expect(httpMock.expectOne(ENUM_SLICE_URL).request.method).toBe("GET");
+        expect(httpMock.expectOne(ENTITY_HEADERS_URL).request.method).toBe("GET");
+        viewRequest.flush(ANSWER);
+        fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
+        const chainRequest = httpMock.expectOne("/api/aurelius/v1/types/for-type/DataSet");
+        expect(chainRequest.request.method).toBe("GET");
+        chainRequest.flush(DATASET_CHAIN);
         fixture.detectChanges();
         flushValidation(httpMock); // the open round the visible form fires (EDT-23)
     });
 
-    it("alerts and keeps the empty drawer on a failed entity read (EDT-02)", () => {
+    it("alerts and keeps the empty drawer on a failed view read (EDT-02, VDE-01)", () => {
         const { fixture, httpMock } = setup({ guid: "missing" });
         arriveTypeDefs(fixture, httpMock);
 
-        httpMock.expectOne(`${ENTITY_URL}missing`).flush({}, { status: 404, statusText: "Not Found" });
+        httpMock.expectOne(`${VIEW_URL}missing`).flush({}, { status: 404, statusText: "Not Found" });
         fixture.detectChanges();
 
         expect(TestBed.inject(AlertsService).hasAlerts()).toBe(true);
@@ -300,7 +403,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
     });
 
-    it("renders the edit form from the supertype walk (EDT-03)", () => {
+    it("renders the edit form from the for-type chain (EDT-03, VDE-02)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
@@ -341,8 +444,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(label).toBeTruthy();
         expect(compiled.querySelector("textarea#editor-description")).toBeTruthy();
 
-        // Typing rides the source string; the save sends it unchanged (EDT-06
-        // untouched — no transform between read and body).
+        // Typing rides the source string; the save sends it unchanged (the
+        // door body carries it whole — no transform between read and body).
         const area = compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")!;
         area.value = "# Headings stay source";
         area.dispatchEvent(new Event("input"));
@@ -350,26 +453,28 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
 
-        const post = httpMock.expectOne(ENTITY_POST_URL);
-        const posted = (post.request.body as { entity: { attributes: Record<string, unknown> } }).entity;
-        expect(posted.attributes["description"]).toBe("# Headings stay source");
-        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        const body = post.request.body as ViewSaveRequest;
+        expect(body.attributes["description"]).toBe("# Headings stay source");
+        post.flush(savedView());
         fixture.detectChanges();
         expect(navigate).toHaveBeenCalled();
     });
 
-    it("seeds the tag box from the entity's own classifications (EDT-05, DD-326)", () => {
+    it("seeds the tag box from the view's own classification names (EDT-05, VDE-03)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
         const tags = [...compiled.querySelectorAll(".aurelius-editor-tag")].map((tag) => normalize(tag.textContent));
-        // The chip carries the dictionary display name (EDT-05, DD-379).
+        // The chip carries the dictionary display name (EDT-05, DD-379); the
+        // seed is the view's `classificationNames` — already its own tags, so
+        // the client's DD-326 propagated filter retires (VDE-03).
         expect(tags).toEqual(["Has PII"]);
     });
 
-    it("renders a picker per relationship attribute, in order, seeded ACTIVE-only (EDT-13, EDT-15)", () => {
+    it("renders a picker per relationship attribute, seeded ACTIVE-only from sections (EDT-13, EDT-15, VDE-04)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs());
+        arrive(fixture, httpMock, RA_ANSWER, raChain());
 
         const blocks = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
         expect(blocks.map((block) => block.dataset["field"])).toEqual(["inputToProcesses", "model"]);
@@ -377,8 +482,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         // The mandatory flag marks the label (EDT-13); the optional one does not.
         expect(blocks[1].querySelector("p.label .has-text-danger")).toBeNull();
 
-        // The chips: the ACTIVE edge only — the DELETED tombstone never seeds
-        // (EDT-15) — and the lead is the entity's own typeName (DD-341).
+        // The chips: the ACTIVE end only — the non-ACTIVE end never seeds
+        // (EDT-15) — and the lead is the end's typeName (DD-341).
         const chips = [...blocks[0].querySelectorAll("aurelius-atlas-ui-classification-chip")];
         expect(chips).toHaveLength(1);
         expect(normalize(chips[0].querySelector(".tag")?.textContent)).toBe("Process");
@@ -395,7 +500,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
     it("a typed search and a mousedown pick add a chip (EDT-14)", () => {
         vi.useFakeTimers();
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs());
+        arrive(fixture, httpMock, RA_ANSWER, raChain());
 
         const input = compiled.querySelector<HTMLInputElement>(
             '[data-field="inputToProcesses"] .aurelius-relationship-input',
@@ -439,7 +544,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-type")?.textContent)).toBe("DataSet");
     });
 
-    it("create mode: the picker lists the shipped types minus glossary and internals (EDT-04)", () => {
+    it("create mode: the picker lists the entity typedef headers minus glossary and internals (EDT-04, VDE-02)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true });
         arriveTypeDefs(fixture, httpMock);
 
@@ -448,13 +553,13 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         const options = [...(select?.querySelectorAll("option") ?? [])].map((option) => option.textContent);
         // The placeholder row is the hidden option; the data rows are the
         // picker list — no AtlasGlossary, no __ — ordered by the label shown
-        // (DD-497): "Business Process" sorts from its alias, not its raw name.
+        // (DD-497). The rows ride the entity typedef headers (VDE-02), which
+        // carry no display name, so every label is the plain type name.
         const dataRows = [...(select?.querySelectorAll("option") ?? [])]
             .filter((option) => !option.hasAttribute("hidden"))
             .map((option) => option.textContent);
-        expect(dataRows).toEqual(["Asset", "Business Process", "DataSet", "Referenceable"]);
+        expect(dataRows).toEqual(["Asset", "DataSet", "Process", "Referenceable"]);
         expect(options).not.toContain("AtlasGlossary");
-        expect(options).not.toContain("Process");
         // The bare route (no type yet): the picker alone, no form (DD-330).
         expect(compiled.querySelector("form")).toBeNull();
     });
@@ -479,9 +584,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         httpMock.verify(); // no entity read in create mode (EDT-02's edit-only)
     });
 
-    it("the route's type seeds the create form with a negative guid (EDT-04, DD-325, DD-330)", () => {
+    it("the route's type seeds the create form without a temp guid (EDT-04, VDE-05, DD-592, DD-330)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock);
+        arriveTypeDefs(fixture, httpMock, "DataSet");
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         // The picker stays above the form, selected at the route's type.
@@ -492,8 +597,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(names).toEqual(["name", "displayName", "owner"]);
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("");
 
-        // Save with a name: the POST carries the negative temp guid and the
-        // uuid qualifiedName (DD-325).
+        // Save with a name: the door body names no guid and carries the uuid
+        // qualifiedName the client seeded (VDE-05, DD-592 — the negative temp
+        // guid and the guidAssignments remap of DD-325 retire).
         const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
         nameInput.value = "fresh_table";
         nameInput.dispatchEvent(new Event("input"));
@@ -501,30 +607,29 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
 
-        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const post = httpMock.expectOne(VIEW_POST_URL);
         expect(post.request.method).toBe("POST");
-        // The body is the AtlasEntityWithExtInfo wrapper the client posts.
-        const posted = (
-            post.request.body as { entity: { guid: string; typeName: string; attributes: Record<string, unknown> } }
-        ).entity;
-        expect(Number(posted.guid)).toBeLessThan(0);
-        expect(posted.typeName).toBe("DataSet");
-        expect(String(posted.attributes["qualifiedName"])).toMatch(
+        const body = post.request.body as ViewSaveRequest;
+        expect(body.guid).toBeUndefined();
+        expect(body.typeName).toBe("DataSet");
+        expect(String(body.attributes["qualifiedName"])).toMatch(
             /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
         );
-        expect(posted.attributes["name"]).toBe("fresh_table");
-        post.flush({ guidAssignments: { [posted.guid]: "9999" }, createdEntityHeaders: [], updatedEntityHeaders: [] });
+        expect(body.attributes["name"]).toBe("fresh_table");
+        const evict = vi.spyOn(TestBed.inject(ViewEntityService), "evict");
+        post.flush(savedView({ guid: "9999", updateTime: 1_700_000_090_000 }));
         fixture.detectChanges();
 
-        // No tags chosen: the diff is empty and the save lands straight on
-        // the entity's details (EDT-06, DD-326).
+        // The answer carries the server's guid (AVW-06): the cache is evicted
+        // at it (VDE-10) and the save lands straight on the entity's details.
+        expect(evict).toHaveBeenCalledWith("9999");
         httpMock.verify();
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "9999"], drawer: null } }]);
     });
 
     it("switching the type re-seeds the form through the route (EDT-04, DD-330)", () => {
         const { fixture, compiled, httpMock, paramMap } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock);
+        arriveTypeDefs(fixture, httpMock, "DataSet");
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
@@ -542,19 +647,23 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(navigate).toHaveBeenCalledWith([{ outlets: { drawer: ["create", "Referenceable"] } }]);
 
         // The router answers: the same component with the new type param. The
+        // new type asks nothing: Referenceable's whole typedef already sits in
+        // the chain the DataSet read answered (VDE-02 — the store holds every
+        // supertype whole, and the guard skips a def already in hand). The
         // DataSet form is gone (Referenceable carries no rendered field —
         // qualifiedName never renders, EDT-03) and a save posts the new type.
         paramMap.next(convertToParamMap({ type: "Referenceable" }));
         fixture.detectChanges();
+        flushValidation(httpMock);
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")).toBeNull();
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
-        const post = httpMock.expectOne(ENTITY_POST_URL);
-        const posted = (post.request.body as { entity: { typeName: string; guid: string } }).entity;
-        expect(posted.typeName).toBe("Referenceable");
-        expect(Number(posted.guid)).toBeLessThan(0); // a fresh seed, not the old temp entity
-        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        const body = post.request.body as ViewSaveRequest;
+        expect(body.typeName).toBe("Referenceable");
+        expect(body.guid).toBeUndefined(); // a fresh seed, not the old draft
+        post.flush(savedView({ guid: "9998", typeName: "Referenceable" }));
         httpMock.verify();
     });
 
@@ -595,8 +704,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         await router.navigate([{ outlets: { drawer: ["create"] } }]);
         await fixture.whenStable(); // the loadComponent promise and the route activation
         fixture.detectChanges();
-        http.expectOne(TYPEDEFS_URL).flush(TYPEDEFS);
-        fixture.detectChanges();
+        arriveSlices(fixture, http);
 
         // The bare create route: the picker alone, no form (DD-330).
         expect(compiled.querySelector("form")).toBeNull();
@@ -606,6 +714,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         // The first pick, through the router — the typed segment arrives.
         await router.navigate([{ outlets: { drawer: ["create", "DataSet"] } }]);
         await fixture.whenStable();
+        fixture.detectChanges(); // the typed route seeds the type and asks its chain (VDE-02)
+        arriveChain(http, "DataSet", DATASET_CHAIN);
         fixture.detectChanges();
 
         // The same panel element survived (a rebuild would be a new node,
@@ -621,7 +731,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         arrive(fixture, httpMock);
 
         const input = compiled.querySelector<HTMLInputElement>("input.aurelius-editor-classification-input")!;
-        input.value = "CONFIDENTIAL"; // applies through the Asset supertype
+        input.value = "CONFIDENTIAL"; // applies through the Asset supertype (the chain names the lineage, VDE-02)
         input.dispatchEvent(new Event("input"));
         input.dispatchEvent(new KeyboardEvent("keyup", { key: "Enter" }));
         fixture.detectChanges();
@@ -703,7 +813,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("the input is a labelled combobox pointing at the active option (EDT-05, DD-336)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock);
+        arriveTypeDefs(fixture, httpMock, "DataSet");
 
         const input = compiled.querySelector<HTMLInputElement>("#editor-classification-input")!;
         expect(input.getAttribute("role")).toBe("combobox");
@@ -727,7 +837,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("Enter commits the keyboard-active option (EDT-05, DD-336)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock);
+        arriveTypeDefs(fixture, httpMock, "DataSet");
 
         const input = compiled.querySelector<HTMLInputElement>("#editor-classification-input")!;
         input.dispatchEvent(new Event("focusin", { bubbles: true }));
@@ -745,14 +855,14 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
     it("a type with nothing applicable disables the box and says so (EDT-05, DD-336)", () => {
         // Referenceable has no applicable classification among the defs.
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "Referenceable" });
-        arriveTypeDefs(fixture, httpMock);
+        arriveTypeDefs(fixture, httpMock, "Referenceable", chainFor(TYPEDEFS, "Referenceable"));
 
         expect(compiled.querySelector(".aurelius-editor-classification-box.is-disabled")).toBeTruthy();
         expect(compiled.querySelector<HTMLInputElement>("#editor-classification-input")!.disabled).toBe(true);
         expect(compiled.querySelector(".aurelius-editor-no-classifications")).toBeTruthy();
     });
 
-    it("save posts the merged entity; unchanged tags send nothing (EDT-06, DD-326)", () => {
+    it("save posts one door body; the tag box rides it whole (EDT-06, VDE-03, VDE-05)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
@@ -764,24 +874,26 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
 
-        const post = httpMock.expectOne(ENTITY_POST_URL);
+        const post = httpMock.expectOne(VIEW_POST_URL);
         expect(post.request.method).toBe("POST");
-        const posted = (post.request.body as { entity: { guid: string; attributes: Record<string, unknown> } }).entity;
-        expect(posted.guid).toBe("7a1b");
-        expect(posted.attributes["name"]).toBe("renamed_variants");
-        expect(posted.attributes["qualifiedName"]).toBe("genomic_variants@cluster"); // untouched passthrough
-        expect(posted.attributes["owner"]).toBe("analyst-3");
-        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        const body = post.request.body as ViewSaveRequest;
+        // The update names the base view's version (AVW-04, VDE-05).
+        expect(body.guid).toBe("7a1b");
+        expect(body.updateTime).toBe(1_700_000_021_000);
+        expect(body.attributes["name"]).toBe("renamed_variants");
+        expect(body.attributes["qualifiedName"]).toBe("genomic_variants@cluster"); // untouched passthrough
+        expect(body.attributes["owner"]).toBe("analyst-3");
+        // The full tag set rides the one body (VDE-03): the door replaces it
+        // wholesale, so no add/replace/delete classification calls follow.
+        expect(body.classifications).toEqual(["PII"]);
+        post.flush(savedView());
         fixture.detectChanges();
 
-        // The box still holds the seeded PII tag: the diff is empty, so no
-        // classification call fires at all (DD-326 — the kept tags ride
-        // nothing, which is exactly what the CLS-08 replace cannot survive).
-        httpMock.verify();
+        httpMock.verify(); // nothing else fired: the one POST is the whole save (VDE-05)
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
     });
 
-    it("save POST-adds a gained tag and DELETEs a lost one (EDT-06, DD-326)", () => {
+    it("a gained and a lost tag both ride the one body (EDT-06, VDE-03)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
@@ -797,68 +909,85 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
-        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
-        fixture.detectChanges();
-
-        // The gained tag rides one POST-add, stamped with the real guid.
-        const add = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classifications");
-        expect(add.request.method).toBe("POST");
-        expect(add.request.body).toEqual([
-            { typeName: "CONFIDENTIAL", entityGuid: "7a1b", propagate: true, removePropagationsOnEntityDelete: true },
-        ]);
-        add.flush({});
-
-        // The lost tag rides one DELETE.
-        const del = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b/classification/PII");
-        expect(del.request.method).toBe("DELETE");
-        del.flush({});
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        // The desired set — the gained tag in, the lost one out — rides the
+        // door's `classifications` key (VDE-03); the classification add/DELETE
+        // pair of DD-326 retires.
+        expect((post.request.body as ViewSaveRequest).classifications).toEqual(["CONFIDENTIAL"]);
+        post.flush(savedView());
         fixture.detectChanges();
 
         httpMock.verify();
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
     });
 
-    it("save posts the pickers' full value and drops the attributes mirror (EDT-16, DD-340)", () => {
+    it("save posts the pickers' full value as the door's sections (EDT-16, VDE-04)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs());
+        arrive(fixture, httpMock, RA_ANSWER, raChain());
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
 
-        const post = httpMock.expectOne(ENTITY_POST_URL);
-        const posted = post.request.body as {
-            entity: {
-                attributes: Record<string, unknown>;
-                relationshipAttributes: Record<string, unknown>;
-            };
-        };
-        // The rendered keys carry their full value: the ACTIVE entry list (the
-        // DELETED tombstone never echoes) and null for the empty SINGLE slot.
-        expect(posted.entity.relationshipAttributes["inputToProcesses"]).toEqual([
-            {
-                guid: "p1",
-                typeName: "Process",
-                displayText: "load_events",
-                relationshipType: "dataset_process_inputs",
-                relationshipStatus: "ACTIVE",
-            },
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        const body = post.request.body as ViewSaveRequest;
+        // One entry per rendered picker, complete desired sets: the ACTIVE
+        // end (the non-ACTIVE end was never seeded, EDT-15) and the empty
+        // `model` set — the picker owns its key (VDE-04).
+        expect(body.sections).toEqual([
+            { attribute: "inputToProcesses", entities: ["p1"] },
+            { attribute: "model", entities: [] },
         ]);
-        expect(posted.entity.relationshipAttributes["model"]).toBeNull();
-        // The picker owns its key: the stale `attributes` mirror is gone and
-        // the untouched attributes pass through (DD-340's re-attach rule).
-        expect(posted.entity.attributes["inputToProcesses"]).toBeUndefined();
-        expect(posted.entity.attributes["qualifiedName"]).toBe("genomic_variants@cluster");
-        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        // The picker owns its key: no attributes mirror rides the door view
+        // (DD-340 retired with the Atlas read) and the untouched attributes
+        // pass through.
+        expect(body.attributes["inputToProcesses"]).toBeUndefined();
+        expect(body.attributes["qualifiedName"]).toBe("genomic_variants@cluster");
+        post.flush(savedView());
         fixture.detectChanges();
 
         httpMock.verify();
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
     });
 
+    it("the meanings picker rides the door's meanings key (VDE-04, DD-612)", () => {
+        const defs: AtlasTypesDef = {
+            ...TYPEDEFS,
+            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                def.name === "DataSet"
+                    ? {
+                          ...def,
+                          relationshipAttributeDefs: [
+                              { name: "meanings", typeName: "array<string>", cardinality: "SET" },
+                          ],
+                      }
+                    : def,
+            ),
+        };
+        const view: EntityView = {
+            ...ANSWER,
+            sections: [{ attribute: "meanings", entities: [{ guid: "t1", name: "glossary debt", status: "ACTIVE" }] }],
+        };
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, view, chainFor(defs, "DataSet"));
+        vi.spyOn(TestBed.inject(Router), "navigate"); // the save's navigation, stubbed as every save spec does
+
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        const body = post.request.body as ViewSaveRequest;
+        // Term assignments are 5.2c's bookkeeping, not plain edges: the picker
+        // reads the `meanings` section and its picks ride the door's own
+        // `meanings` key — never the generic `sections` list (VDE-04).
+        expect(body.meanings).toEqual(["t1"]);
+        expect(body.sections ?? []).not.toContainEqual(expect.objectContaining({ attribute: "meanings" }));
+        post.flush(savedView());
+    });
+
     it("an empty mandatory relationship picker blocks the save (EDT-17)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs(true));
+        arrive(fixture, httpMock, RA_ANSWER, raChain(true));
 
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
@@ -931,21 +1060,24 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("a required multi group names its rows and says required (FORM-REQ-001)", () => {
         const { fixture, compiled, httpMock } = setup();
-        const typedefs: AtlasTypesDef = {
-            ...TYPEDEFS,
-            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
-                def.name === "Asset"
-                    ? {
-                          ...def,
-                          attributeDefs: [
-                              ...def.attributeDefs!,
-                              { name: "tags", typeName: "array<string>", cardinality: "SET", isOptional: false },
-                          ],
-                      }
-                    : def,
-            ),
-        };
-        arrive(fixture, httpMock, ANSWER, typedefs);
+        const chain = chainFor(
+            {
+                ...TYPEDEFS,
+                entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                    def.name === "Asset"
+                        ? {
+                              ...def,
+                              attributeDefs: [
+                                  ...def.attributeDefs!,
+                                  { name: "tags", typeName: "array<string>", cardinality: "SET", isOptional: false },
+                              ],
+                          }
+                        : def,
+                ),
+            },
+            "DataSet",
+        );
+        arrive(fixture, httpMock, ANSWER, chain);
 
         const block = compiled.querySelector<HTMLElement>('[data-field="tags"]')!;
         expect(normalize(block.querySelector("label.label")?.textContent)).toBe("tags *(required)");
@@ -958,7 +1090,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("an error line travels with its control (FORM-ERR-002)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, RA_ANSWER, raTypeDefs(true));
+        arrive(fixture, httpMock, RA_ANSWER, raChain(true));
 
         const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
         nameInput.value = "";
@@ -987,20 +1119,23 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("the markdown field passes the required and error wiring through (FORM-ERR-002, FORM-REQ-001)", () => {
         const { fixture, compiled, httpMock } = setup();
-        const typedefs: AtlasTypesDef = {
-            ...TYPEDEFS,
-            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
-                def.name === "Asset"
-                    ? {
-                          ...def,
-                          attributeDefs: def.attributeDefs!.map((attribute) =>
-                              attribute.name === "description" ? { ...attribute, isOptional: false } : attribute,
-                          ),
-                      }
-                    : def,
-            ),
-        };
-        arrive(fixture, httpMock, ANSWER, typedefs);
+        const chain = chainFor(
+            {
+                ...TYPEDEFS,
+                entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                    def.name === "Asset"
+                        ? {
+                              ...def,
+                              attributeDefs: def.attributeDefs!.map((attribute) =>
+                                  attribute.name === "description" ? { ...attribute, isOptional: false } : attribute,
+                              ),
+                          }
+                        : def,
+                ),
+            },
+            "DataSet",
+        );
+        arrive(fixture, httpMock, ANSWER, chain);
 
         const area = compiled.querySelector<HTMLTextAreaElement>("textarea#editor-description")!;
         // The schema's required rule reaches the textarea through the
@@ -1023,14 +1158,16 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         const { fixture, compiled, httpMock } = setup();
         arriveTypeDefs(fixture, httpMock);
 
-        // The entity read is still open: the region was mounted from the
-        // first paint and now carries the line — a reader already watches
-        // the place the text lands in.
+        // The view read is still open: the region was mounted from the first
+        // paint and now carries the line — a reader already watches the place
+        // the text lands in.
         const region = compiled.querySelector("output.aurelius-editor-loading");
         expect(region).toBeTruthy();
         expect(normalize(region?.textContent)).toBe("Retrieving the entity details");
 
-        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
+        fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
+        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
         fixture.detectChanges();
         flushValidation(httpMock); // the open round the visible form fires (EDT-23)
 
@@ -1053,7 +1190,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         fixture.detectChanges();
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
-        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        httpMock.expectOne(VIEW_POST_URL).flush(savedView());
         fixture.detectChanges();
         // The outcome rides an effect, which fills the line at the end of the
         // tick it was scheduled in — one more pass lets the binding re-read.
@@ -1064,7 +1201,95 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent)).toBe("Entity saved");
     });
 
-    it("the delete's outcome is announced, not just acted on (LR-005)", () => {
+    it("a lost version race re-edits from the stored view (VDE-07, DD-610)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock);
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        // Edit the name; leave owner, description, and displayName untouched.
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "renamed_variants";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+
+        // The door lost the race (AVW-04): 409 carrying the stored view.
+        const stored: EntityView = {
+            ...ANSWER,
+            name: "stored_variants",
+            displayText: "stored_variants",
+            updateTime: 2_000_000_000_000,
+            attributes: { ...ANSWER.attributes, name: "stored_variants", owner: "ops-9" },
+        };
+        httpMock
+            .expectOne(VIEW_POST_URL)
+            .flush({ errorCode: "ENTITY_VERSION_CONFLICT", view: stored }, { status: 409, statusText: "Conflict" });
+        fixture.detectChanges();
+
+        // One line, no alert, no navigation (DD-591's reload-and-reedit): the
+        // drawer stays open with the person's edit kept (VDE-07).
+        expect(normalize(compiled.querySelector(".aurelius-editor-conflict")?.textContent)).toBe(
+            "This entity changed since you opened it. Your edits are kept — save again to write them over the stored version.",
+        );
+        expect(compiled.querySelector(".aurelius-editor-notification")).toBeNull();
+        expect(add).not.toHaveBeenCalled();
+        expect(navigate).not.toHaveBeenCalled();
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("renamed_variants"); // kept
+        // The untouched control answers the stored value (VDE-07): the re-seed
+        // ran against the seed the old view gave.
+        expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.value).toBe("ops-9");
+
+        // A second Save rides the stored updateTime (VDE-07, AVW-04).
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        const second = httpMock.expectOne(VIEW_POST_URL);
+        const body = second.request.body as ViewSaveRequest;
+        expect(body.updateTime).toBe(2_000_000_000_000);
+        expect(body.attributes["name"]).toBe("renamed_variants");
+        expect(body.attributes["owner"]).toBe("ops-9");
+        second.flush(savedView({ ...stored, updateTime: 2_000_000_050_000 }));
+        fixture.detectChanges();
+        expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "7a1b"], drawer: null } }]);
+    });
+
+    it("a name-taken create answers one line and keeps the drawer (VDE-08, DD-591)", () => {
+        const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
+        arriveTypeDefs(fixture, httpMock, "DataSet");
+        const add = vi.spyOn(TestBed.inject(AlertsService), "add");
+        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+
+        const nameInput = compiled.querySelector<HTMLInputElement>("#editor-name")!;
+        nameInput.value = "already_there";
+        nameInput.dispatchEvent(new Event("input"));
+        fixture.detectChanges();
+        compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
+        fixture.detectChanges();
+        httpMock
+            .expectOne(VIEW_POST_URL)
+            .flush(
+                { errorCode: "ENTITY_NAME_TAKEN", errorMessage: "qualifiedName already exists" },
+                { status: 409, statusText: "Conflict" },
+            );
+        fixture.detectChanges();
+
+        // One alert naming the taken name, the drawer open, the edits kept
+        // (VDE-08) — no conflict line, no navigation (AVW-06).
+        expect(add).toHaveBeenCalledTimes(1);
+        expect(add).toHaveBeenCalledWith({
+            severity: "error",
+            source: "search",
+            message: "That name is already held by another entity.",
+        });
+        expect(compiled.querySelector(".aurelius-editor-conflict")).toBeNull();
+        expect(navigate).not.toHaveBeenCalled();
+        expect(compiled.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
+        expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("already_there");
+    });
+
+    it("the delete's outcome is announced, not just acted on (LR-005, VDE-11)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         // The store navigates on success; the spy keeps the empty test-bed
@@ -1072,7 +1297,8 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         vi.spyOn(TestBed.inject(Router), "navigate");
 
         holdDirective(fixture).held.emit(true);
-        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        // The delete stays on the Atlas route (VDE-11): the door does not delete.
+        const request = httpMock.expectOne(`${ATLAS_ENTITY_URL}7a1b`);
         request.flush({ guidAssignments: {} });
         fixture.detectChanges();
         fixture.detectChanges(); // the outcome effect fills at the tick's end
@@ -1085,7 +1311,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         arrive(fixture, httpMock);
 
         holdDirective(fixture).held.emit(true);
-        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        const request = httpMock.expectOne(`${ATLAS_ENTITY_URL}7a1b`);
         request.flush(
             { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
             { status: 403, statusText: "Forbidden" },
@@ -1099,7 +1325,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-outcome")?.textContent ?? "")).toBe("");
     });
 
-    it("a refused save adds one alert and keeps the drawer (EDT-08)", () => {
+    it("a refused save adds one alert and keeps the drawer (EDT-08, VDE-09)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         const add = vi.spyOn(TestBed.inject(AlertsService), "add");
@@ -1108,13 +1334,14 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
         httpMock
-            .expectOne(ENTITY_POST_URL)
+            .expectOne(VIEW_POST_URL)
             .flush(
                 { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
                 { status: 403, statusText: "Forbidden" },
             );
         fixture.detectChanges();
 
+        // Any other failure of the door is the EDT-08 alert (VDE-09).
         expect(add).toHaveBeenCalledTimes(1);
         expect(add).toHaveBeenCalledWith({
             severity: "error",
@@ -1130,7 +1357,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
     it("an in-flight save spins the button and the status line ends with the answer (EDT-18, DD-342)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
-        const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
+        vi.spyOn(TestBed.inject(Router), "navigate");
 
         const saveButton = () => compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!;
         expect(saveButton().disabled).toBe(false);
@@ -1150,7 +1377,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
         // A refusal ends the state with the drawer open (EDT-08's path).
         httpMock
-            .expectOne(ENTITY_POST_URL)
+            .expectOne(VIEW_POST_URL)
             .flush(
                 { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
                 { status: 403, statusText: "Forbidden" },
@@ -1165,7 +1392,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         saveButton().click();
         fixture.detectChanges();
         expect(saveButton().disabled).toBe(true);
-        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        httpMock.expectOne(VIEW_POST_URL).flush(savedView());
         fixture.detectChanges();
         expect(compiled.querySelector(".aurelius-editor-busy")).toBeNull();
     });
@@ -1223,7 +1450,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         expect(del?.getAttribute("title")).toBe("Hold for 3 seconds");
     });
 
-    it("a completed hold deletes the entity and lands on browse (EDT-19)", () => {
+    it("a completed hold deletes the entity and lands on browse (EDT-19, VDE-11)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
@@ -1235,7 +1462,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         directive.held.emit(true);
         fixture.detectChanges();
 
-        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        const request = httpMock.expectOne(`${ATLAS_ENTITY_URL}7a1b`);
         expect(request.request.method).toBe("DELETE");
         // In flight the Delete is the acting button: spinner, busy, disabled,
         // and the status line names the delete (EDT-18, DD-342).
@@ -1258,7 +1485,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         holdDirective(fixture).held.emit(false);
         fixture.detectChanges();
 
-        httpMock.expectNone((req) => req.url.startsWith("/api/atlas/v2/entity/guid/7a1b") && req.method === "DELETE");
+        httpMock.expectNone((req) => req.url.startsWith(ATLAS_ENTITY_URL) && req.method === "DELETE");
         expect(navigate).not.toHaveBeenCalled();
         expect(compiled.querySelector(".aurelius-drawer-panel")).toBeTruthy();
     });
@@ -1269,7 +1496,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
 
         holdDirective(fixture).held.emit(true);
-        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/7a1b");
+        const request = httpMock.expectOne(`${ATLAS_ENTITY_URL}7a1b`);
         request.flush(
             { errorCode: "ATLAS-403-00-001", errorMessage: "forbidden" },
             { status: 403, statusText: "Forbidden" },
@@ -1305,21 +1532,25 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         );
     });
 
-    // The governance banner (EDT-23/EDT-24, DD-446). The helper `arrive`
-    // already settles the open round, so the debounce/line specs ride it and
-    // drive only the change under test; the trigger specs flush the reads by
-    // hand to watch the first round fire.
-    it("validates the merged draft when the form opens (EDT-23)", () => {
+    // The governance banner (EDT-23/EDT-24, DD-446, VDE-11): it keeps the
+    // Atlas validate-entity aux API and the AtlasEntity-shaped draft — the
+    // adapter answers that shape from the view. The helper `arrive` already
+    // settles the open round, so the debounce/line specs ride it and drive
+    // only the change under test; the trigger specs flush the reads by hand
+    // to watch the first round fire.
+    it("validates the merged draft when the form opens (EDT-23, VDE-11)", () => {
         const { fixture, httpMock } = setup();
-        arriveTypeDefs(fixture, httpMock);
-        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        arriveSlices(fixture, httpMock, false);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
+        fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
+        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
         fixture.detectChanges();
 
         const validation = httpMock.expectOne(VALIDATE_URL);
         expect(validation.request.method).toBe("POST");
-        // The body is the merged draft (EDT-21's payload): the read's entity
+        // The body is the merged draft (EDT-21's payload): the view's entity
         // with the form's seeded values written back — the legacy's
-        // opened-entity merge, not the raw read or the save wrapper.
+        // opened-entity merge, not the raw view or the save wrapper (VDE-11).
         const draft = validation.request.body as { typeName: string; attributes: Record<string, unknown> };
         expect(draft.typeName).toBe("DataSet");
         expect(draft.attributes["name"]).toBe("genomic_variants");
@@ -1351,8 +1582,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("a failed validation renders no lines, alerts nothing, and keeps the drawer usable (EDT-23)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arriveTypeDefs(fixture, httpMock);
-        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        arriveSlices(fixture, httpMock, false);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
+        fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
+        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
         fixture.detectChanges();
         vi.spyOn(TestBed.inject(Router), "navigate"); // the save's navigation, as every save spec stubs it
 
@@ -1367,7 +1600,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
         // And the form still saves (the drawer stays usable).
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
-        httpMock.expectOne(ENTITY_POST_URL).flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        httpMock.expectOne(VIEW_POST_URL).flush(savedView());
     });
 
     it("a newer draft drops the in-flight validation (EDT-23: the generation guard)", () => {
@@ -1432,8 +1665,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("a non-compliant verdict paints the warning icon (EDT-24)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arriveTypeDefs(fixture, httpMock);
-        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        arriveSlices(fixture, httpMock, false);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
+        fixture.detectChanges(); // the answer's type fires the chain read (VDE-02)
+        arriveChain(httpMock, "DataSet", DATASET_CHAIN);
         fixture.detectChanges();
 
         httpMock.expectOne(VALIDATE_URL).flush({
@@ -1450,7 +1685,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 
     it("a create draft is validated too, with the seeded type (EDT-23)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
-        arriveTypeDefs(fixture, httpMock);
+        arriveTypeDefs(fixture, httpMock, "DataSet", DATASET_CHAIN, false);
+        flushValidation(httpMock);
+        fixture.detectChanges();
 
         // The banner rides the create form as well: the open round answered
         // the corpus verdicts, and the two rendered controls carry their lines
@@ -1465,7 +1702,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19)", () => {
 });
 
 /* ------------------------------------------------------------------ */
-/* The quality-mode drawer (EDT-25, EDT-28, EDT-29).                    */
+/* The quality-mode drawer (EDT-25, EDT-28, EDT-29, VDE-11).            */
 /* ------------------------------------------------------------------ */
 
 const KINDS_URL = "/api/aurelius/v1/quality/kinds";
@@ -1494,9 +1731,9 @@ const QUALITY_KINDS = {
     thresholdMax: 1,
 };
 
-/** The typedefs the quality drawer reads: the rule type with its derived
- * `fields` end (EDT-13's machinery) and the DataSet/Referenceable noise ends
- * the quality mode must not draw (EDT-25). */
+/** The types the quality drawer's chain answers: the rule type with its
+ * derived `fields` end (EDT-13's machinery) and the DataSet/Referenceable
+ * lineage ends the quality mode must not draw (EDT-25). */
 const QUALITY_TYPEDEFS: AtlasTypesDef = {
     entityDefs: [
         {
@@ -1539,48 +1776,54 @@ const QUALITY_TYPEDEFS: AtlasTypesDef = {
     relationshipDefs: [],
 };
 
-/** The stored vocabulary rule (EDT-29's seed source): a kind, its
- * parameter, and foreign leftovers (EWR-09's materialized dqpattern). */
-const RULE_ANSWER: AtlasEntityWithExtInfo = {
-    entity: {
-        guid: "r-1",
-        typeName: "m4i_data_quality",
-        attributes: {
-            name: "total_not_null",
-            qualifiedName: "total_not_null@cluster",
-            id: 7,
-            dqcheckkind: "COLUMN_NOT_NULL_RATIO",
-            dqcolumn: "total",
-            dqpattern: "leftover",
-            active: true,
-            threshold: 0.95,
-        },
-        relationshipAttributes: {
-            fields: [{ guid: "f1", typeName: "m4i_field", displayText: "total", relationshipStatus: "ACTIVE" }],
-        },
-        classifications: [],
+/** The stored vocabulary rule as a view (EDT-29's seed source): a kind, its
+ * parameter, foreign leftovers (EWR-09's materialized dqpattern), and the
+ * `fields` end among its sections. */
+const RULE_ANSWER: EntityView = {
+    guid: "r-1",
+    typeName: "m4i_data_quality",
+    qualifiedName: "total_not_null@cluster",
+    name: "total_not_null",
+    displayText: "total_not_null",
+    status: "ACTIVE",
+    updateTime: 1_700_000_000_000,
+    stale: false,
+    attributes: {
+        name: "total_not_null",
+        id: 7,
+        dqcheckkind: "COLUMN_NOT_NULL_RATIO",
+        dqcolumn: "total",
+        dqpattern: "leftover",
+        active: true,
+        threshold: 0.95,
     },
-    referredEntities: {},
+    sections: [
+        { attribute: "fields", entities: [{ guid: "f1", name: "total", typeName: "m4i_field", status: "ACTIVE" }] },
+    ],
 };
 
-/** The legacy rule (EDT-29): no kind — the generic form and no validate. */
-const LEGACY_RULE_ANSWER: AtlasEntityWithExtInfo = {
-    entity: {
-        guid: "r-2",
-        typeName: "m4i_data_quality",
-        attributes: {
-            name: "legacy_rule",
-            qualifiedName: "legacy_rule@cluster",
-            id: 9,
-            dataqualitytype: "pattern",
-            dataqualityoperator: "regularexpression",
-            expression: "^\\d+$",
-            description: "A pair rule the scanner still reads (DQ-07).",
-        },
-        classifications: [],
+/** The legacy rule as a view (EDT-29): no kind — the generic form and no validate. */
+const LEGACY_RULE_ANSWER: EntityView = {
+    guid: "r-2",
+    typeName: "m4i_data_quality",
+    qualifiedName: "legacy_rule@cluster",
+    name: "legacy_rule",
+    displayText: "legacy_rule",
+    status: "ACTIVE",
+    updateTime: 1_700_000_000_000,
+    stale: false,
+    attributes: {
+        name: "legacy_rule",
+        id: 9,
+        dataqualitytype: "pattern",
+        dataqualityoperator: "regularexpression",
+        expression: "^\\d+$",
+        description: "A pair rule the scanner still reads (DQ-07).",
     },
-    referredEntities: {},
+    sections: [],
 };
+
+const QUALITY_CHAIN = chainFor(QUALITY_TYPEDEFS, "m4i_data_quality");
 
 /** Set the quality form's name input (the child's, EDT-27). */
 function typeRuleName(compiled: HTMLElement, fixture: { detectChanges: () => void }, value: string): void {
@@ -1590,10 +1833,10 @@ function typeRuleName(compiled: HTMLElement, fixture: { detectChanges: () => voi
     fixture.detectChanges();
 }
 
-describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
+describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, VDE-11)", () => {
     it("opens a vocabulary rule in the quality form, not the attribute list (EDT-25, EDT-29)", () => {
         const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
-        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_CHAIN);
         const kindsRequest = httpMock.expectOne(KINDS_URL);
         kindsRequest.flush(QUALITY_KINDS);
         fixture.detectChanges();
@@ -1604,7 +1847,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
         expect(compiled.querySelector("textarea#editor-description")).toBeFalsy();
         expect(compiled.querySelector<HTMLInputElement>("#editor-name")?.value).toBe("total_not_null");
         // Only the `fields` picker renders — the DataSet/m4i_referenceable
-        // noise ends the derived typedefs carry stay out (EDT-25).
+        // noise ends the derived chain carries stay out (EDT-25).
         const pickers = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
         expect(pickers.map((picker) => picker.getAttribute("data-field"))).toEqual(["fields"]);
         expect(pickers[0]?.querySelector(".aurelius-relationship-chip")?.textContent).toContain("total");
@@ -1612,7 +1855,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
 
     it("opens a legacy rule in the generic form, unchecked (EDT-29)", () => {
         const { fixture, compiled, httpMock } = setup({ guid: "r-2" });
-        arrive(fixture, httpMock, LEGACY_RULE_ANSWER, QUALITY_TYPEDEFS);
+        arrive(fixture, httpMock, LEGACY_RULE_ANSWER, QUALITY_CHAIN);
 
         // No quality form, no kinds call; the pair attributes are not rendered
         // as editable fields either — the expression rides the save untouched
@@ -1623,21 +1866,21 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
             "A pair rule the scanner still reads (DQ-07).",
         );
 
-        // Its Save is the EDT-06 path: no validate call, expression rides.
+        // Its Save is the door path (VDE-05): no validate call, expression rides.
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
         httpMock.expectNone(RULE_VALIDATE_URL);
-        const post = httpMock.expectOne(ENTITY_POST_URL);
-        const posted = (post.request.body as { entity: { attributes: Record<string, unknown> } }).entity;
-        expect(posted.attributes["expression"]).toBe("^\\d+$");
-        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        const body = post.request.body as ViewSaveRequest;
+        expect(body.attributes["expression"]).toBe("^\\d+$");
+        post.flush({ ...LEGACY_RULE_ANSWER, updateTime: 1_700_000_090_000 });
         expect(navigate).toHaveBeenCalled();
     });
 
-    it("validates before the POST, and posts the minimal quality body (EDT-28, EDT-27)", () => {
+    it("validates before the POST, and posts the minimal quality body (EDT-28, EDT-27, VDE-11)", () => {
         const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
-        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_CHAIN);
         httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
         fixture.detectChanges();
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
@@ -1645,7 +1888,8 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
         compiled.querySelector<HTMLButtonElement>("button.aurelius-editor-save")!.click();
         fixture.detectChanges();
 
-        // The validate call first (EDT-28): the draft's stored-rule shape.
+        // The validate call first (EDT-28, VDE-11: quality validation stays
+        // before the save): the draft's stored-rule shape.
         const validate = httpMock.expectOne(RULE_VALIDATE_URL);
         expect(validate.request.method).toBe("POST");
         expect(validate.request.body).toMatchObject({
@@ -1660,33 +1904,21 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
         validate.flush({ valid: true, kind: "COLUMN_NOT_NULL_RATIO", dimension: "COMPLETENESS" });
         fixture.detectChanges();
 
-        // The EDT-06 save rides: the minimal body (no foreign dqpattern,
-        // EDT-27) plus the fields picker's full value (EDT-16).
-        const post = httpMock.expectOne(ENTITY_POST_URL);
-        const posted = (
-            post.request.body as {
-                entity: { attributes: Record<string, unknown>; relationshipAttributes: Record<string, unknown> };
-            }
-        ).entity;
-        expect(posted.attributes["dqpattern"]).toBeUndefined();
-        expect(posted.attributes["dqcheckkind"]).toBe("COLUMN_NOT_NULL_RATIO");
-        expect(posted.relationshipAttributes["fields"]).toEqual([
-            {
-                guid: "f1",
-                typeName: "m4i_field",
-                displayText: "total",
-                relationshipType: "m4i_data_quality_field_assignment",
-                relationshipStatus: "ACTIVE",
-            },
-        ]);
-        post.flush({ createdEntityHeaders: [], updatedEntityHeaders: [] });
+        // The door save rides (VDE-05): the minimal body (no foreign dqpattern,
+        // EDT-27) plus the fields picker's full value (VDE-04).
+        const post = httpMock.expectOne(VIEW_POST_URL);
+        const body = post.request.body as ViewSaveRequest;
+        expect(body.attributes["dqpattern"]).toBeUndefined();
+        expect(body.attributes["dqcheckkind"]).toBe("COLUMN_NOT_NULL_RATIO");
+        expect(body.sections).toEqual([{ attribute: "fields", entities: ["f1"] }]);
+        post.flush({ ...RULE_ANSWER, updateTime: 1_700_000_090_000 });
         fixture.detectChanges();
         expect(navigate).toHaveBeenCalledWith([{ outlets: { primary: ["search", "details", "r-1"], drawer: null } }]);
     });
 
     it("an engine refusal keeps the line and posts nothing (EDT-28)", () => {
         const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
-        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_CHAIN);
         httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
         fixture.detectChanges();
 
@@ -1699,7 +1931,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
             "The rule needs a column.",
         );
-        httpMock.expectNone(ENTITY_POST_URL);
+        httpMock.expectNone(VIEW_POST_URL);
 
         // A later edit clears the line (EDT-28); the next Save re-checks.
         typeRuleName(compiled, fixture, "total_not_null_v2");
@@ -1709,7 +1941,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
 
     it("a validate transport failure answers the generic line, unchecked never saves (EDT-28)", () => {
         const { fixture, compiled, httpMock } = setup({ guid: "r-1" });
-        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_TYPEDEFS);
+        arrive(fixture, httpMock, RULE_ANSWER, QUALITY_CHAIN);
         httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
         fixture.detectChanges();
 
@@ -1721,13 +1953,13 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29)", () => {
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
             "The rule could not be checked against the server. Try again.",
         );
-        httpMock.expectNone(ENTITY_POST_URL);
+        httpMock.expectNone(VIEW_POST_URL);
         httpMock.verify();
     });
 
     it("an incomplete quality form bails before the call (EDT-28/EDT-07)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "m4i_data_quality" });
-        arriveTypeDefs(fixture, httpMock, QUALITY_TYPEDEFS);
+        arriveTypeDefs(fixture, httpMock, "m4i_data_quality", QUALITY_CHAIN);
         httpMock.expectOne(KINDS_URL).flush(QUALITY_KINDS);
         fixture.detectChanges();
 
