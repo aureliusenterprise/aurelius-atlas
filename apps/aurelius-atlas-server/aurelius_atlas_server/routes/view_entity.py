@@ -8,7 +8,7 @@ answers the live view of the written entity (AVW-07), its refusals in the door's
 its conflicts beside the stored view (DD-591).
 """
 
-from aurelius_atlas_core.view_derivation import view_of
+from aurelius_atlas_core.view_derivation import read_ends, view_of
 from aurelius_atlas_core.view_mutation import ViewMutationDoor, ViewVersionConflictError
 from aurelius_atlas_model.errors import validate_guid
 from aurelius_atlas_model.views import EntityView
@@ -40,7 +40,8 @@ async def read(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
     entity_type = store.registry.entity_type(found.entity.type_name)
     if entity_type is None:  # pragma: no cover - the store only holds entities of known types
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {found.entity.type_name} of entity {guid}")
-    return AtlasJSONResponse(view_of(found.entity, entity_type).to_json())
+    ends = await read_ends(store, found.entity, entity_type)  # VDR-02, DD-604: one batched read of the entity's ends
+    return AtlasJSONResponse(view_of(found.entity, entity_type, ends=ends).to_json())
 
 
 @VIEW_ENTITY.post("/entity", responses=VIEW_RESULT, **VIEW_BODY)

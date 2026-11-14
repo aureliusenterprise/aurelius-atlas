@@ -1,4 +1,4 @@
-import type { AtlasEntity } from "aurelius-atlas-data-access";
+import type { AtlasEntity, EntityView } from "aurelius-atlas-data-access";
 
 /**
  * The uniform card body's facts (DET-19, DD-367): the display text, the
@@ -6,7 +6,15 @@ import type { AtlasEntity } from "aurelius-atlas-data-access";
  * reads them — the same rules the details header already follows
  * (DET-09's title, DET-10/DD-320's definition-else-description, DET-26's
  * `attributes.typeAlias`).
+ *
+ * The helpers take either door's shape — the bulk-read {@link AtlasEntity}
+ * a card body resolves (7.21a kept, VDR-03) or the read door's
+ * {@link EntityView} the details header answers (16.5b) — because every
+ * rule reads only the guid and the attribute values, which both carry.
  */
+
+/** What the rules read: an entity's guid and its attribute values, from either door. */
+export type CardRecord = Pick<AtlasEntity, "guid" | "attributes"> | Pick<EntityView, "guid" | "attributes">;
 
 /**
  * A card's display text: the entity's `displayText`-style name — the
@@ -15,7 +23,7 @@ import type { AtlasEntity } from "aurelius-atlas-data-access";
  * @param entity the resolved related entity
  * @returns the card title's text
  */
-export function cardDisplayText(entity: AtlasEntity): string {
+export function cardDisplayText(entity: CardRecord): string {
     const attributes = entity.attributes ?? {};
     const name = attributes["name"];
     if (typeof name === "string" && name !== "") {
@@ -35,7 +43,7 @@ export function cardDisplayText(entity: AtlasEntity): string {
  * @param entity the resolved related entity
  * @returns the description text, or empty
  */
-export function cardDescription(entity: AtlasEntity): string {
+export function cardDescription(entity: CardRecord): string {
     const attributes = entity.attributes ?? {};
     for (const key of ["definition", "description"]) {
         if (typeof attributes[key] === "string") {
@@ -52,7 +60,7 @@ export function cardDescription(entity: AtlasEntity): string {
  * @param entity the resolved related entity
  * @returns the alias, or undefined
  */
-export function cardTypeAlias(entity: AtlasEntity): string | undefined {
+export function cardTypeAlias(entity: CardRecord): string | undefined {
     const alias = entity.attributes?.["typeAlias"];
     return typeof alias === "string" && alias !== "" ? alias : undefined;
 }

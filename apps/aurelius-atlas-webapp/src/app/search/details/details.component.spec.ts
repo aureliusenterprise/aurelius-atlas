@@ -8,7 +8,7 @@ import Keycloak from "keycloak-js";
 import { Subject } from "rxjs";
 import { faPenToSquare } from "@fortawesome/free-solid-svg-icons";
 
-import type { AtlasEntity, AtlasEntityWithExtInfo } from "aurelius-atlas-data-access";
+import type { EntityRelation, EntityView, RelationEntity } from "aurelius-atlas-data-access";
 import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 
 import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json";
@@ -20,39 +20,41 @@ import { EntitySaved } from "../editor/entity-saved";
 import { Details } from "./details.component";
 
 /**
- * The details screen on its data spine (DET-08..DET-13, 7.20): the route's
- * guid drives one `GET /api/atlas/v2/entity/guid/{guid}` (DET-08), the
- * header/description/properties bind to the entity that answers
- * (DET-09..DET-11), and every no-entity state keeps the 7.6 empty shape
- * (DET-02). The specs ride the results screen's idiom: a `paramMap`
- * Subject so a guid change is observable, `expectOne` + `flush` for the
- * arrival, `detectChanges` to let the effects and signals settle.
+ * The details screen on its data spine (DET-08..DET-13, 7.20, VDR-01): the
+ * route's guid drives one `GET /api/aurelius/v1/entity/guid/{guid}` — the
+ * view family's read door (ADR 064) — the header/description/properties
+ * bind to the view that answers (DET-09..DET-11, VDR-04..VDR-06), and every
+ * no-entity state keeps the 7.6 empty shape (DET-02, VDR-08). The specs
+ * ride the results screen's idiom: a `paramMap` Subject so a guid change is
+ * observable, `expectOne` + `flush` for the arrival, `detectChanges` to let
+ * the effects and signals settle.
  */
-const ENTITY_URL = "/api/atlas/v2/entity/guid/";
+const VIEW_URL = "/api/aurelius/v1/entity/guid/";
 
 /** The layout dispatch's typedef read (DET-15): `/v2/types/typedef/name/{name}`. */
 const TYPEDEF_URL = "/api/atlas/v2/types/typedef/name/";
 
-/** The wire body of the fixture entity: two renderable properties. */
-const ANSWER: AtlasEntityWithExtInfo = {
-    entity: {
-        guid: "7a1b",
-        typeName: "DataSet",
-        attributes: {
-            name: "genomic_variants",
-            qualifiedName: "genomic_variants@cluster",
-            definition: "Curated variant calls.",
-            description: "A seeded description.",
-            owner: "analyst-3",
-        },
-        relationshipAttributes: {},
-        classifications: [{ typeName: "PII" }, { typeName: "CONFIDENTIAL" }],
+/** The read door's answer for the fixture entity: two renderable properties. */
+const ANSWER: EntityView = {
+    guid: "7a1b",
+    typeName: "DataSet",
+    displayText: "genomic_variants",
+    name: "genomic_variants",
+    qualifiedName: "genomic_variants@cluster",
+    status: "ACTIVE",
+    stale: false,
+    classificationNames: ["PII", "CONFIDENTIAL"],
+    attributes: {
+        name: "genomic_variants",
+        qualifiedName: "genomic_variants@cluster",
+        definition: "Curated variant calls.",
+        description: "A seeded description.",
+        owner: "analyst-3",
     },
-    referredEntities: {},
 };
 
-/** The entity minus its classifications — the chip-less variant. */
-const NO_CHIPS = { ...ANSWER, entity: { ...ANSWER.entity, classifications: [] } };
+/** The view minus its classification names — the chip-less variant (VDR-05). */
+const NO_CHIPS: EntityView = { ...ANSWER, classificationNames: [] };
 
 /**
  * Bring the screen up at the given guid: the paramMap Subject carries the
@@ -93,11 +95,25 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
     };
 }
 
-/** Deliver the entity body for the in-flight read and settle the screen. */
+/** Deliver the view for the in-flight read and settle the screen. */
 function arrive(fixture: { detectChanges: () => void }, httpMock: HttpTestingController, body = ANSWER) {
-    httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(body);
+    httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(body);
     fixture.detectChanges();
     settleTypeDefs(httpMock);
+}
+
+/**
+ * One view section carrying the given ends. The fixture ends stay loose
+ * (`Record<string, unknown>`) on purpose: the guidless and DELETED entries
+ * the fixtures carry are not representable as a `RelationEntity`.
+ */
+function ends(attribute: string, seed: readonly Record<string, unknown>[]): EntityRelation {
+    return { attribute, entities: seed as unknown as RelationEntity[] };
+}
+
+/** The view's sections, one per key in ``seeds``. */
+function sectionsOf(seeds: Record<string, readonly Record<string, unknown>[]>): EntityRelation[] {
+    return Object.entries(seeds).map(([attribute, seed]) => ends(attribute, seed));
 }
 
 /**
@@ -115,10 +131,10 @@ function settleTypeDefs(httpMock: HttpTestingController): void {
 const normalize = (text: string | undefined | null) => text?.replace(/\s+/g, " ").trim();
 
 describe("Details data spine (DET-08..DET-13)", () => {
-    it("fetches the entity by guid on arrival (DET-08)", () => {
+    it("fetches the entity by guid on arrival (DET-08, VDR-01)", () => {
         const { httpMock } = setup("g-42");
 
-        const request = httpMock.expectOne("/api/atlas/v2/entity/guid/g-42");
+        const request = httpMock.expectOne("/api/aurelius/v1/entity/guid/g-42");
         expect(request.request.method).toBe("GET");
         request.flush(ANSWER);
     });
@@ -129,16 +145,16 @@ describe("Details data spine (DET-08..DET-13)", () => {
         // Two reads in flight: the first guid's answer arrives after the
         // screen moved on, and must not paint (the legacy
         // EntityDetailsService.latestEntityId guard).
-        const first = httpMock.expectOne("/api/atlas/v2/entity/guid/first");
+        const first = httpMock.expectOne("/api/aurelius/v1/entity/guid/first");
         paramMap.next(convertToParamMap({ guid: "second" }));
         fixture.detectChanges();
-        const second = httpMock.expectOne("/api/atlas/v2/entity/guid/second");
+        const second = httpMock.expectOne("/api/aurelius/v1/entity/guid/second");
 
         first.flush(ANSWER); // stale: its entity names a different screen
         fixture.detectChanges();
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("Entity type");
 
-        second.flush({ ...ANSWER, entity: { ...ANSWER.entity, guid: "second", attributes: { name: "second" } } });
+        second.flush({ ...ANSWER, guid: "second", attributes: { name: "second" } });
         fixture.detectChanges();
         settleTypeDefs(httpMock);
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("second");
@@ -147,7 +163,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
     it("issues exactly one read per guid: no second client (DET-08)", () => {
         const { fixture, compiled, httpMock } = setup();
 
-        const requests = httpMock.match((request) => request.url.startsWith(ENTITY_URL));
+        const requests = httpMock.match((request) => request.url.startsWith(VIEW_URL));
         expect(requests).toHaveLength(1);
         requests[0].flush(ANSWER);
         fixture.detectChanges();
@@ -178,7 +194,9 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, paramMap, httpMock } = setup();
         arrive(fixture, httpMock, {
             ...ANSWER,
-            entity: { ...ANSWER.entity, attributes: { qualifiedName: "qualified@only" } },
+            name: undefined,
+            displayText: "qualified@only",
+            attributes: { qualifiedName: "qualified@only" },
         });
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("qualified@only");
 
@@ -186,10 +204,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         // restored): the same localized chrome label the 7.6 skeleton rode.
         paramMap.next(convertToParamMap({ guid: "blank" }));
         fixture.detectChanges();
-        arriveSecond(fixture, httpMock, {
-            ...ANSWER,
-            entity: { ...ANSWER.entity, guid: "blank", attributes: {} },
-        });
+        arriveSecond(fixture, httpMock, { ...ANSWER, guid: "blank", name: undefined, attributes: {} });
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("Entity type");
     });
 
@@ -211,10 +226,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
 
     it("shows the legacy placeholder when neither attribute exists (DET-10, DD-321)", () => {
         const { fixture, compiled, httpMock } = setup();
-        arrive(fixture, httpMock, {
-            ...ANSWER,
-            entity: { ...ANSWER.entity, attributes: { name: "no-definition" } },
-        });
+        arrive(fixture, httpMock, { ...ANSWER, name: "no-definition", attributes: { name: "no-definition" } });
 
         // The legacy description component's noDescription template: an
         // italic centered line in place of the markdown block.
@@ -228,10 +240,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock, {
             ...ANSWER,
-            entity: {
-                ...ANSWER.entity,
-                attributes: { ...ANSWER.entity!.attributes, definition: "Curated **variant** calls." },
-            },
+            attributes: { ...ANSWER.attributes, definition: "Curated **variant** calls." },
         });
 
         const box = compiled.querySelector(".aurelius-details-description");
@@ -244,7 +253,8 @@ describe("Details data spine (DET-08..DET-13)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock, {
             ...ANSWER,
-            entity: { ...ANSWER.entity, attributes: { name: "atlas-typed", description: "A seeded description." } },
+            name: "atlas-typed",
+            attributes: { name: "atlas-typed", description: "A seeded description." },
         });
 
         // The Atlas model types carry their text in `description`: the box
@@ -288,12 +298,11 @@ describe("Details data spine (DET-08..DET-13)", () => {
 
     it("routes the details screen when a property link is clicked (DET-11, DET-06)", () => {
         const { fixture, compiled, httpMock } = setup();
+        // VDR-04: the section's ends merge into the table as a link array —
+        // the row the Atlas GET's merged relationshipAttributes answered.
         arrive(fixture, httpMock, {
             ...ANSWER,
-            entity: {
-                ...ANSWER.entity,
-                relationshipAttributes: { upstreamDatasets: [{ guid: "linked-1", displayText: "Upstream" }] },
-            },
+            sections: [ends("upstreamDatasets", [{ guid: "linked-1", displayText: "Upstream" }])],
         });
 
         // Sorted rows: description, owner, upstreamDatasets — the link is
@@ -312,20 +321,52 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(navigate).toHaveBeenCalledWith(["/search/details", "linked-1"]);
     });
 
-    it("renders the trail from the breadcrumb store, and routes a crumb click (DET-12, DET-06)", () => {
+    it("renders the view's stored trail with its own crumb active, and routes a crumb click (DET-12, VDR-06, DD-606)", () => {
         const { fixture, compiled, httpMock } = setup("current");
-        arrive(fixture, httpMock);
+        // The seam of 7.20 (DD-317) is filled: the door answers the view
+        // with the index document's stored breadcrumb, top down (VDR-06).
+        arrive(fixture, httpMock, {
+            ...ANSWER,
+            guid: "current",
+            breadcrumb: [
+                { guid: "g1", name: "Genomics", typeName: "m4i_data_domain" },
+                { guid: "g2", name: null, typeName: "m4i_dataset" },
+                { guid: "g3", name: null, typeName: null },
+            ],
+        });
 
-        // The seam (DD-317): the screen renders whatever the store holds
-        // — empty until an API fills it — and the trail stays absent.
-        expect(compiled.querySelector("nav.breadcrumb")).toBeNull();
+        const crumbs = [...compiled.querySelectorAll("nav.breadcrumb li")];
+        // The stored trail plus the opened entity's own crumb last, marked
+        // active (DD-606). Each crumb shows its name, or its type, or its
+        // guid — g2 lost its name (ASU-02), g3 both (VDR-06's fallbacks),
+        // and the opened entity leads with its own name.
+        expect(crumbs.map((crumb) => normalize(crumb.textContent))).toEqual([
+            "Genomics",
+            "m4i_dataset",
+            "g3",
+            "genomic_variants",
+        ]);
+        expect(crumbs[3].classList.contains("is-active")).toBe(true);
+        // Icons ride the app's type map (DET-26's resolver): the mapped
+        // domain crumb draws one, the unmapped DataSet crumb stays text-only.
+        expect(crumbs[0].querySelector("fa-icon svg")).toBeTruthy();
+        expect(crumbs[3].querySelector(".icon")).toBeNull();
 
         // The routing contract is proven at the component boundary: the
         // lib's emit reaches the screen's router call, the lib never routes.
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");
-        const crumbs = fixture.debugElement.query(By.directive(Breadcrumbs)).componentInstance as Breadcrumbs;
-        crumbs.itemClicked.emit("g2");
+        const trail = fixture.debugElement.query(By.directive(Breadcrumbs)).componentInstance as Breadcrumbs;
+        trail.itemClicked.emit("g2");
         expect(navigate).toHaveBeenCalledWith(["/search/details", "g2"]);
+    });
+
+    it("an entity without a document shows its own crumb alone (VDR-06)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock); // ANSWER carries no breadcrumb
+
+        const crumbs = [...compiled.querySelectorAll("nav.breadcrumb li")];
+        expect(crumbs.map((crumb) => normalize(crumb.textContent))).toEqual(["genomic_variants"]);
+        expect(crumbs[0].classList.contains("is-active")).toBe(true);
     });
 
     it("shows the localized loading line while the first read is in flight (DET-13)", () => {
@@ -350,7 +391,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         // feature's own call is what the spec pins.
         const add = vi.spyOn(TestBed.inject(AlertsService), "add");
 
-        httpMock.expectOne(`${ENTITY_URL}7a1b`).flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
+        httpMock.expectOne(`${VIEW_URL}7a1b`).flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
         fixture.detectChanges();
 
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("Entity type");
@@ -365,7 +406,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
     it("answers a 404 with the empty state and no alert (DET-13, ALR-05)", () => {
         const { fixture, compiled, httpMock } = setup("missing");
 
-        httpMock.expectOne(`${ENTITY_URL}missing`).flush({}, { status: 404, statusText: "Not Found" });
+        httpMock.expectOne(`${VIEW_URL}missing`).flush({}, { status: 404, statusText: "Not Found" });
         fixture.detectChanges();
 
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("Entity type");
@@ -375,7 +416,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
 
     it("keeps the guid from the route as the screen's address (DET-01, DET-07)", () => {
         const { fixture, httpMock } = setup("guid-from-route");
-        httpMock.expectOne("/api/atlas/v2/entity/guid/guid-from-route").flush(ANSWER);
+        httpMock.expectOne("/api/aurelius/v1/entity/guid/guid-from-route").flush(ANSWER);
 
         const crumbs = fixture.debugElement.query(By.directive(Breadcrumbs)).componentInstance as Breadcrumbs;
         expect(crumbs.activeGuid()).toBe("guid-from-route");
@@ -422,11 +463,13 @@ describe("Details data spine (DET-08..DET-13)", () => {
         TestBed.inject(EntitySaved).notify("saved-guid");
         fixture.detectChanges();
 
-        // The still-mounted screen re-reads the saved entity (the drawer
-        // save never changed this URL, so the router reused the component).
-        const second = httpMock.expectOne("/api/atlas/v2/entity/guid/saved-guid");
+        // The still-mounted screen re-reads the saved entity: the save tick
+        // evicts the cached view first (VDR-07, DD-605), so the door answers
+        // again (the drawer save never changed this URL, so the router
+        // reused the component).
+        const second = httpMock.expectOne("/api/aurelius/v1/entity/guid/saved-guid");
         expect(second.request.method).toBe("GET");
-        second.flush({ ...ANSWER, entity: { ...ANSWER.entity, attributes: { name: "renamed_after_save" } } });
+        second.flush({ ...ANSWER, attributes: { name: "renamed_after_save" } });
         fixture.detectChanges();
         expect(normalize(compiled.querySelector("h1.aurelius-details-title")?.textContent)).toBe("renamed_after_save");
     });
@@ -438,7 +481,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
         TestBed.inject(EntitySaved).notify("some-other-guid");
         fixture.detectChanges();
 
-        httpMock.expectNone("/api/atlas/v2/entity/guid/saved-guid");
+        httpMock.expectNone("/api/aurelius/v1/entity/guid/saved-guid");
         // The screen's own read is already flushed above; nothing else fires
         // and the rendered entity stays as it arrived.
         httpMock.verify();
@@ -446,7 +489,7 @@ describe("Details data spine (DET-08..DET-13)", () => {
     });
 });
 
-/** A related-entity end of the seeded `relationshipAttributes`. */
+/** A related-entity end of a seeded view section (VDR-03). */
 function end(guid: string, displayText: string): Record<string, unknown> {
     return { guid, displayText, typeName: "m4i_data_attribute", name: displayText };
 }
@@ -456,31 +499,33 @@ function endOf(guid: string, typeName: string, displayText: string): Record<stri
     return { guid, displayText, typeName, name: displayText };
 }
 
-/** A person end of the seeded `relationshipAttributes`. */
+/** A person end of a seeded view section, or of a bulk answer's edges. */
 function person(guid: string, displayText: string): Record<string, unknown> {
     return { guid, displayText, typeName: "person" };
 }
 
-/** The m4i entity body, overridable per spec. */
-function m4iEntity(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+/** The m4i entity's view, overridable per spec. */
+function m4iEntity(overrides: Partial<EntityView> = {}): EntityView {
     return {
-        entity: {
-            guid: "m4i-1",
-            typeName: "m4i_data_entity",
-            attributes: {
-                name: "variants_entity",
-                qualifiedName: "variants@cluster",
-                description: "A governed entity.",
-            },
-            relationshipAttributes: {
-                attributes: [end("a1", "gene_symbol"), end("a2", "chromosome")],
-                businessOwner: [person("p1", "Ada")],
-                steward: [person("p2", "Lin"), person("p2", "Lin again")],
-                domainLead: [person("p3", "Ada Lead")],
-            },
-            ...overrides,
+        guid: "m4i-1",
+        typeName: "m4i_data_entity",
+        displayText: "variants_entity",
+        name: "variants_entity",
+        qualifiedName: "variants@cluster",
+        status: "ACTIVE",
+        stale: false,
+        attributes: {
+            name: "variants_entity",
+            qualifiedName: "variants@cluster",
+            description: "A governed entity.",
         },
-        referredEntities: {},
+        sections: sectionsOf({
+            attributes: [end("a1", "gene_symbol"), end("a2", "chromosome")],
+            businessOwner: [person("p1", "Ada")],
+            steward: [person("p2", "Lin"), person("p2", "Lin again")],
+            domainLead: [person("p3", "Ada Lead")],
+        }),
+        ...overrides,
     };
 }
 
@@ -511,19 +556,21 @@ function attributesAnswer(overrides: Record<string, Record<string, unknown>> = {
  * `outputFromProcesses` (a producer) and the same on `inputToProcesses` (a
  * consumer), no fields and no children.
  */
-function m4iDataset(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+function m4iDataset(overrides: Partial<EntityView> = {}): EntityView {
     return {
-        entity: {
-            guid: "ds-1",
-            typeName: "m4i_dataset",
-            attributes: { name: "hourly_index", qualifiedName: "hourly_index@cluster" },
-            relationshipAttributes: {
-                outputFromProcesses: [endOf("pr-1", "m4i_generic_process", "build_index")],
-                inputToProcesses: [endOf("pr-1", "m4i_generic_process", "build_index")],
-            },
-            ...overrides,
-        },
-        referredEntities: {},
+        guid: "ds-1",
+        typeName: "m4i_dataset",
+        displayText: "hourly_index",
+        name: "hourly_index",
+        qualifiedName: "hourly_index@cluster",
+        status: "ACTIVE",
+        stale: false,
+        attributes: { name: "hourly_index", qualifiedName: "hourly_index@cluster" },
+        sections: sectionsOf({
+            outputFromProcesses: [endOf("pr-1", "m4i_generic_process", "build_index")],
+            inputToProcesses: [endOf("pr-1", "m4i_generic_process", "build_index")],
+        }),
+        ...overrides,
     };
 }
 
@@ -542,20 +589,22 @@ function processAnswer(): Record<string, unknown> {
 }
 
 /** The m4i process body: the three forward ends of DET-33's row. */
-function m4iProcess(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+function m4iProcess(overrides: Partial<EntityView> = {}): EntityView {
     return {
-        entity: {
-            guid: "pr-1",
-            typeName: "m4i_generic_process",
-            attributes: { name: "build_index", qualifiedName: "build_index@cluster" },
-            relationshipAttributes: {
-                system: [endOf("sy-1", "m4i_system", "elastic1")],
-                inputs: [endOf("ds-1", "m4i_dataset", "raw_logs")],
-                outputs: [endOf("ds-2", "m4i_dataset", "hourly_index")],
-            },
-            ...overrides,
-        },
-        referredEntities: {},
+        guid: "pr-1",
+        typeName: "m4i_generic_process",
+        displayText: "build_index",
+        name: "build_index",
+        qualifiedName: "build_index@cluster",
+        status: "ACTIVE",
+        stale: false,
+        attributes: { name: "build_index", qualifiedName: "build_index@cluster" },
+        sections: sectionsOf({
+            system: [endOf("sy-1", "m4i_system", "elastic1")],
+            inputs: [endOf("ds-1", "m4i_dataset", "raw_logs")],
+            outputs: [endOf("ds-2", "m4i_dataset", "hourly_index")],
+        }),
+        ...overrides,
     };
 }
 
@@ -565,35 +614,37 @@ function m4iProcess(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInf
  * (counts nothing), and a `ProcessOwner` end the box never lists (DV-154).
  * `email` is the one property the Other stat counts.
  */
-function m4iPerson(overrides: Partial<AtlasEntity> = {}): AtlasEntityWithExtInfo {
+function m4iPerson(overrides: Partial<EntityView> = {}): EntityView {
     return {
-        entity: {
-            guid: "pe-1",
-            typeName: "m4i_person",
-            attributes: { name: "Ada", qualifiedName: "ada@corp", email: "ada@example.com" },
-            relationshipAttributes: {
-                domainLead: [endOf("d1", "m4i_data_domain", "genomics")],
-                businessOwnerEntity: [
-                    endOf("e1", "m4i_data_entity", "variants"),
-                    endOf("e2", "m4i_data_entity", "samples"),
-                    endOf("e2", "m4i_data_entity", "samples"),
-                ],
-                businessOwnerAttribute: [endOf("a1", "m4i_data_attribute", "gene_symbol")],
-                stewardEntity: [endOf("e3", "m4i_data_entity", "reports")],
-                stewardAttribute: [
-                    {
-                        guid: "a2",
-                        displayText: "chromosome",
-                        typeName: "m4i_data_attribute",
-                        relationshipStatus: "DELETED",
-                    },
-                    endOf("a3", "m4i_data_attribute", "coverage"),
-                ],
-                ProcessOwner: [endOf("po1", "m4i_generic_process", "build_index")],
-            },
-            ...overrides,
-        },
-        referredEntities: {},
+        guid: "pe-1",
+        typeName: "m4i_person",
+        displayText: "Ada",
+        name: "Ada",
+        qualifiedName: "ada@corp",
+        status: "ACTIVE",
+        stale: false,
+        attributes: { name: "Ada", qualifiedName: "ada@corp", email: "ada@example.com" },
+        sections: sectionsOf({
+            domainLead: [endOf("d1", "m4i_data_domain", "genomics")],
+            businessOwnerEntity: [
+                endOf("e1", "m4i_data_entity", "variants"),
+                endOf("e2", "m4i_data_entity", "samples"),
+                endOf("e2", "m4i_data_entity", "samples"),
+            ],
+            businessOwnerAttribute: [endOf("a1", "m4i_data_attribute", "gene_symbol")],
+            stewardEntity: [endOf("e3", "m4i_data_entity", "reports")],
+            stewardAttribute: [
+                {
+                    guid: "a2",
+                    displayText: "chromosome",
+                    typeName: "m4i_data_attribute",
+                    status: "DELETED",
+                },
+                endOf("a3", "m4i_data_attribute", "coverage"),
+            ],
+            ProcessOwner: [endOf("po1", "m4i_generic_process", "build_index")],
+        }),
+        ...overrides,
     };
 }
 
@@ -635,7 +686,7 @@ function personEndsAnswer(): Record<string, unknown> {
 function arrivePerson(
     fixture: { detectChanges: () => void },
     httpMock: HttpTestingController,
-    body: AtlasEntityWithExtInfo = m4iPerson(),
+    body: EntityView = m4iPerson(),
     rules: Record<string, unknown>[] = [],
 ): void {
     arrive(fixture, httpMock, body);
@@ -655,7 +706,7 @@ function arrivePerson(
 function arriveSections(
     fixture: { detectChanges: () => void },
     httpMock: HttpTestingController,
-    body: AtlasEntityWithExtInfo = m4iEntity(),
+    body: EntityView = m4iEntity(),
     answer: Record<string, unknown> = attributesAnswer(),
 ) {
     arrive(fixture, httpMock, body);
@@ -740,23 +791,18 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
 
     it("a card body shows chips, the description, and the card entity's people (DET-19)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
-        arriveSections(
-            fixture,
-            httpMock,
-            m4iEntity({ relationshipAttributes: { attributes: [end("a1", "gene_symbol")] } }),
-            {
-                entities: [
-                    {
-                        guid: "a1",
-                        typeName: "m4i_data_attribute",
-                        attributes: { name: "gene_symbol", description: "HGNC **symbol**." },
-                        classifications: [{ typeName: "PII" }],
-                        relationshipAttributes: { steward: [person("p2", "Lin")] },
-                    },
-                ],
-                referredEntities: {},
-            },
-        );
+        arriveSections(fixture, httpMock, m4iEntity({ sections: [ends("attributes", [end("a1", "gene_symbol")])] }), {
+            entities: [
+                {
+                    guid: "a1",
+                    typeName: "m4i_data_attribute",
+                    attributes: { name: "gene_symbol", description: "HGNC **symbol**." },
+                    classifications: [{ typeName: "PII" }],
+                    relationshipAttributes: { steward: [person("p2", "Lin")] },
+                },
+            ],
+            referredEntities: {},
+        });
 
         const card = compiled.querySelector("#related-attributes aurelius-atlas-ui-entity-card")!;
         expect(normalize(card.querySelector(".field.is-grouped .control")?.textContent)).toBe("Has PII");
@@ -801,7 +847,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         arriveSections(
             fixture,
             httpMock,
-            m4iEntity({ relationshipAttributes: { attributes: [end("a1", "gene_symbol"), end("a2", "chromosome")] } }),
+            m4iEntity({ sections: [ends("attributes", [end("a1", "gene_symbol"), end("a2", "chromosome")])] }),
         );
 
         expect(compiled.querySelector("#people-details .aurelius-people-row")).toBeNull();
@@ -879,7 +925,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
     it("the grid pages at 9; the load button extends the page (DET-22)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         const many = Array.from({ length: 10 }, (_, index) => end(`g${index}`, `name-${index}`));
-        arriveSections(fixture, httpMock, m4iEntity({ relationshipAttributes: { attributes: many } }), {
+        arriveSections(fixture, httpMock, m4iEntity({ sections: [ends("attributes", many)] }), {
             entities: many.map((row) => ({
                 guid: row["guid"],
                 typeName: "m4i_data_attribute",
@@ -1100,13 +1146,14 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             fixture,
             httpMock,
             {
-                entity: {
-                    guid: "attr-1",
-                    typeName: "m4i_data_attribute",
-                    attributes: { name: "gene_symbol" },
-                    relationshipAttributes: { fields: [end("f1", "chromosome_pos")] },
-                },
-                referredEntities: {},
+                guid: "attr-1",
+                typeName: "m4i_data_attribute",
+                displayText: "gene_symbol",
+                name: "gene_symbol",
+                status: "ACTIVE",
+                stale: false,
+                attributes: { name: "gene_symbol" },
+                sections: [ends("fields", [end("f1", "chromosome_pos")])],
             },
             {
                 entities: [{ guid: "f1", typeName: "m4i_field", attributes: { name: "chromosome_pos" } }],
@@ -1128,7 +1175,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
 
         TestBed.inject(EntitySaved).notify("m4i-1");
         fixture.detectChanges();
-        httpMock.expectOne("/api/atlas/v2/entity/guid/m4i-1").flush(m4iEntity({ relationshipAttributes: {} }));
+        httpMock.expectOne("/api/aurelius/v1/entity/guid/m4i-1").flush(m4iEntity({ sections: [] }));
         fixture.detectChanges();
 
         // The new entity has no ends: every section re-seeds to zero.
@@ -1139,7 +1186,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
     it("a DataSet keeps the DET-14 default shape while its walk runs (DET-15)", async () => {
         const { fixture, compiled, httpMock } = setup("ds-1");
         // Delivered without settling the walk: this spec rides it to the end.
-        httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(ANSWER);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
         fixture.detectChanges();
 
         // The default layout's boxes — no section boxes, no People box.
@@ -1544,7 +1591,7 @@ describe("Details person page (DET-39..DET-43)", () => {
         // The guard effect reads the layout: a person-shaped entity of an
         // unmapped type asks for nothing (the default layout, DET-14).
         const { fixture, compiled, httpMock } = setup("pe-1");
-        arrive(fixture, httpMock, { ...m4iPerson(), entity: { ...m4iPerson().entity, typeName: "person" } });
+        arrive(fixture, httpMock, { ...m4iPerson(), typeName: "person" });
         fixture.detectChanges();
 
         expect(compiled.querySelector("#gov-quality")).toBeNull();
@@ -1563,6 +1610,6 @@ function arriveSecond(
     httpMock: HttpTestingController,
     body: Record<string, unknown>,
 ) {
-    httpMock.expectOne((request) => request.url.startsWith(ENTITY_URL)).flush(body);
+    httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(body);
     fixture.detectChanges();
 }
