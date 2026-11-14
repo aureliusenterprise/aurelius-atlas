@@ -77,7 +77,7 @@
                 "oauth2.device.authorization.grant.enabled": "false",
                 "oidc.ciba.grant.enabled": "false",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://__ATLAS_HOST__/*\nhttps://__DASHBOARD_HOST__/*",
+                "post.logout.redirect.uris": "https://__ATLAS_HOST__/*##https://__DASHBOARD_HOST__/*",
                 "realm_client": "false",
                 "standard.token.exchange.enabled": "false"
             },
@@ -114,7 +114,7 @@
                 "display.on.consent.screen": "false",
                 "frontchannel.logout.session.required": "true",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://__ATLAS_HOST__/*\nhttps://__DASHBOARD_HOST__/*"
+                "post.logout.redirect.uris": "https://__ATLAS_HOST__/*##https://__DASHBOARD_HOST__/*"
             },
             "authorizationServicesEnabled": false,
             "bearerOnly": false,
@@ -163,7 +163,7 @@
             "clientId": "grafana",
             "consentRequired": false,
             "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
-            "description": "Grafana's relying-party client (10.8, CHT-81, DD-275): the confidential OIDC login Grafana itself presents; its editor/admin client roles escalate the Viewer default via GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH. Prod realm only — the dev compose Grafana stays anonymous (DV-113).",
+            "description": "Grafana's relying-party client (10.8, CHT-81, DD-275): the confidential OIDC login Grafana presents; its editor/admin client roles raise the Viewer default. Prod realm only: the dev Grafana stays anonymous (DV-113).",
             "directAccessGrantsEnabled": false,
             "enabled": true,
             "frontchannelLogout": true,
@@ -401,7 +401,7 @@
     "maxTemporaryLockouts": 0,
     "minimumQuickLoginWaitSeconds": 60,
     "offlineSessionIdleTimeout": 2592000,
-    "passwordPolicy": "length(12) and complexity(2) and digits(1) and symbols(1)",
+    "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername",
     "permanentLockout": false,
     "quickLoginCheckMilliSeconds": 1000,
     "realm": "aurelius-atlas",
