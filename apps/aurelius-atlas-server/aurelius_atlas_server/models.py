@@ -152,6 +152,8 @@ class ViewSearchRequest(AtlasModel):
     """
 
     query: str | None = None
+    mode: str | None = None
+    """``keyword`` (default), ``semantic`` or ``hybrid`` (ASV-01)."""
     filters: dict[str, Any] | None = None
     facets: list[str] | dict[str, Any] | None = None
     sort: Any = None
