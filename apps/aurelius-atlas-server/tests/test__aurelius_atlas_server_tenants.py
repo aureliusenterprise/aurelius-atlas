@@ -11,6 +11,7 @@ from urllib.parse import parse_qs, urlparse
 
 import httpx2 as httpx
 import pytest
+import pytest_asyncio
 from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_server import ServerSettings, create_app
 from aurelius_atlas_server.tenancy import Tenancy
@@ -49,7 +50,7 @@ async def serve(settings: ServerSettings, **update: object) -> AsyncIterator[tup
             yield app, client
 
 
-@pytest.fixture
+@pytest_asyncio.fixture(loop_scope="function")  # the test's loop, which stops the workers the start began
 async def served(settings: ServerSettings, record_tenants: Record) -> AsyncIterator[tuple[FastAPI, httpx.AsyncClient]]:
     """Tenancy on, the index read at every request, acme provisioned before the start."""
     await record_tenants("acme")

@@ -9,9 +9,9 @@ import pytest
 from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService, AuditAgingConfig
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
-from aurelius_atlas_server.app import _audit_aging
 from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.tenant_workers import audit_aging
 from aurelius_atlas_typesystem.registry import TypeRegistry
 from fake_issuer import FakeIssuer
 from fastapi import FastAPI
@@ -57,7 +57,7 @@ async def test__an_ageout_queues_the_agings_it_asks_for(
     "aurelius_atlas_server.audit_aging_scheduler.AuditAgingScheduler.age_out",
     "aurelius_atlas_server.audit_aging_scheduler.AuditAgingScheduler.start",
     "aurelius_atlas_server.audit_aging_scheduler.AuditAgingScheduler.stop",
-    "aurelius_atlas_server.app._audit_aging",
+    "aurelius_atlas_server.tenant_workers.audit_aging",
     "aurelius_atlas_server.settings.ServerSettings.audit_aging_config",
     rules=["AGE-05"],
 )
@@ -87,10 +87,10 @@ async def test__the_configured_aging_runs_after_its_delay_and_then_on_its_freque
 
     assert slept == [60, 86_400, 86_400]
     assert len(rounds) == 2
-    assert _audit_aging(settings, store) is None
+    assert audit_aging(settings, store) is None
     enabled = settings.model_copy(update={"audit_aging_enabled": True, "audit_min_count_to_maintain": 9})
     assert enabled.audit_aging_config().min_count_to_maintain == 9
-    started = _audit_aging(enabled, store)
+    started = audit_aging(enabled, store)
     assert started is not None
     await started.stop()
     await started.stop()

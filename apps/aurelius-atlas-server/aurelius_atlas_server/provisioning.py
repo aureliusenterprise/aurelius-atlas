@@ -29,6 +29,9 @@ __all__ = ["PROG", "Provisioner", "ProvisioningError", "main", "parser", "run"]
 
 PROG = "python -m aurelius_atlas_server.provisioning"
 
+REMOVAL_WAITS = 2
+"""How many of the servers' refresh intervals removal waits: their next read, then their workers' stop (DD-577)."""
+
 IMPORTED = frozenset({OperationStatus.SUCCESS, OperationStatus.PARTIAL_SUCCESS})
 """The import results a provisioning accepts, as the standalone sample import does."""
 
@@ -46,6 +49,9 @@ def parser() -> argparse.ArgumentParser:
     provisioning.add_argument("--sample", type=Path, help="an Apache Atlas export ZIP to import into the tenant")
     provisioning.add_argument(
         "--no-operator-trust", action="store_true", help="record that the tenant doesn't trust the operators"
+    )
+    provisioning.add_argument(
+        "--existing-ok", action="store_true", help="leave a tenant already active as it is, and exit 0"
     )
     trusting = choices.add_parser("trust", help="record whether a tenant trusts the operators")
     trusting.add_argument("alias")
@@ -78,7 +84,9 @@ async def run(  # noqa: PLR0913 - the command, its settings, and where it writes
         )
         if args.command == "provision":
             sample = None if args.sample is None else await asyncio.to_thread(_read_sample, args.sample)
-            await provisioner.provision(args.alias, sample=sample, trusts_operators=not args.no_operator_trust)
+            await provisioner.provision(
+                args.alias, sample=sample, trusts_operators=not args.no_operator_trust, existing_ok=args.existing_ok
+            )
         elif args.command == "trust":
             await provisioner.trust(args.alias, trusts=args.trust == "on")
         elif args.command == "list":
@@ -107,16 +115,22 @@ class Provisioner:
         self._sleep = sleep
         self._who = who
 
-    async def provision(self, alias: str, *, sample: tuple[str, bytes] | None, trusts_operators: bool) -> None:
+    async def provision(
+        self, alias: str, *, sample: tuple[str, bytes] | None, trusts_operators: bool, existing_ok: bool = False
+    ) -> None:
         """Record the tenant ``provisioning``, open its store set, import the sample (its file name and content),
-        record it ``active`` (TPR-02 to TPR-04).
+        record it ``active`` (TPR-02 to TPR-04); with ``existing_ok``, leave a tenant already ``active`` as it is
+        (WPT-07).
 
         Raises:
             ProvisioningError: For an alias that isn't index-safe, the operator organization's, a tenant already
-                ``active`` or ``removing``, or a sample whose import failed.
+                ``active`` without ``existing_ok`` or ``removing``, or a sample whose import failed.
         """  # noqa: D205 - one sentence
         _check_alias(alias, self._settings)
         existing = await self._tenants.get(alias)
+        if existing is not None and existing.state is TenantState.ACTIVE and existing_ok:
+            self._out(f"{alias} is already provisioned")
+            return
         if existing is not None and existing.state is not TenantState.PROVISIONING:
             msg = f"tenant {alias} is {existing.state.value}"
             raise ProvisioningError(msg)
@@ -169,8 +183,9 @@ class Provisioner:
             self._out(f"{tenant.alias}\t{tenant.state.value}\t{trust}\t{tenant.sample or '-'}")
 
     async def remove(self, alias: str) -> None:
-        """Record the tenant ``removing``, wait out the servers' refresh, delete the indices behind its aliases and
-        its record (TPR-05, DD-574).
+        """Record the tenant ``removing``, wait twice the servers' refresh, so that every server has read it and
+        stopped the tenant's workers, delete the indices behind its aliases and its record (TPR-05, WPT-05, DD-574,
+        DD-577).
 
         Raises:
             ProvisioningError: For the operator organization or a tenant with no record.
@@ -181,7 +196,7 @@ class Provisioner:
         record = await self._recorded(alias)
         removing = {"state": TenantState.REMOVING, "updated_at": _now(), "updated_by": self._who}
         await self._tenants.put(record.model_copy(update=removing))
-        await self._sleep(self._settings.tenancy_refresh_seconds)
+        await self._sleep(REMOVAL_WAITS * self._settings.tenancy_refresh_seconds)
         client = self._store.client
         deleted: list[str] = []
         for name in store_aliases(tenant_prefix(alias)):

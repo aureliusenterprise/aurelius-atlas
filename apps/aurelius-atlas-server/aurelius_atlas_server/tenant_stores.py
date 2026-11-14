@@ -9,7 +9,7 @@ DD-570).
 
 import asyncio
 from collections.abc import Awaitable, Callable, Iterator, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
@@ -60,6 +60,9 @@ STORE_SUFFIXES = (
 type Opener = Callable[[str], Awaitable["TenantStores"]]
 """Opens the store set of an index prefix."""
 
+type Hook = Callable[["TenantStores"], Awaitable[None]]
+"""Called with a store set as it opens, or before it closes: its workers start or stop (WPT-02)."""
+
 
 @dataclass(frozen=True)
 class TenantStores:
@@ -74,6 +77,8 @@ class TenantStores:
     task_management: TaskManagement
     admin_audits: AtlasAuditService
     notifier: EntityChangeNotifier
+    import_export_lock: asyncio.Lock = field(default_factory=asyncio.Lock, compare=False)
+    """One export or import at a time in this store set (EXP-01, WPT-06, DD-578)."""
 
 
 def index_prefix(tenant: str | None, tenancy: Tenancy | None) -> str:
@@ -141,12 +146,15 @@ def store_aliases(prefix: str) -> list[str]:
 class TenantStoreSets(Mapping[str, TenantStores]):
     """The open store sets by index prefix: the default always, a tenant's opened on demand (TPR-08).
 
-    ``opener`` opens a store set that provisioning made, without loading the models again.
+    ``opener`` opens a store set that provisioning made, without loading the models again. ``opened`` is called
+    with each store set as it opens, ``closing`` before it closes (WPT-02).
     """
 
-    def __init__(self, opened: dict[str, TenantStores], opener: Opener) -> None:
-        self._opened = opened
+    def __init__(self, opener: Opener, *, opened: Hook | None = None, closing: Hook | None = None) -> None:
+        self._opened: dict[str, TenantStores] = {}
         self._opener = opener
+        self._on_opened = opened
+        self._on_closing = closing
         self._lock = asyncio.Lock()
 
     def __getitem__(self, prefix: str) -> TenantStores:
@@ -158,19 +166,50 @@ class TenantStoreSets(Mapping[str, TenantStores]):
     def __len__(self) -> int:
         return len(self._opened)
 
+    async def add(self, stores: TenantStores) -> None:
+        """Keep a store set opened elsewhere, the start's, as open (WPT-02)."""
+        async with self._lock:
+            await self._keep(stores)
+
     async def ensure(self, prefix: str) -> TenantStores:
-        """The store set of the prefix, opened first when it isn't open; one opening at a time."""
+        """The store set of the prefix, opened first when it isn't open; one opening or closing at a time."""
         if prefix in self._opened:
             return self._opened[prefix]
         async with self._lock:
             if prefix not in self._opened:
-                self._opened[prefix] = await self._opener(prefix)
+                await self._keep(await self._opener(prefix))
             return self._opened[prefix]
 
-    def retain(self, prefixes: frozenset[str]) -> None:
-        """Close to requests every tenant's store set whose prefix isn't among ``prefixes``; never the default's."""
-        for prefix in [prefix for prefix in self._opened if prefix != INDEX_PREFIX and prefix not in prefixes]:
-            del self._opened[prefix]
+    async def retain(self, prefixes: frozenset[str]) -> None:
+        """Close every tenant's store set whose prefix isn't among ``prefixes``, its workers stopped first; never
+        the default's (TPR-08, WPT-02).
+        """  # noqa: D205 - one sentence
+        async with self._lock:
+            for prefix in [prefix for prefix in self._opened if prefix != INDEX_PREFIX and prefix not in prefixes]:
+                await self._drop(prefix)
+
+    async def follow(self, tenancy: Tenancy) -> None:
+        """Open the store set of every provisioned tenant and close the others' (TPR-08, WPT-04)."""
+        prefixes = frozenset(index_prefix(tenant, tenancy) for tenant in tenancy.tenants)
+        await self.retain(prefixes)
+        for prefix in sorted(prefixes):
+            await self.ensure(prefix)
+
+    async def close(self) -> None:
+        """Close every store set, the default's too: the server stops (WPT-02)."""
+        async with self._lock:
+            for prefix in list(self._opened):
+                await self._drop(prefix)
+
+    async def _keep(self, stores: TenantStores) -> None:
+        self._opened[stores.prefix] = stores
+        if self._on_opened is not None:
+            await self._on_opened(stores)
+
+    async def _drop(self, prefix: str) -> None:
+        if self._on_closing is not None:
+            await self._on_closing(self._opened[prefix])
+        del self._opened[prefix]
 
 
 async def open_request_stores(request: Request, tenancy: Tenancy | None) -> None:
@@ -180,7 +219,7 @@ async def open_request_stores(request: Request, tenancy: Tenancy | None) -> None
     if tenancy is None:
         return
     sets: TenantStoreSets = request.app.state.tenant_stores
-    sets.retain(frozenset(index_prefix(tenant, tenancy) for tenant in tenancy.tenants))
+    await sets.retain(frozenset(index_prefix(tenant, tenancy) for tenant in tenancy.tenants))
     tenant: str | None = getattr(request.state, "tenant", None)
     if tenant is not None:
         await sets.ensure(index_prefix(tenant, tenancy))

@@ -1,6 +1,5 @@
 """The FastAPI application: settings, the store's lifetime, error handling and routers (DD-015, DD-016)."""
 
-import asyncio
 import logging
 import time
 from collections.abc import AsyncGenerator, Callable, Sequence
@@ -10,15 +9,8 @@ from pathlib import Path
 
 import httpx2 as httpx
 from aurelius_atlas_auth import AuthConfig, KeycloakAuth
-from aurelius_atlas_core.app_search_governance import GovernanceIndexer
-from aurelius_atlas_core.app_search_indexer import AppSearchIndexer
-from aurelius_atlas_core.app_search_quality import QualityIndexer
 from aurelius_atlas_core.atlas_audit_service import AtlasAuditService
-from aurelius_atlas_core.audit_reduction_service import AtlasAuditReductionService
-from aurelius_atlas_core.entity_documents import INDEX_PREFIX, ElasticsearchEntityDocuments
-from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
-from aurelius_atlas_core.entity_store import EntityStore
-from aurelius_atlas_core.metrics_service import MetricsService
+from aurelius_atlas_core.entity_documents import INDEX_PREFIX
 from aurelius_atlas_core.metrics_util import AtlasMetricsUtil
 from aurelius_atlas_model.atlas_audit import AuditOperation
 from aurelius_atlas_otel import (
@@ -28,20 +20,16 @@ from aurelius_atlas_otel import (
     build_otlp_pipeline,
     setup_telemetry,
 )
-from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
+from aurelius_atlas_store_es import ElasticsearchStore
 from aurelius_atlas_store_es.snapshots import SnapshotStatus, prepare_snapshots, snapshot_status
-from aurelius_atlas_typesystem.registry import TypeRegistry
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from opentelemetry import metrics
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
-from aurelius_atlas_server.app_search import AppSearchWorker
-from aurelius_atlas_server.audit_aging_scheduler import AuditAgingScheduler
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
-from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingWorker, embedding_http
+from aurelius_atlas_server.embedding import EmbeddingClient, embedding_http
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
-from aurelius_atlas_server.metrics_scheduler import MetricsScheduler
 from aurelius_atlas_server.oidc_client import OidcClient
 from aurelius_atlas_server.openapi import install as install_openapi
 from aurelius_atlas_server.request_context import RequestContextMiddleware
@@ -61,9 +49,9 @@ from aurelius_atlas_server.routes import (
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.snapshot_watcher import SnapshotWatcher
-from aurelius_atlas_server.task_worker import TaskWorker
 from aurelius_atlas_server.tenancy import Tenancy
 from aurelius_atlas_server.tenant_stores import TenantStores, TenantStoreSets, index_prefix, open_stores
+from aurelius_atlas_server.tenant_workers import TenantFollower, WorkerFactory
 from aurelius_atlas_server.tenants import TenantDirectory, TenantsIndex
 
 NAME = "aurelius-atlas-server"
@@ -160,39 +148,33 @@ def create_app(
         LOGGER.info("Starting %s %s", app.title, app.version)
         started = int(time.time() * 1000)
         _start(metrics_util)
-        worker: TaskWorker | None = None
-        schedules: list[
-            AppSearchWorker | AuditAgingScheduler | EmbeddingWorker | MetricsScheduler | SnapshotWatcher
-        ] = []
+        embedder, embedder_http = _embedder(app, settings)
+        workers = app.state.tenant_workers = WorkerFactory(settings, store, metrics_util, embedder)
+        opened: TenantStoreSets | None = None
+        watchers: list[SnapshotWatcher | TenantFollower] = []
         await store.open()
         try:
-            opened = await _open_store_sets(store, settings, directory)
+            opened = await _open_store_sets(store, settings, directory, workers)
             app.state.tenant_stores = opened
             default = opened[INDEX_PREFIX]
-            # the default store set, which the workers and the start audit run on alone until 15.4 (TSS-07, DD-571)
-            registry, documents, entity_store = default.registry, default.documents, default.entity_store
-            app.state.type_registry, app.state.entity_documents = registry, documents
+            # the default store set's, which the single-tenant tests read (DD-576)
+            app.state.type_registry, app.state.entity_documents = default.registry, default.documents
             app.state.entity_audits, app.state.typedef_store = default.entity_audits, default.typedef_store
-            app.state.entity_store, app.state.task_management = entity_store, default.task_management
-            worker = _task_worker(app, settings, entity_store)
+            app.state.entity_store, app.state.task_management = default.entity_store, default.task_management
+            app.state.import_export_lock = default.import_export_lock
+            app.state.task_worker = workers.running[INDEX_PREFIX].task_worker
             await _audit_server_status(default.admin_audits, started)
-            schedules = [
-                scheduler
-                for scheduler in (
-                    _audit_aging(settings, entity_store),
-                    _metrics_schedule(app, settings, entity_store),
-                    _embedding_worker(app, settings, documents),
-                    _app_search_worker(settings, documents, registry),
-                    await _snapshots(settings, store),
-                )
-                if scheduler is not None
-            ]
+            follower = app.state.tenant_follower = _follower(settings, directory, opened)
+            watchers = [watcher for watcher in (await _snapshots(settings, store), follower) if watcher is not None]
             yield
         finally:
-            for scheduler in schedules:
-                await scheduler.stop()
-            if worker is not None:
-                await worker.stop()
+            for watcher in watchers:
+                await watcher.stop()
+            if opened is not None:
+                await opened.close()
+            await workers.stop()
+            if embedder_http is not None:
+                await embedder_http.aclose()
             await store.close()
             await _close(auth, oidc)
             LOGGER.info("Stopped %s", app.title)
@@ -209,14 +191,14 @@ def create_app(
         redoc_url=None,
         openapi_url="/api/atlas/openapi.json" if settings.is_development else None,
     )
-    # one export or import at a time (EXP-01, DD-304)
-    app.state.settings, app.state.import_export_lock = settings, asyncio.Lock()
+    app.state.settings = settings
     app.state.store = store
     app.state.metrics_util = metrics_util
     app.state.embedder = None  # the embeddings client, once embedding is on and the server has started (DD-443)
     # the tenancy and its directory are None while it is off: no request has a tenant (TEN-01, TPR-09)
     app.state.auth, app.state.oidc, app.state.sessions = auth, oidc, sessions
     app.state.tenancy, app.state.tenant_directory = tenancy, directory
+    app.state.tenant_follower = None  # follows the tenants index once the server has started, with tenancy on (WPT-04)
     _mount(app, settings)
 
     _telemetry(app, settings)
@@ -323,10 +305,11 @@ def _authentication(
 
 
 async def _open_store_sets(
-    store: ElasticsearchStore, settings: ServerSettings, directory: TenantDirectory | None
+    store: ElasticsearchStore, settings: ServerSettings, directory: TenantDirectory | None, workers: WorkerFactory
 ) -> TenantStoreSets:
-    """The default store set and, with tenancy on, each provisioned tenant's, by index prefix, the models loaded
-    (TSS-01, TSS-04, TPR-08); a tenant provisioned later opens on demand, without them.
+    """The default store set and, with tenancy on, each provisioned tenant's, by index prefix, the models loaded,
+    each with its workers (TSS-01, TSS-04, TPR-08, WPT-02); a tenant provisioned later opens on demand, without the
+    models.
     """  # noqa: D205 - one sentence
 
     async def opened(prefix: str, models_dirs: Sequence[Path] = ()) -> TenantStores:
@@ -343,10 +326,21 @@ async def _open_store_sets(
         await directory.index.prepare()
         tenancy = await directory.load()
     tenants = [] if tenancy is None else sorted(tenancy.tenants)
-    sets: dict[str, TenantStores] = {}
+    sets = TenantStoreSets(opened, opened=workers.started, closing=workers.stopping)
     for prefix in [INDEX_PREFIX, *(index_prefix(tenant, tenancy) for tenant in tenants)]:
-        sets[prefix] = await opened(prefix, settings.model_dirs)
-    return TenantStoreSets(sets, opened)
+        await sets.add(await opened(prefix, settings.model_dirs))
+    return sets
+
+
+def _follower(
+    settings: ServerSettings, directory: TenantDirectory | None, sets: TenantStoreSets
+) -> TenantFollower | None:
+    """The store sets kept in step with the tenants index in the background and started, with tenancy on (WPT-04)."""
+    if directory is None:
+        return None
+    follower = TenantFollower(directory, sets, seconds=settings.tenancy_refresh_seconds)
+    follower.start()
+    return follower
 
 
 def _start(metrics_util: AtlasMetricsUtil) -> None:
@@ -366,36 +360,6 @@ async def _audit_server_status(audits: AtlasAuditService, started: int) -> None:
         await audits.add(AuditOperation.SERVER_STATE_ACTIVE, None, None, 0, start_time=now, end_time=now)
     except AtlasError:
         LOGGER.exception("Exception occurred during audit")
-
-
-def _audit_aging(settings: ServerSettings, store: EntityStore) -> AuditAgingScheduler | None:
-    """The configured aging of the entity audits scheduled and started, when it is enabled (AGE-05)."""
-    if not settings.audit_aging_enabled:
-        return None
-    aging = AuditAgingScheduler(
-        AtlasAuditReductionService(store, settings.audit_aging_config()),
-        frequency_days=settings.audit_aging_scheduler_frequency_in_days,
-        initial_delay_minutes=settings.audit_aging_scheduler_initial_delay_in_min,
-    )
-    aging.start()
-    return aging
-
-
-def _metrics_schedule(app: FastAPI, settings: ServerSettings, store: EntityStore) -> MetricsScheduler | None:
-    """The metrics stored and purged on their schedule and started, unless its interval is 0 (MHS-05)."""
-    if settings.metrics_persist_interval_minutes == 0:
-        return None
-    search_store: ElasticsearchStore = app.state.store
-
-    async def connected() -> bool:
-        return (await search_store.health()).status is HealthStatus.UP
-
-    service = MetricsService(
-        store, app.state.metrics_util, namespace=settings.cluster_name, ttl_hours=settings.metrics_ttl_hours
-    )
-    scheduler = MetricsScheduler(service, connected, interval_minutes=settings.metrics_persist_interval_minutes)
-    scheduler.start()
-    return scheduler
 
 
 async def _snapshots(settings: ServerSettings, store: ElasticsearchStore) -> SnapshotWatcher | None:
@@ -421,52 +385,16 @@ def _dimensions(settings: ServerSettings) -> int | None:
     return settings.embedding_dimensions if settings.embedding_url is not None else None
 
 
-def _embedding_worker(
-    app: FastAPI, settings: ServerSettings, documents: ElasticsearchEntityDocuments
-) -> EmbeddingWorker | None:
-    """The worker that embeds the store's entities, started when embedding is on; its client embeds the searches'
-    queries too, as ``app.state.embedder`` (VEC-07, VEC-08, DD-443).
+def _embedder(app: FastAPI, settings: ServerSettings) -> tuple[EmbeddingClient | None, httpx.AsyncClient | None]:
+    """The embedding service's client and its HTTP client, one per server and shared by every store set's worker,
+    when embedding is on; it embeds the searches' queries too, as ``app.state.embedder`` (VEC-08, WPT-03, DD-443).
     """  # noqa: D205 - one sentence
+    app.state.embedder = None
     if settings.embedding_url is None:
-        return None
+        return None, None
     http = embedding_http(settings.embedding_ca_file)
     client = EmbeddingClient(
         str(settings.embedding_url), settings.embedding_model, settings.embedding_dimensions, http=http
     )
     app.state.embedder = client
-    indexer = EntityEmbeddingIndexer(
-        documents,
-        client,
-        batch_size=settings.embedding_batch_size,
-        wait_for_documents=settings.app_search_enabled,  # a document comes only while its indexer runs (DD-540)
-    )
-    worker = EmbeddingWorker(indexer, poll_seconds=settings.embedding_poll_seconds, http=http)
-    worker.start()
-    return worker
-
-
-def _app_search_worker(
-    settings: ServerSettings, documents: ElasticsearchEntityDocuments, registry: TypeRegistry
-) -> AppSearchWorker | None:
-    """The worker that keeps the App Search documents, results, totals and verdicts up to date, started unless
-    turned off (ASU-06, ASQ-07, ASG-06, DD-521).
-    """  # noqa: D205 - one sentence
-    if not settings.app_search_enabled:
-        return None
-    indexer = AppSearchIndexer(documents, registry, batch_size=settings.app_search_batch_size)
-    quality = QualityIndexer(documents, batch_size=settings.app_search_batch_size)
-    governance = GovernanceIndexer(documents, registry, batch_size=settings.app_search_batch_size)
-    worker = AppSearchWorker(indexer, quality, governance, poll_seconds=settings.app_search_poll_seconds)
-    worker.start()
-    return worker
-
-
-def _task_worker(app: FastAPI, settings: ServerSettings, store: EntityStore) -> TaskWorker | None:
-    """The worker of the application's tasks, woken by the store's writes and started, when tasks are enabled."""
-    if not settings.tasks_enabled:
-        return None
-    worker = TaskWorker(app.state.task_management, poll_seconds=settings.task_poll_seconds)
-    store.task_listeners.append(worker.wake)
-    worker.start()
-    app.state.task_worker = worker
-    return worker
+    return client, http

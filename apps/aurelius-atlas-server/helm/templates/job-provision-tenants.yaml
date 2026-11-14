@@ -1,0 +1,98 @@
+{{/*
+The tenant provisioning Job (WPT-08, DD-579): after every install and upgrade,
+the server's image provisions each tenant of tenancy.tenants, one init
+container per tenant in order (the image has no shell), with --existing-ok so
+a tenant already there is left as it is; the main container lists the
+tenants. It carries the server's settings and the store's credentials, and the
+server's name and instance labels, which the store's network policy admits,
+with a component of its own, which the Service doesn't select (WPT-09).
+*/}}
+{{- if .Values.tenancy.tenants }}
+{{- if not .Values.tenancy.enabled }}
+{{- fail "tenancy.tenants needs tenancy.enabled: tenants are provisioned only for a server that serves them" }}
+{{- end }}
+{{- range .Values.tenancy.tenants }}
+{{- if not (regexMatch "^[a-z0-9][a-z0-9-]{0,62}$" (toString .alias)) }}
+{{- fail (printf "tenancy.tenants: %q is no tenant alias: a lowercase letter or digit, then up to 62 of them or '-'" (toString .alias)) }}
+{{- end }}
+{{- if eq (toString .alias) $.Values.tenancy.operatorOrganization }}
+{{- fail (printf "tenancy.tenants: %s is the operator organization, which keeps the default indices" .alias) }}
+{{- end }}
+{{- end }}
+{{- $fullname := include "atlas-server.fullname" . -}}
+{{- $esSecret := default (printf "%s-elasticsearch" .Release.Name) .Values.credentialSecrets.elasticsearch -}}
+{{- $store := include "atlas-server.storeService" . -}}
+{{- $env := include "atlas-server.provisioningEnv" (dict "root" . "store" $store "esSecret" $esSecret) -}}
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: {{ printf "%s-provision-tenants" $fullname }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+    annotations:
+        helm.sh/hook: post-install,post-upgrade
+        helm.sh/hook-delete-policy: before-hook-creation
+spec:
+    backoffLimit: 2
+    template:
+        metadata:
+            labels:
+                {{- include "atlas-server.selectorLabels" . | nindent 16 }}
+                app.kubernetes.io/component: tenant-provisioning
+                app.kubernetes.io/part-of: aurelius-atlas
+        spec:
+            restartPolicy: Never
+            serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 14 }}
+            {{- end }}
+            securityContext:
+                {{- toYaml .Values.podSecurityContext | nindent 16 }}
+            initContainers:
+                {{- range .Values.tenancy.tenants }}
+                -   name: {{ printf "provision-%s" .alias | trunc 63 | trimSuffix "-" }}
+                    image: {{ include "atlas-server.image" $ | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml $.Values.securityContext | nindent 24 }}
+                    command:
+                        - python
+                        - -m
+                        - aurelius_atlas_server.provisioning
+                        - provision
+                        - {{ .alias | quote }}
+                        - --existing-ok
+                        {{- if and (hasKey . "trustsOperators") (not .trustsOperators) }}
+                        - --no-operator-trust
+                        {{- end }}
+                    env:
+                        {{- $env | nindent 24 }}
+                    volumeMounts:
+                        - name: tls
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                    resources:
+                        {{- toYaml $.Values.resources | nindent 24 }}
+                {{- end }}
+            containers:
+                -   name: list
+                    image: {{ include "atlas-server.image" . | quote }}
+                    imagePullPolicy: IfNotPresent
+                    securityContext:
+                        {{- toYaml .Values.securityContext | nindent 24 }}
+                    command: [python, -m, aurelius_atlas_server.provisioning, list]
+                    env:
+                        {{- $env | nindent 24 }}
+                    volumeMounts:
+                        - name: tls
+                          mountPath: /etc/aurelius-atlas/tls
+                          readOnly: true
+                    resources:
+                        {{- toYaml .Values.resources | nindent 24 }}
+            volumes:
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-server.tlsSecretName" . }}
+{{- end }}

@@ -124,6 +124,19 @@ overlay, and the two shipped overlays are the tested shapes:
 CI renders every chart against both overlays on every change (CHT-06), so
 "renders on a stock cluster" is a gate, not a hope.
 
+## Tenants
+
+Tenancy is off by default, and the server answers as Apache Atlas does. The
+server chart's `tenancy.enabled` turns it on (ADR 063, WPT-08). Each request
+then acts in the one Keycloak organization its token names, with that
+tenant's own indices and background work. Each tenant listed in
+`tenancy.tenants` is provisioned by a hook Job after every install and
+upgrade, and a tenant already there is left as it is (DD-579). A tenant is
+removed only by the server's command, `python -m
+aurelius_atlas_server.provisioning remove <alias>`, never by dropping it from
+the list. Until 15.5, the realm's organizations and their groups are set up by
+hand.
+
 ## Trust
 
 cert-manager signs every certificate (DD-286, corrected by DD-259). The

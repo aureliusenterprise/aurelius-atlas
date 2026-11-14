@@ -15,6 +15,7 @@ from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_server import app as app_module
+from aurelius_atlas_server import tenant_workers
 from aurelius_atlas_server.app import create_app
 from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingError, EmbeddingWorker, embedding_http
 from aurelius_atlas_server.settings import ServerSettings
@@ -205,7 +206,7 @@ async def test__the_embedding_indexer_waits_for_documents_while_the_app_search_w
             super().__init__(*args, **kwargs)
             made.append(self)
 
-    monkeypatch.setattr(app_module, "EntityEmbeddingIndexer", Recorded)
+    monkeypatch.setattr(tenant_workers, "EntityEmbeddingIndexer", Recorded)
     monkeypatch.setattr(app_module, "embedding_http", lambda _ca: httpx.AsyncClient(transport=embedder([])))
     configured = settings.model_copy(
         update={"embedding_url": URL, "embedding_dimensions": 3, "app_search_enabled": app_search}

@@ -56,21 +56,30 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
   uvicorn's `root_path` from `AURELIUS_ATLAS_SERVER_ROOT_PATH` (9.5, DD-363); the path checks read within it,
   the redirects lead under it
 - `aurelius_atlas_server/tenancy.py` — `Tenancy`, `tenant_of`, `tenant_roles`: with `tenancy_enabled` (off by
-  default, offered from 15.4 only, DD-566), `user_of` reads the request's one tenant from the token's
+  default; the chart's `tenancy` values and the standalone stack's `ATLAS_TENANCY_ENABLED` offer it, WPT-08,
+  WPT-10), `user_of` reads the request's one tenant from the token's
   organization claim and its roles from that organization's groups, or refuses with 403 (TEN-01 to TEN-07,
   ADR 063). The tenant is on `request.state.tenant` and the core's `RequestContext` (TEN-08)
 - `aurelius_atlas_server/tenant_stores.py` — `TenantStores`, `open_stores`, `stores`: the default store set and,
   with tenancy on, each provisioned tenant's (`aurelius-atlas-tenant-<alias>-*`), opened at start, or on its
   first request when provisioned later, and kept in `app.state.tenant_stores` (TSS-03, TSS-04, TPR-08). **A
-  route reads its stores through `stores(request)`**, never from `app.state`, which keeps the default set for
-  the workers alone (TSS-06, TSS-07, DD-570). A new index of a store set joins `STORE_SUFFIXES`, or removal
-  leaves it behind (DD-574); a test fails until it does
+  route reads its stores through `stores(request)`**, never from `app.state`, which names the default set's for
+  the single-tenant tests alone (TSS-06, DD-570); the import and export lock is the store set's too (WPT-06).
+  `TenantStoreSets` calls back as a store set opens and before it closes, which starts and stops its workers.
+  A new index of a store set joins `STORE_SUFFIXES`, or removal leaves it behind (DD-574); a test fails until
+  it does
 - `aurelius_atlas_server/tenants.py` — `TenantsIndex`, `TenantDirectory`: the tenants' records in
   `aurelius-atlas-tenants` and the provisioned tenants the server reads from them, again every
   `tenancy_refresh_seconds` (TPR-01, TPR-07, DD-575). Tests record tenants with the `record_tenants` fixture
+- `aurelius_atlas_server/tenant_workers.py` — `WorkerFactory`, `TenantFollower`: each open store set's task,
+  App Search and embedding workers, audit aging and metrics history, the embedding client shared; with tenancy
+  on, the tenants index read in the background to open and close store sets without a request (WPT-01 to
+  WPT-04, DD-576, DD-577). A new background worker starts in `WorkerFactory.started`, never in `app.py`, or
+  the tenants go without it
 - `aurelius_atlas_server/provisioning.py` — the command `python -m aurelius_atlas_server.provisioning
 provision|trust|list|remove`, reading the server's settings: a tenant's indices, models and sample made by the
-  server's own start sequence and import, its record kept (TPR-02 to TPR-06, DD-573)
+  server's own start sequence and import, its record kept (TPR-02 to TPR-06, DD-573);
+  `provision --existing-ok` is what the chart's hook Job runs (WPT-07, DD-579)
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)

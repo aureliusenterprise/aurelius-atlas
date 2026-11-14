@@ -126,6 +126,8 @@ services:
             AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
             # Propagation by the task worker after the request, as Atlas's default; false propagates in it (DD-081).
             AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
+            # Tenancy (15.4, ADR 063): off by default; on, each tenant is provisioned by the command (README.md).
+            AURELIUS_ATLAS_SERVER_TENANCY_ENABLED: ${ATLAS_TENANCY_ENABLED:-false}
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
             AURELIUS_ATLAS_SERVER_AUTH_REALM: demo
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
