@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute, Router } from "@angular/router";
-import { AtlasEntityHeader } from "aurelius-atlas-data-access";
+import { EntityCard as ViewCard } from "aurelius-atlas-data-access";
 import { EntityCard, FacetList, InfiniteScrollContainer } from "aurelius-atlas-ui";
 import { map } from "rxjs";
 
@@ -109,24 +109,23 @@ export class Results {
     }
 
     /**
-     * The card's title (SRH-05, DV-83): the header's display text, the
-     * `name` attribute as its fallback — rendered straight from the hit,
-     * no per-card fetch.
-     * @param entity the search hit
+     * The card's title (SRH-05, DV-83, VSR-07): the card's display text — the
+     * name, or the qualified name when there is no name (AVS-03) — rendered
+     * straight from the card, no per-card fetch.
+     * @param card the result card
      * @returns the name to show
      */
-    protected displayName(entity: AtlasEntityHeader): string {
-        const attribute = entity.attributes?.["name"];
-        return entity.displayText ?? (typeof attribute === "string" ? attribute : "") ?? "";
+    protected displayName(card: ViewCard): string {
+        return card.displayText;
     }
 
     /**
      * The `trackBy` of the card list (the legacy `trackByGuid`).
      * @param _index the row position (unused)
-     * @param entity the search hit
+     * @param card the result card
      * @returns the entity's guid
      */
-    protected trackByGuid(_index: number, entity: AtlasEntityHeader): string {
-        return entity.guid ?? "";
+    protected trackByGuid(_index: number, card: ViewCard): string {
+        return card.guid;
     }
 }

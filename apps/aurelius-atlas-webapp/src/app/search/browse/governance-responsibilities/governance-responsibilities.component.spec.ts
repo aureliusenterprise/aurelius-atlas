@@ -41,9 +41,9 @@ function setup(email = "ada@example.org") {
  * answer it empty.
  */
 function expectSearch(httpMock: HttpTestingController, body: Record<string, unknown>) {
-    const request = httpMock.expectOne((req) => req.url === "/api/atlas/v2/search/quick" && req.method === "POST");
+    const request = httpMock.expectOne((req) => req.url === "/api/aurelius/v1/search" && req.method === "POST");
     expect(request.request.body).toMatchObject(body);
-    request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
+    request.flush({ cards: [], facets: {}, total: 0 });
 }
 
 /** The card's explore button, found by its label (the field's submit shares the class). */
@@ -135,7 +135,7 @@ describe("GovernanceResponsibilities", () => {
         fixture.detectChanges();
 
         // DV-84: a plain query, no Person-type filter — Atlas has none.
-        expectSearch(httpMock, { query: "ada", limit: 10, offset: 0, excludeDeletedEntities: true });
+        expectSearch(httpMock, { query: "ada", mode: "keyword", limit: 10, offset: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "ada" } });
     });
 
@@ -150,7 +150,7 @@ describe("GovernanceResponsibilities", () => {
 
         // The legacy directToUser: the token's e-mail as the query term,
         // carried in the URL the way the legacy navigated it.
-        expectSearch(httpMock, { query: "ada@example.org", limit: 10, offset: 0 });
+        expectSearch(httpMock, { query: "ada@example.org", mode: "keyword", limit: 10, offset: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], {
             queryParams: { query: "ada@example.org" },
         });

@@ -35,9 +35,9 @@ function setup() {
  * answer it empty.
  */
 function expectSearch(httpMock: HttpTestingController, body: Record<string, unknown>) {
-    const request = httpMock.expectOne((req) => req.url === "/api/atlas/v2/search/quick" && req.method === "POST");
+    const request = httpMock.expectOne((req) => req.url === "/api/aurelius/v1/search" && req.method === "POST");
     expect(request.request.body).toMatchObject(body);
-    request.flush({ searchResults: { entities: [], approximateCount: 0 }, aggregationMetrics: {} });
+    request.flush({ cards: [], facets: {}, total: 0 });
 }
 
 /** The card's explore button, found by its label (the field's submit shares the class). */
@@ -126,7 +126,7 @@ describe("TechnicalContext", () => {
         compiled.querySelector<HTMLButtonElement>("button.button.is-success[aria-label='Search']")!.click();
         fixture.detectChanges();
 
-        expectSearch(httpMock, { query: "warehouse", limit: 10, offset: 0, excludeDeletedEntities: true });
+        expectSearch(httpMock, { query: "warehouse", mode: "keyword", limit: 10, offset: 0 });
         expect(navigate).toHaveBeenCalledWith(["/search/results"], { queryParams: { query: "warehouse" } });
     });
 
@@ -142,7 +142,13 @@ describe("TechnicalContext", () => {
         // The legacy directToTechnical's filter read as Atlas's base model
         // (DV-84): the empty query and typeName=Infrastructure ride the
         // session store, the URL carries nothing (DD-219).
-        expectSearch(httpMock, { query: "", typeName: "Infrastructure", limit: 10, offset: 0 });
+        expectSearch(httpMock, {
+            query: "",
+            mode: "keyword",
+            filters: { any: [{ typeName: ["Infrastructure"] }, { superTypeNames: ["Infrastructure"] }] },
+            limit: 10,
+            offset: 0,
+        });
         expect(navigate).toHaveBeenCalledWith(["/search/results"]);
     });
 });
