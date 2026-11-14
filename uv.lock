@@ -432,7 +432,7 @@ requires-dist = [
     { name = "aurelius-atlas-otel", editable = "libs/python/aurelius-atlas-otel" },
     { name = "aurelius-atlas-server-client", editable = "libs/python/aurelius-atlas-server-client" },
     { name = "httpx2", specifier = ">=2.0.0" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.0" },
+    { name = "psycopg", extras = ["binary"], specifier = ">=3.3.8" },
     { name = "pydantic", specifier = ">=2.14.2" },
     { name = "pydantic-settings", specifier = ">=2.15.0" },
     { name = "sqlalchemy", specifier = ">=2.0.44" },
