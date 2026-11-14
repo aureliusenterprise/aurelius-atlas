@@ -1817,16 +1817,17 @@ Free text is a scored `simple_query_string` over the text sub-fields (DD-092); f
 ```
 search_app_search(
     *,
-    query: dict[str, Any],
+    query: dict[str, Any] | None,
     sort: list[dict[str, Any]],
     aggs: dict[str, Any],
     from_: int,
     size: int,
     index: str = ENTITY_DOCUMENTS,
+    knn: dict[str, Any] | None = None,
 ) -> Mapping[str, Any]
 ```
 
-One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact total, the aggregations (DD-523). Writes refresh (ENS-11).
+One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact total, the aggregations (DD-523). A `knn` searches the nearest with its own filter inside, the scores of both added (ASV-03, DD-596). Writes refresh (ENS-11).
 
 #### terms
 

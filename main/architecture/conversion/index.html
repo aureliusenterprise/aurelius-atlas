@@ -8055,28 +8055,28 @@ checks a PR must pass:</p>
 <td>The view family: search and read doors</td>
 <td><code>POST /api/aurelius/v1/search</code> (query, filters, facets, sort, page) and <code>GET /api/aurelius/v1/entity/guid/{guid}</code> (the live view, one read): the facets over the derived fields without the App Search wire, answering 16.1's shape for every entity type (AVR-01..13, DD-584..588)</td>
 <td>none; reuses 14.4's query machinery (DD-523/DD-525) behind a new contract</td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>16.3</td>
 <td>The view family: the mutation door</td>
 <td><code>POST /api/aurelius/v1/entity</code>: the view as desired state, applied in one request through 2.4/3.3a/5.2c/5.3a's internals with the sets diffed server-side and the new live view answered (AVW-01..12) and <code>GET /api/aurelius/v1/types/for-type/{name}</code> (DD-589..593)</td>
 <td>none; replaces the webapp's client-side diff and remap (DD-325/DD-326) server-side</td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>16.4</td>
 <td>The view family: the semantic door</td>
 <td>The search door's two extra modes, semantic and hybrid, reusing 11.3's vectors and 11.4's ranking inside the card answer (ASV, DD-NNN at design)</td>
 <td>none; 11.4 (SBM) inside the new door</td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>16.5</td>
 <td>The webapp on the view family</td>
 <td>Results, details and editor switched to the doors: the Angular view models, the guid-keyed client cache superseding DD-318's posture, the save conflict and name-taken UX, the breadcrumb seam (DD-317) closed by the view, the picker and tag-diff mechanisms retired (16.5's own rules at spec)</td>
 <td>Aurelius <code>apps/atlas/src/app/search/**</code> (what they read changes; what they show stays)</td>
-<td>planned</td>
+<td>in progress</td>
 </tr>
 <tr>
 <td>16.6</td>

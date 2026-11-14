@@ -1653,6 +1653,8 @@ Answer an `AtlasError` with its status and `{"errorCode", "errorMessage"[, "erro
 
 A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the request as `requestId` (SRV-07, DD-235): the cause's text goes to the log, never to the wire, so a wrapped store or transport failure cannot leak internals; the id ties the response to the logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) — there the cause is the request's own defect, not server internals.
 
+An error that refuses several problems at once adds `messages`, one text each (AVR-13, DD-588): the Aurelius error shape beside the one `errorMessage` a single refusal has.
+
 ## aurelius\_atlas\_server.routes.admin
 
 The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, metrics, purge, tasks, export, import, servers and their audit trail.

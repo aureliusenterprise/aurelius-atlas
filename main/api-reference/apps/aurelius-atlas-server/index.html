@@ -14423,6 +14423,8 @@ SNP-03).</p>
 wrapped store or transport failure cannot leak internals; the id ties the response to the
 logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) —
 there the cause is the request's own defect, not server internals.</p>
+<p>An error that refuses several problems at once adds <code>messages</code>, one text each (AVR-13, DD-588): the
+Aurelius error shape beside the one <code>errorMessage</code> a single refusal has.</p>
 
 
     </div>
