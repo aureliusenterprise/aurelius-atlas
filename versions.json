@@ -10,11 +10,6 @@
     "aliases": []
   },
   {
-    "version": "fix-prod-realm-import",
-    "title": "fix-prod-realm-import",
-    "aliases": []
-  },
-  {
     "version": "feat-15-5-tenants-in-the-realm",
     "title": "feat-15-5-tenants-in-the-realm",
     "aliases": []
