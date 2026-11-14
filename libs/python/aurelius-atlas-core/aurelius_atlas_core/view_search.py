@@ -8,7 +8,7 @@ Each hit's stored document becomes a 16.1 card, so a card holds the entity's own
 indexer stored; a card of an entity without a document has empty derived fields (AVR-11, AVS-02).
 """
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any, NoReturn
 
@@ -36,6 +36,7 @@ from aurelius_atlas_core.app_search_engine import (
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
 from aurelius_atlas_core.search_fields import KEYWORD, kind_of
+from aurelius_atlas_core.search_query import MAX_NEAREST, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, view_of
 
@@ -52,8 +53,14 @@ DEFAULT_OFFSET = 0
 MAX_OFFSET = 10_000
 """``limit`` is 1 to 100 (10 by default) and ``offset`` 0 to 10,000 (0 by default), the window's end (AVR-07)."""
 
-OPTION_NAMES = ("query", "filters", "facets", "sort", "limit", "offset")
-"""The request's keys; any other is refused (AVR-02)."""
+OPTION_NAMES = ("query", "filters", "facets", "sort", "limit", "offset", "mode")
+"""The request's keys; any other is refused (AVR-02, ASV-01)."""
+
+MODES = ("keyword", "semantic", "hybrid")
+"""The door's modes (ASV-01): words alone, meaning alone, or both scored together (ADR 059, DD-595)."""
+
+NEAREST_WINDOW = MAX_NEAREST
+"""A meaning mode's window: ``offset + limit`` is at most 1,000, 11.4's rule of the same kNN search (ASV-08, DD-441)."""
 
 _NAME_ATTRIBUTES = ("name", "qualifiedName", "definition")
 """The card fields matched as words, however many types store them under their own qualified name (AVR-04)."""
@@ -76,7 +83,7 @@ _TOTAL_PARTS = ("score", "count", "total")
 
 @dataclass
 class DoorRequest:
-    """A search request checked against the door's fields, ready to run (AVR-02)."""
+    """A search request checked against the door's fields, ready to run (AVR-02, ASV-01)."""
 
     query: str = ""
     filters: list[dict[str, Any]] = field(default_factory=list)
@@ -84,6 +91,8 @@ class DoorRequest:
     sort: list[tuple[str, str]] = field(default_factory=list)
     limit: int = DEFAULT_LIMIT
     offset: int = DEFAULT_OFFSET
+    mode: str = "keyword"
+    """The door's mode (ASV-01): ``keyword``, or a meaning mode the caller embedded a query for (ASV-03, ASV-05)."""
 
 
 def name_paths(registry: TypeRegistry) -> dict[str, tuple[str, ...]]:
@@ -186,20 +195,56 @@ def parse(body: object, fields: Mapping[str, EngineField]) -> DoorRequest:
         if key not in OPTION_NAMES:
             errors.add(f"The request holds an unknown option: {key}")
     request = DoorRequest(query=_query(body, errors))
+    request.mode = _mode(body, errors)
     if (filters := body.get("filters")) is not None:
         request.filters = [filter_clauses(filters, errors, "Filters")]
     if (facets := body.get("facets")) is not None:
         request.facets = _facets(facets, fields, errors)
-    if (sort := body.get("sort")) is not None:
-        request.sort = parse_sort(sort, errors)
-        for name, _direction in request.sort:
-            if name != "_score" and fields[name].path is None:
-                errors.add(f"Sort by {name} needs one stored value: filters.typeName must name one type")
+    request.sort = _sort(body, fields, errors)
     request.limit = _bounded(body, "limit", (1, MAX_LIMIT), DEFAULT_LIMIT, errors)
     request.offset = _bounded(body, "offset", (DEFAULT_OFFSET, MAX_OFFSET), DEFAULT_OFFSET, errors)
+    if request.mode != "keyword":
+        _checked_for_meaning(request, errors)
     if errors.messages:
         _refuse(errors.messages)
     return request
+
+
+def _sort(body: dict[str, Any], fields: Mapping[str, EngineField], errors: Errors) -> list[tuple[str, str]]:
+    """The requested sort; of a field with no single stored value, refused (AVR-05, DD-586)."""
+    if (sort := body.get("sort")) is None:
+        return []
+    requested = parse_sort(sort, errors)
+    for name, _direction in requested:
+        if name != "_score" and fields[name].path is None:
+            errors.add(f"Sort by {name} needs one stored value: filters.typeName must name one type")
+    return requested
+
+
+def _mode(body: dict[str, Any], errors: Errors) -> str:
+    """The requested mode, ``keyword`` where the body leaves it out; any other value is refused (ASV-01)."""
+    if (mode := body.get("mode")) is None:
+        return "keyword"
+    if not isinstance(mode, str) or mode not in MODES:
+        errors.add(f"Mode must be one of: {', '.join(MODES)}")
+        return "keyword"
+    return mode
+
+
+def _checked_for_meaning(request: DoorRequest, errors: Errors) -> None:
+    """A meaning mode's own refusals, beside the shared ones (ASV-06, ASV-07, ASV-08).
+
+    The query must carry words to embed, the order can only be by score, and the window stays
+    inside 11.4's (DD-441): a kNN search cannot page past its own ``k``.
+    """
+    if not request.query.strip():
+        errors.add(f"A {request.mode} search needs a query to embed")
+    for name, direction in request.sort:
+        if name != "_score" or direction != "desc":
+            errors.add(f"A {request.mode} search answers by score descending only")
+            break
+    if request.offset + request.limit > NEAREST_WINDOW:
+        errors.add(f"A {request.mode} search answers at most {NEAREST_WINDOW} entities: offset + limit is over it")
 
 
 def _query(body: dict[str, Any], errors: Errors) -> str:
@@ -269,8 +314,15 @@ class ViewSearchEngine:
         self._documents = documents
         self._registry = registry
 
-    async def search(self, body: object) -> dict[str, Any]:
+    async def search(
+        self, body: object, *, vector: Sequence[float] | None = None, weight: float = 1.0
+    ) -> dict[str, Any]:
         """The answer to a search request: ``{cards, facets, total}`` (AVR-08).
+
+        In a meaning mode, ``vector`` is the query's embedding and the door answers the nearest
+        among those it holds, the filters inside the kNN search (ASV-03, DD-596). ``weight`` is
+        the hybrid score's (ASV-05, DD-442), 1 in the pure semantic mode as in 11.4. The answer's
+        ``total`` and facets count the kNN search's hits, not the whole population (ASV-04, DD-597).
 
         Raises:
             AtlasError: ``VIEW_REFUSED`` for a request the door refuses (AVR-02, AVR-13).
@@ -279,13 +331,17 @@ class ViewSearchEngine:
         request = parse(body, fields)
         search = Search(
             engine=Engine(VIEW_ENGINE, HOLDS, fields),
-            query=request.query,
+            query="" if request.mode == "semantic" else request.query,
+            # The pure semantic mode matches no words, as in 11.4 (DD-441); the text still had to carry them (ASV-06).
             filters=request.filters,
             facets={name: [facet] for name, facet in request.facets.items()},
             sort=request.sort,
             size=request.limit,
             start=request.offset,
             search_fields=query_fields(self._registry),
+            vector=None
+            if vector is None or request.mode == "keyword"
+            else VectorQuery(tuple(vector), request.offset + request.limit, weight),
         )
         response = await self._documents.search_app_search(**query_body(search))
         hits = response["hits"]
