@@ -100,6 +100,19 @@
             "notBefore": 0,
             "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": true,
             "redirectUris": ["https://__ATLAS_HOST__/*", "https://__DASHBOARD_HOST__/*"],
             "rootUrl": "",
@@ -131,8 +144,21 @@
             "name": "aurelius-atlas-server",
             "nodeReRegistrationTimeout": 0,
             "notBefore": 0,
-            "optionalClientScopes": [],
+            "optionalClientScopes": ["organization"],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": ["https://__ATLAS_HOST__/login.jsp", "https://__DASHBOARD_HOST__/login.jsp"],
             "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
@@ -401,6 +427,34 @@
     "maxTemporaryLockouts": 0,
     "minimumQuickLoginWaitSeconds": 60,
     "offlineSessionIdleTimeout": 2592000,
+    "organizations": [
+        {
+            "alias": "operators",
+            "description": "The operator organization: runs the platform, keeps the default indices (ADR 063)",
+            "enabled": true,
+            "groups": [
+                {
+                    "id": "a00e0000-0000-4000-8000-000000000001",
+                    "name": "atlas-read"
+                },
+                {
+                    "id": "a00e0000-0000-4000-8000-000000000002",
+                    "name": "atlas-write"
+                },
+                {
+                    "id": "a00e0000-0000-4000-8000-000000000003",
+                    "name": "atlas-types"
+                },
+                {
+                    "id": "a00e0000-0000-4000-8000-000000000004",
+                    "name": "atlas-admin"
+                }
+            ],
+            "members": [],
+            "name": "operators"
+        }
+    ],
+    "organizationsEnabled": true,
     "passwordPolicy": "length(12) and complexity(2) and digits(1) and symbols(1)",
     "permanentLockout": false,
     "quickLoginCheckMilliSeconds": 1000,
@@ -475,7 +529,16 @@
                     "name": "admin"
                 }
             ]
-        }
+        },
+        "realm": [
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "Runs the platform: holds at most atlas-read outside the operator organization (TEN-06, ADR 063)",
+                "name": "atlas-operator"
+            }
+        ]
     },
     "sslRequired": "all",
     "ssoSessionIdleTimeout": 1800,

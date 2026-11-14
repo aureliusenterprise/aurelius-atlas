@@ -43,6 +43,10 @@ class Tokens:
     id_token: str | None
 
 
+ORGANIZATION_SCOPE = "organization"
+"""Keycloak's scope that names the organization a person signs in to, chosen at sign-in (RLM-03, DD-582)."""
+
+
 class OidcClient:
     """The client ``client_id`` with ``client_secret`` at the provider ``auth`` verifies tokens of.
 
@@ -79,7 +83,10 @@ class OidcClient:
         await self._http.aclose()
 
     async def authorization_url(self, login: Login, redirect_uri: str) -> str:
-        """Where a browser signs in: the authorization endpoint with the client, state, nonce and PKCE (AUT-05)."""
+        """Where a browser signs in: the authorization endpoint with the client, state, nonce and PKCE (AUT-05); while
+        tenancy is on, the organization scope too, so the provider has the person choose one organization (RLM-03,
+        DD-582).
+        """  # noqa: D205 - one sentence
         endpoint = (await self._discovery())["authorization_endpoint"]
         challenge = base64.urlsafe_b64encode(hashlib.sha256(login.verifier.encode()).digest()).rstrip(b"=").decode()
         query = urlencode(
@@ -87,7 +94,7 @@ class OidcClient:
                 "response_type": "code",
                 "client_id": self._client_id,
                 "redirect_uri": redirect_uri,
-                "scope": "openid",
+                "scope": "openid" if self._tenancy is None else f"openid {ORGANIZATION_SCOPE}",
                 "state": login.state,
                 "nonce": login.nonce,
                 "code_challenge": challenge,

@@ -1483,6 +1483,19 @@
             "notBefore": 0,
             "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": true,
             "redirectUris": [
                 "http://localhost:4200/*",
@@ -1532,8 +1545,21 @@
             "name": "aurelius-atlas-server",
             "nodeReRegistrationTimeout": 0,
             "notBefore": 0,
-            "optionalClientScopes": [],
+            "optionalClientScopes": ["organization"],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": ["https://localhost:21000/login.jsp", "https://localhost:21001/login.jsp"],
             "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
@@ -1548,7 +1574,7 @@
             "clientAuthenticatorType": "client-secret",
             "clientId": "aurelius-atlas-db-scanner",
             "consentRequired": false,
-            "defaultClientScopes": ["basic", "profile", "roles"],
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
             "description": "The relational database scanner's own service identity (13.3, DD-506): its client-credentials token, accepted by azp (AUT-02), names the job in every catalogue write. Its service account holds atlas-read and atlas-write on aurelius-atlas-server.",
             "directAccessGrantsEnabled": false,
             "enabled": true,
@@ -1560,6 +1586,19 @@
             "notBefore": 0,
             "optionalClientScopes": [],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": [],
             "secret": "${DB_SCANNER_CLIENT_SECRET}",
@@ -1574,7 +1613,7 @@
             "clientAuthenticatorType": "client-secret",
             "clientId": "aurelius-atlas-kafka-scanner",
             "consentRequired": false,
-            "defaultClientScopes": ["basic", "profile", "roles"],
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
             "description": "The Kafka cluster scanner's own service identity (13.1, DD-469): its client-credentials token, accepted by azp (AUT-02), names the job in every catalogue write. Its service account holds atlas-read and atlas-write on aurelius-atlas-server.",
             "directAccessGrantsEnabled": false,
             "enabled": true,
@@ -1586,6 +1625,19 @@
             "notBefore": 0,
             "optionalClientScopes": [],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": [],
             "secret": "${KAFKA_SCANNER_CLIENT_SECRET}",
@@ -1600,7 +1652,7 @@
             "clientAuthenticatorType": "client-secret",
             "clientId": "aurelius-atlas-quality-scanner",
             "consentRequired": false,
-            "defaultClientScopes": ["basic", "profile", "roles"],
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
             "description": "The quality scanner's own service identity (12.2, DD-458): its client-credentials token, accepted by azp (AUT-02), names the job in every catalogue read and score write. Its service account holds atlas-read and atlas-write on aurelius-atlas-server.",
             "directAccessGrantsEnabled": false,
             "enabled": true,
@@ -1612,6 +1664,19 @@
             "notBefore": 0,
             "optionalClientScopes": [],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": [],
             "secret": "${QUALITY_SCANNER_CLIENT_SECRET}",
@@ -1626,7 +1691,7 @@
             "clientAuthenticatorType": "client-secret",
             "clientId": "aurelius-atlas-validate-entity",
             "consentRequired": false,
-            "defaultClientScopes": ["basic", "profile", "roles"],
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
             "description": "The validate-entity API's own service identity (12.7, DD-499): its client-credentials token, accepted by azp (AUT-02), names the app in every governance-rule read. Its service account holds atlas-read on aurelius-atlas-server.",
             "directAccessGrantsEnabled": false,
             "enabled": true,
@@ -1638,6 +1703,19 @@
             "notBefore": 0,
             "optionalClientScopes": [],
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": [],
             "secret": "${VALIDATE_ENTITY_CLIENT_SECRET}",
@@ -2142,7 +2220,64 @@
     "offlineSessionIdleTimeout": 2592000,
     "offlineSessionMaxLifespan": 5184000,
     "offlineSessionMaxLifespanEnabled": false,
-    "organizationsEnabled": false,
+    "organizations": [
+        {
+            "alias": "operators",
+            "description": "The operator organization: runs the platform, keeps the default indices (ADR 063)",
+            "enabled": true,
+            "groups": [
+                {
+                    "id": "d00e0000-0000-4000-8000-000000000001",
+                    "name": "atlas-read"
+                },
+                {
+                    "id": "d00e0000-0000-4000-8000-000000000002",
+                    "name": "atlas-write"
+                },
+                {
+                    "id": "d00e0000-0000-4000-8000-000000000003",
+                    "name": "atlas-types"
+                },
+                {
+                    "id": "d00e0000-0000-4000-8000-000000000004",
+                    "name": "atlas-admin"
+                }
+            ],
+            "members": [
+                {
+                    "groups": [
+                        "d00e0000-0000-4000-8000-000000000001",
+                        "d00e0000-0000-4000-8000-000000000002",
+                        "d00e0000-0000-4000-8000-000000000003",
+                        "d00e0000-0000-4000-8000-000000000004"
+                    ],
+                    "username": "aurelius-writer"
+                },
+                {
+                    "groups": ["d00e0000-0000-4000-8000-000000000001"],
+                    "username": "aurelius-reader"
+                },
+                {
+                    "groups": ["d00e0000-0000-4000-8000-000000000001", "d00e0000-0000-4000-8000-000000000002"],
+                    "username": "service-account-aurelius-atlas-db-scanner"
+                },
+                {
+                    "groups": ["d00e0000-0000-4000-8000-000000000001", "d00e0000-0000-4000-8000-000000000002"],
+                    "username": "service-account-aurelius-atlas-kafka-scanner"
+                },
+                {
+                    "groups": ["d00e0000-0000-4000-8000-000000000001", "d00e0000-0000-4000-8000-000000000002"],
+                    "username": "service-account-aurelius-atlas-quality-scanner"
+                },
+                {
+                    "groups": ["d00e0000-0000-4000-8000-000000000001"],
+                    "username": "service-account-aurelius-atlas-validate-entity"
+                }
+            ],
+            "name": "operators"
+        }
+    ],
+    "organizationsEnabled": true,
     "otpPolicyAlgorithm": "HmacSHA1",
     "otpPolicyCodeReusable": false,
     "otpPolicyDigits": 6,
@@ -2674,6 +2809,13 @@
                 "description": "${role_admin}",
                 "id": "4179f759-af9b-4db3-bf6c-9a4d9ad833b5",
                 "name": "admin"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "Runs the platform: holds at most atlas-read outside the operator organization (TEN-06, ADR 063)",
+                "name": "atlas-operator"
             }
         ]
     },
@@ -2707,7 +2849,7 @@
             "enabled": true,
             "firstName": "Aurelius",
             "lastName": "Writer",
-            "realmRoles": ["default-roles-master"],
+            "realmRoles": ["default-roles-master", "atlas-operator"],
             "username": "aurelius-writer"
         },
         {
