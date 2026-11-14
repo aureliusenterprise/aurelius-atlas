@@ -182,6 +182,7 @@ nav:
                 - 061. The governance banner answers live verdicts: architecture/adr/061-the-governance-banner-answers-live-verdicts.md
                 - 062. The pull-request gate proves the critical and high scenarios: architecture/adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios.md
                 - 063. Each tenant is an organization with its own store: architecture/adr/063-each-tenant-is-an-organization-with-its-own-store.md
+                - 064. The webapp reads rich catalogue data through one Aurelius view family: architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md
