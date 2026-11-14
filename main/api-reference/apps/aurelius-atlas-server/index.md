@@ -587,12 +587,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "Tenancy Operator Role",
 >       "type": "string"
 >     },
->     "tenancy_tenants": {
->       "items": {
->         "type": "string"
->       },
->       "title": "Tenancy Tenants",
->       "type": "array"
+>     "tenancy_refresh_seconds": {
+>       "default": 30,
+>       "minimum": 0,
+>       "title": "Tenancy Refresh Seconds",
+>       "type": "number"
 >     }
 >   },
 >   "required": [
@@ -692,11 +691,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_enabled` (`bool`)
 > - `tenancy_operator_organization` (`str`)
 > - `tenancy_operator_role` (`str`)
-> - `tenancy_tenants` (`list[str]`)
->
-> Validators:
->
-> - `_operators_are_not_a_tenant`
+> - `tenancy_refresh_seconds` (`float`)
 >
 > ### app\_search\_batch\_size
 >
@@ -1344,13 +1339,13 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > The realm role that marks an operator, who holds at most `atlas-read` in other tenants (TEN-06).
 >
-> ### tenancy\_tenants
+> ### tenancy\_refresh\_seconds
 >
 > ```
-> tenancy_tenants: list[str]
+> tenancy_refresh_seconds: float = 30
 > ```
 >
-> The provisioned tenants beside the operator organization, until 15.3's tenants index (TEN-04, DD-565).
+> How long the server serves its last read of the tenants index before it reads it again, and how long `provisioning remove` waits before it deletes a tenant's indices (TPR-05, TPR-07, DD-575).
 >
 > ### tls
 >
@@ -1414,7 +1409,7 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > tenancy() -> Tenancy | None
 > ```
 >
-> How tenancy reads a token while `tenancy_enabled`, else None: no request has a tenant (TEN-01).
+> How tenancy reads a token while `tenancy_enabled`, else None: no request has a tenant (TEN-01). The provisioned tenants come from the tenants index (TPR-07), so none are listed here.
 
 ## Design
 
@@ -1456,7 +1451,7 @@ Functions:
   The token verifier: the provider's tokens for the server's client and the further audiences (AUT-02).
 - **`build_oidc`** –
 
-  The server's client at the provider, which browsers sign in with (AUT-05).
+  The server's client at the provider, which browsers sign in with (AUT-05); `tenancy` answers the latest
 - **`create_app`** –
 
   Build the application.
@@ -1514,10 +1509,16 @@ The token verifier: the provider's tokens for the server's client and the furthe
 ### build\_oidc
 
 ```
-build_oidc(settings: ServerSettings, auth: KeycloakAuth, http: AsyncClient | None = None) -> OidcClient
+build_oidc(
+    settings: ServerSettings,
+    auth: KeycloakAuth,
+    http: AsyncClient | None = None,
+    *,
+    tenancy: Callable[[], Tenancy | None] | None = None,
+) -> OidcClient
 ```
 
-The server's client at the provider, which browsers sign in with (AUT-05).
+The server's client at the provider, which browsers sign in with (AUT-05); `tenancy` answers the latest provisioned tenants while tenancy is on (TPR-07).
 
 ### create\_app
 

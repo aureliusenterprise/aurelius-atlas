@@ -2077,10 +2077,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#aurelius_atlas_server.settings.ServerSettings.tenancy_tenants" class="md-nav__link">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.tenancy_refresh_seconds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;tenancy_tenants
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;tenancy_refresh_seconds
       </span>
     </span>
   </a>
@@ -9165,10 +9165,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#aurelius_atlas_server.settings.ServerSettings.tenancy_tenants" class="md-nav__link">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.tenancy_refresh_seconds" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;tenancy_tenants
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;tenancy_refresh_seconds
       </span>
     </span>
   </a>
@@ -10654,12 +10654,11 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tenancy Operator Role"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
-<span class="w">    </span><span class="nt">"tenancy_tenants"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
-<span class="w">      </span><span class="p">},</span>
-<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tenancy Tenants"</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
+<span class="w">    </span><span class="nt">"tenancy_refresh_seconds"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tenancy Refresh Seconds"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -11410,22 +11409,16 @@ Elasticsearch settings; it does not start without its store.</p>
                 (<code><span title="str">str</span></code>)
             </li>
             <li>
-              <code><a class="autorefs autorefs-internal" title="            tenancy_tenants
+              <code><a class="autorefs autorefs-internal" title="            tenancy_refresh_seconds
 
 
   
       pydantic-field
-   (aurelius_atlas_server.settings.ServerSettings.tenancy_tenants)" href="./#aurelius_atlas_server.settings.ServerSettings.tenancy_tenants">tenancy_tenants</a></code>
-                (<code><span title="list">list</span>[<span title="str">str</span>]</code>)
+   (aurelius_atlas_server.settings.ServerSettings.tenancy_refresh_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.tenancy_refresh_seconds">tenancy_refresh_seconds</a></code>
+                (<code><span title="float">float</span></code>)
             </li>
         </ul>
 
-        <p>Validators:</p>
-        <ul>
-            <li>
-              <code><span title="aurelius_atlas_server.settings.ServerSettings._operators_are_not_a_tenant">_operators_are_not_a_tenant</span></code>
-            </li>
-        </ul>
 
 
 
@@ -13417,21 +13410,22 @@ to be turned on before each tenant has its own stores (DD-566).</p>
 
 
 
-<h3 id="aurelius_atlas_server.settings.ServerSettings.tenancy_tenants" class="doc doc-heading">
-<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">tenancy_tenants</span>
+<h3 id="aurelius_atlas_server.settings.ServerSettings.tenancy_refresh_seconds" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">tenancy_refresh_seconds</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
   </span>
 
-<a href="#aurelius_atlas_server.settings.ServerSettings.tenancy_tenants" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tenancy_tenants</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span>
+<a href="#aurelius_atlas_server.settings.ServerSettings.tenancy_refresh_seconds" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">tenancy_refresh_seconds</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mi">30</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>The provisioned tenants beside the operator organization, until 15.3's tenants index (TEN-04, DD-565).</p>
+        <p>How long the server serves its last read of the tenants index before it reads it again, and how long
+<code>provisioning remove</code> waits before it deletes a tenant's indices (TPR-05, TPR-07, DD-575).</p>
 
     </div>
 
@@ -13611,7 +13605,8 @@ the way the store's password is required (SRV-01, SRV-02).</p>
 
     <div class="doc doc-contents ">
 
-        <p>How tenancy reads a token while <code>tenancy_enabled</code>, else None: no request has a tenant (TEN-01).</p>
+        <p>How tenancy reads a token while <code>tenancy_enabled</code>, else None: no request has a tenant (TEN-01). The
+provisioned tenants come from the tenants index (TPR-07), so none are listed here.</p>
 
 
     </div>
@@ -13730,7 +13725,7 @@ scenario (ADR 052).</p>
             <b><code><a class="autorefs autorefs-internal" title="            build_oidc (aurelius_atlas_server.app.build_oidc)" href="./#aurelius_atlas_server.app.build_oidc">build_oidc</a></code></b>
             –
             <div class="doc-md-description">
-              <p>The server's client at the provider, which browsers sign in with (AUT-05).</p>
+              <p>The server's client at the provider, which browsers sign in with (AUT-05); <code>tenancy</code> answers the latest</p>
             </div>
           </li>
           <li class="doc-section-item field-body">
@@ -13952,17 +13947,24 @@ scenario (ADR 052).</p>
 
 
 <a href="#aurelius_atlas_server.app.build_oidc" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">build_oidc</span><span class="p">(</span><span class="n"><span title="aurelius_atlas_server.app.build_oidc(settings)">settings</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            aurelius_atlas_server.settings.ServerSettings
+<div class="doc-signature codehilite"><pre><span></span><code><span class="nf">build_oidc</span><span class="p">(</span>
+    <span class="n"><span title="aurelius_atlas_server.app.build_oidc(settings)">settings</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            aurelius_atlas_server.settings.ServerSettings
 
 
   
       pydantic-model
-  " href="./#aurelius_atlas_server.settings.ServerSettings">ServerSettings</a></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.app.build_oidc(auth)">auth</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            KeycloakAuth (aurelius_atlas_auth.KeycloakAuth)" href="../../libs/python/aurelius-atlas-auth/#aurelius_atlas_auth.auth.KeycloakAuth">KeycloakAuth</a></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_server.app.build_oidc(http)">http</span></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="aurelius_atlas_server.oidc_client.OidcClient">OidcClient</span></span>
+  " href="./#aurelius_atlas_server.settings.ServerSettings">ServerSettings</a></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_server.app.build_oidc(auth)">auth</span></span><span class="p">:</span> <span class="n"><a class="autorefs autorefs-internal" title="            KeycloakAuth (aurelius_atlas_auth.KeycloakAuth)" href="../../libs/python/aurelius-atlas-auth/#aurelius_atlas_auth.auth.KeycloakAuth">KeycloakAuth</a></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_server.app.build_oidc(http)">http</span></span><span class="p">:</span> <span class="n"><span title="httpx2.AsyncClient">AsyncClient</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_server.app.build_oidc(tenancy)">tenancy</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[],</span> <span class="n"><span title="aurelius_atlas_server.tenancy.Tenancy">Tenancy</span></span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="aurelius_atlas_server.oidc_client.OidcClient">OidcClient</span></span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>The server's client at the provider, which browsers sign in with (AUT-05).</p>
+        <p>The server's client at the provider, which browsers sign in with (AUT-05); <code>tenancy</code> answers the latest
+provisioned tenants while tenancy is on (TPR-07).</p>
 
 
     </div>
