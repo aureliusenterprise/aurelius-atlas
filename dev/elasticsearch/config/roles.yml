@@ -1,0 +1,12 @@
+# The store's roles (RLM-08, DD-583; ADR 063). Mounted over the image's empty
+# config/roles.yml; the chart's ConfigMap carries the same roles.
+#
+# aurelius_atlas_operator: the operators' direct read access to every
+# catalogue in the store, every tenant's included, trusted or not, for
+# operations and support. No user holds it here: the deployment grants it to
+# the people who run the platform, as it signs them in to the store.
+aurelius_atlas_operator:
+    cluster: [monitor]
+    indices:
+        - names: ["aurelius-atlas-*"]
+          privileges: [read, view_index_metadata, monitor]

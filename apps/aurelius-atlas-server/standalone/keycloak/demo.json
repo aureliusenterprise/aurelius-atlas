@@ -1,7 +1,10 @@
 {
     "clientScopeMappings": {
         "aurelius-atlas-server": [
-            { "client": "aurelius", "roles": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"] }
+            {
+                "client": "aurelius",
+                "roles": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            }
         ]
     },
     "clients": [
@@ -19,6 +22,19 @@
             "fullScopeAllowed": true,
             "name": "aurelius-atlas-server",
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": false,
             "redirectUris": ["https://localhost:9000/atlas2/login.jsp"],
             "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
@@ -38,6 +54,19 @@
             "fullScopeAllowed": false,
             "name": "aurelius",
             "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
             "publicClient": true,
             "redirectUris": ["https://localhost:9000/*"],
             "serviceAccountsEnabled": false,
@@ -49,20 +78,114 @@
     "enabled": true,
     "loginTheme": "aurelius",
     "loginWithEmailAllowed": false,
+    "organizations": [
+        {
+            "alias": "operators",
+            "description": "The operator organization: runs the platform, keeps the default indices (ADR 063)",
+            "enabled": true,
+            "groups": [
+                {
+                    "id": "de0e0000-0000-4000-8000-000000000001",
+                    "name": "atlas-read"
+                },
+                {
+                    "id": "de0e0000-0000-4000-8000-000000000002",
+                    "name": "atlas-write"
+                },
+                {
+                    "id": "de0e0000-0000-4000-8000-000000000003",
+                    "name": "atlas-types"
+                },
+                {
+                    "id": "de0e0000-0000-4000-8000-000000000004",
+                    "name": "atlas-admin"
+                }
+            ],
+            "members": [
+                {
+                    "groups": [
+                        "de0e0000-0000-4000-8000-000000000001",
+                        "de0e0000-0000-4000-8000-000000000002",
+                        "de0e0000-0000-4000-8000-000000000003",
+                        "de0e0000-0000-4000-8000-000000000004"
+                    ],
+                    "username": "atlas"
+                }
+            ],
+            "name": "operators"
+        },
+        {
+            "alias": "acme",
+            "description": "The sample tenant (15.5a)",
+            "enabled": true,
+            "groups": [
+                {
+                    "id": "deac0000-0000-4000-8000-000000000001",
+                    "name": "atlas-read"
+                },
+                {
+                    "id": "deac0000-0000-4000-8000-000000000002",
+                    "name": "atlas-write"
+                },
+                {
+                    "id": "deac0000-0000-4000-8000-000000000003",
+                    "name": "atlas-types"
+                },
+                {
+                    "id": "deac0000-0000-4000-8000-000000000004",
+                    "name": "atlas-admin"
+                }
+            ],
+            "members": [
+                {
+                    "groups": ["deac0000-0000-4000-8000-000000000001", "deac0000-0000-4000-8000-000000000002"],
+                    "username": "steward"
+                },
+                {
+                    "groups": ["deac0000-0000-4000-8000-000000000001"],
+                    "username": "scientist"
+                },
+                {
+                    "groups": ["deac0000-0000-4000-8000-000000000001"],
+                    "username": "atlas"
+                }
+            ],
+            "name": "acme"
+        }
+    ],
+    "organizationsEnabled": true,
     "realm": "demo",
     "registrationAllowed": false,
     "roles": {
         "client": {
             "aurelius-atlas-server": [
-                { "description": "Read the types, the entities and their classifications", "name": "atlas-read" },
+                {
+                    "description": "Read the types, the entities and their classifications",
+                    "name": "atlas-read"
+                },
                 {
                     "description": "Create, change and delete entities, relationships and their classifications",
                     "name": "atlas-write"
                 },
-                { "description": "Create, change and delete types", "name": "atlas-types" },
-                { "description": "Import, export, purge and the admin audits", "name": "atlas-admin" }
+                {
+                    "description": "Create, change and delete types",
+                    "name": "atlas-types"
+                },
+                {
+                    "description": "Import, export, purge and the admin audits",
+                    "name": "atlas-admin"
+                }
             ]
-        }
+        },
+        "realm": [
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "Runs the platform: holds at most atlas-read outside the operator organization (TEN-06, ADR 063)",
+                "name": "atlas-operator"
+            }
+        ]
     },
     "sslRequired": "external",
     "users": [
@@ -70,18 +193,29 @@
             "clientRoles": {
                 "aurelius-atlas-server": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
             },
-            "credentials": [{ "type": "password", "value": "${DEMO_USER_ATLAS_PASSWORD}" }],
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_ATLAS_PASSWORD}"
+                }
+            ],
             "email": "atlas@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Atlas",
             "lastName": "Administrator",
+            "realmRoles": ["atlas-operator"],
             "username": "atlas"
         },
         {
             "clientRoles": {
                 "aurelius-atlas-server": ["atlas-read", "atlas-write"]
             },
-            "credentials": [{ "type": "password", "value": "${DEMO_USER_STEWARD_PASSWORD}" }],
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_STEWARD_PASSWORD}"
+                }
+            ],
             "email": "steward@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
@@ -92,7 +226,12 @@
             "clientRoles": {
                 "aurelius-atlas-server": ["atlas-read"]
             },
-            "credentials": [{ "type": "password", "value": "${DEMO_USER_SCIENTIST_PASSWORD}" }],
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_SCIENTIST_PASSWORD}"
+                }
+            ],
             "email": "scientist@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",

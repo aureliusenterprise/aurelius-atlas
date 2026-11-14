@@ -144,6 +144,17 @@ nx up aurelius-atlas-dev-keycloak      # decrypt + build + observability, waits 
 - The prod realm's event lifetimes (`eventsExpiration`, the
   `adminEventsExpiration` attribute, RET-06) are stated on the Data Archiving
   page; change both together. An existing realm keeps its own (import skips it).
+- Tenancy (15.5a, ADR 063): every realm turns organizations on and carries the
+  realm role `atlas-operator` and the organization `operators` with its four
+  groups `atlas-read`/`-write`/`-types`/`-admin` at fixed ids, distinct per
+  realm (RLM-01). A member's organization groups are listed under the member,
+  by group id; a group can't list its members on import. The server's and
+  the webapp's clients carry the Organization Group Membership mapper with
+  `organization` optional; a service client has it as a default scope, and
+  its service account is a member of `operators` in the groups of its client
+  roles (RLM-04, DD-581). A user with server client roles gets the matching
+  `operators` groups too; a test fails until they agree. Tenants'
+  organizations come from provisioning (15.5b), never from these files.
 
 ## Helm chart
 

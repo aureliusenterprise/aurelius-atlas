@@ -167,6 +167,17 @@ async def test__a_browser_session_of_a_removed_tenant_is_signed_out(
     assert (await client.get(SESSION)).status_code == 401
 
 
+@pytest.mark.covers("aurelius_atlas_server.oidc_client.OidcClient.authorization_url", rules=["RLM-03"])
+async def test__with_tenancy_the_sign_in_asks_for_the_organization_scope(
+    served: tuple[FastAPI, httpx.AsyncClient],
+) -> None:
+    """The provider is asked for ``openid organization``, so a person in several organizations chooses one."""
+    _, client = served
+    await client.get("/n/")
+    started = await client.get("/login.jsp")
+    assert parse_qs(urlparse(started.headers["location"]).query)["scope"] == ["openid organization"]
+
+
 @pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["TPR-08"])
 async def test__only_the_tenants_opened_at_start_load_the_models(
     settings: ServerSettings, record_tenants: Record, issuer: FakeIssuer, tmp_path: Path

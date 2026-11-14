@@ -64,6 +64,8 @@ services:
             - snapshots:/usr/share/elasticsearch/snapshots
             - ../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
             - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+            # The store's roles, the operators' read role among them (RLM-08).
+            - ./config/roles.yml:/usr/share/elasticsearch/config/roles.yml:ro
             # Not config/certs: see config/elasticsearch.yml.
             - ./certs:/usr/share/elasticsearch/config/tls:ro
         ulimits:
