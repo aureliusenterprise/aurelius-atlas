@@ -30,6 +30,30 @@ from conftest import (
     policy_peers_by_port,
 )
 
+MAX_DESCRIPTION = 255
+"""The length of Keycloak's description columns: a longer one fails the realm's import."""
+
+URI_SEPARATOR = "##"
+"""How Keycloak joins a client's post-logout redirect URIs; a newline makes one invalid URI of them."""
+
+KEYCLOAK_PASSWORD_POLICIES = {
+    "length",
+    "maxLength",
+    "digits",
+    "lowerCase",
+    "upperCase",
+    "specialChars",
+    "notUsername",
+    "notEmail",
+    "passwordHistory",
+    "forceExpiredPasswordChange",
+    "hashAlgorithm",
+    "hashIterations",
+    "regexPattern",
+    "passwordBlacklist",
+}
+"""Keycloak 26's built-in password policies; any other name fails the import ("Password policy not found")."""
+
 
 @pytest.mark.covers(rules=["CHT-16"])
 def test__prod_mode_boot_and_workload_shapes(kc_docs: list[dict[str, Any]]) -> None:
@@ -784,8 +808,9 @@ def test__prod_realm_is_hardened(kc_docs: list[dict[str, Any]]) -> None:
     assert asset["registrationAllowed"] is False
     assert asset["resetPasswordAllowed"] is False
     assert asset["rememberMe"] is False
-    assert "length(" in asset["passwordPolicy"]
-    assert "complexity(" in asset["passwordPolicy"]
+    policies = {term.split("(")[0] for term in asset["passwordPolicy"].split(" and ")}
+    assert {"length", "upperCase", "lowerCase", "digits", "specialChars"} <= policies
+    assert policies <= KEYCLOAK_PASSWORD_POLICIES  # an unknown name fails the import ("Password policy not found")
     assert asset["eventsEnabled"] is True
     assert asset["adminEventsEnabled"] is True
 
@@ -834,13 +859,13 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
     (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
     assert aur["redirectUris"] == ["https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"]
     assert aur["webOrigins"] == ["https://atlas.atlas.example", "https://dashboard.atlas.example"]
-    post_logout = aur["attributes"]["post.logout.redirect.uris"].splitlines()
+    post_logout = aur["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR)
     assert set(post_logout) == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
     # CHT-110 (10.12): the server client's AUT-05 return leg lands on its own
     # login.jsp — the browser hosts, per-host.
     (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
     assert srv["redirectUris"] == ["https://atlas.atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
-    srv_post_logout = set(srv["attributes"]["post.logout.redirect.uris"].splitlines())
+    srv_post_logout = set(srv["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR))
     assert srv_post_logout == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
 
     docs = helm_render(
@@ -865,7 +890,7 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
     ):
         text = find(rendered, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
         (a,) = [c for c in json.loads(text)["clients"] if c["clientId"] == "aurelius"]
-        uris = a["redirectUris"] + a["webOrigins"] + a["attributes"]["post.logout.redirect.uris"].splitlines()
+        uris = a["redirectUris"] + a["webOrigins"] + a["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR)
         assert not [u for u in uris if "localhost" in u or "127.0.0.1" in u or u == "+"], uris
         assert "127.0.0.1" not in text
         assert '"+"' not in text
@@ -1037,3 +1062,40 @@ def test__digest_wins_over_tag_at_keycloak_and_postgres() -> None:
     assert container(ss, "keycloak")["image"] == "dhi.io/keycloak@sha256:" + "0" * 63 + "1"
     pg = find(docs, "StatefulSet", "atlas-keycloak-postgres")
     assert container(pg, "postgres")["image"] == "dhi.io/postgres@sha256:" + "0" * 63 + "2"
+
+
+@pytest.mark.covers(rules=["CHT-75", "CHT-76"])
+@pytest.mark.parametrize(
+    "path",
+    [
+        WORKSPACE / "dev/keycloak/import/master.json",
+        KC_CHART / "files/aurelius-atlas.json",
+        WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/demo.json",
+    ],
+    ids=["dev", "chart", "demo"],
+)
+def test__every_realm_file_is_one_keycloak_imports(path: Any) -> None:  # noqa: ANN401 - a path
+    """What Keycloak 26.7 refuses at import, and the realm with it: a description over its 255-character column,
+    post-logout URIs joined other than by ``##``, a password policy it doesn't know.
+    """  # noqa: D205 - one sentence
+    realm = json.loads(path.read_text())
+    long = []
+
+    def walk(node: Any, where: str) -> None:  # noqa: ANN401 - JSON
+        if isinstance(node, dict):
+            for key, value in node.items():
+                if key == "description" and isinstance(value, str) and len(value) > MAX_DESCRIPTION:
+                    long.append((where, len(value)))
+                walk(value, str(node.get("clientId") or node.get("name") or where))
+        elif isinstance(node, list):
+            for value in node:
+                walk(value, where)
+
+    walk(realm, "realm")
+    assert long == []
+    for client in realm["clients"]:
+        uris = client.get("attributes", {}).get("post.logout.redirect.uris", "")
+        assert "\n" not in uris, client["clientId"]
+    if "passwordPolicy" in realm:
+        names = {term.split("(")[0] for term in realm["passwordPolicy"].split(" and ")}
+        assert names <= KEYCLOAK_PASSWORD_POLICIES
