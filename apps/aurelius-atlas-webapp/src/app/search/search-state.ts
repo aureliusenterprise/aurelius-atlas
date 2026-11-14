@@ -2,49 +2,46 @@ import { HttpErrorResponse } from "@angular/common/http";
 import { Injectable, computed, inject, signal } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import {
-    AtlasAggregationEntry,
-    AtlasEntityHeader,
-    AtlasQuickSearchResult,
-    QuickSearchParameters,
-    SearchByMeaningService,
-    SearchService,
+    EntityCard as ViewCard,
+    FacetEntry,
+    ViewSearchMode,
+    ViewSearchRequest,
+    ViewSearchService,
 } from "aurelius-atlas-data-access";
-import { Observable } from "rxjs";
 import { FacetItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../alerts/alerts.service";
 import { SearchMode, SearchModeService } from "../settings/search-mode.service";
 import { nameDisplay } from "./meta/type-display";
 
-/** Atlas's every-entity type marker (SRC-03): what an empty query searches. */
-const ALL_ENTITY_TYPES = "_ALL_ENTITY_TYPES";
-
-/** The server's type-facet key (QSR-03) — the one facet the screen filters on (DD-426). */
-const TYPE_FACET = "__typeName";
+/** The door's type-facet key (VSR-06) — the one facet the screen filters on (DD-426). */
+const TYPE_FACET = "typeName";
 
 /**
- * The facet titles, the four new bridge keys (SDX-08, DD-427): the server's
- * facet names are not App Search field names, so the legacy dictionary has
- * no keys for them — the vendored fixtures gained four (both locales) and
- * the DD-128 bridge carries them. An unknown facet key renders raw, the
- * legacy's missing-key answer.
+ * The facet titles (SDX-08, DD-427, DD-603): the door's facet names carry the
+ * four labels the wire's `__`-prefixed keys wore — the `$localize` ids are
+ * unchanged, so no dictionary key moves. An unknown facet key renders raw,
+ * the legacy's missing-key answer.
  */
 const FACET_TITLES: Record<string, string> = {
     [TYPE_FACET]: $localize`:@@search.components.filter.type:Type`,
-    __state: $localize`:@@search.components.filter.state:State`,
-    "Asset.owner": $localize`:@@search.components.filter.owner:Owner`,
-    ServiceType: $localize`:@@search.components.filter.serviceType:Service Type`,
+    status: $localize`:@@search.components.filter.state:State`,
+    owner: $localize`:@@search.components.filter.owner:Owner`,
+    serviceType: $localize`:@@search.components.filter.serviceType:Service Type`,
 };
+
+/** The type facet's asked size (VSR-06): DD-093's facet counted 100 values. */
+const TYPE_FACET_SIZE = 100;
 
 /** The most entities a search by meaning answers (DD-441, DD-479). */
 const MAX_NEAREST = 1000;
 
-/** The server's code for a server without search by meaning (SBM-06). */
+/** The server's code for a server without search by meaning (SBM-06, ASV-09). */
 const EMBEDDING_OFF = "AURELIUS-404-00-001";
 
 /** One sidebar facet as the results screen renders it (SDX-03). */
 export type FacetView = {
-    /** The server's facet key (`__typeName`, `__state`, `Asset.owner`, `ServiceType`). */
+    /** The door's facet key (`typeName`, `status`, `owner`, `serviceType`). */
     readonly key: string;
     /** The localised menu title (SDX-08). */
     readonly title: string;
@@ -67,28 +64,29 @@ type TypeRow = {
  * subtree destroys the store, so a fresh visit to browse resets the search
  * (the legacy `NavigationEnd` reset, by construction).
  *
- * The query runs as a quick search (SDX-01, DD-424, POST `/v2/search/quick`
- * — the 7.4a basic search, amended) with pages of ten (the legacy page
- * size, SRH-04): one answer carries the page and the facet counts
- * (SDX-02, QSR-02/QSR-03, DD-093), so there is no second request for the
- * sidebar. `includeSubTypes` rides `true` because the quick-search model
- * defaults it `false`, unlike the basic search's (DD-424) — without it the
- * explore buttons' subtype listings stop answering. `run` is the hero's
+ * The query opens the view family's search door (VSR-03, ADR 064, POST
+ * `/aurelius/v1/search`) with pages of ten (the legacy page size, SRH-04):
+ * one body carries the query, the mode, the filters and the four sidebar
+ * facets, and one answer carries the page of cards and every facet's counts
+ * (AVR-08) — there is no second request for the sidebar, and no second
+ * endpoint for a search by meaning: the stored mode names the body's `mode`
+ * key (SBX-02, ASV-01, DD-602). `run` is the hero's
  * submit, `explore` the browse cards' buttons, `nextPage` the
- * infinite-scroll container's, `toggleType` the sidebar's checkbox. An
- * empty query with no type selection searches `_ALL_ENTITY_TYPES` — the
- * demo resolver's documented default ("we load the page without a search
- * term, we can still see results", DD-221): the server rejects an empty
- * query without a type (SRC-02, QSR-01), the marker is Atlas's
- * every-entity shape (SRC-03). A search the server answers with an error
+ * infinite-scroll container's, `toggleType` the sidebar's checkbox. A
+ * selected type filters entities of that type and of its sub types: the
+ * door's `filters` hold an `any` of the names under `typeName` and under
+ * `superTypeNames` (VSR-04, DD-600) — the documents carry the whole super
+ * chain, so no typedef walk is needed. An empty query with no type
+ * selection sends no filter and answers every entity (AVR-11): quick
+ * search's every-entity marker left with the wire it belonged to (DD-600),
+ * the demo resolver's list-everything default (DD-221) answering on its
+ * own. A search the door answers with an error
  * lands in the alerts drawer (the DD-214 failure path, the legacy pipeline
  * strip's successor).
  */
 @Injectable()
 export class SearchState {
-    private readonly search = inject(SearchService);
-
-    private readonly meaning = inject(SearchByMeaningService);
+    private readonly door = inject(ViewSearchService);
 
     private readonly searchMode = inject(SearchModeService);
 
@@ -97,11 +95,11 @@ export class SearchState {
     /** The legacy `pageSize` (the results store's 10). */
     static readonly PAGE_SIZE = 10;
 
-    /** The entities accumulated across pages, in answer order (SRH-04). */
-    readonly entries = signal<AtlasEntityHeader[]>([]);
+    /** The cards accumulated across pages, in answer order (SRH-04, VSR-07). */
+    readonly entries = signal<ViewCard[]>([]);
 
-    /** The server's count of the current search (`approximateCount`, SRC-09). */
-    readonly approximateCount = signal(0);
+    /** The door's count of the current search (`total`, AVR-07). */
+    readonly total = signal(0);
 
     /**
      * How the search field searches (SBX-01, DD-473): the stored setting
@@ -115,8 +113,8 @@ export class SearchState {
      */
     readonly byMeaning = computed(() => this.mode() !== "words" && this.queryText().trim() !== "");
 
-    /** The header's count (SBW-04, DD-479): the entities shown by meaning, the server's count by words. */
-    readonly shownCount = computed(() => (this.byMeaning() ? this.entries().length : this.approximateCount()));
+    /** The header's count (SBW-04, DD-479, VSR-05): the entities shown by meaning, the door's count by words. */
+    readonly shownCount = computed(() => (this.byMeaning() ? this.entries().length : this.total()));
 
     /** The last page came back full: by meaning, the sign there is more (SBW-04, DD-479). */
     private readonly lastPageFull = signal(true);
@@ -140,16 +138,16 @@ export class SearchState {
      */
     private readonly typeRows = signal<readonly TypeRow[]>([]);
 
-    /** The non-type facets of the last answer, in answer order, empty ones dropped (SDX-03/05). */
-    private readonly otherFacets = signal<readonly { key: string; entries: readonly AtlasAggregationEntry[] }[]>([]);
+    /** The door's non-type facets of the last answer, in answer order, empty ones dropped (SDX-03/05). */
+    private readonly otherFacets = signal<readonly { key: string; entries: readonly FacetEntry[] }[]>([]);
 
     /**
-     * The sidebar's facets (SDX-03): the type facet first (the server's own
-     * answer order starts with it), then `__state`, `Asset.owner` and
-     * `ServiceType` as the answer carries them; empty facets are not
-     * rendered (the legacy `FilterService` dropped them). Only the type
-     * facet is selectable (DD-426): the quick-search contract takes no
-     * parameter the others could send (SDX-05).
+     * The sidebar's facets (SDX-03, VSR-06): the type facet first (the store
+     * asks it first), then `status`, `owner` and `serviceType` as the answer
+     * carries them; empty facets are not rendered (the legacy
+     * `FilterService` dropped them). Only the type facet is selectable
+     * (DD-426): the other three answer what quick search's aggregator
+     * answered, and the door filters what the sidebar can name (SDX-05).
      */
     readonly facets = computed<FacetView[]>(() => {
         const views: FacetView[] = [];
@@ -174,8 +172,8 @@ export class SearchState {
                 title: FACET_TITLES[facet.key] ?? facet.key,
                 selectable: false,
                 items: facet.entries.map((entry) => ({
-                    value: entry.name ?? "",
-                    label: entry.name ?? "",
+                    value: `${entry.value}`,
+                    label: `${entry.value}`,
                     count: entry.count,
                 })),
             });
@@ -186,7 +184,7 @@ export class SearchState {
     /**
      * Every entity of the search is listed (the legacy equality, SRH-04); by
      * meaning, once a page came back short or 1,000 are shown, as a search
-     * by meaning counts what it was asked for (SBW-04, DD-479).
+     * by meaning counts what it was asked for (SBW-04, DD-479, VSR-05).
      */
     readonly allLoaded = computed(() => {
         if (this.loading()) {
@@ -195,16 +193,14 @@ export class SearchState {
         if (this.byMeaning()) {
             return !this.lastPageFull() || this.entries().length >= MAX_NEAREST;
         }
-        return this.entries().length >= this.approximateCount();
+        return this.entries().length >= this.total();
     });
 
     /** Cards render (SRH-05). */
     readonly hasResults = computed(() => this.entries().length > 0);
 
     /** The no-results pair renders (SRH-06): answered zero, or nothing to ask. */
-    readonly noResults = computed(
-        () => !this.loading() && this.entries().length === 0 && this.approximateCount() === 0,
-    );
+    readonly noResults = computed(() => !this.loading() && this.entries().length === 0 && this.total() === 0);
 
     /** The search's text, `""` for the explore landings (the hero's field reads it). */
     readonly queryText = signal("");
@@ -315,7 +311,7 @@ export class SearchState {
      */
     private restart(resetFacets: boolean): void {
         this.entries.set([]);
-        this.approximateCount.set(0);
+        this.total.set(0);
         this.lastPageFull.set(true);
         this.offset = 0;
         if (resetFacets) {
@@ -326,55 +322,59 @@ export class SearchState {
     }
 
     /**
-     * The `typeName` wire field for the current session (SRC-03): the
-     * comma-joined selection when it has values; the every-entity marker
-     * when the query is empty and nothing is selected (QSR-01 makes the
-     * bare URL answer, DD-221); absent for a plain query.
-     * @param selection the session type selection
-     * @param query the current query text
+     * The door body of the current page (VSR-03): the query's words, the
+     * mode that ranks them (Words asks `keyword`, ASV-01 — an empty query
+     * asks it too, as the door refuses a meaning mode without words,
+     * ASV-06), the sidebar's four facets, and the page. A selection filters
+     * the selected types and every type under them (VSR-04, DD-600); with
+     * no selection the body carries no filter, and the door answers every
+     * entity (AVR-11).
      */
-    private typeNameFor(selection: readonly string[], query: string): string | null {
-        if (selection.length > 0) {
-            return selection.join(",");
-        }
-        return query ? null : ALL_ENTITY_TYPES;
+    private request(): ViewSearchRequest {
+        const selection = [...this.typeSelection()];
+        return {
+            query: this.queryText(),
+            mode: this.doorMode(),
+            ...(selection.length > 0
+                ? { filters: { any: [{ typeName: selection }, { superTypeNames: selection }] } }
+                : {}),
+            facets: { typeName: { size: TYPE_FACET_SIZE }, status: {}, owner: {}, serviceType: {} },
+            limit: SearchState.PAGE_SIZE,
+            offset: this.offset,
+        };
     }
 
     /**
-     * Run the current search's next page (SDX-01). An empty query with no
-     * selection searches `_ALL_ENTITY_TYPES` — the every-entity marker
-     * (SRC-03), the demo resolver's list-everything default (DD-221); the
-     * server rejects an empty query without a type (QSR-01), so the marker
-     * is what makes the bare `/search/results` URL answer. A selection is
-     * the comma-joined `typeName` (SRC-03) the server splits into its type
-     * list. `includeSubTypes` rides `true` (DD-424).
+     * The door's ranking mode (VSR-03, ASV-01): the stored mode's door name,
+     * Words being `keyword`. A meaning mode needs words to embed (ASV-06), so
+     * an empty query asks `keyword` whatever the stored mode is (SBW-03's
+     * rule, the same one the header's count follows).
+     */
+    private doorMode(): ViewSearchMode {
+        if (!this.byMeaning()) {
+            return "keyword";
+        }
+        return this.mode() === "hybrid" ? "hybrid" : "semantic";
+    }
+
+    /**
+     * Run the current search's next page (SDX-01, VSR-03): one door, whatever
+     * the mode — the body's `mode` key names it (ASV-01, DD-602).
      */
     private load(): void {
         if (this.loading()) {
             return;
         }
         this.searched = true;
-        const typeName = this.typeNameFor(this.typeSelection(), this.queryText());
-        const query = this.queryText();
-        this.loading.set(true);
-        const parameters: QuickSearchParameters = {
-            query: query ?? "",
-            ...(typeName ? { typeName } : {}),
-            limit: SearchState.PAGE_SIZE,
-            offset: this.offset,
-            excludeDeletedEntities: true,
-            includeSubTypes: true,
-        };
         const byMeaning = this.byMeaning();
-        this.page(parameters, byMeaning).subscribe({
-            next: (result) => {
-                const found = result.searchResults;
-                this.approximateCount.set(found?.approximateCount ?? 0);
-                const entities = found?.entities ?? [];
-                this.entries.update((entries) => [...entries, ...entities]);
-                this.lastPageFull.set(entities.length >= SearchState.PAGE_SIZE);
+        this.loading.set(true);
+        this.door.search(this.request()).subscribe({
+            next: (answer) => {
+                this.total.set(answer.total);
+                this.entries.update((entries) => [...entries, ...answer.cards]);
+                this.lastPageFull.set(answer.cards.length >= SearchState.PAGE_SIZE);
                 this.offset += SearchState.PAGE_SIZE;
-                this.applyFacets(result.aggregationMetrics ?? {});
+                this.applyFacets(answer.facets);
                 this.loading.set(false);
             },
             error: (error: unknown) => {
@@ -395,21 +395,6 @@ export class SearchState {
     }
 
     /**
-     * One page of the current search (SBW-03): a search by meaning in
-     * Meaning and Both — `semantic` and `hybrid` — with the quick search's
-     * own parameters, else the quick search.
-     * @param parameters the page's quick search parameters
-     * @param byMeaning whether the page is a search by meaning
-     */
-    private page(parameters: QuickSearchParameters, byMeaning: boolean): Observable<AtlasQuickSearchResult> {
-        if (!byMeaning) {
-            return this.search.quickSearch(parameters);
-        }
-        const mode = this.mode() === "hybrid" ? "hybrid" : "semantic";
-        return this.meaning.search({ ...parameters, mode });
-    }
-
-    /**
      * A server without search by meaning (SBW-06): say so and store Words,
      * whose change searches again by the query's words (SBX-02).
      */
@@ -424,24 +409,21 @@ export class SearchState {
     }
 
     /**
-     * Fold one answer's facets into the sidebar's state (SDX-02, SDX-07):
-     * the type facet merges with the seen rows — the answer's values and
-     * counts first, in answer order, then the values the narrowed answer
+     * Fold one answer's facets into the sidebar's state (SDX-02, SDX-07,
+     * VSR-06): the type facet merges with the seen rows — the answer's values
+     * and counts first, in answer order, then the values the narrowed answer
      * no longer carries with their last counts (DD-426) — and the rest is
      * replaced as answered, empty facets dropped (SDX-03, the legacy
      * `FilterService`'s rule).
-     * @param metrics the answer's `aggregationMetrics` (QSR-03/QSR-04)
+     * @param facets the answer's facet counts, keyed by the door's names (AVR-08)
      */
-    private applyFacets(metrics: Record<string, AtlasAggregationEntry[]>): void {
-        const fresh = (metrics[TYPE_FACET] ?? []).filter((entry) => entry.name);
-        const freshValues = new Set(fresh.map((entry) => entry.name));
+    private applyFacets(facets: Record<string, FacetEntry[]>): void {
+        const fresh = (facets[TYPE_FACET] ?? []).filter((entry) => typeof entry.value === "string");
+        const freshValues = new Set(fresh.map((entry) => `${entry.value}`));
         const kept = this.typeRows().filter((row) => !freshValues.has(row.value));
-        this.typeRows.set([
-            ...fresh.map((entry) => ({ value: entry.name as string, count: entry.count ?? 0 })),
-            ...kept,
-        ]);
+        this.typeRows.set([...fresh.map((entry) => ({ value: `${entry.value}`, count: entry.count })), ...kept]);
         this.otherFacets.set(
-            Object.entries(metrics)
+            Object.entries(facets)
                 .filter(([key, entries]) => key !== TYPE_FACET && entries.length > 0)
                 .map(([key, entries]) => ({ key, entries })),
         );
@@ -449,8 +431,8 @@ export class SearchState {
 }
 
 /**
- * Whether a failed request is the server's answer that it has no search by
- * meaning (SBM-06): a 404 carrying `AURELIUS-404-00-001`.
+ * Whether a failed request is the door's answer that the server has no search
+ * by meaning (SBM-06, ASV-09, VSR-08): a 404 carrying `AURELIUS-404-00-001`.
  * @param error what the request failed with
  */
 function isEmbeddingOff(error: unknown): boolean {

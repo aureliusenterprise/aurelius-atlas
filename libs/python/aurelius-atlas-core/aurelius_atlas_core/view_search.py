@@ -35,8 +35,9 @@ from aurelius_atlas_core.app_search_engine import (
 )
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments
 from aurelius_atlas_core.free_text import MAX_QUERY_LENGTH
-from aurelius_atlas_core.search_fields import KEYWORD, kind_of
-from aurelius_atlas_core.search_query import MAX_NEAREST, VectorQuery
+from aurelius_atlas_core.search_aggregator import ASSET_ENTITY_TYPE, OWNER_ATTRIBUTE
+from aurelius_atlas_core.search_fields import KEYWORD, field_name, kind_of
+from aurelius_atlas_core.search_query import FACET_SIZE, MAX_NEAREST, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.view_derivation import QUALITY_DIMENSIONS, card_of, view_of
 
@@ -79,6 +80,16 @@ _MATCHED = (
 
 _TOTAL_PARTS = ("score", "count", "total")
 """The quality sub-fields a filter or facet names as ``quality.<dimension>.<part>`` (AVR-03)."""
+
+SERVICE_TYPE = "serviceType"
+OWNER = "owner"
+"""The door's facet names that may count no field of the index (VSR-01, DD-599).
+
+``serviceType`` is DD-093's ``ServiceTypeAggregator`` over the type counts, so it counts every matched
+entity's type and not only the page of cards; ``owner`` counts ``Asset``'s owner attribute where the
+registry defines one, and nothing where it does not. The aggregator itself stays for the wire's answers
+until 16.6 (VSR-10).
+"""
 
 
 @dataclass
@@ -144,6 +155,12 @@ def door_fields(registry: TypeRegistry, type_name: str | None = None) -> dict[st
                 if single is not None
                 else EngineField(Kind.TEXT)
             )
+    owner = None if (asset := registry.entity_type(ASSET_ENTITY_TYPE)) is None else asset.attribute(OWNER_ATTRIBUTE)
+    owner_path = None if owner is None else field_name(owner)
+    fields[OWNER] = EngineField(Kind.TEXT, path=None if owner_path is None else f"search.{owner_path}")
+    fields[SERVICE_TYPE] = EngineField(Kind.TEXT)
+    # ``Asset``'s owner attribute, however the registry stores it, and the service-type roll-up (VSR-01):
+    # both names are always asked for, and count nothing where the registry holds nothing for them (DD-599).
     for dimension in QUALITY_DIMENSIONS:
         for part in _TOTAL_PARTS:
             path = f"{QUALITY_TOTALS_FIELD}.{dimension}.{part}"
@@ -269,21 +286,32 @@ def _facets(facets: object, fields: Mapping[str, EngineField], errors: Errors) -
     for name, options in asked:
         if known(name, errors, "Facets") is None:
             continue
+        if name in (SERVICE_TYPE, OWNER) and fields[name].path is None:
+            # Counted outside the index: ``serviceType`` is summed from the type counts in the answer and an
+            # ``owner`` the registry never defined counts no one. Both are asked for and answered empty
+            # rather than refused (VSR-01, DD-599).
+            parsed[name] = Facet(_size(name, options, errors), {"_count": "desc"})
+            continue
         if fields[name].kind is Kind.NUMBER and not name.startswith("quality."):
             errors.add(f"Facet for {name}: number fields hold no values to count")
             continue
         if fields[name].path is None:
             errors.add(f"Facet for {name}: the field holds no single value to count")
             continue
-        if not isinstance(options, dict):
-            errors.add(f"Facet for {name} must be an object with a size")
-            continue
-        size = options.get("size", 10)
-        if not isinstance(size, int) or isinstance(size, bool) or not 1 <= size <= MAX_FACET_SIZE:
-            errors.add(f"Facet size for {name} must be between 1 and {MAX_FACET_SIZE}")
-            size = 10
-        parsed[name] = Facet(size, {"_count": "desc"})
+        parsed[name] = Facet(_size(name, options, errors), {"_count": "desc"})
     return parsed
+
+
+def _size(name: object, options: object, errors: Errors) -> int:
+    """A facet's asked size, the default kept with the problem named when it is no size (AVR-05)."""
+    if not isinstance(options, dict):
+        errors.add(f"Facet for {name} must be an object with a size")
+        return 10
+    size = options.get("size", 10)
+    if not isinstance(size, int) or isinstance(size, bool) or not 1 <= size <= MAX_FACET_SIZE:
+        errors.add(f"Facet size for {name} must be between 1 and {MAX_FACET_SIZE}")
+        return 10
+    return size
 
 
 def _bounded(body: dict[str, Any], name: str, bounds: tuple[int, int], default: int, errors: Errors) -> int:
@@ -343,13 +371,56 @@ class ViewSearchEngine:
             if vector is None or request.mode == "keyword"
             else VectorQuery(tuple(vector), request.offset + request.limit, weight),
         )
-        response = await self._documents.search_app_search(**query_body(search))
+        response = await self._documents.search_app_search(**_asked(search, request))
         hits = response["hits"]
+        aggregations = response.get("aggregations") or {}
+        facets = _answered_facets(request.facets, aggregations)
+        if SERVICE_TYPE in request.facets:
+            feed = aggregations.get(_FEED, aggregations.get("typeName#0", {})).get("buckets", [])
+            facets[SERVICE_TYPE] = _service_types(self._registry, feed)[: request.facets[SERVICE_TYPE].size]
         return {
             "cards": [_card(hit["_source"], self._registry).to_json() for hit in hits["hits"]],
-            "facets": _answered_facets(request.facets, response.get("aggregations") or {}),
+            "facets": facets,
             "total": int(hits["total"]["value"]),
         }
+
+
+_FEED = "$serviceTypes#0"
+"""The door's private type count feeding ``serviceType``: DD-093's facet size of 100 values, asked only when
+no asked facet is a wide enough type count (DD-599)."""
+
+
+def _asked(search: Search, request: DoorRequest) -> dict[str, Any]:
+    """The search's query body, with the whole type count bolted on when ``serviceType`` needs a feed of
+    its own: the roll-up counts every matched entity's type, and a short asked type facet leaves some out
+    (DD-093, DD-599).
+    """  # noqa: D205 - one sentence
+    body = query_body(search)
+    if SERVICE_TYPE in request.facets:
+        asked = request.facets.get("typeName")
+        if (asked is None or asked.size < FACET_SIZE) and search.engine.fields["typeName"].path is not None:
+            body["aggs"][_FEED] = {
+                "terms": {"field": "typeName", "size": FACET_SIZE + 1, "order": [{"_count": "desc"}, {"_key": "asc"}]}
+            }
+    return body
+
+
+def _service_types(registry: TypeRegistry, buckets: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """``ServiceTypeAggregator``: the type counts added up by service type, those counted none left out
+    (VSR-01, DD-093).
+    """  # noqa: D205 - one sentence
+    totals = dict.fromkeys(registry.all_service_types(), 0)
+    for bucket in buckets:
+        entity_type = registry.entity_type(plain(bucket["key"]))
+        service = None if entity_type is None else entity_type.service_type
+        if service in totals:
+            totals[service] += bucket["doc_count"]
+    return [
+        {"value": service, "count": count}
+        for service, count in sorted(
+            ((service, count) for service, count in totals.items() if count), key=lambda item: (-item[1], item[0])
+        )
+    ]
 
 
 def _single_type(body: object) -> str | None:
