@@ -5,6 +5,11 @@
     "aliases": []
   },
   {
+    "version": "feat-15-4-workers-per-tenant",
+    "title": "feat-15-4-workers-per-tenant",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
