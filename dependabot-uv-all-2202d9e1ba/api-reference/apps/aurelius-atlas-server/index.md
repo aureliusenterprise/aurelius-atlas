@@ -566,6 +566,32 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "exclusiveMinimum": 0,
 >       "title": "Session Timeout Seconds",
 >       "type": "integer"
+>     },
+>     "auth_organization_claim": {
+>       "default": "organization",
+>       "title": "Auth Organization Claim",
+>       "type": "string"
+>     },
+>     "tenancy_enabled": {
+>       "default": false,
+>       "title": "Tenancy Enabled",
+>       "type": "boolean"
+>     },
+>     "tenancy_operator_organization": {
+>       "default": "operators",
+>       "title": "Tenancy Operator Organization",
+>       "type": "string"
+>     },
+>     "tenancy_operator_role": {
+>       "default": "atlas-operator",
+>       "title": "Tenancy Operator Role",
+>       "type": "string"
+>     },
+>     "tenancy_refresh_seconds": {
+>       "default": 30,
+>       "minimum": 0,
+>       "title": "Tenancy Refresh Seconds",
+>       "type": "number"
 >     }
 >   },
 >   "required": [
@@ -661,6 +687,11 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `auth_groups_claim` (`str`)
 > - `auth_ca_file` (`FilePath | None`)
 > - `session_timeout_seconds` (`int`)
+> - `auth_organization_claim` (`str`)
+> - `tenancy_enabled` (`bool`)
+> - `tenancy_operator_organization` (`str`)
+> - `tenancy_operator_role` (`str`)
+> - `tenancy_refresh_seconds` (`float`)
 >
 > ### app\_search\_batch\_size
 >
@@ -877,6 +908,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The claim a user's groups are read from, else the realm roles: `atlas.authentication.method.keycloak .groups_claim` (AUT-03).
+>
+> ### auth\_organization\_claim
+>
+> ```
+> auth_organization_claim: str = 'organization'
+> ```
+>
+> The claim a token names its organizations in, as Keycloak's `organization` scope writes it (TEN-02).
 >
 > ### auth\_principal\_claim
 >
@@ -1276,6 +1315,38 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > Whether propagation is deferred to tasks a worker runs after the request: `atlas.tasks.enabled` (TSK-02, DD-081).
 >
+> ### tenancy\_enabled
+>
+> ```
+> tenancy_enabled: bool = False
+> ```
+>
+> Whether a request acts in the one organization its token names (TEN-01, TEN-03). Off by default, and not to be turned on before each tenant has its own stores (DD-566).
+>
+> ### tenancy\_operator\_organization
+>
+> ```
+> tenancy_operator_organization: str = 'operators'
+> ```
+>
+> The organization whose members run the platform; always provisioned (TEN-04, DD-567).
+>
+> ### tenancy\_operator\_role
+>
+> ```
+> tenancy_operator_role: str = 'atlas-operator'
+> ```
+>
+> The realm role that marks an operator, who holds at most `atlas-read` in other tenants (TEN-06).
+>
+> ### tenancy\_refresh\_seconds
+>
+> ```
+> tenancy_refresh_seconds: float = 30
+> ```
+>
+> How long the server serves its last read of the tenants index before it reads it again, and how long `provisioning remove` waits before it deletes a tenant's indices (TPR-05, TPR-07, DD-575).
+>
 > ### tls
 >
 > ```
@@ -1331,6 +1402,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > The settings of the Elasticsearch store.
+>
+> ### tenancy
+>
+> ```
+> tenancy() -> Tenancy | None
+> ```
+>
+> How tenancy reads a token while `tenancy_enabled`, else None: no request has a tenant (TEN-01). The provisioned tenants come from the tenants index (TPR-07), so none are listed here.
 
 ## Design
 
@@ -1372,7 +1451,7 @@ Functions:
   The token verifier: the provider's tokens for the server's client and the further audiences (AUT-02).
 - **`build_oidc`** –
 
-  The server's client at the provider, which browsers sign in with (AUT-05).
+  The server's client at the provider, which browsers sign in with (AUT-05); `tenancy` answers the latest
 - **`create_app`** –
 
   Build the application.
@@ -1430,10 +1509,16 @@ The token verifier: the provider's tokens for the server's client and the furthe
 ### build\_oidc
 
 ```
-build_oidc(settings: ServerSettings, auth: KeycloakAuth, http: AsyncClient | None = None) -> OidcClient
+build_oidc(
+    settings: ServerSettings,
+    auth: KeycloakAuth,
+    http: AsyncClient | None = None,
+    *,
+    tenancy: Callable[[], Tenancy | None] | None = None,
+) -> OidcClient
 ```
 
-The server's client at the provider, which browsers sign in with (AUT-05).
+The server's client at the provider, which browsers sign in with (AUT-05); `tenancy` answers the latest provisioned tenants while tenancy is on (TPR-07).
 
 ### create\_app
 
