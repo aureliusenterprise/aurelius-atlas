@@ -11,6 +11,7 @@ from aurelius_atlas_server.routes.search_by_meaning import SEARCH_BY_MEANING
 from aurelius_atlas_server.routes.types import TYPES
 from aurelius_atlas_server.routes.view_entity import VIEW_ENTITY
 from aurelius_atlas_server.routes.view_search import VIEW_SEARCH
+from aurelius_atlas_server.routes.view_types import VIEW_TYPES
 
 __all__ = [
     "ADMIN",
@@ -26,4 +27,5 @@ __all__ = [
     "TYPES",
     "VIEW_ENTITY",
     "VIEW_SEARCH",
+    "VIEW_TYPES",
 ]
