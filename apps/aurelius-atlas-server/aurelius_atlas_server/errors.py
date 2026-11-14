@@ -39,10 +39,15 @@ async def atlas_error_handler(_request: Request, error: Exception) -> AtlasJSONR
     wrapped store or transport failure cannot leak internals; the id ties the response to the
     logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) —
     there the cause is the request's own defect, not server internals.
+
+    An error that refuses several problems at once adds ``messages``, one text each (AVR-13, DD-588): the
+    Aurelius error shape beside the one ``errorMessage`` a single refusal has.
     """
     if not isinstance(error, AtlasError):  # pragma: no cover - registered for AtlasError only
         raise error
     body: dict[str, Any] = {"errorCode": error.code.code, "errorMessage": error.message}
+    if error.messages:
+        body["messages"] = error.messages
     headers: dict[str, str] = {}
     if error.code.http_status >= 500:  # noqa: PLR2004 - server errors are logged, as Atlas does
         LOGGER.error("Atlas error %s: %s", error.code.code, error.message, exc_info=error.cause)

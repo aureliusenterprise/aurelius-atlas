@@ -462,6 +462,7 @@ class AtlasErrorCode(Enum):
     TYPE_HAS_RELATIONSHIPS = (409, "ATLAS-409-00-005", "Given type {0} has associated relationshipDefs")
     INTERNAL_ERROR = (500, "ATLAS-500-00-001", "Internal server error {0}")
     # Aurelius's own, for its endpoints beside Atlas's: none of Atlas's answers them (SBM-05, SBM-06, DD-440).
+    VIEW_REFUSED = (400, "AURELIUS-400-00-001", "The view door refuses the request: {0}")
     EMBEDDING_OFF = (404, "AURELIUS-404-00-001", "Search by meaning is off: no embedding service is configured")
     NO_EMBEDDING = (409, "AURELIUS-409-00-001", "Entity {0} has no embedding yet")
     EMBEDDER_UNAVAILABLE = (503, "AURELIUS-503-00-001", "The embedding service could not embed the query: {0}")
@@ -469,6 +470,8 @@ class AtlasErrorCode(Enum):
     NO_TENANT = (403, "AURELIUS-403-00-001", "{0} acts in no tenant: the token names no organization")
     SEVERAL_TENANTS = (403, "AURELIUS-403-00-002", "{0} acts in no tenant: the token names {1} organizations")
     TENANT_NOT_PROVISIONED = (403, "AURELIUS-403-00-003", "Tenant {0} is not provisioned")
+    # Aurelius's own, for a door of the view family whose caller may not read (AVR-01, AVR-10, DD-588).
+    VIEW_FORBIDDEN = (403, "AURELIUS-403-00-004", "{0} is not authorized to read the catalogue")
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK = (
         409,
         "ATLAS-500-00-006",
@@ -586,13 +589,24 @@ def message_format(template: str, *params: object) -> str:
 
 
 class AtlasError(Exception):
-    """An error the Atlas API answers with its own status and body (``AtlasBaseException``)."""
+    """An error the Atlas API answers with its own status and body (``AtlasBaseException``).
 
-    def __init__(self, code: AtlasErrorCode, *params: object, cause: BaseException | None = None) -> None:
+    ``messages`` holds one text per refusal where an endpoint refuses several problems at once (AVR-13); the
+    handler answers it as ``messages`` beside the one ``errorMessage``, the Aurelius error shape.
+    """
+
+    def __init__(
+        self,
+        code: AtlasErrorCode,
+        *params: object,
+        cause: BaseException | None = None,
+        messages: Iterable[str] | None = None,
+    ) -> None:
         self.code = code
         self.params = params
         self.message = code.message(*params)
         self.cause = cause
+        self.messages = list(messages) if messages else None
         super().__init__(self.message)
 
     @classmethod
