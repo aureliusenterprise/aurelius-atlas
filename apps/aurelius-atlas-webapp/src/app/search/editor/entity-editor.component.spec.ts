@@ -1683,6 +1683,50 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(line.querySelector(".icon.has-text-success")).toBeNull();
     });
 
+    it("a definition verdict rides both controls once each (EDT-24, DD-633)", () => {
+        // The chain carries a `definition` attribute beside `description`: both
+        // markdown controls render (EDT-03's kindOf), and each verdict names one
+        // control (12.7a, DD-633): the description control keeps its own
+        // verdict, and the definition verdict rides the definition control.
+        const defs: AtlasTypesDef = {
+            ...TYPEDEFS,
+            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                def.name === "Asset"
+                    ? {
+                          ...def,
+                          attributeDefs: [...(def.attributeDefs ?? []), { name: "definition", typeName: "string" }],
+                      }
+                    : def,
+            ),
+        };
+        const { fixture, compiled, httpMock } = setup();
+        arriveSlices(fixture, httpMock, false);
+        httpMock.expectOne((request) => request.url.startsWith(VIEW_URL)).flush(ANSWER);
+        fixture.detectChanges();
+        arriveChain(httpMock, "DataSet", chainFor(defs, "DataSet"));
+        fixture.detectChanges();
+
+        httpMock.expectOne(VALIDATE_URL).flush({
+            verdicts: [
+                govVerdict("definition", "This entity has a definition", true),
+                govVerdict("description", "This entity has a description", true),
+            ],
+            unreadRules: [],
+        });
+        fixture.detectChanges();
+
+        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
+        expect(lines).toHaveLength(2);
+        const definitionLine = lines.find((line) =>
+            line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-definition"),
+        );
+        const descriptionLine = lines.find((line) =>
+            line.closest(".aurelius-editor-field")?.querySelector("textarea#editor-description"),
+        );
+        expect(definitionLine && normalize(definitionLine.textContent)).toBe("This entity has a definition");
+        expect(descriptionLine && normalize(descriptionLine.textContent)).toBe("This entity has a description");
+    });
+
     it("a create draft is validated too, with the seeded type (EDT-23)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
         arriveTypeDefs(fixture, httpMock, "DataSet", DATASET_CHAIN, false);

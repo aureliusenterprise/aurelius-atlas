@@ -16,8 +16,10 @@ auth=None)` builds the verifier and the leg, mounts the routers, configures the 
 - `aurelius_atlas_validate_entity/globals.py` — `NAME`, `LOGGER`, the healthcheck
   status (VE-04), the Atlas error code
 - `aurelius_atlas_validate_entity/verdicts.py` — `VerdictEngine`: the paged ACTIVE-rule
-  search of `m4i_gov_data_quality`, the `RULES_CACHE_SECONDS` cache, the verdict assembly
-  over the draft's attributes, the unread-rule recording (VEV-02/03/05, DD-498, DV-146)
+  search of `m4i_gov_data_quality`, the `RULES_CACHE_SECONDS` cache (the whole read; the
+  type filter runs per call, DD-631), the verdict assembly over the draft's record (its
+  attributes and picks, VEV-08), the draft-type scoping by the rule's qualified-name
+  prefix (VEV-07, DD-631), the unread-rule recording (VEV-02/03/05/07/08, DD-498..632, DV-146)
 - `aurelius_atlas_validate_entity/errors.py` — `UpstreamError` (the leg's 502, VEV-06),
   `DraftRejectedError` (VEV-01's 400), `atlas_error` (the Atlas body)
 - `aurelius_atlas_validate_entity/providers/` — `auth.py` (`build_auth`, the shared
@@ -45,13 +47,15 @@ auth=None)` builds the verifier and the leg, mounts the routers, configures the 
 ## Rules the app keeps
 
 The VEV/VE rules live in
-`apps/aurelius-atlas-validate-entity/specs/12-7-governance-verdicts/spec.md` (8.3's and
+`apps/aurelius-atlas-validate-entity/specs/12-7-governance-verdicts/spec.md` and its
+amendment `specs/12-7a-governance-verdict-scoping/spec.md` (8.3's and
 8.6's specs hold the history: the mock, the failure posture); tests cite them with
 `@pytest.mark.covers(..., rules=["VEV-NN"])` (ADR 056). The engine half is
 `aurelius-atlas-quality` (GQ, 12.6); the legacy reference is `.scratch/aurelius`
 (`backend/m4i-validate-entity/`) — the mock it answered with retired at 12.7 (DV-153
-supersedes DV-67, ADR 061); the trigger contract (POST the draft, read only its
-`attributes`) survives in the webapp (EDT-23).
+supersedes DV-67, ADR 061); the trigger contract (POST the draft, read its `attributes`,
+its `typeName`, and its `relationshipAttributes` picks — nothing else, VEV-01 as amended
+by 12.7a) survives in the webapp (EDT-23).
 
 ## Wiring Checklist
 

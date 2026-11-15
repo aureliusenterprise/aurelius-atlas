@@ -56,14 +56,13 @@ type EnumRow = { value: string };
 type EditorValue = string | number | boolean | string[] | null;
 
 /** The description pair (DET-10, DD-320): the product treats the two keys as
- * one description, so a verdict of one names a control of the other — the
- * legacy's types carry `definition`, this catalogue's carry `description`
- * (EDT-24 as amended by 12.7: a `definition` verdict banners the
- * `description` control, the legacy's own alias kept — DD-498; the map keeps
- * its 7.24 name). */
+ * one description, and the legacy's types carry `definition` where this
+ * catalogue's carry `description`. The alias runs one way, as the legacy's
+ * `gov-quality-display` card did (EDT-24 as amended by 12.7a, DD-633): a
+ * `definition` verdict names the `description` control; a `description`
+ * verdict names only its own (the map keeps its 7.24 name). */
 const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
     description: ["description", "definition"],
-    definition: ["definition", "description"],
 };
 
 /**
@@ -707,17 +706,28 @@ export class EntityEditor {
     }
 
     /** The verdicts that measure a rendered control (EDT-24 as amended by
-     * 12.7, DD-498): the answer's flat array grouped by `attribute`, keeping
-     * the legacy's description pair ({@link GOV_CONTROL_KEYS}). A control no
-     * rule measures renders nothing; `unreadRules` renders no line (VEV-03). */
+     * 12.7/12.7a, DD-498/DD-633): the answer's flat array grouped by
+     * `attribute`. The description control borrows the `definition` verdict
+     * only while the form has no `definition` control of its own — the
+     * legacy's one-way alias, and each verdict sits once on a type that
+     * carries both. A control no rule measures renders nothing; `unreadRules`
+     * renders no line (VEV-03). */
     protected validationItems(name: string): readonly GovernanceVerdict[] {
         const answer = this.validation();
         if (!answer) {
             return [];
         }
+        // While the form has no `definition` control, the description control
+        // borrows the `definition` verdict (the legacy's alias). With both
+        // controls rendered, each verdict names its own (DD-633).
+        const hasDefinitionControl = this.fields().some((field) => field.name === "definition");
         const keys = GOV_CARD_KEYS[name] ?? [name];
 
-        return answer.verdicts.filter((verdict) => keys.includes(verdict.attribute));
+        return answer.verdicts.filter(
+            (verdict) =>
+                keys.includes(verdict.attribute) &&
+                !(name === "description" && hasDefinitionControl && verdict.attribute === "definition"),
+        );
     }
 
     /** A fresh signal form over {@link values}, with the current field set's
