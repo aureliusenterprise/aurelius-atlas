@@ -664,7 +664,7 @@ def _purge_type(page: Page, root_url: str, token: str, type_name: str) -> None:
 
 @pytest.mark.critical
 def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, root_url: str, user_token: str) -> None:
-    """The hero field searches: seeded hits, the count, the card → details link (SRH-01..SRH-05).
+    """The hero field searches: seeded hits, the count, the parentless card trail (SRH-01..SRH-05).
 
     A query submitted in the hero's search field runs POST
     ``/api/aurelius/v1/search`` (16.5a, VSR-03), rides into
@@ -693,14 +693,13 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     for name in names:
         expect(rows.filter(has_text=name)).to_have_count(1)
 
-    # VCF-02 (16.5d): the rich results card carries the trail — the door's
-    # stored breadcrumb plus the card's own active crumb. These seeds have
-    # no parent, so the trail is the one crumb: the entity's own name,
-    # marked active — the same rule the details header renders (VDR-06).
+    # VDR-11 (16.5g): these seeds have no parent, and the trail rule asks a
+    # stored parent — the legacy guard drew no trail for a parentless entity,
+    # since the one crumb would repeat the card's own title (DD-630). The
+    # trail body renders nothing; the filled trail rides the seeded-parentage
+    # scenario below (VDR-06, DD-606).
     trail = rows.filter(has_text=names[0]).locator(".aurelius-card-trail")
-    expect(trail.locator("li")).to_have_count(1)
-    expect(trail.locator("li").first).to_have_text(names[0])
-    expect(trail.locator("li").first).to_have_class(re.compile("is-active"))
+    expect(trail.locator("nav")).to_have_count(0)
 
     # The card → details deep link (SRH-05): the clicked guid rides the URL,
     # and the header renders the live entity the read answers (7.20, DET-09).
