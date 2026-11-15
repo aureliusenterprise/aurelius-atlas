@@ -360,13 +360,13 @@ describe("Details data spine (DET-08..DET-13)", () => {
         expect(navigate).toHaveBeenCalledWith(["/search/details", "g2"]);
     });
 
-    it("an entity without a document shows its own crumb alone (VDR-06)", () => {
+    it("an entity without a stored parent shows no trail (VDR-06 amended, VDR-11, DD-630)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock); // ANSWER carries no breadcrumb
 
-        const crumbs = [...compiled.querySelectorAll("nav.breadcrumb li")];
-        expect(crumbs.map((crumb) => normalize(crumb.textContent))).toEqual(["genomic_variants"]);
-        expect(crumbs[0].classList.contains("is-active")).toBe(true);
+        // The legacy guard draws no trail for a parentless entity: the one
+        // crumb would repeat the title right above it (DD-630).
+        expect(compiled.querySelector("nav.breadcrumb")).toBeNull();
     });
 
     it("shows the localized loading line while the first read is in flight (DET-13)", () => {

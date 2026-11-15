@@ -131,6 +131,17 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         expect(normalize(crumbs[1].textContent)).toContain("x2");
     });
 
+    it("a card without a stored parent draws no trail (VDR-11, DD-630)", () => {
+        // The shared rule: the one crumb would repeat the card's own title,
+        // so the legacy guard's shape leaves no trail (results rows ride
+        // this too, VCF-04).
+        const { fixture, host } = mount({ ...CARD, breadcrumb: [] });
+        expect(fixture.nativeElement.querySelector(".aurelius-card-trail nav")).toBeNull();
+        // The card still routes by its title (VCF-01).
+        fixture.nativeElement.querySelector(".title.is-4 a").click();
+        expect(host.last).toBe("e1");
+    });
+
     it("renders the classification chips by display name (DD-379)", () => {
         const { fixture } = mount(CARD);
         const chips = [...fixture.nativeElement.querySelectorAll("aurelius-atlas-ui-classification-chip")];
