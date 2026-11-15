@@ -117,7 +117,7 @@ def test__a_user_is_named_by_the_configured_claims() -> None:
     f"{C}.sign_in",
     f"{A}.SessionStore.renew",
     f"{A}.set_session_cookie",
-    rules=["AUT-05", "AUT-09"],
+    rules=["AUT-05", "AUT-09", "RLM-03"],
 )
 async def test__a_browser_signs_in_at_the_provider(
     anonymous: tuple[FastAPI, httpx.AsyncClient], issuer: FakeIssuer

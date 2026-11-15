@@ -95,9 +95,14 @@ docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
 
 `list` shows the tenants, `trust acme off` closes a tenant to the operators, and `remove acme` deletes its
 indices, about a minute after it stops serving the tenant. The server picks up a new tenant within
-`tenancy_refresh_seconds`, 30 by default, without a restart. The demo realm has no organizations yet: until
-15.5, a tenant's organization, its `/atlas-*` groups and its members are set up by hand in Keycloak's admin
-console, and the server's client needs the `organization` scope.
+`tenancy_refresh_seconds`, 30 by default, without a restart.
+
+The demo realm has the organization `operators`, whose member `atlas` runs the platform, and the sample tenant
+`acme`, the organization the command above provisions: `steward` writes there, `scientist` reads, and `atlas`
+reads as an operator. At sign-in, `atlas` chooses which of the two to act in; to switch, sign out and in again.
+Until 15.5b, another tenant's organization, its `/atlas-*` groups and its members are added by hand in
+Keycloak's admin console. The realm is imported at the stack's first start only, so a stack started before
+keeps its realm until `down -v`.
 
 ## How it fits together
 

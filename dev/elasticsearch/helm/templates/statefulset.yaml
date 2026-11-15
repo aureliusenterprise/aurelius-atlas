@@ -128,6 +128,11 @@ spec:
                           mountPath: /usr/share/elasticsearch/config/elasticsearch.yml
                           subPath: elasticsearch.yml
                           readOnly: true
+                        - name: chart-roles
+                          # The store's roles (RLM-08): the operators' read role.
+                          mountPath: /usr/share/elasticsearch/config/roles.yml
+                          subPath: roles.yml
+                          readOnly: true
                         - name: logs
                           # GC + server logs off the (read-only) root (DD-282
                           # Tier 3); not persisted — the cluster's logs ride
@@ -183,6 +188,9 @@ spec:
                     # it at the image's ES_PATH_CONF (DD-282 Tier 3).
                     emptyDir: {}
                 -   name: chart-config
+                    configMap:
+                        name: {{ $fullname }}
+                -   name: chart-roles
                     configMap:
                         name: {{ $fullname }}
                 -   name: logs
