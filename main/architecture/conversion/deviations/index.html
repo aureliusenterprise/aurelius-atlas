@@ -7815,6 +7815,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The corpus is the dev store, and its rules were wrong for the product's rule; the parity oracle is frozen output of the old data, so the three 14.6 gates re-baseline with the damage named per document (the user's decision, DD-635). Every other oracle verdict still answers as it was.</td>
 <td>12.7b</td>
 </tr>
+<tr>
+<td>DV-172</td>
+<td>App Search</td>
+<td>The frozen <code>atlas-dev</code> oracle judged the sample corpus's field and data-entity rules as one-name rules: <code>length('datasets', 1)</code> over the field's datasets and <code>length('attributes', 1)</code> over the entity's attributes (DV-146's read set).</td>
+<td>Those two rules are OR pairs too - <code>length('datasets', 1) \| length('parentField', 1)</code> and <code>length('attributes', 1) \| length('childEntity', 1)</code> - so a nested struct field reached through its parent, or an entity carrying content on its children, answers as data (12.7c, DD-637). The oracle falsifies for exactly the two edited rules: 280 verdict documents carry the old description, 17 verdicts pass through the alternative, 2 records carry new names.</td>
+<td>The metamodel carries both ends of every hierarchy edge, so the one-sided warning is wrong on a node the other end places - the same contention class as DV-171. The three 14.6 gates re-baseline with the damage named per document (the user's decision, DD-637). Every other oracle verdict still answers as it was.</td>
+<td>12.7c</td>
+</tr>
 </tbody>
 </table>
 
