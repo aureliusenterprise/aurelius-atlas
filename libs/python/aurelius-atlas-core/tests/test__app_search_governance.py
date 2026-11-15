@@ -411,7 +411,7 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
 
 @pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04"])
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
-    """45 of 95 rules read; 2,558 verdicts; 1,583 of the 1,612 legacy verdicts of a rule that reads as it
+    """43 of 95 rules read; 2,030 verdicts; 1,583 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
 
     DV-171 and DV-172: the sample corpus's four hierarchy rules are OR pairs — the two dataset pairs
@@ -419,14 +419,17 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
     dataset or its parent field; a data entity's attribute or its child entity, DV-172). Each pair judges
     verdicts the frozen oracle never carried, and 29 legacy verdicts now pass through the alternative the
     oracle's one-name rule did not measure.
+
+    DV-173: the two field-flag rules (`hasContent`, `optionalField`) are inactive, so 528 verdicts the
+    frozen oracle never carried leave the read set. Every legacy verdict still answers as it was.
     """  # noqa: D205 - one sentence
     read, rules, verdicts = sample_verdicts()
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
 
-    assert (read, rules) == (45, 95)
+    assert (read, rules) == (43, 95)
     assert (len(verdicts), Counter(verdict["compliant"] for verdict in verdicts.values())) == (
-        2558,
-        Counter({"1": 1767, "0": 791}),
+        2030,
+        Counter({"1": 1767, "0": 263}),
     )
     kept = [document for document in legacy if document["id"] in verdicts]
     assert len(kept) == 1612
