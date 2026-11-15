@@ -7946,6 +7946,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>12.7d</td>
+<td>The two field-flag rules retire</td>
+<td><code>m4i_field--hasContent</code> and <code>m4i_field--optionalField</code> go <code>active: false</code> in both sample bundles, so every field stops carrying two nag warnings for two optional flags (DD-638). The requested boolean flip is blocked upstream: Atlas refuses to retype a stored attribute (TDS-08), so a flipped model would reach only new stores - toggles there and text boxes elsewhere, forever. The attributes stay optional strings; VEV-03/ASG-03 take the retired rules out of the verdicts, the editor and the read set with no code change</td>
+<td>none (the 12.7b retirement precedent, DD-635; the oracle never carried these two rules, so DV-173 records only Aurelius-side shrink)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>13.1</td>
 <td>The Kafka cluster scanner</td>
 <td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the broker-and-Registry e2e stack (KSC-01..10, DD-465..469; the stack joined the app's <code>e2e/</code> with DD-541)</td>

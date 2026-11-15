@@ -7823,6 +7823,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The metamodel carries both ends of every hierarchy edge, so the one-sided warning is wrong on a node the other end places - the same contention class as DV-171. The three 14.6 gates re-baseline with the damage named per document (the user's decision, DD-637). Every other oracle verdict still answers as it was.</td>
 <td>12.7c</td>
 </tr>
+<tr>
+<td>DV-173</td>
+<td>App Search</td>
+<td>The frozen <code>atlas-dev</code> oracle judged 27 rules of the corpus and its verdict documents never carried the two field-flag rules <code>m4i_field--hasContent</code> and <code>m4i_field--optionalField</code>, though the corpus ships both active and Aurelius judged them over all 264 fields.</td>
+<td>Both records now carry <code>active: false</code> (12.7d, DD-638), the 12.7b retirement precedent (DD-635), so the two nag warnings leave the drawer, the details box and the rule pages. The two attributes stay optional strings: Atlas refuses to retype a stored attribute (TDS-08, <code>INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED</code> on import), so the requested boolean flip cannot reach an existing store.</td>
+<td>The retirement moves Aurelius closer to the oracle: 528 verdict documents leave the index and the parity set is untouched (1,612 kept, 29 pair moves, 16 missing-guid all hold). The governance gate re-baselines to 43 read and 2,030 verdicts; the other two gates stand as they are.</td>
+<td>12.7d</td>
+</tr>
 </tbody>
 </table>
 
