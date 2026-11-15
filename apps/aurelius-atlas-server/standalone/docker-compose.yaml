@@ -88,6 +88,10 @@ services:
             DEMO_USER_ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:?}
             DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:?}
             DEMO_USER_SCIENTIST_PASSWORD: ${DEMO_USER_SCIENTIST_PASSWORD:?}
+            # The tenant meyn's users have passwords of their own, as every tenant's do (README.md, Tenants).
+            MEYN_USER_ATLAS_PASSWORD: ${MEYN_USER_ATLAS_PASSWORD:?}
+            MEYN_USER_STEWARD_PASSWORD: ${MEYN_USER_STEWARD_PASSWORD:?}
+            MEYN_USER_SCIENTIST_PASSWORD: ${MEYN_USER_SCIENTIST_PASSWORD:?}
             # The platform's operator, who reads every tenant and administers the store (README.md, Tenants).
             DEMO_USER_OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}

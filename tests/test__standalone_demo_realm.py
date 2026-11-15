@@ -86,3 +86,15 @@ def test__stack_signs_in_to_demo_alone(services: dict[str, Any], realm: dict[str
     assert sample["TOKEN_URL"] == "https://localhost:9000/auth/realms/demo/protocol/openid-connect/token"  # noqa: S105 - a URL
     assert sample["ATLAS_USERNAME"] == "demo_atlas"
     assert sample["ATLAS_PASSWORD"] == "${DEMO_USER_ATLAS_PASSWORD:-}"  # noqa: S105 - a placeholder
+
+
+@pytest.mark.covers(rules=["DMO-02", "RLM-06"])
+def test__each_tenants_users_have_passwords_of_their_own(realm: dict[str, Any]) -> None:
+    """No two users share a password placeholder: a tenant's people never know another tenant's passwords."""
+    people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
+    placeholders = {user["username"]: user["credentials"][0]["value"] for user in people}
+    assert len(set(placeholders.values())) == len(placeholders)
+    for name, placeholder in placeholders.items():
+        tenant, _, role = name.partition("_")
+        if role:
+            assert placeholder == f"${{{tenant.upper()}_USER_{role.upper()}_PASSWORD}}", name

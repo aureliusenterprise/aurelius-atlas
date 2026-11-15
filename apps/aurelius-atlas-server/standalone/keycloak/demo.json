@@ -313,7 +313,7 @@
             "credentials": [
                 {
                     "type": "password",
-                    "value": "${DEMO_USER_ATLAS_PASSWORD}"
+                    "value": "${MEYN_USER_ATLAS_PASSWORD}"
                 }
             ],
             "email": "meyn.atlas@aureliusenterprise.com",
@@ -329,7 +329,7 @@
             "credentials": [
                 {
                     "type": "password",
-                    "value": "${DEMO_USER_STEWARD_PASSWORD}"
+                    "value": "${MEYN_USER_STEWARD_PASSWORD}"
                 }
             ],
             "email": "meyn.steward@aureliusenterprise.com",
@@ -345,7 +345,7 @@
             "credentials": [
                 {
                     "type": "password",
-                    "value": "${DEMO_USER_SCIENTIST_PASSWORD}"
+                    "value": "${MEYN_USER_SCIENTIST_PASSWORD}"
                 }
             ],
             "email": "meyn.scientist@aureliusenterprise.com",

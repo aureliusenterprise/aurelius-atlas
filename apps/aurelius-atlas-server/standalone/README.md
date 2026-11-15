@@ -22,9 +22,11 @@ and the platform's `operator` (DD-366, see Tenants):
 | `demo_scientist`, `meyn_scientist` | `atlas-read`                                              | Read the types and the entities                                       |
 | `operator`                         | `atlas-read`                                              | Read every tenant, and administer the store                           |
 
-The passwords are by role, the same for a tenant's user and the other's: `DEMO_USER_ATLAS_PASSWORD`,
-`DEMO_USER_STEWARD_PASSWORD`, `DEMO_USER_SCIENTIST_PASSWORD` and `DEMO_USER_OPERATOR_PASSWORD` in the dev
-Keycloak's `.env`, decrypted from its `.env.enc`.
+Each tenant's users have passwords of their own, named `<TENANT>_USER_<ROLE>_PASSWORD`: demo's
+`DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`, meyn's
+`MEYN_USER_ATLAS_PASSWORD`, `MEYN_USER_STEWARD_PASSWORD` and `MEYN_USER_SCIENTIST_PASSWORD`, and the
+operator's `DEMO_USER_OPERATOR_PASSWORD`, in the dev Keycloak's `.env`, decrypted from its `.env.enc`. A tenant
+added to the realm gets three more, so no tenant's people know another's passwords.
 
 The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
