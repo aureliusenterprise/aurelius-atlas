@@ -31,6 +31,22 @@ const PERSON_ATTRIBUTE = "m4i_person";
 @Component({
     selector: "aurelius-atlas-webapp-catalogue-card",
     imports: [Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox],
+    // The demo's card body is a stack of blocks with a 16px gap; here the
+    // body is the slotted content of the shell, so the rhythm lives on
+    // [card-content]: a flex column with a fixed gap, and the chips field
+    // with Bulma's -12px pull removed so the gap measures clean. (VCF-03)
+    styles: [
+        `
+            [card-content] {
+                display: flex;
+                flex-direction: column;
+                gap: 16px;
+            }
+            [card-content] .field.is-grouped {
+                margin-bottom: 0;
+            }
+        `,
+    ],
     template: `
         <aurelius-atlas-ui-entity-card
             [guid]="card().guid"
