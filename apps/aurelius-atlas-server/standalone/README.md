@@ -118,6 +118,8 @@ port, so it is reached from the stack's network. `TENANT_SAMPLE` names the expor
 starts with, `sample_data.zip` by default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into
 demo, not into the stack's own catalogue.
 
+To add a tenant of your own that lasts, follow the user guide's page `docs/user-guide/standalone-tenants.md`.
+
 At sign-in, a person in several organizations, such as `operator`, chooses which to act in. The webapp shows
 the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by
 signing out and in. Another tenant is provisioned by the server's command, run in the server's image with its
