@@ -7953,6 +7953,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>12.7e</td>
+<td>The system rule becomes a pair</td>
+<td>The sample corpus's system rule becomes an OR pair (<code>length('collections', 1) \| length('childSystem', 1)</code>), so a system that groups its content through subsystems answers as data (DD-639) - the user's product call, extending the pair idiom of 12.7b/12.7c to the system edge (<code>m4i_system_parent_assignment</code>, which DD-637's audit had tested only from the parent end). No rule is retired and no code changes; no sample system holds a subsystem, so no verdict moves and the two systems without a collection keep failing. Reuses the 12.7b machinery (<code>anyOf</code>, VEV-09); the three 14.6 gates re-baseline under DV-174</td>
+<td>none (the metamodel carries both ends of the system edge; the webapp already shows <code>childSystem</code> as Subsystems; DV-174 carves the oracle damage for the edited rule)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>13.1</td>
 <td>The Kafka cluster scanner</td>
 <td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the broker-and-Registry e2e stack (KSC-01..10, DD-465..469; the stack joined the app's <code>e2e/</code> with DD-541)</td>
