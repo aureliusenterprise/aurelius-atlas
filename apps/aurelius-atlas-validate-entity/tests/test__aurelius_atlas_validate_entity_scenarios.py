@@ -22,6 +22,7 @@ NAME_RULE = rule_entity(
     "Dataset has a name",
     {
         "name": "Dataset has a name",
+        "qualifiedName": "m4i_dataset--name",
         "active": True,
         "dqcheckkind": "ATTRIBUTE_PRESENT",
         "dqattribute": "name",
@@ -34,6 +35,7 @@ FIELDS_RULE = rule_entity(
     "Dataset has a field",
     {
         "name": "Dataset has a field",
+        "qualifiedName": "m4i_dataset--fields",
         "active": True,
         "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
         "dqattribute": "fields",
@@ -41,8 +43,23 @@ FIELDS_RULE = rule_entity(
         "nonCompliantMessage": "This dataset should have at least one field",
     },
 )
+SYSTEM_NAME_RULE = rule_entity(
+    "rule-system-name",
+    "System has a name",
+    {
+        "name": "System has a name",
+        "qualifiedName": "m4i_system--name",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "name",
+        "compliantMessage": "This system has a name",
+        "nonCompliantMessage": "This system should have a name",
+    },
+)
+"""The m4i_system corpus's own name record (VEV-07): a foreign draft must not answer it."""
 """The scenario's rules: the m4i_dataset corpus's own name/fields records, in 12.6's shape
-(``.scratch/aurelius/libs/m4i-governance-data-quality/.../definitions/m4i_dataset.json``)."""
+(``.scratch/aurelius/libs/m4i-governance-data-quality/.../definitions/m4i_dataset.json``),
+beside the m4i_system name record of the same corpus (12.7a, VEV-07)."""
 
 
 def _bearer(token: str) -> dict[str, str]:
@@ -55,7 +72,7 @@ def scenario_catalogue(catalogue: FakeCatalogue) -> FakeCatalogue:
     """The fake catalogue answering the rule walk with the scenario's two rules."""
 
     def handler(_request: httpx.Request) -> httpx.Response:
-        return FakeCatalogue.json(200, search_result([NAME_RULE, FIELDS_RULE], "-1"))
+        return FakeCatalogue.json(200, search_result([NAME_RULE, FIELDS_RULE, SYSTEM_NAME_RULE], "-1"))
 
     catalogue.handler = handler
     return catalogue

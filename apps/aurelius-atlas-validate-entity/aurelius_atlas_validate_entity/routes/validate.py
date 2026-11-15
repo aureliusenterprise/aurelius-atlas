@@ -56,9 +56,11 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
         read runs as the app's own identity, never the caller's (VEV-04). The
         model of the body requires an entity object whose ``attributes`` is a JSON
         object — anything else is the 400 of VEV-01, in the Atlas error body. The
-        rest of the body is ignored: a verdict reads attributes, not relationships.
+        draft's ``typeName`` names the rules that judge it (VEV-07) and its
+        ``relationshipAttributes`` ride the record the checks read (VEV-08);
+        classifications and the rest of the body stay ignored (VEV-01).
         """
         engine = request.app.state.engine
-        return await engine.evaluate_draft(body.attributes)
+        return await engine.evaluate_draft(body)
 
     return router

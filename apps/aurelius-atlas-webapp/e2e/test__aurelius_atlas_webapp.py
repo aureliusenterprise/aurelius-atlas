@@ -2327,9 +2327,11 @@ def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, 
     """Seed one ACTIVE governance rule through the proxy; return its real guid (12.7, VEV-02).
 
     The banner test seeds through the catalogue — the same store the deployed
-    validate-entity app reads — with the run's word in every visible string:
-    the dev store also carries the m4i sample corpus's rules, so the assertions
-    name this run's sentences and never count the banner's total lines.
+    validate-entity app reads — with the run's word in every visible string.
+    A rule answers only the drafts of the type its qualifiedName names (VEV-07),
+    so the default prefix is the editor's own DataSet type; a caller seeding for
+    another type (the person box) passes its qualifiedName in ``attributes``.
+    The assertions still name this run's sentences (DD-223).
     """
     name = attributes["name"]
     body = {
@@ -2340,7 +2342,7 @@ def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, 
                 # `id` is mandatory on the type (isOptional: false): the create must
                 # carry it, the legacy editor's create seeds -1 (the rules editor's
                 # idiom in quality-fields.ts); the attribute is not unique.
-                "attributes": {"qualifiedName": name, "id": -1, **attributes},
+                "attributes": {"qualifiedName": f"DataSet--{name}", "id": -1, **attributes},
             }
         ]
     }
@@ -2367,9 +2369,11 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
     the seeded rules answer. The drawer renders one line per verdict whose
     attribute names a rendered control (EDT-24): the DataSet editor carries
     ``name`` and the description key, so this run's success line appears under
-    Name and its refusal line, warning-iconed, under Description. Lines are
-    keyed by this run's sentences — the shared store's corpus rules ride the
-    answer too, and that is not this test's failure (DD-223). Self-cleaned.
+    Name and its refusal line, warning-iconed, under Description. Since 12.7a
+    the answer carries only DataSet's own rules (VEV-07, DD-631): the sample
+    corpus's m4i rules — the ones that once warned a dataset about a missing
+    ``kibanaSpace`` — stay out, which the exact per-field line counts pin
+    beside the run-keyed lookups. Self-cleaned.
     """
     run = secrets.token_hex(4)
     name = f"zz{run}govbanner"
@@ -2414,10 +2418,13 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
 
         # The open round renders the lines without any edit (EDT-23's trigger),
         # each under its own control (EDT-24's keying), icon by the verdict.
+        # The unfiltered counts are the VEV-07 proof: no foreign rule's line
+        # rides either control — the drawer shows exactly this run's two.
         name_field = drawer.locator(".aurelius-editor-field", has=authenticated.locator("#editor-name"))
         ok = name_field.locator("[data-gov-line]").filter(has_text=ok_line)
         expect(ok).to_have_count(1)
         expect(ok.locator(".icon.has-text-success")).to_have_count(1)
+        expect(name_field.locator("[data-gov-line]")).to_have_count(1)
 
         description_field = drawer.locator(
             ".aurelius-editor-field", has=authenticated.locator("textarea#editor-description")
@@ -2425,6 +2432,7 @@ def test__the_editor_shows_the_governance_banner(authenticated: Page, root_url: 
         warn = description_field.locator("[data-gov-line]").filter(has_text=warn_line)
         expect(warn).to_have_count(1)
         expect(warn.locator(".icon.has-text-warning")).to_have_count(1)
+        expect(description_field.locator("[data-gov-line]")).to_have_count(1)
     finally:
         _delete_entity(authenticated, root_url, user_token, guid)
         for rule_guid in rule_guids:

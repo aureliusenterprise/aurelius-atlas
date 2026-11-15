@@ -1,4 +1,4 @@
-"""The rules door: the paged read, the cache, the assembly, the breaker (VEV-02/03/05/06; DD-498, DD-500).
+"""The rules door: the paged read, the cache, the assembly, the breaker (VEV-02/03/05/06/07/08; DD-498, DD-631/632).
 
 The fake catalogue answers the search; the breaker is the app's real one with
 its test-sized bounds. No issuer and no HTTP server: the door speaks to the
@@ -12,6 +12,7 @@ import httpx2 as httpx
 import pytest
 from aurelius_atlas_server_client.client import AtlasClient
 from aurelius_atlas_validate_entity.errors import UpstreamError
+from aurelius_atlas_validate_entity.models import DraftEntity
 from aurelius_atlas_validate_entity.providers import server_breaker
 from aurelius_atlas_validate_entity.settings import ValidateEntitySettings
 from aurelius_atlas_validate_entity.verdicts import RULE_ATTRIBUTES, VerdictEngine, is_active
@@ -23,27 +24,111 @@ NAME_RULE = rule_entity(
     "Name present",
     {
         "name": "Name present",
+        "qualifiedName": "m4i_dataset--name-present",
         "active": True,
         "dqcheckkind": "ATTRIBUTE_PRESENT",
         "dqattribute": "name",
         "compliantMessage": "This entity has a name",
     },
 )
+SYSTEM_NAME_RULE = rule_entity(
+    "rule-system-name",
+    "System name present",
+    {
+        "name": "System name present",
+        "qualifiedName": "m4i_system--name",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "name",
+        "compliantMessage": "This system has a name",
+    },
+)
+"""A readable rule of another type (VEV-07): it judges a system, never a dataset draft."""
+
+UNPREFIXED_RULE = rule_entity(
+    "rule-unprefixed",
+    "Breaks the convention",
+    {
+        "name": "Breaks the convention",
+        "qualifiedName": "nobody-owns-me",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "name",
+    },
+)
+"""A readable rule whose qualified name names no type (VEV-07): it enters no call at all."""
+
 INACTIVE_RULE = rule_entity(
     "rule-inactive",
     "Turned off",
-    {"name": "Turned off", "active": False, "dqcheckkind": "ATTRIBUTE_PRESENT", "dqattribute": "owner"},
+    {
+        "name": "Turned off",
+        "qualifiedName": "m4i_dataset--turned-off",
+        "active": False,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "owner",
+    },
 )
 EXPRESSION_RULE = rule_entity(
     "rule-expression",
     "Legacy expression",
-    {"name": "Legacy expression", "expression": "uniqueness('qualifiedName')"},
+    {
+        "name": "Legacy expression",
+        "qualifiedName": "m4i_dataset--legacy-expression",
+        "expression": "uniqueness('qualifiedName')",
+    },
 )
 WRONG_KIND_RULE = rule_entity(
     "rule-wrong-kind",
     "Unknown kind",
-    {"name": "Unknown kind", "dqcheckkind": "REGEX_MATCH", "dqattribute": "name"},
+    {
+        "name": "Unknown kind",
+        "qualifiedName": "m4i_dataset--wrong-kind",
+        "dqcheckkind": "REGEX_MATCH",
+        "dqattribute": "name",
+    },
 )
+SYSTEM_EXPRESSION_RULE = rule_entity(
+    "rule-system-expression",
+    "System legacy expression",
+    {
+        "name": "System legacy expression",
+        "qualifiedName": "m4i_system--kafkaClusters",
+        "expression": "uniqueness('qualifiedName')",
+    },
+)
+"""An unread rule of another type (VEV-07): unread for its own drafts, silent for the rest."""
+
+FIELDS_RULE = rule_entity(
+    "rule-fields",
+    "Dataset has a field",
+    {
+        "name": "Dataset has a field",
+        "qualifiedName": "m4i_dataset--fields",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
+        "dqattribute": "fields",
+        "compliantMessage": "This dataset has at least one field",
+        "nonCompliantMessage": "This dataset should have at least one field",
+    },
+)
+"""A rule over a relationship attribute (VEV-08, DD-632): the draft's picks answer it."""
+
+
+def _draft(
+    attributes: dict[str, Any],
+    *,
+    type_name: str | None = "m4i_dataset",
+    relationships: dict[str, Any] | None = None,
+) -> DraftEntity:
+    """One browser draft, as the model parses it (VEV-01 amended): keys as the wire names them."""
+    return DraftEntity.model_validate(
+        {
+            "attributes": attributes,
+            **({"typeName": type_name} if type_name is not None else {}),
+            **({"relationshipAttributes": relationships} if relationships is not None else {}),
+        }
+    )
 
 
 def _engine(catalogue: FakeCatalogue, settings: ValidateEntitySettings) -> tuple[VerdictEngine, httpx.AsyncClient]:
@@ -77,7 +162,7 @@ async def test__one_rule_answers_one_verdict(engine_settings: ValidateEntitySett
     _one_page(catalogue, NAME_RULE)
     engine, http = _engine(catalogue, engine_settings)
 
-    answer = await engine.evaluate_draft({"name": "Sales Orders"})
+    answer = await engine.evaluate_draft(_draft({"name": "Sales Orders"}))
     await http.aclose()
 
     (verdict,) = answer.verdicts
@@ -107,10 +192,71 @@ async def test__inactive_rules_neither_run_nor_ride_unread(engine_settings: Vali
     _one_page(catalogue, NAME_RULE, INACTIVE_RULE)
     engine, http = _engine(catalogue, engine_settings)
 
-    answer = await engine.evaluate_draft({"name": "x"})
+    answer = await engine.evaluate_draft(_draft({"name": "x"}))
     await http.aclose()
 
     assert [verdict.rule_guid for verdict in answer.verdicts] == ["rule-name"]
+    assert answer.unread_rules == []
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft",
+    "aurelius_atlas_validate_entity.verdicts._rule_type",
+    rules=["VEV-07"],
+)
+async def test__another_types_rule_answers_nothing_at_all(
+    engine_settings: ValidateEntitySettings,
+) -> None:
+    """The draft is judged by its own type's rules: a foreign verdict and unread ride nothing (VEV-07, DD-631).
+
+    The store holds one rule per type (LAS-13): the m4i_system name rule is a system's,
+    the m4i_system expression rule unread for systems. Over a dataset draft both are
+    silent — no verdict, no unread entry — while the dataset's own rules answer.
+    """
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, NAME_RULE, SYSTEM_NAME_RULE, EXPRESSION_RULE, SYSTEM_EXPRESSION_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    answer = await engine.evaluate_draft(_draft({"name": "Sales Orders"}))
+    await http.aclose()
+
+    assert [verdict.rule_guid for verdict in answer.verdicts] == ["rule-name"]
+    assert [entry.rule_guid for entry in answer.unread_rules] == ["rule-expression"]
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft",
+    "aurelius_atlas_validate_entity.verdicts._rule_type",
+    rules=["VEV-07"],
+)
+async def test__a_rule_naming_no_type_judges_nothing(engine_settings: ValidateEntitySettings) -> None:
+    """A qualified name without the ``--`` names no type: the rule answers no draft, and is no news (VEV-07).
+
+    The details box hides the same rule from its rows (DET-42's prefix search), so both
+    surfaces keep it silent — a broken convention goes nowhere, everywhere.
+    """
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, UNPREFIXED_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    answer = await engine.evaluate_draft(_draft({"name": "Sales Orders"}))
+    await http.aclose()
+
+    assert answer.verdicts == []
+    assert answer.unread_rules == []
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft", rules=["VEV-07"])
+async def test__a_draft_without_a_type_is_judged_by_nothing(engine_settings: ValidateEntitySettings) -> None:
+    """No type, no join: the readable rules of the read answer nothing (VEV-07)."""
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, NAME_RULE, EXPRESSION_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    answer = await engine.evaluate_draft(_draft({"name": "Sales Orders"}, type_name=None))
+    await http.aclose()
+
+    assert answer.verdicts == []
     assert answer.unread_rules == []
 
 
@@ -121,7 +267,7 @@ async def test__an_unread_rule_rides_the_unread_list_never_executed(engine_setti
     _one_page(catalogue, EXPRESSION_RULE, WRONG_KIND_RULE)
     engine, http = _engine(catalogue, engine_settings)
 
-    answer = await engine.evaluate_draft({"name": "x"})
+    answer = await engine.evaluate_draft(_draft({"name": "x"}))
     await http.aclose()
 
     assert answer.verdicts == []
@@ -144,11 +290,11 @@ async def test__the_search_walk_pages_to_the_end_marker(engine_settings: Validat
     catalogue.handler = lambda _request: next(pages)
     engine, http = _engine(catalogue, engine_settings)
 
-    rules = await engine.rules()
+    entries = await engine.rules()
     await http.aclose()
 
-    assert len(rules.rules) == 1
-    assert len(rules.unread) == 1
+    assert sum(1 for entry in entries if entry.check is not None) == 1
+    assert sum(1 for entry in entries if entry.check is None) == 1
     markers = [json.loads(request.content)["marker"] for request in catalogue.searches()]
     assert markers == ["*", "second"]
 
@@ -178,8 +324,8 @@ async def test__a_fresh_cache_window_answers_without_reading(engine_settings: Va
     _one_page(catalogue, NAME_RULE)
     engine, http = _engine(catalogue, engine_settings)
 
-    missing = await engine.evaluate_draft({})
-    filled = await engine.evaluate_draft({"name": "x"})
+    missing = await engine.evaluate_draft(_draft({}))
+    filled = await engine.evaluate_draft(_draft({"name": "x"}))
     await http.aclose()
 
     assert len(catalogue.searches()) == 1
@@ -221,7 +367,7 @@ async def test__a_failed_read_caches_nothing_and_answers_502(engine_settings: Va
 
     assert raised.value.status_code == 502
     assert len(catalogue.searches()) == 2
-    assert rules.rules == ()
+    assert rules == ()
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.rules", rules=["VEV-06"])
@@ -259,3 +405,59 @@ async def test__outages_open_the_circuit_and_a_fact_resets_the_count(engine_sett
 
     assert "fast-failing" in str(raised.value)
     assert len(catalogue.searches()) == calls_before  # the open circuit answered without calling
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts._draft_record",
+    rules=["VEV-08"],
+)
+async def test__the_picks_landed_on_a_picker_answer_its_rule(engine_settings: ValidateEntitySettings) -> None:
+    """The draft's relationship picks ride the record the check reads (VEV-08, DD-632).
+
+    The corpus's ``length('fields', 1)`` shape: a list of entries holds content by
+    its length and a cleared picker (``null``) holds none — ASG-04's reading of a
+    stored entity's ends, kept for the draft's own picks. A key the draft does not
+    carry is a missing value, and an empty list stays no content: the picker's
+    answer changes with what the person picks (EDT-23's trigger).
+    """
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, FIELDS_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    empty = await engine.evaluate_draft(_draft({"name": "Sales Orders"}))
+    picked = await engine.evaluate_draft(
+        _draft({"name": "Sales Orders"}, relationships={"fields": [{"guid": "f1", "typeName": "m4i_field"}]})
+    )
+    cleared = await engine.evaluate_draft(_draft({"name": "Sales Orders"}, relationships={"fields": None}))
+    zero = await engine.evaluate_draft(_draft({"name": "Sales Orders"}, relationships={"fields": []}))
+    await http.aclose()
+
+    assert [verdict.compliant for verdict in empty.verdicts] == [False]
+    assert [verdict.compliant for verdict in picked.verdicts] == [True]
+    assert [verdict.compliant for verdict in cleared.verdicts] == [False]
+    assert [verdict.compliant for verdict in zero.verdicts] == [False]
+    assert picked.verdicts[0].message == "This dataset has at least one field"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts._draft_record",
+    rules=["VEV-08"],
+)
+async def test__a_draft_value_carried_wrapped_reads_bare(engine_settings: ValidateEntitySettings) -> None:
+    """A ``{"raw": …}`` draft value is the value: the unwrapping the rule read always applied (VEV-08, DD-632).
+
+    A wrapped empty used to count as content (a non-empty dict), flipping compliance —
+    the same DV-132 wrapper the rule attributes read bare since 12.7.
+    """
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, FIELDS_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    wrapped_empty = await engine.evaluate_draft(_draft({"name": "x"}, relationships={"fields": {"raw": []}}))
+    wrapped_one = await engine.evaluate_draft(
+        _draft({"name": "x"}, relationships={"fields": {"raw": [{"guid": "f1"}]}})
+    )
+    await http.aclose()
+
+    assert [verdict.compliant for verdict in wrapped_empty.verdicts] == [False]
+    assert [verdict.compliant for verdict in wrapped_one.verdicts] == [True]

@@ -8,6 +8,8 @@ import {
     type SearchParameters,
 } from "aurelius-atlas-data-access";
 
+import { entityFromView } from "../../editor/view-as-entity";
+
 /** The rule type's own name: the box lists the rules written for a type (DET-42). */
 const RULE_TYPE_NAME = "m4i_gov_data_quality";
 
@@ -188,12 +190,16 @@ export class DetailsGovQualityState {
      * call, unchanged (EDT-21's client). Its answer joins the rows on
      * `ruleGuid`; a failure leaves the rules iconless (the same swallow,
      * and the verdicts are the box's decoration, never its data).
-     * @param entity the opened entity, sent as the draft (the aux API reads
-     *   its attributes only, VEV-01 — a view's carry the same values)
+     * Since 12.7a the draft rides `entityFromView` (DD-608's helper, the
+     * editor's own shape): the aux API reads the type, the attributes, and
+     * the picks (VEV-01 as amended, VEV-08), so a relationship rule's row
+     * here answers with the ends the view carries — the same verdict the
+     * editor's banner paints for the same entity (DD-632).
+     * @param entity the opened entity, folded into the draft shape
      * @param generation the round the answer belongs to
      */
     private readVerdicts(entity: EntityView, generation: number): void {
-        this.validateEntity.validateEntity(entity).subscribe({
+        this.validateEntity.validateEntity(entityFromView(entity)).subscribe({
             next: (answer: EntityValidationResponse) => {
                 if (this.generation !== generation) {
                     return;

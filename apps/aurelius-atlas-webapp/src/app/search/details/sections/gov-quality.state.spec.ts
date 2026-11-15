@@ -93,12 +93,48 @@ describe("Gov-quality store (DET-42)", () => {
                 attributeValue: "m4i_person--",
             },
         });
-        // The verdict read runs beside the search, on the opened entity.
+        // The verdict read runs beside the search, over the opened entity in
+        // the draft shape (DD-632): entityFromView's Atlas-shaped body, the
+        // pick-less person carrying an empty relationshipAttributes.
         const validate = httpMock.expectOne(VALIDATE_URL);
-        expect(validate.request.body).toEqual(PERSON);
+        expect(validate.request.body).toEqual({
+            guid: "pe-1",
+            typeName: "m4i_person",
+            status: "ACTIVE",
+            attributes: { name: "Ada" },
+            classifications: [],
+            relationshipAttributes: {},
+        });
 
         request.flush({ entities: [] });
         validate.flush({ verdicts: [], unreadRules: [] });
+        httpMock.verify();
+    });
+
+    it("the draft the verdict read posts carries the view's sections as picks (VEV-08, DD-632)", () => {
+        const { store, httpMock } = setup();
+        store.load({
+            ...PERSON,
+            classificationNames: ["Finance"],
+            sections: [{ attribute: "fields", entities: [{ guid: "f-1", name: "amount", typeName: "m4i_field" }] }],
+        });
+
+        const request = httpMock.expectOne(VALIDATE_URL);
+        // The end the view carries rides relationshipAttributes (DD-608's
+        // helper, the editor's shape), so a relationship rule answers the box
+        // with the ends on record instead of refusing them (VEV-08).
+        expect(request.request.body).toEqual({
+            guid: "pe-1",
+            typeName: "m4i_person",
+            status: "ACTIVE",
+            attributes: { name: "Ada" },
+            classifications: [{ typeName: "Finance", entityGuid: "pe-1" }],
+            relationshipAttributes: {
+                fields: [{ guid: "f-1", typeName: "m4i_field", displayText: "amount", relationshipStatus: "ACTIVE" }],
+            },
+        });
+        request.flush({ verdicts: [], unreadRules: [] });
+        httpMock.expectOne(SEARCH_URL).flush({ entities: [] });
         httpMock.verify();
     });
 
