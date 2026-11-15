@@ -38,6 +38,19 @@ CHILD_RULE = rule_entity(
     },
 )
 """The sample corpus's ``completeness('childDataset')`` record, in the vocabulary shape."""
+PAIR_RULE = rule_entity(
+    "rule-dataset-fields-pair",
+    "Dataset has a field or a child dataset",
+    {
+        "name": "Dataset has a field or a child dataset",
+        "qualifiedName": "m4i_dataset--fields",
+        "active": True,
+        "expression": "length('fields', 1) | length('childDataset', 1)",
+        "compliantMessage": "This dataset has a field or a child dataset",
+        "nonCompliantMessage": "This dataset should have a field or a child dataset",
+    },
+)
+"""The paired corpus rule (DV-171): the ``|`` expression reads with ``childDataset`` as its alternative."""
 DRAFT = {"guid": "e-in", "typeName": "m4i_dataset", "attributes": {"name": "Sales Orders"}}
 
 
@@ -166,6 +179,45 @@ async def test__an_empty_picker_answers_its_presence_rule_as_missing(
     assert [verdict["compliant"] for verdict in cleared.json()["verdicts"]] == [False]
     assert [verdict["compliant"] for verdict in picked.json()["verdicts"]] == [True]
     assert picked.json()["verdicts"][0]["message"] == "This entity has a childDataset"
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-09"])
+async def test__the_alternatives_of_an_or_rule_ride_the_wire(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """The whole-body answer of the paired rule: ``anyOf`` names the alternative (VEV-09).
+
+    A one-attribute rule's verdict omits the key wholly: the answer the screen
+    reads carries ``anyOf`` only where the rule measures more than one name.
+    """
+    _answers_one_page(catalogue, PAIR_RULE, CHILD_RULE)
+    bearer = _bearer(token())
+
+    answer = await client.post("/", json=DRAFT, headers=bearer)
+
+    assert answer.status_code == 200
+    assert answer.json() == {
+        "verdicts": [
+            {
+                "ruleGuid": "rule-dataset-fields-pair",
+                "ruleName": "Dataset has a field or a child dataset",
+                "attribute": "fields",
+                "anyOf": ["childDataset"],
+                "dimension": "COMPLETENESS",
+                "compliant": False,
+                "message": "This dataset should have a field or a child dataset",
+            },
+            {
+                "ruleGuid": "rule-dataset-child",
+                "ruleName": "Dataset has a child",
+                "attribute": "childDataset",
+                "dimension": "COMPLETENESS",
+                "compliant": False,
+                "message": "This entity is missing a childDataset",
+            },
+        ],
+        "unreadRules": [],
+    }
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-01"])

@@ -1727,6 +1727,44 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(descriptionLine && normalize(descriptionLine.textContent)).toBe("This entity has a description");
     });
 
+    it("an anyOf verdict paints under each control the rule names (EDT-24, VEV-09, DD-636)", () => {
+        // The paired rule measures two names: its verdict carries `attribute`
+        // plus `anyOf` and sits once under each control it names — the fields
+        // rule's line rides both the fields picker and the child picker.
+        const pair = {
+            ruleGuid: "rule-fields-pair",
+            ruleName: "Dataset has a field or a child dataset",
+            attribute: "inputToProcesses",
+            anyOf: ["model"],
+            dimension: "COMPLETENESS",
+            compliant: true,
+            message: "This dataset has a field or a child dataset",
+        };
+        const solo = {
+            ...pair,
+            ruleGuid: "rule-model",
+            ruleName: "Dataset has a model",
+            attribute: "model",
+            message: "This dataset has a model",
+        };
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, RA_ANSWER, raChain(), false);
+        httpMock.expectOne(VALIDATE_URL).flush({ verdicts: [pair, solo], unreadRules: [] });
+        fixture.detectChanges();
+
+        const lines = [...compiled.querySelectorAll<HTMLElement>("[data-gov-line]")];
+        expect(lines).toHaveLength(3); // once per control per naming verdict — no copies
+        const inputs = [...compiled.querySelectorAll<HTMLElement>('[data-field="inputToProcesses"] [data-gov-line]')];
+        const models = [...compiled.querySelectorAll<HTMLElement>('[data-field="model"] [data-gov-line]')];
+        expect(inputs.map((line) => normalize(line.textContent))).toEqual([
+            "This dataset has a field or a child dataset",
+        ]);
+        expect(models.map((line) => normalize(line.textContent))).toEqual([
+            "This dataset has a field or a child dataset",
+            "This dataset has a model",
+        ]);
+    });
+
     it("a create draft is validated too, with the seeded type (EDT-23)", () => {
         const { fixture, compiled, httpMock } = setup({ create: true, createType: "DataSet" });
         arriveTypeDefs(fixture, httpMock, "DataSet", DATASET_CHAIN, false);

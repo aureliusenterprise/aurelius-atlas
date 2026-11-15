@@ -19,6 +19,13 @@ export type GovernanceVerdict = {
     ruleName: string;
     /** The entity attribute the rule measures: the banner groups by it. */
     attribute: string;
+    /**
+     * The other attributes the rule measures beside its first — the `|`
+     * alternatives of a stored expression (GQ-06, VEV-09). Absent when the
+     * rule measures one attribute; the editor paints the verdict under each
+     * name it carries.
+     */
+    anyOf?: string[];
     /** The rule's quality dimension, e.g. `COMPLETENESS`. */
     dimension: string;
     /** The verdict: whether the draft passes the rule. */
