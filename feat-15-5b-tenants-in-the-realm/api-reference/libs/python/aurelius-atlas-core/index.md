@@ -2686,6 +2686,9 @@ Attributes:
 - **`breadcrumbname`** (`list[str | None]`) –
 - **`breadcrumbtype`** (`list[str]`) –
 - **`definition`** (`str`) –
+- **`derivation_version`** (`int`) –
+
+  The derivation rules the document was made under, folded into `source_hash` (ASD-07, DD-628).
 - **`derivedcollection`** (`list[str | None]`) –
 - **`derivedcollectionguid`** (`list[str]`) –
 - **`deriveddataattribute`** (`list[str | None]`) –
@@ -2694,8 +2697,20 @@ Attributes:
 - **`deriveddatadomainguid`** (`list[str]`) –
 - **`deriveddataentity`** (`list[str | None]`) –
 - **`deriveddataentityguid`** (`list[str]`) –
+- **`deriveddataowner`** (`list[str | None]`) –
+- **`deriveddataownerguid`** (`list[str]`) –
+
+  The ends of the `businessOwner` relationship attribute (ASD-06).
 - **`deriveddataset`** (`list[str | None]`) –
 - **`deriveddatasetguid`** (`list[str]`) –
+- **`deriveddatasteward`** (`list[str | None]`) –
+- **`deriveddatastewardguid`** (`list[str]`) –
+
+  The ends of the `steward` relationship attribute (ASD-06).
+- **`deriveddomainlead`** (`list[str | None]`) –
+- **`deriveddomainleadguid`** (`list[str]`) –
+
+  The ends of the `domainLead` relationship attribute, names and GUIDs (ASD-06); the legacy mapping
 - **`derivedfield`** (`list[str | None]`) –
 - **`derivedfieldguid`** (`list[str]`) –
 - **`derivedperson`** (`list[str | None]`) –
@@ -2741,6 +2756,16 @@ breadcrumbtype: list[str] = Field(default_factory=list)
 ```
 definition: str = ''
 ```
+
+#### derivation\_version
+
+```
+derivation_version: int = 1
+```
+
+The derivation rules the document was made under, folded into `source_hash` (ASD-07, DD-628).
+
+One stands for 14.2's documents, which carry no mark; a document of another version than the indexer's is what its round has to derive again.
 
 #### derivedcollection
 
@@ -2790,6 +2815,20 @@ deriveddataentity: list[str | None] = Field(default_factory=list)
 deriveddataentityguid: list[str] = Field(default_factory=list)
 ```
 
+#### deriveddataowner
+
+```
+deriveddataowner: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddataownerguid
+
+```
+deriveddataownerguid: list[str] = Field(default_factory=list)
+```
+
+The ends of the `businessOwner` relationship attribute (ASD-06).
+
 #### deriveddataset
 
 ```
@@ -2801,6 +2840,34 @@ deriveddataset: list[str | None] = Field(default_factory=list)
 ```
 deriveddatasetguid: list[str] = Field(default_factory=list)
 ```
+
+#### deriveddatasteward
+
+```
+deriveddatasteward: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddatastewardguid
+
+```
+deriveddatastewardguid: list[str] = Field(default_factory=list)
+```
+
+The ends of the `steward` relationship attribute (ASD-06).
+
+#### deriveddomainlead
+
+```
+deriveddomainlead: list[str | None] = Field(default_factory=list)
+```
+
+#### deriveddomainleadguid
+
+```
+deriveddomainleadguid: list[str] = Field(default_factory=list)
+```
+
+The ends of the `domainLead` relationship attribute, names and GUIDs (ASD-06); the legacy mapping declared the GUID field, its pipeline never filled it (DD-626).
 
 #### derivedfield
 

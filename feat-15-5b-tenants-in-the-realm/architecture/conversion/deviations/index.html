@@ -7778,9 +7778,9 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <tr>
 <td>DV-167</td>
 <td>Webapp</td>
-<td>The demo card body leads with a breadcrumb trail and names each person in the body with their role (Data Owner(s), Domain Lead(s)); its badge can show a type alias</td>
-<td>The shared card shows the trail (the card's stored breadcrumb, VCF-01) but lists the people as one flat row of names (DD-617) and its badge never shows an alias: the card shape carries no <code>typeAlias</code>, and the document's derived person relations name no roles (the legacy per-role document arrays were never filled)</td>
-<td>A rich card without a false label: the opened entity's People box keeps the true labelled rows from the view's sections (VDR-03); the roles return when a source exists, and the alias with a card-shape field</td>
+<td>The demo card body leads with a breadcrumb trail and names each person in the body with their role (Data Owner(s), Domain Lead(s)); its badge can show a type alias. The demo resolves the roles through an entity read per card (amended by 16.5f, DD-626)</td>
+<td>The shared card shows the trail (the card's stored breadcrumb, VCF-01) and names each person with their role in labelled rows (ASD-06, AVS-10, VCF-15), the roles riding the stored document the indexer fills rather than a per-card read; a document still awaiting its re-derive round shows the flat row meanwhile (VCF-16). Its badge never shows an alias: the card shape carries no <code>typeAlias</code> (DD-626)</td>
+<td>The card stays one door round (ADR 064 R1), so a new role edge shows on a card only after the indexer's next round; the opened entity's People box keeps its labelled rows from the view's sections (VDR-03); the alias would need a card-shape field nobody asked for</td>
 <td>16.5d</td>
 </tr>
 <tr>
@@ -7798,6 +7798,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The switch stays out — VDR-03 seeds direct ends and the door has no derived-chain GUID filter; the funnel keeps the demo's mark (the glyph tinted primary for any state off the default — keyword, selection, sort, direction — DD-623) and the popover opens on hover like the legacy CSS and also on click, so the keyboard reaches it (VCF-08)</td>
 <td>Descendants need an engine-side chain filter the door never had (DD-620, DD-623)</td>
 <td>16.5e</td>
+</tr>
+<tr>
+<td>DV-170</td>
+<td>Webapp</td>
+<td>The sections' funnel asked one flat People facet per ownership section (the <code>derivedperson</code> engine field: the role arrays never held anything, DV-167).</td>
+<td>The funnel asks the three role groups - Domain Lead(s), Data Owner(s), Data Steward(s) - counting and filtering the cards' role relations (VCF-18, AVS-10).</td>
+<td>Aurelius fills and answers the roles (ASD-06), so the popover names each person's responsibility: the demo's labelled card rows carried into the filter (DD-629).</td>
+<td>16.5f</td>
 </tr>
 </tbody>
 </table>
