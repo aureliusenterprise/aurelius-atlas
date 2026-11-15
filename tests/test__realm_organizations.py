@@ -115,29 +115,37 @@ def test__in_the_dev_realm_people_and_service_accounts_act_in_the_operator_organ
 
 @pytest.mark.covers(rules=["RLM-06", "RLM-07"])
 def test__the_demo_realm_has_an_operator_and_the_two_tenants() -> None:
-    """``operator`` runs the platform and reads every organization; the tenants demo and meyn have atlas as their
-    administrator, steward writing and scientist reading; atlas is no operator; everyone keeps the server client's
-    roles.
+    """``operator`` runs the platform and reads every organization; each tenant, demo and meyn, has its own
+    administrator, steward and scientist, members of it alone; everyone keeps the server client's roles.
     """  # noqa: D205 - one sentence
     loaded = realm(DEMO_REALM)
     assert [org["alias"] for org in loaded["organizations"]] == ["operators", "demo", "meyn"]
-    assert memberships(loaded, "operators") == {"atlas": ROLES, "operator": ["atlas-read"]}
+    assert memberships(loaded, "operators") == {"operator": ["atlas-read"]}
     for tenant in ("demo", "meyn"):
         assert [group["name"] for group in organization(loaded, tenant)["groups"]] == ROLES
         assert memberships(loaded, tenant) == {
-            "atlas": ROLES,
-            "steward": ["atlas-read", "atlas-write"],
-            "scientist": ["atlas-read"],
+            f"{tenant}_atlas": ROLES,
+            f"{tenant}_steward": ["atlas-read", "atlas-write"],
+            f"{tenant}_scientist": ["atlas-read"],
             "operator": ["atlas-read"],
         }
     users = {user["username"]: user for user in loaded["users"]}
     assert {name for name, user in users.items() if "atlas-operator" in user.get("realmRoles", [])} == {"operator"}
-    assert [server_roles(users[name]) for name in ("atlas", "steward", "scientist", "operator")] == [
+    assert [server_roles(users[name]) for name in ("demo_atlas", "meyn_steward", "demo_scientist", "operator")] == [
         ROLES,
         ["atlas-read", "atlas-write"],
         ["atlas-read"],
         ["atlas-read"],
     ]
+    # a tenant's users belong to it alone, so they sign in without a choice; operator reads all three
+    owners: dict[str, list[str]] = {}
+    for org in loaded["organizations"]:
+        for member in org["members"]:
+            owners.setdefault(member["username"], []).append(org["alias"])
+    assert owners == {
+        **{f"{tenant}_{name}": [tenant] for tenant in ("demo", "meyn") for name in ("atlas", "steward", "scientist")},
+        "operator": ["operators", "demo", "meyn"],
+    }
 
 
 @pytest.mark.covers(rules=["RLM-07"])

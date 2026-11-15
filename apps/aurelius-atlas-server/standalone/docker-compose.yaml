@@ -184,7 +184,7 @@ services:
         volumes:
             - ../../aurelius-atlas-embedder/certs:/certs:ro
 
-    # One shot: waits for the server, signs in as the demo user atlas and posts SAMPLE_ZIP to admin/import, all
+    # One shot: waits for the server, signs in as the demo user demo_atlas and posts SAMPLE_ZIP to admin/import, all
     # through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
     sample-import:
         image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
@@ -196,7 +196,7 @@ services:
         environment:
             ATLAS_URL: https://localhost:9000/atlas2
             TOKEN_URL: https://localhost:9000/auth/realms/demo/protocol/openid-connect/token
-            ATLAS_USERNAME: atlas
+            ATLAS_USERNAME: demo_atlas
             ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:-}
             CA_FILE: /certs/ca.pem
             SAMPLE_DIR: /sample

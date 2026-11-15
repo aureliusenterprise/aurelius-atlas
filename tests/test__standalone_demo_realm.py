@@ -60,9 +60,9 @@ def test__demo_users_hold_all_write_and_read_rights(realm: dict[str, Any]) -> No
     users = {user["username"]: user for user in realm["users"] if "serviceAccountClientId" not in user}
     roles = {name: set(user["clientRoles"][SERVER_CLIENT]) for name, user in users.items()}
     assert roles == {
-        "atlas": set(ROLE_PRIVILEGES),
-        "steward": {"atlas-read", "atlas-write"},
-        "scientist": {"atlas-read"},
+        **{f"{tenant}_atlas": set(ROLE_PRIVILEGES) for tenant in ("demo", "meyn")},
+        **{f"{tenant}_steward": {"atlas-read", "atlas-write"} for tenant in ("demo", "meyn")},
+        **{f"{tenant}_scientist": {"atlas-read"} for tenant in ("demo", "meyn")},
         "operator": {"atlas-read"},
     }
     for user in users.values():
@@ -84,5 +84,5 @@ def test__stack_signs_in_to_demo_alone(services: dict[str, Any], realm: dict[str
     assert services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_REALM"] == "demo"
     sample = services["sample-import"]["environment"]
     assert sample["TOKEN_URL"] == "https://localhost:9000/auth/realms/demo/protocol/openid-connect/token"  # noqa: S105 - a URL
-    assert sample["ATLAS_USERNAME"] == "atlas"
+    assert sample["ATLAS_USERNAME"] == "demo_atlas"
     assert sample["ATLAS_PASSWORD"] == "${DEMO_USER_ATLAS_PASSWORD:-}"  # noqa: S105 - a placeholder

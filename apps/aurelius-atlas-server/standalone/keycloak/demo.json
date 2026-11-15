@@ -121,15 +121,6 @@
             ],
             "members": [
                 {
-                    "groups": [
-                        "de0e0000-0000-4000-8000-000000000001",
-                        "de0e0000-0000-4000-8000-000000000002",
-                        "de0e0000-0000-4000-8000-000000000003",
-                        "de0e0000-0000-4000-8000-000000000004"
-                    ],
-                    "username": "atlas"
-                },
-                {
                     "groups": ["de0e0000-0000-4000-8000-000000000001"],
                     "username": "operator"
                 }
@@ -166,15 +157,15 @@
                         "ded0000-0000-4000-8000-000000000003",
                         "ded0000-0000-4000-8000-000000000004"
                     ],
-                    "username": "atlas"
+                    "username": "demo_atlas"
                 },
                 {
                     "groups": ["ded0000-0000-4000-8000-000000000001", "ded0000-0000-4000-8000-000000000002"],
-                    "username": "steward"
+                    "username": "demo_steward"
                 },
                 {
                     "groups": ["ded0000-0000-4000-8000-000000000001"],
-                    "username": "scientist"
+                    "username": "demo_scientist"
                 },
                 {
                     "groups": ["ded0000-0000-4000-8000-000000000001"],
@@ -213,15 +204,15 @@
                         "dee0000-0000-4000-8000-000000000003",
                         "dee0000-0000-4000-8000-000000000004"
                     ],
-                    "username": "atlas"
+                    "username": "meyn_atlas"
                 },
                 {
                     "groups": ["dee0000-0000-4000-8000-000000000001", "dee0000-0000-4000-8000-000000000002"],
-                    "username": "steward"
+                    "username": "meyn_steward"
                 },
                 {
                     "groups": ["dee0000-0000-4000-8000-000000000001"],
-                    "username": "scientist"
+                    "username": "meyn_scientist"
                 },
                 {
                     "groups": ["dee0000-0000-4000-8000-000000000001"],
@@ -277,11 +268,11 @@
                     "value": "${DEMO_USER_ATLAS_PASSWORD}"
                 }
             ],
-            "email": "atlas@aureliusenterprise.com",
+            "email": "demo.atlas@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Atlas",
             "lastName": "Administrator",
-            "username": "atlas"
+            "username": "demo_atlas"
         },
         {
             "clientRoles": {
@@ -293,11 +284,11 @@
                     "value": "${DEMO_USER_STEWARD_PASSWORD}"
                 }
             ],
-            "email": "steward@aureliusenterprise.com",
+            "email": "demo.steward@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
             "lastName": "Steward",
-            "username": "steward"
+            "username": "demo_steward"
         },
         {
             "clientRoles": {
@@ -309,11 +300,59 @@
                     "value": "${DEMO_USER_SCIENTIST_PASSWORD}"
                 }
             ],
-            "email": "scientist@aureliusenterprise.com",
+            "email": "demo.scientist@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
             "lastName": "Scientist",
-            "username": "scientist"
+            "username": "demo_scientist"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_ATLAS_PASSWORD}"
+                }
+            ],
+            "email": "meyn.atlas@aureliusenterprise.com",
+            "enabled": true,
+            "firstName": "Atlas",
+            "lastName": "Administrator",
+            "username": "meyn_atlas"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_STEWARD_PASSWORD}"
+                }
+            ],
+            "email": "meyn.steward@aureliusenterprise.com",
+            "enabled": true,
+            "firstName": "Data",
+            "lastName": "Steward",
+            "username": "meyn_steward"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_SCIENTIST_PASSWORD}"
+                }
+            ],
+            "email": "meyn.scientist@aureliusenterprise.com",
+            "enabled": true,
+            "firstName": "Data",
+            "lastName": "Scientist",
+            "username": "meyn_scientist"
         },
         {
             "clientRoles": {

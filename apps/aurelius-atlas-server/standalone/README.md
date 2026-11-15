@@ -12,16 +12,19 @@ on port 9000. It is a way to try them by hand. `nx serve` and the e2e stacks are
 The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or
 `nx serve` write to the dev store (DD-367). Keycloak is the stack's own too, because the dev Keycloak's
 address is the issuer the other dev services trust (DD-363). At every start it imports the realm `demo` from
-`keycloak/demo.json`, with three users (DD-366):
+`keycloak/demo.json`, with three users per tenant, `demo` and `meyn`, each a member of its own tenant alone,
+and the platform's `operator` (DD-366, see Tenants):
 
-| User        | Roles                                                     | May                                                                   |
-| ----------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
-| `atlas`     | `atlas-read`, `atlas-write`, `atlas-types`, `atlas-admin` | Everything: the catalogue, the types, import, export and purge        |
-| `steward`   | `atlas-read`, `atlas-write`                               | Read and change the entities, their relationships and classifications |
-| `scientist` | `atlas-read`                                              | Read the types and the entities                                       |
+| User                               | Roles                                                     | May                                                                   |
+| ---------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------- |
+| `demo_atlas`, `meyn_atlas`         | `atlas-read`, `atlas-write`, `atlas-types`, `atlas-admin` | Everything: the catalogue, the types, import, export and purge        |
+| `demo_steward`, `meyn_steward`     | `atlas-read`, `atlas-write`                               | Read and change the entities, their relationships and classifications |
+| `demo_scientist`, `meyn_scientist` | `atlas-read`                                              | Read the types and the entities                                       |
+| `operator`                         | `atlas-read`                                              | Read every tenant, and administer the store                           |
 
-Their passwords are `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`
-in the dev Keycloak's `.env`, decrypted from its `.env.enc`.
+The passwords are by role, the same for a tenant's user and the other's: `DEMO_USER_ATLAS_PASSWORD`,
+`DEMO_USER_STEWARD_PASSWORD`, `DEMO_USER_SCIENTIST_PASSWORD` and `DEMO_USER_OPERATOR_PASSWORD` in the dev
+Keycloak's `.env`, decrypted from its `.env.enc`.
 
 The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
@@ -53,7 +56,7 @@ certgen aurelius-atlas-embedder`.
 ## A sample dataset
 
 `SAMPLE_ZIP` names an Apache Atlas export ZIP in `data/atlas-sample/` at the repository root. Once the server
-is ready, the `sample-import` service signs in as `atlas` and posts it to `admin/import`, through
+is ready, the `sample-import` service signs in as `demo_atlas` and posts it to `admin/import`, through
 the proxy. Without `SAMPLE_ZIP`, or when no file has that name, the option is ignored: the service logs why
 and exits, and the server runs as without it.
 
@@ -91,11 +94,13 @@ ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalo
 docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml logs tenants
 ```
 
-| Organization | `atlas`        | `steward`      | `scientist` | `operator` | Catalogue                             |
-| ------------ | -------------- | -------------- | ----------- | ---------- | ------------------------------------- |
-| `demo`       | all four roles | read and write | read        | read       | the sample, `TENANT_SAMPLE`           |
-| `meyn`       | all four roles | read and write | read        | read       | empty                                 |
-| `operators`  | all four roles |                |             | read       | the stack's catalogue without tenancy |
+| Organization | `<tenant>_atlas` | `<tenant>_steward` | `<tenant>_scientist` | `operator` | Catalogue                             |
+| ------------ | ---------------- | ------------------ | -------------------- | ---------- | ------------------------------------- |
+| `demo`       | all four roles   | read and write     | read                 | read       | the sample, `TENANT_SAMPLE`           |
+| `meyn`       | all four roles   | read and write     | read                 | read       | empty                                 |
+| `operators`  |                  |                    |                      | read       | the stack's catalogue without tenancy |
+
+A tenant's users belong to their tenant alone, so they sign in to it without a choice.
 
 `operator` runs the platform: it holds the operator role, so the server holds it at read access outside
 `operators`, and the one shot gives it a user of its own in the store, an admin of every index (ADR 063's direct
@@ -104,9 +109,10 @@ port, so it is reached from the stack's network. `TENANT_SAMPLE` names the expor
 starts with, `sample_data.zip` by default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into
 demo, not into the stack's own catalogue.
 
-At sign-in, a person in several organizations chooses which to act in. The webapp shows the tenant in its account
-menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in. Another
-tenant is provisioned by the server's command, run in the server's image with its settings:
+At sign-in, a person in several organizations, such as `operator`, chooses which to act in. The webapp shows
+the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by
+signing out and in. Another tenant is provisioned by the server's command, run in the server's image with its
+settings:
 
 ```bash
 ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
