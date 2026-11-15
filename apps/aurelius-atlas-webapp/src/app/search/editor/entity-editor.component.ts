@@ -20,7 +20,6 @@ import { map, Subscription } from "rxjs";
 import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
 import {
     QualityRuleService,
-    type AtlasEntity,
     type EntityValidationResponse,
     type GovernanceVerdict,
     ValidateEntityService,
@@ -44,6 +43,7 @@ import {
     seedRelationshipValues,
     toFormValues,
 } from "./form-fields";
+import { bodyFromEdits, picksAfterConflict, valuesAfterConflict } from "./view-as-entity";
 import { QualityFields, QUALITY_FIELDS_RELATIONSHIP, QUALITY_TYPE_NAME, storedCheckKind } from "./quality-fields";
 
 /** A picker row for the ui-lib {@link Select} (its `displayField` is `label`). */
@@ -254,16 +254,16 @@ export class EntityEditor {
     );
 
     /**
-     * The chosen tags that carry a name (EDT-05) — the template's tag row.
-     * The row keeps the raw `typeName` (the tooltip lookup and the remove
-     * emit ride it); the chip's label is the dictionary display name,
-     * rendered below (DD-379).
+     * The chosen tags (EDT-05, VDE-03) — the template's tag row. The box
+     * holds names since 16.5c; the row keeps the raw name (the tooltip
+     * lookup and the remove emit ride it); the chip's label is the
+     * dictionary display name, rendered below (DD-379).
      */
     protected readonly chosenTags = computed(() =>
         this.state
             .chosen()
-            .filter((tag) => typeof tag.typeName === "string" && tag.typeName !== "")
-            .map((tag) => ({ typeName: tag.typeName as string })),
+            .filter((name) => name !== "")
+            .map((name) => ({ typeName: name })),
     );
 
     /**
@@ -469,6 +469,15 @@ export class EntityEditor {
      */
     protected readonly outcomeLine = signal("");
 
+    /** Whether the last Save lost the version race (VDE-07, DD-610): one
+     * line above the form says the entity changed since it opened — no
+     * alert, no error page (DD-591's reload-and-reedit path). */
+    protected readonly conflictShown = signal(false);
+
+    /** The conflict line (VDE-07): the drawer stays open, the edits stay,
+     * and a second Save carries the stored version. */
+    protected readonly conflictLine = $localize`:@@search.components.editor.conflict:This entity changed since you opened it. Your edits are kept — save again to write them over the stored version.`;
+
     protected readonly savedLine = $localize`:@@search.components.editor.saved:Entity saved`;
 
     protected readonly deletedLine = $localize`:@@ENTITY_DELETE:Entity deleted`;
@@ -486,13 +495,24 @@ export class EntityEditor {
 
     constructor() {
         this.state.mode.set(this.isCreate ? "create" : "edit");
-        this.state.loadTypeDefs();
+        this.state.loadSlices();
 
-        // The entity read follows the route's guid (EDT-02) — edit mode only.
+        // The entity read follows the route's guid (EDT-02, VDE-01) — edit
+        // mode only. The read door's client answers it (DD-608).
         effect(() => {
             const guid = this.guid();
             if (!this.isCreate && guid) {
                 this.state.loadEntity(guid);
+            }
+        });
+
+        // The form's type material follows the rendered type (VDE-02, AVW-11):
+        // one chain read per type, cached by the door's client (DD-611). The
+        // store guards the repeat, so a re-pick of the same type asks nothing.
+        effect(() => {
+            const typeName = this.state.typeName();
+            if (typeName !== null) {
+                this.state.loadChain(typeName);
             }
         });
 
@@ -567,6 +587,28 @@ export class EntityEditor {
             }
         });
 
+        // The conflict's re-edit (VDE-07, DD-610): the store already moved
+        // the base to the stored view and re-seeded the tag box; here every
+        // control and picker the person never touched answers the stored
+        // value, and every one they changed keeps their value — the value
+        // comparison runs against the seed the old view gave (the signal
+        // form exposes no dirty flag). The line says the entity changed
+        // since it opened; the next Save rides the stored updateTime
+        // because the body now merges onto the new base. A lost race is
+        // not a mistake: no touched marking, no alert (DD-591).
+        effect(() => {
+            const event = this.state.conflict();
+            if (event === null) {
+                return;
+            }
+            this.values.set(valuesAfterConflict(event.from, event.to, this.fields(), this.values()));
+            this.relationshipValues.set(
+                picksAfterConflict(event.from, event.to, this.relationshipFields(), this.relationshipValues()),
+            );
+            this.conflictShown.set(true);
+            untracked(() => this.state.conflictHandled());
+        });
+
         // The multi lists repeat: the blank trailing row becomes real on
         // typing and a new blank row joins (EDT-03). The effect reads the
         // model, so it sees post-update values, unlike a DOM handler.
@@ -607,6 +649,14 @@ export class EntityEditor {
         // record is drafted, and the drawer stays usable.
         effect((onCleanup) => {
             if (!this.formVisible()) {
+                return;
+            }
+            // The chain answers first (VDE-02): in edit mode the for-type door
+            // is asked from the view's type, so it lands a beat after the read
+            // — and the draft's fields ride it. An open round before the chain
+            // would validate a field set the form never shows.
+            const renderedType = this.state.typeName();
+            if (renderedType !== null && !this.state.chainDefs().some((def) => def.name === renderedType)) {
                 return;
             }
             // The draft's sources, read so any change re-fires (EDT-23).
@@ -871,11 +921,10 @@ export class EntityEditor {
         this.suggestionsOpen.set(false);
     }
 
-    /** The chip's tooltip: the classification def's description (UIC-16). */
+    /** The chip's tooltip: the classification def's description (UIC-16),
+     * read off the classification slice (VDE-02, DD-612). */
     protected chipTooltip(typeName: string): string | undefined {
-        return (
-            this.state.typedefsDef()?.classificationDefs?.find((def) => def.name === typeName)?.description ?? undefined
-        );
+        return this.state.classificationDescription(typeName);
     }
 
     /** Remove a chosen tag (EDT-05). */
@@ -939,11 +988,35 @@ export class EntityEditor {
     }
 
     /**
-     * Save (EDT-06/07/16): invalid (a control, or a required picker with no
-     * chip, EDT-17) bails marked-touched; valid merges the attributes and the
-     * pickers' full lists onto the entity, and saves. The quality branch
-     * (EDT-28, DD-477) answers first: the draft rides the validate endpoint
-     * before the POST, and the POST body is the minimal quality body (EDT-27).
+     * The door body for the current draft (VDE-03/04/05, DD-609/612): the base
+     * view (edit) or null (create), the merged attribute map, the tag box's
+     * names, and one `sections` entry per picker this call renders. The quality
+     * branch passes its minimal rule body (EDT-27) and only the `fields` end.
+     * @param overrides the quality branch's full attribute map and rendered pickers
+     */
+    private doorBody(overrides: Partial<Parameters<typeof bodyFromEdits>[0]> = {}): ReturnType<typeof bodyFromEdits> {
+        const entity = this.state.entity();
+
+        return bodyFromEdits({
+            base: this.state.view(),
+            entity: entity ?? {},
+            typeName: entity?.typeName ?? "",
+            fields: this.fields(),
+            values: this.values() as Record<string, unknown>,
+            relationshipFields: this.relationshipFields(),
+            relationshipValues: this.relationshipValues(),
+            classifications: this.state.chosen(),
+            ...overrides,
+        });
+    }
+
+    /**
+     * Save (EDT-06/07/16, VDE-05): invalid (a control, or a required picker
+     * with no chip, EDT-17) bails marked-touched; valid posts one mutation-door
+     * body (DD-609) — attributes, tags, ends, and meanings in one request.
+     * The quality branch (EDT-28, DD-477) answers first: the draft rides the
+     * validate endpoint before the door POST, whose body is the minimal
+     * quality body (EDT-27).
      */
     protected save(): void {
         this.saveAttempted.set(true);
@@ -964,20 +1037,14 @@ export class EntityEditor {
         if (!entity?.typeName) {
             return;
         }
-        const merged = mergeOntoEntity(entity, this.fields(), this.values() as Record<string, unknown>);
-        const withRelationships = mergeRelationshipsOntoEntity(
-            merged,
-            this.relationshipFields(),
-            this.relationshipValues(),
-        );
 
-        this.state.save(withRelationships, entity.guid ?? "");
+        this.state.save(this.doorBody());
     }
 
     /**
-     * The quality-mode Save (EDT-28, DD-476/DD-477): the draft's stored-rule
-     * attributes ride 12.5's validate call first — a rule never saves
-     * unchecked. `{valid: true}` continues with the EDT-06 save over the
+     * The quality-mode Save (EDT-28, DD-476/DD-477, VDE-11): the draft's
+     * stored-rule attributes ride 12.5's validate call first — a rule never
+     * saves unchecked. `{valid: true}` continues with the door save over the
      * minimal body (EDT-27) plus the pickers rendered by quality mode (the
      * `fields` end); `{valid: false}` answers the engine's reason in the
      * child's notification line and does not POST (a later edit clears it,
@@ -996,16 +1063,15 @@ export class EntityEditor {
             return;
         }
         const attributes = qualityForm.draftAttributes();
-        const draft: AtlasEntity = { ...entity, attributes };
-        const withRelationships = mergeRelationshipsOntoEntity(
-            draft,
-            this.renderedRelationshipFields(),
-            this.relationshipValues(),
-        );
         this.qualityRule.validateRule(attributes).subscribe({
             next: (answer) => {
                 if (answer.valid) {
-                    this.state.save(withRelationships, entity.guid ?? "");
+                    this.state.save(
+                        this.doorBody({
+                            attributes,
+                            relationshipFields: this.renderedRelationshipFields(),
+                        }),
+                    );
                 } else {
                     qualityForm.showEngineReason(answer.reason ?? "");
                 }

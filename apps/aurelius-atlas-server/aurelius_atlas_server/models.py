@@ -139,3 +139,46 @@ class AppSearchRequest(AtlasModel):
     page: dict[str, Any] | None = None
     result_fields: dict[str, Any] | None = None
     search_fields: dict[str, Any] | None = None
+
+
+class ViewSearchRequest(AtlasModel):
+    """The request of ``POST /api/aurelius/v1/search`` (AVR-02, DD-584).
+
+    The door's own shape: flat ``limit``/``offset`` paging, ``filters`` by field
+    name or ``all``/``any``/``none``, ``facets`` a list of field names or an
+    object of them with sizes, ``sort`` one field or a list of them. The door
+    reads the raw body and answers any unknown key itself (AVR-13), so this
+    model documents the shape rather than enforcing it.
+    """
+
+    query: str | None = None
+    mode: str | None = None
+    """``keyword`` (default), ``semantic`` or ``hybrid`` (ASV-01)."""
+    filters: dict[str, Any] | None = None
+    facets: list[str] | dict[str, Any] | None = None
+    sort: Any = None
+    limit: int | None = None
+    offset: int | None = None
+
+
+class ViewSearchAnswer(AtlasModel):
+    """The answer of ``POST /api/aurelius/v1/search`` (AVR-08).
+
+    ``cards`` holds the 16.1 cards of the page's hits; ``facets`` holds each
+    asked field's ``{value, count}`` entries; ``total`` counts every hit.
+    """
+
+    cards: list[dict[str, Any]] = Field(default_factory=list)
+    facets: dict[str, Any] = Field(default_factory=dict)
+    total: int = 0
+
+
+class ViewForTypeAnswer(AtlasModel):
+    """The answer of ``GET /api/aurelius/v1/types/for-type/{name}`` (AVW-11).
+
+    ``type`` holds the named entity type and ``superTypes`` each supertype in
+    the chain, every one a whole Atlas typedef with the attributes it declares.
+    """
+
+    type: dict[str, Any] = Field(default_factory=dict)
+    super_types: list[dict[str, Any]] = Field(default_factory=list)

@@ -1,0 +1,154 @@
+# 064. The webapp reads rich catalogue data through one Aurelius view family
+
+- **Status:** Proposed
+- **Date:** 2026-11-14
+- **Deciders:** Aurelius Enterprise
+
+## Decision
+
+**One view family, one client shape.** The rewritten webapp reads its rich
+catalogue data (search cards with facets and breadcrumb trails, entity detail
+views, and quality verdicts) from an Aurelius view family on the server. The
+view family answers in one typed shape that follows the Atlas naming, on the
+Aurelius prefix the searches by meaning already use
+([059](./059-the-catalogue-searches-by-meaning-with-a-model-that-runs-on-site.md)).
+Its fields are the entity's derived document of
+[060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md):
+the breadcrumb trail, the derived relations, and the quality results, read as
+stored. A view does not compute them per request. The family answers on the
+same server, so it adds no data host and
+[054](./054-the-server-api-is-the-webapps-one-data-plane.md) stands.
+
+**One shape, three doors.** The server answers the same shape family at three
+doors: a search over the documents with facets, a read of one document by
+GUID, and the response to each Aurelius mutation. A screen that found an
+entity through the search door finishes with the read door, and reaches for no
+second read of the entity. Because the document read carries what a screen
+needs and more, the rewritten webapp has no reason to call the Atlas entity
+read at all. This record is the record
+[054](./054-the-server-api-is-the-webapps-one-data-plane.md) asks for when the
+webapp gains an endpoint family, and it names the family's rules so later
+increments do not decide them one by one.
+
+**The Atlas API stays frozen; the legacy wire is on an exit path.** The Apache
+Atlas API keeps its contract for third parties
+([046](./046-the-catalogue-keeps-its-public-contract.md)). The App Search wire
+([060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md))
+answered the original webapp, and that webapp is deprecated. The wire keeps
+answering until that webapp retires, and it gains no new consumer, feature, or
+test beyond what [060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)
+already fixed. A later record supersedes
+[060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md) when
+its last consumer leaves, and the wire goes with it. The derived documents it
+served stay: they are what the view family reads. The facet machinery over
+those documents moves to the family's search door without the wire's query
+language and answer wrapping.
+
+**A mutation answers with a view.** An Aurelius mutation endpoint takes the
+edit in the view's shape, applies the whole change inside the server,
+including the classifications and the term assignments, and returns the new
+view of the changed entity. The client stops diffing tags, stops remapping
+temporary GUIDs, and stops re-reading the whole screen after a save.
+
+**Every endpoint states its freshness.** A view over the derived documents is
+as fresh as the worker that maintains them. A live read is as fresh as the
+store. Each screen reads its data from one side and shows that contract. The
+response to a mutation carries the fresh view of what the mutation changed, so
+a screen never shows the person who saved an edit the state from before it.
+
+## Context
+
+The original product split its metadata over two systems, and series 14
+ended that split inside the server: the answer the legacy search backend gave
+is now a derived document on the entity itself, kept current by the server's
+workers ([060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)).
+The rewritten webapp, though, still builds its screens from the Atlas
+endpoints alone. An entity screen costs several round trips because the Atlas
+answer does not carry the breadcrumb trail, the related bodies, the type
+ancestry, or the verdicts, so the client walks, fetches, and joins them.
+Five search answer shapes and three mutation return styles share only the
+GUID, so the client maps between them before it can render or save, and
+re-reads after every save. The product goal is a snappy webapp with no
+window in which one part of a screen disagrees with another. The rich answer
+already exists as derived data, so the open question is the shape and the
+number of calls the rewritten webapp reads it in.
+
+The original webapp is deprecated. The wire built for it
+([060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md))
+carries a query language and an answer wrapping few people like, and keeping
+it long term has no consumer behind it. The facets over the derived fields,
+though, are what the results page needs, and they live behind that wire today.
+The product wants the facets and the derived documents, and not the wire.
+
+## Requirements
+
+- **R1 — A screen loads in few calls.** The details screen and the editor
+  assemble from one read, not from a walk.
+- **R2 — One shape family for the client.** The rewritten webapp maps one
+  search result shape and one entity view shape, and a save takes what the
+  view carries.
+- **R3 — The Atlas contract does not move**
+  ([046](./046-the-catalogue-keeps-its-public-contract.md)).
+- **R4 — The legacy wire ends without a break.** The App Search contract
+  keeps answering its current consumers until the original webapp retires
+  ([060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)).
+  Nothing new depends on it, it grows no features, and its exit is one planned
+  event with notice to operators.
+- **R5 — One system of record**
+  ([047](./047-one-search-store-is-the-system-of-record.md)). A view reads
+  the store and its derived documents and keeps nothing of its own.
+- **R6 — One data host**
+  ([054](./054-the-server-api-is-the-webapps-one-data-plane.md)).
+- **R7 — Stated freshness.** Each endpoint says whether it is live or
+  derived, and a mutation response covers the derived window for the person
+  who saved.
+- **R8 — A save is one request.** A visible change lands in one server call,
+  with no ordered sequence of smaller calls from the browser.
+
+## Alternatives
+
+- **Keep today's arrangement.** The webapp keeps joining per request: the
+  details screen keeps its walk and fan-out, and a save keeps its diff, its
+  deletes, and its full re-read. Fails R1, R2, and R8.
+- **Let the webapp speak the App Search wire directly.** No new backend work,
+  because the surface exists. It ties the new product to the wire of a
+  deprecated consumer: per-value wrappers, legacy field names, its own paging,
+  and a query language the new client must learn. When the wire retires, the
+  client retires with it. Fails R2 and R4.
+- **Retire the App Search wire today.** The original webapp is deprecated,
+  but it still runs in installations that cannot move yet
+  ([060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)).
+  Pulling the wire before its last consumer leaves fails R4. The deprecation
+  decides the exit, and this record schedules nothing beyond it.
+- **Join the live store per request.** A new endpoint that computes the
+  breadcrumb, the relations, and the verdicts when asked. Series 14 rejected
+  this for the original webapp because it is too slow for a search page
+  ([060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)),
+  and it pays the price again here. Fails R1.
+- **Run a separate backend-for-frontend service.** A second host for the
+  webapp's reads, which a later team must deploy, secure, and keep in step
+  with the server. Fails R6, and buys what an endpoint family buys for less.
+
+## Tradeoffs
+
+- **Positive:** the details screen and the editor drop to one call each, and
+  neither calls the Atlas entity read. The rewritten client holds one shape
+  family. The breadcrumb seam the rewrite left empty (DD-317) gets its real
+  source. A save answers with the state it produced, so the screen and the
+  store cannot disagree in front of the person who just saved. The facets
+  reach the new webapp without its wire, and retiring the wire later deletes
+  a surface instead of growing one.
+- **Negative:** while the wire lives, the server keeps three read answers over
+  one store (the Atlas API, the wire on its exit path, and the view family),
+  and each needs its own parity or contract tests. The view family must follow
+  every change to the derived documents, or its answers lag the store in a new
+  way. The freshness rule turns a technical property into a product rule each
+  screen must handle.
+- **Neutral / follow-ups:** the increments that specify the endpoints, the
+  card fields and the facet model. The increment that retires the App Search
+  wire, which supersedes
+  [060](./060-the-app-search-api-returns-as-a-view-over-the-one-store.md)
+  when the original webapp exits and carries the notice to operators. The
+  client cache keyed by GUID, which replaces the no-cache posture of DD-318
+  and needs its own design record. The hand-mirrored client models, which the
+  view family shrinks to one family until generation replaces them.

@@ -7,7 +7,6 @@ the entity's stored vector.
 
 from typing import Annotated
 
-import httpx2 as httpx
 from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_model.discovery import AtlasQuickSearchResult, QuickSearchParameters
 from aurelius_atlas_model.errors import validate_guid
@@ -16,7 +15,7 @@ from fastapi import APIRouter, Depends, Request
 
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, verify_access
 from aurelius_atlas_server.bodies import json_model
-from aurelius_atlas_server.embedding import EmbeddingClient, EmbeddingError
+from aurelius_atlas_server.embedding import embed_query, query_embedder
 from aurelius_atlas_server.errors import AtlasError, AtlasErrorCode, AtlasJSONResponse
 from aurelius_atlas_server.models import SemanticSearchParameters
 from aurelius_atlas_server.openapi import json_response, request_body
@@ -28,32 +27,6 @@ MEANING_BODY = json_model(SemanticSearchParameters)
 """``searchByMeaning``: quick search's parameters and the mode, validated by the model (SBM-01, SBM-04)."""
 
 type MeaningBody = Annotated[SemanticSearchParameters | None, Depends(MEANING_BODY)]
-
-
-def _embedder(request: Request) -> EmbeddingClient:
-    """The embeddings client, or 404 when embedding is off (SBM-06).
-
-    Raises:
-        AtlasError: ``EMBEDDING_OFF`` without one.
-    """
-    embedder: EmbeddingClient | None = request.app.state.embedder
-    if embedder is None:
-        raise AtlasError(AtlasErrorCode.EMBEDDING_OFF)
-    return embedder
-
-
-async def _query_vector(embedder: EmbeddingClient, query: str) -> list[float]:
-    """The query's embedding, as a ``query`` (DD-443).
-
-    Raises:
-        AtlasError: ``EMBEDDER_UNAVAILABLE`` when the embedder cannot be reached or answers otherwise (SBM-06).
-    """
-    try:
-        [vector] = await embedder.embed([query], input_type="query")
-    except (httpx.HTTPError, EmbeddingError, KeyError, ValueError) as error:
-        raise AtlasError(AtlasErrorCode.EMBEDDER_UNAVAILABLE, type(error).__name__, cause=error) from error
-    return vector
-
 
 QUICK_SEARCH_RESULT = json_response(AtlasQuickSearchResult, description="The search result, the facets included.")
 
@@ -68,7 +41,7 @@ async def search_by_meaning(request: Request, meaning_body: MeaningBody, store: 
     """Quick search by meaning, ``semantic`` or ``hybrid`` (SBM-01 to SBM-04, SBM-06, SBM-07)."""
     parameters = meaning_body or SemanticSearchParameters()
     hybrid = parameters.checked()
-    vector = await _query_vector(_embedder(request), str(parameters.query))
+    vector = await embed_query(query_embedder(request), str(parameters.query))
     weight = request.app.state.settings.hybrid_vector_weight if hybrid else 1.0
     result = await EntityDiscoveryService(store, authorizer=authorizer(request)).search_by_meaning(
         parameters, vector, hybrid=hybrid, weight=weight
@@ -85,7 +58,7 @@ async def similar_entities(guid: str, request: Request, store: Store) -> AtlasJS
             embedded; ``EMBEDDING_OFF`` without embedding.
     """
     validate_guid("guid", guid)
-    _embedder(request)
+    query_embedder(request)
     found = await store.get(guid)
     if found is None:
         raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)

@@ -1,12 +1,13 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
-import { AtlasEntitiesService, type AtlasEntity, type AtlasRelatedEntity } from "aurelius-atlas-data-access";
-import type { CardSortOption } from "aurelius-atlas-ui";
+import { type EntityCard, type EntityView, ViewSearchService } from "aurelius-atlas-data-access";
+import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../../alerts/alerts.service";
-import { cardDescription, cardDisplayText, cardTypeAlias } from "../shared/card";
-import type { SectionDef, TypeLayout } from "./section-config";
+import { nameDisplay } from "../../meta/type-display";
+import { sectionEnds, type SectionEnd } from "../shared/people";
+import { FACET_GROUP_TITLES, type FacetGroupKey, type SectionDef, type TypeLayout } from "./section-config";
 
-/** The bulk read's chunk size: a browser- and edge-sized URL (DD-368). */
+/** The resolve chunk size: one door request per chunk (DD-368, DD-615). */
 export const CHUNK_SIZE = 25;
 
 /** The legacy cards grid's page size (DET-22). */
@@ -24,8 +25,8 @@ interface SeedEntry {
 interface SectionRecord {
     def: SectionDef;
     seed: SeedEntry[];
-    /** Resolved card entities by guid. */
-    resolved: Map<string, AtlasEntity>;
+    /** Resolved door cards by guid (DD-615). */
+    resolved: Map<string, EntityCard>;
     /** The guids whose chunk failed — their cards drop, the count stays (DET-18). */
     failed: Set<string>;
     /**
@@ -47,18 +48,24 @@ interface SectionRecord {
     text: string | null;
     sort: string;
     descending: boolean;
+    /**
+     * The popover's selected values per group (VCF-11, DD-620): one entry
+     * per group, an array of values — the legacy `filters.all` shape, so
+     * a group matches by OR and the groups compose by AND. A group with
+     * its last untick loses its key, as the legacy service deleted it.
+     */
+    facetSelection: Record<string, string[]>;
     /** The page grown by the scroll container: how many filtered cards show. */
     shown: number;
 }
 
-/** One card of a section's grid: a resolved entity, or a loading placeholder. */
+/** One card of a section's grid: a resolved door card, or a loading placeholder. */
 export type SectionCard =
     | {
           kind: "card";
           guid: string;
           displayText: string;
-          alias?: string;
-          entity: AtlasEntity;
+          card: EntityCard;
       }
     | {
           kind: "loading";
@@ -74,7 +81,13 @@ export interface SectionView {
     title: string;
     /** The seed count — the count line and the stats bar (DET-17). */
     count: number;
-    /** Whether the search filters the set (DET-20). */
+    /** The popover's facet groups (VCF-08..VCF-12): the section's configured
+     * groups with their rows, counts, and ticks over the filtered set. */
+    facets: CardFacetGroup[];
+    /** Whether the funnel marks the icon active — keyword, selection, or a
+     * sort/direction away from its default (VCF-08, DV-169 amended). */
+    filterActive: boolean;
+    /** Whether the search filters the set (DET-20, VCF-13 extended to selections). */
     filtered: boolean;
     /** The count line's number: seed count, or the filtered count (DET-20). */
     countShown: number;
@@ -104,19 +117,24 @@ const SORT_OPTIONS: CardSortOption[] = [
 const DEFAULT_SORT = "relevance";
 
 /**
- * The details screen's card sections (DET-17..DET-22, DD-365/DD-368): the
- * seed, the chunked bulk resolve, and the client-side filter, sort, and
- * paging of every section of the entity's layout.
+ * The details screen's card sections (DET-17..DET-22, DD-365/DD-368, DD-615):
+ * the seed, the chunked resolve through the search door, and the
+ * client-side filter, sort, and paging of every section of the entity's
+ * layout.
  *
- * The seed is the entity's own `relationshipAttributes` (DET-17): each
- * seed key's ACTIVE entries carrying a guid, in order, deduped by guid —
- * the EDT-15 rule shared with the editor's seed. The count is the seed
- * length and shows at once, before any card resolves. The guids resolve
- * through `getEntitiesByGuids` in chunks of 25 (DET-18); until a chunk
- * answers its cards show the loading row, a failed chunk alerts once and
- * drops its cards (the count keeps them), and a guid missing from the
- * answer is a deleted relation, not an error. Search, sort, and paging run
- * client-side over what the browser holds (DD-368).
+ * Since 16.5b the seed is the view's `sections` (VDR-03): each seed key's
+ * ACTIVE ends carrying a guid, in order, deduped by guid — the same
+ * {@link sectionEnds} rule the People box and the person stats count by, so
+ * a seed, a stat and a box can never disagree. The count is the seed length
+ * and shows at once, before any card resolves. Since 16.5d the guids resolve
+ * through the search door (VCF-02, DD-615 — the legacy read its section
+ * cards from the search engine): one `POST /api/aurelius/v1/search` per
+ * chunk of 25, `filters.guid` the chunk and `limit` its length, no facets.
+ * Until a chunk answers its cards show the loading row, a failed chunk
+ * alerts once and drops its cards (the count keeps them), and a guid
+ * missing from the `cards` answer is a deleted relation, not an error
+ * (DET-18's rules, carried). Search, sort, and paging run client-side over
+ * what the browser holds (DD-368).
  *
  * The store is per-screen (provided by `Details`): {@link seed} re-runs on
  * every entity arrival, including the editor's save re-read (DET-17), and
@@ -125,7 +143,7 @@ const DEFAULT_SORT = "relevance";
  */
 @Injectable()
 export class RelatedSectionsState {
-    private readonly entities = inject(AtlasEntitiesService);
+    private readonly search = inject(ViewSearchService);
 
     private readonly alerts = inject(AlertsService);
 
@@ -135,32 +153,32 @@ export class RelatedSectionsState {
     /** The resolve generation: a re-seed drops every in-flight answer. */
     private generation = 0;
 
-    /** The entity the last seed read ({@link endCount}'s source, DET-40). */
-    private lastSeed: { entity: AtlasEntity | null } = { entity: null };
+    /** The view the last seed read ({@link endCount}'s source, DET-40). */
+    private lastSeed: { view: EntityView | null } = { view: null };
 
     /** The sections as the renderer draws them, in layout order. */
     readonly views = computed<SectionView[]>(() => this.records().map((record) => this.viewOf(record)));
 
     /**
-     * (Re-)seed every section from the entity (DET-17): the count shows at
-     * once and the resolve starts. A null entity or layout clears the
-     * sections; a new layout or entity re-seeds from scratch — the editor's
-     * save re-read rides this entry (DD-327).
-     * @param entity the resolved entity, or null
+     * (Re-)seed every section from the view (DET-17, VDR-03): the count
+     * shows at once and the resolve starts. A null view or layout clears
+     * the sections; a new layout or view re-seeds from scratch — the
+     * editor's save re-read rides this entry (DD-327).
+     * @param view the read door's answer for the opened entity, or null
      * @param layout the entity's layout, or undefined for the default
      */
-    seed(entity: AtlasEntity | null, layout: TypeLayout | undefined): void {
+    seed(view: EntityView | null, layout: TypeLayout | undefined): void {
         this.generation++;
-        this.lastSeed = { entity };
-        if (entity === null || layout === undefined) {
+        this.lastSeed = { view };
+        if (view === null || layout === undefined) {
             this.records.set([]);
             return;
         }
 
         const records = layout.sections.map((def) => ({
             def,
-            seed: this.seedOf(entity, def),
-            resolved: new Map<string, AtlasEntity>(),
+            seed: this.seedOf(view, def),
+            resolved: new Map<string, EntityCard>(),
             failed: new Set<string>(),
             missing: new Set<string>(),
             pending: 0,
@@ -168,6 +186,7 @@ export class RelatedSectionsState {
             text: null,
             sort: DEFAULT_SORT,
             descending: false,
+            facetSelection: {},
             shown: PAGE_SIZE,
         }));
         this.records.set(records);
@@ -188,33 +207,17 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The count of one `relationshipAttributes` end (DET-40, DD-519): the
-     * person stats bar's per-end numbers, computed by the same seed rule
-     * the sections ride — ACTIVE entries carrying a guid, deduped by guid
-     * — so a stat and the merged box's cards can never disagree. The seed
-     * follows the entity, like {@link seed}: the count is read from the
-     * last entity passed to it.
-     * @param key the `relationshipAttributes` key to count
-     * @returns the deduped ACTIVE entry count, 0 with no entity or end
+     * The count of one relationship end (DET-40, DD-519, VDR-03): the
+     * person stats bar's per-end numbers, computed by the same
+     * {@link sectionEnds} rule the seed and the People box ride — ACTIVE
+     * ends carrying a guid, deduped by guid — so a stat and the merged
+     * box's cards can never disagree. The seed follows the view, like
+     * {@link seed}: the count is read from the last view passed to it.
+     * @param key the relationship attribute name to count
+     * @returns the deduped ACTIVE end count, 0 with no view or end
      */
     endCount(key: string): number {
-        const entity = this.lastSeed.entity;
-        if (entity === null) {
-            return 0;
-        }
-
-        const stored = entity.relationshipAttributes ?? {};
-        const seen = new Set<string>();
-        for (const row of asRelatedList(stored[key])) {
-            if (row.relationshipStatus !== undefined && row.relationshipStatus !== "ACTIVE") {
-                continue; // EDT-15: a DELETED edge counts nothing
-            }
-            if (typeof row.guid === "string" && row.guid !== "") {
-                seen.add(row.guid);
-            }
-        }
-
-        return seen.size;
+        return sectionEnds(this.lastSeed.view?.sections, [key]).length;
     }
 
     /**
@@ -246,8 +249,10 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The count-line click while filtered (DET-20): the query and the sort
-     * return to their defaults — the legacy reset link.
+     * The count-line click while filtered (DET-20, VCF-13): the keyword,
+     * the facet selections, and the sort return to their defaults — the
+     * legacy reset link, which the demo showed clearing the ticks with the
+     * keyword.
      * @param anchor the section's anchor
      */
     reset(anchor: string): void {
@@ -257,8 +262,37 @@ export class RelatedSectionsState {
             text: null,
             sort: DEFAULT_SORT,
             descending: false,
+            facetSelection: {},
             shown: PAGE_SIZE,
         }));
+    }
+
+    /**
+     * A popover row ticked or unticked (VCF-11, DD-620): the value joins
+     * or leaves its group's array — the legacy `filters.all` shape, with
+     * the key deleted at the group's last untick (the legacy service's
+     * rule). The page returns to its first size, as a keyword change does.
+     * @param anchor the section's anchor
+     * @param group the group's key
+     * @param value the row's value
+     * @param checked the row's new state
+     */
+    toggleFacet(anchor: string, group: string, value: string, checked: boolean): void {
+        this.update(anchor, (record) => {
+            const chosen = new Set(record.facetSelection[group] ?? []);
+            if (checked) {
+                chosen.add(value);
+            } else {
+                chosen.delete(value);
+            }
+            const facetSelection = { ...record.facetSelection };
+            if (chosen.size === 0) {
+                delete facetSelection[group];
+            } else {
+                facetSelection[group] = [...chosen];
+            }
+            return { ...record, facetSelection, shown: PAGE_SIZE };
+        });
     }
 
     /**
@@ -288,37 +322,21 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The seed of one section (DET-17): the entity's ACTIVE relationship
-     * entries for the section's keys, in order, deduped by guid.
-     * @param entity the resolved entity
+     * The seed of one section (DET-17, VDR-03): the view's ACTIVE ends for
+     * the section's keys, in order, deduped by guid — {@link sectionEnds}.
+     * @param view the read door's answer for the opened entity
      * @param def the section's config
      * @returns the seed entries
      */
-    private seedOf(entity: AtlasEntity, def: SectionDef): SeedEntry[] {
-        const stored = entity.relationshipAttributes ?? {};
-        const entries: SeedEntry[] = [];
-        const seen = new Set<string>();
-
-        for (const key of def.seedKeys) {
-            for (const row of asRelatedList(stored[key])) {
-                if (row.relationshipStatus !== undefined && row.relationshipStatus !== "ACTIVE") {
-                    continue; // EDT-15: a DELETED edge seeds nothing
-                }
-                if (typeof row.guid !== "string" || row.guid === "" || seen.has(row.guid)) {
-                    continue;
-                }
-                seen.add(row.guid);
-                entries.push(seedEntry(row));
-            }
-        }
-
-        return entries;
+    private seedOf(view: EntityView, def: SectionDef): SeedEntry[] {
+        return sectionEnds(view.sections, def.seedKeys).map(seedEntry);
     }
 
     /**
-     * Resolve one section's seed (DET-18): the guids travel to
-     * `GET /v2/entity/bulk` in chunks of 25; answers paint only while the
-     * section's generation still stands.
+     * Resolve one section's seed (DET-18, VCF-02, DD-615): the guids travel
+     * to the search door in chunks of 25 — `filters.guid` the chunk,
+     * `limit` its length, no facets; answers paint only while the section's
+     * generation still stands.
      * @param record the section's record
      * @param generation the seed generation the resolve belongs to
      */
@@ -332,27 +350,28 @@ export class RelatedSectionsState {
 
         for (let start = 0; start < guids.length; start += CHUNK_SIZE) {
             const chunk = guids.slice(start, start + CHUNK_SIZE);
-            this.entities.getEntitiesByGuids(chunk).subscribe({
+            this.search.search({ filters: { guid: chunk }, limit: chunk.length }).subscribe({
                 next: (answer) => {
                     if (this.generation !== generation) {
                         return; // a re-seed superseded this answer
                     }
                     const byGuid = new Map(
-                        (answer.entities ?? [])
-                            .filter((entity) => typeof entity?.guid === "string")
-                            .map((entity) => [entity.guid as string, entity]),
+                        (answer.cards ?? [])
+                            .filter((card) => typeof card?.guid === "string")
+                            .map((card) => [card.guid as string, card]),
                     );
                     this.update(record.def.anchor, (current) => {
                         const resolved = new Map(current.resolved);
                         const missing = new Set(current.missing);
                         for (const guid of chunk) {
-                            const entity = byGuid.get(guid);
-                            if (entity !== undefined) {
-                                resolved.set(guid, entity);
+                            const card = byGuid.get(guid);
+                            if (card !== undefined) {
+                                resolved.set(guid, card);
                             } else {
                                 // A guid missing from the answer is a
-                                // deleted relation: no card, the count
-                                // keeps it (DET-18).
+                                // deleted relation — or one the indexer
+                                // has not reached yet (DD-615):
+                                // no card, the count keeps it (DET-18).
                                 missing.add(guid);
                             }
                         }
@@ -406,6 +425,8 @@ export class RelatedSectionsState {
      */
     private viewOf(record: SectionRecord): SectionView {
         const term = record.query?.toLowerCase() ?? "";
+        // VCF-08/VCF-13: a selection or the keyword filters the section.
+        const selectionActive = Object.values(record.facetSelection).some((values) => values.length > 0);
         const cards: SectionCard[] = record.seed
             .filter((entry) => !record.failed.has(entry.guid) && !record.missing.has(entry.guid))
             .map((entry) => {
@@ -419,25 +440,40 @@ export class RelatedSectionsState {
                         ...(entry.name !== undefined ? { name: entry.name } : {}),
                     };
                 }
-                const alias = cardTypeAlias(entity);
                 return {
                     kind: "card" as const,
                     guid: entry.guid,
-                    displayText: cardDisplayText(entity),
-                    ...(alias !== undefined ? { alias } : {}),
-                    entity,
+                    displayText: entity.displayText,
+                    card: entity,
                 };
             });
 
-        const matched = term === "" ? cards : cards.filter((card) => matches(card, term));
+        // VCF-14, DD-621: a card that has not resolved cannot be tested
+        // against a value it does not carry, so it hides while any
+        // selection is active — and shows as DET-18's loading row otherwise.
+        const testable = selectionActive ? cards.filter((card) => card.kind === "card") : cards;
+        // VCF-11: the keyword ANDs with the selections; VCF-12: the facet
+        // rows count over the set both filtered.
+        const matched = testable
+            .filter((card) => term === "" || matches(card, term))
+            .filter((card) => passesFacets(card, record.facetSelection, record.def.facets));
         const sorted = this.sorted(matched, record);
+        const filtered = record.query !== null || selectionActive;
+        // VCF-08 (DV-169 amended): the legacy funnel marks on the whole
+        // query object, so a sort key or direction away from its default
+        // marks it too — the demo's isFilterActive$ is the section's
+        // queryObject differing from its default, and its sorting
+        // component writes sort and direction into that object.
+        const stateApplied = filtered || record.sort !== DEFAULT_SORT || record.descending;
 
         return {
             anchor: record.def.anchor,
             title: record.def.title,
+            facets: facetGroupsOf(record, matched),
+            filterActive: stateApplied,
             count: record.seed.length,
-            filtered: record.query !== null,
-            countShown: record.query === null ? record.seed.length : sorted.length,
+            filtered,
+            countShown: filtered ? sorted.length : record.seed.length,
             loading: record.pending > 0,
             allLoaded: sorted.length <= record.shown,
             query: record.text,
@@ -463,9 +499,95 @@ export class RelatedSectionsState {
 }
 
 /**
- * Whether a card matches the submitted keyword (DET-20, DD-368): the term
- * occurs, case-insensitively, in the display text, the `name` or
- * `qualifiedName` attribute, or the description text.
+ * The values one card carries for one facet group (VCF-09, DD-619): a
+ * chain or people key reads the card's stored derived relations of that
+ * attribute — the direct ends, by name (AVS-02, LAS-05); Type Name reads
+ * the card's type name; Name reads its display text. A card without the
+ * field contributes nothing, and one card counts a value once.
+ * @param card the resolved section card
+ * @param group the facet group's key
+ * @returns the card's values for the group, deduplicated
+ */
+function facetValuesOf(card: SectionCard, group: FacetGroupKey): string[] {
+    if (card.kind !== "card") {
+        return [];
+    }
+    if (group === "typeName") {
+        return [card.card.typeName];
+    }
+    if (group === "name") {
+        return [card.card.displayText];
+    }
+    const relation = card.card.relations?.find((entry) => entry.attribute === group);
+    return [
+        ...new Set((relation?.entities ?? []).map((entity) => entity.name).filter((name) => typeof name === "string")),
+    ] as string[];
+}
+
+/**
+ * Whether a card passes the selected facet values (VCF-11, DD-620): the
+ * legacy check-box service's shape — within a group the card matches by
+ * OR over the chosen values, across groups by AND over the configured
+ * groups. A group with no selection filters nothing; only the section's
+ * configured groups are tested.
+ * @param card the section card
+ * @param selection the selected values per group
+ * @param groups the section's configured groups
+ * @returns whether the card carries every group's selection
+ */
+function passesFacets(
+    card: SectionCard,
+    selection: Record<string, string[]>,
+    groups: readonly FacetGroupKey[],
+): boolean {
+    return groups.every((group) => {
+        const chosen = selection[group];
+        if (chosen === undefined || chosen.length === 0) {
+            return true;
+        }
+        return facetValuesOf(card, group).some((value) => chosen.includes(value));
+    });
+}
+
+/**
+ * The section's popover groups (VCF-09, VCF-12, DD-619): the configured
+ * groups with at least one row, each counted over the keyword-and-facet
+ * filtered set — a value at zero leaves the popover (a checked row with
+ * it), and the last untick returns it; a group whose last row left leaves
+ * with it, as the legacy FilterService dropped empty facets (SDX-03).
+ * Rows order by count, then label; the titles ride the catalogue map (DD-622).
+ * @param record the section's record
+ * @param filtered the cards that passed the keyword and the selections
+ * @returns the groups in configured order, rows counted and ticked
+ */
+function facetGroupsOf(record: SectionRecord, filtered: readonly SectionCard[]): CardFacetGroup[] {
+    return record.def.facets
+        .map((group) => {
+            const counts = new Map<string, number>();
+            for (const card of filtered) {
+                for (const value of facetValuesOf(card, group)) {
+                    counts.set(value, (counts.get(value) ?? 0) + 1);
+                }
+            }
+            const chosen = record.facetSelection[group] ?? [];
+            const items: FacetItem[] = [...counts.entries()]
+                .sort(([valueA, countA], [valueB, countB]) => countB - countA || valueA.localeCompare(valueB))
+                .map(([value, count]) => ({
+                    value,
+                    label: group === "typeName" ? (nameDisplay(value) ?? value) : value,
+                    count,
+                    checked: chosen.includes(value),
+                }));
+            return { key: group, title: FACET_GROUP_TITLES[group], items };
+        })
+        .filter((group) => group.items.length > 0);
+}
+
+/**
+ * Whether a card matches the submitted keyword (DET-20, DD-368, VCF-05):
+ * the term occurs, case-insensitively, in the card's display text, its
+ * `qualifiedName`, or its description text (the `definition` field, DD-614
+ * — the door card carries no attribute map).
  * @param card the section's card
  * @param term the lowercased term
  * @returns whether the card matches
@@ -478,56 +600,30 @@ function matches(card: SectionCard, term: string): boolean {
         // A card still resolving matches on its seed's own texts (DET-20).
         return card.name?.toLowerCase().includes(term) ?? false;
     }
-    const attributes = card.entity.attributes ?? {};
-    const name = attributes["name"];
-    if (typeof name === "string" && name.toLowerCase().includes(term)) {
-        return true;
-    }
-    const qualifiedName = attributes["qualifiedName"];
+    const qualifiedName = card.card.qualifiedName;
     if (typeof qualifiedName === "string" && qualifiedName.toLowerCase().includes(term)) {
         return true;
     }
-    return cardDescription(card.entity).toLowerCase().includes(term);
+    const definition = card.card.definition;
+    return typeof definition === "string" && definition.toLowerCase().includes(term);
 }
 
 /**
- * The seed entry a relationship end becomes: its guid and display texts —
- * the loading card's title until the bulk answer resolves the entity.
- * @param row the relationship end
+ * The seed entry a view's section end becomes: its guid and texts — the
+ * loading card's title until the door answer resolves the card. A view's
+ * end names itself (VDR-02): the name, the guid as the last resort.
+ * @param end the deduped ACTIVE end
  * @returns the seed entry
  */
-function seedEntry(row: AtlasRelatedEntity): SeedEntry {
-    let displayText = typeof row.guid === "string" ? row.guid : "";
-    if (typeof row.name === "string" && row.name !== "") {
-        displayText = row.name;
-    }
-    if (typeof row.displayText === "string" && row.displayText !== "") {
-        displayText = row.displayText;
-    }
+function seedEntry(end: SectionEnd): SeedEntry {
+    const name = typeof end.name === "string" && end.name !== "" ? end.name : undefined;
 
     return {
-        guid: row.guid as string,
-        displayText,
-        ...(typeof row.typeName === "string" && row.typeName !== "" ? { typeName: row.typeName } : {}),
-        ...(typeof row.name === "string" && row.name !== "" ? { name: row.name } : {}),
+        guid: end.guid,
+        displayText: name ?? end.guid,
+        ...(typeof end.typeName === "string" && end.typeName !== "" ? { typeName: end.typeName } : {}),
+        ...(name !== undefined ? { name } : {}),
     };
-}
-
-/**
- * A read's `relationshipAttributes` value as a list (the editor's twin:
- * a SET end answers as a list, a SINGLE end as one object).
- * @param value the raw value
- * @returns the related entities
- */
-function asRelatedList(value: unknown): AtlasRelatedEntity[] {
-    if (Array.isArray(value)) {
-        return value as AtlasRelatedEntity[];
-    }
-    if (value !== null && typeof value === "object") {
-        return [value as AtlasRelatedEntity];
-    }
-
-    return [];
 }
 
 /**

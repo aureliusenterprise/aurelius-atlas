@@ -1313,6 +1313,11 @@ The technical data governance model consists of the following types of entities:
         <target>Relatie selecteren...</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.relationshipsInput.selectPlaceholder</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.conflict" datatype="html">
+        <source>This entity changed since you opened it. Your edits are kept — save again to write them over the stored version.</source>
+        <target>Deze entiteit is gewijzigd sinds je hem opende. Je bewerkingen blijven behouden — sla opnieuw op om ze over de opgeslagen versie te schrijven.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.conflict</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.dataQualityRule.active" datatype="html">
         <source>Active</source>
         <target>Actief</target>
@@ -1936,6 +1941,11 @@ The technical data governance model consists of the following types of entities:
         <source>History</source>
         <target>Geschiedenis</target>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.historyPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.nameTaken" datatype="html">
+        <source>That name is already held by another entity.</source>
+        <target>Die naam wordt al door een andere entiteit gebruikt.</target>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.nameTaken</note>
       </trans-unit>
       <trans-unit id="search.components.editor.person.dataOwnerAttributes" datatype="html">
         <source>Data owner attributes</source>

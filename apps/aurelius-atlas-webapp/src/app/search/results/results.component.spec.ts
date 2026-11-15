@@ -8,26 +8,23 @@ import { vi } from "vitest";
 import { SearchState } from "../search-state";
 import { Results } from "./results.component";
 
-const QUICK_SEARCH = "/api/atlas/v2/search/quick";
+const DOOR = "/api/aurelius/v1/search";
 
 /**
- * A page of hits, named so the rows are identifiable, in the quick-search
- * answer shape: nested under `searchResults`, with empty
- * `aggregationMetrics` beside it (QSR-02) — no facets unless a test asks.
+ * A page of cards, named so the rows are identifiable, in the search door's
+ * answer shape (AVR-08) — no facets unless a test asks (VSR-03).
  */
-function page(count: number, approximateCount: number) {
+function page(count: number, total: number, offset = 0) {
     return {
-        searchResults: {
-            entities: Array.from({ length: count }, (_, i) => ({
-                guid: `g${i}`,
-                typeName: "DataSet",
-                displayText: `entity-${i}`,
-                attributes: { name: `attr-${i}` },
-            })),
-            approximateCount,
-            queryType: "BASIC",
-        },
-        aggregationMetrics: {},
+        cards: Array.from({ length: count }, (_, i) => ({
+            guid: `g${offset + i}`,
+            typeName: "DataSet",
+            displayText: `entity-${offset + i}`,
+            status: "ACTIVE",
+            stale: false,
+        })),
+        facets: {},
+        total,
     };
 }
 
@@ -35,13 +32,13 @@ function page(count: number, approximateCount: number) {
 function facetPage() {
     return {
         ...page(3, 3),
-        aggregationMetrics: {
-            __typeName: [
-                { name: "m4i_data_attribute", count: 75 },
-                { name: "m4i_data_domain", count: 9 },
+        facets: {
+            typeName: [
+                { value: "m4i_data_attribute", count: 75 },
+                { value: "m4i_data_domain", count: 9 },
             ],
-            __state: [{ name: "ACTIVE", count: 84 }],
-            "Asset.owner": [],
+            status: [{ value: "ACTIVE", count: 84 }],
+            owner: [],
         },
     };
 }
@@ -76,7 +73,7 @@ function setup() {
         httpMock: TestBed.inject(HttpTestingController),
         compiled: fixture.nativeElement as HTMLElement,
         /** The arrival's list-everything request (the empty stream). */
-        arrival: () => TestBed.inject(HttpTestingController).expectOne(QUICK_SEARCH),
+        arrival: () => TestBed.inject(HttpTestingController).expectOne(DOOR),
     };
 }
 
@@ -89,7 +86,7 @@ function arrive(query: string, answer = page(3, 3)) {
     harness.arrival().flush(page(0, 0)); // the query-less arrival (DD-221)
     harness.queryParamMap.next(convertToParamMap({ query }));
     harness.fixture.detectChanges(); // the URL effect runs, the request fires
-    harness.httpMock.expectOne(QUICK_SEARCH).flush(answer);
+    harness.httpMock.expectOne(DOOR).flush(answer);
     harness.fixture.detectChanges();
     return harness;
 }
@@ -104,9 +101,9 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         harness.queryParamMap.next(convertToParamMap({ query: "genomic" }));
         harness.fixture.detectChanges(); // the URL effect runs the search
 
-        const request = harness.httpMock.expectOne(QUICK_SEARCH);
+        const request = harness.httpMock.expectOne(DOOR);
         expect(request.request.method).toBe("POST");
-        expect(request.request.body).toMatchObject({ query: "genomic", limit: 10, offset: 0 });
+        expect(request.request.body).toMatchObject({ query: "genomic", mode: "keyword", limit: 10, offset: 0 });
         request.flush(page(1, 1));
     });
 
@@ -116,7 +113,7 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         harness.queryParamMap.next(convertToParamMap({ query: "two" }));
         harness.fixture.detectChanges();
 
-        const request = harness.httpMock.expectOne(QUICK_SEARCH);
+        const request = harness.httpMock.expectOne(DOOR);
         expect(request.request.body).toMatchObject({ query: "two", offset: 0 });
         request.flush(page(1, 1));
     });
@@ -125,10 +122,11 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         const harness = setup();
 
         // The arrival IS the query-less URL: the resolver twin's '' default,
-        // answered with the every-entity marker (SRC-03) standing in for the
-        // type the server requires with an empty query (SRC-02).
+        // which the door answers with every entity — no filter, no marker
+        // (VSR-04, AVR-11, DD-600).
         const request = harness.arrival();
-        expect(request.request.body).toMatchObject({ typeName: "_ALL_ENTITY_TYPES", query: "", offset: 0 });
+        expect(request.request.body).toMatchObject({ query: "", offset: 0 });
+        expect(request.request.body).not.toHaveProperty("filters");
         request.flush(page(2, 2));
         harness.fixture.detectChanges();
         expect(harness.compiled.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(2);
@@ -157,17 +155,12 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         expect(navigate).toHaveBeenCalledWith(["/search/details", "g0"]);
     });
 
-    it("a hit whose type is in the icon map leads its badge with the icon (DET-26, DD-378)", () => {
-        const hitPage = {
+    it("a card whose type is in the icon map leads its badge with the icon (DET-26, DD-378)", () => {
+        const cardPage = {
             ...page(1, 1),
-            searchResults: {
-                ...page(1, 1).searchResults,
-                entities: [
-                    { guid: "g0", typeName: "m4i_dataset", displayText: "topic-x", attributes: { name: "topic-x" } },
-                ],
-            },
+            cards: [{ guid: "g0", typeName: "m4i_dataset", displayText: "topic-x", status: "ACTIVE", stale: false }],
         };
-        const { compiled } = arrive("topic", hitPage);
+        const { compiled } = arrive("topic", cardPage);
 
         const icon = compiled.querySelector("aurelius-atlas-ui-entity-card .media-right .icon");
         expect(icon).toBeTruthy();
@@ -220,8 +213,12 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
         box.click(); // tick "m4i_data_attribute" (the first type row)
         harness.fixture.detectChanges();
 
-        const request = harness.httpMock.expectOne(QUICK_SEARCH);
-        expect(request.request.body).toMatchObject({ query: "data", typeName: "m4i_data_attribute", offset: 0 });
+        const request = harness.httpMock.expectOne(DOOR);
+        expect(request.request.body).toMatchObject({
+            query: "data",
+            filters: { any: [{ typeName: ["m4i_data_attribute"] }, { superTypeNames: ["m4i_data_attribute"] }] },
+            offset: 0,
+        });
         request.flush(page(1, 1));
     });
 
@@ -250,7 +247,7 @@ describe("Results screen (SRH-02, SRH-04..07)", () => {
 
         load.click();
 
-        const second = harness.httpMock.expectOne(QUICK_SEARCH);
+        const second = harness.httpMock.expectOne(DOOR);
         expect(second.request.body).toMatchObject({ query: "gene", offset: 10, limit: 10 });
         second.flush(page(10, 25));
         expect(harness.store.entries()).toHaveLength(20);

@@ -51,15 +51,15 @@
                             <!-- The legacy row: `div.column > details-card`.
                                  The column's auto height is what keeps the
                                  card's min-height:100% inert, and its 0.75rem
-                                 padding is the gap between rows. -->
+                                 padding is the gap between rows. Since 16.5d
+                                 the row is the shared rich card (VCF-04,
+                                 DD-616): the same component the details
+                                 sections mount, body and trail answered by
+                                 the card itself — no second request. -->
                             <div class="column result-row">
-                                <aurelius-atlas-ui-entity-card
-                                    [guid]="entity.guid ?? undefined"
-                                    [name]="displayName(entity)"
-                                    [typeName]="nameFor(entity.typeName)"
-                                    [typeIcon]="iconFor(entity.typeName)?.icon"
-                                    [typeIconClass]="iconFor(entity.typeName)?.classIcon"
-                                    (entityClicked)="openDetails($event)"
+                                <aurelius-atlas-webapp-catalogue-card
+                                    [card]="entity"
+                                    (cardClicked)="openDetails($event)"
                                 />
                             </div>
                         }

@@ -45,6 +45,9 @@ from aurelius_atlas_server.routes import (
     RELATIONSHIP,
     SEARCH_BY_MEANING,
     TYPES,
+    VIEW_ENTITY,
+    VIEW_SEARCH,
+    VIEW_TYPES,
 )
 from aurelius_atlas_server.security_headers import SecurityHeadersMiddleware
 from aurelius_atlas_server.settings import ServerSettings
@@ -258,6 +261,9 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
         SEARCH_BY_MEANING,
         QUALITY,
         APP_SEARCH,
+        VIEW_SEARCH,
+        VIEW_ENTITY,
+        VIEW_TYPES,
     ):
         app.include_router(router)
     install_openapi(app)

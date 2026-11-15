@@ -16,7 +16,7 @@ from conftest import (
     TEMPO_PORT,
     _goto_app,
 )
-from playwright.sync_api import Locator, Page, expect
+from playwright.sync_api import Locator, Page, Route, expect
 
 EN_PLACEHOLDER = (
     "Welcome to Aurelius Atlas! We would like to help you get started. Please pick your topic of interest below."
@@ -659,13 +659,7 @@ def _purge_type(page: Page, root_url: str, token: str, type_name: str) -> None:
     assert listing.status == 200, listing.text()
 
     for entity in listing.json().get("entities", []):
-        deleted = page.request.delete(
-            urljoin(root_url, "/api/atlas/v2/entity/bulk"),
-            params={"guid": entity["guid"]},
-            headers={"authorization": f"Bearer {token}"},
-        )
-
-        assert deleted.status == 200, deleted.text()
+        _delete_entity(page, root_url, token, entity["guid"])
 
 
 @pytest.mark.critical
@@ -673,9 +667,9 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     """The hero field searches: seeded hits, the count, the card → details link (SRH-01..SRH-05).
 
     A query submitted in the hero's search field runs POST
-    ``/api/atlas/v2/search/basic``, rides into ``search/results?query=``, and
-    renders a card per hit with the count above the box (the legacy
-    results screen, DD-218). Clicking a card deep-links the 2.3 skeleton with
+    ``/api/aurelius/v1/search`` (16.5a, VSR-03), rides into
+    ``search/results?query=``, and renders a card per hit with the count
+    above the box (the legacy results screen, DD-218). Clicking a card deep-links the 2.3 skeleton with
     that guid; the results URL survives so a reload re-runs the search
     (SRH-02). The nl-NL locale renders the Dutch word (SRH-10).
     """
@@ -699,6 +693,15 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
     for name in names:
         expect(rows.filter(has_text=name)).to_have_count(1)
 
+    # VCF-02 (16.5d): the rich results card carries the trail — the door's
+    # stored breadcrumb plus the card's own active crumb. These seeds have
+    # no parent, so the trail is the one crumb: the entity's own name,
+    # marked active — the same rule the details header renders (VDR-06).
+    trail = rows.filter(has_text=names[0]).locator(".aurelius-card-trail")
+    expect(trail.locator("li")).to_have_count(1)
+    expect(trail.locator("li").first).to_have_text(names[0])
+    expect(trail.locator("li").first).to_have_class(re.compile("is-active"))
+
     # The card → details deep link (SRH-05): the clicked guid rides the URL,
     # and the header renders the live entity the read answers (7.20, DET-09).
     clicked = names[0]
@@ -719,29 +722,31 @@ def test__hero_search_shows_seeded_results_in_both_locales(authenticated: Page, 
 
 @pytest.mark.critical
 def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user_token: str) -> None:
-    """The quick-search answer fills the facet sidebar; ticking a type narrows the list (SDX-02..08).
+    """The door's answer fills the facet sidebar; ticking a type narrows the list (SDX-02..08).
 
-    The 7.4b spine: one ``POST /api/atlas/v2/search/quick`` answers the hits and
-    the facets, so the sidebar renders a menu per non-empty facet in answer
-    order (SDX-02/03) — the type facet as checkboxes (SDX-04), ``__state`` as
-    read-only text (SDX-05). Ticking a type re-POSTs narrowed to it while the
-    seen-set keeps the other value visible with its last count (SDX-07,
-    DD-426); unticking broadens again. The hero's submit clears the tick
-    (SDX-06, DD-425). Two base-model types (``DataSet``, ``Process``, both
-    outside the name dictionary) keep the values raw and locale-stable; the
-    run token is the prefix the quick search appends ``*`` to (QSR-02), so a
-    single-word query matches this run's seeds alone. Namespaced and cleaned by
-    guid (DD-223's rule on the shared store).
+    The 7.4b spine on the view search door (16.5a, VSR-03/04/06): one
+    ``POST /api/aurelius/v1/search`` answers the hits and the four facets, so
+    the sidebar renders a menu per non-empty facet in answer order (SDX-02/03)
+    — the type facet as checkboxes (SDX-04), the state and service-type facets
+    as read-only text (SDX-05). Ticking a type re-POSTs narrowed to it (the
+    ``filters`` of VSR-04) while the seen-set keeps the other value visible
+    with its last count (SDX-07, DD-426); unticking broadens again. The hero's
+    submit clears the tick (SDX-06, DD-425). Two base-model types
+    (``DataSet``, ``Process``, both outside the name dictionary) keep the
+    values raw and locale-stable; the door matches whole words (AVR-04), so
+    the query names this run's seeds and matches those alone. Namespaced and
+    cleaned by guid (DD-223's rule on the shared store).
     """
     run = secrets.token_hex(4)
     prefix = f"zz{run}"
     datasets = [f"{prefix}alpha", f"{prefix}beta"]
     processes = [f"{prefix}proc"]
+    query = " ".join([*datasets, *processes])
     ds_guids = _seed_entities(authenticated, root_url, user_token, "DataSet", datasets)
     proc_guids = _seed_entities(authenticated, root_url, user_token, "Process", processes)
 
     try:
-        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={prefix}"))
+        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={quote(query)}"))
 
         # One answer feeds the list and the sidebar: three rows, and a menu per
         # non-empty facet in answer order — type, state, service type (SDX-02).
@@ -778,25 +783,72 @@ def test__facet_sidebar_filters_by_type(authenticated: Page, root_url: str, user
         dataset_box.check()
         expect(authenticated.locator(".result-row")).to_have_count(2)
         field = authenticated.locator(".hero aurelius-atlas-ui-search-field input")
-        field.fill(prefix)
+        field.fill(query)
         authenticated.locator(".hero aurelius-atlas-ui-search-field button.button.is-success").click()
         expect(dataset_box).not_to_be_checked()
         expect(authenticated.locator(".result-row")).to_have_count(3)
 
         # SDX-08: the same sidebar in Dutch — the titles ride the bridge
         # (nl-NL: Type, Status, Servicetype). The values stay raw (base-model names).
-        authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={prefix}"))
+        authenticated.goto(urljoin(root_url, f"/nl-NL/search/results?query={quote(query)}"))
         expect(authenticated.locator(".column.is-one-third .menu-label")).to_have_text(
             ["Type", "Status", "Servicetype"]
         )
     finally:
         for guid in [*ds_guids.values(), *proc_guids.values()]:
-            deleted = authenticated.request.delete(
-                urljoin(root_url, "/api/atlas/v2/entity/bulk"),
-                params={"guid": guid},
-                headers={"authorization": f"Bearer {user_token}"},
-            )
-            assert deleted.status == 200, deleted.text()
+            _delete_entity(authenticated, root_url, user_token, guid)
+
+
+@pytest.mark.critical
+def test__meaning_mode_falls_back_to_words_on_a_server_without_embedding(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """Choosing Meaning on a server with no embedder warns and lands on the words answer (VSR-08, SBW-06).
+
+    16.5a's door scenario: the results screen asks
+    ``POST /api/aurelius/v1/search`` (VSR-03), and this stack runs no embedder,
+    so the door refuses a meaning mode with 404 ``AURELIUS-404-00-001``
+    (ASV-09). Picking Meaning in the settings panel (SBX-01) restarts the
+    shown query (SBX-02, VSR-09), that request fails, and the known fallback
+    runs (SBW-06): a warning lands in the alerts feed and the mode stores back
+    to Words, whose change searches again — so the words answer renders the
+    seeded row and the panel reads Words again. The door's keyword answer is
+    what the rows come back on (VSR-03).
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}meaning"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+
+    try:
+        authenticated.goto(urljoin(root_url, f"/en-US/search/results?query={name}"))
+        expect(authenticated.locator(".result-row")).to_have_count(1)
+
+        gear = authenticated.locator('a.navbar-item[aria-label="Settings"]')
+        gear.click()
+        panel = authenticated.locator(".aurelius-drawer-panel")
+        expect(panel).to_be_visible()
+        panel.locator(".settings-search-mode button", has_text="Meaning").click()
+        # The panel stays open over the scrim, which covers the navbar: Escape
+        # dismisses it (the drawer's keyboard path) before the bell is clicked.
+        authenticated.keyboard.press("Escape")
+
+        # The failed meaning search warns (SBW-06): the alert feed carries the
+        # line, through the bell's drawer.
+        authenticated.locator('a.navbar-item[aria-label="Alerts"]').click()
+        expect(authenticated.locator(".aurelius-alert-message")).to_have_text(
+            "Search by meaning is not available on this server"
+        )
+
+        # The words answer the store fell back to is what renders: the seeded
+        # row (VSR-03), and the panel — reopened — reads Words as pressed
+        # again, the stored mode the fallback wrote (SBW-06, SBX-02).
+        expect(authenticated.locator(".result-row")).to_have_count(1)
+        authenticated.keyboard.press("Escape")
+        gear.click()
+        words = panel.locator(".settings-search-mode button", has_text="Words")
+        expect(words).to_have_attribute("aria-pressed", "true")
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guids["-0"])
 
 
 @pytest.mark.critical
@@ -968,6 +1020,32 @@ def _active_edge(entity: dict, key: str, guid: str) -> bool:
     )
 
 
+def _wait_search_cards(page: Page, root_url: str, token: str, guids: list[str], *, timeout: float = 90) -> None:
+    """Ask the search door until it carries every guid (bounded).
+
+    The section cards and the results rows ride the view search door's
+    answer (16.5d, DD-615/DD-616), and the door's cards are the indexer
+    worker's derived documents: the read door answers a just-seeded entity
+    right away, while the search door can still answer without its card —
+    and DET-18 quietly drops a relation whose card is missing. A scenario
+    that asserts card bodies therefore waits the door's beat first, the
+    propagation-retry idiom of ``_wait_entity_read`` (CLS-12's sibling)
+    on the slower indexer.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        answer = page.request.post(
+            urljoin(root_url, "/api/aurelius/v1/search"),
+            data=json.dumps({"filters": {"guid": guids}, "limit": len(guids)}),
+            headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        ).json()
+        found = {card["guid"] for card in answer.get("cards", [])}
+        if set(guids) <= found:
+            return
+        assert time.monotonic() < deadline, f"the search door never carried the cards: missing {set(guids) - found}"
+        time.sleep(2)
+
+
 def _jump_with_side_navigation(page: Page) -> None:
     """The floating side navigation jumps within the details page (DET-25, DD-381).
 
@@ -1090,6 +1168,10 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
             alpha_guid,
             predicate=lambda entity: _active_edge(entity, "fields", guids["field"]),
         )
+        # The section cards ride the search door (16.5d, DD-615): wait its
+        # beat until it carries the attribute pair the boxes resolve, so
+        # DET-18 never drops a card the indexer has not derived yet.
+        _wait_search_cards(authenticated, root_url, user_token, [alpha_guid, guids["beta"]])
 
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{entity_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
@@ -1133,6 +1215,8 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         # edge read back at the attribute end, one resolved card. The layout
         # table gives the attribute a People box too (DET-16); the attribute
         # holds no people ends, so its empty placeholder line renders (DET-23).
+        # The field card rides the door too (DD-615): wait it before opening.
+        _wait_search_cards(authenticated, root_url, user_token, [guids["field"]])
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{alpha_guid}"))
         fields = authenticated.locator("#related-fields")
         expect(fields).to_be_visible()
@@ -1163,6 +1247,71 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         ]:
             _purge_type(authenticated, root_url, user_token, type_name)
         _delete_entity(authenticated, root_url, user_token, dataset_guid)
+
+
+@pytest.mark.critical
+def test__the_details_trail_follows_the_seeded_parentage(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The seeded entity's details show the filled trail, its own crumb active (VDR-06, DD-606).
+
+    16.5b fills the 7.20 seam (DD-317): the read door answers the view with
+    the index document's stored breadcrumb, and the screen renders it top
+    down with the opened entity's own crumb last and active. The mini-graph
+    parents the entity to its domain (the ``dataDomain`` edge), so the trail
+    is domain → entity. The document is the indexer worker's: the scenario
+    waits the door for its breadcrumb, bounded — the poll interval (10 s)
+    plus the document upkeep rides inside the wait. Self-cleaned by the
+    purge helper (DD-223: no shared service restarts, namespaced by the run
+    token).
+    """
+    run = secrets.token_hex(4)
+    guids = _seed_m4i_mini_graph(authenticated, root_url, user_token, run)
+
+    try:
+        # VDR-06's source is the stored document, not the entity: wait the
+        # read door until the indexer has derived the entity's breadcrumb.
+        deadline = time.monotonic() + 90
+        while True:
+            view = authenticated.request.get(
+                urljoin(root_url, f"/api/aurelius/v1/entity/guid/{guids['entity']}"),
+                headers={"authorization": f"Bearer {user_token}"},
+            ).json()
+            crumbs = [crumb["guid"] for crumb in view.get("breadcrumb", [])]
+            if crumbs == [guids["domain"]]:
+                break
+            assert time.monotonic() < deadline, f"the breadcrumb never arrived: {view.get('breadcrumb')}"
+            time.sleep(2)
+
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guids['entity']}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
+
+        # The stored trail top-down plus the opened entity's own crumb,
+        # marked active (VDR-06): the domain above, the entity last. The
+        # header's own trail — since 16.5d the rich section cards carry a
+        # trail too (VCF-05), so the locator names the header's.
+        trail = authenticated.locator(".aurelius-details-header .aurelius-details-trail")
+        items = trail.locator("li")
+        expect(items).to_have_count(2)
+        expect(items.nth(0)).to_have_text(f"zz{run}domain")
+        expect(items.nth(1)).to_have_text(f"zz{run}entity")
+        expect(items.nth(1)).to_have_class(re.compile("is-active"))
+
+        # DET-06 on real crumbs: the parent crumb is a link that routes the
+        # screen to the domain's own details.
+        items.nth(0).locator("a").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guids['domain']}$"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}domain")
+    finally:
+        for type_name in [
+            "m4i_data_entity",
+            "m4i_data_attribute",
+            "m4i_data_domain",
+            "m4i_field",
+            "m4i_system",
+            "m4i_generic_process",
+            "m4i_dataset",
+            "m4i_person",
+        ]:
+            _purge_type(authenticated, root_url, user_token, type_name)
 
 
 @pytest.mark.critical
@@ -1213,6 +1362,10 @@ def test__the_dataset_and_process_pages_render_their_lineage_sections(
                 and _active_edge(entity, "outputs", dataset_guid)
             ),
         )
+        # The lineage boxes' and the process page's cards ride the search
+        # door (16.5d, DD-615): wait its beat for every card the scenario
+        # asserts — the producer, the system, and the dataset.
+        _wait_search_cards(authenticated, root_url, user_token, [process_guid, guids["system"], dataset_guid])
 
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{dataset_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}warehouse")
@@ -1377,6 +1530,9 @@ def test__the_field_page_shows_its_data_quality_rules(authenticated: Page, root_
             field_guid,
             predicate=lambda entity: _active_edge(entity, "dataQuality", rule_guid),
         )
+        # The rules box card rides the search door (16.5d, DD-615): wait its
+        # beat before the screen resolves the box.
+        _wait_search_cards(authenticated, root_url, user_token, [rule_guid])
 
         authenticated.goto(urljoin(root_url, f"/en-US/search/details/{field_guid}"))
         expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}field")
@@ -1458,11 +1614,12 @@ def test__business_explore_lists_glossary_entities_without_a_url_query(
     expect(rows.filter(has_text=name)).to_have_count(1)
 
     # The type filter is session state: reloading the bare results URL
-    # restarts from the URL alone — the empty query, which searches every
-    # entity (_ALL_ENTITY_TYPES, DD-221). The purged type holds exactly the
-    # seeded glossary, so a filtered re-run would show its one row; the
-    # every-entity search shows more (stack-size agnostic: on a fresh CI
-    # stack the few seeded entities, on a shared stack the full page of ten).
+    # restarts from the URL alone — the empty query with no filter, which the
+    # door answers with every entity (VSR-04, AVR-11). The purged type holds
+    # exactly the seeded glossary, so a filtered re-run would show its one
+    # row; the every-entity search shows more (stack-size agnostic: on a
+    # fresh CI stack the few seeded entities, on a shared stack the full page
+    # of ten).
     authenticated.reload()
     expect(authenticated.locator(".result-row")).not_to_have_count(1)
 
@@ -1487,12 +1644,26 @@ def test__no_match_shows_the_legacy_no_results_pair(authenticated: Page, root_ur
 
 
 def _delete_entity(page: Page, root_url: str, token: str, guid: str) -> None:
-    """Delete one entity by guid (the editor scenarios' self-cleaning, EDT-12)."""
-    deleted = page.request.delete(
-        urljoin(root_url, "/api/atlas/v2/entity/bulk"),
-        params={"guid": guid},
-        headers={"authorization": f"Bearer {token}"},
-    )
+    """Delete one entity by guid (the scenarios' self-cleaning, EDT-12).
+
+    A just-seeded entity is still being written by the indexer worker when the
+    scenario finishes, and the soft delete can land mid-write: the server
+    answers 500 "changed by another write" (the store's version conflict).
+    That resolves as soon as the worker's own write lands, so the delete
+    retries it a few times before failing.
+    """
+    attempt = 0
+    while True:
+        deleted = page.request.delete(
+            urljoin(root_url, "/api/atlas/v2/entity/bulk"),
+            params={"guid": guid},
+            headers={"authorization": f"Bearer {token}"},
+        )
+
+        if deleted.status == 200 or "changed by another write" not in deleted.text() or attempt == 10:
+            break
+        time.sleep(1 + attempt)
+        attempt += 1
 
     assert deleted.status == 200, deleted.text()
 
@@ -1976,6 +2147,124 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         if created is not None:
             _delete_entity(authenticated, root_url, user_token, created)
         _delete_entity(authenticated, root_url, user_token, volume_guid)
+
+
+# impact=major, likelihood=high (the conflict re-edit is a young promise on the mutation door)
+@pytest.mark.high
+@pytest.mark.covers(rules=["VDE-07"])
+def test__the_editor_re_edits_from_the_stored_view_after_a_conflict(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """A lost update answers the conflict line; saving again writes over the stored version (VDE-07, AVW-04).
+
+    The drawer reads once and keeps its answer, so when another hand changes
+    the entity while it is open the save is a lost update: the door answers 409
+    with the stored view beside it (AVW-04) and the editor re-seeds from that
+    view (VDE-07) — the typed edit survives, the untouched owner slot takes the
+    stored answer's new value, and the line above the fields says what
+    happened. The second Save rides the stored version and lands: the drawer
+    goes away and the details screen underneath shows the saved text.
+    """
+    run = secrets.token_hex(4)
+    name = f"zz{run}conflict"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [name])
+    guid = guids["-0"]
+
+    try:
+        _open_editor_from_details(authenticated, root_url, guid)
+        drawer = authenticated.locator(".aurelius-drawer")
+        # The drawer's read has landed: the form carries the seeded name.
+        expect(authenticated.locator("#editor-name")).to_have_value(name)
+
+        # Another hand saves through the API while the drawer is open: the put
+        # sets a new updateTime, so the drawer now edits a stale view.
+        bumped = authenticated.request.put(
+            urljoin(root_url, f"/api/atlas/v2/entity/guid/{guid}"),
+            params={"name": "owner"},
+            data=json.dumps("ops-after-conflict"),
+            headers={"content-type": "application/json", "authorization": f"Bearer {user_token}"},
+        )
+        assert bumped.status == 200, bumped.text()
+
+        authenticated.locator("textarea#editor-description").fill("The kept edit.")
+        drawer.locator("button.aurelius-editor-save").click()
+
+        # The door refuses the lost update whole (AVW-04): the warning line
+        # appears, the drawer stays open, and the typed edit survives (VDE-07).
+        expect(drawer.locator(".aurelius-editor-conflict")).to_be_visible()
+        expect(authenticated.locator("textarea#editor-description")).to_have_value("The kept edit.")
+        expect(authenticated).to_have_url(re.compile(r"drawer:edit"))
+
+        # The re-seed (VDE-07): the untouched owner slot now carries the
+        # stored answer's new value; the typed description stayed.
+        expect(authenticated.locator("#editor-owner")).to_have_value("ops-after-conflict")
+
+        # Saving again rides the stored updateTime and lands (AVW-04): the
+        # drawer closes and the details screen shows the kept edit.
+        drawer.locator("button.aurelius-editor-save").click()
+        expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{guid}$"))
+        expect(authenticated.locator(".aurelius-drawer")).to_have_count(0)
+        expect(authenticated.locator(".aurelius-details-description")).to_have_text("The kept edit.")
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+
+
+# impact=major, likelihood=low (the refusal path is young, but two creators colliding is rare)
+@pytest.mark.medium
+@pytest.mark.covers(rules=["VDE-08"])
+def test__the_editor_keeps_the_draft_when_the_name_is_taken(
+    authenticated: Page, root_url: str, user_token: str
+) -> None:
+    """A create whose qualified name is held answers one line and keeps the draft (VDE-08, AVW-06).
+
+    The door answers 409 ``ENTITY_NAME_TAKEN`` for a create whose unique
+    ``qualifiedName`` another entity holds (AVW-06); the editor adds one alert
+    line, the drawer stays open, and the typed name survives (VDE-08) — no
+    conflict line, because the name-taken answer carries no stored view. The
+    form does not expose ``qualifiedName`` (the client sends a fresh uuid,
+    DD-592), so the scenario routes the door's POST and hands the server the
+    held qualified name in the browser's place: the 409 the page renders is the
+    real server's refusal.
+    """
+    run = secrets.token_hex(4)
+    held_name = f"zz{run}held"
+    draft_name = f"zz{run}draft"
+    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [held_name])
+
+    def _hand_the_held_name(route: Route) -> None:
+        body = json.loads(route.request.post_data or "{}")
+        body.setdefault("attributes", {})["qualifiedName"] = held_name
+        route.continue_(post_data=json.dumps(body))
+
+    authenticated.route("**/api/aurelius/v1/entity", _hand_the_held_name)
+    try:
+        authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
+        authenticated.locator("button.aurelius-create-entity").click()
+        authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+        authenticated.locator("#editor-name").fill(draft_name)
+        drawer = authenticated.locator(".aurelius-drawer")
+        drawer.locator("button.aurelius-editor-save").click()
+
+        # The create is refused (AVW-06): the drawer stays open on the create
+        # route with the draft intact, and no conflict line shows (VDE-08).
+        expect(drawer.locator(".aurelius-editor-conflict")).to_have_count(0)
+        expect(authenticated).to_have_url(re.compile(r"drawer:create/DataSet"))
+        expect(authenticated.locator("#editor-name")).to_have_value(draft_name)
+        expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(1)  # the bell marks the alert unread
+
+        # The line itself, in the alerts feed: the bell's drawer names the
+        # refusal. The kept drawer rides the scrim that covers the navbar, so
+        # it goes first (16.5a's idiom) — pressed on a field, because the
+        # drawer listens for Escape on its panel and a failed Save leaves the
+        # focus on the body, where the keydown would die.
+        authenticated.locator("#editor-name").press("Escape")
+        authenticated.locator('a.navbar-item[aria-label="Alerts"]').click()
+        expect(authenticated.locator(".aurelius-alert-message")).to_have_text(
+            "That name is already held by another entity."
+        )
+    finally:
+        authenticated.unroute("**/api/aurelius/v1/entity")
+        _delete_entity(authenticated, root_url, user_token, guids["-0"])
 
 
 def _seed_gov_rule(page: Page, root_url: str, token: str, attributes: dict[str, str]) -> str:

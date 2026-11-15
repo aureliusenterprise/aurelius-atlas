@@ -51,6 +51,37 @@
 }
 
 /*
+ * The filter popover (UIC-42, DD-618): Bulma's dropdown carries the
+ * position; the panel caps its height so a section with many facet rows
+ * scrolls inside the popover instead of pushing the panel past the
+ * screen — the menus slice at five rows (UIC-34) long before that, so
+ * the cap only matters with several groups open at once.
+ */
+.aurelius-card-section-facet-panel {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.aurelius-card-section-no-filters {
+    white-space: nowrap;
+}
+
+/*
+ * The funnel's active mark (VCF-08): on the demo the button's face
+ * stays as it is and the filter glyph turns primary — the legacy pairs
+ * `is-text` with `is-primary` and only the icon's inherited colour
+ * changes (measured on the live demo: the active button keeps its
+ * background, its fa-icon takes the primary hue). Bulma defines
+ * `.button.is-text` after `.button.is-primary`, so the shared cascade
+ * carries no colour at all — the part sets the icon's own (the
+ * component selector outranks Bulma's through the encapsulation
+ * attribute, as the rules above outrank Bulma's `.level`).
+ */
+.aurelius-card-section-funnel.is-primary {
+    color: hsl(var(--bulma-primary-h), var(--bulma-primary-s), var(--bulma-primary-l));
+}
+
+/*
  * Stacked. The host is a size container so the section flips to the
  * stacked layout on its own width, not the viewport's: the boxes share
  * the width that is there and the titles differ, and Bulma's viewport
@@ -89,19 +120,36 @@
         }
 
         .level-right {
-            flex-direction: column;
-        }
+            /* Stacked, the funnel rides left of the sort row, not above
+               it (DD-618: "a funnel button before the sort control" —
+               the row is where the control is): a wrapping row keeps the
+               funnel and the sort pair on the first line and drops the
+               search to a full second line. The column version floated
+               the funnel alone on its own line, which the review of the
+               first cut rejected. */
+            align-items: center;
+            flex-direction: row;
+            flex-wrap: wrap;
 
-        .aurelius-card-section-controls {
-            /* Bulma's `.select select` holds `width: auto`; the stretch
-               repeats Bulma's own `.select.is-fullwidth select` rule. */
-            .control.has-icons-left {
+            .aurelius-card-section-controls {
                 flex-grow: 1;
+                min-width: 0;
+
+                /* Bulma's `.select select` holds `width: auto`; the
+                   stretch repeats Bulma's own `.select.is-fullwidth
+                   select` rule. */
+                .control.has-icons-left {
+                    flex-grow: 1;
+                }
+
+                .select,
+                .select select {
+                    width: 100%;
+                }
             }
 
-            .select,
-            .select select {
-                width: 100%;
+            .aurelius-card-section-search {
+                flex-basis: 100%;
             }
         }
     }

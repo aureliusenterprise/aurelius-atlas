@@ -1048,6 +1048,10 @@ The technical data governance model consists of the following types of entities:
         <source>Select a relationship...</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.components.relationshipsInput.selectPlaceholder</note>
       </trans-unit>
+      <trans-unit id="search.components.editor.conflict" datatype="html">
+        <source>This entity changed since you opened it. Your edits are kept — save again to write them over the stored version.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.conflict</note>
+      </trans-unit>
       <trans-unit id="search.components.editor.dataQualityRule.active" datatype="html">
         <source>Active</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.dataQualityRule.active</note>
@@ -1539,6 +1543,10 @@ The technical data governance model consists of the following types of entities:
       <trans-unit id="search.components.editor.historyPlaceholder" datatype="html">
         <source>History</source>
         <note priority="1" from="description">Aurelius dictionary key: search.components.editor.historyPlaceholder</note>
+      </trans-unit>
+      <trans-unit id="search.components.editor.nameTaken" datatype="html">
+        <source>That name is already held by another entity.</source>
+        <note priority="1" from="description">Aurelius dictionary key: search.components.editor.nameTaken</note>
       </trans-unit>
       <trans-unit id="search.components.editor.person.dataOwnerAttributes" datatype="html">
         <source>Data owner attributes</source>

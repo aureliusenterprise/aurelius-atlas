@@ -106,6 +106,17 @@
              resolved order. Each control binds through [formField] (DD-354);
              the signal form owns validity and is not itself bound. -->
         <form class="aurelius-editor-form" novalidate>
+            <!-- The conflict line (VDE-07, DD-610): a Save that lost the version
+                 race re-edits from the stored view, and this one line says the
+                 entity changed since the drawer opened. It is not an alert and
+                 not an error page (DD-591): the edits stayed, the tag box and
+                 pickers re-seeded around them, and a second Save rides the
+                 stored version. -->
+            @if (conflictShown()) {
+                <p class="help is-warning aurelius-editor-conflict" role="status">
+                    {{ conflictLine }}
+                </p>
+            }
             <!-- The required-fields notification (EDT-07): shown at the top of
                  the form when a Save was attempted and the form is invalid —
                  never below the fold of a long form. Its delete (Bulma's

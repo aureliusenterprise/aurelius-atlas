@@ -2,8 +2,8 @@ import { computed, inject, Injectable, signal } from "@angular/core";
 import {
     SearchService,
     ValidateEntityService,
-    type AtlasEntity,
     type EntityValidationResponse,
+    type EntityView,
     type GovernanceVerdict,
     type SearchParameters,
 } from "aurelius-atlas-data-access";
@@ -44,7 +44,7 @@ export interface GovQualityRow {
 /** The state of one read round: a superseded round's answer paints nothing. */
 interface GovQualityRecord {
     /** The entity this round reads for, or null for the cleared box. */
-    entity: AtlasEntity | null;
+    entity: EntityView | null;
     /** The rules the search answered, sorted by name (DET-42). */
     rules: { guid: string; name: string; description: string; dimension: string }[];
     /** The verdicts by rule guid (the aux API's join key, DD-520). */
@@ -109,10 +109,13 @@ export class DetailsGovQualityState {
      * (Re-)read the box for one entity (DET-42): the rules of its type,
      * then the verdicts over it. A null entity clears the box. Every
      * arrival — the editor's save re-read among them — re-reads from
-     * scratch, the sections store's rule (DD-327's sibling).
-     * @param entity the resolved entity, or null
+     * scratch, the sections store's rule (DD-327's sibling). Since 16.5b
+     * the opened entity arrives as the view (VDR-01): the rules search
+     * reads only its type name, and the aux validate call reads only its
+     * attributes (VEV-01), which the view answers as the entity GET did.
+     * @param entity the read door's answer for the opened entity, or null
      */
-    load(entity: AtlasEntity | null): void {
+    load(entity: EntityView | null): void {
         this.generation++;
         const generation = this.generation;
         if (entity === null) {
@@ -133,7 +136,7 @@ export class DetailsGovQualityState {
      * @param entity the entity whose type names the prefix
      * @param generation the round the answer belongs to
      */
-    private readRules(entity: AtlasEntity, generation: number): void {
+    private readRules(entity: EntityView, generation: number): void {
         const parameters: SearchParameters = {
             typeName: RULE_TYPE_NAME,
             excludeDeletedEntities: true,
@@ -185,10 +188,11 @@ export class DetailsGovQualityState {
      * call, unchanged (EDT-21's client). Its answer joins the rows on
      * `ruleGuid`; a failure leaves the rules iconless (the same swallow,
      * and the verdicts are the box's decoration, never its data).
-     * @param entity the opened entity, sent as the draft
+     * @param entity the opened entity, sent as the draft (the aux API reads
+     *   its attributes only, VEV-01 — a view's carry the same values)
      * @param generation the round the answer belongs to
      */
-    private readVerdicts(entity: AtlasEntity, generation: number): void {
+    private readVerdicts(entity: EntityView, generation: number): void {
         this.validateEntity.validateEntity(entity).subscribe({
             next: (answer: EntityValidationResponse) => {
                 if (this.generation !== generation) {

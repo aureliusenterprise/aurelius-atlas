@@ -21,6 +21,23 @@
  * section, so its place rides the layout row, not the `sections` list.
  */
 
+/**
+ * One facet group of a section's filter popover (VCF-09, VCF-10, DD-619).
+ * A chain or people key is the relation attribute the rows count — the
+ * card's stored derived relations of that type (AVS-02, LAS-05); the two
+ * own-field keys count the card's type name (the dictionary name, DET-26)
+ * and its display text.
+ */
+export type FacetGroupKey =
+    | "m4i_data_domain"
+    | "m4i_data_entity"
+    | "m4i_person"
+    | "m4i_collection"
+    | "m4i_dataset"
+    | "m4i_system"
+    | "typeName"
+    | "name";
+
 /** One card section of a layout (DET-17..DET-22 render it). */
 export interface SectionDef {
     /** The box's anchor id without the `#` — the legacy section id. */
@@ -29,7 +46,33 @@ export interface SectionDef {
     readonly title: string;
     /** The `relationshipAttributes` keys whose entries seed the section. */
     readonly seedKeys: readonly string[];
+    /**
+     * The popover's facet groups, in legacy order (VCF-10, DD-619's
+     * table): each legacy `*-cards` component asked its own `facets` over
+     * the engine, and these keys carry that ask. An empty list renders
+     * the popover's "No filters available." line (VCF-10).
+     */
+    readonly facets: readonly FacetGroupKey[];
 }
+
+/**
+ * The facet group titles (DD-622): each reuses the Aurelius catalogue key
+ * the legacy menu label carried — the seven dictionary keys every locale
+ * already carries (SHL-08). The Name group has no key, so it keeps the raw
+ * titlecased literal the legacy rendered untranslated — DET-21's precedent
+ * for the same value in the sort select.
+ */
+export const FACET_GROUP_TITLES: Readonly<Record<FacetGroupKey, string>> = {
+    m4i_data_domain: $localize`:@@deriveddatadomain:Data Domain`,
+    m4i_data_entity: $localize`:@@deriveddataentity:Data Entity`,
+    m4i_person: $localize`:@@derivedperson:People`,
+    m4i_collection: $localize`:@@derivedcollection:Collection`,
+    m4i_dataset: $localize`:@@deriveddataset:Dataset`,
+    m4i_system: $localize`:@@derivedsystem:System`,
+    typeName: $localize`:@@typename:Type Name`,
+    // No catalogue key: the legacy option value, titlecased raw (DD-622).
+    name: `Name`,
+};
 
 /**
  * Which count a stat shows: a section's seed count, the properties rows,
@@ -155,6 +198,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-entities",
                 title: $localize`:@@search.details.domain.entityCards.title:Data Entities`,
                 seedKeys: ["dataEntity"],
+                facets: ["m4i_person"],
             },
         ],
         stats: [
@@ -192,11 +236,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-attributes",
                 title: $localize`:@@search.details.entity.attributesCards.title:Data Attributes`,
                 seedKeys: ["attributes"],
+                facets: ["m4i_person"],
             },
             {
                 anchor: "related-entities",
                 title: $localize`:@@search.details.entity.entitiesCards.title:Child Entities`,
                 seedKeys: ["childEntity"],
+                facets: ["m4i_person"],
             },
         ],
         stats: [
@@ -243,6 +289,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-fields",
                 title: $localize`:@@search.details.attribute.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
+                facets: ["m4i_system", "m4i_collection", "m4i_dataset"],
             },
         ],
         stats: [
@@ -279,11 +326,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-attributes",
                 title: $localize`:@@search.details.field.attributesCards.title:Data Attributes`,
                 seedKeys: ["attributes"],
+                facets: ["m4i_data_domain", "m4i_data_entity", "m4i_person"],
             },
             {
                 anchor: "related-fields",
                 title: $localize`:@@search.details.field.fieldsCards.title:Child Fields`,
                 seedKeys: ["childField"],
+                facets: ["m4i_system", "m4i_collection", "m4i_dataset"],
             },
             // DET-35 (7.24): the field's own `dataQuality` relationship end seeds
             // the rules box (DD-444). The legacy read the App Search
@@ -293,6 +342,9 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-rules",
                 title: $localize`:@@search.details.field.dataQualityCards.title:Data Quality Rules`,
                 seedKeys: ["dataQuality"],
+                // The legacy asked the rule dimension (DV-168): no card
+                // field carries it, so the popover shows the empty line.
+                facets: [],
             },
         ],
         stats: [
@@ -347,6 +399,8 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-fields",
                 title: $localize`:@@search.details.rule.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
+                // The legacy rule page carries no facet ask (DD-619).
+                facets: [],
             },
         ],
         stats: [
@@ -380,11 +434,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-fields",
                 title: $localize`:@@search.details.dataset.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
+                facets: ["m4i_person"],
             },
             {
                 anchor: "related-datasets",
                 title: $localize`:@@search.details.dataset.datasetsCards.title:Child Datasets`,
                 seedKeys: ["childDataset"],
+                facets: ["m4i_person"],
             },
             // LDG-09: the Lineage Model box sits after Child Datasets and
             // before Producers (dataset-details.component.html L115) — the
@@ -398,11 +454,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-producers",
                 title: $localize`:@@search.details.dataset.producersCards.title:Producers`,
                 seedKeys: ["outputFromProcesses"],
+                facets: ["typeName", "m4i_system"],
             },
             {
                 anchor: "related-consumers",
                 title: $localize`:@@search.details.dataset.consumersCards.title:Consumers`,
                 seedKeys: ["inputToProcesses"],
+                facets: ["typeName", "m4i_system"],
             },
         ],
         stats: [
@@ -479,6 +537,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-datasets",
                 title: $localize`:@@search.details.collection.datasetsCards.title:Datasets`,
                 seedKeys: ["datasets"],
+                facets: ["m4i_person"],
             },
         ],
         stats: [
@@ -512,16 +571,19 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-collections",
                 title: $localize`:@@search.details.system.collectionsCards.title:Collections`,
                 seedKeys: ["collections"],
+                facets: ["m4i_person"],
             },
             {
                 anchor: "related-systems",
                 title: $localize`:@@search.details.system.systemsCards.title:Subsystems`,
                 seedKeys: ["childSystem"],
+                facets: ["m4i_person"],
             },
             {
                 anchor: "related-processes",
                 title: $localize`:@@search.details.system.processesCards.title:Processes`,
                 seedKeys: ["processes"],
+                facets: ["typeName", "m4i_system"],
             },
         ],
         // The legacy systems/processes stats read the systems' governance
@@ -562,6 +624,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-systems",
                 title: $localize`:@@search.details.process.systemsCards.title:Systems`,
                 seedKeys: ["system"],
+                facets: ["typeName", "m4i_system"],
             },
             // LDG-09: the Lineage Model box sits after Systems and before
             // Inputs (process-details.component.html L74) — the
@@ -570,11 +633,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-inputs",
                 title: $localize`:@@search.details.process.inputCards.title:Inputs`,
                 seedKeys: ["inputs"],
+                facets: ["typeName", "m4i_system", "m4i_collection"],
             },
             {
                 anchor: "related-outputs",
                 title: $localize`:@@search.details.process.outputCards.title:Outputs`,
                 seedKeys: ["outputs"],
+                facets: ["typeName", "m4i_system", "m4i_collection"],
             },
         ],
         stats: [
@@ -647,6 +712,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                     "stewardEntity",
                     "stewardAttribute",
                 ],
+                facets: ["typeName", "m4i_data_domain", "m4i_data_entity", "name"],
             },
         ],
         // The grouped bar renders these (DET-40); the flat list stays empty

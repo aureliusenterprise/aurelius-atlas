@@ -14,21 +14,30 @@
         <ul>
             @for (item of _items; track item.guid) {
                 <li [class.is-active]="item.guid === _activeGuid">
-                    <!-- The href is the keyboard path; the click handler cancels
-                         the fragment navigation and emits (UIC-11). -->
-                    <a
-                        href="#"
-                        class="truncate"
-                        [attr.aria-current]="item.guid === _activeGuid ? 'page' : null"
-                        (click)="onItemClick($event, item)"
-                    >
-                        @if (item.icon) {
-                            <span class="icon is-small" [title]="item.typeName">
-                                <fa-icon [ngClass]="item.iconClass" [icon]="item.icon"></fa-icon>
-                            </span>
-                        }
-                        <span [title]="item.name">{{ item.name }}</span>
-                    </a>
+                    @if (item.guid === _activeGuid) {
+                        <!-- The crumb of the entity being viewed cannot be
+                             navigated to, so it is plain text, not a dead
+                             link (UIC-11 amended, DD-624). -->
+                        <span class="truncate" aria-current="page">
+                            @if (item.icon) {
+                                <span class="icon is-small" [title]="item.typeName">
+                                    <fa-icon [ngClass]="item.iconClass" [icon]="item.icon"></fa-icon>
+                                </span>
+                            }
+                            <span [title]="item.name">{{ item.name }}</span>
+                        </span>
+                    } @else {
+                        <!-- The href is the keyboard path; the click handler cancels
+                             the fragment navigation and emits (UIC-11). -->
+                        <a href="#" class="truncate" (click)="onItemClick($event, item)">
+                            @if (item.icon) {
+                                <span class="icon is-small" [title]="item.typeName">
+                                    <fa-icon [ngClass]="item.iconClass" [icon]="item.icon"></fa-icon>
+                                </span>
+                            }
+                            <span [title]="item.name">{{ item.name }}</span>
+                        </a>
+                    }
                 </li>
             }
         </ul>

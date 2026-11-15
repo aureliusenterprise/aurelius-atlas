@@ -15,6 +15,8 @@ from pathlib import Path
 
 import httpx2 as httpx
 from aurelius_atlas_core.entity_embedding_indexer import EntityEmbeddingIndexer
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
+from fastapi import Request
 
 LOGGER = logging.getLogger("aurelius-atlas-server")
 
@@ -67,6 +69,32 @@ def embedding_http(ca_file: Path | None) -> httpx.AsyncClient:
     """The HTTP client of the embedder, verifying its TLS against ``ca_file`` or the system trust store."""
     context = ssl.create_default_context(cafile=ca_file) if ca_file else ssl.create_default_context()
     return httpx.AsyncClient(timeout=HTTP_TIMEOUT_SECONDS, verify=context)
+
+
+def query_embedder(request: Request) -> EmbeddingClient:
+    """The embeddings client of the started server, or 404 when embedding is off (SBM-06, ASV-09).
+
+    Raises:
+        AtlasError: ``EMBEDDING_OFF`` without one.
+    """
+    embedder: EmbeddingClient | None = request.app.state.embedder
+    if embedder is None:
+        raise AtlasError(AtlasErrorCode.EMBEDDING_OFF)
+    return embedder
+
+
+async def embed_query(embedder: EmbeddingClient, query: str) -> list[float]:
+    """The query's embedding, as a ``query`` (DD-443); the searches by meaning and the door share it.
+
+    Raises:
+        AtlasError: ``EMBEDDER_UNAVAILABLE`` when the embedder cannot be reached or answers otherwise (SBM-06,
+            ASV-09).
+    """
+    try:
+        [vector] = await embedder.embed([query], input_type="query")
+    except (httpx.HTTPError, EmbeddingError, KeyError, ValueError) as error:
+        raise AtlasError(AtlasErrorCode.EMBEDDER_UNAVAILABLE, type(error).__name__, cause=error) from error
+    return vector
 
 
 class EmbeddingWorker:
