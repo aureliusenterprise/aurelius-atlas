@@ -118,8 +118,8 @@ four legacy pairs of the quality rules are.
       the two retired presence rules as inactive, DV-173); 2,030 verdicts, 1,767 met and 263 missed; every
       one of the 1,612 legacy documents of a read rule with the verdict it holds — but the 29 of the four
       hierarchy pair rules, which pass through the alternative the oracle's rule did not measure (DV-171,
-      DV-172) — and none of the 16 of the rule whose expression is now `conditional_value(...)` (LAS-13,
-      DV-160, DV-171, DV-172, DV-173).
+      DV-172) — none of the 16 of the rule whose expression is now `conditional_value(...)` (LAS-13,
+      DV-160) — and the system pair rule moves none, as no sample system carries a subsystem (DV-174).
 - `libs/python/aurelius-atlas-core/tests/test__app_search_engine.py`: the engine's fields, and the details
   cards', the list's and the rule page's requests (ASG-05).
 - `apps/aurelius-atlas-server/tests/test__aurelius_atlas_server_app_search_engine.py`: both paths of the engine
