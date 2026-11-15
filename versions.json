@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "fix-auth-jwks-refresh",
+    "title": "fix-auth-jwks-refresh",
+    "aliases": []
+  },
+  {
     "version": "feat-standalone-tenants",
     "title": "feat-standalone-tenants",
     "aliases": []
