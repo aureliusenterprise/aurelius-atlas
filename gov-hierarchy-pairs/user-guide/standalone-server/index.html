@@ -6861,15 +6861,20 @@ settings:</p>
 <span class="w">    </span>run<span class="w"> </span>--rm<span class="w"> </span>--no-deps<span class="w"> </span>--entrypoint<span class="w"> </span>python<span class="w"> </span>aurelius-atlas-server<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-m<span class="w"> </span>aurelius_atlas_server.provisioning<span class="w"> </span>provision<span class="w"> </span>acme
 </code></pre></div>
-<p><code>list</code> shows the tenants, <code>trust acme off</code> closes a tenant to the operators, and <code>remove acme</code> deletes its
-indices, about a minute after it stops serving the tenant. The server picks up a new tenant within
-<code>tenancy_refresh_seconds</code>, 30 by default, without a restart.</p>
+<p>The command keeps the realm in step too, as the client <code>aurelius-atlas-provisioning</code>: it makes the tenant's
+organization and its four <code>/atlas-*</code> groups, and makes each operator a member who reads it while the tenant
+trusts the operators. <code>list</code> shows the tenants. <code>trust acme off</code> closes a tenant to the operators and removes
+them from it. <code>operators</code> brings every tenant in step after an operator joins or leaves <code>operators</code>.
+<code>admin acme add &lt;username&gt;</code> lets that user manage the role groups of acme's members, and nothing outside acme.
+<code>remove acme</code> deletes its indices, about a minute after it stops serving the tenant, then its organization. The
+server picks up a new tenant within <code>tenancy_refresh_seconds</code>, 30 by default, without a restart.</p>
 <p>The demo realm has the organization <code>operators</code>, whose member <code>atlas</code> runs the platform, and the sample tenant
 <code>acme</code>, the organization the command above provisions: <code>steward</code> writes there, <code>scientist</code> reads, and <code>atlas</code>
-reads as an operator. At sign-in, <code>atlas</code> chooses which of the two to act in; to switch, sign out and in again.
-Until 15.5b, another tenant's organization, its <code>/atlas-*</code> groups and its members are added by hand in
-Keycloak's admin console. The realm is imported at the stack's first start only, so a stack started before
-keeps its realm until <code>down -v</code>.</p>
+reads as an operator. At sign-in, <code>atlas</code> chooses which of the two to act in. The webapp shows the tenant in its
+account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in.
+A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
+administrator list or add them. The realm is imported at the stack's first start only, so a stack started
+before keeps its realm until <code>down -v</code>.</p>
 <h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>nginx.conf</code>: TLS on port 9000 with the server's certificate. <code>/atlas2/</code> goes to the server without the

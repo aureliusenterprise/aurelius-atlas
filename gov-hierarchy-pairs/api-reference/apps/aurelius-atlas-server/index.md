@@ -592,6 +592,25 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "minimum": 0,
 >       "title": "Tenancy Refresh Seconds",
 >       "type": "number"
+>     },
+>     "tenancy_admin_client_id": {
+>       "default": "aurelius-atlas-provisioning",
+>       "title": "Tenancy Admin Client Id",
+>       "type": "string"
+>     },
+>     "tenancy_admin_client_secret": {
+>       "anyOf": [
+>         {
+>           "format": "password",
+>           "type": "string",
+>           "writeOnly": true
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Tenancy Admin Client Secret"
 >     }
 >   },
 >   "required": [
@@ -692,6 +711,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_operator_organization` (`str`)
 > - `tenancy_operator_role` (`str`)
 > - `tenancy_refresh_seconds` (`float`)
+> - `tenancy_admin_client_id` (`str`)
+> - `tenancy_admin_client_secret` (`SecretStr | None`)
 >
 > ### app\_search\_batch\_size
 >
@@ -1314,6 +1335,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Whether propagation is deferred to tasks a worker runs after the request: `atlas.tasks.enabled` (TSK-02, DD-081).
+>
+> ### tenancy\_admin\_client\_id
+>
+> ```
+> tenancy_admin_client_id: str = 'aurelius-atlas-provisioning'
+> ```
+>
+> The client the provisioning command reaches the realm's admin API as (TRM-01, DD-600).
+>
+> ### tenancy\_admin\_client\_secret
+>
+> ```
+> tenancy_admin_client_secret: SecretStr | None = None
+> ```
+>
+> Its secret; unset, the command leaves the realm as it is (TRM-01, DD-603).
 >
 > ### tenancy\_enabled
 >
