@@ -54,13 +54,16 @@ def test__demo_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any]
 
 @pytest.mark.covers(rules=["DMO-02"])
 def test__demo_users_hold_all_write_and_read_rights(realm: dict[str, Any]) -> None:
-    """`atlas` holds every role, `steward` read and write, `scientist` read; passwords are placeholders (DMO-02)."""
+    """`atlas` holds every role, `steward` read and write, `scientist` and `operator` read; passwords are
+    placeholders (DMO-02, RLM-06).
+    """  # noqa: D205 - one sentence
     users = {user["username"]: user for user in realm["users"] if "serviceAccountClientId" not in user}
     roles = {name: set(user["clientRoles"][SERVER_CLIENT]) for name, user in users.items()}
     assert roles == {
-        "atlas": set(ROLE_PRIVILEGES),
-        "steward": {"atlas-read", "atlas-write"},
-        "scientist": {"atlas-read"},
+        **{f"{tenant}_atlas": set(ROLE_PRIVILEGES) for tenant in ("demo", "meyn")},
+        **{f"{tenant}_steward": {"atlas-read", "atlas-write"} for tenant in ("demo", "meyn")},
+        **{f"{tenant}_scientist": {"atlas-read"} for tenant in ("demo", "meyn")},
+        "operator": {"atlas-read"},
     }
     for user in users.values():
         assert [credential["type"] for credential in user["credentials"]] == ["password"]
@@ -81,5 +84,28 @@ def test__stack_signs_in_to_demo_alone(services: dict[str, Any], realm: dict[str
     assert services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_REALM"] == "demo"
     sample = services["sample-import"]["environment"]
     assert sample["TOKEN_URL"] == "https://localhost:9000/auth/realms/demo/protocol/openid-connect/token"  # noqa: S105 - a URL
-    assert sample["ATLAS_USERNAME"] == "atlas"
+    assert sample["ATLAS_USERNAME"] == "demo_atlas"
     assert sample["ATLAS_PASSWORD"] == "${DEMO_USER_ATLAS_PASSWORD:-}"  # noqa: S105 - a placeholder
+
+
+@pytest.mark.covers(rules=["DMO-02", "RLM-06"])
+def test__each_tenants_users_have_passwords_of_their_own(realm: dict[str, Any]) -> None:
+    """No two users share a password placeholder: a tenant's people never know another tenant's passwords."""
+    people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
+    placeholders = {user["username"]: user["credentials"][0]["value"] for user in people}
+    assert len(set(placeholders.values())) == len(placeholders)
+    for name, placeholder in placeholders.items():
+        tenant, _, role = name.partition("_")
+        if role:
+            assert placeholder == f"${{{tenant.upper()}_USER_{role.upper()}_PASSWORD}}", name
+
+
+@pytest.mark.covers(rules=["TRM-06"])
+def test__the_demo_realms_people_keep_their_ids_across_imports(realm: dict[str, Any]) -> None:
+    """Fixed, distinct ids: a tenant's record names its administrators and operators by id, and every new Keycloak
+    container imports the realm again, which would otherwise give each person a new one.
+    """  # noqa: D205 - one sentence
+    people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
+    ids = [user.get("id") for user in people] + [org.get("id") for org in realm["organizations"]]
+    assert None not in ids
+    assert len(set(ids)) == len(ids)  # an administrator opens its own organization by this id
