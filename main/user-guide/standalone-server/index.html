@@ -6870,7 +6870,8 @@ them from it. <code>operators</code> brings every tenant in step after an operat
 server picks up a new tenant within <code>tenancy_refresh_seconds</code>, 30 by default, without a restart.</p>
 <p>The demo realm has the organization <code>operators</code>, whose member <code>atlas</code> runs the platform, and the sample tenant
 <code>acme</code>, the organization the command above provisions: <code>steward</code> writes there, <code>scientist</code> reads, and <code>atlas</code>
-reads as an operator. At sign-in, <code>atlas</code> chooses which of the two to act in; to switch, sign out and in again.
+reads as an operator. At sign-in, <code>atlas</code> chooses which of the two to act in. The webapp shows the tenant in its
+account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in.
 A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
 administrator list or add them. The realm is imported at the stack's first start only, so a stack started
 before keeps its realm until <code>down -v</code>.</p>
