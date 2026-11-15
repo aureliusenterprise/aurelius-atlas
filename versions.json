@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "gov-rules-or-pairs",
+    "title": "gov-rules-or-pairs",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
