@@ -8030,9 +8030,16 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
-<td>15.5</td>
+<td>15.5a</td>
+<td>Organizations in the realm</td>
+<td>The operator organization, its role groups and the operator realm role in the dev, standalone and chart realms; the organization group mapper and scope on the server's, the webapp's and the service clients; the service accounts' membership; the server login's organization scope; the operators' read role on every index in the store (ADR 063)</td>
+<td>none</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>15.5b</td>
 <td>Tenants in the realm</td>
-<td>The operator organization and realm role, the tenants' organizations and their role groups, the organization group mapper and each tenant's delegated administrator in the dev, standalone and chart realms; the operators made members of each trusting tenant with read access, kept in step; the operators' read role on every index in the store; the server login's organization scope; the service clients' tenant mappers (ADR 063)</td>
+<td>Provisioning makes and removes each tenant's organization and its role groups; the operators made members of each trusting tenant with read access, kept in step with trust and with the operator organization; each tenant's delegated administrator (ADR 063)</td>
 <td>none</td>
 <td>planned</td>
 </tr>
