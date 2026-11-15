@@ -558,6 +558,21 @@ describe("The section facet filters (VCF-09..VCF-14, DD-619/DD-620)", () => {
         httpMock.verify();
     });
 
+    it("a card's role relations add no facet rows (VCF-17)", () => {
+        // Since 16.5f the door's role pairs (domainLead / businessOwner /
+        // steward, AVS-10) ride every card's relations. They are different
+        // attributes than any configured group, so they count nowhere: the
+        // popover stays the configured groups only (VCF-17).
+        const { store, httpMock } = arriveFields([related("f1", "one")], () => [
+            cardWithRelations("f1", "one", { m4i_system: ["elastic"], steward: ["Ada"], businessOwner: ["Bob"] }),
+        ]);
+
+        const view = fields(store);
+        expect(view.facets.map((facet) => facet.key)).toEqual(["m4i_system"]);
+        expect(group(view, "m4i_system").items.map((row) => [row.label, row.count])).toEqual([["elastic", 1]]);
+        httpMock.verify();
+    });
+
     it("the Type Name group labels the dictionary name (VCF-09, DD-622)", () => {
         const { store, httpMock } = setup();
         store.seed(

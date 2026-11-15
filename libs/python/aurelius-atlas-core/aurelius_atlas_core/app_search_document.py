@@ -45,6 +45,33 @@ RELATION_FIELDS = {
 }
 """The mapped types and the field a relation to one of them is listed in, its GUIDs in ``<field>guid`` (LAS-05)."""
 
+ROLE_FIELDS = {
+    "domainLead": "deriveddomainlead",
+    "businessOwner": "deriveddataowner",
+    "steward": "deriveddatasteward",
+}
+"""The role relationship attributes and the field their ends are listed in, GUIDs in ``<field>guid`` (ASD-06).
+
+The legacy mapping declared the three GUID fields and its pipeline never filled them; the name lists are
+ours, because the door answers a card's people from the document alone (DD-626, DD-627).
+"""
+
+ROLE_NAME_FIELDS = tuple(ROLE_FIELDS.values())
+"""The document's role name lists, mapped as keywords with a text sub-field like the other names (ASD-06)."""
+
+ROLE_GUID_FIELDS = tuple(f"{field}guid" for field in ROLE_FIELDS.values())
+"""The document's role GUID lists, mapped as keywords like the other relation GUIDs (ASD-06)."""
+
+DERIVATION_VERSION = 2
+"""The derivation rules an index round writes documents under: 16.5f's, with the role fields (ASD-07, DD-628).
+
+Version 1 is 14.2's hash, which carries no version and no role fields; a document of another version than
+this one is what the round derives again.
+"""
+
+DERIVATION_VERSION_FIELD = f"{APP_SEARCH_FIELD}.derivationVersion"
+"""The field of the derivation version the document was made under, the round's staleness query (ASD-07)."""
+
 PARENTS = {
     "m4i_data_entity": ("parentEntity", "dataDomain"),
     "m4i_data_attribute": ("dataEntity",),
@@ -55,14 +82,43 @@ PARENTS = {
 }
 """Each mapped type's parent attributes, in the order the first parent is looked for (LAS-04)."""
 
-GUID_FIELDS = ("breadcrumbguid", *(f"{field}guid" for field in RELATION_FIELDS.values()))
-"""The fields a document names other entities in, by GUID: its breadcrumb and its relations (ASU-03)."""
+GUID_FIELDS = (
+    "breadcrumbguid",
+    *(f"{field}guid" for field in RELATION_FIELDS.values()),
+    *ROLE_GUID_FIELDS,
+)
+"""The fields a document names other entities in, by GUID: its breadcrumb, its relations and its role ends.
+
+What a write looks a changed entity up in, and what an identity is made of (ASU-03, DD-519); the role GUID
+fields are part of it since 16.5f, so a role end's name stays fresh in every document naming it (ASD-06).
+"""
 
 NAME_FIELDS = ("name", "referenceablequalifiedname", "definition", "breadcrumbname", *RELATION_FIELDS.values())
-"""The document's fields of names and words, mapped as keywords with a text sub-field (ASD-02)."""
+"""The fields ``atlas-dev``'s engine reads as names, and the index maps as keywords with a text sub-field (ASD-02).
 
-KEYWORD_FIELDS = ("email", "sourcetype", "breadcrumbtype", "parentguid", *GUID_FIELDS)
-"""The document's other fields, its source hash aside, mapped as keywords only (ASD-02)."""
+The role name lists are ours, not ``atlas-dev``'s: the engine keeps its legacy field set and reads the role
+GUIDs as constants until 16.6; the index maps the role lists through ``MAPPING_NAME_FIELDS`` (DD-626).
+"""
+
+MAPPING_NAME_FIELDS = (*NAME_FIELDS, *ROLE_NAME_FIELDS)
+"""Every name list the entity index maps, the role lists included (ASD-02, ASD-06)."""
+
+KEYWORD_FIELDS = (
+    "email",
+    "sourcetype",
+    "breadcrumbtype",
+    "parentguid",
+    "breadcrumbguid",
+    *(f"{field}guid" for field in RELATION_FIELDS.values()),
+)
+"""The fields ``atlas-dev``'s engine reads as stored keywords, its source hash aside (ASD-02).
+
+The role GUID lists are ours, not ``atlas-dev``'s: the engine keeps its legacy field set and answers the
+role GUIDs as constants until 16.6; the index maps them through ``MAPPING_KEYWORD_FIELDS`` (LAS-07, DD-626).
+"""
+
+MAPPING_KEYWORD_FIELDS = (*KEYWORD_FIELDS, *ROLE_GUID_FIELDS)
+"""Every keyword field the entity index maps, the role GUID lists included (ASD-02, ASD-06)."""
 
 SCORE_TYPE = "m4i_dq_score"
 """The quality scanner's score entities, one per rule and dataset (DQS-06)."""
@@ -152,11 +208,13 @@ def has_document(entity: StoredEntity) -> bool:
 
 
 def awaits_document(entity: StoredEntity) -> bool:
-    """Whether the indexer has a document to derive for the entity: one it should have and lacks, or a stale one
-    (ASD-04, ASU-02, EMC-04).
+    """Whether the indexer has a document to derive for the entity: one it should have and lacks, a stale one,
+    or one derived under older rules (ASD-04, ASD-07, ASU-02, EMC-04).
     """  # noqa: D205 - one sentence
     document = entity.app_search
-    return (document is None and has_document(entity)) or (document is not None and document.stale)
+    if document is None:
+        return has_document(entity)
+    return document.stale or document.derivation_version != DERIVATION_VERSION
 
 
 def mapped(entity: StoredEntity) -> bool:
@@ -185,13 +243,15 @@ def source_type(type_name: str) -> str:
 def source_hash(entity: StoredEntity) -> str:
     """The SHA-256 of what the document's own fields and relations are read from on the entity (ASD-03, DD-499).
 
-    Its type, state, own attributes' values and the relationships it lists, sorted.
+    Its type, state, own attributes' values, the relationships it lists, sorted, and the derivation version,
+    so a document derived under older rules is stale once the version moves (ASD-07, DD-628).
     """
     made_of: list[Any] = [
         entity.type_name,
         entity.state.value,
         [attribute_value(entity, name) for name in OWN_ATTRIBUTES],
         sorted(entity.relationship_guids or []),
+        DERIVATION_VERSION,
     ]
     return hashlib.sha256(json.dumps(made_of, ensure_ascii=False, default=str).encode()).hexdigest()
 
@@ -214,6 +274,7 @@ def own_document(entity: StoredEntity) -> StoredAppSearch:
     """The document with the entity's own fields only: no breadcrumb, no relations (LAS-02, LAS-03)."""
     return StoredAppSearch(
         source_hash=source_hash(entity),
+        derivation_version=DERIVATION_VERSION,
         name=document_name(entity),
         referenceablequalifiedname=attribute_value(entity, "qualifiedName") or entity.guid,
         definition=attribute_value(entity, "definition") or "",
@@ -269,8 +330,12 @@ def app_search_mapping() -> dict[str, Any]:
     """The mapping of the entity document's App Search document: keywords, names also as text (ASD-02); the stale
     flag a boolean (ASU-01).
     """  # noqa: D205 - one sentence
-    keywords = ("sourceHash", "governedBy", "governedSource", *KEYWORD_FIELDS)
-    properties = dict.fromkeys(NAME_FIELDS, _NAME) | dict.fromkeys(keywords, _KEYWORD) | {"stale": {"type": "boolean"}}
+    keywords = ("sourceHash", "governedBy", "governedSource", *MAPPING_KEYWORD_FIELDS)
+    properties = (
+        dict.fromkeys(MAPPING_NAME_FIELDS, _NAME)
+        | dict.fromkeys(keywords, _KEYWORD)
+        | {"stale": {"type": "boolean"}, "derivationVersion": {"type": "integer"}}
+    )
     return {"properties": properties}
 
 

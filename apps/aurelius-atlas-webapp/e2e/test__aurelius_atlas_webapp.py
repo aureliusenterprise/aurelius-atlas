@@ -1046,6 +1046,55 @@ def _wait_search_cards(page: Page, root_url: str, token: str, guids: list[str], 
         time.sleep(2)
 
 
+def _wait_card_role_relations(
+    page: Page, root_url: str, token: str, guid: str, attributes: list[str], *, timeout: float = 90
+) -> None:
+    """Ask the search door until the card of ``guid`` carries every role relation (bounded).
+
+    The 16.5f card rows read the door's role relations (AVS-10), which ride the
+    indexer's derived document: the edges are active long before the document
+    re-derives with its role fields filled. The same propagation-retry idiom as
+    ``_wait_search_cards``, waiting the role fill rather than the card's presence.
+    """
+    deadline = time.monotonic() + timeout
+    while True:
+        answer = page.request.post(
+            urljoin(root_url, "/api/aurelius/v1/search"),
+            data=json.dumps({"filters": {"guid": [guid]}, "limit": 1}),
+            headers={"content-type": "application/json", "authorization": f"Bearer {token}"},
+        ).json()
+        cards = answer.get("cards", [])
+        held = {relation["attribute"] for card in cards for relation in card.get("relations", [])}
+        if set(attributes) <= held:
+            return
+        assert time.monotonic() < deadline, (
+            f"the door never carried the role relations on {guid}: missing {set(attributes) - held}"
+        )
+        time.sleep(2)
+
+
+def _the_rich_card_shows_its_labelled_roles(
+    page: Page, root_url: str, token: str, guids: dict[str, str], run: str
+) -> None:
+    """The shared rich card renders the seeded roles as labelled rows (VCF-15, 16.5f).
+
+    Open the seeded domain's page: its Child Entities box resolves the entity's
+    card, and the card shows the owner and steward as the legacy's labelled
+    rows — the role relations ride the door's answer since AVS-10, filled by
+    the indexer's re-derive (ASD-07), so wait that beat through the door first.
+    """
+    _wait_card_role_relations(page, root_url, token, guids["entity"], ["businessOwner", "steward"])
+    page.goto(urljoin(root_url, f"/en-US/search/details/{guids['domain']}"))
+    entity_card = page.locator("#related-entities aurelius-atlas-webapp-catalogue-card").filter(
+        has_text=f"zz{run}entity"
+    )
+    expect(entity_card).to_have_count(1)
+    # the empty domainLead end draws no row: two rows, the seeded roles (VCF-15).
+    expect(entity_card.locator(".aurelius-people-row")).to_have_count(2)
+    expect(entity_card).to_contain_text(f"Data Owner(s) : zz{run}owner")
+    expect(entity_card).to_contain_text(f"Data Steward(s) : zz{run}steward")
+
+
 def _jump_with_side_navigation(page: Page) -> None:
     """The floating side navigation jumps within the details page (DET-25, DD-381).
 
@@ -1125,13 +1174,15 @@ def _deep_link_lands_its_section(page: Page, root_url: str, entity_guid: str, ru
 
 @pytest.mark.critical
 def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: str, user_token: str) -> None:
-    """The m4i details layout renders from a seeded mini-graph (DET-15..DET-20, DET-23, DET-27).
+    """The m4i details layout renders from a seeded mini-graph (DET-15..DET-20, DET-23, DET-27, VCF-15).
 
     The 7.21a screen on real data: the dispatch picks the m4i layout for the
     entity type (DET-15, a direct hit — no typedef walk), the People box
     shows the owner and steward links of the seeded people ends (DET-23),
-    the Data Attributes section seeds from ``relationshipAttributes`` and
-    resolves its cards with their definition text (DET-17, DET-19), the
+    the shared rich card on the domain's Child Entities box shows the same
+    roles labelled on it (VCF-15, 16.5f), the Data Attributes section seeds
+    from ``relationshipAttributes`` and resolves its cards with their
+    definition text (DET-17, DET-19), the
     keyword filter narrows the cards and the reset count line restores them
     (DET-20), and Child Entities renders at its zero count (the empty box,
     no cards). Opening the seeded attribute shows its Fields section — the
@@ -1182,6 +1233,12 @@ def test__m4i_details_render_the_seeded_sections(authenticated: Page, root_url: 
         expect(people.locator(".aurelius-people-row")).to_have_count(2)
         expect(people).to_contain_text(f"Data Owner(s) : zz{run}owner")
         expect(people).to_contain_text(f"Data Steward(s) : zz{run}steward")
+
+        # VCF-15 (16.5f): the same roles, labelled, on the shared rich card
+        # the entity's card draws on the domain page's Child Entities box.
+        _the_rich_card_shows_its_labelled_roles(authenticated, root_url, user_token, guids, run)
+        authenticated.goto(urljoin(root_url, f"/en-US/search/details/{entity_guid}"))
+        expect(authenticated.locator("h1.aurelius-details-title")).to_have_text(f"zz{run}entity")
 
         # DET-17/DET-19: the Data Attributes section at its seeded count,
         # two cards whose bodies carry the seeded definition text.

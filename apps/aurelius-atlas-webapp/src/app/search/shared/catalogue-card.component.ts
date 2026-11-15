@@ -4,6 +4,7 @@ import { Breadcrumbs, ClassificationChip, EntityCard, Markdown, PeopleBox, type 
 
 import { nameDisplay } from "../meta/type-display";
 import { typeIcon } from "../meta/type-icons";
+import { PEOPLE_ENDS } from "../details/shared/people";
 import { trailOf } from "./trail";
 
 /** The relationship attribute the document's derived people arrive under (LAS-05). */
@@ -16,9 +17,11 @@ const PERSON_ATTRIBUTE = "m4i_person";
  * the details header; the crumb of the entity being viewed is the
  * active one, DD-625), the classification chips (`classificationNames`,
  * DD-379's names), the description text (the card's `definition`, DD-614's
- * fallback included) as markdown, and the flat people row (VCF-06, DD-617):
- * the document's derived `m4i_person` relations as plain names, because the
- * document names the people but never their roles (DV-167).
+ * fallback included) as markdown, and the people rows: one labelled row
+ * per role — Domain Lead(s), Data Owner(s), Data Steward(s) — from the
+ * door's role relations (VCF-15, AVS-10, ASD-06), the flat "People" row
+ * of 16.5d kept as the fallback for a document still awaiting its
+ * re-derive round (VCF-16, DD-628).
  *
  * The results row and the details section card mount this one component
  * (VCF-05): the same entity cannot render differently on the two screens
@@ -79,7 +82,7 @@ const PERSON_ATTRIBUTE = "m4i_person";
                         <aurelius-atlas-ui-markdown [markdown]="description()" />
                     </div>
                 }
-                @if (people().length > 0) {
+                @if (peopleRows().length > 0) {
                     <aurelius-atlas-ui-people-box
                         [rows]="peopleRows()"
                         [showEmpty]="false"
@@ -134,7 +137,7 @@ export class CatalogueCard {
     });
 
     /** The flat people of the card's derived person relations (DD-617), deduped by guid. */
-    protected readonly people = computed(() => {
+    private readonly persons = computed(() => {
         const seen = new Map<string, { guid: string; displayText: string }>();
         for (const relation of this.card().relations ?? []) {
             if (relation.attribute !== PERSON_ATTRIBUTE) continue;
@@ -147,8 +150,32 @@ export class CatalogueCard {
         return [...seen.values()];
     });
 
-    /** The one flat row (VCF-06): the people under the single "People" label, no roles. */
-    protected readonly peopleRows = computed<PeopleRow[]>(() => [
-        { label: CatalogueCard.peopleLabel, people: this.people() },
-    ]);
+    /**
+     * The card's people rows (VCF-15): one labelled row per role — Domain
+     * Lead(s), Data Owner(s), Data Steward(s), the legacy order — read from
+     * the door's role relations (AVS-10), each deduped by guid first-wins,
+     * a role with no people drawing no row. A card whose document has
+     * person names but no role ends — derived before 16.5f, awaiting its
+     * round (VCF-16, ASD-07) — keeps the flat "People" row instead, never
+     * both.
+     */
+    protected readonly peopleRows = computed<PeopleRow[]>(() => {
+        const relations = this.card().relations ?? [];
+        const rows: PeopleRow[] = [];
+        for (const { key, label } of PEOPLE_ENDS) {
+            const seen = new Map<string, { guid: string; displayText: string }>();
+            for (const relation of relations) {
+                if (relation.attribute !== key) continue;
+                for (const entity of relation.entities ?? []) {
+                    if (typeof entity.guid !== "string" || entity.guid === "" || seen.has(entity.guid)) continue;
+                    const name = typeof entity.name === "string" && entity.name !== "" ? entity.name : entity.guid;
+                    seen.set(entity.guid, { guid: entity.guid, displayText: name });
+                }
+            }
+            if (seen.size > 0) rows.push({ label, people: [...seen.values()] });
+        }
+        if (rows.length > 0) return rows;
+        const people = this.persons();
+        return people.length > 0 ? [{ label: CatalogueCard.peopleLabel, people }] : [];
+    });
 }
