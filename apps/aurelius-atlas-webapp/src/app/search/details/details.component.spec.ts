@@ -893,6 +893,53 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(search?.getAttribute("placeholder")).toBe("Search for keywords");
     });
 
+    it("the funnel opens the popover and a tick filters the cards and the count line (VCF-08..VCF-13)", () => {
+        const { fixture, compiled, httpMock } = setup("m4i-1");
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity(),
+            doorAnswer([
+                doorCard("a1", "m4i_data_attribute", "gene_symbol", {
+                    relations: [
+                        { attribute: "m4i_person", entities: [{ guid: "p1", name: "Ada", typeName: "m4i_person" }] },
+                    ],
+                }),
+                doorCard("a2", "m4i_data_attribute", "chromosome"),
+            ]),
+        );
+
+        // The entity's Data Attributes box asks the People group (VCF-10).
+        const funnel = compiled.querySelector<HTMLButtonElement>("#related-attributes .aurelius-card-section-funnel")!;
+        expect(funnel.getAttribute("aria-label")).toBe("Filter");
+        expect(funnel.classList.contains("is-primary")).toBe(false);
+
+        funnel.click();
+        fixture.detectChanges();
+        const menu = compiled.querySelector<HTMLElement>(
+            "#related-attributes .aurelius-card-section-filter .dropdown-menu",
+        );
+        expect(normalize(menu?.querySelector(".menu-label")?.textContent)).toBe("People");
+        const box = menu!.querySelector<HTMLInputElement>("input[type='checkbox']")!;
+        expect(normalize(box.closest("label")?.textContent)).toBe("Ada (1)");
+
+        box.click();
+        fixture.detectChanges();
+        const attributes = compiled.querySelector<HTMLElement>("#related-attributes");
+        // Only the card carrying the ticked person stays; the count line
+        // and the funnel follow the filtered set (VCF-13, VCF-08).
+        expect(attributes?.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(1);
+        expect(normalize(attributes?.querySelector("a.aurelius-card-section-reset")?.textContent)).toBe("1 result(s)");
+        expect(funnel.classList.contains("is-primary")).toBe(true);
+
+        // The reset link clears the tick with the keyword and the sort (VCF-13).
+        attributes!.querySelector<HTMLAnchorElement>("a.aurelius-card-section-reset")!.click();
+        fixture.detectChanges();
+        expect(attributes?.querySelectorAll("aurelius-atlas-ui-entity-card")).toHaveLength(2);
+        expect(normalize(attributes?.querySelector("h6")?.textContent)).toBe("2 result(s)");
+        expect(funnel.classList.contains("is-primary")).toBe(false);
+    });
+
     it("Name sorts the cards by display text; the direction reverses (DET-21)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(fixture, httpMock);

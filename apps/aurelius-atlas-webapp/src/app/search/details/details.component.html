@@ -197,7 +197,14 @@
                 [loading]="view.loading"
                 [allLoaded]="view.allLoaded"
                 [loadLabel]="loadLabel"
+                [facets]="view.facets"
+                [filterActive]="view.filterActive"
+                [filterLabel]="filterLabel"
+                [notAvailableLabel]="notAvailableLabel"
+                [showMoreLabel]="showMoreLabel"
+                [showLessLabel]="showLessLabel"
                 (resetRequested)="onSectionReset(view)"
+                (facetToggled)="onSectionFacetToggled(view, $event)"
                 (sortDirectionToggled)="onSectionDirection(view)"
                 (queryChange)="onSectionText(view, $event)"
                 (querySubmitted)="onSectionQuery(view, $event)"
@@ -227,6 +234,7 @@
                                  trail, chips, description, flat people. -->
                             <aurelius-atlas-webapp-catalogue-card
                                 [card]="card.card"
+                                [pageGuid]="guid()"
                                 (cardClicked)="onCardClick($event)"
                             />
                         }

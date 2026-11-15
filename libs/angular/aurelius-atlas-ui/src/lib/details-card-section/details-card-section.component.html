@@ -22,6 +22,62 @@
         </div>
     </div>
     <div class="level-right">
+        <!-- The filter dropdown (UIC-42, VCF-08, DD-618): the legacy
+             details-cards-list funnel — a hoverable Bulma dropdown whose
+             panel carries the facet menus. The button carries the click
+             and keyboard path the CSS hover cannot (DV-169's note) and
+             tints its glyph primary while any section state differs
+             from its default, as the demo's is-primary pair does. -->
+        <div class="dropdown is-hoverable aurelius-card-section-filter" [class.is-active]="facetsOpen()">
+            <div class="dropdown-trigger">
+                <button
+                    #funnel
+                    type="button"
+                    class="button is-text is-inverted aurelius-card-section-funnel"
+                    [class.is-primary]="filterActive()"
+                    aria-haspopup="true"
+                    [attr.aria-controls]="dropdownId"
+                    [attr.aria-expanded]="facetsOpen()"
+                    [attr.title]="filterLabel()"
+                    [attr.aria-label]="filterLabel()"
+                    (click)="toggleFacets()"
+                >
+                    <span class="icon is-large">
+                        <fa-icon aria-hidden="true" [icon]="faFilter" size="lg"></fa-icon>
+                    </span>
+                </button>
+            </div>
+            <div class="dropdown-menu" [id]="dropdownId" role="menu">
+                <div class="dropdown-content aurelius-card-section-facet-panel">
+                    <div class="dropdown-item">
+                        @if (facets().length > 0) {
+                            @for (group of facets(); track group.key) {
+                                <aurelius-atlas-ui-facet-list
+                                    [title]="group.title"
+                                    [items]="group.items"
+                                    [selectable]="true"
+                                    [showMoreLabel]="showMoreLabel()"
+                                    [showLessLabel]="showLessLabel()"
+                                    (toggled)="
+                                        facetToggled.emit({
+                                            group: group.key,
+                                            value: $event.value,
+                                            checked: $event.checked,
+                                        })
+                                    "
+                                />
+                            }
+                        } @else {
+                            <!-- SDX-03's empty state (VCF-10): the legacy
+                                 filter component's #noFilters line. -->
+                            <p class="is-italic has-text-centered aurelius-card-section-no-filters">
+                                {{ notAvailableLabel() }}
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="field has-addons aurelius-card-section-controls">
             <div class="control has-icons-left">
                 <div class="select">

@@ -297,3 +297,97 @@ def test__the_person_page_shows_the_quality_rules_with_verdicts(
         _delete_entity(authenticated, root_url, user_token, rule_guid)
         for type_name in _M4I_PURGE:
             _purge_type(authenticated, root_url, user_token, type_name)
+
+
+@pytest.mark.critical
+@pytest.mark.covers(rules=["VCF-08", "VCF-09", "VCF-10", "VCF-11", "VCF-12", "VCF-13"])
+def test__the_roles_box_funnel_filters_the_cards_by_type(authenticated: Page, root_url: str, user_token: str) -> None:
+    """The roles box's funnel filters its cards: rows, counts, tick, and reset (VCF-08..VCF-13).
+
+    The person's five responsibility ends (two Data Entities, two Data
+    Attributes, one Data Domain) seed the one merged box; its popover
+    asks the legacy roles-box groups (DD-619) and counts them over the
+    resolved door cards. Ticking "Data Attribute" keeps the two attribute
+    cards and moves the count line; the zero-count rows leave the popover
+    (VCF-12) and the reset link returns the whole set (VCF-13). Self-cleaned.
+    """
+    run = secrets.token_hex(4)
+    guid, names, assignments = _seed_person(authenticated, root_url, user_token, run, with_graph=True)
+    ends = ["domainLead", "businessOwnerEntity", "businessOwnerAttribute", "stewardEntity", "stewardAttribute"]
+
+    def row_texts(menu: object) -> list[str]:
+        """The facet rows' texts, spaces folded (the count rides an ``&nbsp;``)."""
+        return [re.sub(r"\s+", " ", text).strip() for text in menu.locator(".menu-list li").all_inner_texts()]  # type: ignore[attr-defined]
+
+    try:
+        _wait_entity_read(
+            authenticated,
+            root_url,
+            user_token,
+            guid,
+            predicate=lambda entity: all(entity.get("relationshipAttributes", {}).get(key) for key in ends),
+        )
+        _wait_search_cards(authenticated, root_url, user_token, [assignments[f"-{i}"] for i in range(1, 6)])
+
+        _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guid}"))
+
+        roles = authenticated.locator("#governance-roles")
+        expect(roles.locator(".title.is-4 a")).to_have_count(5)
+
+        # VCF-08: the funnel sits in the section header, unmarked while nothing filters.
+        funnel = roles.locator("button.aurelius-card-section-funnel")
+        expect(funnel).to_have_count(1)
+        expect(funnel).to_have_class(re.compile(r"^(?!.*\bis-primary\b).*$"))
+
+        # VCF-09/VCF-10: the popover lists the groups with rows over the
+        # five cards — Type Name labels by the dictionary and orders by
+        # count then label (two entities, two attributes, one domain). The
+        # star seed edges the person to every end and nothing sideways, so
+        # no card carries a domain or entity relation and those groups have
+        # no rows to show (SDX-03's empty-facet drop).
+        funnel.click()
+        popover = roles.locator(".aurelius-card-section-filter .dropdown-menu")
+        expect(popover).to_be_visible()
+        labels = [(text or "").strip().casefold() for text in popover.locator(".menu-label").all_inner_texts()]
+        assert labels == ["type name", "name"]
+        menus = popover.locator("aurelius-atlas-ui-facet-list")
+        assert row_texts(menus.first) == ["Data Attribute (2)", "Data Entity (2)", "Data Domain (1)"]
+
+        # VCF-11/VCF-13: tick "Data Attribute" — only the attribute cards
+        # stay, the count line moves, the funnel marks itself active.
+        attribute_row = menus.first.get_by_role("checkbox", name=re.compile("data attribute", re.IGNORECASE))
+        attribute_row.check()
+        expect(roles.locator(".title.is-4 a")).to_have_text([names["owned_attribute"], names["stewarded_attribute"]])
+        expect(roles.locator("h6.aurelius-card-section-count")).to_have_text("2 result(s)")
+        expect(funnel).to_have_class(re.compile(r"\bis-primary\b"))
+
+        # VCF-12: the rows count the filtered set — the Type Name group
+        # drops to the ticked row alone (the checked row stays, its zero
+        # siblings leave), and the Name group shows the two attribute names.
+        assert row_texts(menus.first) == ["Data Attribute (2)"]
+        expect(attribute_row).to_be_checked()
+        assert row_texts(menus.nth(1)) == [f"{names['owned_attribute']} (1)", f"{names['stewarded_attribute']} (1)"]
+
+        # VCF-13: the count line resets keyword, ticks, and sort together.
+        roles.locator("a.aurelius-card-section-reset").click()
+        expect(roles.locator(".title.is-4 a")).to_have_count(5)
+        expect(roles.locator("h6.aurelius-card-section-count")).to_have_text("5 result(s)")
+        expect(funnel).to_have_class(re.compile(r"^(?!.*\bis-primary\b).*$"))
+
+        # VCF-08 (DD-623): a sort away from its default marks the funnel —
+        # the demo's mark follows the section's whole query object, and the
+        # count line stays on the seed count because a sort filters nothing.
+        sort_select = roles.locator("select")
+        sort_select.select_option("name")
+        expect(funnel).to_have_class(re.compile(r"\bis-primary\b"))
+        expect(roles.locator("h6.aurelius-card-section-count")).to_have_text("5 result(s)")
+        sort_select.select_option("relevance")
+        expect(funnel).to_have_class(re.compile(r"^(?!.*\bis-primary\b).*$"))
+
+        # The groups and their rows returned with the untick (VCF-12).
+        funnel.click()  # the reset click closed the popover (a click outside it)
+        assert row_texts(menus.first) == ["Data Attribute (2)", "Data Entity (2)", "Data Domain (1)"]
+    finally:
+        _delete_entity(authenticated, root_url, user_token, guid)
+        for type_name in _M4I_PURGE:
+            _purge_type(authenticated, root_url, user_token, type_name)
