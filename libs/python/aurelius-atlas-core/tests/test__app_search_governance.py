@@ -411,13 +411,14 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
 
 @pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04"])
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
-    """45 of 95 rules read; 2,558 verdicts; 1,600 of the 1,612 legacy verdicts of a rule that reads as it
+    """45 of 95 rules read; 2,558 verdicts; 1,583 of the 1,612 legacy verdicts of a rule that reads as it
     were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
 
-    DV-171: the sample corpus's two dataset rules are the 12.7b pairs — ``length('fields', 1) |
-    length('childDataset', 1)`` and ``length('collections', 1) | length('parentDataset', 1)`` — and the
-    two presence rules they replace went inactive. The pairs judge 44 verdicts the frozen oracle never
-    carried, and 12 legacy verdicts now pass through the alternative the oracle's rule did not measure.
+    DV-171 and DV-172: the sample corpus's four hierarchy rules are OR pairs — the two dataset pairs
+    (a field or a child; a collection or a parent, DV-171) and the two content/membership pairs (a field's
+    dataset or its parent field; a data entity's attribute or its child entity, DV-172). Each pair judges
+    verdicts the frozen oracle never carried, and 29 legacy verdicts now pass through the alternative the
+    oracle's one-name rule did not measure.
     """  # noqa: D205 - one sentence
     read, rules, verdicts = sample_verdicts()
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
@@ -425,15 +426,20 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
     assert (read, rules) == (45, 95)
     assert (len(verdicts), Counter(verdict["compliant"] for verdict in verdicts.values())) == (
         2558,
-        Counter({"1": 1750, "0": 808}),
+        Counter({"1": 1767, "0": 791}),
     )
     kept = [document for document in legacy if document["id"] in verdicts]
     assert len(kept) == 1612
-    # DV-171: the only verdicts that moved are the pair rules' own, and each moved to compliant —
-    # a dataset holding a child (or a parent) now answers the fields (or collections) pair.
-    pairs = ("cfd24715-125d-46e2-854d-b0c1b16340bf", "fb2c608f-d7ff-4574-8c2d-a240c8c79e91")
+    # DV-171/DD-635 + DV-172/DD-637: the only verdicts that moved are the pair rules' own, and each moved
+    # to compliant — a node reached through its other hierarchy edge now answers the pair.
+    pairs = (
+        "cfd24715-125d-46e2-854d-b0c1b16340bf",
+        "fb2c608f-d7ff-4574-8c2d-a240c8c79e91",
+        "cad0a3bf-9f7f-464f-aeb5-9ce97eb993b3",
+        "c4d10911-7661-4058-a2df-a25fbed0e093",
+    )
     moved = [document for document in kept if verdicts[document["id"]]["compliant"] != document["compliant"]]
-    assert len(moved) == 12
+    assert len(moved) == 29
     assert all(document["id"].endswith(tuple(pairs)) and document["compliant"] == "0" for document in moved)
     assert all(document not in moved for document in kept if not document["id"].endswith(tuple(pairs)))
     assert {document["guid"] for document in legacy if document["id"] not in verdicts} == {
