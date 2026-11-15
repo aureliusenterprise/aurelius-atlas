@@ -94,7 +94,7 @@ def governance_rule(entity: StoredEntity) -> GovernanceRule | None:
         "dataqualityruledescription": attribute_value(entity, "ruleDescription") or "",
         "dataqualityruledimension": attribute_value(entity, "qualityDimension") or check.dimension.value.lower(),
         "noncompliant_message": check.non_compliant_message or GOV_KINDS[check.kind].reason,
-        "usedattributes": [check.attribute],
+        "usedattributes": [check.attribute, *check.any_of],
         "result_id": "0",
         "business_rule_id": "1",
     }

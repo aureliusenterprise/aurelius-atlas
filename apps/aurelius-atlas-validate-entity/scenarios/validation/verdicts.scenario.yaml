@@ -12,7 +12,10 @@
 # presence rule over a relationship (data/atlas-sample/sample_data.zip, guid
 # 0d3807d0-d6cc-4093-b990-6a0928504a94) — answers its refusal line for a
 # picker holding nothing and its compliant line only once a child is picked
-# (VEV-08, DD-634).
+# (VEV-08, DD-634). 12.7b restates the fields record as the corpus's new pair
+# — length('fields', 1) | length('childDataset', 1) (guid cfd24715-125d-46e2-
+# 854d-b0c1b16340bf): its verdict carries anyOf and a picked child passes it
+# through the alternative (VEV-09).
 name: "A draft in, one verdict per active rule out"
 source:
     - .scratch/aurelius/libs/m4i-governance-data-quality/m4i_governance_data_quality/rules/definitions/m4i_dataset.json
@@ -24,6 +27,7 @@ rules:
     - VEV-03
     - VEV-07
     - VEV-08
+    - VEV-09
 covers:
     - aurelius_atlas_validate_entity.app.create_app
 stages:
@@ -51,11 +55,13 @@ stages:
                     compliant: true
                     message: This dataset has a name
                   - ruleGuid: rule-dataset-fields
-                    ruleName: Dataset has a field
+                    ruleName: Dataset has a field or a child dataset
                     attribute: fields
+                    anyOf:
+                        - childDataset
                     dimension: COMPLETENESS
                     compliant: false
-                    message: This dataset should have at least one field
+                    message: This dataset should have a field or a child dataset
                   - ruleGuid: rule-dataset-child
                     ruleName: Dataset has a child
                     attribute: childDataset
@@ -91,11 +97,13 @@ stages:
                     compliant: true
                     message: This dataset has a name
                   - ruleGuid: rule-dataset-fields
-                    ruleName: Dataset has a field
+                    ruleName: Dataset has a field or a child dataset
                     attribute: fields
+                    anyOf:
+                        - childDataset
                     dimension: COMPLETENESS
                     compliant: true
-                    message: This dataset has at least one field
+                    message: This dataset has a field or a child dataset
                   - ruleGuid: rule-dataset-child
                     ruleName: Dataset has a child
                     attribute: childDataset
@@ -129,11 +137,13 @@ stages:
                     compliant: true
                     message: This dataset has a name
                   - ruleGuid: rule-dataset-fields
-                    ruleName: Dataset has a field
+                    ruleName: Dataset has a field or a child dataset
                     attribute: fields
+                    anyOf:
+                        - childDataset
                     dimension: COMPLETENESS
                     compliant: false
-                    message: This dataset should have at least one field
+                    message: This dataset should have a field or a child dataset
                   - ruleGuid: rule-dataset-child
                     ruleName: Dataset has a child
                     attribute: childDataset
@@ -141,7 +151,7 @@ stages:
                     compliant: false
                     message: This entity is missing a childDataset
               unreadRules: []
-    - name: A picked child lands the presence rule (VEV-08, DD-634)
+    - name: A picked child lands the presence rule and passes the pair rule (VEV-08, VEV-09, DD-634)
       request:
           method: POST
           url: /
@@ -169,11 +179,13 @@ stages:
                     compliant: true
                     message: This dataset has a name
                   - ruleGuid: rule-dataset-fields
-                    ruleName: Dataset has a field
+                    ruleName: Dataset has a field or a child dataset
                     attribute: fields
+                    anyOf:
+                        - childDataset
                     dimension: COMPLETENESS
-                    compliant: false
-                    message: This dataset should have at least one field
+                    compliant: true
+                    message: This dataset has a field or a child dataset
                   - ruleGuid: rule-dataset-child
                     ruleName: Dataset has a child
                     attribute: childDataset

@@ -96,7 +96,9 @@ def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> N
         for document in documents
         if document["typename"] == "m4i_person"
     )
-    assert list(mismatches("name", names).values()) == ["m4i_gov_data_quality"]
+    # DV-171: the sample corpus's two pair rules (12.7b) carry new names, so they join
+    # the one name the frozen oracle already missed.
+    assert list(mismatches("name", names).values()) == ["m4i_gov_data_quality"] * 3
     assert sorted(mismatches("referenceablequalifiedname", qualified).values()) == [
         *["m4i_generic_process"] * 19,
         "m4i_gov_data_quality",
@@ -218,8 +220,14 @@ def test__a_quality_result_names_its_rule_and_a_field_of_it() -> None:
 
 @pytest.mark.covers(rules=["LAS-13"])
 def test__a_governance_verdict_names_its_entity_and_a_rule_for_its_type() -> None:
-    """Identity, type and the rule's kind, description and dimension hold for all 1,628 verdicts."""
+    """Identity, type and the rule's kind, description and dimension hold for all 1,628 verdicts; the
+    description of the two pair rules differs in 44, text only (DV-171).
+    """  # noqa: D205 - one sentence
     verdicts = engine("atlas-dev-gov-quality")
+    # DV-171: the sample corpus's two dataset pair rules (12.7b) carry the pair sentence where the
+    # frozen oracle still holds the one-name one — the rule's own text, unchanged everywhere else.
+    pair_rules = {"cfd24715-125d-46e2-854d-b0c1b16340bf", "fb2c608f-d7ff-4574-8c2d-a240c8c79e91"}
+    description_differs = 0
     for verdict in verdicts:
         rule, entity = verdict["guid"], verdict["entity_guid"]
         assert entities()[rule]["typeName"] == "m4i_gov_data_quality"
@@ -227,7 +235,7 @@ def test__a_governance_verdict_names_its_entity_and_a_rule_for_its_type() -> Non
         assert verdict["dataqualityruletypename"] == entities()[entity]["typeName"]
         assert str(attribute(rule, "qualifiedName")).startswith(f"{verdict['dataqualityruletypename']}--")
         assert verdict["dataqualitytype"] == attribute(rule, "ruleType")
-        assert verdict["dataqualityruledescription"] == attribute(rule, "ruleDescription")
+        description_differs += verdict["dataqualityruledescription"] != attribute(rule, "ruleDescription")
         assert verdict["dataqualityruledimension"] == attribute(rule, "qualityDimension")
         assert (verdict["result_id"], verdict["business_rule_id"]) == ("0", "1")
         assert verdict["compliant"] in ("0", "1")
@@ -238,3 +246,9 @@ def test__a_governance_verdict_names_its_entity_and_a_rule_for_its_type() -> Non
     )
     assert len(verdicts) == len({verdict["id"] for verdict in verdicts}) == 1628
     assert disagree == 199
+    assert description_differs == 44
+    assert all(
+        verdict["guid"] in pair_rules
+        for verdict in verdicts
+        if verdict["dataqualityruledescription"] != attribute(verdict["guid"], "ruleDescription")
+    )

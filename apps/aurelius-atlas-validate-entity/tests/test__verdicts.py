@@ -131,6 +131,22 @@ CHILD_RULE = rule_entity(
 """The corpus's ``completeness('childDataset')`` shape: a PRESENCE rule over a relationship
 attribute. An empty picker is no value, so the rule misses it (VEV-08, DD-634)."""
 
+PAIR_RULE = rule_entity(
+    "rule-fields-pair",
+    "Dataset has a field or a child dataset",
+    {
+        "name": "Dataset has a field or a child dataset",
+        "qualifiedName": "m4i_dataset--fields",
+        "active": True,
+        "expression": "length('fields', 1) | length('childDataset', 1)",
+        "ruleDescription": "A dataset should have at least one field or a child dataset",
+        "compliantMessage": "This dataset has a field or a child dataset",
+        "nonCompliantMessage": "This dataset should have a field or a child dataset",
+    },
+)
+"""The sample corpus's paired fields rule (DV-171): the stored ``|`` expression reads as
+attribute ``fields`` with ``childDataset`` among its alternatives (VEV-09, GQ-06, ASG-02)."""
+
 
 def _draft(
     attributes: dict[str, Any],
@@ -516,3 +532,34 @@ async def test__a_relationship_without_picks_is_no_value_for_a_presence_rule(
     assert [verdict.compliant for verdict in cleared.verdicts] == [False]
     assert [verdict.compliant for verdict in picked.verdicts] == [True]
     assert picked.verdicts[0].message == "This entity has a childDataset"
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft",
+    rules=["VEV-09"],
+)
+async def test__the_alternatives_of_an_or_rule_travel_on_its_verdict(
+    engine_settings: ValidateEntitySettings,
+) -> None:
+    """The paired corpus rule answers once by either name and carries the other to the screen (VEV-09, DV-171).
+
+    ``length('fields', 1) | length('childDataset', 1)`` reads as GQ-06's anyOf pair:
+    the draft with no field and one picked child passes, and the verdict names
+    ``fields`` with ``childDataset`` among its alternatives, so the editor paints the
+    one line under both pickers.
+    """
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, PAIR_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    bare = await engine.evaluate_draft(_draft({"name": "Sales Orders"}))
+    child = await engine.evaluate_draft(
+        _draft({"name": "Sales Orders"}, relationships={"childDataset": [{"guid": "c-1", "typeName": "m4i_dataset"}]}),
+    )
+    await http.aclose()
+
+    assert [verdict.compliant for verdict in bare.verdicts] == [False]
+    assert bare.verdicts[0].attribute == "fields"
+    assert bare.verdicts[0].any_of == ["childDataset"]
+    assert [verdict.compliant for verdict in child.verdicts] == [True]
+    assert child.verdicts[0].message == "This dataset has a field or a child dataset"
