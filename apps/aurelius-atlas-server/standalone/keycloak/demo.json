@@ -128,47 +128,107 @@
                         "de0e0000-0000-4000-8000-000000000004"
                     ],
                     "username": "atlas"
+                },
+                {
+                    "groups": ["de0e0000-0000-4000-8000-000000000001"],
+                    "username": "operator"
                 }
             ],
             "name": "operators"
         },
         {
-            "alias": "acme",
-            "description": "The sample tenant (15.5a)",
+            "alias": "demo",
+            "description": "The tenant with the sample catalogue (the stack's profile tenancy)",
             "enabled": true,
             "groups": [
                 {
-                    "id": "deac0000-0000-4000-8000-000000000001",
+                    "id": "ded0000-0000-4000-8000-000000000001",
                     "name": "atlas-read"
                 },
                 {
-                    "id": "deac0000-0000-4000-8000-000000000002",
+                    "id": "ded0000-0000-4000-8000-000000000002",
                     "name": "atlas-write"
                 },
                 {
-                    "id": "deac0000-0000-4000-8000-000000000003",
+                    "id": "ded0000-0000-4000-8000-000000000003",
                     "name": "atlas-types"
                 },
                 {
-                    "id": "deac0000-0000-4000-8000-000000000004",
+                    "id": "ded0000-0000-4000-8000-000000000004",
                     "name": "atlas-admin"
                 }
             ],
             "members": [
                 {
-                    "groups": ["deac0000-0000-4000-8000-000000000001", "deac0000-0000-4000-8000-000000000002"],
+                    "groups": [
+                        "ded0000-0000-4000-8000-000000000001",
+                        "ded0000-0000-4000-8000-000000000002",
+                        "ded0000-0000-4000-8000-000000000003",
+                        "ded0000-0000-4000-8000-000000000004"
+                    ],
+                    "username": "atlas"
+                },
+                {
+                    "groups": ["ded0000-0000-4000-8000-000000000001", "ded0000-0000-4000-8000-000000000002"],
                     "username": "steward"
                 },
                 {
-                    "groups": ["deac0000-0000-4000-8000-000000000001"],
+                    "groups": ["ded0000-0000-4000-8000-000000000001"],
                     "username": "scientist"
                 },
                 {
-                    "groups": ["deac0000-0000-4000-8000-000000000001"],
-                    "username": "atlas"
+                    "groups": ["ded0000-0000-4000-8000-000000000001"],
+                    "username": "operator"
                 }
             ],
-            "name": "acme"
+            "name": "demo"
+        },
+        {
+            "alias": "meyn",
+            "description": "A tenant without sample data (the stack's profile tenancy)",
+            "enabled": true,
+            "groups": [
+                {
+                    "id": "dee0000-0000-4000-8000-000000000001",
+                    "name": "atlas-read"
+                },
+                {
+                    "id": "dee0000-0000-4000-8000-000000000002",
+                    "name": "atlas-write"
+                },
+                {
+                    "id": "dee0000-0000-4000-8000-000000000003",
+                    "name": "atlas-types"
+                },
+                {
+                    "id": "dee0000-0000-4000-8000-000000000004",
+                    "name": "atlas-admin"
+                }
+            ],
+            "members": [
+                {
+                    "groups": [
+                        "dee0000-0000-4000-8000-000000000001",
+                        "dee0000-0000-4000-8000-000000000002",
+                        "dee0000-0000-4000-8000-000000000003",
+                        "dee0000-0000-4000-8000-000000000004"
+                    ],
+                    "username": "atlas"
+                },
+                {
+                    "groups": ["dee0000-0000-4000-8000-000000000001", "dee0000-0000-4000-8000-000000000002"],
+                    "username": "steward"
+                },
+                {
+                    "groups": ["dee0000-0000-4000-8000-000000000001"],
+                    "username": "scientist"
+                },
+                {
+                    "groups": ["dee0000-0000-4000-8000-000000000001"],
+                    "username": "operator"
+                }
+            ],
+            "name": "meyn"
         }
     ],
     "organizationsEnabled": true,
@@ -221,7 +281,6 @@
             "enabled": true,
             "firstName": "Atlas",
             "lastName": "Administrator",
-            "realmRoles": ["atlas-operator"],
             "username": "atlas"
         },
         {
@@ -273,6 +332,24 @@
             "enabled": true,
             "serviceAccountClientId": "aurelius-atlas-provisioning",
             "username": "service-account-aurelius-atlas-provisioning"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read"]
+            },
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_OPERATOR_PASSWORD}"
+                }
+            ],
+            "email": "operator@aurelius-atlas.localhost",
+            "emailVerified": true,
+            "enabled": true,
+            "firstName": "Platform",
+            "lastName": "Operator",
+            "realmRoles": ["atlas-operator"],
+            "username": "operator"
         }
     ]
 }

@@ -81,13 +81,35 @@ later.
 ## Tenants
 
 `ATLAS_TENANCY_ENABLED=true` serves several tenants from the one stack (ADR 063): a request acts in the one
-Keycloak organization its token names, and each tenant has its own indices and background work. The
-organization `operators` keeps the catalogue the stack has without tenancy. Off by default, the server answers
-as Apache Atlas does. A tenant is provisioned by the server's command, run in the server's image with its
-settings:
+Keycloak organization its token names, and each tenant has its own indices and background work. Off by default,
+the server answers as Apache Atlas does. The profile `tenancy` adds the one shot `tenants`, which provisions the
+demo realm's two tenants at every start, leaving one already there as it is:
 
 ```bash
-docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
+ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
+    --env-file apps/aurelius-atlas-server/.env --env-file dev/keycloak/.env --profile tenancy up -d
+docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml logs tenants
+```
+
+| Organization | `atlas`        | `steward`      | `scientist` | `operator` | Catalogue                             |
+| ------------ | -------------- | -------------- | ----------- | ---------- | ------------------------------------- |
+| `demo`       | all four roles | read and write | read        | read       | the sample, `TENANT_SAMPLE`           |
+| `meyn`       | all four roles | read and write | read        | read       | empty                                 |
+| `operators`  | all four roles |                |             | read       | the stack's catalogue without tenancy |
+
+`operator` runs the platform: it holds the operator role, so the server holds it at read access outside
+`operators`, and the one shot gives it a user of its own in the store, an admin of every index (ADR 063's direct
+store access). Its password is `DEMO_USER_OPERATOR_PASSWORD` in `dev/keycloak/.env`; the store has no published
+port, so it is reached from the stack's network. `TENANT_SAMPLE` names the export ZIP in `SAMPLE_DIR` that demo
+starts with, `sample_data.zip` by default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into
+demo, not into the stack's own catalogue.
+
+At sign-in, a person in several organizations chooses which to act in. The webapp shows the tenant in its account
+menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in. Another
+tenant is provisioned by the server's command, run in the server's image with its settings:
+
+```bash
+ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
     --env-file apps/aurelius-atlas-server/.env --env-file dev/keycloak/.env \
     run --rm --no-deps --entrypoint python aurelius-atlas-server \
     -m aurelius_atlas_server.provisioning provision acme
@@ -99,15 +121,10 @@ trusts the operators. `list` shows the tenants. `trust acme off` closes a tenant
 them from it. `operators` brings every tenant in step after an operator joins or leaves `operators`.
 `admin acme add <username>` lets that user manage the role groups of acme's members, and nothing outside acme.
 `remove acme` deletes its indices, about a minute after it stops serving the tenant, then its organization. The
-server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, without a restart.
-
-The demo realm has the organization `operators`, whose member `atlas` runs the platform, and the sample tenant
-`acme`, the organization the command above provisions: `steward` writes there, `scientist` reads, and `atlas`
-reads as an operator. At sign-in, `atlas` chooses which of the two to act in. The webapp shows the tenant in its
-account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in.
-A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
-administrator list or add them. The realm is imported at the stack's first start only, so a stack started
-before keeps its realm until `down -v`.
+server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, without a restart. A tenant's
+members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
+administrator list or add them. The stack's Keycloak keeps no data of its own: each new container imports
+`keycloak/demo.json` again, so a change made in its console lasts until the container is recreated.
 
 ## How it fits together
 

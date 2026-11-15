@@ -54,13 +54,16 @@ def test__demo_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any]
 
 @pytest.mark.covers(rules=["DMO-02"])
 def test__demo_users_hold_all_write_and_read_rights(realm: dict[str, Any]) -> None:
-    """`atlas` holds every role, `steward` read and write, `scientist` read; passwords are placeholders (DMO-02)."""
+    """`atlas` holds every role, `steward` read and write, `scientist` and `operator` read; passwords are
+    placeholders (DMO-02, RLM-06).
+    """  # noqa: D205 - one sentence
     users = {user["username"]: user for user in realm["users"] if "serviceAccountClientId" not in user}
     roles = {name: set(user["clientRoles"][SERVER_CLIENT]) for name, user in users.items()}
     assert roles == {
         "atlas": set(ROLE_PRIVILEGES),
         "steward": {"atlas-read", "atlas-write"},
         "scientist": {"atlas-read"},
+        "operator": {"atlas-read"},
     }
     for user in users.values():
         assert [credential["type"] for credential in user["credentials"]] == ["password"]

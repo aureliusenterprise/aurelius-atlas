@@ -159,3 +159,27 @@ def test__the_umbrella_generates_the_provisioning_clients_secret(umbrella_docs: 
     """``<release>-provisioning-client`` with its ``client-secret``, as the server client's Secret is made."""
     secret = find(umbrella_docs, "Secret", "atlas-provisioning-client")
     assert set(secret["data"]) == {"client-secret"}
+
+
+@pytest.mark.covers(rules=["WPT-10", "TRM-02"])
+def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_demand() -> None:
+    """The profile tenancy's one shot: the server's image and settings, tenancy on, the operator's password, the
+    sample folder; it runs the stack's tenants script, which provisions demo with the sample and meyn without.
+    """  # noqa: D205 - one sentence
+    standalone = WORKSPACE / "apps/aurelius-atlas-server/standalone"
+    compose = yaml.safe_load((standalone / "docker-compose.yaml").read_text())
+    tenants = compose["services"]["tenants"]
+    server = compose["services"]["aurelius-atlas-server"]
+    assert (tenants["profiles"], tenants["image"]) == (["tenancy"], server["image"])
+    assert tenants["entrypoint"] == ["python", "/standalone/tenants.py"]
+    environment = tenants["environment"]
+    assert {key: value for key, value in environment.items() if key in server["environment"]} == {
+        **server["environment"],
+        "AURELIUS_ATLAS_SERVER_TENANCY_ENABLED": "true",
+    }
+    assert environment["OPERATOR_PASSWORD"] == "${DEMO_USER_OPERATOR_PASSWORD:?}"  # noqa: S105 - a placeholder
+    assert environment["PYTHONPATH"] == "/application"  # the image's packages, beside the script
+    assert "./tenants.py:/standalone/tenants.py:ro" in tenants["volumes"]
+    script = (standalone / "tenants.py").read_text()
+    assert '"provision", "demo", "--existing-ok", "--sample"' in script
+    assert '"provision", "meyn", "--existing-ok"]' in script

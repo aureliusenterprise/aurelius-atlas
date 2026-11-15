@@ -88,6 +88,8 @@ services:
             DEMO_USER_ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:?}
             DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:?}
             DEMO_USER_SCIENTIST_PASSWORD: ${DEMO_USER_SCIENTIST_PASSWORD:?}
+            # The platform's operator, who reads every tenant and administers the store (README.md, Tenants).
+            DEMO_USER_OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             # The provisioning command's client (15.5b, TRM-11), in dev/keycloak/.env.
             PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
@@ -116,7 +118,7 @@ services:
                 condition: service_healthy
             elasticsearch:
                 condition: service_healthy
-        environment:
+        environment: &server-environment
             AURELIUS_ATLAS_SERVER_ROOT_PATH: /atlas2
             AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
             AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
@@ -204,6 +206,33 @@ services:
         volumes:
             - *certs
             - ./import_sample.py:/standalone/import_sample.py:ro
+            - ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
+
+    # One shot of the profile tenancy (README.md, Tenants): provisions the tenant demo with the sample and meyn
+    # without one, their organizations included, and gives the realm's operator a store user of its own. A tenant
+    # already provisioned is left as it is, so it runs at every start.
+    tenants:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        profiles: [tenancy]
+        entrypoint: [python, /standalone/tenants.py]
+        network_mode: service:proxy
+        depends_on:
+            keycloak:
+                condition: service_healthy
+            elasticsearch:
+                condition: service_healthy
+        restart: "no"
+        environment:
+            <<: *server-environment
+            AURELIUS_ATLAS_SERVER_TENANCY_ENABLED: "true"
+            # The image's packages are in its working directory, which a script's own path leaves out.
+            PYTHONPATH: /application
+            OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
+            SAMPLE_DIR: /sample
+            TENANT_SAMPLE: ${TENANT_SAMPLE:-sample_data.zip}
+        volumes:
+            - *certs
+            - ./tenants.py:/standalone/tenants.py:ro
             - ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
 
 volumes:
