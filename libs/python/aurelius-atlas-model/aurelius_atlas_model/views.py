@@ -59,8 +59,9 @@ class EntityCard(AtlasModel):
 
     The derived fields — ``breadcrumb``, ``relations``, ``quality``, ``governed``, ``stale`` — come from the
     entity's stored App Search document; an entity without one has them empty and ``governed`` absent (AVS-02).
-    ``displayText`` is the name, or the qualified name when there is no name (AVS-03, DD-582). ``stale`` is the
-    stored document's mark and ``updateTime`` the entity's: the shape's whole freshness claim (AVS-06, DD-583).
+    ``displayText`` is the name, or the qualified name when there is no name (AVS-03, DD-582). ``definition``
+    is the description text: the ``definition`` attribute, else the ``description`` one (DD-614). ``stale`` is
+    the stored document's mark and ``updateTime`` the entity's: the shape's whole freshness claim (AVS-06, DD-583).
     """
 
     guid: str

@@ -1,19 +1,20 @@
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { TestBed } from "@angular/core/testing";
-import type { AtlasEntitiesWithExtInfo, EntityRelation, EntityView, RelationEntity } from "aurelius-atlas-data-access";
+import type { EntityCard, EntityRelation, EntityView, RelationEntity } from "aurelius-atlas-data-access";
 
 import { AlertsService } from "../../../alerts/alerts.service";
 import { LAYOUTS } from "./section-config";
 import { CHUNK_SIZE, PAGE_SIZE, RelatedSectionsState } from "./related-sections.state";
 
 /**
- * The card-section store (DET-17..DET-22, DD-365/DD-368, VDR-03): the seed
- * off the view's `sections`, the chunked bulk resolve, and the client-side
- * filter, sort, and page. Specs ride the details screen's idiom —
- * `provideHttpClientTesting`, `expectOne` + `flush`.
+ * The card-section store (DET-17..DET-22, DD-365/DD-368, VDR-03, VCF-02,
+ * DD-615): the seed off the view's `sections`, the chunked resolve through
+ * the search door, and the client-side filter, sort, and page. Specs ride
+ * the details screen's idiom — `provideHttpClientTesting`, `expectOne` +
+ * `flush`.
  */
-const BULK_URL = "/api/atlas/v2/entity/bulk";
+const SEARCH_URL = "/api/aurelius/v1/search";
 
 /** The entity layout's sections: every section of one type at once. */
 const LAYOUT = LAYOUTS.m4i_data_entity;
@@ -38,20 +39,16 @@ function ends(attribute: string, seed: readonly Record<string, unknown>[]): Enti
     return { attribute, entities: seed as unknown as RelationEntity[] };
 }
 
-/** A resolved entity for the bulk answer. */
-function resolved(
-    guid: string,
-    name: string,
-    description?: string,
-): NonNullable<AtlasEntitiesWithExtInfo["entities"]>[number] {
+/** A resolved card for the door answer (DD-615). */
+function resolved(guid: string, displayText: string, definition?: string): EntityCard {
     return {
         guid,
         typeName: "m4i_data_attribute",
-        attributes: {
-            name,
-            qualifiedName: `${name}@cluster`,
-            ...(description === undefined ? {} : { description }),
-        },
+        displayText,
+        qualifiedName: `${displayText}@cluster`,
+        status: "ACTIVE",
+        stale: false,
+        ...(definition === undefined ? {} : { definition }),
     };
 }
 
@@ -77,20 +74,25 @@ function setup() {
     return { store, httpMock };
 }
 
-/** The bulk requests still in flight. */
-function bulkRequests(httpMock: HttpTestingController) {
-    return httpMock.match((request) => request.url === BULK_URL);
+/** The door requests still in flight. */
+function searchRequests(httpMock: HttpTestingController) {
+    return httpMock.match((request) => request.url === SEARCH_URL && request.method === "POST");
 }
 
-/** Deliver every in-flight bulk chunk with its own guids' cards. */
+/** The GUIDs one door request carries in its filter. */
+function filteredGuids(request: { request: { body: unknown } }): string[] {
+    const filters = (request.request.body as { filters?: { guid?: unknown } }).filters;
+    return Array.isArray(filters?.guid) ? (filters.guid as string[]) : [];
+}
+
+/** Deliver every in-flight door chunk with its own guids' cards. */
 function flushAll(
     httpMock: HttpTestingController,
-    answer: (guids: string[]) => NonNullable<AtlasEntitiesWithExtInfo["entities"]> = (guids) =>
-        guids.map((guid) => resolved(guid, `attr-${guid}`)),
+    answer: (guids: string[]) => EntityCard[] = (guids) => guids.map((guid) => resolved(guid, `attr-${guid}`)),
 ) {
-    for (const request of bulkRequests(httpMock)) {
-        const guids = request.request.params.getAll("guid") ?? [];
-        request.flush({ entities: answer(guids), referredEntities: {} });
+    for (const request of searchRequests(httpMock)) {
+        const cards = answer(filteredGuids(request));
+        request.flush({ cards, facets: {}, total: cards.length });
     }
 }
 
@@ -116,7 +118,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
         // The child section has no ends: a zero view, no request (DET-17).
         const children = views.find((view) => view.anchor === "related-entities");
         expect(children?.count).toBe(0);
-        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+        searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
         httpMock.verify();
     });
 
@@ -139,15 +141,19 @@ describe("Related sections store (DET-17..DET-22)", () => {
         httpMock.verify();
     });
 
-    it("resolves the seed in chunks of at most 25 (DET-18, DD-368)", () => {
+    it("resolves the seed in chunks of at most 25 through the door (DET-18, DD-368, VCF-02)", () => {
         const { store, httpMock } = setup();
         const seed = Array.from({ length: CHUNK_SIZE + 1 }, (_, index) => related(`g${index}`, `g${index}`));
         store.seed(opened(seed), LAYOUT);
 
-        const requests = bulkRequests(httpMock);
+        const requests = searchRequests(httpMock);
         expect(requests).toHaveLength(2); // 26 guids travel as 25 + 1
-        expect(requests[0].request.params.getAll("guid")).toHaveLength(CHUNK_SIZE);
-        expect(requests[1].request.params.getAll("guid")).toHaveLength(1);
+        expect(filteredGuids(requests[0])).toHaveLength(CHUNK_SIZE);
+        expect(filteredGuids(requests[1])).toHaveLength(1);
+        // VCF-02: the body carries the GUID filter, the limit, and no facets.
+        const body = requests[0].request.body as { filters: Record<string, unknown>; limit: number; facets?: unknown };
+        expect(body.limit).toBe(CHUNK_SIZE);
+        expect(body.facets).toBeUndefined();
         flushAll(httpMock);
         expect(store.views().find((view) => view.anchor === "related-attributes")?.count).toBe(CHUNK_SIZE + 1);
         httpMock.verify();
@@ -174,7 +180,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
         const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         store.seed(opened([related("a1", "Alpha"), related("a2", "Beta")]), LAYOUT);
 
-        bulkRequests(httpMock)[0].flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
+        searchRequests(httpMock)[0].flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
 
         const attributes = store.views().find((view) => view.anchor === "related-attributes");
         expect(attributes?.count).toBe(2); // the count keeps the dropped cards
@@ -186,7 +192,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
             source: "search",
             message: "Retrieving the entity details",
         });
-        httpMock.expectNone(BULK_URL); // no retry loop
+        httpMock.expectNone(SEARCH_URL); // no retry loop
     });
 
     it("filters as the text is typed, not only on submit (DET-20, DD-375)", () => {
@@ -231,12 +237,12 @@ describe("Related sections store (DET-17..DET-22)", () => {
         httpMock.verify();
     });
 
-    it("matches the qualifiedName and the description, case-insensitively (DET-20, DD-368)", () => {
+    it("matches the qualifiedName and the description, case-insensitively (DET-20, DD-368, VCF-05)", () => {
         const { store, httpMock } = setup();
         store.seed(opened([related("a1", "Alpha"), related("a2", "Beta")]), LAYOUT);
         flushAll(httpMock, (guids) => [
             resolved("a1", "alpha-one", "Sequencing reads"),
-            { ...resolved("a2", "beta-two"), attributes: { name: "beta-two", qualifiedName: "beta@warehouse" } },
+            { ...resolved("a2", "beta-two"), qualifiedName: "beta@warehouse" },
         ]);
 
         store.setQuery("related-attributes", "SEQUENCING");
@@ -279,8 +285,8 @@ describe("Related sections store (DET-17..DET-22)", () => {
         const { store, httpMock } = setup();
         store.seed(opened([related("a1", "zebra"), related("a2", "alpha")]), LAYOUT);
         flushAll(httpMock, (guids) => [resolved("a1", "zebra-name"), resolved("a2", "alpha-name")]);
-        // A resolved card's display text is its `name` attribute
-        // (cardDisplayText): the sort compares those.
+        // A resolved card's display text is the card's own `displayText`
+        // (AVS-03): the sort compares those.
         store.setSort("related-attributes", "name");
         expect(
             store
@@ -319,7 +325,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
     it("a re-seed drops in-flight answers and re-seeds the sections (DET-17)", () => {
         const { store, httpMock } = setup();
         store.seed(opened([related("a1", "Alpha")]), LAYOUT);
-        const before = bulkRequests(httpMock);
+        const before = searchRequests(httpMock);
 
         // The editor's save re-read: a new view arrives with new ends.
         store.seed(
@@ -335,7 +341,7 @@ describe("Related sections store (DET-17..DET-22)", () => {
             LAYOUT,
         );
 
-        before[0].flush({ entities: [resolved("a1", "gone")] }); // superseded: paints nothing
+        before[0].flush({ cards: [resolved("a1", "gone")], facets: {}, total: 1 }); // superseded: paints nothing
         const views = store.views();
         expect(views.find((view) => view.anchor === "related-attributes")?.cards.map((card) => card.guid)).toEqual([
             "b1",
@@ -404,7 +410,7 @@ describe("The field layout's rules box (DET-35/DET-36, 7.24, DD-444)", () => {
         const rules = store.views().find((view) => view.anchor === "related-rules");
         expect(rules?.count).toBe(0);
         expect(store.countFor("related-rules")).toBe(0); // the stat reads its zero, in legacy place
-        expect(bulkRequests(httpMock)).toEqual([]); // a zero view sends nothing
+        expect(searchRequests(httpMock)).toEqual([]); // a zero view sends nothing
         httpMock.verify();
     });
 });
@@ -441,7 +447,7 @@ describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
         expect(store.endCount("stewardAttribute")).toBe(0); // an absent end counts nothing
         // The merged box agrees: two ends, two cards' worth of seed.
         expect(store.countFor("governance-roles")).toBe(2);
-        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+        searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
         httpMock.verify();
     });
 
@@ -455,7 +461,7 @@ describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
         );
 
         expect(store.endCount("businessOwnerEntity")).toBe(1);
-        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+        searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
         httpMock.verify();
     });
 
@@ -463,7 +469,7 @@ describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
         const { store, httpMock } = setup();
         store.seed(openedPerson({ domainLead: [related("d1", "Genomics")] }), LAYOUTS.m4i_person);
         expect(store.endCount("domainLead")).toBe(1);
-        bulkRequests(httpMock).forEach((request) => request.flush({ entities: [] }));
+        searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
 
         store.seed(openedPerson({}), LAYOUTS.m4i_person); // the save re-read's entity
         expect(store.endCount("domainLead")).toBe(0);

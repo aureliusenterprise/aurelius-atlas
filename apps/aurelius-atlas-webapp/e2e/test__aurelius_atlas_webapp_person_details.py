@@ -24,6 +24,7 @@ from test__aurelius_atlas_webapp import (
     _purge_type,
     _seed_gov_rule,
     _wait_entity_read,
+    _wait_search_cards,
 )
 
 # The shared dev store is never cleaned between runs, so the m4i purge list
@@ -37,13 +38,16 @@ _M4I_PURGE = [
 ]
 
 
-def _seed_person(page: Page, root_url: str, token: str, run: str, *, with_graph: bool) -> tuple[str, dict[str, str]]:
+def _seed_person(
+    page: Page, root_url: str, token: str, run: str, *, with_graph: bool
+) -> tuple[str, dict[str, str], dict[str, str]]:
     """Seed one person (and, on request, its five responsibility ends) in one bulk create.
 
     The ends ride ``relationshipAttributes`` naming the request's own
     temporary guids (REL-11, the mini-graph's idiom). Names are single
     ``zz<run>`` tokens so every assertion can be word-exact on the shared
-    store. Returns the person's guid and the name map.
+    store. Returns the person's guid, the name map, and the guid
+    assignments keyed by temporary guid.
     """
     names = {
         "person": f"zz{run}person",
@@ -91,7 +95,7 @@ def _seed_person(page: Page, root_url: str, token: str, run: str, *, with_graph:
 
     assignments = response.json()["guidAssignments"]
 
-    return assignments["-0"], names
+    return assignments["-0"], names, assignments
 
 
 def _person_stat(page: Page, group_heading: str, label: str) -> str:
@@ -115,7 +119,7 @@ def test__the_person_page_draws_roles_and_counts(authenticated: Page, root_url: 
     legacy page never carried. Self-cleaned.
     """
     run = secrets.token_hex(4)
-    guid, names = _seed_person(authenticated, root_url, user_token, run, with_graph=True)
+    guid, names, assignments = _seed_person(authenticated, root_url, user_token, run, with_graph=True)
     ends = ["domainLead", "businessOwnerEntity", "businessOwnerAttribute", "stewardEntity", "stewardAttribute"]
 
     try:
@@ -128,6 +132,10 @@ def test__the_person_page_draws_roles_and_counts(authenticated: Page, root_url: 
             guid,
             predicate=lambda entity: all(entity.get("relationshipAttributes", {}).get(key) for key in ends),
         )
+        # The roles box lists its five ends as rich cards, which ride the
+        # search door (16.5d, DD-615): wait its beat for all five before the
+        # screen opens, so DET-18 never drops a card still being indexed.
+        _wait_search_cards(authenticated, root_url, user_token, [assignments[f"-{i}"] for i in range(1, 6)])
 
         _goto_app(authenticated, urljoin(root_url, f"/en-US/search/details/{guid}"))
 
@@ -209,7 +217,7 @@ def test__the_person_page_shows_the_quality_rules_with_verdicts(
     box too, and counting them is not this test's business (DD-223). Self-cleaned.
     """
     run = secrets.token_hex(4)
-    guid, names = _seed_person(authenticated, root_url, user_token, run, with_graph=False)
+    guid, names, _ = _seed_person(authenticated, root_url, user_token, run, with_graph=False)
     rule_name = f"zz{run}email"
     description = f"zz{run} the person carries an email address"
     rule_guid = _seed_gov_rule(

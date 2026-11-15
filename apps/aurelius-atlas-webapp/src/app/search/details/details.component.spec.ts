@@ -529,26 +529,36 @@ function m4iEntity(overrides: Partial<EntityView> = {}): EntityView {
     };
 }
 
-/** The bulk answer for the two seeded attributes; extra overrides per guid. */
-function attributesAnswer(overrides: Record<string, Record<string, unknown>> = {}): Record<string, unknown> {
+/** The read door's answer for a card; the shape every section fixture builds on. */
+function doorCard(guid: string, typeName: string, displayText: string, extra: Record<string, unknown> = {}) {
     return {
-        entities: [
-            {
-                guid: "a1",
-                typeName: "m4i_data_attribute",
-                attributes: { name: "gene_symbol", qualifiedName: "gene_symbol@cluster", description: "HGNC symbol." },
-                relationshipAttributes: { steward: [person("p2", "Lin")] },
-                ...overrides["a1"],
-            },
-            {
-                guid: "a2",
-                typeName: "m4i_data_attribute",
-                attributes: { name: "chromosome", qualifiedName: "chromosome@cluster", description: "The pair." },
-                ...overrides["a2"],
-            },
-        ],
-        referredEntities: {},
+        guid,
+        typeName,
+        displayText,
+        qualifiedName: `${displayText}@cluster`,
+        status: "ACTIVE",
+        stale: false,
+        ...extra,
     };
+}
+
+/** A search door answer for the given cards (VCF-02, DD-615). */
+function doorAnswer(cards: Record<string, unknown>[]): Record<string, unknown> {
+    return { cards, facets: {}, total: cards.length };
+}
+
+/** The door answer for the two seeded attributes; extra overrides per guid. */
+function attributesAnswer(overrides: Record<string, Record<string, unknown>> = {}): Record<string, unknown> {
+    return doorAnswer([
+        doorCard("a1", "m4i_data_attribute", "gene_symbol", {
+            definition: "HGNC symbol.",
+            ...overrides["a1"],
+        }),
+        doorCard("a2", "m4i_data_attribute", "chromosome", {
+            definition: "The pair.",
+            ...overrides["a2"],
+        }),
+    ]);
 }
 
 /**
@@ -574,18 +584,9 @@ function m4iDataset(overrides: Partial<EntityView> = {}): EntityView {
     };
 }
 
-/** The bulk answer for the dataset's two lineage sections: the one process. */
+/** The door answer for the dataset's two lineage sections: the one process. */
 function processAnswer(): Record<string, unknown> {
-    return {
-        entities: [
-            {
-                guid: "pr-1",
-                typeName: "m4i_generic_process",
-                attributes: { name: "build_index", qualifiedName: "build_index@cluster", definition: "Indexes it." },
-            },
-        ],
-        referredEntities: {},
-    };
+    return doorAnswer([doorCard("pr-1", "m4i_generic_process", "build_index", { definition: "Indexes it." })]);
 }
 
 /** The m4i process body: the three forward ends of DET-33's row. */
@@ -648,35 +649,16 @@ function m4iPerson(overrides: Partial<EntityView> = {}): EntityView {
     };
 }
 
-/** The bulk answer for the person's merged roles box: the five seeded ends. */
+/** The door answer for the person's merged roles box: the five seeded ends. */
 function personEndsAnswer(): Record<string, unknown> {
-    return {
-        entities: [
-            {
-                guid: "d1",
-                typeName: "m4i_data_domain",
-                attributes: { name: "genomics", qualifiedName: "genomics@corp" },
-            },
-            {
-                guid: "e1",
-                typeName: "m4i_data_entity",
-                attributes: { name: "variants", qualifiedName: "variants@corp" },
-            },
-            { guid: "e2", typeName: "m4i_data_entity", attributes: { name: "samples", qualifiedName: "samples@corp" } },
-            { guid: "e3", typeName: "m4i_data_entity", attributes: { name: "reports", qualifiedName: "reports@corp" } },
-            {
-                guid: "a1",
-                typeName: "m4i_data_attribute",
-                attributes: { name: "gene_symbol", qualifiedName: "gene_symbol@corp" },
-            },
-            {
-                guid: "a3",
-                typeName: "m4i_data_attribute",
-                attributes: { name: "coverage", qualifiedName: "coverage@corp" },
-            },
-        ],
-        referredEntities: {},
-    };
+    return doorAnswer([
+        doorCard("d1", "m4i_data_domain", "genomics"),
+        doorCard("e1", "m4i_data_entity", "variants"),
+        doorCard("e2", "m4i_data_entity", "samples"),
+        doorCard("e3", "m4i_data_entity", "reports"),
+        doorCard("a1", "m4i_data_attribute", "gene_symbol"),
+        doorCard("a3", "m4i_data_attribute", "coverage"),
+    ]);
 }
 
 /**
@@ -690,7 +672,7 @@ function arrivePerson(
     rules: Record<string, unknown>[] = [],
 ): void {
     arrive(fixture, httpMock, body);
-    for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+    for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
         request.flush(personEndsAnswer());
     }
     for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/search/basic")) {
@@ -702,7 +684,7 @@ function arrivePerson(
     fixture.detectChanges();
 }
 
-/** Deliver an m4i entity's read, its sections' first chunk, and the box's call. */
+/** Deliver an m4i entity's read, its sections' first door chunk, and the box's call. */
 function arriveSections(
     fixture: { detectChanges: () => void },
     httpMock: HttpTestingController,
@@ -710,7 +692,7 @@ function arriveSections(
     answer: Record<string, unknown> = attributesAnswer(),
 ) {
     arrive(fixture, httpMock, body);
-    for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+    for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
         request.flush(answer);
     }
     // The dataset/process layouts carry the Lineage Model box (LDG-09): its
@@ -762,7 +744,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(normalize(box?.querySelector("h6")?.textContent)).toBe("2 result(s)");
         expect(box?.querySelector("aurelius-atlas-ui-entity-card .loader")).toBeTruthy(); // loading cards (DET-18)
 
-        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
             request.flush(attributesAnswer());
         }
         fixture.detectChanges();
@@ -789,25 +771,34 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         }
     });
 
-    it("a card body shows chips, the description, and the card entity's people (DET-19)", () => {
+    it("a card body shows the trail, chips, the description, and a flat people row (DET-19, VCF-01, VCF-05)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
-        arriveSections(fixture, httpMock, m4iEntity({ sections: [ends("attributes", [end("a1", "gene_symbol")])] }), {
-            entities: [
-                {
-                    guid: "a1",
-                    typeName: "m4i_data_attribute",
-                    attributes: { name: "gene_symbol", description: "HGNC **symbol**." },
-                    classifications: [{ typeName: "PII" }],
-                    relationshipAttributes: { steward: [person("p2", "Lin")] },
-                },
-            ],
-            referredEntities: {},
-        });
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({ sections: [ends("attributes", [end("a1", "gene_symbol")])] }),
+            doorAnswer([
+                doorCard("a1", "m4i_data_attribute", "gene_symbol", {
+                    name: "gene_symbol",
+                    definition: "HGNC **symbol**.",
+                    classificationNames: ["PII"],
+                    breadcrumb: [{ guid: "e", name: "variants_entity", typeName: "m4i_data_entity" }],
+                    relations: [
+                        { attribute: "m4i_person", entities: [{ guid: "p2", name: "Lin", typeName: "m4i_person" }] },
+                    ],
+                }),
+            ]),
+        );
 
-        const card = compiled.querySelector("#related-attributes aurelius-atlas-ui-entity-card")!;
+        const card = compiled.querySelector("#related-attributes aurelius-atlas-webapp-catalogue-card")!;
+        // The trail (VCF-01): the stored crumb plus the card's own active crumb.
+        expect(
+            [...card.querySelectorAll(".aurelius-card-trail li")].map((crumb) => normalize(crumb.textContent)),
+        ).toEqual(["variants_entity", "gene_symbol"]);
         expect(normalize(card.querySelector(".field.is-grouped .control")?.textContent)).toBe("Has PII");
         expect(card.querySelector(".aurelius-card-description strong")?.textContent).toBe("symbol"); // markdown (DET-10 sibling)
-        expect(normalize(card.querySelector(".aurelius-people-row")?.textContent)).toBe("Data Steward(s) : Lin");
+        // The flat people row (VCF-06, DD-617): one label, no roles.
+        expect(normalize(card.querySelector(".aurelius-people-row")?.textContent)).toBe("People : Lin");
         // No quality column (DET-19: the DQ column has no source).
         expect(card.querySelector(".quality")).toBeNull();
         httpMock.verify();
@@ -925,14 +916,14 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
     it("the grid pages at 9; the load button extends the page (DET-22)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         const many = Array.from({ length: 10 }, (_, index) => end(`g${index}`, `name-${index}`));
-        arriveSections(fixture, httpMock, m4iEntity({ sections: [ends("attributes", many)] }), {
-            entities: many.map((row) => ({
-                guid: row["guid"],
-                typeName: "m4i_data_attribute",
-                attributes: { name: row["displayText"] },
-            })),
-            referredEntities: {},
-        });
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iEntity({ sections: [ends("attributes", many)] }),
+            doorAnswer(
+                many.map((row) => doorCard(row["guid"] as string, "m4i_data_attribute", row["displayText"] as string)),
+            ),
+        );
 
         expect(compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card")).toHaveLength(9);
         const load = [...compiled.querySelectorAll<HTMLButtonElement>("#related-attributes button")].find(
@@ -956,7 +947,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         arrive(fixture, httpMock, m4iEntity());
         fixture.detectChanges();
 
-        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
             request.flush({ error: "boom" }, { status: 500, statusText: "Server Error" });
         }
         fixture.detectChanges();
@@ -969,7 +960,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         // The cards the chunk carried drop; the count keeps them (DET-18).
         expect(normalize(compiled.querySelector("#related-attributes h6")?.textContent)).toBe("2 result(s)");
         expect(compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card")).toHaveLength(0);
-        httpMock.expectNone("/api/atlas/v2/entity/bulk"); // no retry loop
+        httpMock.expectNone("/api/aurelius/v1/search"); // no retry loop (DD-615)
     });
 
     it("the stats bar carries the layout's counts and #hrefs (DET-24)", () => {
@@ -1079,7 +1070,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(landed).toEqual(["related-attributes"]);
     });
 
-    it("the header badge shows the alias with the base type, the cards the alias alone (DET-26)", () => {
+    it("the header badge shows the alias with the base type; the cards ride the card shape (DET-26, DV-167)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(
             fixture,
@@ -1092,7 +1083,6 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
                     typeAlias: "Data Entity",
                 },
             }),
-            attributesAnswer({ a1: { attributes: { name: "gene_symbol", typeAlias: "Data Attribute" } } }),
         );
 
         // The header badge: the alias with the base type beside it, both
@@ -1108,14 +1098,12 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(headerIcon).toBeTruthy();
         expect(headerIcon!.classList.contains("business")).toBe(true);
         expect(headerIcon!.querySelector("fa-icon svg")).toBeTruthy();
-        // The card badges: only the resolved card carrying an alias shows
-        // one, and it shows the alias alone (DD-374, demo-measured — the
-        // legacy card never passes showBaseTypeName).
+        // The card badges (DV-167, DD-616): the shared rich card shows the
+        // type's display name — the card shape carries no `typeAlias`, so
+        // an alias never reaches a card badge anymore.
         const badges = [
             ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
         ].map((badge) => normalize(badge.textContent));
-        // The second card has no alias, so its badge shows the type's
-        // display name — what the raw name rendered before DD-379.
         expect(badges).toEqual(["Data Attribute", "Data Attribute"]);
         // Every card badge carries its type's icon too (DET-19, DD-378):
         // both fixture cards are m4i_data_attribute — the tag glyph,
@@ -1155,10 +1143,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
                 attributes: { name: "gene_symbol" },
                 sections: [ends("fields", [end("f1", "chromosome_pos")])],
             },
-            {
-                entities: [{ guid: "f1", typeName: "m4i_field", attributes: { name: "chromosome_pos" } }],
-                referredEntities: {},
-            },
+            doorAnswer([doorCard("f1", "m4i_field", "chromosome_pos")]),
         );
 
         // The attribute page carries a People box (the spec table and the
@@ -1291,14 +1276,16 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
 
     it("an m4i process renders the eighth layout's three boxes (DET-33)", () => {
         const { fixture, compiled, httpMock } = setup("pr-1");
-        arriveSections(fixture, httpMock, m4iProcess(), {
-            entities: [
-                { guid: "sy-1", typeName: "m4i_system", attributes: { name: "elastic1" } },
-                { guid: "ds-1", typeName: "m4i_dataset", attributes: { name: "raw_logs" } },
-                { guid: "ds-2", typeName: "m4i_dataset", attributes: { name: "hourly_index" } },
-            ],
-            referredEntities: {},
-        });
+        arriveSections(
+            fixture,
+            httpMock,
+            m4iProcess(),
+            doorAnswer([
+                doorCard("sy-1", "m4i_system", "elastic1"),
+                doorCard("ds-1", "m4i_dataset", "raw_logs"),
+                doorCard("ds-2", "m4i_dataset", "hourly_index"),
+            ]),
+        );
 
         // DET-33: the three section boxes with the legacy anchors; no
         // People box (the legacy page has none — DET-23's field case).
@@ -1355,7 +1342,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
     it("the Lineage Model stat follows the box's fetch state (LDG-32, DD-400)", () => {
         const { fixture, compiled, httpMock } = setup("ds-1");
         arrive(fixture, httpMock, m4iDataset());
-        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
             request.flush(processAnswer());
         }
         fixture.detectChanges();
@@ -1507,7 +1494,7 @@ describe("Details person page (DET-39..DET-43)", () => {
     it("the rule box lists the type's rules with their verdicts (DET-42, DV-155)", () => {
         const { fixture, compiled, httpMock } = setup("pe-1");
         arrive(fixture, httpMock, m4iPerson());
-        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
             request.flush(personEndsAnswer());
         }
         const search = httpMock.expectOne("/api/atlas/v2/search/basic");
@@ -1574,7 +1561,7 @@ describe("Details person page (DET-39..DET-43)", () => {
         const { fixture, compiled, httpMock } = setup("pe-1");
         const add = vi.spyOn(TestBed.inject(AlertsService), "add");
         arrive(fixture, httpMock, m4iPerson());
-        for (const request of httpMock.match((r) => r.url === "/api/atlas/v2/entity/bulk")) {
+        for (const request of httpMock.match((r) => r.url === "/api/aurelius/v1/search")) {
             request.flush(personEndsAnswer());
         }
         httpMock.expectOne("/api/atlas/v2/search/basic").flush({}, { status: 500, statusText: "Server Error" });

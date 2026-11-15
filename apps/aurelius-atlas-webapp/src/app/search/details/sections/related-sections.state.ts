@@ -1,13 +1,12 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
-import { AtlasEntitiesService, type AtlasEntity, type EntityView } from "aurelius-atlas-data-access";
+import { type EntityCard, type EntityView, ViewSearchService } from "aurelius-atlas-data-access";
 import type { CardSortOption } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../../alerts/alerts.service";
-import { cardDescription, cardDisplayText, cardTypeAlias } from "../shared/card";
 import { sectionEnds, type SectionEnd } from "../shared/people";
 import type { SectionDef, TypeLayout } from "./section-config";
 
-/** The bulk read's chunk size: a browser- and edge-sized URL (DD-368). */
+/** The resolve chunk size: one door request per chunk (DD-368, DD-615). */
 export const CHUNK_SIZE = 25;
 
 /** The legacy cards grid's page size (DET-22). */
@@ -25,8 +24,8 @@ interface SeedEntry {
 interface SectionRecord {
     def: SectionDef;
     seed: SeedEntry[];
-    /** Resolved card entities by guid. */
-    resolved: Map<string, AtlasEntity>;
+    /** Resolved door cards by guid (DD-615). */
+    resolved: Map<string, EntityCard>;
     /** The guids whose chunk failed — their cards drop, the count stays (DET-18). */
     failed: Set<string>;
     /**
@@ -52,14 +51,13 @@ interface SectionRecord {
     shown: number;
 }
 
-/** One card of a section's grid: a resolved entity, or a loading placeholder. */
+/** One card of a section's grid: a resolved door card, or a loading placeholder. */
 export type SectionCard =
     | {
           kind: "card";
           guid: string;
           displayText: string;
-          alias?: string;
-          entity: AtlasEntity;
+          card: EntityCard;
       }
     | {
           kind: "loading";
@@ -105,21 +103,24 @@ const SORT_OPTIONS: CardSortOption[] = [
 const DEFAULT_SORT = "relevance";
 
 /**
- * The details screen's card sections (DET-17..DET-22, DD-365/DD-368): the
- * seed, the chunked bulk resolve, and the client-side filter, sort, and
- * paging of every section of the entity's layout.
+ * The details screen's card sections (DET-17..DET-22, DD-365/DD-368, DD-615):
+ * the seed, the chunked resolve through the search door, and the
+ * client-side filter, sort, and paging of every section of the entity's
+ * layout.
  *
  * Since 16.5b the seed is the view's `sections` (VDR-03): each seed key's
  * ACTIVE ends carrying a guid, in order, deduped by guid — the same
  * {@link sectionEnds} rule the People box and the person stats count by, so
  * a seed, a stat and a box can never disagree. The count is the seed length
- * and shows at once, before any card resolves. The guids resolve through
- * `getEntitiesByGuids` in chunks of 25 (DET-18, VDR-03 keeps the bulk
- * Atlas read for card bodies): until a chunk answers its cards show the
- * loading row, a failed chunk alerts once and drops its cards (the count
- * keeps them), and a guid missing from the answer is a deleted relation,
- * not an error. Search, sort, and paging run client-side over what the
- * browser holds (DD-368).
+ * and shows at once, before any card resolves. Since 16.5d the guids resolve
+ * through the search door (VCF-02, DD-615 — the legacy read its section
+ * cards from the search engine): one `POST /api/aurelius/v1/search` per
+ * chunk of 25, `filters.guid` the chunk and `limit` its length, no facets.
+ * Until a chunk answers its cards show the loading row, a failed chunk
+ * alerts once and drops its cards (the count keeps them), and a guid
+ * missing from the `cards` answer is a deleted relation, not an error
+ * (DET-18's rules, carried). Search, sort, and paging run client-side over
+ * what the browser holds (DD-368).
  *
  * The store is per-screen (provided by `Details`): {@link seed} re-runs on
  * every entity arrival, including the editor's save re-read (DET-17), and
@@ -128,7 +129,7 @@ const DEFAULT_SORT = "relevance";
  */
 @Injectable()
 export class RelatedSectionsState {
-    private readonly entities = inject(AtlasEntitiesService);
+    private readonly search = inject(ViewSearchService);
 
     private readonly alerts = inject(AlertsService);
 
@@ -163,7 +164,7 @@ export class RelatedSectionsState {
         const records = layout.sections.map((def) => ({
             def,
             seed: this.seedOf(view, def),
-            resolved: new Map<string, AtlasEntity>(),
+            resolved: new Map<string, EntityCard>(),
             failed: new Set<string>(),
             missing: new Set<string>(),
             pending: 0,
@@ -286,9 +287,10 @@ export class RelatedSectionsState {
     }
 
     /**
-     * Resolve one section's seed (DET-18): the guids travel to
-     * `GET /v2/entity/bulk` in chunks of 25; answers paint only while the
-     * section's generation still stands.
+     * Resolve one section's seed (DET-18, VCF-02, DD-615): the guids travel
+     * to the search door in chunks of 25 — `filters.guid` the chunk,
+     * `limit` its length, no facets; answers paint only while the section's
+     * generation still stands.
      * @param record the section's record
      * @param generation the seed generation the resolve belongs to
      */
@@ -302,27 +304,28 @@ export class RelatedSectionsState {
 
         for (let start = 0; start < guids.length; start += CHUNK_SIZE) {
             const chunk = guids.slice(start, start + CHUNK_SIZE);
-            this.entities.getEntitiesByGuids(chunk).subscribe({
+            this.search.search({ filters: { guid: chunk }, limit: chunk.length }).subscribe({
                 next: (answer) => {
                     if (this.generation !== generation) {
                         return; // a re-seed superseded this answer
                     }
                     const byGuid = new Map(
-                        (answer.entities ?? [])
-                            .filter((entity) => typeof entity?.guid === "string")
-                            .map((entity) => [entity.guid as string, entity]),
+                        (answer.cards ?? [])
+                            .filter((card) => typeof card?.guid === "string")
+                            .map((card) => [card.guid as string, card]),
                     );
                     this.update(record.def.anchor, (current) => {
                         const resolved = new Map(current.resolved);
                         const missing = new Set(current.missing);
                         for (const guid of chunk) {
-                            const entity = byGuid.get(guid);
-                            if (entity !== undefined) {
-                                resolved.set(guid, entity);
+                            const card = byGuid.get(guid);
+                            if (card !== undefined) {
+                                resolved.set(guid, card);
                             } else {
                                 // A guid missing from the answer is a
-                                // deleted relation: no card, the count
-                                // keeps it (DET-18).
+                                // deleted relation — or one the indexer
+                                // has not reached yet (DD-615):
+                                // no card, the count keeps it (DET-18).
                                 missing.add(guid);
                             }
                         }
@@ -389,13 +392,11 @@ export class RelatedSectionsState {
                         ...(entry.name !== undefined ? { name: entry.name } : {}),
                     };
                 }
-                const alias = cardTypeAlias(entity);
                 return {
                     kind: "card" as const,
                     guid: entry.guid,
-                    displayText: cardDisplayText(entity),
-                    ...(alias !== undefined ? { alias } : {}),
-                    entity,
+                    displayText: entity.displayText,
+                    card: entity,
                 };
             });
 
@@ -433,9 +434,10 @@ export class RelatedSectionsState {
 }
 
 /**
- * Whether a card matches the submitted keyword (DET-20, DD-368): the term
- * occurs, case-insensitively, in the display text, the `name` or
- * `qualifiedName` attribute, or the description text.
+ * Whether a card matches the submitted keyword (DET-20, DD-368, VCF-05):
+ * the term occurs, case-insensitively, in the card's display text, its
+ * `qualifiedName`, or its description text (the `definition` field, DD-614
+ * — the door card carries no attribute map).
  * @param card the section's card
  * @param term the lowercased term
  * @returns whether the card matches
@@ -448,21 +450,17 @@ function matches(card: SectionCard, term: string): boolean {
         // A card still resolving matches on its seed's own texts (DET-20).
         return card.name?.toLowerCase().includes(term) ?? false;
     }
-    const attributes = card.entity.attributes ?? {};
-    const name = attributes["name"];
-    if (typeof name === "string" && name.toLowerCase().includes(term)) {
-        return true;
-    }
-    const qualifiedName = attributes["qualifiedName"];
+    const qualifiedName = card.card.qualifiedName;
     if (typeof qualifiedName === "string" && qualifiedName.toLowerCase().includes(term)) {
         return true;
     }
-    return cardDescription(card.entity).toLowerCase().includes(term);
+    const definition = card.card.definition;
+    return typeof definition === "string" && definition.toLowerCase().includes(term);
 }
 
 /**
  * The seed entry a view's section end becomes: its guid and texts — the
- * loading card's title until the bulk answer resolves the entity. A view's
+ * loading card's title until the door answer resolves the card. A view's
  * end names itself (VDR-02): the name, the guid as the last resort.
  * @param end the deduped ACTIVE end
  * @returns the seed entry
