@@ -181,5 +181,5 @@ def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_de
     assert environment["PYTHONPATH"] == "/application"  # the image's packages, beside the script
     assert "./tenants.py:/standalone/tenants.py:ro" in tenants["volumes"]
     script = (standalone / "tenants.py").read_text()
-    assert '"provision", "demo", "--existing-ok", "--sample"' in script
-    assert '"provision", "meyn", "--existing-ok"]' in script
+    assert '"provision", "demo", "--existing-ok", "--sample", str(sample), "--admin", "demo_atlas"]' in script
+    assert '"provision", "meyn", "--existing-ok", "--admin", "meyn_atlas"]' in script

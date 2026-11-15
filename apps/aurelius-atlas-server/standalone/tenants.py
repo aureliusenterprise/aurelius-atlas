@@ -1,7 +1,8 @@
 """The standalone stack's tenants: the ``tenants`` service of the profile ``tenancy`` (ADR 063, series 15).
 
 It provisions the tenant ``demo`` with the sample ``TENANT_SAMPLE`` from ``SAMPLE_DIR`` and the tenant ``meyn``
-without one, through the server's own command, which keeps their organizations in the demo realm too (TRM-02).
+without one, through the server's own command, which keeps their organizations in the demo realm too (TRM-02),
+and makes each tenant's ``<tenant>_atlas`` its administrator there (TRM-06).
 A tenant already provisioned is left as it is, so the service runs at every start. Then it gives the realm's
 ``operator`` a user of the same name in the store, with the role ``aurelius_atlas_store_admin``: every privilege
 on every index, for running the platform (ADR 063's direct store access). It runs in the server image.
@@ -22,11 +23,13 @@ STORE_ADMIN_ROLE = "aurelius_atlas_store_admin"
 
 
 def provision() -> None:
-    """Provision demo with the sample and meyn without one; an active tenant is left as it is."""
+    """Provision demo with the sample and meyn without one, each with its ``<tenant>_atlas`` as its administrator
+    in the realm (TRM-06, DD-602); an active tenant is left as it is but its realm.
+    """  # noqa: D205 - one sentence
     sample = Path(os.environ.get("SAMPLE_DIR", "/sample")) / os.environ.get("TENANT_SAMPLE", "sample_data.zip")
     for argv in (
-        ["provision", "demo", "--existing-ok", "--sample", str(sample)],
-        ["provision", "meyn", "--existing-ok"],
+        ["provision", "demo", "--existing-ok", "--sample", str(sample), "--admin", "demo_atlas"],
+        ["provision", "meyn", "--existing-ok", "--admin", "meyn_atlas"],
         ["list"],
     ):
         if main(argv) != 0:

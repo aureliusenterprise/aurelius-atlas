@@ -102,7 +102,13 @@ docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml logs
 | `meyn`       | all four roles   | read and write     | read                 | read       | empty                                 |
 | `operators`  |                  |                    |                      | read       | the stack's catalogue without tenancy |
 
-A tenant's users belong to their tenant alone, so they sign in to it without a choice.
+A tenant's users belong to their tenant alone, so they sign in to it without a choice. Each tenant's
+`<tenant>_atlas` is also its administrator in Keycloak (DD-602): it reads its tenant's organization and role
+groups and sets the groups of its tenant's members, and is refused on the other tenant, its people and the realm's
+users. Keycloak 26.7 doesn't let it list the organizations, so it opens its own by its fixed id, for demo
+`https://localhost:9000/auth/admin/demo/console/#/demo/organizations/ded00000-0000-4000-a000-000000000001/edit`
+and for meyn the id `dee00000-0000-4000-a000-000000000001`. Nor does Keycloak let it list, add or remove members
+without reading every user of the realm, so a realm administrator adds them.
 
 `operator` runs the platform: it holds the operator role, so the server holds it at read access outside
 `operators`, and the one shot gives it a user of its own in the store, an admin of every index (ADR 063's direct

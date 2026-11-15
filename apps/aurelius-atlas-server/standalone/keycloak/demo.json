@@ -119,6 +119,7 @@
                     "name": "atlas-admin"
                 }
             ],
+            "id": "de0e0000-0000-4000-a000-000000000001",
             "members": [
                 {
                     "groups": ["de0e0000-0000-4000-8000-000000000001"],
@@ -149,6 +150,7 @@
                     "name": "atlas-admin"
                 }
             ],
+            "id": "ded00000-0000-4000-a000-000000000001",
             "members": [
                 {
                     "groups": [
@@ -196,6 +198,7 @@
                     "name": "atlas-admin"
                 }
             ],
+            "id": "dee00000-0000-4000-a000-000000000001",
             "members": [
                 {
                     "groups": [
@@ -271,6 +274,7 @@
             "email": "demo.atlas@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Atlas",
+            "id": "ded00000-0000-4000-9000-000000000001",
             "lastName": "Administrator",
             "username": "demo_atlas"
         },
@@ -287,6 +291,7 @@
             "email": "demo.steward@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
+            "id": "ded00000-0000-4000-9000-000000000002",
             "lastName": "Steward",
             "username": "demo_steward"
         },
@@ -303,6 +308,7 @@
             "email": "demo.scientist@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
+            "id": "ded00000-0000-4000-9000-000000000003",
             "lastName": "Scientist",
             "username": "demo_scientist"
         },
@@ -319,6 +325,7 @@
             "email": "meyn.atlas@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Atlas",
+            "id": "dee00000-0000-4000-9000-000000000001",
             "lastName": "Administrator",
             "username": "meyn_atlas"
         },
@@ -335,6 +342,7 @@
             "email": "meyn.steward@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
+            "id": "dee00000-0000-4000-9000-000000000002",
             "lastName": "Steward",
             "username": "meyn_steward"
         },
@@ -351,6 +359,7 @@
             "email": "meyn.scientist@aureliusenterprise.com",
             "enabled": true,
             "firstName": "Data",
+            "id": "dee00000-0000-4000-9000-000000000003",
             "lastName": "Scientist",
             "username": "meyn_scientist"
         },
@@ -386,6 +395,7 @@
             "emailVerified": true,
             "enabled": true,
             "firstName": "Platform",
+            "id": "de0e0000-0000-4000-9000-000000000001",
             "lastName": "Operator",
             "realmRoles": ["atlas-operator"],
             "username": "operator"

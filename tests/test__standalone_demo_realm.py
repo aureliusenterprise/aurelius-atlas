@@ -98,3 +98,14 @@ def test__each_tenants_users_have_passwords_of_their_own(realm: dict[str, Any]) 
         tenant, _, role = name.partition("_")
         if role:
             assert placeholder == f"${{{tenant.upper()}_USER_{role.upper()}_PASSWORD}}", name
+
+
+@pytest.mark.covers(rules=["TRM-06"])
+def test__the_demo_realms_people_keep_their_ids_across_imports(realm: dict[str, Any]) -> None:
+    """Fixed, distinct ids: a tenant's record names its administrators and operators by id, and every new Keycloak
+    container imports the realm again, which would otherwise give each person a new one.
+    """  # noqa: D205 - one sentence
+    people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
+    ids = [user.get("id") for user in people] + [org.get("id") for org in realm["organizations"]]
+    assert None not in ids
+    assert len(set(ids)) == len(ids)  # an administrator opens its own organization by this id
