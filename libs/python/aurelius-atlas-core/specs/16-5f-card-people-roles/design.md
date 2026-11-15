@@ -97,3 +97,40 @@ need nothing.
 deploy is larger than a normal one — bounded by ASD-04's pages, no new mechanism. VCF-16's
 flat row is the visible face of a document in that window, and it disappears as the round
 reaches each entity.
+
+## DD-629. The sections' funnel asks the three role groups, not one flat People facet
+
+- **Status:** Proposed
+- **Increment:** 16.5f
+- **Date:** 2026-11-15
+- **Supersedes:** none (amends VCF-09 and DV-167's funnel half)
+
+**Decision.** The details-section funnel drops the flat `m4i_person` facet group from every
+ownership layout and asks the three role groups instead — `domainLead`, `businessOwner`,
+`steward` — titled Domain Lead(s), Data Owner(s) and Data Steward(s) with the keys the
+People box already uses. `facetValuesOf` is unchanged: it already matches a group against
+`card.relations` by attribute, so a role key counts the door's role relations (AVS-10) and
+`passesFacets` filters "cards stewarded by Ada" for free.
+
+**Reason.** The review's "the facet still just lists people" is the flat group. Legacy asked
+one `derivedperson` engine facet (VCF-09 as written) only because the role arrays never
+held anything (DV-167) — there was nothing to split. 16.5f stores and answers the roles
+(ASD-06, AVS-10), so the funnel can name each person's responsibility exactly as the card
+rows do (VCF-15): the same relation, the same titles, one mechanism. Every group keeps
+16.5e's semantics — OR within a group, AND across groups, empty groups drop out (SDX-03) —
+so this is a shape change in `section-config.ts`, not new filtering.
+
+**Alternatives.**
+
+- Keep the flat group: the popover stays a list of names while the card next to it names
+  each role; the review asked for the roles.
+- Keep both the flat group and the three role groups: two overlapping ways to pick the same
+  people, and the AND-across-groups rule makes them read as contradictions.
+- A new 16.5g increment: the funnel and the card read the same relations, ship or review
+  them apart and #366 carries a half-answered review.
+
+**Consequences.** VCF-09 is amended in place (both PRs are unmerged) and DV-170 records the
+shape change. In VCF-16's backfill window a document has no role relations, so its card
+answers none of the three groups and hides while any role facet is on — the same window
+that shows its flat card row, and it closes as the round reaches each entity. The titles
+reuse the existing i18n keys, so no new strings enter the catalogues.

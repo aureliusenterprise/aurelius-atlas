@@ -2,8 +2,8 @@
 
 - **Status:** in progress
 - **Pull request:** #366
-- **Records:** DD-626 to DD-628 (with the core part); DV-167 amended; relies on 16.5d
-  (VCF-01..07, DD-616/617), 16.5e (VCF-08..14), 7.21a (DET-23), 16.1 (AVS-02)
+- **Records:** DD-626 to DD-629 (with the core part); DV-167 amended, DV-170 new;
+  relies on 16.5d (VCF-01..07, DD-616/617), 16.5e (VCF-08..14), 7.21a (DET-23), 16.1 (AVS-02)
 
 This page is the `aurelius-atlas-webapp` part of increment 16.5f; its rule table is the
 increment's shared set. The other part is with [`aurelius-atlas-core`][part-0], which
@@ -20,7 +20,9 @@ labelled rows.
 - the shared rich card's people, one labelled row per role the card has people for, in
   the legacy order (VCF-15);
 - the flat row as the fallback for a document without role data yet (VCF-16);
-- the unchanged neighbours: the opened entity's People box, the People facet, the counts
+- the sections' funnel: the three role groups where the layout table carried the flat
+  People group, counting and filtering the card's role relations (VCF-18);
+- the unchanged neighbours: the opened entity's People box, the stats bar, the counts
   (VCF-17).
 
 Not in scope:
@@ -36,7 +38,8 @@ Not in scope:
 | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | VCF-15 | The shared rich card names its people in one labelled row per role it has (VCF-06 amended): Domain Lead(s) (`domainLead`), Data Owner(s) (`businessOwner`), Data Steward(s) (`steward`), in that order — the legacy card's order (DET-23's rows, `shared/people.ts`'s ends and labels). Each row dedupes by guid first-wins and links each name, emitting `cardClicked(guid)`. A role with no people draws no row, and a card with none draws no people block |
 | VCF-16 | A card whose document has person names but no role ends (derived before 16.5f, still awaiting its round, ASD-07) keeps today's flat "People" row (VCF-06 as written). The row is the fallback, never an extra: when role ends answer, the flat row is gone (DD-628)                                                                                                                                                                                           |
-| VCF-17 | Nothing else changes: the opened entity's People box keeps its rows from the view's sections (VDR-03, DET-23), the sections' People facet keeps counting the `m4i_person` relations (VCF-09 — the role keys are different attributes and add no rows), and the stats bar and counts are untouched                                                                                                                                                             |
+| VCF-17 | Nothing else changes: the opened entity's People box keeps its rows from the view's sections (VDR-03, DET-23), and the stats bar and counts are untouched                                                                                                                                                                                                                                                                                                     |
+| VCF-18 | Each section's funnel asks the three role groups — Domain Lead(s), Data Owner(s), Data Steward(s), in that order — where 16.5e's table carried the flat People group (VCF-09 amended): each counts the card's role relations of its key by name (AVS-10, LAS-05's read) and filters by them as any group (VCF-11). A role group with no rows leaves the popover (VCF-12); a card whose document awaits its round (VCF-16) adds no role rows meanwhile         |
 
 ## Aurelius origin
 
@@ -47,6 +50,10 @@ Not in scope:
   opened entity's box (DET-23); VCF-15 reuses them.
 - The demo resolved a card's roles through an entity read per card; our card reads them
   from the door's `card.relations` now that the core part answers them (DV-167 amended).
+- The section funnels (VCF-18): the legacy asked one flat `derivedperson` engine facet per
+  ownership section (DD-619's table, VCF-10) — the roles were never in the legacy index, as
+  the role arrays were never filled (DV-167). The role groups are our shape, the demo's
+  labelled card rows carried into the popover (DV-170).
 
 ## Deviations
 
@@ -56,6 +63,10 @@ Against the demo: DV-167 amended — the card's rows now match the demo's. The r
 difference is the round delay: a freshly written edge shows on a card only after the
 indexer re-derives its document, not on the first read.
 
+Against legacy Atlas: DV-170 — the funnel's flat People group becomes the three role
+groups, since Aurelius stores and answers the roles (ASD-06, AVS-10) where the legacy
+engine facet could only count the flat derived-people field.
+
 ## Acceptance
 
 - `src/app/search/shared/catalogue-card.component.spec.ts`: the labelled rows in order
@@ -64,7 +75,10 @@ indexer re-derives its document, not on the first read.
 - `e2e/test__aurelius_atlas_webapp.py`: the seeded entity's card on its domain's page
   shows "Data Owner(s)" and "Data Steward(s)" rows (VCF-15) on the shared dev store,
   namespaced seeds, self-cleaned.
-- `src/app/search/details/sections/related-sections.state.spec.ts`: the People facet
-  counts unchanged with role keys present (VCF-17).
+- `src/app/search/details/sections/section-config.spec.ts`: the layout table asks the role
+  groups where it carried the flat one (VCF-18).
+- `src/app/search/details/sections/related-sections.state.spec.ts`: the role groups count
+  the cards' role relations, empty ones leave, and the groups filter as any other
+  (VCF-18); the People box and counts stay green (VCF-17).
 
 [part-0]: ../../../../libs/python/aurelius-atlas-core/specs/16-5f-card-people-roles/spec.md

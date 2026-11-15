@@ -23,15 +23,20 @@
 
 /**
  * One facet group of a section's filter popover (VCF-09, VCF-10, DD-619).
- * A chain or people key is the relation attribute the rows count — the
- * card's stored derived relations of that type (AVS-02, LAS-05); the two
- * own-field keys count the card's type name (the dictionary name, DET-26)
- * and its display text.
+ * A chain or role key is the relation attribute the rows count — the
+ * card's stored derived relations of that type or role (AVS-02, LAS-05;
+ * the three role keys count the door's role relations, VCF-18/AVS-10);
+ * the two own-field keys count the card's type name (the dictionary name,
+ * DET-26) and its display text. The flat `m4i_person` group of 16.5e went
+ * with the roles (DD-629): the legacy engine facet counted the one derived
+ * people field, as it never stored the roles (DV-170).
  */
 export type FacetGroupKey =
     | "m4i_data_domain"
     | "m4i_data_entity"
-    | "m4i_person"
+    | "domainLead"
+    | "businessOwner"
+    | "steward"
     | "m4i_collection"
     | "m4i_dataset"
     | "m4i_system"
@@ -57,15 +62,18 @@ export interface SectionDef {
 
 /**
  * The facet group titles (DD-622): each reuses the Aurelius catalogue key
- * the legacy menu label carried — the seven dictionary keys every locale
- * already carries (SHL-08). The Name group has no key, so it keeps the raw
+ * the legacy menu label carried — the dictionary keys every locale already
+ * carries (SHL-08), the three role groups the People box's own keys
+ * (DET-23, DD-629). The Name group has no key, so it keeps the raw
  * titlecased literal the legacy rendered untranslated — DET-21's precedent
  * for the same value in the sort select.
  */
 export const FACET_GROUP_TITLES: Readonly<Record<FacetGroupKey, string>> = {
     m4i_data_domain: $localize`:@@deriveddatadomain:Data Domain`,
     m4i_data_entity: $localize`:@@deriveddataentity:Data Entity`,
-    m4i_person: $localize`:@@derivedperson:People`,
+    domainLead: $localize`:@@search.components.people.domainLead:Domain Lead(s)`,
+    businessOwner: $localize`:@@search.components.people.dataOwner:Data Owner(s)`,
+    steward: $localize`:@@search.components.people.dataSteward:Data Steward(s)`,
     m4i_collection: $localize`:@@derivedcollection:Collection`,
     m4i_dataset: $localize`:@@deriveddataset:Dataset`,
     m4i_system: $localize`:@@derivedsystem:System`,
@@ -73,6 +81,15 @@ export const FACET_GROUP_TITLES: Readonly<Record<FacetGroupKey, string>> = {
     // No catalogue key: the legacy option value, titlecased raw (DD-622).
     name: `Name`,
 };
+
+/**
+ * The three role groups in the People box's order (DET-23): where every
+ * layout carried the flat people group, it now asks the roles (VCF-18,
+ * DD-629). Each counts the door's role relations (AVS-10), so a card
+ * whose document awaits its re-derive round simply draws no role rows
+ * (VCF-16's rule, read the same way by the facet's empty-group drop).
+ */
+const ROLE_FACETS: readonly FacetGroupKey[] = ["domainLead", "businessOwner", "steward"];
 
 /**
  * Which count a stat shows: a section's seed count, the properties rows,
@@ -198,7 +215,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-entities",
                 title: $localize`:@@search.details.domain.entityCards.title:Data Entities`,
                 seedKeys: ["dataEntity"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
         ],
         stats: [
@@ -236,13 +253,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-attributes",
                 title: $localize`:@@search.details.entity.attributesCards.title:Data Attributes`,
                 seedKeys: ["attributes"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
             {
                 anchor: "related-entities",
                 title: $localize`:@@search.details.entity.entitiesCards.title:Child Entities`,
                 seedKeys: ["childEntity"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
         ],
         stats: [
@@ -326,7 +343,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-attributes",
                 title: $localize`:@@search.details.field.attributesCards.title:Data Attributes`,
                 seedKeys: ["attributes"],
-                facets: ["m4i_data_domain", "m4i_data_entity", "m4i_person"],
+                facets: ["m4i_data_domain", "m4i_data_entity", ...ROLE_FACETS],
             },
             {
                 anchor: "related-fields",
@@ -434,13 +451,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-fields",
                 title: $localize`:@@search.details.dataset.fieldsCards.title:Fields`,
                 seedKeys: ["fields"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
             {
                 anchor: "related-datasets",
                 title: $localize`:@@search.details.dataset.datasetsCards.title:Child Datasets`,
                 seedKeys: ["childDataset"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
             // LDG-09: the Lineage Model box sits after Child Datasets and
             // before Producers (dataset-details.component.html L115) — the
@@ -537,7 +554,7 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-datasets",
                 title: $localize`:@@search.details.collection.datasetsCards.title:Datasets`,
                 seedKeys: ["datasets"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
         ],
         stats: [
@@ -571,13 +588,13 @@ export const LAYOUTS: Readonly<Record<M4iLayoutType, TypeLayout>> = {
                 anchor: "related-collections",
                 title: $localize`:@@search.details.system.collectionsCards.title:Collections`,
                 seedKeys: ["collections"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
             {
                 anchor: "related-systems",
                 title: $localize`:@@search.details.system.systemsCards.title:Subsystems`,
                 seedKeys: ["childSystem"],
-                facets: ["m4i_person"],
+                facets: ROLE_FACETS,
             },
             {
                 anchor: "related-processes",

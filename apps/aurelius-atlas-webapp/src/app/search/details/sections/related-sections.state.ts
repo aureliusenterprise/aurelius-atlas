@@ -500,10 +500,11 @@ export class RelatedSectionsState {
 
 /**
  * The values one card carries for one facet group (VCF-09, DD-619): a
- * chain or people key reads the card's stored derived relations of that
- * attribute — the direct ends, by name (AVS-02, LAS-05); Type Name reads
- * the card's type name; Name reads its display text. A card without the
- * field contributes nothing, and one card counts a value once.
+ * chain or role key reads the card's stored derived relations of that
+ * attribute — the direct ends, by name (AVS-02, LAS-05; the role keys read
+ * the door's role relations, VCF-18/AVS-10); Type Name reads the card's
+ * type name; Name reads its display text. A card without the field
+ * contributes nothing, and one card counts a value once.
  * @param card the resolved section card
  * @param group the facet group's key
  * @returns the card's values for the group, deduplicated

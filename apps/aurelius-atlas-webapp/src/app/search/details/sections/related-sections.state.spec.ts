@@ -480,7 +480,7 @@ describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
     });
 });
 
-describe("The section facet filters (VCF-09..VCF-14, DD-619/DD-620)", () => {
+describe("The section facet filters (VCF-09..VCF-14, VCF-18, DD-619/DD-620/DD-629)", () => {
     /** The attribute body whose Fields section seeds the given ends (its
      * section asks the System / Collection / Dataset groups, DD-619). */
     function openedAttribute(seed: Record<string, unknown>[]): EntityView {
@@ -558,18 +558,49 @@ describe("The section facet filters (VCF-09..VCF-14, DD-619/DD-620)", () => {
         httpMock.verify();
     });
 
-    it("a card's role relations add no facet rows (VCF-17)", () => {
-        // Since 16.5f the door's role pairs (domainLead / businessOwner /
-        // steward, AVS-10) ride every card's relations. They are different
-        // attributes than any configured group, so they count nowhere: the
-        // popover stays the configured groups only (VCF-17).
-        const { store, httpMock } = arriveFields([related("f1", "one")], () => [
-            cardWithRelations("f1", "one", { m4i_system: ["elastic"], steward: ["Ada"], businessOwner: ["Bob"] }),
+    it("the facet groups ask the roles, counting the cards' role relations (VCF-18, DD-629)", () => {
+        // Since 16.5f the popover asks the three role groups where 16.5e
+        // carried the flat People group: each counts its role relation's
+        // names (AVS-10). The flat m4i_person relation is asked nowhere —
+        // a card that only carries it, still awaiting its re-derive round
+        // (VCF-16), adds no people rows until the round fills the roles.
+        const { store, httpMock } = setup();
+        store.seed(
+            {
+                guid: "d-1",
+                typeName: "m4i_data_domain",
+                displayText: "domain",
+                status: "ACTIVE",
+                stale: false,
+                attributes: { name: "domain" },
+                sections: [ends("dataEntity", [related("e1", "one"), related("e2", "stale")])],
+            },
+            LAYOUTS.m4i_data_domain,
+        );
+        flushAll(httpMock, (guids) =>
+            guids.map((guid) =>
+                guid === "e1"
+                    ? cardWithRelations("e1", "one", { steward: ["ada", "bob"], businessOwner: ["cid"] })
+                    : cardWithRelations("e2", "stale", { m4i_person: ["dana"] }),
+            ),
+        );
+
+        const view = store.views().find((section) => section.anchor === "related-entities")!;
+        // Configured order (lead, owner, steward); Domain Lead has no rows and
+        // leaves the popover (SDX-03), and no group is titled "People".
+        expect(view.facets.map((facet) => facet.title)).toEqual(["Data Owner(s)", "Data Steward(s)"]);
+        expect(group(view, "businessOwner").items.map((row) => [row.label, row.count])).toEqual([["cid", 1]]);
+        expect(group(view, "steward").items.map((row) => [row.label, row.count])).toEqual([
+            ["ada", 1],
+            ["bob", 1],
         ]);
 
-        const view = fields(store);
-        expect(view.facets.map((facet) => facet.key)).toEqual(["m4i_system"]);
-        expect(group(view, "m4i_system").items.map((row) => [row.label, row.count])).toEqual([["elastic", 1]]);
+        // The role groups filter like any other: AND across groups, so the
+        // steward's tick keeps only the card carrying both roles.
+        store.toggleFacet("related-entities", "steward", "ada", true);
+        store.toggleFacet("related-entities", "businessOwner", "cid", true);
+        const filtered = store.views().find((section) => section.anchor === "related-entities")!;
+        expect(filtered.cards.map((card) => card.guid)).toEqual(["e1"]);
         httpMock.verify();
     });
 

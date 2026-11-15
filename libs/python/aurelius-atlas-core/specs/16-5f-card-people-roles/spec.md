@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** #366
-- **Records:** DD-626, DD-627, DD-628 (here); DV-167 amended; relies on 14.2
+- **Records:** DD-626 to DD-629 (here); DV-167 amended, DV-170 new; relies on 14.2
   (ASD-01..05), 16.1 (AVS-01/02, LAS-05), 16.5d (VCF-01..07), 16.5e (VCF-08..14)
 
 This page is the `aurelius-atlas-core` part of increment 16.5f; its rule table is the
