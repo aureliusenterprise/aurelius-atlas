@@ -20,6 +20,8 @@ from pydantic import Field
 
 from aurelius_atlas_core.app_search_document import (
     APP_SEARCH_FIELD,
+    DERIVATION_VERSION,
+    DERIVATION_VERSION_FIELD,
     GOV_RULE_TYPE,
     GOVERNED_BY_FIELD,
     GOVERNED_FIELD,
@@ -501,7 +503,8 @@ def _keeps_source_vectors(settings: dict[str, Any]) -> bool:
 
 def _awaiting_document() -> dict[str, Any]:
     """The entities the App Search indexer has a document to derive for: active ones of m4i types with a document
-    that have none, and those with a stale one (LAS-01, ASD-04, ASU-02, DD-500).
+    that have none, those with a stale one, and those derived under older rules (LAS-01, ASD-04, ASD-07, ASU-02,
+    DD-500).
     """  # noqa: D205 - one sentence
     missing = {
         "bool": {
@@ -512,7 +515,25 @@ def _awaiting_document() -> dict[str, Any]:
             ],
         }
     }
-    return {"bool": {"should": [missing, {"term": {STALE_FIELD: True}}], "minimum_should_match": 1}}
+    outdated = {
+        "bool": {
+            "filter": [
+                {"term": {"state": ACTIVE}},
+                {"prefix": {"typeName": M4I_PREFIX}},
+                {"exists": {"field": SOURCE_HASH_FIELD}},
+            ],
+            "must_not": [
+                {"terms": {"typeName": sorted(WITHOUT_DOCUMENT)}},
+                {"term": {DERIVATION_VERSION_FIELD: DERIVATION_VERSION}},
+            ],
+        }
+    }
+    return {
+        "bool": {
+            "should": [missing, {"term": {STALE_FIELD: True}}, outdated],
+            "minimum_should_match": 1,
+        }
+    }
 
 
 def _next_generation(index: str) -> str:

@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from decimal import Decimal
 
 import pytest
+from aurelius_atlas_core.app_search_document import DERIVATION_VERSION
 from aurelius_atlas_core.app_search_document import source_hash as document_hash
 from aurelius_atlas_core.entity_documents import ElasticsearchEntityDocuments, EmbeddingDimensionsError
 from aurelius_atlas_core.entity_embedding import VECTOR_FIELD, source_hash
@@ -32,6 +33,7 @@ def documented(stored: StoredEntity, *, stale: bool = False, domains: Sequence[s
     """``stored`` with an App Search document of its own fields, naming ``domains``."""
     document = StoredAppSearch(
         source_hash=document_hash(stored),
+        derivation_version=DERIVATION_VERSION,
         stale=stale,
         referenceablequalifiedname=stored.guid,
         deriveddatadomain=list(domains),

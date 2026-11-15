@@ -8,10 +8,14 @@ import { CatalogueCard } from "./catalogue-card.component";
  * The one rich card of both screens (VCF-01, VCF-06, DD-616, DD-617): the
  * shell's title and badge, the breadcrumb trail (the stored crumb array
  * plus the card's own active crumb), the classification chips, the
- * description markdown, and the flat people row of the derived
- * `m4i_person` relations. Every click — title, crumb, person — emits the
- * guid on `cardClicked`; routing is the screen's (DD-154). These specs
- * mount the part through a host, the gov-quality cards spec's idiom.
+ * description markdown, and the people rows: one labelled row per role —
+ * Domain Lead(s), Data Owner(s), Data Steward(s) — from the door's role
+ * relations (VCF-15, AVS-10), the flat "People" row of the derived
+ * `m4i_person` relations kept as the fallback for a document still
+ * awaiting its re-derive round (VCF-16). Every click — title, crumb,
+ * person — emits the guid on `cardClicked`; routing is the screen's
+ * (DD-154). These specs mount the part through a host, the gov-quality
+ * cards spec's idiom.
  */
 
 /** A minimal host: the part under test with one card input. */
@@ -142,7 +146,47 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         expect(bare.nativeElement.querySelector(".aurelius-card-description")).toBeNull();
     });
 
-    it("renders one flat People row of the derived persons, deduped (VCF-06, DD-617)", () => {
+    it("renders one labelled row per role, in legacy order, deduped (VCF-15, AVS-10)", () => {
+        const { fixture, host } = mount({
+            ...CARD,
+            relations: [
+                { attribute: "steward", entities: [{ guid: "p2", name: "Ava Ross", typeName: "m4i_person" }] },
+                {
+                    attribute: "businessOwner",
+                    entities: [
+                        { guid: "p1", name: "Gerrit Lorenz", typeName: "m4i_person" },
+                        { guid: "p1", name: "Gerrit Lorenz", typeName: "m4i_person" }, // the duplicate drops
+                    ],
+                },
+                { attribute: "domainLead", entities: [{ guid: "p3", name: "Ida Lang", typeName: "m4i_person" }] },
+            ],
+        });
+        const rows = [...fixture.nativeElement.querySelectorAll(".aurelius-people-row")];
+        // the legacy order — lead, owner, steward — whatever order the relations arrived in
+        expect(rows.map((row: Element) => normalize(row.textContent))).toEqual([
+            "Domain Lead(s) : Ida Lang",
+            "Data Owner(s) : Gerrit Lorenz",
+            "Data Steward(s) : Ava Ross",
+        ]);
+        rows[1].querySelector("a")?.click();
+        expect(host.last).toBe("p1");
+    });
+
+    it("a role with no people draws no row, and the role rows replace the flat one (VCF-15, VCF-16)", () => {
+        const { fixture } = mount({
+            ...CARD,
+            relations: [
+                { attribute: "m4i_person", entities: [{ guid: "p1", name: "Gerrit Lorenz", typeName: "m4i_person" }] },
+                { attribute: "steward", entities: [{ guid: "p2", name: "Ava Ross", typeName: "m4i_person" }] },
+            ],
+        });
+        const rows = [...fixture.nativeElement.querySelectorAll(".aurelius-people-row")];
+        // domainLead and businessOwner have none: no row for them, and the flat m4i_person row is
+        // gone — a card never draws both kinds (VCF-16).
+        expect(rows.map((row: Element) => normalize(row.textContent))).toEqual(["Data Steward(s) : Ava Ross"]);
+    });
+
+    it("keeps the flat People row of a document awaiting its re-derive round (VCF-16, DD-628)", () => {
         const { fixture, host } = mount(CARD);
         const rows = [...fixture.nativeElement.querySelectorAll(".aurelius-people-row")];
         expect(rows).toHaveLength(1);
@@ -151,7 +195,7 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
         expect(host.last).toBe("p1");
     });
 
-    it("omits the people row at none and keeps the rest (VCF-06)", () => {
+    it("omits the people rows at none and keeps the rest (VCF-06)", () => {
         const { fixture } = mount({ ...CARD, relations: [] });
         expect(fixture.nativeElement.querySelector(".aurelius-people-row")).toBeNull();
         expect(fixture.nativeElement.querySelector(".title.is-4 a")?.textContent).toBe("cost_centre_code");
@@ -160,7 +204,7 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
     it("a person without a name rides its guid (a link needs a label)", () => {
         const { fixture } = mount({
             ...CARD,
-            relations: [{ attribute: "m4i_person", entities: [{ guid: "p9", name: null, typeName: "m4i_person" }] }],
+            relations: [{ attribute: "steward", entities: [{ guid: "p9", name: null, typeName: "m4i_person" }] }],
         });
         expect(normalize(fixture.nativeElement.querySelector(".aurelius-people-row")?.textContent)).toContain("p9");
     });

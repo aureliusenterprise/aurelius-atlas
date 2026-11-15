@@ -137,6 +137,38 @@ def test__a_stored_document_becomes_crumbs_relations_and_the_business_metadata(m
     assert view.attributes == {"qualifiedName": "a", "name": "A", "definition": "An attribute"}
 
 
+@pytest.mark.covers(f"{V}.view_of", rules=["AVS-10"])
+def test__the_role_pairs_follow_the_type_keyed_relations_and_leave_the_sections_alone(m4i: TypeRegistry) -> None:
+    """The card's relations answer the stored role pairs after the type-keyed ones, each keyed by its
+    relationship attribute; the sections stay what they were, as the role pairs ride the card only (AVS-10).
+    """  # noqa: D205 - one sentence
+    entity_type = type_of(m4i, "m4i_data_entity")
+    stored = hand("m4i_data_entity", entity_type, qualifiedName="e", name="E").model_copy(
+        update={
+            "app_search": own_document(hand("m4i_data_entity", entity_type, qualifiedName="e", name="E")).model_copy(
+                update={
+                    "deriveddatadomain": ["D"],
+                    "deriveddatadomainguid": ["d"],
+                    "deriveddataowner": ["Alice"],
+                    "deriveddataownerguid": ["alice"],
+                    "deriveddatasteward": ["Bob", "Alice"],
+                    "deriveddatastewardguid": ["bob", "alice"],
+                },
+            ),
+        },
+    )
+
+    view = view_of(stored, entity_type)
+
+    assert [(r.attribute, [(e.guid, e.name) for e in r.entities]) for r in view.relations] == [
+        ("m4i_data_domain", [("d", "D")]),  # the type-keyed pairs first (AVS-02)
+        ("businessOwner", [("alice", "Alice")]),  # then the role pairs, in ROLE_FIELDS' order (ASD-06)
+        ("steward", [("bob", "Bob"), ("alice", "Alice")]),
+    ]
+    # the sections never saw the role pairs: the People box reads the read ends, not these (VCF-17)
+    assert [(r.attribute, [e.guid for e in r.entities]) for r in view.sections] == [("m4i_data_domain", ["d"])]
+
+
 @pytest.mark.covers(f"{V}._card_definition", rules=["AVS-03", "DD-614"])
 def test__the_card_description_falls_back_to_the_description_attribute(m4i: TypeRegistry) -> None:
     """The definition when it is there, the description when there is none, none when neither is (DD-614)."""

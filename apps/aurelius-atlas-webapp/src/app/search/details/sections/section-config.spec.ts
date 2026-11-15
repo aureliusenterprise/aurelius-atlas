@@ -110,7 +110,7 @@ describe("Section config (DET-16)", () => {
         ]);
     });
 
-    it("carries the legacy facet group table for every section (VCF-10, DD-619)", () => {
+    it("carries the facet group table for every section (VCF-10, VCF-18, DD-619)", () => {
         // Each legacy `*-cards` component asked its own facets; the group
         // keys ride the section row (VCF-10). One entry per section, in
         // legacy order — the empty list is the "No filters available."
@@ -118,31 +118,35 @@ describe("Section config (DET-16)", () => {
         const facetShape = (name: keyof typeof LAYOUTS) =>
             LAYOUTS[name].sections.map((section) => [section.anchor, [...section.facets]]);
 
-        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", ["m4i_person"]]]);
+        // The flat people group went with the roles (VCF-18, DD-629): the
+        // three role groups in the People box's order wherever 16.5e
+        // carried the one flat group.
+        const roles = ["domainLead", "businessOwner", "steward"];
+        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", roles]]);
         expect(facetShape("m4i_data_entity")).toEqual([
-            ["related-attributes", ["m4i_person"]],
-            ["related-entities", ["m4i_person"]],
+            ["related-attributes", roles],
+            ["related-entities", roles],
         ]);
         expect(facetShape("m4i_data_attribute")).toEqual([
             ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
         ]);
         expect(facetShape("m4i_field")).toEqual([
-            ["related-attributes", ["m4i_data_domain", "m4i_data_entity", "m4i_person"]],
+            ["related-attributes", ["m4i_data_domain", "m4i_data_entity", ...roles]],
             ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
             // The legacy asked the rule dimension; no card field carries it (DV-168).
             ["related-rules", []],
         ]);
         expect(facetShape("m4i_data_quality")).toEqual([["related-fields", []]]);
         expect(facetShape("m4i_dataset")).toEqual([
-            ["related-fields", ["m4i_person"]],
-            ["related-datasets", ["m4i_person"]],
+            ["related-fields", roles],
+            ["related-datasets", roles],
             ["related-producers", ["typeName", "m4i_system"]],
             ["related-consumers", ["typeName", "m4i_system"]],
         ]);
-        expect(facetShape("m4i_collection")).toEqual([["related-datasets", ["m4i_person"]]]);
+        expect(facetShape("m4i_collection")).toEqual([["related-datasets", roles]]);
         expect(facetShape("m4i_system")).toEqual([
-            ["related-collections", ["m4i_person"]],
-            ["related-systems", ["m4i_person"]],
+            ["related-collections", roles],
+            ["related-systems", roles],
             ["related-processes", ["typeName", "m4i_system"]],
         ]);
         expect(facetShape("m4i_generic_process")).toEqual([
@@ -156,8 +160,9 @@ describe("Section config (DET-16)", () => {
             ["governance-roles", ["typeName", "m4i_data_domain", "m4i_data_entity", "name"]],
         ]);
 
-        // Every asked group carries a catalogue title (DD-622): the seven
-        // dictionary keys and the raw Name literal.
+        // Every asked group carries a catalogue title (DD-622): the
+        // dictionary keys, the People box's three role keys, and the raw
+        // Name literal.
         for (const [name, layout] of Object.entries(LAYOUTS)) {
             for (const section of layout.sections) {
                 for (const group of section.facets) {
