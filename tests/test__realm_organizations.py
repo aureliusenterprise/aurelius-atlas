@@ -137,9 +137,11 @@ def test__the_demo_realm_has_an_operator_and_the_sample_tenant() -> None:
 
 @pytest.mark.covers(rules=["RLM-07"])
 def test__the_production_realm_still_seeds_no_person() -> None:
-    """The operator organization has its groups and no member; the realm has no user."""
+    """The operator organization has its groups and no member; the realm's one user is the provisioning client's
+    service account (TRM-11).
+    """  # noqa: D205 - one sentence
     loaded = realm(PROD_REALM)
-    assert not loaded.get("users")
+    assert [user["username"] for user in loaded["users"]] == ["service-account-aurelius-atlas-provisioning"]
     assert all(not o.get("members") for o in loaded["organizations"])
 
 
@@ -162,3 +164,42 @@ def test__the_store_defines_the_operators_read_role_in_dev_and_the_chart() -> No
     )
     volumes_ = {v["name"]: v for v in pod_spec(statefulset)["volumes"]}
     assert volumes_["chart-roles"]["configMap"]["name"] == configmap["metadata"]["name"]
+
+
+PROVISIONING_ROLES = {
+    "manage-organizations",
+    "view-organizations",
+    "query-organizations",
+    "manage-users",
+    "view-users",
+    "query-users",
+    "query-groups",
+    "view-clients",
+    "manage-realm",
+}
+"""The realm-management roles the provisioning command needs, no more (DD-600's run on Keycloak 26.7.4)."""
+
+
+@pytest.mark.covers(rules=["TRM-11"])
+@pytest.mark.parametrize(
+    ("path", "management"),
+    [(DEV_REALM, "master-realm"), (PROD_REALM, "realm-management"), (DEMO_REALM, "realm-management")],
+    ids=["dev", "chart", "demo"],
+)
+def test__each_realm_has_the_provisioning_client_with_the_roles_it_needs(path: Any, management: str) -> None:  # noqa: ANN401
+    """Confidential, a service account and no sign-in; its account holds the nine roles on the realm's own
+    management client (``master-realm`` in master); fine-grained admin permissions on.
+    """  # noqa: D205 - one sentence
+    loaded = realm(path)
+    assert loaded["adminPermissionsEnabled"] is True
+    found = client(loaded, "aurelius-atlas-provisioning")
+    assert (found["publicClient"], found["serviceAccountsEnabled"]) == (False, True)
+    assert (found["standardFlowEnabled"], found["directAccessGrantsEnabled"], found["implicitFlowEnabled"]) == (
+        False,
+        False,
+        False,
+    )
+    assert found["secret"] == "${PROVISIONING_CLIENT_SECRET}"  # noqa: S105 - the import's placeholder
+    accounts = [user for user in loaded["users"] if user.get("serviceAccountClientId") == found["clientId"]]
+    assert [set(account["clientRoles"]) for account in accounts] == [{management}]
+    assert set(accounts[0]["clientRoles"][management]) == PROVISIONING_ROLES

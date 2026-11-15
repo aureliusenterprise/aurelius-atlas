@@ -194,6 +194,12 @@ secrets:
         # import (${GRAFANA_CLIENT_SECRET}) and the observability chart's
         # GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET.
         clientSecret: ""
+    provisioningClient:
+        # The provisioning command's client secret (TRM-11, 15.5b) → Secret
+        # <release>-provisioning-client, key client-secret. Read by the realm
+        # import (${PROVISIONING_CLIENT_SECRET}) and the server chart's tenant
+        # provisioning Job and operators CronJob.
+        clientSecret: ""
     serverClient:
         # The Atlas server's confidential-client secret (CHT-109, 10.12) →
         # Secret <release>-server-client, key client-secret. Read by both the

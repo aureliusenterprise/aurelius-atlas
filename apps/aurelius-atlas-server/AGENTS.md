@@ -79,7 +79,15 @@ list|take|restore`, reading `StoreAccessSettings` alone; the chart's restore Job
 - `aurelius_atlas_server/provisioning.py` — the command `python -m aurelius_atlas_server.provisioning
 provision|trust|list|remove`, reading the server's settings: a tenant's indices, models and sample made by the
   server's own start sequence and import, its record kept (TPR-02 to TPR-06, DD-573);
-  `provision --existing-ok` is what the chart's hook Job runs (WPT-07, DD-579)
+  `provision --existing-ok` is what the chart's hook Job runs (WPT-07, DD-579); `operators` is the chart's
+  CronJob, and `admin` names a tenant's administrators. **Every setting `ServerSettings` can't start without
+  must reach the Job's and the CronJob's containers** (`atlas-server.provisioningEnv`); a test fails until it
+  does
+- `aurelius_atlas_server/realm_tenants.py` — `KeycloakAdmin`, `RealmTenants`: with
+  `tenancy_admin_client_secret`, the command keeps the realm in step through Keycloak's admin API: the tenant's
+  organization and groups, the operators trust adds (listed in the record's `operatorMembers`), the
+  administrators' policy and permissions (TRM-02 to TRM-10, DD-600 to DD-602). Tests use the fake admin API in
+  `tests/fake_keycloak.py`, which answers as Keycloak 26.7.4 did
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)

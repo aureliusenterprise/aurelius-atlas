@@ -134,8 +134,15 @@ tenant's own indices and background work. Each tenant listed in
 upgrade, and a tenant already there is left as it is (DD-579). A tenant is
 removed only by the server's command, `python -m
 aurelius_atlas_server.provisioning remove <alias>`, never by dropping it from
-the list. Until 15.5, the realm's organizations and their groups are set up by
-hand.
+the list. The command keeps the realm in step as the client
+`aurelius-atlas-provisioning` (DD-600): the tenant's organization and its four
+role groups, the operators as read members of each tenant that trusts them,
+and the rights of each tenant's administrators over its role groups (DD-602).
+A CronJob runs `operators` every 15 minutes, so an operator who joins or
+leaves is in step with every tenant (`tenancy.operatorSync.schedule`). A
+tenant's members join through a platform administrator or by invitation:
+Keycloak doesn't yet let a tenant administrator list them without reading
+every user of the realm.
 
 ## Trust
 

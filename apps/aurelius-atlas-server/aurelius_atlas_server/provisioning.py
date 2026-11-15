@@ -1,9 +1,11 @@
-"""``python -m aurelius_atlas_server.provisioning``: provision, trust, list or remove tenants (TPR-01 to TPR-06).
+"""``python -m aurelius_atlas_server.provisioning``: provision, trust, list or remove tenants, keep the operators in
+step, and name a tenant's administrators (TPR-01 to TPR-06, TRM-01 to TRM-10).
 
 The command reads the server's settings from the same environment, so it runs from the server's image: by hand,
 or as a Job of the chart (15.4). A tenant is provisioned with the server's own start sequence and its sample
-imported by the core's import service, as ``admin/import`` imports one (DD-573).
-"""
+imported by the core's import service, as ``admin/import`` imports one (DD-573). With the provisioning client's
+secret, the realm is kept in step too: the tenant's organization, its operators and administrators (DD-600).
+"""  # noqa: D205 - one sentence
 
 import argparse
 import asyncio
@@ -20,6 +22,7 @@ from aurelius_atlas_core.request_context import current_user
 from aurelius_atlas_model.impexp import AtlasImportResult, OperationStatus
 from aurelius_atlas_store_es import ElasticsearchStore
 
+from aurelius_atlas_server.realm_tenants import KeycloakAdmin, RealmError, RealmTenants
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenancy import ALIAS
 from aurelius_atlas_server.tenant_stores import open_stores, store_aliases, tenant_prefix
@@ -28,6 +31,9 @@ from aurelius_atlas_server.tenants import StoredTenant, TenantsIndex, TenantStat
 __all__ = ["PROG", "Provisioner", "ProvisioningError", "main", "parser", "run"]
 
 PROG = "python -m aurelius_atlas_server.provisioning"
+
+NO_REALM = "The realm is left as it is: tenancy_admin_client_secret is not set"
+"""What the command says once when it can't keep the realm in step (TRM-01, DD-603)."""
 
 REMOVAL_WAITS = 2
 """How many of the servers' refresh intervals removal waits: their next read, then their workers' stop (DD-577)."""
@@ -41,7 +47,7 @@ class ProvisioningError(Exception):
 
 
 def parser() -> argparse.ArgumentParser:
-    """The command's arguments: ``provision``, ``trust``, ``list`` or ``remove``."""
+    """The command's arguments: ``provision``, ``trust``, ``list``, ``remove``, ``operators`` or ``admin``."""
     commands = argparse.ArgumentParser(prog=PROG, description="Provision, trust, list or remove tenants.")
     choices = commands.add_subparsers(dest="command", required=True)
     provisioning = choices.add_parser("provision", help="create a tenant's indices and load its models")
@@ -53,12 +59,20 @@ def parser() -> argparse.ArgumentParser:
     provisioning.add_argument(
         "--existing-ok", action="store_true", help="leave a tenant already active as it is, and exit 0"
     )
+    provisioning.add_argument(
+        "--admin", action="append", default=[], dest="admins", metavar="USERNAME", help="a tenant administrator"
+    )
     trusting = choices.add_parser("trust", help="record whether a tenant trusts the operators")
     trusting.add_argument("alias")
     trusting.add_argument("trust", choices=["on", "off"])
     choices.add_parser("list", help="the recorded tenants: alias, state, trust and sample")
-    removing = choices.add_parser("remove", help="delete a tenant's indices and its record")
+    removing = choices.add_parser("remove", help="delete a tenant's indices, organization and record")
     removing.add_argument("alias")
+    choices.add_parser("operators", help="bring the operators' membership of every tenant in step")
+    administering = choices.add_parser("admin", help="add or remove a tenant administrator")
+    administering.add_argument("alias")
+    administering.add_argument("change", choices=["add", "remove"])
+    administering.add_argument("username")
     return commands
 
 
@@ -68,31 +82,70 @@ async def run(  # noqa: PLR0913 - the command, its settings, and where it writes
     out: Callable[[str], None],
     *,
     store: ElasticsearchStore | None = None,
+    realm: RealmTenants | None = None,
     sleep: Callable[[float], Awaitable[object]] = asyncio.sleep,
     user: str | None = None,
 ) -> None:
-    """Carry out the parsed command against the store, writing what it did to ``out``.
+    """Carry out the parsed command against the store and, with the client's secret, the realm, writing what it
+    did to ``out``; ``realm`` replaces the one the settings make.
 
     Raises:
-        ProvisioningError: When the command refuses (TPR-02, TPR-05, TPR-06).
-    """
-    async with store if store is not None else ElasticsearchStore(settings.store_settings()) as opened:
-        tenants = TenantsIndex(opened)
-        await tenants.prepare()
-        provisioner = Provisioner(
-            settings, opened, tenants, out=out, sleep=sleep, who=user if user is not None else current_user()
+        ProvisioningError: When the command refuses, or the realm refuses a call (TPR-02, TPR-05, TPR-06, TRM-10).
+    """  # noqa: D205 - one sentence
+    realm = realm if realm is not None else realm_of(settings)
+    try:
+        async with store if store is not None else ElasticsearchStore(settings.store_settings()) as opened:
+            tenants = TenantsIndex(opened)
+            await tenants.prepare()
+            who = user if user is not None else current_user()
+            provisioner = Provisioner(settings, opened, tenants, out=out, sleep=sleep, who=who, realm=realm)
+            await _dispatch(args, provisioner)
+    except RealmError as error:
+        raise ProvisioningError(str(error)) from error
+    finally:
+        if realm is not None:
+            await realm.admin.close()
+
+
+async def _dispatch(args: argparse.Namespace, provisioner: Provisioner) -> None:
+    """Run the parsed command."""
+    if args.command == "provision":
+        sample = None if args.sample is None else await asyncio.to_thread(_read_sample, args.sample)
+        await provisioner.provision(
+            args.alias,
+            sample=sample,
+            trusts_operators=not args.no_operator_trust,
+            existing_ok=args.existing_ok,
+            admins=args.admins,
         )
-        if args.command == "provision":
-            sample = None if args.sample is None else await asyncio.to_thread(_read_sample, args.sample)
-            await provisioner.provision(
-                args.alias, sample=sample, trusts_operators=not args.no_operator_trust, existing_ok=args.existing_ok
-            )
-        elif args.command == "trust":
-            await provisioner.trust(args.alias, trusts=args.trust == "on")
-        elif args.command == "list":
-            await provisioner.list()
-        else:
-            await provisioner.remove(args.alias)
+    elif args.command == "trust":
+        await provisioner.trust(args.alias, trusts=args.trust == "on")
+    elif args.command == "list":
+        await provisioner.list()
+    elif args.command == "operators":
+        await provisioner.operators()
+    elif args.command == "admin":
+        await provisioner.admin(args.alias, args.username, add=args.change == "add")
+    else:
+        await provisioner.remove(args.alias)
+
+
+def realm_of(settings: ServerSettings) -> RealmTenants | None:
+    """The realm's tenants as the provisioning client reaches them, or None without its secret (TRM-01)."""
+    if settings.tenancy_admin_client_secret is None:
+        return None
+    admin = KeycloakAdmin(
+        str(settings.auth_server_url),
+        settings.auth_realm,
+        settings.tenancy_admin_client_id,
+        settings.tenancy_admin_client_secret.get_secret_value(),
+        http=KeycloakAdmin.http(None if settings.auth_ca_file is None else str(settings.auth_ca_file)),
+    )
+    return RealmTenants(
+        admin,
+        operator_organization=settings.tenancy_operator_organization,
+        operator_role=settings.tenancy_operator_role,
+    )
 
 
 class Provisioner:
@@ -107,6 +160,7 @@ class Provisioner:
         out: Callable[[str], None],
         sleep: Callable[[float], Awaitable[object]],
         who: str,
+        realm: RealmTenants | None = None,
     ) -> None:
         self._settings = settings
         self._store = store
@@ -114,13 +168,22 @@ class Provisioner:
         self._out = out
         self._sleep = sleep
         self._who = who
+        self._realm = realm
+        self._operators: frozenset[str] | None = None
+        self._said_no_realm = False
 
     async def provision(
-        self, alias: str, *, sample: tuple[str, bytes] | None, trusts_operators: bool, existing_ok: bool = False
+        self,
+        alias: str,
+        *,
+        sample: tuple[str, bytes] | None,
+        trusts_operators: bool,
+        existing_ok: bool = False,
+        admins: Sequence[str] = (),
     ) -> None:
         """Record the tenant ``provisioning``, open its store set, import the sample (its file name and content),
-        record it ``active`` (TPR-02 to TPR-04); with ``existing_ok``, leave a tenant already ``active`` as it is
-        (WPT-07).
+        bring its realm in step with ``admins`` its administrators, record it ``active`` (TPR-02 to TPR-04,
+        TRM-02, TRM-03); with ``existing_ok``, leave a tenant already ``active`` as it is but its realm (WPT-07).
 
         Raises:
             ProvisioningError: For an alias that isn't index-safe, the operator organization's, a tenant already
@@ -129,6 +192,7 @@ class Provisioner:
         _check_alias(alias, self._settings)
         existing = await self._tenants.get(alias)
         if existing is not None and existing.state is TenantState.ACTIVE and existing_ok:
+            await self._in_step(await self._with_admins(existing, admins))
             self._out(f"{alias} is already provisioned")
             return
         if existing is not None and existing.state is not TenantState.PROVISIONING:
@@ -143,7 +207,10 @@ class Provisioner:
             created_at=now if existing is None else existing.created_at,
             updated_at=now,
             updated_by=self._who,
+            operator_members=[] if existing is None else existing.operator_members,
+            administrators=[] if existing is None else existing.administrators,
         )
+        record = await self._with_admins(record, admins)
         await self._tenants.put(record)
         prefix = tenant_prefix(alias)
         settings = self._settings
@@ -161,6 +228,7 @@ class Provisioner:
             importer = ImportService(opened.entity_store, opened.typedef_store, writer, audits=audits)
             result = await importer.run(content, None, self._who, socket.gethostname(), "")
             _check_import(result, name)
+        record = await self._in_step(record)
         await self._tenants.put(record.model_copy(update={"state": TenantState.ACTIVE, "updated_at": _now()}))
         self._out(f"Provisioned {alias}: indices {prefix}-*, {'sample ' + sample[0] if sample else 'no sample'}")
 
@@ -171,10 +239,40 @@ class Provisioner:
             ProvisioningError: For a tenant with no record.
         """
         record = await self._recorded(alias)
-        await self._tenants.put(
-            record.model_copy(update={"trusts_operators": trusts, "updated_at": _now(), "updated_by": self._who})
-        )
+        record = record.model_copy(update={"trusts_operators": trusts, "updated_at": _now(), "updated_by": self._who})
+        await self._tenants.put(record)
+        if record.state is TenantState.ACTIVE:
+            await self._in_step(record)
         self._out(f"{alias} {'trusts' if trusts else 'does not trust'} the operators")
+
+    async def operators(self) -> None:
+        """Bring every ``active`` tenant's operators in step (TRM-05)."""
+        if self._realm is None:
+            self._no_realm()
+            return
+        for tenant in await self._tenants.list():
+            if tenant.state is TenantState.ACTIVE:
+                await self._in_step(tenant, report=True)
+
+    async def admin(self, alias: str, username: str, *, add: bool) -> None:
+        """Add or remove one of the tenant's administrators, and their rights in the realm (TRM-06, TRM-07).
+
+        Raises:
+            ProvisioningError: Without the realm, for a tenant with no record, or a user the realm doesn't have.
+        """
+        if self._realm is None:
+            msg = "a tenant's administrators are kept in the realm: tenancy_admin_client_secret is not set"
+            raise ProvisioningError(msg)
+        record = await self._recorded(alias)
+        user = await self._realm.user_id(username)
+        admins = set(record.administrators) | {user} if add else set(record.administrators) - {user}
+        record = record.model_copy(
+            update={"administrators": sorted(admins), "updated_at": _now(), "updated_by": self._who}
+        )
+        await self._tenants.put(record)
+        if record.state is TenantState.ACTIVE:
+            await self._in_step(record)
+        self._out(f"{username} {'administers' if add else 'no longer administers'} {alias}")
 
     async def list(self) -> None:
         """Write each recorded tenant: alias, state, trust and sample (TPR-06)."""
@@ -204,8 +302,44 @@ class Provisioner:
                 indices = sorted((await client.indices.get(index=name)).body)
                 await client.indices.delete(index=",".join(indices))
                 deleted += indices
+        if self._realm is not None:
+            await self._realm.delete(alias)
+        else:
+            self._no_realm()
         await self._tenants.delete(alias)
         self._out(f"Removed {alias}: {len(deleted)} indices deleted")
+
+    async def _in_step(self, record: StoredTenant, *, report: bool = False) -> StoredTenant:
+        """The record after its realm is brought in step, saved as it changes; as it was without the realm."""
+        if self._realm is None:
+            self._no_realm()
+            return record
+        if self._operators is None:
+            self._operators = await self._realm.operators()
+        record, taken = await self._realm.in_step(record, self._operators, self._tenants.put)
+        if report or taken.added or taken.removed:
+            self._out(f"Realm {record.alias}: {len(taken.added)} operators added, {len(taken.removed)} removed")
+        return record
+
+    async def _with_admins(self, record: StoredTenant, admins: Sequence[str]) -> StoredTenant:
+        """The record with the named administrators added.
+
+        Raises:
+            ProvisioningError: When administrators are named without the realm.
+        """
+        if not admins:
+            return record
+        if self._realm is None:
+            msg = "a tenant's administrators are kept in the realm: tenancy_admin_client_secret is not set"
+            raise ProvisioningError(msg)
+        named = {await self._realm.user_id(username) for username in admins}
+        return record.model_copy(update={"administrators": sorted(set(record.administrators) | named)})
+
+    def _no_realm(self) -> None:
+        """Say once that the realm is left as it is (TRM-01)."""
+        if not self._said_no_realm:
+            self._said_no_realm = True
+            self._out(NO_REALM)
 
     async def _recorded(self, alias: str) -> StoredTenant:
         """The tenant's record.

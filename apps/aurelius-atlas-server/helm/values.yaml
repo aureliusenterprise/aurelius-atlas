@@ -103,6 +103,8 @@ credentialSecrets:
     elasticsearch: ""
     otelClients: ""
     serverClient: ""
+    # The provisioning command's client (TRM-11): <release>-provisioning-client.
+    provisioningClient: ""
 
 # The 6.1a authentication join (CHT-108): the confidential client the server
 # verifies (its own — the dashboards sign in through it, DD-250) and the
@@ -189,6 +191,10 @@ tenancy:
     # - alias: acme              # the organization's alias: [a-z0-9][a-z0-9-]{0,62}
     #   trustsOperators: false   # true unless set
     tenants: []
+    # The operators' membership of every trusting tenant kept in step with
+    # the operator organization (TRM-05, DD-601), by a CronJob.
+    operatorSync:
+        schedule: "*/15 * * * *"
 
 # The restore Job (SNP-07): enabled with replicaCount 0, it restores the
 # store from a snapshot, the newest successful one unless snapshot names one.

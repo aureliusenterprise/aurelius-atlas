@@ -16,6 +16,7 @@ from aurelius_atlas_core.typedef_document import INDEX_SETTINGS, ensure_index
 from aurelius_atlas_model.base import AtlasModel
 from aurelius_atlas_store_es import ElasticsearchStore
 from elasticsearch import NotFoundError
+from pydantic import Field
 
 from aurelius_atlas_server.tenancy import Tenancy
 
@@ -37,6 +38,8 @@ TENANTS_MAPPING: dict[str, Any] = {
         "createdAt": {"type": "long"},
         "updatedAt": {"type": "long"},
         "updatedBy": {"type": "keyword"},
+        "operatorMembers": {"type": "keyword"},
+        "administrators": {"type": "keyword"},
     },
 }
 
@@ -59,6 +62,10 @@ class StoredTenant(AtlasModel):
     created_at: int = 0
     updated_at: int = 0
     updated_by: str | None = None
+    operator_members: list[str] = Field(default_factory=list)
+    """The operators' user ids that trust made members of the tenant's organization (TRM-03, DD-601)."""
+    administrators: list[str] = Field(default_factory=list)
+    """The user ids of the tenant's administrators in the realm (TRM-06, DD-602)."""
 
 
 class TenantsIndex:
@@ -72,7 +79,9 @@ class TenantsIndex:
         self.alias = alias
 
     async def prepare(self) -> None:
-        """Create the index behind its alias unless it exists (DD-508's lost race included)."""
+        """Create the index behind its alias unless it exists (DD-508's lost race included); an index made before
+        takes the fields added since (DD-601).
+        """  # noqa: D205 - one sentence
         if not await self._store.client.indices.exists_alias(name=self.alias):
             await ensure_index(
                 self._store.client,
@@ -81,6 +90,8 @@ class TenantsIndex:
                 mappings=TENANTS_MAPPING,
                 settings=INDEX_SETTINGS,
             )
+            return
+        await self._store.client.indices.put_mapping(index=self.alias, properties=TENANTS_MAPPING["properties"])
 
     async def get(self, alias: str) -> StoredTenant | None:
         """The tenant's record, or None."""
