@@ -522,8 +522,16 @@ jobs:
             # this daemon): the e2e job's daemon is a pod away, so the
             # split's cost is one rebuild per affected app — the GHCR
             # buildcache tags keep it near-instant (tools/plugins/docker.ts).
+            # -c ci is what keeps that promise: the buildcache flags
+            # (--cache-from/--cache-to the GHCR tags) live only in the `ci`
+            # configuration, and the target's DEFAULT is `local` — a bare
+            # `docker buildx build`. Without the flag every image cold-builds
+            # here (run 43738540178: webapp 3m53s, the whole step 4m27s,
+            # cache 0/7) while the e2e job builds the same images warm in
+            # seconds. The `ci` config ends in --load, so docker-sbom still
+            # finds the image on this daemon.
             - name: Build app images
-              run: npx nx affected -t docker-build
+              run: npx nx affected -t docker-build -c ci
 
             # Image vulns (SBOM of each app image) plus chart misconfigs
             # (DD-282): both Trivy, both -c sarif. The helm SARIF is
