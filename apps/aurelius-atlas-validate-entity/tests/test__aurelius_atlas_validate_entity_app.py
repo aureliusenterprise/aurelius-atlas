@@ -16,6 +16,7 @@ NAME_RULE = rule_entity(
     "Dataset has a name",
     {
         "name": "Dataset has a name",
+        "qualifiedName": "m4i_dataset--name",
         "active": True,
         "dqcheckkind": "ATTRIBUTE_PRESENT",
         "dqattribute": "name",
@@ -23,6 +24,20 @@ NAME_RULE = rule_entity(
         "nonCompliantMessage": "This dataset should have a name",
     },
 )
+CHILD_RULE = rule_entity(
+    "rule-dataset-child",
+    "Dataset has a child",
+    {
+        "name": "Dataset has a child",
+        "qualifiedName": "m4i_dataset--childDataset",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "childDataset",
+        "compliantMessage": "This entity has a childDataset",
+        "nonCompliantMessage": "This entity is missing a childDataset",
+    },
+)
+"""The sample corpus's ``completeness('childDataset')`` record, in the vocabulary shape."""
 DRAFT = {"guid": "e-in", "typeName": "m4i_dataset", "attributes": {"name": "Sales Orders"}}
 
 
@@ -67,6 +82,90 @@ async def test__the_draft_answers_with_the_rules_verdicts(
         ],
         "unreadRules": [],
     }
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-07"])
+async def test__a_foreign_types_rule_is_nowhere_in_the_answer(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """The rules of another type answer no verdict and no unread entry for this draft (VEV-07, DD-631)."""
+    _answers_one_page(
+        catalogue,
+        rule_entity(
+            "rule-system-kibana",
+            "System has a kibanaSpace",
+            {
+                "name": "System has a kibanaSpace",
+                "qualifiedName": "m4i_system--kibanaSpace",
+                "active": True,
+                "dqcheckkind": "ATTRIBUTE_PRESENT",
+                "dqattribute": "name",
+                "compliantMessage": "This system has a kibanaSpace",
+            },
+        ),
+    )
+
+    response = await client.post("/", json=DRAFT, headers=_bearer(token()))
+
+    assert response.status_code == 200
+    assert response.json() == {"verdicts": [], "unreadRules": []}
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-08"])
+async def test__the_drafts_picks_answer_a_relationship_rule(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """The picks the browser sends under ``relationshipAttributes`` ride the record the rule reads (VEV-08, DD-632)."""
+    _answers_one_page(
+        catalogue,
+        rule_entity(
+            "rule-dataset-fields",
+            "Dataset has a field",
+            {
+                "name": "Dataset has a field",
+                "qualifiedName": "m4i_dataset--fields",
+                "active": True,
+                "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
+                "dqattribute": "fields",
+                "compliantMessage": "This dataset has at least one field",
+                "nonCompliantMessage": "This dataset should have at least one field",
+            },
+        ),
+    )
+    without = await client.post("/", json=DRAFT, headers=_bearer(token()))
+    with_picks = await client.post(
+        "/",
+        json={**DRAFT, "relationshipAttributes": {"fields": [{"guid": "f-1", "typeName": "m4i_field"}]}},
+        headers=_bearer(token()),
+    )
+
+    assert [verdict["compliant"] for verdict in without.json()["verdicts"]] == [False]
+    assert [verdict["compliant"] for verdict in with_picks.json()["verdicts"]] == [True]
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-08"])
+async def test__an_empty_picker_answers_its_presence_rule_as_missing(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """A picker holding nothing carries no value, so the rule's refusal line is the honest one (VEV-08, DD-634)."""
+    _answers_one_page(catalogue, CHILD_RULE)
+    bearer = _bearer(token())
+
+    empty = await client.post("/", json={**DRAFT, "relationshipAttributes": {"childDataset": []}}, headers=bearer)
+    cleared = await client.post("/", json={**DRAFT, "relationshipAttributes": {"childDataset": None}}, headers=bearer)
+    picked = await client.post(
+        "/",
+        json={
+            **DRAFT,
+            "relationshipAttributes": {"childDataset": [{"guid": "c-1", "typeName": "m4i_dataset"}]},
+        },
+        headers=bearer,
+    )
+
+    assert empty.json()["verdicts"][0]["message"] == "This entity is missing a childDataset"
+    assert [verdict["compliant"] for verdict in cleared.json()["verdicts"]] == [False]
+    assert [verdict["compliant"] for verdict in picked.json()["verdicts"]] == [True]
+    assert picked.json()["verdicts"][0]["message"] == "This entity has a childDataset"
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-01"])
@@ -180,7 +279,11 @@ async def test__the_rules_search_pages_to_the_end_and_asks_the_rule_attributes(
                         rule_entity(
                             "rule-legacy",
                             "Legacy expression",
-                            {"name": "Legacy expression", "expression": "uniqueness('qualifiedName')"},
+                            {
+                                "name": "Legacy expression",
+                                "qualifiedName": "m4i_dataset--legacy-expression",
+                                "expression": "uniqueness('qualifiedName')",
+                            },
                         )
                     ],
                     "-1",

@@ -8,8 +8,9 @@ the dev writer and hard-deleted after (DD-223).
 
 Every test names its rules with one ``zz<run>`` word: the dev store is shared with the
 other suites and the m4i sample corpus, so the assertions are keyed by the seeded rules'
-guids and never count the whole answer — a foreign rule of the shared store rides the
-verdicts too, and that is not this suite's failure (the scanner's precedent).
+guids. Since 12.7a the answer carries only the draft type's rules (VEV-07), so the
+suite's corpus sample no longer rides along — but the assertions still count by guid,
+never the whole answer (the scanner's precedent).
 """
 
 from collections.abc import Awaitable, Callable
@@ -35,7 +36,11 @@ def run() -> str:
 
 
 def _draft(run: str) -> dict[str, Any]:
-    """The editor draft the rules run over (VEV-01): only its ``attributes`` are read."""
+    """The editor draft the rules run over (VEV-01).
+
+    A ``m4i_dataset``, so the dataset's rules answer it and every other type's stay
+    silent (VEV-07).
+    """
     return {
         "typeName": "m4i_dataset",
         "guid": "-1",
@@ -47,11 +52,14 @@ def _draft(run: str) -> dict[str, Any]:
     }
 
 
-def _present_rule(run: str, attribute: str) -> dict[str, Any]:
-    """An ACTIVE ATTRIBUTE_PRESENT rule over ``attribute``, with the corpus's stored sentences."""
+def _present_rule(run: str, attribute: str, type_name: str = "m4i_dataset") -> dict[str, Any]:
+    """An ACTIVE ATTRIBUTE_PRESENT rule for ``type_name`` over ``attribute``.
+
+    With the corpus's stored sentences; the qualifiedName names the type (VEV-07, LAS-13).
+    """
     return {
         "name": f"zz{run}.{attribute}-present",
-        "qualifiedName": f"zz{run}.{attribute}-present",
+        "qualifiedName": f"{type_name}--zz{run}.{attribute}-present",
         "active": True,
         "dqcheckkind": "ATTRIBUTE_PRESENT",
         "dqattribute": attribute,
@@ -86,15 +94,14 @@ async def test__the_draft_answers_with_the_seeded_rules_verdicts(
     The draft carries ``name`` and nothing else, so the presence rule over ``name`` is
     compliant with its own stored sentence and the not-empty rule over ``description``
     is not, with its refusal sentence (GQ-06). The rules are found by their real guids —
-    the server assigns them, the suite saves the assignments — so a foreign rule of the
-    shared store rides the answer unnoticed (DD-223).
+    the server assigns them, the suite saves the assignments (DD-223).
     """
     guids = await seed_rules(
         [
             _present_rule(run, "name"),
             {
                 "name": f"zz{run}.description-empty",
-                "qualifiedName": f"zz{run}.description-empty",
+                "qualifiedName": f"m4i_dataset--zz{run}.description-empty",
                 "active": True,
                 "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
                 "dqattribute": "description",
@@ -129,14 +136,16 @@ async def test__an_inactive_rule_needs_no_verdict_and_an_expression_rule_is_unre
 
     The inactive rule would pass over this draft, so its absence is the assertion; the
     stored expression rule names no ``dqcheckkind``, so the vocabulary cannot read it —
-    it travels as an unread entry with the cause, never executed.
+    it travels as an unread entry with the cause, never executed. Its qualifiedName
+    names the draft's type, so VEV-07 lets it through the type filter to the reading
+    step that fails it.
     """
     guids = await seed_rules(
         [
             {**_present_rule(run, "name"), "active": False},
             {
                 "name": f"zz{run}.legacy-expression",
-                "qualifiedName": f"zz{run}.legacy-expression",
+                "qualifiedName": f"m4i_dataset--zz{run}.legacy-expression",
                 "active": True,
                 "expression": "d.name != null",
                 "qualityDimension": "COMPLETENESS",
@@ -150,6 +159,108 @@ async def test__an_inactive_rule_needs_no_verdict_and_an_expression_rule_is_unre
     unread = {entry.rule_guid: entry for entry in answer.unread_rules}
     assert NO_KIND_ERROR in unread[guids["1"]].error
     assert unread[guids["1"]].rule_name == f"zz{run}.legacy-expression"
+
+
+# impact=major, likelihood=high (the misattached-verdict fix itself; the live proof)
+@pytest.mark.high
+@pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft", rules=["VEV-07"])
+async def test__another_types_rule_stays_out_of_the_live_answer(
+    api: ValidateEntityClient, seed_rules: SeedRules, run: str
+) -> None:
+    """A ``m4i_system`` rule answers nothing at all for the dataset draft (VEV-07).
+
+    The foreign rule asks for an attribute the draft does not carry, so before 12.7a it
+    rode the answer as a false warning naming the dataset; now neither its verdict nor
+    an unread entry travels. The dataset rule seeded beside it proves the marker is not
+    vacuous: same run word, same store, and it does answer.
+    """
+    guids = await seed_rules(
+        [
+            _present_rule(run, "owner", type_name="m4i_system"),
+            _present_rule(run, "name"),
+        ]
+    )
+
+    answer = await api.validate(_draft(run))
+
+    verdict_guids = {verdict.rule_guid for verdict in answer.verdicts}
+    assert guids["0"] not in verdict_guids
+    assert guids["0"] not in {entry.rule_guid for entry in answer.unread_rules}
+    assert guids["1"] in verdict_guids
+
+
+# impact=major, likelihood=high (the picker verdicts fix; the live proof)
+@pytest.mark.high
+@pytest.mark.covers("aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft", rules=["VEV-08"])
+async def test__the_picks_the_draft_carries_answer_a_rule_live(
+    api: ValidateEntityClient, seed_rules: SeedRules, run: str
+) -> None:
+    """The relationship picks under ``relationshipAttributes`` ride the record (VEV-08).
+
+    The rule asks the dataset's ``fields`` for at least one entry. Without the picks
+    the rule refuses the draft; with one pick landed, the same rule answers with its
+    compliant sentence — over the deployed store, not a fake.
+    """
+    guids = await seed_rules(
+        [
+            {
+                "name": f"zz{run}.fields-present",
+                "qualifiedName": f"m4i_dataset--zz{run}.fields-present",
+                "active": True,
+                "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
+                "dqattribute": "fields",
+                "qualityDimension": "COMPLETENESS",
+                "compliantMessage": f"zz{run} the dataset has fields",
+                "nonCompliantMessage": f"zz{run} the dataset has no fields",
+            },
+        ]
+    )
+
+    bare = await api.validate(_draft(run))
+    by_guid = {verdict.rule_guid: verdict for verdict in bare.verdicts}
+    assert by_guid[guids["0"]].compliant is False
+
+    draft = _draft(run)
+    draft["relationshipAttributes"] = {"fields": [{"guid": f"zz{run}.field", "typeName": "m4i_field"}]}
+    picked = await api.validate(draft)
+    by_guid = {verdict.rule_guid: verdict for verdict in picked.verdicts}
+    assert by_guid[guids["0"]].compliant is True
+    assert by_guid[guids["0"]].message == f"zz{run} the dataset has fields"
+
+
+# impact=major, likelihood=high (the childDataset wrong-verdict fix; the live proof)
+@pytest.mark.high
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts._draft_record",
+    "aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft",
+    rules=["VEV-08"],
+)
+async def test__an_empty_picker_carries_no_value_to_its_presence_rule_live(
+    api: ValidateEntityClient, seed_rules: SeedRules, run: str
+) -> None:
+    """A PRESENCE rule over a relationship refuses the draft whose picker holds nothing (VEV-08, DD-634).
+
+    The opened editor folds every view section, so an untouched picker rides the draft as
+    ``[]`` — the shape that made 12.7a answer "This entity has a childDataset" under an
+    empty Child Dataset picker. Over the deployed store the rule now refuses the empty
+    list, and lands only once a child is picked.
+    """
+    guids = await seed_rules([_present_rule(run, "childDataset")])
+
+    empty = await api.validate({**_draft(run), "relationshipAttributes": {"childDataset": []}})
+    by_guid = {verdict.rule_guid: verdict for verdict in empty.verdicts}
+    assert by_guid[guids["0"]].compliant is False
+    assert by_guid[guids["0"]].message == f"zz{run} the draft carries no childDataset"
+
+    picked = await api.validate(
+        {
+            **_draft(run),
+            "relationshipAttributes": {"childDataset": [{"guid": f"zz{run}.child", "typeName": "m4i_dataset"}]},
+        }
+    )
+    by_guid = {verdict.rule_guid: verdict for verdict in picked.verdicts}
+    assert by_guid[guids["0"]].compliant is True
+    assert by_guid[guids["0"]].message == f"zz{run} the draft carries a childDataset"
 
 
 # impact=minor, likelihood=medium (an error-body posture, the only proof)

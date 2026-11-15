@@ -9,11 +9,14 @@ Introduced by increment 8.3 as the mock the legacy service was
 ([DV-67](../../docs/architecture/conversion/deviations.md)); made live by 12.7
 ([ADR 061](../../docs/architecture/adr/061-the-governance-banner-answers-live-verdicts.md),
 [DV-153](../../docs/architecture/conversion/deviations.md)). The app reads the ACTIVE
-governance rules (`m4i_gov_data_quality`) from the catalogue, runs each over the draft's
-attributes with the 12.6 engine, and answers one boolean verdict per rule — the rule's own
-guid, name, attribute, dimension, verdict, and message — plus the rules the vocabulary
-cannot read (a stored expression of the two legacy forms reads, 14.6's ASG-02)
-([spec](specs/12-7-governance-verdicts/spec.md)). The code follows the workspace's
+governance rules (`m4i_gov_data_quality`) from the catalogue, keeps the rules of the
+draft's own type (the qualified-name prefix of LAS-13, 12.7a), runs each over the draft's
+record — its attributes and its picker's picks — with the 12.6 engine, and answers one
+boolean verdict per rule — the rule's own guid, name, attribute, dimension, verdict, and
+message — plus the rules the vocabulary cannot read (a stored expression of the two legacy
+forms reads, 14.6's ASG-02)
+([spec](specs/12-7-governance-verdicts/spec.md), amended by
+[12.7a](specs/12-7a-governance-verdict-scoping/spec.md)). The code follows the workspace's
 example-app layout (DD-209): the collaborators built by `providers/`, the endpoints in
 `routes/`, and a thin composition root in `app.py`.
 
