@@ -106,3 +106,46 @@ a line on one control).
 **Consequences.** Nothing changes on this catalogue's shipped types, which carry
 only `description`. A re-imported legacy type, which carries both, shows each rule's
 line once.
+
+### DD-634. An empty relationship carries no value to its rule
+
+- **Status:** Proposed
+- **Increment:** 12.7a
+- **Date:** 2026-11-15
+- **Supersedes:** none; refines DD-632 (Proposed, same increment)
+
+**Decision.** On the draft record DD-632 builds, a relationship value that holds no
+ends — the JSON list `[]`, the webapp's wrapped `{"raw": []}`, or a `null` — carries
+no value at all: the key reads as absent to the check. Both kinds therefore miss an
+empty picker: `ATTRIBUTE_PRESENT` because there is no value, and
+`ATTRIBUTE_NOT_EMPTY` because there is no content. A relationship holding one entry
+still answers as DD-632 states. Plain attributes keep GQ-04's reading unchanged: a
+present key is a value, an empty collection of them included.
+
+**Reason.** The sample corpus carries `completeness('childDataset')` (guid
+`0d3807d0-d6cc-4093-b990-6a0928504a94`), a presence rule over the `childDataset`
+relationship whose own description says "is not None and is not empty". DD-632's fold
+sends every opened view section, so an untouched picker rides the draft as `[]` —
+not-null, which GQ-04's presence kind called a value, and the drawer painted "This
+entity has a childDataset" under a picker holding nothing. The legacy ran a rule over
+the attributes frame or the relationship frame by its `ruleType`; a completeness rule
+asking for a relationship name on the attributes frame saw it absent (score 0), so
+the honest verdict for an empty childDataset was always "missing". This decision
+restores that verdict on the draft path — the one the editor banner and the details
+box answer from.
+
+**Alternatives.** Change GQ-04's presence reading for every attribute (refused: on a
+plain attribute an empty collection is a value by GQ-04's letter — a `labels: []`
+rule says "present" — and the kind is shared by every stored-rule path). Change 14.6's
+`_values` for a stored entity (refused here: ASG-04's `[]`-present reading is frozen
+by DD-536's 1,612-verdict parity corpus; the fixture's relationship rules are all
+`length(...)` and no stored completeness rule names a relationship, so the draft-side
+repair carries no parity risk, and the stored path waits for its own parity-checked
+patch — flagged in the spec's not-delivered table).
+
+**Consequences.** The banner and details-box line for an empty picker flip from a
+false ✓ to the rule's refusal line, and land once a pick arrives — both surfaces
+ride this draft path (DD-632's fold, DD-608's helper). Stored entities' verdicts on a
+presence-over-relationship rule keep the `[]`-present reading until 14.6's follow-up,
+so a rule of that kind can disagree between a saved entity's row and the open editor;
+none exists in the sample corpus today. GQ-04's wording and the 12.6 tests stand.

@@ -24,6 +24,20 @@ NAME_RULE = rule_entity(
         "nonCompliantMessage": "This dataset should have a name",
     },
 )
+CHILD_RULE = rule_entity(
+    "rule-dataset-child",
+    "Dataset has a child",
+    {
+        "name": "Dataset has a child",
+        "qualifiedName": "m4i_dataset--childDataset",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "childDataset",
+        "compliantMessage": "This entity has a childDataset",
+        "nonCompliantMessage": "This entity is missing a childDataset",
+    },
+)
+"""The sample corpus's ``completeness('childDataset')`` record, in the vocabulary shape."""
 DRAFT = {"guid": "e-in", "typeName": "m4i_dataset", "attributes": {"name": "Sales Orders"}}
 
 
@@ -127,6 +141,31 @@ async def test__the_drafts_picks_answer_a_relationship_rule(
 
     assert [verdict["compliant"] for verdict in without.json()["verdicts"]] == [False]
     assert [verdict["compliant"] for verdict in with_picks.json()["verdicts"]] == [True]
+
+
+@pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-08"])
+async def test__an_empty_picker_answers_its_presence_rule_as_missing(
+    client: httpx.AsyncClient, token: Callable[..., str], catalogue: FakeCatalogue
+) -> None:
+    """A picker holding nothing carries no value, so the rule's refusal line is the honest one (VEV-08, DD-634)."""
+    _answers_one_page(catalogue, CHILD_RULE)
+    bearer = _bearer(token())
+
+    empty = await client.post("/", json={**DRAFT, "relationshipAttributes": {"childDataset": []}}, headers=bearer)
+    cleared = await client.post("/", json={**DRAFT, "relationshipAttributes": {"childDataset": None}}, headers=bearer)
+    picked = await client.post(
+        "/",
+        json={
+            **DRAFT,
+            "relationshipAttributes": {"childDataset": [{"guid": "c-1", "typeName": "m4i_dataset"}]},
+        },
+        headers=bearer,
+    )
+
+    assert empty.json()["verdicts"][0]["message"] == "This entity is missing a childDataset"
+    assert [verdict["compliant"] for verdict in cleared.json()["verdicts"]] == [False]
+    assert [verdict["compliant"] for verdict in picked.json()["verdicts"]] == [True]
+    assert picked.json()["verdicts"][0]["message"] == "This entity has a childDataset"
 
 
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-01"])

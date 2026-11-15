@@ -228,6 +228,41 @@ async def test__the_picks_the_draft_carries_answer_a_rule_live(
     assert by_guid[guids["0"]].message == f"zz{run} the dataset has fields"
 
 
+# impact=major, likelihood=high (the childDataset wrong-verdict fix; the live proof)
+@pytest.mark.high
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts._draft_record",
+    "aurelius_atlas_validate_entity.verdicts.VerdictEngine.evaluate_draft",
+    rules=["VEV-08"],
+)
+async def test__an_empty_picker_carries_no_value_to_its_presence_rule_live(
+    api: ValidateEntityClient, seed_rules: SeedRules, run: str
+) -> None:
+    """A PRESENCE rule over a relationship refuses the draft whose picker holds nothing (VEV-08, DD-634).
+
+    The opened editor folds every view section, so an untouched picker rides the draft as
+    ``[]`` — the shape that made 12.7a answer "This entity has a childDataset" under an
+    empty Child Dataset picker. Over the deployed store the rule now refuses the empty
+    list, and lands only once a child is picked.
+    """
+    guids = await seed_rules([_present_rule(run, "childDataset")])
+
+    empty = await api.validate({**_draft(run), "relationshipAttributes": {"childDataset": []}})
+    by_guid = {verdict.rule_guid: verdict for verdict in empty.verdicts}
+    assert by_guid[guids["0"]].compliant is False
+    assert by_guid[guids["0"]].message == f"zz{run} the draft carries no childDataset"
+
+    picked = await api.validate(
+        {
+            **_draft(run),
+            "relationshipAttributes": {"childDataset": [{"guid": f"zz{run}.child", "typeName": "m4i_dataset"}]},
+        }
+    )
+    by_guid = {verdict.rule_guid: verdict for verdict in picked.verdicts}
+    assert by_guid[guids["0"]].compliant is True
+    assert by_guid[guids["0"]].message == f"zz{run} the draft carries a childDataset"
+
+
 # impact=minor, likelihood=medium (an error-body posture, the only proof)
 @pytest.mark.medium
 @pytest.mark.covers("aurelius_atlas_validate_entity.app.create_app", rules=["VEV-01"])

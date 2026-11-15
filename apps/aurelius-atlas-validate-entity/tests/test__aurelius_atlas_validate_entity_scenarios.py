@@ -43,6 +43,22 @@ FIELDS_RULE = rule_entity(
         "nonCompliantMessage": "This dataset should have at least one field",
     },
 )
+CHILD_RULE = rule_entity(
+    "rule-dataset-child",
+    "Dataset has a child",
+    {
+        "name": "Dataset has a child",
+        "qualifiedName": "m4i_dataset--childDataset",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "childDataset",
+        "compliantMessage": "This entity has a childDataset",
+        "nonCompliantMessage": "This entity is missing a childDataset",
+    },
+)
+"""The sample corpus's own ``completeness('childDataset')`` record (guid 0d3807d0-d6cc-4093-
+b990-6a0928504a94 in ``data/atlas-sample/sample_data.zip``), restated in the vocabulary
+shape: a PRESENCE rule over a relationship attribute (12.7a, VEV-08, DD-634)."""
 SYSTEM_NAME_RULE = rule_entity(
     "rule-system-name",
     "System has a name",
@@ -69,10 +85,13 @@ def _bearer(token: str) -> dict[str, str]:
 
 @pytest.fixture
 def scenario_catalogue(catalogue: FakeCatalogue) -> FakeCatalogue:
-    """The fake catalogue answering the rule walk with the scenario's two rules."""
+    """The fake catalogue answering the rule walk with the scenario's rules."""
 
     def handler(_request: httpx.Request) -> httpx.Response:
-        return FakeCatalogue.json(200, search_result([NAME_RULE, FIELDS_RULE, SYSTEM_NAME_RULE], "-1"))
+        return FakeCatalogue.json(
+            200,
+            search_result([NAME_RULE, FIELDS_RULE, CHILD_RULE, SYSTEM_NAME_RULE], "-1"),
+        )
 
     catalogue.handler = handler
     return catalogue

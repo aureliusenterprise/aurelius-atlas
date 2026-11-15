@@ -6,13 +6,19 @@
 # rule, restated with the typed attributes patch 002 added; the expected lines
 # are those records' own compliantMessage/nonCompliantMessage, so the document
 # is derived from Aurelius data, not invented. 12.7a grows the document: the
-# foreign m4i_system rule answers a dataset draft nowhere (VEV-07), and the
-# draft's picks under relationshipAttributes land the fields rule (VEV-08).
+# foreign m4i_system rule answers a dataset draft nowhere (VEV-07), the draft's
+# picks under relationshipAttributes land the fields rule (VEV-08), and the
+# sample corpus's own childDataset record — completeness('childDataset'), a
+# presence rule over a relationship (data/atlas-sample/sample_data.zip, guid
+# 0d3807d0-d6cc-4093-b990-6a0928504a94) — answers its refusal line for a
+# picker holding nothing and its compliant line only once a child is picked
+# (VEV-08, DD-634).
 name: "A draft in, one verdict per active rule out"
 source:
     - .scratch/aurelius/libs/m4i-governance-data-quality/m4i_governance_data_quality/rules/definitions/m4i_dataset.json
     - .scratch/aurelius/libs/m4i-governance-data-quality/m4i_governance_data_quality/rules/definitions/m4i_system.json
     - .scratch/aurelius/backend/m4i-validate-entity/m4i_validate_entity/m4i_validate_entity.py
+    - data/atlas-sample/sample_data.zip
 rules:
     - VEV-02
     - VEV-03
@@ -50,6 +56,12 @@ stages:
                     dimension: COMPLETENESS
                     compliant: false
                     message: This dataset should have at least one field
+                  - ruleGuid: rule-dataset-child
+                    ruleName: Dataset has a child
+                    attribute: childDataset
+                    dimension: COMPLETENESS
+                    compliant: false
+                    message: This entity is missing a childDataset
               unreadRules: []
     - name: The picks the editor carries answer the fields rule (VEV-08)
       request:
@@ -84,4 +96,88 @@ stages:
                     dimension: COMPLETENESS
                     compliant: true
                     message: This dataset has at least one field
+                  - ruleGuid: rule-dataset-child
+                    ruleName: Dataset has a child
+                    attribute: childDataset
+                    dimension: COMPLETENESS
+                    compliant: false
+                    message: This entity is missing a childDataset
+              unreadRules: []
+    - name: A picker holding nothing carries no value to its presence rule (VEV-08, DD-634)
+      request:
+          method: POST
+          url: /
+          json:
+              guid: 6f1a2c34-0000-4000-8000-aureliusatlas0
+              typeName: m4i_dataset
+              status: ACTIVE
+              attributes:
+                  name: Sales Orders
+                  qualifiedName: kafka.topic.sales_orders
+              relationshipAttributes:
+                  childDataset: []
+      response:
+          status: 200
+          headers:
+              content-type: application/json
+          json:
+              verdicts:
+                  - ruleGuid: rule-dataset-name
+                    ruleName: Dataset has a name
+                    attribute: name
+                    dimension: COMPLETENESS
+                    compliant: true
+                    message: This dataset has a name
+                  - ruleGuid: rule-dataset-fields
+                    ruleName: Dataset has a field
+                    attribute: fields
+                    dimension: COMPLETENESS
+                    compliant: false
+                    message: This dataset should have at least one field
+                  - ruleGuid: rule-dataset-child
+                    ruleName: Dataset has a child
+                    attribute: childDataset
+                    dimension: COMPLETENESS
+                    compliant: false
+                    message: This entity is missing a childDataset
+              unreadRules: []
+    - name: A picked child lands the presence rule (VEV-08, DD-634)
+      request:
+          method: POST
+          url: /
+          json:
+              guid: 6f1a2c34-0000-4000-8000-aureliusatlas0
+              typeName: m4i_dataset
+              status: ACTIVE
+              attributes:
+                  name: Sales Orders
+                  qualifiedName: kafka.topic.sales_orders
+              relationshipAttributes:
+                  childDataset:
+                      - guid: 9d8c7b6a-0000-4000-8000-aureliusatlas0
+                        typeName: m4i_dataset
+      response:
+          status: 200
+          headers:
+              content-type: application/json
+          json:
+              verdicts:
+                  - ruleGuid: rule-dataset-name
+                    ruleName: Dataset has a name
+                    attribute: name
+                    dimension: COMPLETENESS
+                    compliant: true
+                    message: This dataset has a name
+                  - ruleGuid: rule-dataset-fields
+                    ruleName: Dataset has a field
+                    attribute: fields
+                    dimension: COMPLETENESS
+                    compliant: false
+                    message: This dataset should have at least one field
+                  - ruleGuid: rule-dataset-child
+                    ruleName: Dataset has a child
+                    attribute: childDataset
+                    dimension: COMPLETENESS
+                    compliant: true
+                    message: This entity has a childDataset
               unreadRules: []

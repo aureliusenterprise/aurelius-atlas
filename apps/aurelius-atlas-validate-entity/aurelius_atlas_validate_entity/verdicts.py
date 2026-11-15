@@ -242,11 +242,14 @@ def _draft_record(draft: DraftEntity) -> dict[str, Any]:
     A ``{"raw": x}`` value reads as ``x`` — the unwrapping the rule read has always
     applied, and what a draft's wrapped value needs not to count as content. Each
     relationship key rides the draft's own value, unwrapped whole: a list of picks
-    holds content by its length, a single pick by being there, and a ``null`` (a
-    cleared picker) by nothing — the reading ASG-04/DD-536 gives a stored entity's
-    ends, and an unsaved draft can only answer as its own picks, never resolved.
+    holds a value and content by its length, a single pick holds both, and an empty
+    list or a ``null`` (an empty or cleared picker) carries no value at all — the
+    reading ASG-04/DD-536 gives a stored entity with no ends, and what the rule's own
+    description means ("is not None and is not empty"): a relationship rule sees a
+    picker with no picks as absent, so a presence rule misses it, not a false warning.
     """
     record: dict[str, Any] = {name: _raw(value) for name, value in draft.attributes.items()}
     for name, picks in (draft.relationship_attributes or {}).items():
-        record[name] = _raw(picks)
+        ends = _raw(picks)
+        record[name] = None if isinstance(ends, list | tuple) and not ends else ends
     return record

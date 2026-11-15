@@ -1,4 +1,4 @@
-"""The rules door: the paged read, the cache, the assembly, the breaker (VEV-02/03/05/06/07/08; DD-498, DD-631/632).
+"""The rules door: the read, the cache, the assembly, the breaker (VEV-02..08; DD-498, DD-631/632).
 
 The fake catalogue answers the search; the breaker is the app's real one with
 its test-sized bounds. No issuer and no HTTP server: the door speaks to the
@@ -113,6 +113,23 @@ FIELDS_RULE = rule_entity(
     },
 )
 """A rule over a relationship attribute (VEV-08, DD-632): the draft's picks answer it."""
+
+CHILD_RULE = rule_entity(
+    "rule-child",
+    "Dataset has a child",
+    {
+        "name": "Dataset has a child",
+        "qualifiedName": "m4i_dataset--childDataset",
+        "active": True,
+        "dqcheckkind": "ATTRIBUTE_PRESENT",
+        "dqattribute": "childDataset",
+        "ruleDescription": "childDataset is not None and is not empty",
+        "compliantMessage": "This entity has a childDataset",
+        "nonCompliantMessage": "This entity is missing a childDataset",
+    },
+)
+"""The corpus's ``completeness('childDataset')`` shape: a PRESENCE rule over a relationship
+attribute. An empty picker is no value, so the rule misses it (VEV-08, DD-634)."""
 
 
 def _draft(
@@ -461,3 +478,41 @@ async def test__a_draft_value_carried_wrapped_reads_bare(engine_settings: Valida
 
     assert [verdict.compliant for verdict in wrapped_empty.verdicts] == [False]
     assert [verdict.compliant for verdict in wrapped_one.verdicts] == [True]
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_validate_entity.verdicts._draft_record",
+    rules=["VEV-08"],
+)
+async def test__a_relationship_without_picks_is_no_value_for_a_presence_rule(
+    engine_settings: ValidateEntitySettings,
+) -> None:
+    """The empty picker answers its presence rule as absent: the childDataset case (VEV-08, DD-634).
+
+    The corpus rule reads ``completeness('childDataset')`` and its own description says
+    "is not None and is not empty". The empty section of the opened view rides the draft
+    as ``[]`` (DD-632), which 12.7a first shipped as a value, so the drawer painted
+    "This entity has a childDataset" under a picker holding nothing. An empty list — and
+    a wrapped empty — carries no value: the rule misses, and the line rides only once a
+    child is actually picked.
+    """
+    catalogue = FakeCatalogue()
+    _one_page(catalogue, CHILD_RULE)
+    engine, http = _engine(catalogue, engine_settings)
+
+    empty = await engine.evaluate_draft(_draft({"name": "Sales Orders"}, relationships={"childDataset": []}))
+    wrapped_empty = await engine.evaluate_draft(
+        _draft({"name": "Sales Orders"}, relationships={"childDataset": {"raw": []}}),
+    )
+    cleared = await engine.evaluate_draft(_draft({"name": "Sales Orders"}, relationships={"childDataset": None}))
+    picked = await engine.evaluate_draft(
+        _draft({"name": "Sales Orders"}, relationships={"childDataset": [{"guid": "c-1", "typeName": "m4i_dataset"}]}),
+    )
+    await http.aclose()
+
+    assert [verdict.compliant for verdict in empty.verdicts] == [False]
+    assert empty.verdicts[0].message == "This entity is missing a childDataset"
+    assert [verdict.compliant for verdict in wrapped_empty.verdicts] == [False]
+    assert [verdict.compliant for verdict in cleared.verdicts] == [False]
+    assert [verdict.compliant for verdict in picked.verdicts] == [True]
+    assert picked.verdicts[0].message == "This entity has a childDataset"
