@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "gov-verdict-scoping",
+    "title": "gov-verdict-scoping",
+    "aliases": []
+  },
+  {
     "version": "feat-15-5b-tenants-in-the-realm",
     "title": "feat-15-5b-tenants-in-the-realm",
     "aliases": []
