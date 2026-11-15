@@ -12,8 +12,9 @@ const PERSON_ATTRIBUTE = "m4i_person";
 /**
  * The one rich card of both screens (VCF-01, DD-616): the 7.13 card shell
  * with the view-family card's body — the breadcrumb trail (the stored
- * `breadcrumb` plus the card's own active crumb, `trailOf`'s rule shared
- * with the details header), the classification chips (`classificationNames`,
+ * `breadcrumb` plus the card's own crumb, `trailOf`'s rule shared with
+ * the details header; the crumb of the entity being viewed is the
+ * active one, DD-625), the classification chips (`classificationNames`,
  * DD-379's names), the description text (the card's `definition`, DD-614's
  * fallback included) as markdown, and the flat people row (VCF-06, DD-617):
  * the document's derived `m4i_person` relations as plain names, because the
@@ -61,7 +62,7 @@ const PERSON_ATTRIBUTE = "m4i_person";
                 <aurelius-atlas-ui-breadcrumbs
                     class="aurelius-card-trail"
                     [items]="trail()"
-                    [activeGuid]="card().guid"
+                    [activeGuid]="pageGuid() ?? card().guid"
                     (itemClicked)="cardClicked.emit($event)"
                 />
                 @if (classifications().length > 0) {
@@ -93,6 +94,16 @@ const PERSON_ATTRIBUTE = "m4i_person";
 export class CatalogueCard {
     /** The view-family card to render — either door's answer. */
     readonly card = input.required<ViewCard>();
+
+    /**
+     * The entity being viewed, whose crumb is the trail's plain-text one
+     * (DD-625): the details sections pass the page's guid, as the legacy
+     * card's `parentId$` did, so the entity you are already at is the
+     * non-clickable crumb and the card's own stays a link. Unset — a
+     * results row, where no entity is open — leaves the card's own crumb
+     * active (VCF-02).
+     */
+    readonly pageGuid = input<string | undefined>(undefined);
 
     /** Emits the clicked card's, crumb's, or person's guid — the screen routes (DD-154). */
     readonly cardClicked = output<string>();

@@ -1,4 +1,4 @@
-import { LAYOUTS, layoutForTypeName } from "./section-config";
+import { FACET_GROUP_TITLES, LAYOUTS, layoutForTypeName } from "./section-config";
 
 /**
  * The config table (DET-16, DD-366; 7.21c's rows, DET-32/DET-33; 7.29's
@@ -108,6 +108,64 @@ describe("Section config (DET-16)", () => {
             ["related-inputs", ["inputs"]],
             ["related-outputs", ["outputs"]],
         ]);
+    });
+
+    it("carries the legacy facet group table for every section (VCF-10, DD-619)", () => {
+        // Each legacy `*-cards` component asked its own facets; the group
+        // keys ride the section row (VCF-10). One entry per section, in
+        // legacy order — the empty list is the "No filters available."
+        // popover (DV-168's rule sections).
+        const facetShape = (name: keyof typeof LAYOUTS) =>
+            LAYOUTS[name].sections.map((section) => [section.anchor, [...section.facets]]);
+
+        expect(facetShape("m4i_data_domain")).toEqual([["related-entities", ["m4i_person"]]]);
+        expect(facetShape("m4i_data_entity")).toEqual([
+            ["related-attributes", ["m4i_person"]],
+            ["related-entities", ["m4i_person"]],
+        ]);
+        expect(facetShape("m4i_data_attribute")).toEqual([
+            ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
+        ]);
+        expect(facetShape("m4i_field")).toEqual([
+            ["related-attributes", ["m4i_data_domain", "m4i_data_entity", "m4i_person"]],
+            ["related-fields", ["m4i_system", "m4i_collection", "m4i_dataset"]],
+            // The legacy asked the rule dimension; no card field carries it (DV-168).
+            ["related-rules", []],
+        ]);
+        expect(facetShape("m4i_data_quality")).toEqual([["related-fields", []]]);
+        expect(facetShape("m4i_dataset")).toEqual([
+            ["related-fields", ["m4i_person"]],
+            ["related-datasets", ["m4i_person"]],
+            ["related-producers", ["typeName", "m4i_system"]],
+            ["related-consumers", ["typeName", "m4i_system"]],
+        ]);
+        expect(facetShape("m4i_collection")).toEqual([["related-datasets", ["m4i_person"]]]);
+        expect(facetShape("m4i_system")).toEqual([
+            ["related-collections", ["m4i_person"]],
+            ["related-systems", ["m4i_person"]],
+            ["related-processes", ["typeName", "m4i_system"]],
+        ]);
+        expect(facetShape("m4i_generic_process")).toEqual([
+            ["related-systems", ["typeName", "m4i_system"]],
+            ["related-inputs", ["typeName", "m4i_system", "m4i_collection"]],
+            ["related-outputs", ["typeName", "m4i_system", "m4i_collection"]],
+        ]);
+        // DET-39: the person's roles box asked the type, the two chain
+        // groups, and the raw Name (DD-619).
+        expect(facetShape("m4i_person")).toEqual([
+            ["governance-roles", ["typeName", "m4i_data_domain", "m4i_data_entity", "name"]],
+        ]);
+
+        // Every asked group carries a catalogue title (DD-622): the seven
+        // dictionary keys and the raw Name literal.
+        for (const [name, layout] of Object.entries(LAYOUTS)) {
+            for (const section of layout.sections) {
+                for (const group of section.facets) {
+                    expect(FACET_GROUP_TITLES[group], `${name}.${section.anchor}`).not.toBeUndefined();
+                    expect(FACET_GROUP_TITLES[group], `${name}.${section.anchor}`).not.toBe("");
+                }
+            }
+        }
     });
 
     it("carries the Lineage Model box position on the two layouts (LDG-09)", () => {

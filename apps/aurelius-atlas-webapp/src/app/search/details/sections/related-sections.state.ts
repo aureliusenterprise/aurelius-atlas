@@ -1,10 +1,11 @@
 import { computed, inject, Injectable, signal } from "@angular/core";
 import { type EntityCard, type EntityView, ViewSearchService } from "aurelius-atlas-data-access";
-import type { CardSortOption } from "aurelius-atlas-ui";
+import type { CardFacetGroup, CardSortOption, FacetItem } from "aurelius-atlas-ui";
 
 import { AlertsService } from "../../../alerts/alerts.service";
+import { nameDisplay } from "../../meta/type-display";
 import { sectionEnds, type SectionEnd } from "../shared/people";
-import type { SectionDef, TypeLayout } from "./section-config";
+import { FACET_GROUP_TITLES, type FacetGroupKey, type SectionDef, type TypeLayout } from "./section-config";
 
 /** The resolve chunk size: one door request per chunk (DD-368, DD-615). */
 export const CHUNK_SIZE = 25;
@@ -47,6 +48,13 @@ interface SectionRecord {
     text: string | null;
     sort: string;
     descending: boolean;
+    /**
+     * The popover's selected values per group (VCF-11, DD-620): one entry
+     * per group, an array of values — the legacy `filters.all` shape, so
+     * a group matches by OR and the groups compose by AND. A group with
+     * its last untick loses its key, as the legacy service deleted it.
+     */
+    facetSelection: Record<string, string[]>;
     /** The page grown by the scroll container: how many filtered cards show. */
     shown: number;
 }
@@ -73,7 +81,13 @@ export interface SectionView {
     title: string;
     /** The seed count — the count line and the stats bar (DET-17). */
     count: number;
-    /** Whether the search filters the set (DET-20). */
+    /** The popover's facet groups (VCF-08..VCF-12): the section's configured
+     * groups with their rows, counts, and ticks over the filtered set. */
+    facets: CardFacetGroup[];
+    /** Whether the funnel marks the icon active — keyword, selection, or a
+     * sort/direction away from its default (VCF-08, DV-169 amended). */
+    filterActive: boolean;
+    /** Whether the search filters the set (DET-20, VCF-13 extended to selections). */
     filtered: boolean;
     /** The count line's number: seed count, or the filtered count (DET-20). */
     countShown: number;
@@ -172,6 +186,7 @@ export class RelatedSectionsState {
             text: null,
             sort: DEFAULT_SORT,
             descending: false,
+            facetSelection: {},
             shown: PAGE_SIZE,
         }));
         this.records.set(records);
@@ -234,8 +249,10 @@ export class RelatedSectionsState {
     }
 
     /**
-     * The count-line click while filtered (DET-20): the query and the sort
-     * return to their defaults — the legacy reset link.
+     * The count-line click while filtered (DET-20, VCF-13): the keyword,
+     * the facet selections, and the sort return to their defaults — the
+     * legacy reset link, which the demo showed clearing the ticks with the
+     * keyword.
      * @param anchor the section's anchor
      */
     reset(anchor: string): void {
@@ -245,8 +262,37 @@ export class RelatedSectionsState {
             text: null,
             sort: DEFAULT_SORT,
             descending: false,
+            facetSelection: {},
             shown: PAGE_SIZE,
         }));
+    }
+
+    /**
+     * A popover row ticked or unticked (VCF-11, DD-620): the value joins
+     * or leaves its group's array — the legacy `filters.all` shape, with
+     * the key deleted at the group's last untick (the legacy service's
+     * rule). The page returns to its first size, as a keyword change does.
+     * @param anchor the section's anchor
+     * @param group the group's key
+     * @param value the row's value
+     * @param checked the row's new state
+     */
+    toggleFacet(anchor: string, group: string, value: string, checked: boolean): void {
+        this.update(anchor, (record) => {
+            const chosen = new Set(record.facetSelection[group] ?? []);
+            if (checked) {
+                chosen.add(value);
+            } else {
+                chosen.delete(value);
+            }
+            const facetSelection = { ...record.facetSelection };
+            if (chosen.size === 0) {
+                delete facetSelection[group];
+            } else {
+                facetSelection[group] = [...chosen];
+            }
+            return { ...record, facetSelection, shown: PAGE_SIZE };
+        });
     }
 
     /**
@@ -379,6 +425,8 @@ export class RelatedSectionsState {
      */
     private viewOf(record: SectionRecord): SectionView {
         const term = record.query?.toLowerCase() ?? "";
+        // VCF-08/VCF-13: a selection or the keyword filters the section.
+        const selectionActive = Object.values(record.facetSelection).some((values) => values.length > 0);
         const cards: SectionCard[] = record.seed
             .filter((entry) => !record.failed.has(entry.guid) && !record.missing.has(entry.guid))
             .map((entry) => {
@@ -400,15 +448,32 @@ export class RelatedSectionsState {
                 };
             });
 
-        const matched = term === "" ? cards : cards.filter((card) => matches(card, term));
+        // VCF-14, DD-621: a card that has not resolved cannot be tested
+        // against a value it does not carry, so it hides while any
+        // selection is active — and shows as DET-18's loading row otherwise.
+        const testable = selectionActive ? cards.filter((card) => card.kind === "card") : cards;
+        // VCF-11: the keyword ANDs with the selections; VCF-12: the facet
+        // rows count over the set both filtered.
+        const matched = testable
+            .filter((card) => term === "" || matches(card, term))
+            .filter((card) => passesFacets(card, record.facetSelection, record.def.facets));
         const sorted = this.sorted(matched, record);
+        const filtered = record.query !== null || selectionActive;
+        // VCF-08 (DV-169 amended): the legacy funnel marks on the whole
+        // query object, so a sort key or direction away from its default
+        // marks it too — the demo's isFilterActive$ is the section's
+        // queryObject differing from its default, and its sorting
+        // component writes sort and direction into that object.
+        const stateApplied = filtered || record.sort !== DEFAULT_SORT || record.descending;
 
         return {
             anchor: record.def.anchor,
             title: record.def.title,
+            facets: facetGroupsOf(record, matched),
+            filterActive: stateApplied,
             count: record.seed.length,
-            filtered: record.query !== null,
-            countShown: record.query === null ? record.seed.length : sorted.length,
+            filtered,
+            countShown: filtered ? sorted.length : record.seed.length,
             loading: record.pending > 0,
             allLoaded: sorted.length <= record.shown,
             query: record.text,
@@ -431,6 +496,91 @@ export class RelatedSectionsState {
             record.sort === "name" ? [...cards].sort((a, b) => a.displayText.localeCompare(b.displayText)) : [...cards];
         return record.descending ? sorted.reverse() : sorted;
     }
+}
+
+/**
+ * The values one card carries for one facet group (VCF-09, DD-619): a
+ * chain or people key reads the card's stored derived relations of that
+ * attribute — the direct ends, by name (AVS-02, LAS-05); Type Name reads
+ * the card's type name; Name reads its display text. A card without the
+ * field contributes nothing, and one card counts a value once.
+ * @param card the resolved section card
+ * @param group the facet group's key
+ * @returns the card's values for the group, deduplicated
+ */
+function facetValuesOf(card: SectionCard, group: FacetGroupKey): string[] {
+    if (card.kind !== "card") {
+        return [];
+    }
+    if (group === "typeName") {
+        return [card.card.typeName];
+    }
+    if (group === "name") {
+        return [card.card.displayText];
+    }
+    const relation = card.card.relations?.find((entry) => entry.attribute === group);
+    return [
+        ...new Set((relation?.entities ?? []).map((entity) => entity.name).filter((name) => typeof name === "string")),
+    ] as string[];
+}
+
+/**
+ * Whether a card passes the selected facet values (VCF-11, DD-620): the
+ * legacy check-box service's shape — within a group the card matches by
+ * OR over the chosen values, across groups by AND over the configured
+ * groups. A group with no selection filters nothing; only the section's
+ * configured groups are tested.
+ * @param card the section card
+ * @param selection the selected values per group
+ * @param groups the section's configured groups
+ * @returns whether the card carries every group's selection
+ */
+function passesFacets(
+    card: SectionCard,
+    selection: Record<string, string[]>,
+    groups: readonly FacetGroupKey[],
+): boolean {
+    return groups.every((group) => {
+        const chosen = selection[group];
+        if (chosen === undefined || chosen.length === 0) {
+            return true;
+        }
+        return facetValuesOf(card, group).some((value) => chosen.includes(value));
+    });
+}
+
+/**
+ * The section's popover groups (VCF-09, VCF-12, DD-619): the configured
+ * groups with at least one row, each counted over the keyword-and-facet
+ * filtered set — a value at zero leaves the popover (a checked row with
+ * it), and the last untick returns it; a group whose last row left leaves
+ * with it, as the legacy FilterService dropped empty facets (SDX-03).
+ * Rows order by count, then label; the titles ride the catalogue map (DD-622).
+ * @param record the section's record
+ * @param filtered the cards that passed the keyword and the selections
+ * @returns the groups in configured order, rows counted and ticked
+ */
+function facetGroupsOf(record: SectionRecord, filtered: readonly SectionCard[]): CardFacetGroup[] {
+    return record.def.facets
+        .map((group) => {
+            const counts = new Map<string, number>();
+            for (const card of filtered) {
+                for (const value of facetValuesOf(card, group)) {
+                    counts.set(value, (counts.get(value) ?? 0) + 1);
+                }
+            }
+            const chosen = record.facetSelection[group] ?? [];
+            const items: FacetItem[] = [...counts.entries()]
+                .sort(([valueA, countA], [valueB, countB]) => countB - countA || valueA.localeCompare(valueB))
+                .map(([value, count]) => ({
+                    value,
+                    label: group === "typeName" ? (nameDisplay(value) ?? value) : value,
+                    count,
+                    checked: chosen.includes(value),
+                }));
+            return { key: group, title: FACET_GROUP_TITLES[group], items };
+        })
+        .filter((group) => group.items.length > 0);
 }
 
 /**

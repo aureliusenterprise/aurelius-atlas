@@ -244,3 +244,35 @@ export const NextPage: Story = {
         await userEvent.click(button);
     },
 };
+
+/** The narrow section: the container query stacks it — the funnel rides
+ * left of the sort row and the search box spans the line under it
+ * (DD-618's place "before the sort control", kept in both layouts; the
+ * first cut stacked the funnel on its own line above the controls).
+ * The wrapper's width drives the container, so the snapshot holds at
+ * any Chromatic viewport. */
+export const Stacked: Story = {
+    render: () => ({
+        moduleMetadata: { imports: [StoryHost] },
+        template: `<div style="width: 380px">
+    <aurelius-atlas-ui-card-section-story-host></aurelius-atlas-ui-card-section-story-host>
+</div>`,
+    }),
+    play: async ({ canvasElement }) => {
+        const canvas = within(canvasElement);
+        await expect(canvas.getByText("Data Attributes")).toBeVisible();
+
+        // The funnel sits beside the sort row, not above it: their boxes
+        // ride the same line (the funnel's centre is inside the select's).
+        const funnel = canvas.getByRole("button", { name: "Filter" });
+        const select = canvas.getByRole("combobox");
+        const funnelCentre = (funnel.getBoundingClientRect().top + funnel.getBoundingClientRect().bottom) / 2;
+        expect(funnelCentre).toBeGreaterThan(select.getBoundingClientRect().top);
+        expect(funnelCentre).toBeLessThan(select.getBoundingClientRect().bottom);
+        // And left of it.
+        expect(funnel.getBoundingClientRect().right).toBeLessThan(select.getBoundingClientRect().left);
+        // The search wraps to its own full-width line below both.
+        const search = canvas.getByRole("searchbox");
+        expect(search.getBoundingClientRect().top).toBeGreaterThan(select.getBoundingClientRect().bottom);
+    },
+};

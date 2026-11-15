@@ -433,6 +433,18 @@ export class Details {
     /** The scroll container's label — `search.components.infiniteScrollContainer.loadNextPage`. */
     protected readonly loadLabel = $localize`:@@search.components.infiniteScrollContainer.loadNextPage:Load next page...`;
 
+    /** The funnel button's name — `search.details.components.detailsCardsList.filter` (VCF-08). */
+    protected readonly filterLabel = $localize`:@@search.details.components.detailsCardsList.filter:Filter`;
+
+    /** The popover's empty line — `search.components.filter.notAvailable` (VCF-10). */
+    protected readonly notAvailableLabel = $localize`:@@search.components.filter.notAvailable:No filters available.`;
+
+    /** The facet menu's show-more label — `search.components.filter.facet.showMore` (UIC-34). */
+    protected readonly showMoreLabel = $localize`:@@search.components.filter.facet.showMore:Show more`;
+
+    /** The facet menu's show-less label — `search.components.filter.facet.showLess` (UIC-34). */
+    protected readonly showLessLabel = $localize`:@@search.components.filter.facet.showLess:Show less`;
+
     /** The People box's placeholder — `search.components.people.empty`. */
     protected readonly peopleEmpty = $localize`:@@search.components.people.empty:No people assigned.`;
 
@@ -534,6 +546,16 @@ export class Details {
      * @param view the section */
     protected onSectionReset(view: SectionView): void {
         this.sections.reset(view.anchor);
+    }
+
+    /** A section's popover row was ticked or unticked (VCF-11).
+     * @param view the section
+     * @param event the group's key with the row's value and new state */
+    protected onSectionFacetToggled(
+        view: SectionView,
+        event: { group: string; value: string; checked: boolean },
+    ): void {
+        this.sections.toggleFacet(view.anchor, event.group, event.value, event.checked);
     }
 
     /**
