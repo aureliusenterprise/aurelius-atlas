@@ -76,6 +76,8 @@ A tenant's users belong to their tenant alone, so they sign in to it without a c
 
 `operator` runs the platform: it holds the operator role, so the server holds it at read access outside `operators`, and the one shot gives it a user of its own in the store, an admin of every index (ADR 063's direct store access). Its password is `DEMO_USER_OPERATOR_PASSWORD` in `dev/keycloak/.env`; the store has no published port, so it is reached from the stack's network. `TENANT_SAMPLE` names the export ZIP in `SAMPLE_DIR` that demo starts with, `sample_data.zip` by default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into demo, not into the stack's own catalogue.
 
+To add a tenant of your own that lasts, follow the user guide's page `docs/user-guide/standalone-tenants.md`.
+
 At sign-in, a person in several organizations, such as `operator`, chooses which to act in. The webapp shows the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in. Another tenant is provisioned by the server's command, run in the server's image with its settings:
 
 ```
