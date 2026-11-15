@@ -706,12 +706,14 @@ export class EntityEditor {
     }
 
     /** The verdicts that measure a rendered control (EDT-24 as amended by
-     * 12.7/12.7a, DD-498/DD-633): the answer's flat array grouped by
-     * `attribute`. The description control borrows the `definition` verdict
-     * only while the form has no `definition` control of its own — the
-     * legacy's one-way alias, and each verdict sits once on a type that
-     * carries both. A control no rule measures renders nothing; `unreadRules`
-     * renders no line (VEV-03). */
+     * 12.7/12.7a/12.7b, DD-498/DD-633/DD-636): the answer's flat array
+     * grouped by the names a rule measures. A verdict rides its `attribute`
+     * and every `anyOf` alternative (VEV-09), so it paints under each control
+     * the rule names — once each, since the filter keeps one copy. The
+     * description control borrows the `definition` verdict only while the form
+     * has no `definition` control of its own — the legacy's one-way alias, and
+     * each verdict sits once on a type that carries both. A control no rule
+     * measures renders nothing; `unreadRules` renders no line (VEV-03). */
     protected validationItems(name: string): readonly GovernanceVerdict[] {
         const answer = this.validation();
         if (!answer) {
@@ -721,12 +723,12 @@ export class EntityEditor {
         // borrows the `definition` verdict (the legacy's alias). With both
         // controls rendered, each verdict names its own (DD-633).
         const hasDefinitionControl = this.fields().some((field) => field.name === "definition");
-        const keys = GOV_CARD_KEYS[name] ?? [name];
+        const keys = (GOV_CARD_KEYS[name] ?? [name]).filter(
+            (key) => !(name === "description" && hasDefinitionControl && key === "definition"),
+        );
 
-        return answer.verdicts.filter(
-            (verdict) =>
-                keys.includes(verdict.attribute) &&
-                !(name === "description" && hasDefinitionControl && verdict.attribute === "definition"),
+        return answer.verdicts.filter((verdict) =>
+            [verdict.attribute, ...(verdict.anyOf ?? [])].some((measured) => keys.includes(measured)),
         );
     }
 

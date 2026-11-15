@@ -139,6 +139,7 @@ class VerdictEngine:
                 ruleGuid=rule.guid or "",
                 ruleName=rule.name,
                 attribute=rule.attribute,
+                **({"anyOf": list(rule.any_of)} if rule.any_of else {}),
                 dimension=rule.dimension.value,
                 compliant=verdict.compliant,
                 message=verdict.message,

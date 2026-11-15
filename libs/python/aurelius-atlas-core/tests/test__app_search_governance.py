@@ -411,20 +411,31 @@ def sample_verdicts() -> tuple[int, int, dict[str, dict[str, Any]]]:
 
 @pytest.mark.covers(f"{X}.run_once", rules=["LAS-13", "ASG-02", "ASG-03", "ASG-04"])
 def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> None:
-    """47 of 95 rules read; 2,602 verdicts; each of the 1,612 legacy verdicts of a rule that reads as it was, and
-    none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
+    """45 of 95 rules read; 2,558 verdicts; 1,600 of the 1,612 legacy verdicts of a rule that reads as it
+    were, and none of the 16 of the rule whose expression is now ``conditional_value(...)`` (DV-160).
+
+    DV-171: the sample corpus's two dataset rules are the 12.7b pairs — ``length('fields', 1) |
+    length('childDataset', 1)`` and ``length('collections', 1) | length('parentDataset', 1)`` — and the
+    two presence rules they replace went inactive. The pairs judge 44 verdicts the frozen oracle never
+    carried, and 12 legacy verdicts now pass through the alternative the oracle's rule did not measure.
     """  # noqa: D205 - one sentence
     read, rules, verdicts = sample_verdicts()
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
 
-    assert (read, rules) == (47, 95)
+    assert (read, rules) == (45, 95)
     assert (len(verdicts), Counter(verdict["compliant"] for verdict in verdicts.values())) == (
-        2602,
-        Counter({"1": 1782, "0": 820}),
+        2558,
+        Counter({"1": 1750, "0": 808}),
     )
     kept = [document for document in legacy if document["id"] in verdicts]
     assert len(kept) == 1612
-    assert all(verdicts[document["id"]]["compliant"] == document["compliant"] for document in kept)
+    # DV-171: the only verdicts that moved are the pair rules' own, and each moved to compliant —
+    # a dataset holding a child (or a parent) now answers the fields (or collections) pair.
+    pairs = ("cfd24715-125d-46e2-854d-b0c1b16340bf", "fb2c608f-d7ff-4574-8c2d-a240c8c79e91")
+    moved = [document for document in kept if verdicts[document["id"]]["compliant"] != document["compliant"]]
+    assert len(moved) == 12
+    assert all(document["id"].endswith(tuple(pairs)) and document["compliant"] == "0" for document in moved)
+    assert all(document not in moved for document in kept if not document["id"].endswith(tuple(pairs)))
     assert {document["guid"] for document in legacy if document["id"] not in verdicts} == {
         "3cb9ab0b-050c-40db-9f12-f136045a77a0"
     }

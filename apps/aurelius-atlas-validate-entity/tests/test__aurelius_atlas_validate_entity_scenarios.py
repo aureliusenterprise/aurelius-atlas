@@ -32,15 +32,16 @@ NAME_RULE = rule_entity(
 )
 FIELDS_RULE = rule_entity(
     "rule-dataset-fields",
-    "Dataset has a field",
+    "Dataset has a field or a child dataset",
     {
-        "name": "Dataset has a field",
+        "name": "Dataset has a field or a child dataset",
         "qualifiedName": "m4i_dataset--fields",
         "active": True,
         "dqcheckkind": "ATTRIBUTE_NOT_EMPTY",
         "dqattribute": "fields",
-        "compliantMessage": "This dataset has at least one field",
-        "nonCompliantMessage": "This dataset should have at least one field",
+        "dqanyOf": ["childDataset"],
+        "compliantMessage": "This dataset has a field or a child dataset",
+        "nonCompliantMessage": "This dataset should have a field or a child dataset",
     },
 )
 CHILD_RULE = rule_entity(

@@ -48,7 +48,13 @@ def build_router(auth: KeycloakAuth) -> APIRouter:
     """
     router = APIRouter(tags=[VALIDATE])
 
-    @router.post("/", response_model=ValidationResponse, responses=VALIDATE_ANSWER, dependencies=[auth.require_auth])
+    @router.post(
+        "/",
+        response_model=ValidationResponse,
+        response_model_exclude_none=True,
+        responses=VALIDATE_ANSWER,
+        dependencies=[auth.require_auth],
+    )
     async def validate_entity(request: Request, body: DraftEntity) -> ValidationResponse:
         """`POST /`: the draft entity in, the governance verdicts out (VEV-01/02).
 
