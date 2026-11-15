@@ -110,7 +110,7 @@ describe("Section config (DET-16)", () => {
         ]);
     });
 
-    it("carries the legacy facet group table for every section (VCF-10, DD-619)", () => {
+    it("carries the facet group table for every section (VCF-10, VCF-18, DD-619)", () => {
         // Each legacy `*-cards` component asked its own facets; the group
         // keys ride the section row (VCF-10). One entry per section, in
         // legacy order — the empty list is the "No filters available."
