@@ -432,6 +432,10 @@ def test__csp_keeps_connect_src_self(page: Page, root_url: str) -> None:
     assert "frame-ancestors 'none'" in csp
 
 
+START_TENANCY_READ = "/api/aurelius/v1/tenancy"
+"""The app start's read of the server's tenancy (TNW-02), before any screen renders."""
+
+
 # impact=severe, likelihood=low (the screen after sign-in; a stable template, boot has a backstop)
 @pytest.mark.high
 def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page) -> None:
@@ -439,7 +443,9 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
 
     The screen exists before its API does: the requests recorded across a
     reload of the landing must contain no /api call — the search affordances
-    that would need one are deferred (DD-143).
+    that would need one are deferred (DD-143). The reload restarts the app, whose
+    start reads the server's tenancy (TNW-02, 15.6): that read is the start's, not
+    the landing's, and is left out of the count.
     """
     api_requests: list[str] = []
     authenticated.on("request", lambda request: api_requests.append(request.url))
@@ -453,7 +459,7 @@ def test__landing_renders_the_three_cards_without_api_calls(authenticated: Page)
     card_titles = authenticated.locator(".columns .column .card .media-content .title.is-4")
     expect(card_titles).to_have_text(["Business context", "Technical context", "Data governance organization"])
 
-    assert [url for url in api_requests if "/api/" in url] == []
+    assert [url for url in api_requests if "/api/" in url and not url.endswith(START_TENANCY_READ)] == []
 
 
 # impact=major, likelihood=low (a modal in its own screen)

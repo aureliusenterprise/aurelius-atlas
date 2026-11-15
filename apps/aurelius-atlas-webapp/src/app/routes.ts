@@ -1,5 +1,8 @@
+import { inject } from "@angular/core";
 import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlMatchResult, UrlSegment } from "@angular/router";
 import { AuthGuardData, createAuthGuard } from "keycloak-angular";
+
+import { NO_TENANCY, SIGN_IN_SCOPE, TENANCY } from "./tenancy";
 
 /**
  * The create-mode editor route's matcher (DD-355): it takes `create` and
@@ -59,12 +62,17 @@ export function lineageDrawerMatcher(segments: UrlSegment[]): UrlMatchResult | n
  * @param keycloak.authenticated whether Keycloak's check-sso found a session
  * @param keycloak.login the Keycloak client
  * @returns whether the navigation may proceed
+ *
+ * With tenancy on, the sign-in asks for the organization scope, so Keycloak lets
+ * a person in several organizations choose the one to act in (TNW-04, DD-582).
  */
-async function rootAuthGuard(
+export async function rootAuthGuard(
     _route: ActivatedRouteSnapshot,
     state: RouterStateSnapshot,
     { authenticated, keycloak }: AuthGuardData,
 ): Promise<boolean> {
+    // Read while the guard still runs in the router's injection context, before any await.
+    const { enabled } = inject(TENANCY, { optional: true }) ?? NO_TENANCY;
     if (!authenticated) {
         // The auth code comes back in the URL *fragment* (response_mode=fragment);
         // when init fails to consume it (a tracking-preventing browser blocks the
@@ -72,7 +80,10 @@ async function rootAuthGuard(
         // that fragment on the url — Keycloak then rejects the exact-registered
         // redirect_uri with 400. Strip the fragment; keep query params (app state).
         const path = state.url.split("#")[0];
-        await keycloak.login({ redirectUri: new URL(path.replace(/^\//, ""), document.baseURI).href });
+        await keycloak.login({
+            redirectUri: new URL(path.replace(/^\//, ""), document.baseURI).href,
+            ...(enabled ? { scope: SIGN_IN_SCOPE } : {}),
+        });
     }
     return authenticated;
 }

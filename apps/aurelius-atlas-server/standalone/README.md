@@ -103,7 +103,8 @@ server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, wi
 
 The demo realm has the organization `operators`, whose member `atlas` runs the platform, and the sample tenant
 `acme`, the organization the command above provisions: `steward` writes there, `scientist` reads, and `atlas`
-reads as an operator. At sign-in, `atlas` chooses which of the two to act in; to switch, sign out and in again.
+reads as an operator. At sign-in, `atlas` chooses which of the two to act in. The webapp shows the tenant in its
+account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in.
 A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
 administrator list or add them. The realm is imported at the stack's first start only, so a stack started
 before keeps its realm until `down -v`.

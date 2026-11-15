@@ -41,6 +41,8 @@ OPEN_PATHS = frozenset(
         "/migration-status.html",
         LOGIN_PATH,
         LOGOUT_PATH,
+        # Whether the server serves tenants, read by the webapp before it signs in (TNW-01, DD-636).
+        "/api/aurelius/v1/tenancy",
         # The dev OpenAPI surface (create_app serves it only under development; these paths 404 elsewhere).
         "/api/atlas/docs",
         "/api/atlas/openapi.json",

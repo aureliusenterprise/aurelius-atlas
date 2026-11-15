@@ -12,6 +12,12 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   `aurelius-atlas-observability`), `routes.ts` the guarded shell routes
   (`createAuthGuard` + `rootAuthGuard` → Keycloak login), `config.ts` is the
   typed `/config.json` shape
+- `src/app/tenancy.ts` — the server's tenancy (`GET /api/aurelius/v1/tenancy`), read at start after
+  `/config.json` and before signing in (TNW-02, DD-636), and provided as `TENANCY`. With it on, a sign-in asks
+  for `openid organization`, the silent check for the remembered tenant's `organization:<alias>` (TNW-04,
+  TNW-05, DD-634), the account menu shows the tenant and "Switch tenant" signs in again (TNW-06, DD-635), and
+  `canWriteEntities` reads the tenant's groups and the operator cap, never the client roles (TNW-07). **Never
+  read the tenant from a URL or a setting**: the remembered alias only picks what the silent check asks for
 - `public/silent-check-sso.html` — the silent-SSO redirect page (hash-pinned in
   the nginx CSP; served at the origin root, keyed to it by `keycloakInitOptions()`)
 - `src/locale/` — **generated** XLIFF catalogues (the Aurelius dictionary bridge,

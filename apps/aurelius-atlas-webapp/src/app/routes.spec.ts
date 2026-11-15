@@ -3,14 +3,24 @@ import { ActivatedRouteSnapshot, RouterStateSnapshot, Routes, UrlSegment } from 
 import Keycloak from "keycloak-js";
 
 import { createEntityMatcher, lineageDrawerMatcher, routes } from "./routes";
+import { NO_TENANCY, type Tenancy, TENANCY } from "./tenancy";
 import { SEARCH_ROUTES } from "./search/search.routes";
 import { SettingsPanel } from "./settings/settings-panel.component";
 
 type GuardFn = (route: ActivatedRouteSnapshot, state: RouterStateSnapshot) => Promise<boolean>;
 
-function runGuard(guard: GuardFn, state: RouterStateSnapshot, authenticated: boolean, login: ReturnType<typeof vi.fn>) {
+function runGuard(
+    guard: GuardFn,
+    state: RouterStateSnapshot,
+    authenticated: boolean,
+    login: ReturnType<typeof vi.fn>,
+    tenancy: Tenancy = NO_TENANCY,
+) {
     const injector = Injector.create({
-        providers: [{ provide: Keycloak, useValue: { authenticated, login } }],
+        providers: [
+            { provide: Keycloak, useValue: { authenticated, login } },
+            { provide: TENANCY, useValue: tenancy },
+        ],
     });
 
     return runInInjectionContext(injector, () => guard({} as ActivatedRouteSnapshot, state));
@@ -233,6 +243,19 @@ describe("routes", () => {
         expect(result).toBe(false);
         expect(login).toHaveBeenCalledWith({
             redirectUri: `${globalThis.location.origin}/search/browse`,
+        });
+    });
+
+    it("asks the sign-in for the organization scope with tenancy on (TNW-04, DD-582)", async () => {
+        const guard = routes[0].canActivate?.[0] as GuardFn;
+        const login = vi.fn().mockResolvedValue(undefined);
+        const tenancy: Tenancy = { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" };
+
+        await runGuard(guard, { url: "/search/browse" } as RouterStateSnapshot, false, login, tenancy);
+
+        expect(login).toHaveBeenCalledWith({
+            redirectUri: `${globalThis.location.origin}/search/browse`,
+            scope: "openid organization",
         });
     });
 

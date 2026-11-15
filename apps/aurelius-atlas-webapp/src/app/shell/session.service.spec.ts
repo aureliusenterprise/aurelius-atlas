@@ -1,6 +1,8 @@
 import { TestBed } from "@angular/core/testing";
 import Keycloak from "keycloak-js";
 
+import { TENANT_KEY } from "../settings/user-preference";
+import { TENANCY } from "../tenancy";
 import { Session } from "./session.service";
 
 /**
@@ -31,5 +33,40 @@ describe("Session", () => {
         provideKeycloak(undefined);
 
         expect(TestBed.inject(Session).identity()).toBe("");
+    });
+});
+
+describe("Session's tenant (TNW-05, TNW-06)", () => {
+    afterEach(() => localStorage.clear());
+
+    const ON = { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" };
+
+    it("reads the token's one organization and remembers it for the next silent check", () => {
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: Keycloak, useValue: { tokenParsed: { organization: { acme: { groups: [] } } } } },
+                { provide: TENANCY, useValue: ON },
+            ],
+        });
+
+        expect(TestBed.inject(Session).tenant()).toBe("acme");
+        expect(localStorage.getItem(TENANT_KEY)).toBe(JSON.stringify("acme"));
+    });
+
+    it("has none with tenancy off, or when the token names none", () => {
+        provideKeycloak({ organization: { acme: {} } });
+
+        expect(TestBed.inject(Session).tenant()).toBeUndefined();
+
+        TestBed.resetTestingModule();
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: Keycloak, useValue: { tokenParsed: {} } },
+                { provide: TENANCY, useValue: ON },
+            ],
+        });
+
+        expect(TestBed.inject(Session).tenant()).toBeUndefined();
+        expect(localStorage.getItem(TENANT_KEY)).toBeNull();
     });
 });

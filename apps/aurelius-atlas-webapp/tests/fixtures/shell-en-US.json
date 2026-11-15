@@ -14,7 +14,9 @@
             "update": "Update available",
             "welcome": "Logged in as",
             "settings": "Settings",
-            "alerts": "Alerts"
+            "alerts": "Alerts",
+            "tenant": "Tenant",
+            "switchTenant": "Switch tenant"
         },
         "pipeline": {
             "error": "Something went wrong while",
