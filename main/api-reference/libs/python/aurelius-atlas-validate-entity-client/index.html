@@ -1878,6 +1878,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_validate_entity_client.models.GovernanceVerdict.any_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;any_of
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_validate_entity_client.models.GovernanceVerdict.attribute" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7003,6 +7014,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_validate_entity_client.models.GovernanceVerdict.any_of" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;any_of
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_validate_entity_client.models.GovernanceVerdict.attribute" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7692,6 +7714,22 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Attribute"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">          </span><span class="p">},</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The other attributes the rule measures beside its first, the ``|`` alternatives of a stored expression (GQ-06, VEV-09). Absent when the rule measures one attribute."</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Anyof"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"dimension"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's quality dimension, e.g. ``COMPLETENESS``."</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Dimension"</span><span class="p">,</span>
@@ -7759,6 +7797,15 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
                 (<code><span title="str">str</span></code>)
             </li>
             <li>
+              <code><a class="autorefs autorefs-internal" title="            any_of
+
+
+  
+      pydantic-field
+   (aurelius_atlas_validate_entity_client.models.GovernanceVerdict.any_of)" href="./#aurelius_atlas_validate_entity_client.models.GovernanceVerdict.any_of">any_of</a></code>
+                (<code><span title="list">list</span>[<span title="str">str</span>] | None</code>)
+            </li>
+            <li>
               <code><a class="autorefs autorefs-internal" title="            dimension
 
 
@@ -7797,6 +7844,30 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="aurelius_atlas_validate_entity_client.models.GovernanceVerdict.any_of" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">any_of</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_validate_entity_client.models.GovernanceVerdict.any_of" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">any_of</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The other attributes the rule measures beside its first, the <code>|</code> alternatives of a stored expression (GQ-06, VEV-09). Absent when the rule measures one attribute.</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -8226,6 +8297,22 @@ verdict, the kind's reason when the rule stores none (GQ-06).</p>
 <span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The entity attribute the rule measures: the banner groups by it."</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Attribute"</span><span class="p">,</span>
 <span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">"items"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">                </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">              </span><span class="p">},</span>
+<span class="w">              </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"array"</span>
+<span class="w">            </span><span class="p">},</span>
+<span class="w">            </span><span class="p">{</span>
+<span class="w">              </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
+<span class="w">            </span><span class="p">}</span>
+<span class="w">          </span><span class="p">],</span>
+<span class="w">          </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The other attributes the rule measures beside its first, the ``|`` alternatives of a stored expression (GQ-06, VEV-09). Absent when the rule measures one attribute."</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Anyof"</span>
 <span class="w">        </span><span class="p">},</span>
 <span class="w">        </span><span class="nt">"dimension"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">          </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"The rule's quality dimension, e.g. ``COMPLETENESS``."</span><span class="p">,</span>
