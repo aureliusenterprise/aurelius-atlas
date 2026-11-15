@@ -7197,6 +7197,8 @@
       
         
       
+        
+      
     
     
     
@@ -8966,6 +8968,33 @@
     
   
   063. Each tenant is an organization with its own store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  064. The webapp reads rich catalogue data through one Aurelius view family
 
     
   </span>
@@ -23025,7 +23054,7 @@ they apply before the nearest are picked; with free text, an entity's score is t
 <a href="#aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search" class="headerlink" title="Permanent link">&para;</a></h4>
 <div class="doc-signature codehilite"><pre><span></span><code><span class="nf">search_app_search</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(query)">query</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(query)">query</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(sort)">sort</span></span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]],</span>
     <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(aggs)">aggs</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">],</span>
     <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(from_)">from_</span></span><span class="p">:</span> <span class="n"><span title="int">int</span></span><span class="p">,</span>
@@ -23036,13 +23065,15 @@ they apply before the nearest are picked; with free text, an entity's score is t
   
       module-attribute
    (aurelius_atlas_core.entity_documents.ENTITY_DOCUMENTS)" href="./#aurelius_atlas_core.entity_documents.ENTITY_DOCUMENTS">ENTITY_DOCUMENTS</a></span><span class="p">,</span>
+    <span class="n"><span title="aurelius_atlas_core.entity_documents.ElasticsearchEntityDocuments.search_app_search(knn)">knn</span></span><span class="p">:</span> <span class="n"><span title="dict">dict</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n"><span title="collections.abc.Mapping">Mapping</span></span><span class="p">[</span><span class="n"><span title="str">str</span></span><span class="p">,</span> <span class="n"><span title="typing.Any">Any</span></span><span class="p">]</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
         <p>One search of an engine's index, the entities' or the verdicts' (DD-534): hits with scores, the exact
-total, the aggregations (DD-523). Writes refresh (ENS-11).</p>
+total, the aggregations (DD-523). A <code>knn</code> searches the nearest with its own filter inside, the scores
+of both added (ASV-03, DD-596). Writes refresh (ENS-11).</p>
 
 
     </div>

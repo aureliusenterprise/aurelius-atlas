@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/063-each-tenant-is-an-organization-with-its-own-store/">
+        <link rel="prev" href="../adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/">
       
       
         <link rel="next" href="./design-log/">
@@ -2132,6 +2132,8 @@
       
         
       
+        
+      
     
     
     
@@ -3904,6 +3906,33 @@
     
   
   063. Each tenant is an organization with its own store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  064. The webapp reads rich catalogue data through one Aurelius view family
 
     
   </span>
@@ -8019,6 +8048,48 @@ checks a PR must pass:</p>
 <td>The webapp's tenant</td>
 <td>The webapp's organization scope, its current tenant shown, and switching tenant by signing in again (ADR 063)</td>
 <td>none</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>16.1</td>
+<td>The view shape: the card and the view</td>
+<td>The one shape family of ADR 064 in the shared model library: the card of a result and the view of one entity, derived from the entity document's own fields and its derived App Search document (AVS-01..09, DD-580..583)</td>
+<td>none (Aurelius-native surface)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>16.2</td>
+<td>The view family: search and read doors</td>
+<td><code>POST /api/aurelius/v1/search</code> (query, filters, facets, sort, page) and <code>GET /api/aurelius/v1/entity/guid/{guid}</code> (the live view, one read): the facets over the derived fields without the App Search wire, answering 16.1's shape for every entity type (AVR-01..13, DD-584..588)</td>
+<td>none; reuses 14.4's query machinery (DD-523/DD-525) behind a new contract</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>16.3</td>
+<td>The view family: the mutation door</td>
+<td><code>POST /api/aurelius/v1/entity</code>: the view as desired state, applied in one request through 2.4/3.3a/5.2c/5.3a's internals with the sets diffed server-side and the new live view answered (AVW-01..12) and <code>GET /api/aurelius/v1/types/for-type/{name}</code> (DD-589..593)</td>
+<td>none; replaces the webapp's client-side diff and remap (DD-325/DD-326) server-side</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>16.4</td>
+<td>The view family: the semantic door</td>
+<td>The search door's two extra modes, semantic and hybrid, reusing 11.3's vectors and 11.4's ranking inside the card answer (ASV, DD-NNN at design)</td>
+<td>none; 11.4 (SBM) inside the new door</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>16.5</td>
+<td>The webapp on the view family</td>
+<td>Results, details and editor switched to the doors: the Angular view models, the guid-keyed client cache superseding DD-318's posture, the save conflict and name-taken UX, the breadcrumb seam (DD-317) closed by the view, the picker and tag-diff mechanisms retired (16.5's own rules at spec)</td>
+<td>Aurelius <code>apps/atlas/src/app/search/**</code> (what they read changes; what they show stays)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>16.6</td>
+<td>The App Search wire retires</td>
+<td>The <code>/api/as/v1</code> engines go when the original webapp's last installation does: the wire's routes, request models and parity fixtures deleted, the derived documents and the facet machinery kept; operators' notice in the release notes (ASR, supersedes ADR 060's wire clauses at that date)</td>
+<td>Aurelius <code>m4i-search-api</code> proxy routes (the same exit, one release later)</td>
 <td>planned</td>
 </tr>
 </tbody>

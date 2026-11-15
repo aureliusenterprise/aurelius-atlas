@@ -3908,6 +3908,8 @@
       
         
       
+        
+      
     
     
     
@@ -5677,6 +5679,33 @@
     
   
   063. Each tenant is an organization with its own store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  064. The webapp reads rich catalogue data through one Aurelius view family
 
     
   </span>
@@ -14394,6 +14423,8 @@ SNP-03).</p>
 wrapped store or transport failure cannot leak internals; the id ties the response to the
 logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) —
 there the cause is the request's own defect, not server internals.</p>
+<p>An error that refuses several problems at once adds <code>messages</code>, one text each (AVR-13, DD-588): the
+Aurelius error shape beside the one <code>errorMessage</code> a single refusal has.</p>
 
 
     </div>
