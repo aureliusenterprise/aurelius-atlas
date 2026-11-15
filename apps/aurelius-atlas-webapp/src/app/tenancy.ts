@@ -47,6 +47,25 @@ export function parseTenancy(value: unknown): Tenancy {
 }
 
 /**
+ * The answer's URL: a path on the webapp's own origin, below the API base (TNW-02).
+ *
+ * The base comes from `/config.json`, which the config documents as same-origin;
+ * it is rebuilt from its encoded segments, so no scheme, host or `//` of the
+ * base can send the read to another origin.
+ *
+ * @param apiBaseUrl the API's base, `/api`
+ * @returns the same-origin path of the answer
+ */
+export function tenancyUrl(apiBaseUrl: string): string {
+    const segments = apiBaseUrl
+        .split("/")
+        .filter((segment) => segment.length > 0)
+        .map((segment) => encodeURIComponent(segment));
+
+    return `/${segments.join("/")}${TENANCY_PATH}`.replace(/^\/\//, "/");
+}
+
+/**
  * Read the server's tenancy before signing in (TNW-02): an answer that can't be
  * read fails the start, as a bad `/config.json` does (SHL-02).
  *
@@ -54,7 +73,7 @@ export function parseTenancy(value: unknown): Tenancy {
  * @returns the tenancy the server states
  */
 export async function loadTenancy(apiBaseUrl: string): Promise<Tenancy> {
-    const url = `${apiBaseUrl.replace(/\/$/, "")}${TENANCY_PATH}`;
+    const url = tenancyUrl(apiBaseUrl);
     const response = await fetch(url);
     if (!response.ok) {
         throw new Error(`Failed to load the tenancy (${url}): ${response.status} ${response.statusText}`);

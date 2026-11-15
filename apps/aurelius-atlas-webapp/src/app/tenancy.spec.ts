@@ -1,5 +1,6 @@
 import {
     loadTenancy,
+    tenancyUrl,
     NO_TENANCY,
     parseTenancy,
     rememberedTenant,
@@ -42,6 +43,15 @@ describe("tenancy", () => {
         await expect(loadTenancy("/api")).rejects.toThrow(
             /Failed to load the tenancy \(\/api\/aurelius\/v1\/tenancy\): 503 Unavailable/,
         );
+    });
+
+    it("keeps the read on the webapp's own origin, whatever the base names (TNW-02)", () => {
+        expect(tenancyUrl("/api")).toBe("/api/aurelius/v1/tenancy");
+        expect(tenancyUrl("/api/")).toBe("/api/aurelius/v1/tenancy");
+        expect(tenancyUrl("/gateway/api")).toBe("/gateway/api/aurelius/v1/tenancy");
+        expect(tenancyUrl("//evil.example/api")).toBe("/evil.example/api/aurelius/v1/tenancy");
+        expect(tenancyUrl("https://evil.example")).toBe("/https%3A/evil.example/aurelius/v1/tenancy");
+        expect(tenancyUrl("")).toBe("/aurelius/v1/tenancy");
     });
 
     it("reads the one organization a token names, as the server does (TNW-06, TEN-02)", () => {
