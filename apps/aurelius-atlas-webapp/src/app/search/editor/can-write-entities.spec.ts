@@ -3,7 +3,8 @@ import Keycloak from "keycloak-js";
 
 import { AppConfig } from "../../config";
 import { APP_CONFIG } from "../../tokens";
-import { canWriteEntities } from "./can-write-entities";
+import { type Tenancy, TENANCY } from "../../tenancy";
+import { canWriteEntities, writesInTenant } from "./can-write-entities";
 
 /**
  * The gate's inputs: the Keycloak client's role check (the seam the token
@@ -81,5 +82,42 @@ describe("canWriteEntities (EDT-09)", () => {
         canWrite();
 
         expect(hasResourceRole).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe("canWriteEntities with tenancy on (TNW-07, DD-636)", () => {
+    const tenancy: Tenancy = { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" };
+    const token = (tenant: string, groups: string[], roles: string[] = []) => ({
+        organization: { [tenant]: { groups } },
+        realm_access: { roles },
+    });
+
+    it("grants by the tenant's /atlas-write group, never by the client roles", () => {
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: TENANCY, useValue: tenancy },
+                {
+                    provide: Keycloak,
+                    useValue: { tokenParsed: token("acme", ["/atlas-read"]), hasResourceRole: () => true },
+                },
+            ],
+        });
+
+        expect(TestBed.runInInjectionContext(() => canWriteEntities())()).toBe(false);
+        expect(writesInTenant(tenancy, token("acme", ["/atlas-read", "/atlas-write"]))).toBe(true);
+    });
+
+    it("holds an operator at read outside the operator organization, as the server does (TEN-06)", () => {
+        expect(writesInTenant(tenancy, token("acme", ["/atlas-write"], ["atlas-operator"]))).toBe(false);
+        expect(writesInTenant(tenancy, token("operators", ["/atlas-write"], ["atlas-operator"]))).toBe(true);
+    });
+
+    it("denies a token that names no tenant, or several", () => {
+        expect(writesInTenant(tenancy, {})).toBe(false);
+        expect(
+            writesInTenant(tenancy, {
+                organization: { acme: { groups: ["/atlas-write"] }, globex: { groups: ["/atlas-write"] } },
+            }),
+        ).toBe(false);
     });
 });

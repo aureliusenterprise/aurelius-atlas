@@ -6,6 +6,7 @@ import { Badge, Header } from "aurelius-atlas-ui";
 import Keycloak from "keycloak-js";
 
 import { AlertsService } from "../alerts/alerts.service";
+import { SIGN_IN_SCOPE, TENANCY } from "../tenancy";
 import { APP_CONFIG } from "../tokens";
 import { Session } from "./session.service";
 
@@ -107,6 +108,19 @@ export class ShellHeader {
         const { url, realm } = this.config.keycloak;
 
         return new URL(`realms/${realm}/account`, url).href;
+    }
+
+    /** Whether the server serves tenants: the menu then shows the tenant and switching (TNW-06). */
+    protected readonly tenancy = inject(TENANCY);
+
+    /**
+     * Sign in again for the organization scope, without signing out, back to the
+     * page shown: Keycloak asks the person to choose an organization (TNW-06,
+     * DD-635).
+     */
+    protected switchTenant(): void {
+        // The navigation starts at once; the promise resolves on Keycloak's page.
+        void this.keycloak.login({ redirectUri: globalThis.location.href, scope: SIGN_IN_SCOPE });
     }
 
     /** End the Keycloak session (SHC-05), returning to the sign-in page. */

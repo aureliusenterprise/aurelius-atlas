@@ -1,6 +1,8 @@
 import { Injectable, inject, signal } from "@angular/core";
 import Keycloak from "keycloak-js";
 
+import { rememberTenant, TENANCY, tenantOf } from "../tenancy";
+
 /**
  * The signed-in session's display identity (SHC-05, SHC-08).
  *
@@ -20,6 +22,19 @@ export class Session {
     private readonly identityState = signal(Session.readIdentity(this.keycloak));
 
     private readonly emailState = signal(Session.readEmail(this.keycloak));
+
+    /**
+     * The one organization the token names while tenancy is on, `undefined` for
+     * none (TNW-06); remembered for the next silent check (TNW-05, DD-634).
+     */
+    readonly tenant = signal(inject(TENANCY).enabled ? tenantOf(this.keycloak.tokenParsed) : undefined).asReadonly();
+
+    constructor() {
+        const tenant = this.tenant();
+        if (tenant !== undefined) {
+            rememberTenant(tenant);
+        }
+    }
 
     /** The identity to greet the user by, `""` when no session is readable. */
     readonly identity = this.identityState.asReadonly();

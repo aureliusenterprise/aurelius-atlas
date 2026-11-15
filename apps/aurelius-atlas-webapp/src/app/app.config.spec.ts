@@ -41,6 +41,7 @@ import {
 } from "./app.config";
 import { parseAppConfig } from "./config";
 import { TELEMETRY_KEY, TIMEZONE_KEY } from "./settings/user-preference";
+import { TENANCY } from "./tenancy";
 
 const configPayload = {
     keycloak: { clientId: "aurelius", realm: "master", url: "https://keycloak.localhost:8443" },
@@ -78,10 +79,18 @@ function makeKeycloakStub(): KeycloakStub {
  * creation, which these tests never do).
  * @returns the provider list, for inspection
  */
-async function bootstrap(keycloak: KeycloakStub, payload: unknown = configPayload): Promise<Provider[]> {
+async function bootstrap(
+    keycloak: KeycloakStub,
+    payload: unknown = configPayload,
+    tenancy: unknown = { enabled: false },
+): Promise<Provider[]> {
+    // The config at /config.json, the server's tenancy at its own path (TNW-02).
     vi.stubGlobal(
         "fetch",
-        vi.fn(async () => new Response(JSON.stringify(payload), { status: 200 })),
+        vi.fn(
+            async (url: string) =>
+                new Response(JSON.stringify(url.endsWith("/tenancy") ? tenancy : payload), { status: 200 }),
+        ),
     );
     const appConfig: ApplicationConfig = await initialize();
     vi.unstubAllGlobals();
@@ -118,6 +127,35 @@ describe("app providers (7.3)", () => {
             onLoad: "check-sso",
             silentCheckSsoRedirectUri: `${globalThis.location.origin}/silent-check-sso.html`,
         });
+    });
+
+    it("keycloakInitOptions asks the silent check for the remembered tenant with tenancy on (TNW-03, TNW-05)", () => {
+        const on = { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" };
+
+        expect(keycloakInitOptions({ enabled: false }, "acme")).not.toHaveProperty("scope");
+        expect(keycloakInitOptions(on, "acme")).toMatchObject({ scope: "openid organization:acme" });
+        expect(keycloakInitOptions(on, undefined)).toMatchObject({ scope: "openid organization" });
+    });
+
+    it("provides the server's tenancy, read before signing in (TNW-02)", async () => {
+        const on = { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" };
+        await bootstrap(makeKeycloakStub(), configPayload, on);
+
+        expect(TestBed.inject(TENANCY)).toEqual(on);
+    });
+
+    it("initialize fails loudly when the tenancy can't be read (TNW-02)", async () => {
+        vi.stubGlobal(
+            "fetch",
+            vi.fn(async (url: string) =>
+                url.endsWith("/tenancy")
+                    ? new Response("down", { status: 502, statusText: "Bad Gateway" })
+                    : new Response(JSON.stringify(configPayload), { status: 200 }),
+            ),
+        );
+
+        await expect(initialize()).rejects.toThrow(/Failed to load the tenancy .*: 502 Bad Gateway/);
+        vi.unstubAllGlobals();
     });
 
     it("bearerTokenConfig covers /api, /lineage-model and /validate-entity calls only (APC-06, LDG-05, EDT-22)", () => {

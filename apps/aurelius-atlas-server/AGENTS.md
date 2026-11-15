@@ -88,6 +88,8 @@ provision|trust|list|remove`, reading the server's settings: a tenant's indices,
   organization and groups, the operators trust adds (listed in the record's `operatorMembers`), the
   administrators' policy and permissions (TRM-02 to TRM-10, DD-600 to DD-602). Tests use the fake admin API in
   `tests/fake_keycloak.py`, which answers as Keycloak 26.7.4 did
+- `aurelius_atlas_server/routes/tenancy.py` — `GET /api/aurelius/v1/tenancy`, open: whether tenancy is on and
+  the operator organization and role, which the webapp reads before it signs in (TNW-01, DD-636)
 - `aurelius_atlas_server/authorization.py` — the four roles of the server's client that grant Atlas's
   privileges, `authorizer` and `verify_access` (6.2, DD-300). Every core store a route builds must be given
   `authorizer=authorizer(request)`: a store without one checks nothing (DD-301)

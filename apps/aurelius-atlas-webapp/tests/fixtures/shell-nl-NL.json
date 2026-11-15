@@ -14,7 +14,9 @@
             "update": "Update beschikbaar",
             "welcome": "Ingelogd als",
             "settings": "Instellingen",
-            "alerts": "Meldingen"
+            "alerts": "Meldingen",
+            "tenant": "Tenant",
+            "switchTenant": "Andere tenant kiezen"
         },
         "pipeline": {
             "error": "Er is iets misgegaan tijden",

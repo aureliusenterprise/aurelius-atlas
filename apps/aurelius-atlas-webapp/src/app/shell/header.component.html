@@ -84,6 +84,23 @@
                 {{ session.identity() }}
             </a>
             <div class="navbar-dropdown is-right">
+                @if (tenancy.enabled) {
+                    <!-- The tenant the token names, and switching it by signing in again (TNW-06, DD-635). -->
+                    @if (session.tenant(); as tenant) {
+                        <div class="navbar-item">
+                            <span><span i18n="@@shell.header.tenant">Tenant</span>: {{ tenant }}</span>
+                        </div>
+                    }
+                    <button
+                        type="button"
+                        class="navbar-item navbar-link is-arrowless"
+                        (click)="switchTenant()"
+                        i18n="@@shell.header.switchTenant"
+                    >
+                        Switch tenant
+                    </button>
+                    <hr class="navbar-divider" />
+                }
                 <!-- Account-security: the Keycloak account console. -->
                 <a class="navbar-item" i18n="@@shell.header.security" [href]="accountUrl">Account security</a>
                 <hr class="navbar-divider" />

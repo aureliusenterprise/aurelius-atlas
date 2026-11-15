@@ -2533,6 +2533,14 @@ The technical data governance model consists of the following types of entities:
         <source>Settings</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.header.settings</note>
       </trans-unit>
+      <trans-unit id="shell.header.switchTenant" datatype="html">
+        <source>Switch tenant</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.switchTenant</note>
+      </trans-unit>
+      <trans-unit id="shell.header.tenant" datatype="html">
+        <source>Tenant</source>
+        <note priority="1" from="description">Aurelius dictionary key: shell.header.tenant</note>
+      </trans-unit>
       <trans-unit id="shell.header.update" datatype="html">
         <source>Update available</source>
         <note priority="1" from="description">Aurelius dictionary key: shell.header.update</note>

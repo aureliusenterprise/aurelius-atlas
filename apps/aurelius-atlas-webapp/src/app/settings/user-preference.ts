@@ -24,6 +24,9 @@ export const TELEMETRY_KEY = "aurelius-atlas.settings.telemetry";
 /** The search mode: how the search field searches (SBX-01, DD-473). */
 export const SEARCH_MODE_KEY = "aurelius-atlas.settings.searchMode";
 
+/** The tenant the browser last signed in to, the silent check's choice (TNW-05, DD-634). */
+export const TENANT_KEY = "aurelius-atlas.session.tenant";
+
 /**
  * Read a stored preference. The bootstrap gate (telemetry, `DATE_PIPE_DEFAULT_OPTIONS`)
  * reads through this before any service exists — `localStorage` is

@@ -8,6 +8,7 @@ import { AppConfig } from "../config";
 import { AlertsService } from "../alerts/alerts.service";
 import { APP_CONFIG } from "../tokens";
 import { ShellHeader } from "./header.component";
+import { TENANCY } from "../tenancy";
 import { Session } from "./session.service";
 
 const config: AppConfig = {
@@ -293,5 +294,56 @@ describe("ShellHeader", () => {
         expect(() => button?.click()).not.toThrow();
         expect(keycloak.logout).toHaveBeenCalledOnce();
         await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+});
+
+describe("ShellHeader with tenancy on (TNW-06, DD-635)", () => {
+    function setupTenancy(tenant: string | undefined) {
+        const login = vi.fn().mockResolvedValue(undefined);
+        window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+        TestBed.configureTestingModule({
+            imports: [FontAwesomeModule, ShellHeader],
+            providers: [
+                provideRouter([]),
+                { provide: APP_CONFIG, useValue: config },
+                { provide: Keycloak, useValue: { logout: vi.fn(), login } },
+                { provide: Session, useValue: { identity: () => "ann", tenant: () => tenant } },
+                {
+                    provide: TENANCY,
+                    useValue: { enabled: true, operatorOrganization: "operators", operatorRole: "atlas-operator" },
+                },
+            ],
+        });
+        return { login };
+    }
+
+    it("shows the tenant, and switching signs in again for the organization scope, back to the page", () => {
+        const { login } = setupTenancy("acme");
+        const compiled = render();
+
+        expect(normalize(compiled.querySelector(".navbar-dropdown")?.textContent)).toContain("Tenant: acme");
+
+        const button = [...compiled.querySelectorAll<HTMLButtonElement>("button.navbar-item")].find((item) =>
+            item.textContent?.includes("Switch tenant"),
+        );
+        button?.click();
+
+        expect(login).toHaveBeenCalledWith({ redirectUri: globalThis.location.href, scope: "openid organization" });
+    });
+
+    it("shows no tenant when the token names none, and still offers the switch", () => {
+        setupTenancy(undefined);
+        const text = normalize(render().querySelector(".navbar-dropdown")?.textContent);
+
+        expect(text).not.toContain("Tenant:");
+        expect(text).toContain("Switch tenant");
+    });
+});
+
+describe("ShellHeader with tenancy off (TNW-03)", () => {
+    it("offers no tenant and no switch", () => {
+        setup();
+
+        expect(normalize(render().querySelector(".navbar-dropdown")?.textContent)).not.toContain("tenant");
     });
 });

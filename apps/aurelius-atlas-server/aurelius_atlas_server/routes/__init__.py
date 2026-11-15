@@ -8,6 +8,7 @@ from aurelius_atlas_server.routes.login import LOGIN
 from aurelius_atlas_server.routes.quality import QUALITY
 from aurelius_atlas_server.routes.relationship import RELATIONSHIP
 from aurelius_atlas_server.routes.search_by_meaning import SEARCH_BY_MEANING
+from aurelius_atlas_server.routes.tenancy import TENANCY
 from aurelius_atlas_server.routes.types import TYPES
 from aurelius_atlas_server.routes.view_entity import VIEW_ENTITY
 from aurelius_atlas_server.routes.view_search import VIEW_SEARCH
@@ -24,6 +25,7 @@ __all__ = [
     "QUALITY",
     "RELATIONSHIP",
     "SEARCH_BY_MEANING",
+    "TENANCY",
     "TYPES",
     "VIEW_ENTITY",
     "VIEW_SEARCH",

@@ -38,6 +38,7 @@ import { retryHttpInterceptor } from "./http/retry-http.interceptor";
 import { routes } from "./routes";
 import { TelemetryService } from "./settings/telemetry.service";
 import { TimezoneService } from "./settings/timezone.service";
+import { loadTenancy, NO_TENANCY, rememberedTenant, silentScope, type Tenancy, TENANCY } from "./tenancy";
 import { APP_CONFIG } from "./tokens";
 
 /**
@@ -71,13 +72,22 @@ export function metricsUrl(config: AppConfig): string {
  * The Keycloak init options: `check-sso` (an existing SSO session signs in without a
  * click; the root guard in `routes.ts` redirects everyone else) with a silent-SSO
  * redirect at the origin root, where the `silent-check-sso.html` asset is served
- * (APC-05).
+ * (APC-05). With tenancy on, the silent check asks for the remembered tenant's
+ * organization, else for the organization scope (TNW-05, DD-634).
+ * @param tenancy the server's tenancy (TNW-02)
+ * @param remembered the tenant this browser signed in to last
  * @returns the init options for {@link provideKeycloak}
  */
-export function keycloakInitOptions(): KeycloakInitOptions {
+export function keycloakInitOptions(
+    tenancy: Tenancy = NO_TENANCY,
+    remembered: string | undefined = rememberedTenant(),
+): KeycloakInitOptions {
+    const scope = silentScope(tenancy, remembered);
+
     return {
         onLoad: "check-sso",
         silentCheckSsoRedirectUri: globalThis.location.origin + "/silent-check-sso.html",
+        ...(scope === undefined ? {} : { scope }),
     };
 }
 
@@ -135,6 +145,8 @@ export function setNavbarScrollOffset(): void {
  */
 export async function initialize(): Promise<ApplicationConfig> {
     const config = await loadConfig();
+    // Whether the server serves tenants, read before signing in (TNW-02, DD-636).
+    const tenancy = await loadTenancy(config.apiBaseUrl);
     const sessionResource = createAureliusSessionResource();
     // The OTLP credential seam (DD-193, aurelius-atlas-observability): the
     // exporters read the user's token through its headers factory, lazily —
@@ -211,8 +223,9 @@ export async function initialize(): Promise<ApplicationConfig> {
             // click; the root guard (routes.ts) redirects everyone else (APC-05).
             provideKeycloak({
                 config: config.keycloak,
-                initOptions: keycloakInitOptions(),
+                initOptions: keycloakInitOptions(tenancy),
             }),
+            { provide: TENANCY, useValue: tenancy },
             // Bearer token on every /api call (APC-06, DD-004). The server
             // verifies it since 6.1a (AUT-02; sent from day one, DD-141), and
             // refresh is keycloak-angular's — the legacy updateToken loop is

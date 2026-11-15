@@ -44,6 +44,7 @@ from aurelius_atlas_server.routes import (
     QUALITY,
     RELATIONSHIP,
     SEARCH_BY_MEANING,
+    TENANCY,
     TYPES,
     VIEW_ENTITY,
     VIEW_SEARCH,
@@ -264,6 +265,7 @@ def _mount(app: FastAPI, settings: ServerSettings) -> None:
         VIEW_SEARCH,
         VIEW_ENTITY,
         VIEW_TYPES,
+        TENANCY,
     ):
         app.include_router(router)
     install_openapi(app)
