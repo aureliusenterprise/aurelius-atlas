@@ -23,7 +23,7 @@ from aurelius_atlas_model.views import (
 )
 from aurelius_atlas_typesystem.entity_type import EntityType
 
-from aurelius_atlas_core.app_search_document import RELATION_FIELDS, awaits_document
+from aurelius_atlas_core.app_search_document import RELATION_FIELDS, ROLE_FIELDS, awaits_document
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.graph_helper import collection_elements, other_end, relationship_type_name
 from aurelius_atlas_core.search_fields import TRAIT_NAMES
@@ -125,9 +125,19 @@ def _at(values: list[Any], index: int) -> Any:  # noqa: ANN401 - a stored array 
 
 
 def _relations(document: StoredAppSearch) -> list[EntityRelation]:
-    """The stored relation pairs, per field in RELATION_FIELDS' order, empty fields left out (AVS-02, LAS-05)."""
+    """The card's relations: the stored type-keyed pairs, then the role pairs in ROLE_FIELDS' order.
+
+    The type-keyed pairs come first in RELATION_FIELDS' order (AVS-02, LAS-05); the role pairs follow,
+    each keyed by its relationship attribute (AVS-10, ASD-06). A pair whose end the store no longer has
+    keeps the document's stored name, as every stored pair does (ASU-02).
+    """
+    return _pairs(document, RELATION_FIELDS) + _pairs(document, ROLE_FIELDS)
+
+
+def _pairs(document: StoredAppSearch, fields: Mapping[str, str]) -> list[EntityRelation]:
+    """The stored pairs of ``fields``, per field in its order, empty ones left out (AVS-02, LAS-05)."""
     relations = []
-    for attribute, field in RELATION_FIELDS.items():
+    for attribute, field in fields.items():
         names: list[str | None] = getattr(document, field)
         guids: list[str] = getattr(document, f"{field}guid")
         entities = [RelationEntity(guid=guid, name=name) for guid, name in zip(guids, names, strict=False)]
@@ -191,7 +201,7 @@ def _sections(document: StoredAppSearch | None, ends: RelationEnds | None) -> li
     sections: dict[str, dict[str, RelationEntity]] = {}
     stored: dict[str, dict[str, RelationEntity]] = {}
     if document is not None:
-        for relation in _relations(document):
+        for relation in _pairs(document, RELATION_FIELDS):  # the role pairs ride the card, not the sections (AVS-10)
             sections[relation.attribute] = {entity.guid: entity for entity in relation.entities}
             stored[relation.attribute] = sections[relation.attribute]
     for attribute, entities in (ends or {}).items():

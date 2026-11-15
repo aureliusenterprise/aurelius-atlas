@@ -10,15 +10,16 @@ import type { PeopleRow } from "aurelius-atlas-ui";
  * with no people stays in the list empty: the box drops empty rows and
  * shows its placeholder when all are (DET-23).
  *
- * Since 16.5d the card bodies no longer ride this grouping: the shared
- * rich card answers its people from the card's derived relations, flat and
- * without roles (VCF-06, DD-617, DV-167) — the document names the people
- * but never their roles. The labelled rows here stay the opened entity's
- * own, read from the view's `sections` (VDR-03 kept).
+ * Since 16.5f the shared rich card rides the same three ends again, but
+ * labelled and from the document (VCF-15, AVS-10, ASD-06): the door answers
+ * the role pairs in `relations` under these keys, and the card renders one
+ * labelled row per role, the flat row kept only as the fallback for a
+ * document still awaiting its re-derive round (VCF-16). The opened entity's
+ * box reads them from the view's `sections` (VDR-03 kept).
  */
 
 /** One people end: the `relationshipAttributes` key and the row's label. */
-const PEOPLE_ENDS: readonly { key: string; label: string }[] = [
+export const PEOPLE_ENDS: readonly { key: string; label: string }[] = [
     { key: "domainLead", label: $localize`:@@search.components.people.domainLead:Domain Lead(s)` },
     { key: "businessOwner", label: $localize`:@@search.components.people.dataOwner:Data Owner(s)` },
     { key: "steward", label: $localize`:@@search.components.people.dataSteward:Data Steward(s)` },

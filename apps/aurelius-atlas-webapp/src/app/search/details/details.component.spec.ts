@@ -893,7 +893,7 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(search?.getAttribute("placeholder")).toBe("Search for keywords");
     });
 
-    it("the funnel opens the popover and a tick filters the cards and the count line (VCF-08..VCF-13)", () => {
+    it("the funnel opens the popover and a tick filters the cards and the count line (VCF-08..VCF-13, VCF-18)", () => {
         const { fixture, compiled, httpMock } = setup("m4i-1");
         arriveSections(
             fixture,
@@ -902,14 +902,16 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
             doorAnswer([
                 doorCard("a1", "m4i_data_attribute", "gene_symbol", {
                     relations: [
-                        { attribute: "m4i_person", entities: [{ guid: "p1", name: "Ada", typeName: "m4i_person" }] },
+                        { attribute: "steward", entities: [{ guid: "p1", name: "Ada", typeName: "m4i_person" }] },
                     ],
                 }),
                 doorCard("a2", "m4i_data_attribute", "chromosome"),
             ]),
         );
 
-        // The entity's Data Attributes box asks the People group (VCF-10).
+        // The entity's Data Attributes box asks the role groups (VCF-10, VCF-18);
+        // only Ada's stewards group has rows, so it is the one group on offer
+        // and the empty lead and owner groups left the popover (VCF-12).
         const funnel = compiled.querySelector<HTMLButtonElement>("#related-attributes .aurelius-card-section-funnel")!;
         expect(funnel.getAttribute("aria-label")).toBe("Filter");
         expect(funnel.classList.contains("is-primary")).toBe(false);
@@ -919,7 +921,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         const menu = compiled.querySelector<HTMLElement>(
             "#related-attributes .aurelius-card-section-filter .dropdown-menu",
         );
-        expect(normalize(menu?.querySelector(".menu-label")?.textContent)).toBe("People");
+        expect([...menu!.querySelectorAll(".menu-label")].map((label) => normalize(label.textContent))).toEqual([
+            "Data Steward(s)",
+        ]);
         const box = menu!.querySelector<HTMLInputElement>("input[type='checkbox']")!;
         expect(normalize(box.closest("label")?.textContent)).toBe("Ada (1)");
 

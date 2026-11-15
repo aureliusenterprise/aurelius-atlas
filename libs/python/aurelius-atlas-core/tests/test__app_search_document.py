@@ -4,8 +4,10 @@ the listings (LAS-01 to LAS-03, ASD-01 to ASD-04, ASU-01 to ASU-04), without a c
 
 import pytest
 from aurelius_atlas_core.app_search_document import (
+    DERIVATION_VERSION,
     app_search_mapping,
     attribute_value,
+    awaits_document,
     governance_source,
     has_document,
     identity,
@@ -161,6 +163,59 @@ def test__a_document_names_its_breadcrumb_and_relations_and_is_known_by_name_bre
         assert identity(document.model_copy(update=other)) != identity(document)
 
 
+@pytest.mark.covers(f"{A}.named_guids", rules=["ASD-06", "ASU-03"])
+@pytest.mark.covers(f"{A}.identity", rules=["ASD-06", "ASU-03"])
+def test__a_document_names_and_knows_its_role_ends_too() -> None:
+    """The role GUID fields join the naming and the identity (DD-626): a role end's name stays fresh."""
+    document = own_document(entity(**{"m4i_data_entity.name": "N"})).model_copy(
+        update={
+            "deriveddataownerguid": ["p"],
+            "deriveddatastewardguid": ["p", "q"],
+            "deriveddatasteward": ["Pat", "Sam"],
+        }
+    )
+
+    assert named_guids(document) == ["p", "q"]
+    assert identity(document.model_copy(update={"deriveddatastewardguid": ["p"]})) != identity(document)
+
+
+@pytest.mark.covers(f"{A}.awaits_document", rules=["ASD-04", "ASD-07"])
+def test__a_document_awaits_a_round_when_it_is_stale_or_derived_under_older_rules() -> None:
+    """None, stale, or a version below the indexer's: all three; a current one, none (ASD-07, DD-628)."""
+    stored = entity()
+    assert awaits_document(stored)
+
+    current = indexed(stored)
+    assert not awaits_document(current)
+
+    stale = current.model_copy(update={"app_search": current.app_search.model_copy(update={"stale": True})})  # type: ignore[union-attr]
+    assert awaits_document(stale)
+
+    before = current.model_copy(
+        update={"app_search": current.app_search.model_copy(update={"derivation_version": 1})}  # type: ignore[union-attr]
+    )
+    assert awaits_document(before)
+
+
+@pytest.mark.covers(f"{A}.source_hash", rules=["ASD-03", "ASD-07"])
+def test__the_hash_carries_the_derivation_version_once() -> None:
+    """Two entities alike hash alike; a document of the version before the current one hashes apart (DD-628)."""
+    first = entity("g1", **{"m4i_data_entity.name": "N"})
+    second = entity("g2", **{"m4i_data_entity.name": "N"})
+
+    assert source_hash(first) == source_hash(second)
+    assert source_hash(first) != source_hash(first.model_copy(update={"type_name": "m4i_field"}))
+
+
+@pytest.mark.covers(f"{A}.own_document", rules=["LAS-02", "ASD-07"])
+def test__an_own_document_carries_the_derivation_version_it_was_made_under() -> None:
+    """The round writes documents of its current version; one made without the mark is of version 1 (ASD-07)."""
+    document = own_document(entity(**{"m4i_data_entity.name": "N"}))
+
+    assert document.derivation_version == DERIVATION_VERSION == 2
+    assert StoredAppSearch(source_hash="h", referenceablequalifiedname="q").derivation_version == 1
+
+
 @pytest.mark.covers(f"{A}.app_search_mapping", rules=["ASD-02"])
 def test__names_are_keywords_with_text_and_guids_and_types_keywords() -> None:
     """Every field of the stored document is mapped; the names also as text."""
@@ -182,12 +237,18 @@ async def test__the_elasticsearch_documents_map_list_and_mark_documents() -> Non
     client = FakeClient()
     documents = ElasticsearchEntityDocuments(client)  # type: ignore[arg-type]
     await documents.prepare()
+    old = entity("o", **{"m4i_data_entity.name": "O"})
     await documents.write(
         [
             (indexed(entity("e", **{"m4i_data_entity.name": "N"})), None),
             (entity("f", "m4i_field"), None),
             (entity("s", "m4i_source"), None),
             (entity("h", "hive_table"), None),
+            # A document of the version before the current one, unchanged since: the round owes it (ASD-07).
+            (
+                old.model_copy(update={"app_search": own_document(old).model_copy(update={"derivation_version": 1})}),
+                None,
+            ),
         ]
     )
     read = (await documents.get(["e"]))["e"]
@@ -198,7 +259,7 @@ async def test__the_elasticsearch_documents_map_list_and_mark_documents() -> Non
     assert client.index_mappings["aurelius-atlas-entities-000001"]["properties"]["appSearch"] == app_search_mapping()
     assert read.entity.app_search is not None
     assert (await documents.get(["e"]))["e"].entity.app_search.stale  # type: ignore[union-attr]
-    assert [found.entity.guid for found in await documents.without_app_search(10)] == ["e", "f"]
+    assert [found.entity.guid for found in await documents.without_app_search(10)] == ["e", "f", "o"]
 
 
 @pytest.mark.covers(f"{D}.prepare", rules=["ASU-04"])
@@ -232,16 +293,25 @@ async def test__the_elasticsearch_documents_list_the_naming_entities_and_the_uns
 async def test__the_memory_documents_list_and_mark_documents_as_elasticsearch_s_do() -> None:
     """The same listing and the same check of the hash."""
     documents = MemoryEntityDocuments()
+    old = entity("o")
     await documents.write(
-        [(indexed(entity("e")), None), (entity("f", "m4i_field"), None), (entity("s", "m4i_source"), None)]
+        [
+            (indexed(entity("e")), None),
+            (entity("f", "m4i_field"), None),
+            (entity("s", "m4i_source"), None),
+            (
+                old.model_copy(update={"app_search": own_document(old).model_copy(update={"derivation_version": 1})}),
+                None,
+            ),
+        ]
     )
     read = (await documents.get(["e"]))["e"]
 
     assert read.entity.app_search is not None
-    assert [found.entity.guid for found in await documents.without_app_search(10)] == ["f"]
+    assert [found.entity.guid for found in await documents.without_app_search(10)] == ["f", "o"]
     await documents.write([(read.entity.model_copy(update={"state": EntityStatus.DELETED}), read.version)])
     assert (await documents.get(["e"]))["e"].entity.app_search.stale  # type: ignore[union-attr]
-    assert [found.entity.guid for found in await documents.without_app_search(10)] == ["e", "f"]
+    assert [found.entity.guid for found in await documents.without_app_search(10)] == ["e", "f", "o"]
 
 
 @pytest.mark.covers(f"{M}.naming", rules=["ASU-03"])

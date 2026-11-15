@@ -360,8 +360,84 @@ async def test__the_relations_list_both_ends_and_a_field_joins_its_dataset_and_d
     assert catalogue.keys(documents["p"].deriveddataentityguid) == ["e"]
     assert (catalogue.keys(field.deriveddatasetguid), catalogue.keys(field.deriveddataattributeguid)) == (["s"], ["a"])
     assert field.deriveddataentityguid == []
-    quality = documents["q"].model_dump(exclude={"source_hash", "name", "referenceablequalifiedname"})
+    quality = documents["q"].model_dump(
+        exclude={"source_hash", "name", "referenceablequalifiedname", "derivation_version"}
+    )
     assert all(not value for value in quality.values())
+
+
+@pytest.mark.covers(f"{X}.derive", rules=["ASD-06"])
+async def test__the_role_fields_list_the_people_of_each_role_attribute() -> None:
+    """The domain lists its leads, the entity and attribute theirs; the person lists none — its own ends of
+    the same-named attribute lead to what it leads, not to people — and the field lists none either, as its
+    steward is a plain attribute with no assignment relationship to derive from (ASD-06).
+    """  # noqa: D205 - one sentence
+    catalogue = await Catalogue.of(
+        m4i("m4i_person", "alice"),
+        m4i("m4i_person", "bob"),
+        m4i("m4i_data_domain", "d", domainLead=["alice", "bob"]),
+        m4i("m4i_data_entity", "e", dataDomain=["d"], businessOwner=["alice"], steward=["bob", "alice"]),
+        m4i("m4i_data_attribute", "a", dataEntity=["e"], businessOwner=["bob"], steward=["bob"]),
+        m4i("m4i_field", "f", attributes=["a"], steward=["alice"]),
+    )
+
+    documents = await catalogue.documents_of()
+
+    domain, entity, attribute, field, person = (
+        documents["d"],
+        documents["e"],
+        documents["a"],
+        documents["f"],
+        documents["alice"],
+    )
+    assert (catalogue.keys(domain.deriveddomainleadguid), domain.deriveddomainlead) == (
+        ["alice", "bob"],
+        ["ALICE", "BOB"],
+    )
+    assert catalogue.keys(entity.deriveddataownerguid) == ["alice"]
+    assert catalogue.keys(entity.deriveddatastewardguid) == ["bob", "alice"]
+    assert catalogue.keys(attribute.deriveddataownerguid) == ["bob"]
+    assert catalogue.keys(attribute.deriveddatastewardguid) == ["bob"]
+    assert (field.deriveddomainlead, field.deriveddataowner, field.deriveddatasteward) == ([], [], [])
+    assert (person.deriveddomainleadguid, person.deriveddataownerguid, person.deriveddatastewardguid) == ([], [], [])
+    # The steward edge is a relation like any other, so the flat person field lists it too, in the order
+    # the assignment edges hang off the entity: the owner edge first, then the stewards deduped (DD-626).
+    assert catalogue.keys(entity.derivedpersonguid) == ["alice", "bob"]
+
+
+@pytest.mark.covers(f"{X}.run_once", rules=["ASD-07"])
+async def test__a_round_derives_again_a_document_of_the_version_before_the_current_one() -> None:
+    """The version bump marks every stored document stale once: the round re-derives and fills it, and the
+    next round has nothing left (ASD-07, DD-628).
+    """  # noqa: D205 - one sentence
+    catalogue = await Catalogue.of(m4i("m4i_person", "p"), m4i("m4i_data_entity", "e", steward=["p"]))
+    await catalogue.indexer().run_once()
+    guid = catalogue.guids["e"]
+    before = (await catalogue.documents.get([guid]))[guid]
+    assert before.entity.app_search is not None
+    assert before.entity.app_search.deriveddatastewardguid == [catalogue.guids["p"]]
+
+    # The deployment's first round after a version bump: every document of the old version is on the list.
+    await catalogue.documents.write(
+        [
+            (
+                before.entity.model_copy(
+                    update={"app_search": before.entity.app_search.model_copy(update={"derivation_version": 1})}
+                ),
+                before.version,
+            )
+        ]
+    )
+
+    written = await catalogue.indexer().run_once()
+
+    assert written >= 1
+    after = (await catalogue.documents.get([guid]))[guid].entity.app_search
+    assert after is not None
+    assert after.derivation_version == 2
+    assert not after.stale
+    assert catalogue.keys(after.deriveddatastewardguid) == ["p"]
+    assert await catalogue.indexer().run_once() == 0
 
 
 @pytest.mark.covers(f"{X}.run_once", rules=["LAS-01", "ASD-04"])

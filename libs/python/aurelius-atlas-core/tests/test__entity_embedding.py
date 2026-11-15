@@ -5,7 +5,7 @@ VEC-06, VEC-10, EMC-01 to EMC-05), on the in-memory store and a fake embedder.
 from collections.abc import Sequence
 
 import pytest
-from aurelius_atlas_core.app_search_document import awaits_document
+from aurelius_atlas_core.app_search_document import DERIVATION_VERSION, awaits_document
 from aurelius_atlas_core.app_search_document import source_hash as document_hash
 from aurelius_atlas_core.entity_documents import (
     ElasticsearchEntityDocuments,
@@ -54,7 +54,12 @@ def entity(guid: str = "g", type_name: str = "m4i_data_entity", **attributes: ob
 def documented(stored: StoredEntity, **fields: object) -> StoredEntity:
     """``stored`` with an App Search document of its current own fields and ``fields``."""
     document = StoredAppSearch.model_validate(
-        {"source_hash": document_hash(stored), "referenceablequalifiedname": stored.guid} | fields
+        {
+            "source_hash": document_hash(stored),
+            "derivation_version": DERIVATION_VERSION,
+            "referenceablequalifiedname": stored.guid,
+        }
+        | fields
     )
     return stored.model_copy(update={"app_search": document})
 

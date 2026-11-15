@@ -40,6 +40,11 @@ class StoredAppSearch(AtlasModel):
 
     source_hash: str
     stale: bool = False
+    derivation_version: int = 1
+    """The derivation rules the document was made under, folded into ``source_hash`` (ASD-07, DD-628).
+
+    One stands for 14.2's documents, which carry no mark; a document of another version than the
+    indexer's is what its round has to derive again."""
     governed_by: str | None = None
     """The digest of the type's governance rules the entity was judged by; a document derived again has none
     (ASG-06, DD-535)."""
@@ -72,6 +77,16 @@ class StoredAppSearch(AtlasModel):
     derivedpersonguid: list[str] = Field(default_factory=list)
     derivedprocess: list[str | None] = Field(default_factory=list)
     derivedprocessguid: list[str] = Field(default_factory=list)
+    deriveddomainlead: list[str | None] = Field(default_factory=list)
+    deriveddomainleadguid: list[str] = Field(default_factory=list)
+    """The ends of the ``domainLead`` relationship attribute, names and GUIDs (ASD-06); the legacy mapping
+    declared the GUID field, its pipeline never filled it (DD-626)."""
+    deriveddataowner: list[str | None] = Field(default_factory=list)
+    deriveddataownerguid: list[str] = Field(default_factory=list)
+    """The ends of the ``businessOwner`` relationship attribute (ASD-06)."""
+    deriveddatasteward: list[str | None] = Field(default_factory=list)
+    deriveddatastewardguid: list[str] = Field(default_factory=list)
+    """The ends of the ``steward`` relationship attribute (ASD-06)."""
 
 
 class StoredQualityResult(AtlasModel):

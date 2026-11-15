@@ -22,6 +22,7 @@ from aurelius_atlas_typesystem.registry import TypeRegistry
 from aurelius_atlas_core.app_search_document import (
     PARENTS,
     RELATION_FIELDS,
+    ROLE_FIELDS,
     document_name,
     has_document,
     identity,
@@ -37,7 +38,7 @@ from aurelius_atlas_core.entity_documents import (
     VersionedEntity,
     VersionedRelationship,
 )
-from aurelius_atlas_core.graph_helper import collection_elements, other_end, referenced_end
+from aurelius_atlas_core.graph_helper import collection_elements, other_end, referenced_end, relationship_type_name
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredEntity
 from aurelius_atlas_core.stored_relationship import StoredRelationship
 
@@ -119,6 +120,41 @@ class _Catalogue:
         ]
         await self.load(candidates)
         return next((candidate for candidate in candidates if self.entity(candidate) is not None), None)
+
+    async def role_ends(self, guid: str) -> dict[str, list[StoredEntity]]:
+        """The active people at the ends of the entity's role attributes, by attribute name (ASD-06, DD-626).
+
+        The same membership test ``first_parent`` and the view door's ``read_ends`` use (LAS-04, VDR-02):
+        the entity's listed relationships through ``relationship_type_name`` and ``collection_elements``,
+        so an edge belongs to an attribute exactly as the Apache Atlas read says it does. A person's own
+        ends of the same-named assignment attribute lead to what the person leads, not to a person: only
+        ends of the people type the attributes name join a role field, deduped first-wins (ASD-06).
+        """
+        entity = self.entity(guid)
+        entity_type = None if entity is None else self._registry.entity_type(entity.type_name)
+        if entity is None or entity_type is None:
+            return {}
+        await self.load([guid])
+        edges = self._edges.get(guid, [])
+        found: dict[str, list[StoredEntity]] = {}
+        for name in ROLE_FIELDS:
+            if name not in entity_type.relationship_attributes:
+                continue
+            type_name = relationship_type_name(guid, edges, entity_type, name)
+            attribute = entity_type.relationship_attribute(name, type_name)
+            if attribute is None:  # pragma: no cover - the registry added the attribute for this name
+                continue
+            ends = [other_end(edge, guid) for edge in collection_elements(guid, edges, attribute)]
+            await self.load(ends)
+            seen: dict[str, StoredEntity] = {}
+            for end in ends:
+                # The attributes name m4i_person; only its active ends are people (ASD-06).
+                other = self.entity(end)
+                if other is not None and other.type_name == "m4i_person" and end not in seen:
+                    seen[end] = other
+            if seen:
+                found[name] = list(seen.values())
+        return found
 
     async def breadcrumb(self, guid: str) -> list[StoredEntity]:
         """The entities above, from the top: the first parent's breadcrumb, then that parent (LAS-04).
@@ -265,4 +301,8 @@ async def _document(catalogue: _Catalogue, entity: StoredEntity) -> StoredAppSea
             field = RELATION_FIELDS[other.type_name]
             relations.setdefault(field, []).append(document_name(other))
             relations.setdefault(f"{field}guid", []).append(other.guid)
+    for name, ends in (await catalogue.role_ends(entity.guid)).items():
+        field = ROLE_FIELDS[name]
+        relations[field] = [document_name(other) for other in ends]
+        relations[f"{field}guid"] = [other.guid for other in ends]
     return document.model_copy(update=update | relations)
