@@ -7932,6 +7932,13 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>12.7b</td>
+<td>The dataset rules become pairs</td>
+<td>The sample corpus's two dataset rules become OR pairs (<code>length('fields', 1) \| length('childDataset', 1)</code>, <code>length('collections', 1) \| length('parentDataset', 1)</code>) and the two presence rules they replace go inactive, so the product's rule for a dataset answers as data (DD-635); a verdict names every attribute it measures (<code>anyOf</code>, VEV-09) and the editor paints its line under each picker it names (EDT-24 amended, DD-636); 14.6's <code>usedattributes</code> names them too; the three 14.6 gates re-baseline under DV-171</td>
+<td>none (the corpus's own <code>m4i_data_entity--domained</code> pair is the precedent; DV-171 carves the oracle damage for the two edited rules)</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>13.1</td>
 <td>The Kafka cluster scanner</td>
 <td><code>apps/aurelius-atlas-kafka-scanner</code>: a batch CLI that lists a broker's external topics, reads each schema from the Schema Registry or infers one from the topic's messages, and writes the System/Collection/Dataset/Field tree in one bulk request as its own service identity; the broker-and-Registry e2e stack (KSC-01..10, DD-465..469; the stack joined the app's <code>e2e/</code> with DD-541)</td>
