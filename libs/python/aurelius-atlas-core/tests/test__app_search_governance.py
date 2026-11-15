@@ -422,6 +422,10 @@ def test__the_sample_s_verdicts_are_the_legacy_ones_of_the_rules_that_read() -> 
 
     DV-173: the two field-flag rules (`hasContent`, `optionalField`) are inactive, so 528 verdicts the
     frozen oracle never carried leave the read set. Every legacy verdict still answers as it was.
+
+    DV-174: the system rule is the fifth pair (a collection or a subsystem), but no system in the sample
+    corpus carries a subsystem, so no legacy verdict moves — the two systems without a collection still
+    fail, and the pair changes the rule's text only.
     """  # noqa: D205 - one sentence
     read, rules, verdicts = sample_verdicts()
     legacy = json.loads(FIXTURES.joinpath("legacy-app-search-atlas-dev-gov-quality.json").read_text())
