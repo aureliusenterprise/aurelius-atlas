@@ -89,6 +89,8 @@ services:
             DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:?}
             DEMO_USER_SCIENTIST_PASSWORD: ${DEMO_USER_SCIENTIST_PASSWORD:?}
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The provisioning command's client (15.5b, TRM-11), in dev/keycloak/.env.
+            PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
             JAVA_OPTS: -Xms256m -Xmx512m -Dkeycloak.migration.replace-placeholders=true
         healthcheck:
             test:
@@ -131,6 +133,8 @@ services:
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
             AURELIUS_ATLAS_SERVER_AUTH_REALM: demo
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The provisioning command, run in this service's image, keeps the realm's tenants (TRM-01, TRM-11).
+            AURELIUS_ATLAS_SERVER_TENANCY_ADMIN_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
             AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius"]'
             AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
             # Entities embedded in the background through the stack's embedder (11.3); the server does not wait

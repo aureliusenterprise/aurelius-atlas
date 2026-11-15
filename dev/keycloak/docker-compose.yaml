@@ -44,6 +44,9 @@ services:
             # ${ATLAS_SERVER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here, as the ingest clients' secret above does.
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The provisioning command's client (15.5b, TRM-11): its
+            # ${PROVISIONING_CLIENT_SECRET} placeholder in import/master.json.
+            PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
             # The quality scanner's service client (12.2, DD-458): its
             # ${QUALITY_SCANNER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here — the same mechanism as the secrets above.

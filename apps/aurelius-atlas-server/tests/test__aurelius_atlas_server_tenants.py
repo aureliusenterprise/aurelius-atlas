@@ -72,6 +72,7 @@ async def test__a_tenants_record_is_written_read_listed_and_deleted(fake_es: Fak
     assert await index.list() == []
     await index.prepare()
     await index.prepare()
+    assert fake_es.mapping_updates == [TENANTS_INDEX]  # an existing index takes the fields added since (DD-601)
     record = StoredTenant(alias="globex", state=TenantState.ACTIVE, trusts_operators=False, sample="s.zip")
     await index.put(record)
     await index.put(StoredTenant(alias="acme", created_at=1, updated_at=2, updated_by="op"))
@@ -84,6 +85,8 @@ async def test__a_tenants_record_is_written_read_listed_and_deleted(fake_es: Fak
         "createdAt": 1,
         "updatedAt": 2,
         "updatedBy": "op",
+        "operatorMembers": [],
+        "administrators": [],
     }
     assert await index.get("globex") == record
     assert [tenant.alias for tenant in await index.list()] == ["acme", "globex"]

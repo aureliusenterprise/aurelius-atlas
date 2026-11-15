@@ -8,7 +8,7 @@
     "actionTokenGeneratedByUserLifespan": 300,
     "adminEventsDetailsEnabled": false,
     "adminEventsEnabled": false,
-    "adminPermissionsEnabled": false,
+    "adminPermissionsEnabled": true,
     "attributes": {
         "cibaAuthRequestedUserHint": "login_hint",
         "cibaBackchannelTokenDeliveryMode": "poll",
@@ -2017,6 +2017,23 @@
             "standardFlowEnabled": false,
             "surrogateAuthRequired": false,
             "webOrigins": []
+        },
+        {
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-provisioning",
+            "defaultClientScopes": ["basic", "roles"],
+            "description": "The provisioning command's client (15.5b, TRM-11, DD-600): keeps the tenants' organizations, operators and administrators in step.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "implicitFlowEnabled": false,
+            "name": "Aurelius Atlas provisioning",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "${PROVISIONING_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
         }
     ],
     "components": {
@@ -2905,6 +2922,24 @@
             "realmRoles": ["default-roles-master"],
             "serviceAccountClientId": "aurelius-atlas-validate-entity",
             "username": "service-account-aurelius-atlas-validate-entity"
+        },
+        {
+            "clientRoles": {
+                "master-realm": [
+                    "manage-organizations",
+                    "view-organizations",
+                    "query-organizations",
+                    "manage-users",
+                    "view-users",
+                    "query-users",
+                    "query-groups",
+                    "view-clients",
+                    "manage-realm"
+                ]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-provisioning",
+            "username": "service-account-aurelius-atlas-provisioning"
         }
     ],
     "verifiableCredentialsEnabled": false,

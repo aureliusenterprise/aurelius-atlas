@@ -2,6 +2,7 @@
     "accessTokenLifespan": 900,
     "adminEventsDetailsEnabled": false,
     "adminEventsEnabled": true,
+    "adminPermissionsEnabled": true,
     "attributes": {
         "adminEventsExpiration": "2592000",
         "cibaAuthRequestedUserHint": "login_hint",
@@ -394,6 +395,23 @@
             "standardFlowEnabled": false,
             "surrogateAuthRequired": false,
             "webOrigins": []
+        },
+        {
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-provisioning",
+            "defaultClientScopes": ["basic", "roles"],
+            "description": "The provisioning command's client (15.5b, TRM-11, DD-600): keeps the tenants' organizations, operators and administrators in step.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "implicitFlowEnabled": false,
+            "name": "Aurelius Atlas provisioning",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "${PROVISIONING_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
         }
     ],
     "defaultDefaultClientScopes": [
@@ -543,6 +561,26 @@
     "sslRequired": "all",
     "ssoSessionIdleTimeout": 1800,
     "ssoSessionMaxLifespan": 36000,
+    "users": [
+        {
+            "clientRoles": {
+                "realm-management": [
+                    "manage-organizations",
+                    "view-organizations",
+                    "query-organizations",
+                    "manage-users",
+                    "view-users",
+                    "query-users",
+                    "query-groups",
+                    "view-clients",
+                    "manage-realm"
+                ]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-provisioning",
+            "username": "service-account-aurelius-atlas-provisioning"
+        }
+    ],
     "verifyEmail": false,
     "waitIncrementSeconds": 300
 }

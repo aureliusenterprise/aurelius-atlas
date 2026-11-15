@@ -10,6 +10,7 @@ from typing import Any
 
 import pytest
 import yaml
+from aurelius_atlas_server.settings import ServerSettings
 from conftest import SERVER_CHART, WORKSPACE, container, env_map, env_value, find, helm_render, helm_render_fails
 
 SERVER_TEST_VALUES = (SERVER_CHART / "tests/values.test.yaml",)
@@ -106,3 +107,55 @@ def test__the_standalone_stack_offers_tenancy_off_by_default() -> None:
     compose = yaml.safe_load((WORKSPACE / "apps/aurelius-atlas-server/standalone/docker-compose.yaml").read_text())
     environment = compose["services"]["aurelius-atlas-server"]["environment"]
     assert environment["AURELIUS_ATLAS_SERVER_TENANCY_ENABLED"] == "${ATLAS_TENANCY_ENABLED:-false}"
+
+
+def required_settings() -> set[str]:
+    """The env names of every server setting without a default: the command can't start without them."""
+    prefix = ServerSettings.model_config.get("env_prefix", "")
+    return {f"{prefix}{name}".upper() for name, field in ServerSettings.model_fields.items() if field.is_required()}
+
+
+@pytest.mark.covers(rules=["TRM-11", "WPT-08"])
+def test__every_provisioning_container_has_the_settings_the_command_needs() -> None:
+    """Each init container of the Job, its main container and the CronJob's carry every required setting, the
+    issuer and realm, and the provisioning client's secret from its Secret.
+    """  # noqa: D205 - one sentence
+    docs = render(*TENANTS)
+    job = find(docs, "Job", JOB)["spec"]["template"]["spec"]
+    cron = find(docs, "CronJob", "atlas-server-operators")["spec"]["jobTemplate"]["spec"]["template"]["spec"]
+    containers = [*job["initContainers"], *job["containers"], *cron["containers"]]
+    assert len(containers) == 4
+    for one in containers:
+        envs = env_map(one)
+        assert required_settings() <= set(envs), (one["name"], required_settings() - set(envs))
+        assert {"AURELIUS_ATLAS_SERVER_AUTH_REALM", "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL"} <= set(envs)
+        ref = envs["AURELIUS_ATLAS_SERVER_TENANCY_ADMIN_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+        assert ref == {"name": "atlas-provisioning-client", "key": "client-secret"}
+
+
+@pytest.mark.covers(rules=["TRM-05", "WPT-09"])
+def test__the_operators_cronjob_runs_on_its_schedule_with_tenancy_on_only() -> None:
+    """``operators`` every 15 minutes by default, never two at once, off the Service; no CronJob without tenancy."""
+    cron = find(
+        render("tenancy.enabled=true", "tenancy.operatorSync.schedule=0 * * * *"), "CronJob", "atlas-server-operators"
+    )
+    assert (cron["spec"]["schedule"], cron["spec"]["concurrencyPolicy"]) == ("0 * * * *", "Forbid")
+    pod = cron["spec"]["jobTemplate"]["spec"]["template"]
+    assert pod["metadata"]["labels"]["app.kubernetes.io/component"] == "tenant-provisioning"
+    assert pod["spec"]["containers"][0]["command"] == [
+        "python",
+        "-m",
+        "aurelius_atlas_server.provisioning",
+        "operators",
+    ]
+    assert (
+        find(render("tenancy.enabled=true"), "CronJob", "atlas-server-operators")["spec"]["schedule"] == "*/15 * * * *"
+    )
+    assert not [doc for doc in render() if doc["kind"] == "CronJob"]
+
+
+@pytest.mark.covers(rules=["TRM-11"])
+def test__the_umbrella_generates_the_provisioning_clients_secret(umbrella_docs: list[dict[str, Any]]) -> None:
+    """``<release>-provisioning-client`` with its ``client-secret``, as the server client's Secret is made."""
+    secret = find(umbrella_docs, "Secret", "atlas-provisioning-client")
+    assert set(secret["data"]) == {"client-secret"}

@@ -180,11 +180,15 @@ release without it sets nothing and the server answers as before (WPT-11).
 
 {{/*
 The provisioning command's settings (WPT-08): the store join and password,
+the issuer and the server client, the provisioning client's secret (TRM-11),
 the server's config, its secret references and extra env, and the tenancy
-settings, so the command opens a tenant as the server opens one.
+settings, so the command opens a tenant as the server opens one. Every
+setting the server can't start without is here, or the command fails.
 */}}
 {{- define "atlas-server.provisioningEnv" -}}
 {{- $root := .root -}}
+{{- $authSecret := default (printf "%s-server-client" $root.Release.Name) $root.Values.credentialSecrets.serverClient -}}
+{{- $provisioningSecret := default (printf "%s-provisioning-client" $root.Release.Name) $root.Values.credentialSecrets.provisioningClient -}}
 - name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS
   value: {{ printf "[\"https://%s:%d\"]" .store (int $root.Values.store.port) | quote }}
 - name: AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD
@@ -192,6 +196,20 @@ settings, so the command opens a tenant as the server opens one.
       secretKeyRef:
           name: {{ .esSecret }}
           key: elastic-password
+- name: AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL
+  value: {{ include "atlas-server.issuerUrl" $root | quote }}
+- name: AURELIUS_ATLAS_SERVER_AUTH_REALM
+  value: {{ include "atlas-server.realm" $root | quote }}
+- name: AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET
+  valueFrom:
+      secretKeyRef:
+          name: {{ $authSecret }}
+          key: client-secret
+- name: AURELIUS_ATLAS_SERVER_TENANCY_ADMIN_CLIENT_SECRET
+  valueFrom:
+      secretKeyRef:
+          name: {{ $provisioningSecret }}
+          key: client-secret
 {{- range $key, $value := $root.Values.config }}
 - name: {{ $key }}
   value: {{ $value | quote }}

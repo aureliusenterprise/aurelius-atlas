@@ -104,6 +104,10 @@ realm:
     # placeholder (CHT-109/110, 10.12). Both shipped assets carry the client
     # (master's since 6.1a/DD-250), so the env renders on every realm.
     serverClientSecretName: ""
+    # The provisioning command's client secret: <release>-provisioning-client
+    # (key client-secret) feeds the ${PROVISIONING_CLIENT_SECRET} import
+    # placeholder (TRM-11, DD-600). Both shipped assets carry the client.
+    provisioningClientSecretName: ""
 
 # Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so
 # its own OTLP cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on

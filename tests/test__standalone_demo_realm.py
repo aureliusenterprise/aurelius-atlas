@@ -55,7 +55,7 @@ def test__demo_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any]
 @pytest.mark.covers(rules=["DMO-02"])
 def test__demo_users_hold_all_write_and_read_rights(realm: dict[str, Any]) -> None:
     """`atlas` holds every role, `steward` read and write, `scientist` read; passwords are placeholders (DMO-02)."""
-    users = {user["username"]: user for user in realm["users"]}
+    users = {user["username"]: user for user in realm["users"] if "serviceAccountClientId" not in user}
     roles = {name: set(user["clientRoles"][SERVER_CLIENT]) for name, user in users.items()}
     assert roles == {
         "atlas": set(ROLE_PRIVILEGES),
@@ -73,8 +73,9 @@ def test__stack_signs_in_to_demo_alone(services: dict[str, Any], realm: dict[str
     keycloak = services["keycloak"]
     assert "./keycloak:/opt/keycloak/data/import:ro" in keycloak["volumes"]
     assert sorted(path.name for path in (STANDALONE / "keycloak").iterdir()) == ["demo.json"]
-    placeholders = {credential["value"][2:-1] for user in realm["users"] for credential in user["credentials"]} | {
-        _client(realm, SERVER_CLIENT)["secret"][2:-1]
+    people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
+    placeholders = {credential["value"][2:-1] for user in people for credential in user["credentials"]} | {
+        _client(realm, client_id)["secret"][2:-1] for client_id in (SERVER_CLIENT, "aurelius-atlas-provisioning")
     }
     assert placeholders <= set(keycloak["environment"])
     assert services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_REALM"] == "demo"

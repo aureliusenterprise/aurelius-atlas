@@ -155,6 +155,13 @@ nx up aurelius-atlas-dev-keycloak      # decrypt + build + observability, waits 
   roles (RLM-04, DD-581). A user with server client roles gets the matching
   `operators` groups too; a test fails until they agree. Tenants'
   organizations come from provisioning (15.5b), never from these files.
+- The provisioning command's client `aurelius-atlas-provisioning` (15.5b,
+  TRM-11, DD-600) is in every realm, the same in dev and the chart: a
+  confidential service account whose account holds nine roles of the realm's
+  management client (`master-realm` in master, `realm-management` elsewhere),
+  with fine-grained admin permissions on. Its secret is
+  `PROVISIONING_CLIENT_SECRET` in `.env.enc`; the chart's is
+  `<release>-provisioning-client`.
 
 ## Helm chart
 

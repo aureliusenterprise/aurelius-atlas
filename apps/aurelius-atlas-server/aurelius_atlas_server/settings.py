@@ -326,6 +326,12 @@ class ServerSettings(StoreAccessSettings):
     """How long the server serves its last read of the tenants index before it reads it again, and how long
     ``provisioning remove`` waits before it deletes a tenant's indices (TPR-05, TPR-07, DD-575)."""
 
+    tenancy_admin_client_id: str = "aurelius-atlas-provisioning"
+    """The client the provisioning command reaches the realm's admin API as (TRM-01, DD-600)."""
+
+    tenancy_admin_client_secret: SecretStr | None = None
+    """Its secret; unset, the command leaves the realm as it is (TRM-01, DD-603)."""
+
     def tenancy(self) -> Tenancy | None:
         """How tenancy reads a token while ``tenancy_enabled``, else None: no request has a tenant (TEN-01). The
         provisioned tenants come from the tenants index (TPR-07), so none are listed here.
