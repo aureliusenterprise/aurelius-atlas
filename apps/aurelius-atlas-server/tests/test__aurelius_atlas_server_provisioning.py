@@ -10,7 +10,7 @@ from typing import Any
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings
-from aurelius_atlas_server.provisioning import ProvisioningError, main, parser, run
+from aurelius_atlas_server.provisioning import NO_REALM, ProvisioningError, main, parser, run
 from aurelius_atlas_server.tenant_stores import store_aliases, tenant_prefix
 from aurelius_atlas_server.tenants import TENANTS_INDEX, TenantState
 from aurelius_atlas_store_es import ElasticsearchStore
@@ -37,7 +37,7 @@ class Command:
         self.waits: list[float] = []
 
     async def __call__(self, *argv: str) -> list[str]:
-        """Run the command; the lines it wrote."""
+        """Run the command; the lines it wrote, but that the realm is left alone (``lines`` keeps it)."""
         self.lines = []
 
         async def sleep(seconds: float) -> None:
@@ -51,7 +51,7 @@ class Command:
             sleep=sleep,
             user="op",
         )
-        return self.lines
+        return [line for line in self.lines if line != NO_REALM]
 
 
 @pytest.fixture
@@ -216,3 +216,16 @@ async def test__with_existing_ok_an_active_tenant_is_left_as_it_is(
     await record_tenants("initech", state=TenantState.REMOVING)
     with pytest.raises(ProvisioningError, match="tenant initech is removing"):
         await command("provision", "initech", "--existing-ok")
+
+
+@pytest.mark.covers(f"{P}.run", f"{P}.realm_of", f"{P}.Provisioner.admin", rules=["TRM-01"])
+async def test__without_the_clients_secret_the_realm_is_left_alone(command: Command) -> None:
+    """The store's side runs; the command says once that the realm is left as it is; administrators need it."""
+    assert await command("provision", "acme") == ["Provisioned acme: indices aurelius-atlas-tenant-acme-*, no sample"]
+    assert command.lines.count(NO_REALM) == 1
+    await command("operators")
+    assert command.lines == [NO_REALM]
+    with pytest.raises(ProvisioningError, match="administrators are kept in the realm"):
+        await command("admin", "acme", "add", "ann")
+    with pytest.raises(ProvisioningError, match="administrators are kept in the realm"):
+        await command("provision", "globex", "--admin", "ann")

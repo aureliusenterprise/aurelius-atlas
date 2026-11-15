@@ -177,8 +177,13 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
             "OTEL_INGEST_CLIENT_SECRET",
             "ATLAS_SERVER_CLIENT_SECRET",
             "VALIDATE_ENTITY_CLIENT_SECRET",
+            "PROVISIONING_CLIENT_SECRET",
         )
     ]
+    # TRM-11 (15.5b): both assets carry the provisioning client, so its env rides every realm.
+    for envs in (master_envs, env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))):
+        ref = envs["PROVISIONING_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+        assert ref == {"name": "atlas-provisioning-client", "key": "client-secret"}
     # master's asset has no grafana client: no env, no credential (CHT-80's rule).
     assert "GRAFANA_CLIENT_SECRET" not in master_envs
 
@@ -762,8 +767,8 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         "otel-validate-entity",
     }
     assert (
-        client_ids == {"aurelius", "aurelius-atlas-server", "grafana"} | otel
-    )  # grafana: CHT-81; server client: CHT-110, both realms
+        client_ids == {"aurelius", "aurelius-atlas-server", "grafana", "aurelius-atlas-provisioning"} | otel
+    )  # grafana: CHT-81; server client: CHT-110, both realms; the provisioning client: TRM-11
     assert (
         not {
             "account",
@@ -776,7 +781,8 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         }
         & client_ids
     )
-    assert not asset.get("users")
+    # No person: the provisioning client's service account alone, for its realm-management roles (TRM-11).
+    assert [user["username"] for user in asset.get("users", [])] == ["service-account-aurelius-atlas-provisioning"]
     assert "defaultRole" not in asset
     assert not asset.get("realmRoles")
     assert [s["name"] for s in asset["clientScopes"]] == ["otel-ingest"]
@@ -979,11 +985,12 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     dev_by_id = {c["clientId"]: c for c in dev["clients"]}
     prod_by_id = {c["clientId"]: c for c in prod["clients"]}
 
-    assert set(prod_by_id) - {"aurelius", "aurelius-atlas-server", "grafana"} == {
-        c for c in dev_by_id if c.startswith("otel-")
-    }
+    own = {"aurelius", "aurelius-atlas-server", "grafana", "aurelius-atlas-provisioning"}
+    assert set(prod_by_id) - own == {c for c in dev_by_id if c.startswith("otel-")}
+    # TRM-11: the provisioning client is the same in both realms.
+    assert prod_by_id["aurelius-atlas-provisioning"] == dev_by_id["aurelius-atlas-provisioning"]
     assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
-    for name in set(prod_by_id) - {"aurelius", "aurelius-atlas-server", "grafana"}:
+    for name in set(prod_by_id) - own:
         prod_client, dev_client = prod_by_id[name], dev_by_id[name]
         # CHT-87: the secret is the one allowed delta, spelled per client.
         env = name.upper().replace("-", "_")

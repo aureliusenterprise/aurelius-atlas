@@ -1,4 +1,5 @@
 {
+    "adminPermissionsEnabled": true,
     "clientScopeMappings": {
         "aurelius-atlas-server": [
             {
@@ -72,6 +73,23 @@
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "webOrigins": ["https://localhost:9000"]
+        },
+        {
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-provisioning",
+            "defaultClientScopes": ["basic", "roles"],
+            "description": "The provisioning command's client (15.5b, TRM-11, DD-600): keeps the tenants' organizations, operators and administrators in step.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "implicitFlowEnabled": false,
+            "name": "Aurelius Atlas provisioning",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "${PROVISIONING_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
         }
     ],
     "displayName": "Aurelius Atlas demo",
@@ -237,6 +255,24 @@
             "firstName": "Data",
             "lastName": "Scientist",
             "username": "scientist"
+        },
+        {
+            "clientRoles": {
+                "realm-management": [
+                    "manage-organizations",
+                    "view-organizations",
+                    "query-organizations",
+                    "manage-users",
+                    "view-users",
+                    "query-users",
+                    "query-groups",
+                    "view-clients",
+                    "manage-realm"
+                ]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-provisioning",
+            "username": "service-account-aurelius-atlas-provisioning"
         }
     ]
 }

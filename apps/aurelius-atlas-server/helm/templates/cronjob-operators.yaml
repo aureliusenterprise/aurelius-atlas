@@ -1,0 +1,63 @@
+{{/*
+The operators CronJob (TRM-05, DD-601): with tenancy on, the server's image
+runs `operators` on tenancy.operatorSync.schedule, so an operator who joins or
+leaves the operator organization is in step with every trusting tenant. Its
+pod is the provisioning Job's: the server's settings and the provisioning
+client's secret, the server's name and instance for the store's network
+policy, and a component of its own, which the Service doesn't select (WPT-09).
+*/}}
+{{- if .Values.tenancy.enabled }}
+{{- $fullname := include "atlas-server.fullname" . -}}
+{{- $esSecret := default (printf "%s-elasticsearch" .Release.Name) .Values.credentialSecrets.elasticsearch -}}
+{{- $store := include "atlas-server.storeService" . -}}
+{{- $env := include "atlas-server.provisioningEnv" (dict "root" . "store" $store "esSecret" $esSecret) -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+    name: {{ printf "%s-operators" $fullname }}
+    namespace: {{ default .Release.Namespace .Values.global.namespace }}
+    labels:
+        {{- include "atlas-server.labels" . | nindent 8 }}
+spec:
+    schedule: {{ .Values.tenancy.operatorSync.schedule | quote }}
+    concurrencyPolicy: Forbid
+    successfulJobsHistoryLimit: 1
+    failedJobsHistoryLimit: 3
+    jobTemplate:
+        spec:
+            backoffLimit: 1
+            template:
+                metadata:
+                    labels:
+                        {{- include "atlas-server.selectorLabels" . | nindent 24 }}
+                        app.kubernetes.io/component: tenant-provisioning
+                        app.kubernetes.io/part-of: aurelius-atlas
+                spec:
+                    restartPolicy: Never
+                    serviceAccountName: {{ default $fullname .Values.serviceAccount.name }}
+                    {{- with .Values.global.image.pullSecrets }}
+                    imagePullSecrets:
+                        {{- toYaml . | nindent 22 }}
+                    {{- end }}
+                    securityContext:
+                        {{- toYaml .Values.podSecurityContext | nindent 24 }}
+                    containers:
+                        -   name: operators
+                            image: {{ include "atlas-server.image" . | quote }}
+                            imagePullPolicy: IfNotPresent
+                            securityContext:
+                                {{- toYaml .Values.securityContext | nindent 32 }}
+                            command: [python, -m, aurelius_atlas_server.provisioning, operators]
+                            env:
+                                {{- $env | nindent 32 }}
+                            volumeMounts:
+                                - name: tls
+                                  mountPath: /etc/aurelius-atlas/tls
+                                  readOnly: true
+                            resources:
+                                {{- toYaml .Values.resources | nindent 32 }}
+                    volumes:
+                        -   name: tls
+                            secret:
+                                secretName: {{ include "atlas-server.tlsSecretName" . }}
+{{- end }}
