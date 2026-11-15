@@ -7783,6 +7783,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>A rich card without a false label: the opened entity's People box keeps the true labelled rows from the view's sections (VDR-03); the roles return when a source exists, and the alias with a card-shape field</td>
 <td>16.5d</td>
 </tr>
+<tr>
+<td>DV-168</td>
+<td>Webapp</td>
+<td>The demo's section filter popover lists a governance rule's dimension and rule type as facet groups (<code>dataqualityruledimension</code>, <code>dataqualitytype</code>) on the rules boxes</td>
+<td>The Aurelius popover shows no rule groups: no card field carries a rule's dimension or type, so the sections that asked for them (the field page's Data Quality Rules box) render the "No filters available." line (VCF-10)</td>
+<td>The card shape is the only facet source and it lacks the field; a facet that cannot count is a dead checkbox (DD-619)</td>
+<td>16.5e</td>
+</tr>
+<tr>
+<td>DV-169</td>
+<td>Webapp</td>
+<td>The demo's funnel carries a "Show all descendants" switch beside the facet menus and marks itself active for any re-picked default sort</td>
+<td>The switch stays out — VDR-03 seeds direct ends and the door has no derived-chain GUID filter; the funnel keeps the demo's mark (the glyph tinted primary for any state off the default — keyword, selection, sort, direction — DD-623) and the popover opens on hover like the legacy CSS and also on click, so the keyboard reaches it (VCF-08)</td>
+<td>Descendants need an engine-side chain filter the door never had (DD-620, DD-623)</td>
+<td>16.5e</td>
+</tr>
 </tbody>
 </table>
 
