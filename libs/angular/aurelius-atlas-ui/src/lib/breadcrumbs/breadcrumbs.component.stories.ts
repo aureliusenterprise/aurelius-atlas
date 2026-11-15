@@ -52,10 +52,14 @@ export const Primary: Story = {
     play: async ({ canvas }) => {
         clicked.length = 0;
         const nav = canvas.getByRole("navigation", { name: "breadcrumbs" });
+        // Only the clickable crumb is a link: the active crumb is plain
+        // text (UIC-11 amended, DD-624).
         const crumbs = within(nav).getAllByRole("link");
-        await expect(crumbs).toHaveLength(2);
-        await expect(crumbs[1].closest("li")).toHaveClass("is-active");
-        await expect(crumbs[1]).toHaveTextContent("Orders Dataset");
+        await expect(crumbs).toHaveLength(1);
+        await expect(crumbs[0]).toHaveTextContent("Sales Domain");
+        const active = within(nav).getByText("Orders Dataset");
+        await expect(active.closest("li")).toHaveClass("is-active");
+        await expect(active.closest("a")).toBeNull();
 
         // The anchors carry an href, so Enter activates them natively —
         // the keyboard path UIC-11 promises.

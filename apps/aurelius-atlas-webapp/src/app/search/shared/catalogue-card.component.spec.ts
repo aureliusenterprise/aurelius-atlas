@@ -16,12 +16,15 @@ import { CatalogueCard } from "./catalogue-card.component";
 
 /** A minimal host: the part under test with one card input. */
 @Component({
-    template: `<aurelius-atlas-webapp-catalogue-card [card]="card" (cardClicked)="last = $event" />`,
+    template: `
+        <aurelius-atlas-webapp-catalogue-card [card]="card" [pageGuid]="pageGuid" (cardClicked)="last = $event" />
+    `,
     imports: [CatalogueCard],
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 class Host {
     card: EntityCard = CARD;
+    pageGuid: string | undefined = undefined;
     last: string | null = null;
 }
 
@@ -59,9 +62,13 @@ const CARD: EntityCard = {
     ],
 };
 
-function mount(card: EntityCard): { fixture: ReturnType<typeof TestBed.createComponent<Host>>; host: Host } {
+function mount(
+    card: EntityCard,
+    pageGuid?: string,
+): { fixture: ReturnType<typeof TestBed.createComponent<Host>>; host: Host } {
     const fixture = TestBed.createComponent(Host);
     fixture.componentInstance.card = card;
+    fixture.componentInstance.pageGuid = pageGuid;
     fixture.detectChanges();
     return { fixture, host: fixture.componentInstance };
 }
@@ -86,9 +93,25 @@ describe("The shared rich card (VCF-01, VCF-06)", () => {
             "Cost Centre",
             "cost_centre_code",
         ]);
+        // With no viewed entity (a results row), the card's own crumb is
+        // the active one (VCF-02).
         expect(crumbs[2].classList.contains("is-active")).toBe(true);
         crumbs[0].querySelector("a")?.click();
         expect(host.last).toBe("d1");
+    });
+
+    it("the viewed entity's crumb is the plain-text one, the card's own stays a link (DD-625)", () => {
+        // The details sections pass the page's guid: the entity you are
+        // already at is the non-clickable crumb, the legacy card's
+        // parentId$ as activeGuid (DD-625).
+        const { fixture, host } = mount(CARD, "n1");
+        const crumbs = [...fixture.nativeElement.querySelectorAll(".aurelius-card-trail li")];
+        expect(crumbs[1].classList.contains("is-active")).toBe(true);
+        expect(crumbs[1].querySelector("a")).toBeNull();
+        expect(crumbs[2].classList.contains("is-active")).toBe(false);
+        // The card's own crumb is a link: clicking it routes to the card.
+        crumbs[2].querySelector("a")?.click();
+        expect(host.last).toBe("e1");
     });
 
     it("a crumb without a name rides its type, then its guid (VDR-06, ASU-02)", () => {

@@ -479,3 +479,316 @@ describe("The person stats bar's per-end counts (DET-40, DD-519)", () => {
         httpMock.verify();
     });
 });
+
+describe("The section facet filters (VCF-09..VCF-14, DD-619/DD-620)", () => {
+    /** The attribute body whose Fields section seeds the given ends (its
+     * section asks the System / Collection / Dataset groups, DD-619). */
+    function openedAttribute(seed: Record<string, unknown>[]): EntityView {
+        return {
+            guid: "at-1",
+            typeName: "m4i_data_attribute",
+            displayText: "attribute",
+            status: "ACTIVE",
+            stale: false,
+            attributes: { name: "attribute" },
+            sections: [ends("fields", seed)],
+        };
+    }
+
+    /** A door card carrying stored derived relations per attribute (AVS-02). */
+    function cardWithRelations(guid: string, displayText: string, relations: Record<string, string[]>): EntityCard {
+        return {
+            guid,
+            typeName: "m4i_field",
+            displayText,
+            status: "ACTIVE",
+            stale: false,
+            relations: Object.entries(relations).map(([attribute, names]) => ({
+                attribute,
+                entities: names.map((name) => ({ guid: `${attribute}-${name}`, name })),
+            })),
+        };
+    }
+
+    /** Bring the attribute page up with its fields resolved to the given cards. */
+    function arriveFields(seed: Record<string, unknown>[], answer: (guids: string[]) => EntityCard[]) {
+        const { store, httpMock } = setup();
+        store.seed(openedAttribute(seed), LAYOUTS.m4i_data_attribute);
+        flushAll(httpMock, answer);
+        return { store, httpMock };
+    }
+
+    /** The Fields section view. */
+    function fields(store: RelatedSectionsState) {
+        return store.views().find((view) => view.anchor === "related-fields")!;
+    }
+
+    /** One popover group of a view, by key. */
+    function group(view: ReturnType<typeof fields>, key: string) {
+        return view.facets.find((facet) => facet.key === key)!;
+    }
+
+    it("rows count the resolved cards' relations, by count then label (VCF-09)", () => {
+        const { store, httpMock } = arriveFields([related("f1", "one"), related("f2", "two")], (guids) =>
+            guids.map((guid) =>
+                guid === "f1"
+                    ? cardWithRelations("f1", "one", { m4i_system: ["elastic"], m4i_dataset: ["raw_logs"] })
+                    : cardWithRelations("f2", "two", { m4i_system: ["elastic", "airflow"] }),
+            ),
+        );
+
+        const view = fields(store);
+        // The configured groups with rows, in the layout's order (VCF-10);
+        // the Collection group has no rows and leaves, as the legacy
+        // FilterService dropped empty facets (SDX-03).
+        expect(view.facets.map((facet) => facet.key)).toEqual(["m4i_system", "m4i_dataset"]);
+        const systems = group(view, "m4i_system");
+        expect(systems.title).toBe("System");
+        // Count descends, then the label; a card counts a value once.
+        expect(systems.items.map((row) => [row.label, row.count])).toEqual([
+            ["elastic", 2],
+            ["airflow", 1],
+        ]);
+        // The dataset group counts its own relation names.
+        expect(group(view, "m4i_dataset").items.map((row) => [row.label, row.count])).toEqual([["raw_logs", 1]]);
+        // Nothing selected, nothing filtered (VCF-08/VCF-13).
+        expect(view.filterActive).toBe(false);
+        expect(view.filtered).toBe(false);
+        expect(view.countShown).toBe(2);
+        httpMock.verify();
+    });
+
+    it("the Type Name group labels the dictionary name (VCF-09, DD-622)", () => {
+        const { store, httpMock } = setup();
+        store.seed(
+            {
+                guid: "pe-1",
+                typeName: "m4i_person",
+                displayText: "Ada",
+                status: "ACTIVE",
+                stale: false,
+                attributes: { name: "Ada" },
+                sections: [
+                    ends("domainLead", [related("e1", "variants"), related("e2", "samples"), related("a1", "gene")]),
+                ],
+            },
+            LAYOUTS.m4i_person,
+        );
+        flushAll(httpMock, (guids) =>
+            guids.map((guid) => ({
+                guid,
+                typeName: guid === "a1" ? "m4i_data_attribute" : "m4i_data_entity",
+                displayText: `card-${guid}`,
+                status: "ACTIVE",
+                stale: false,
+            })),
+        );
+
+        const roles = store.views().find((view) => view.anchor === "governance-roles")!;
+        // The person box asks Type Name / Data Domain / Data Entity / Name
+        // (DD-619); these cards carry no chain relations, so the two chain
+        // groups have no rows and leave the popover (SDX-03).
+        expect(roles.facets.map((facet) => facet.title)).toEqual(["Type Name", "Name"]);
+        const typeNames = roles.facets.find((facet) => facet.key === "typeName")!;
+        expect(typeNames.items.map((row) => [row.label, row.count])).toEqual([
+            ["Data Entity", 2],
+            ["Data Attribute", 1],
+        ]);
+        // The Name group counts display texts (raw, no dictionary walk).
+        expect(roles.facets.find((facet) => facet.key === "name")!.items.map((row) => row.label)).toEqual([
+            "card-a1",
+            "card-e1",
+            "card-e2",
+        ]);
+        httpMock.verify();
+    });
+
+    it("values OR within a group, groups AND, the keyword ANDs with all (VCF-11)", () => {
+        const { store, httpMock } = arriveFields(
+            [related("f1", "one"), related("f2", "two"), related("f3", "three")],
+            (guids) =>
+                guids.map((guid) =>
+                    guid === "f1"
+                        ? cardWithRelations("f1", "one", { m4i_system: ["elastic"], m4i_dataset: ["raw_logs"] })
+                        : guid === "f2"
+                          ? cardWithRelations("f2", "two", { m4i_system: ["airflow"], m4i_dataset: ["raw_logs"] })
+                          : cardWithRelations("f3", "three", { m4i_system: ["airflow"], m4i_dataset: ["hourly"] }),
+                ),
+        );
+
+        // OR within the System group: either producer keeps its card.
+        store.toggleFacet("related-fields", "m4i_system", "elastic", true);
+        store.toggleFacet("related-fields", "m4i_system", "airflow", true);
+        expect(fields(store).cards.map((card) => card.guid)).toEqual(["f1", "f2", "f3"]);
+
+        // AND across groups: adding a Dataset value keeps only the cards carrying both.
+        store.toggleFacet("related-fields", "m4i_dataset", "raw_logs", true);
+        expect(fields(store).cards.map((card) => card.guid)).toEqual(["f1", "f2"]);
+
+        // The keyword ANDs with the selections.
+        store.setQuery("related-fields", "two");
+        expect(fields(store).cards.map((card) => card.guid)).toEqual(["f2"]);
+        expect(fields(store).countShown).toBe(1);
+
+        // The last untick deletes the group's key: f1 returns, then all.
+        store.setQuery("related-fields", null);
+        store.toggleFacet("related-fields", "m4i_dataset", "raw_logs", false);
+        expect(fields(store).cards.map((card) => card.guid)).toEqual(["f1", "f2", "f3"]);
+        httpMock.verify();
+    });
+
+    it("a row at zero leaves the popover, the reset returns it (VCF-12, VCF-13)", () => {
+        const { store, httpMock } = arriveFields([related("f1", "one"), related("f2", "two")], (guids) =>
+            guids.map((guid) =>
+                guid === "f1"
+                    ? cardWithRelations("f1", "one", { m4i_system: ["elastic"], m4i_dataset: ["raw_logs"] })
+                    : cardWithRelations("f2", "two", { m4i_system: ["airflow"] }),
+            ),
+        );
+
+        store.toggleFacet("related-fields", "m4i_system", "airflow", true);
+        const view = fields(store);
+        // The count line moves to the filtered number (VCF-13).
+        expect(view.filtered).toBe(true);
+        expect(view.countShown).toBe(1);
+        expect(view.filterActive).toBe(true);
+        // The dataset rows counted the whole set; f1 left, so the group's
+        // last row is gone and the group leaves with it (VCF-12, SDX-03).
+        expect(view.facets.find((facet) => facet.key === "m4i_dataset")).toBeUndefined();
+        // The System group keeps only the surviving row, still ticked.
+        expect(group(view, "m4i_system").items.map((row) => [row.label, row.count, row.checked])).toEqual([
+            ["airflow", 1, true],
+        ]);
+
+        store.reset("related-fields");
+        const reset = fields(store);
+        expect(reset.countShown).toBe(2);
+        expect(reset.filtered).toBe(false);
+        expect(group(reset, "m4i_dataset").items.map((row) => row.label)).toEqual(["raw_logs"]);
+        httpMock.verify();
+    });
+
+    it("a checked row drops with its zero count and the reset recovers it (VCF-12)", () => {
+        const { store, httpMock } = arriveFields([related("f1", "one"), related("f2", "two")], (guids) =>
+            guids.map((guid) =>
+                guid === "f1"
+                    ? cardWithRelations("f1", "one", { m4i_system: ["elastic"], m4i_dataset: ["raw_logs"] })
+                    : cardWithRelations("f2", "two", { m4i_system: ["elastic"], m4i_dataset: ["hourly"] }),
+            ),
+        );
+
+        // Tick both a System and a Dataset value no single card carries:
+        // the AND empties the set, and the still-checked rows vanish with
+        // their zero counts — the demo's measured behaviour.
+        store.toggleFacet("related-fields", "m4i_dataset", "raw_logs", true);
+        store.toggleFacet("related-fields", "m4i_dataset", "hourly", true);
+        store.toggleFacet("related-fields", "m4i_system", "airflow", true);
+        const view = fields(store);
+        expect(view.cards).toEqual([]);
+        expect(view.countShown).toBe(0);
+        // Every row fell to zero, so every group left: the popover carries
+        // the empty set (the part renders the not-available line, VCF-10).
+        expect(view.facets).toEqual([]);
+
+        store.reset("related-fields");
+        expect(fields(store).cards.map((card) => card.guid)).toEqual(["f1", "f2"]);
+        httpMock.verify();
+    });
+
+    it("an unresolved card hides while a selection is active (VCF-14, DD-621)", () => {
+        const { store, httpMock } = setup();
+        // 26 seeds: two chunks, so one can answer while one stays pending.
+        const seed = Array.from({ length: 26 }, (_, index) => related(`f${index}`, `field-${index}`));
+        store.seed(openedAttribute(seed), LAYOUTS.m4i_data_attribute);
+
+        // No selection: the loading rows show (DET-18) — one page of them.
+        expect(fields(store).cards.every((card) => card.kind === "loading")).toBe(true);
+
+        // Answer the first chunk only, then tick its value: the pending
+        // card hides — its values cannot be tested (DD-621). `match`
+        // consumes both chunk requests, so both arrive here.
+        const [first, second] = searchRequests(httpMock);
+        first!.flush({
+            cards: seed.slice(0, 25).map((entry) =>
+                cardWithRelations(entry["guid"] as string, entry["displayText"] as string, {
+                    m4i_system: ["elastic"],
+                }),
+            ),
+            facets: {},
+            total: 25,
+        });
+        store.toggleFacet("related-fields", "m4i_system", "elastic", true);
+        const view = fields(store);
+        expect(view.cards.every((card) => card.kind === "card")).toBe(true); // the pending card is out of the page
+        expect(view.count).toBe(26); // the seed count keeps the unknown entry
+        expect(view.countShown).toBe(25); // the filtered set is the resolved five-and-ten
+
+        // When the last card answers and matches, it joins (DD-619's rows
+        // settle as the cards arrive).
+        second!.flush({
+            cards: [cardWithRelations("f25", "field-25", { m4i_system: ["elastic"] })],
+            facets: {},
+            total: 1,
+        });
+        expect(fields(store).countShown).toBe(26);
+        httpMock.verify();
+    });
+
+    it("the reset clears keyword, selections, and sort together (VCF-13)", () => {
+        const { store, httpMock } = arriveFields([related("f1", "one"), related("f2", "two")], (guids) =>
+            guids.map((guid) => cardWithRelations(guid, `name-${guid}`, { m4i_system: ["elastic"] })),
+        );
+
+        store.setQuery("related-fields", "one");
+        store.toggleFacet("related-fields", "m4i_system", "elastic", true);
+        store.setSort("related-fields", "name");
+        store.toggleDirection("related-fields");
+        expect(fields(store).filtered).toBe(true);
+
+        store.reset("related-fields");
+        const view = fields(store);
+        expect(view.query).toBeNull();
+        expect(view.sort).toBe("relevance");
+        expect(view.descending).toBe(false);
+        expect(view.cards.map((card) => card.guid)).toEqual(["f1", "f2"]);
+        // The tick is gone from the rows too.
+        expect(group(view, "m4i_system").items.every((row) => !row.checked)).toBe(true);
+        httpMock.verify();
+    });
+
+    it("a sort or direction away from its default marks the funnel (VCF-08, DV-169)", () => {
+        const { store, httpMock } = arriveFields([related("f1", "one"), related("f2", "two")], (guids) =>
+            guids.map((guid) => cardWithRelations(guid, `name-${guid}`, { m4i_system: ["elastic"] })),
+        );
+
+        // The default state: the funnel is unmarked and the count line reads the seed.
+        expect(fields(store).filterActive).toBe(false);
+        expect(fields(store).filtered).toBe(false);
+
+        // A re-picked sort marks the funnel — the legacy query-object test —
+        // but leaves the count line on the seed count (sort filters nothing).
+        store.setSort("related-fields", "name");
+        expect(fields(store).filterActive).toBe(true);
+        expect(fields(store).filtered).toBe(false);
+
+        // The default sort with the direction flipped still marks it, and
+        // back to relevance with the direction down marks it too.
+        store.setSort("related-fields", "relevance");
+        store.toggleDirection("related-fields");
+        expect(fields(store).filterActive).toBe(true);
+
+        // Relevance, ascending — the whole default object — clears the mark.
+        store.reset("related-fields");
+        expect(fields(store).filterActive).toBe(false);
+        httpMock.verify();
+    });
+
+    it("a section with no groups renders the empty popover set (VCF-10)", () => {
+        const { store, httpMock } = setup();
+        store.seed(openedAttribute([related("f1", "one")]), LAYOUTS.m4i_data_quality); // the rule page's box asked none
+
+        expect(fields(store).facets).toEqual([]);
+        searchRequests(httpMock).forEach((request) => request.flush({ cards: [], facets: {}, total: 0 }));
+        httpMock.verify();
+    });
+});

@@ -31,6 +31,25 @@
     color: hsl(240, 100%, 75%);
 }
 
+/* The active crumb is plain text, not a link (UIC-11 amended, DD-624),
+   and Bulma styles only the crumb anchors, so the span takes the flex
+   line and padding that `.breadcrumb li.is-active a` gave the anchor.
+   The ink is the plain strong text, not Bulma's breadcrumb active
+   colour — that one is a darkened link blue, which reads as a link.
+   The demo's active crumb is the same ink: rgb(54,54,54) measured, the
+   value this token resolves to. */
+.breadcrumb li.is-active > span {
+    align-items: center;
+    color: var(--bulma-text-strong);
+    display: flex;
+    justify-content: center;
+    padding: var(--bulma-breadcrumb-item-padding-vertical) var(--bulma-breadcrumb-item-padding-horizontal);
+}
+
+.breadcrumb li:first-child > span {
+    padding-inline-start: 0;
+}
+
 .breadcrumb ul {
     margin-left: 0;
 }

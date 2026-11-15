@@ -46,7 +46,7 @@ describe("Breadcrumbs", () => {
         expect(fixture.nativeElement.querySelector("nav.breadcrumb").getAttribute("aria-label")).toBe("kruimelpad");
     });
 
-    it("marks the active guid's item and clears its link semantics (UIC-11)", () => {
+    it("renders the active crumb as plain text, not a link (UIC-11, DD-624)", () => {
         fixture.componentRef.setInput("items", items);
         fixture.componentRef.setInput("activeGuid", "g2");
         fixture.detectChanges();
@@ -54,7 +54,14 @@ describe("Breadcrumbs", () => {
         const listItems = fixture.nativeElement.querySelectorAll("li");
         expect(listItems[0].classList.contains("is-active")).toBe(false);
         expect(listItems[1].classList.contains("is-active")).toBe(true);
-        expect(listItems[1].querySelector("a").getAttribute("aria-current")).toBe("page");
+        // The active crumb navigates nowhere, so it is a span: no anchor,
+        // no href, and it stays out of the link list screen readers tab.
+        expect(listItems[1].querySelector("a")).toBeNull();
+        const crumb = listItems[1].querySelector("span.truncate");
+        expect(crumb.getAttribute("aria-current")).toBe("page");
+        expect(crumb.textContent).toContain("Entity");
+        // The clickable crumb keeps its anchor.
+        expect(listItems[0].querySelector("a")).toBeTruthy();
     });
 
     it("renders the caller icon and class on a crumb (UIC-15)", () => {

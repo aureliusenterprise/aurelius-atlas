@@ -27,8 +27,9 @@ export interface Breadcrumb {
  * warning, and the active entity all arrive as inputs and a crumb click
  * emits `itemClicked` — route wiring belongs to the app (7.6).
  *
- * Crumbs are anchors, so Enter activates them natively; the active crumb
- * is inert by Bulma's own `is-active` styling, as in the legacy trail.
+ * Clickable crumbs are anchors, so Enter activates them natively; the
+ * active crumb — the entity being viewed, which navigates nowhere — is
+ * plain text, not a dead link (UIC-11 amended, DD-624).
  */
 @Component({
     selector: "aurelius-atlas-ui-breadcrumbs",
