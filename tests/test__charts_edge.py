@@ -159,10 +159,14 @@ def test__backend_ca_configmap_and_sync_job_render(umbrella_docs: list[dict[str,
     envs = env_map(container)
     assert env_value(envs, "CA_SOURCE_SECRET") == "aurelius-atlas-selfsigned-ca"
     assert env_value(envs, "CA_TARGET_CONFIGMAP") == "atlas-backend-ca"
-    # Rights bounded: this ConfigMap namespace only, no cluster access.
+    # Rights bounded: this namespace only, no cluster access — get on the
+    # CA Secret it reads (DD-648), get/write on the one ConfigMap it writes.
     roles = find_all(umbrella_docs, "Role")
     assert [r["metadata"]["name"] for r in roles] == ["atlas-ca-sync"]
-    assert roles[0]["rules"][0]["resources"] == ["configmaps"]
+    assert {(tuple(r["resources"]), tuple(r["verbs"])) for r in roles[0]["rules"]} == {
+        (("secrets",), ("get",)),
+        (("configmaps",), ("get", "create", "patch", "update")),
+    }
     # gateway off takes the whole edge machinery with it (CHT-29 pattern).
     docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("global.gateway.enabled=false",))
     assert "atlas-backend-ca" not in names(docs, "ConfigMap")

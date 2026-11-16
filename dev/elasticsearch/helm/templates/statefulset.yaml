@@ -229,8 +229,13 @@ spec:
     volumeClaimTemplates:
         -   metadata:
                 name: data
+                # Stable identity only: volumeClaimTemplates are immutable
+                # after creation, so the chart/version labels the pod template
+                # carries would lock every later release out of its own
+                # upgrade (DD-649).
                 labels:
-                    {{- include "atlas-elasticsearch.labels" . | nindent 20 }}
+                    {{- include "atlas-elasticsearch.selectorLabels" . | nindent 20 }}
+                    app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}
             spec:
                 accessModes:
                     {{- toYaml .Values.persistence.accessModes | nindent 20 }}

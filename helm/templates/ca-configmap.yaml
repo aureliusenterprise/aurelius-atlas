@@ -45,6 +45,13 @@ metadata:
     labels:
         {{- include "aurelius-atlas.labels" . | nindent 8 }}
 rules:
+    # The Job reads the CA Secret (its only get) and writes the one ConfigMap
+    # it syncs to — read+write, both namespaced, nothing else (DD-648: the
+    # first cut granted configmaps only and the Job could never read its
+    # source; the loop then spins to the deadline, failing the hook).
+    -   apiGroups: [""]
+        resources: ["secrets"]
+        verbs: ["get"]
     -   apiGroups: [""]
         resources: ["configmaps"]
         verbs: ["get", "create", "patch", "update"]
