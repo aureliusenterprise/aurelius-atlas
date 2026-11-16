@@ -296,3 +296,46 @@ tasks for a fault only the cosign pair has.
 runs serially, which the earlier verify serialization already proved is
 cheap next to the build it follows. A future cosign target copies this
 flag for the same reason.
+
+### DD-651. The edge issuer makes split-horizon DNS load-bearing
+
+- **Status:** Proposed
+- **Increment:** 10.13 (a runbook finding, 2026-11-16)
+- **Date:** 2026-11-16
+- **Related:** DD-265, DD-643
+
+**Context.** In-cluster consumers reach the issuer by its public name, and
+that name resolved to the load balancer, so each one hairpinned out through
+the gateway. With one private CA, the gateway answered with a private leaf,
+so a consumer pinned to that CA accepted it and DD-265's missing DNS entry
+stayed invisible. The edge split (DD-643) moved the gateway's browser leaf
+to a public CA, so the same hairpin now returns a public leaf. Every
+consumer still pinned to the private CA failed with `x509: certificate
+signed by unknown authority`: the collector's OIDC extension crashed, the
+apps' and pullers' ingest mints sent telemetry headerless, and login could
+not fetch the issuer's keys. The atlas-dev reinstall surfaced all three at
+once.
+
+**Decision.** Keep the shipped pins and supply DD-265's split-horizon entry,
+so the issuer name resolves to the Keycloak Service inside the cluster. The
+Service answers the public name over its CA-pinned 443 listener, its leaf
+carries the public host in its SANs, and the request keeps the public Host,
+so every token keeps the canonical `iss`. No chart change. On GKE the
+mechanism is a private Cloud DNS zone scoped to the cluster network: this
+cluster's kube-dns ConfigMap is empty and pods dial the hosted resolver, so
+a CoreDNS rewrite does not reach them.
+
+**Alternatives.** (a) Drop the private-CA pin in the issuer-touching
+components when an edge issuer is set, so they use the image's system trust
+(the Let's Encrypt root). The collector proved this works, but the job image
+carries no system roots, the puller images are unknown, and it still sends
+internal issuer traffic out through the public gateway. Rejected. (b) Point
+`global.issuer.url` at the in-cluster Service name. Rejected: DD-265 chose a
+DNS entry so the Host and `iss` stay the public name with no per-cluster
+value, and a Service host is the wrong issuer identity.
+
+**Consequences.** Split-horizon DNS becomes a hard prerequisite whenever an
+edge issuer is set, not only when observability runs. The runbook gains the
+GKE private-zone recipe, with the one sharp edge: a private zone is
+authoritative for the whole apex in-cluster, so every other host under it
+(atlas, and any future one) needs a record too, else it returns no answer.

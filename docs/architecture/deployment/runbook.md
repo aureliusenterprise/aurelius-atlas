@@ -96,6 +96,38 @@ the sequence to run.
     Keycloak Service answers the public URL's implicit port (it serves 443
     beside 8443, CHT-41), and the request's Host stays the public name, so
     every token keeps the canonical `iss` whichever horizon it dials from.
+
+    On GKE with the hosted (RUN) resolver, the `kube-dns` ConfigMap is empty
+    and pods dial the VPC resolver, so a CoreDNS rewrite never reaches them.
+    Give the VPC a split view with a private Cloud DNS zone instead (DD-651).
+    `gcloud` names the cluster network with `--networks`:
+
+    ```bash
+    gcloud dns managed-zones create atlas-internal \
+        --dns-name=<domain>. --visibility=private --networks=<vpc-network>
+    gcloud dns record-sets create keycloak.<domain>. --zone=atlas-internal \
+        --type=A --rrdatas=<keycloak-service-cluster-ip> --ttl=60
+    ```
+
+    The private zone is authoritative for the whole apex in-cluster, so
+    every other host under it needs a record too, or it answers nothing. Add
+    the webapp host and a catch-all pointing at the Gateway IP (browsers keep
+    the public view; only pods in the network see this one):
+
+    ```bash
+    gcloud dns record-sets create <domain>. --zone=atlas-internal \
+        --type=A --rrdatas=<gateway-ip> --ttl=300
+    gcloud dns record-sets create "*.<domain>." --zone=atlas-internal \
+        --type=A --rrdatas=<gateway-ip> --ttl=300
+    ```
+
+    A `helm upgrade` keeps these records: they are cluster DNS, not release
+    objects. Read the Keycloak Service ClusterIP and the Gateway address from
+    the running release before you create the records. This entry is a hard
+    prerequisite whenever `global.gateway.edge.issuerRef` is set, because
+    the public edge leaf then breaks a private-CA pin across the load
+    balancer (DD-651).
+
     Verify both horizons after install:
 
     ```bash

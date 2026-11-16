@@ -20,6 +20,14 @@ Generated credentials (DD-287) live in Secrets; read one with:
 Prerequisites the chart does NOT install (runbook): cert-manager, a GatewayClass
 named {{ .Values.global.gateway.className | quote }}, and the dhi.io pull secret
 if the cluster cannot pull dhi.io images without credentials.
+{{- if .Values.global.gateway.edge.issuerRef.name }}
+
+IMPORTANT (DD-651): with an edge issuer set, give keycloak.{{ .Values.global.domain }}
+an in-cluster DNS view that resolves to the Keycloak Service (the runbook's
+split-horizon step). Without it, in-cluster issuer calls hairpin through the
+Gateway, return the public edge leaf, and fail the private-CA pins (the
+collector crashes and login cannot fetch keys).
+{{- end }}
 
 WARNING: Keycloak pins its issuer at first boot. {{ include "aurelius-atlas.issuerUrl" . }}
 is now final for this install — changing global.domain later requires a realm rebuild.
