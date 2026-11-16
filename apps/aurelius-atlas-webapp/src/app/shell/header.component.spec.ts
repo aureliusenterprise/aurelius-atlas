@@ -252,6 +252,19 @@ describe("ShellHeader", () => {
         expect(normalize(security?.textContent)).toBe("Account security");
     });
 
+    it("keeps the path of a Keycloak URL in the Account-security link (SHC-05)", () => {
+        setup();
+        // The standalone stack's Keycloak sits below /auth, without a trailing slash.
+        TestBed.overrideProvider(APP_CONFIG, {
+            useValue: { ...config, keycloak: { ...config.keycloak, url: "https://localhost:9000/auth" } },
+        });
+        const security = [...render().querySelectorAll<HTMLAnchorElement>("a.navbar-item")].find((item) =>
+            item.getAttribute("href")?.includes("/account"),
+        );
+
+        expect(security?.getAttribute("href")).toBe("https://localhost:9000/auth/realms/atlas/account");
+    });
+
     it("ends the Keycloak session on Logout (SHC-05)", () => {
         const { logout } = setup();
         const compiled = render();
