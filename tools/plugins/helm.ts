@@ -203,13 +203,17 @@ function createNodesInternal(
         },
         [publishTargetName]: {
             // The tarball is named after the CHART (helm package), the Nx
-            // project after its OWNER, so glob the artifact rather than
-            // build a name. The OCI repository takes the chart name: the
-            // artifact lands at oci://<ns>/<chart>.
+            // project after its OWNER. Each run packages into its own mktemp
+            // dir and pushes the exact name: Nx never expands {tmpDir} inside
+            // an option value (the shell got a literal "{tmpDir}" dir), and a
+            // shared dir with an `ls` glob made parallel run-many publishes
+            // push each other's tarballs (DD-642, first publish 2026-11-16).
+            // The OCI repository takes the chart name: the artifact lands at
+            // oci://<ns>/<chart>.
             command:
-                `helm dep update ${chartDir} >/dev/null && ` +
-                `helm package ${chartDir} --version {args.version} -d {args.outDir} && ` +
-                `helm push "$(ls {args.outDir}/*.tgz)" oci://{args.namespace}`,
+                `helm dep update ${chartDir} >/dev/null && OUT=$(mktemp -d) && ` +
+                `helm package ${chartDir} --version {args.version} -d "$OUT" && ` +
+                `helm push "$OUT/${chartName}-{args.version}.tgz" oci://{args.namespace}`,
             dependsOn: [
                 { target: templateTargetName },
                 { target: publishTargetName, dependencies: true, params: "forward" },
@@ -219,7 +223,6 @@ function createNodesInternal(
             },
             options: {
                 namespace: "ghcr.io/aureliusenterprise/charts",
-                outDir: "{tmpDir}",
                 version: "0.0.0-local",
             },
         },
