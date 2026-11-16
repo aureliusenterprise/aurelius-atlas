@@ -43,6 +43,17 @@ Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the rea
   kubectl create secret docker-registry ghcr-pull \
       --docker-server=ghcr.io --docker-username=<gh-user> --docker-password=<gh-pat> -n atlas
   ```
+- **trust-manager** (DD-652, with the gateway on — the default): the backend-CA sync. The chart renders one `Bundle` per release, and the trust-manager controller copies the CA Secret into the ConfigMap the BackendTLSPolicies pin. Install it with its **trust namespace** set to the namespace the system installs into — trust-manager reads Bundle sources only from that one namespace, and the namespace must exist before the install:
+
+  ```
+  kubectl create namespace atlas --dry-run=client -o yaml | kubectl apply -f -
+  helm upgrade --install trust-manager \
+      oci://quay.io/jetstack/charts/trust-manager \
+      --namespace cert-manager --create-namespace \
+      --set app.trust.namespace=atlas --wait
+  ```
+
+  Its webhook certificate comes from the cert-manager already installed above. Without this controller, `helm install` of the umbrella fails on the missing `Bundle` CRD — install it before the first install, and before any upgrade of a release older than the switch.
 - **The issuer decision is permanent.** The Keycloak issuer URL derives from `global.domain` and tokens embed it; changing it after entities exist invalidates every token. Choose the domain at first install.
 - **Split-horizon DNS for the issuer** (DD-265, with `atlas-observability` enabled): in-cluster producers (the collector's OIDC validator, the apps' OTLP mints, the store pullers) reach the issuer over its **public** name — `keycloak.<domain>` — so that name must resolve to the Keycloak Service inside the cluster too (the cluster port of the dev stack's per-producer `extra_hosts`). A real deployment's DNS usually does this already: `atlas.test` is your domain, and its internal view points at the cluster. On a dev cluster, give CoreDNS the entry:
 

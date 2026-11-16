@@ -6920,6 +6920,25 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 </code></pre></div>
 </li>
 <li>
+<p><strong>trust-manager</strong> (DD-652, with the gateway on — the default): the
+  backend-CA sync. The chart renders one <code>Bundle</code> per release, and the
+  trust-manager controller copies the CA Secret into the ConfigMap the
+  BackendTLSPolicies pin. Install it with its <strong>trust namespace</strong> set to
+  the namespace the system installs into — trust-manager reads Bundle
+  sources only from that one namespace, and the namespace must exist
+  before the install:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>atlas<span class="w"> </span>--dry-run<span class="o">=</span>client<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
+helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>trust-manager<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>oci://quay.io/jetstack/charts/trust-manager<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--namespace<span class="w"> </span>cert-manager<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>app.trust.namespace<span class="o">=</span>atlas<span class="w"> </span>--wait
+</code></pre></div>
+<p>Its webhook certificate comes from the cert-manager already installed
+above. Without this controller, <code>helm install</code> of the umbrella fails
+on the missing <code>Bundle</code> CRD — install it before the first install, and
+before any upgrade of a release older than the switch.</p>
+</li>
+<li>
 <p><strong>The issuer decision is permanent.</strong> The Keycloak issuer URL derives from
   <code>global.domain</code> and tokens embed it; changing it after entities exist
   invalidates every token. Choose the domain at first install.</p>
