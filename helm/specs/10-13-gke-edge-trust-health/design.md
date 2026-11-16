@@ -396,3 +396,12 @@ machinery, its RBAC, and its image supply all disappear. A chart-owned
 `<release>-backend-ca` ConfigMap from an rc.6-or-earlier release is
 replaced by the controller-owned copy on the first upgrade (an ownership
 label change, not an outage — the policy pin is unchanged).
+
+**Validation.** Live on the `atlas-dev` GKE cluster (2026-11-16): the
+runbook recipe installed trust-manager v0.26.0 beside cert-manager 1.9.1
+with `app.trust.namespace=atlas`, and the upgrade of the rc.6 release to
+this chart completed with no hook Job rendered. The Bundle reports
+`Synced`, the controller took ownership of the pre-existing chart-owned
+ConfigMap, and its `ca.crt` equals the CA Secret's PEM byte for byte except
+a stripped trailing newline (the controller trims, and a PEM parser ignores
+it). Both browser hosts serve 200 through the BackendTLSPolicies.
