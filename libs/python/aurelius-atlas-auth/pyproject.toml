@@ -10,7 +10,7 @@ dependencies = [
 description = "Keycloak bearer-token authentication for Aurelius Atlas services: OIDC discovery, JWKS verification and the write-role gate."
 name = "aurelius-atlas-auth"
 requires-python = ">=3.14"
-version = "0.6.1"
+version = "0.1.0-rc.3"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

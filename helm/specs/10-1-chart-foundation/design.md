@@ -494,3 +494,57 @@ wiring lands in a later increment) are exactly when an operator meets it.
 `helm uninstall` recovery lines; 10.5's install script scripts the recovery
 (guard the wait with a pre-flight, or clean up on timeout) rather than
 discovering it again. Next free DD: 253.
+
+### DD-642. helm-publish packages into a private temp dir and pushes the exact name
+
+- **Status:** Proposed
+- **Increment:** 10.1 (a fix, 2026-11-16)
+- **Date:** 2026-11-16
+- **Supersedes:** none
+
+**Context.** The second publish run (tag `v0.1.0-rc.2`, 2026-11-16) failed at
+"Publish charts": `run-many -t helm-publish` for 12 projects. The target
+packaged every chart with `-d {args.outDir}` (default `{tmpDir}`) and pushed
+`"$(ls {args.outDir}/*.tgz)"`. Two faults compounded. Nx expands tokens in the
+target command, not inside an option's value, so the shell received a literal
+`{tmpDir}` path and really created a directory by that name. And every parallel
+task shared that one directory, so `ls *.tgz` globbed the other tasks'
+tarballs: the webapp's push received twelve charts and helm rejected a push of
+several artifacts, naming charts from other projects in its error. A bare
+single-project publish — the only shape CI's render gates and the developer
+path ever ran — passes either way, so both faults stayed invisible until the
+first release `run-many`.
+
+**Decision.** `helm-publish` runs `OUT=$(mktemp -d) && helm package … -d
+"$OUT" && helm push "$OUT/<chart>-{args.version}.tgz" oci://{args.namespace}`,
+and the `outDir` option is deleted. Each task packages into a directory only it
+sees and pushes the exact filename it produced: `helm package` always names the
+tarball `<chart>-<version>.tgz`, and the plugin knows the chart name, so the
+shell needs no glob.
+
+**Reason.** A shared output directory plus a glob is a race written into the
+command, and the directory was a literal-braces artifact of a token Nx never
+expands there. The exact-name form is deterministic under any `--parallel`, and
+the temp dir removes the shared-state class entirely rather than serialising
+around it. Verified against a throwaway `registry:2` on 2026-11-16 (package +
+push by exact name; `--plain-http` needed only because the test registry
+speaks HTTP).
+
+**Alternatives.**
+
+- Keep `outDir` and make each project's default unique (e.g. per-project tmp
+  path): a per-caller convention to remember, where `mktemp -d` inside the
+  command is self-contained and self-cleaning of the pattern.
+- `parallelism: false` on the target like the verify pair (DD-641): serialising
+  hides the shared-dir race but keeps the literal `{tmpDir}` fault and costs
+  wall time; the two faults here are correctness, not rate.
+- Pass `--version` through to the glob filter (`ls …/${chart}-*.tgz`): still
+  shared-dir state; a second concurrent publish of the same chart still
+  collides.
+
+**Consequences.** `run-many -t helm-publish` is safe at full parallelism, and
+the umbrella's cascade (its `dependsOn` chain over the component charts) pushes
+12 distinct artifacts. The removed `outDir` option had no other consumer; an
+operator who wants the tarball elsewhere takes it from a local `helm package`.
+The first real chart-push remains to be proven by the next tag's publish run,
+with the chain's chart sign/verify (DD-641's fixed target) right behind it.

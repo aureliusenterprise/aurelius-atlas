@@ -29,6 +29,16 @@ changelog, and cuts an `rc` tag locally, publishing nothing. The tag is for pull
 candidate and testing it as an artifact; `npm run release` is the step that publishes and signs
 ([ADR 029](../architecture/adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable.md)).
 
+!!! NOTE "The first release names its version"
+
+    Before the first `v*` tag exists, Nx cannot read the current version or the previous release ref
+    from git. The version falls back to the disk (`fallbackCurrentVersionResolver: "disk"`); the
+    changelog needs `--first-release`, which starts it at the first commit. The conventional-commits
+    bump also moves past `0.1.0`. To make `v0.1.0` the first tag, name the version once:
+    `npx nx release 0.1.0 --first-release --skip-publish`. An exact version ignores `--preid`, so to
+    iterate release candidates after it, use `npm run prerelease` (it cuts `0.1.1-rc.0`, `0.1.1-rc.1`,
+    and so on). After the first tag, `nx release` reads both from git as usual.
+
 ## What publishing runs
 
 Per project, `docker-build` produces the wheel (workspace libraries bundled) and the image; the

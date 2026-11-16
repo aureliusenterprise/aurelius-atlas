@@ -17,7 +17,7 @@ dependencies = [
 description = "The Aurelius Atlas lineage-model API: an entity guid in, the lineage graph's archimate model out."
 name = "aurelius-atlas-lineage-model"
 requires-python = ">=3.14"
-version = "0.1.0"
+version = "0.1.0-rc.3"
 
 [[project.authors]]
 name = "Aurelius Enterprise"
