@@ -19,7 +19,7 @@ The store is the stack's own Elasticsearch, so it holds what you import and noth
 
 Each tenant's users have passwords of their own, named `<TENANT>_USER_<ROLE>_PASSWORD`: demo's `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`, meyn's `MEYN_USER_ATLAS_PASSWORD`, `MEYN_USER_STEWARD_PASSWORD` and `MEYN_USER_SCIENTIST_PASSWORD`, and the operator's `DEMO_USER_OPERATOR_PASSWORD`, in the dev Keycloak's `.env`, decrypted from its `.env.enc`. A tenant added to the realm gets three more, so no tenant's people know another's passwords.
 
-The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.
+The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over one white box on a light band, with a teal sign-in button. The account console, which the webapp's Account security opens, wears the webapp's navbar band and logo over a light sidebar (DD-663). Its logo and favicon are copies of the webapp's.
 
 ## Start
 
