@@ -3,7 +3,7 @@ dependencies = ["elasticsearch[async]>=9.5.1,<10", "pydantic>=2.14.2"]
 description = "Elasticsearch access for Aurelius Atlas: settings, client lifecycle and health check."
 name = "aurelius-atlas-store-es"
 requires-python = ">=3.14"
-version = "0.1.0-rc.2"
+version = "0.1.0-rc.3"
 
 [project.optional-dependencies]
 testing = ["testcontainers>=4.15.0", "trustme>=1.1"]

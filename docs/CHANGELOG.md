@@ -1,3 +1,9 @@
+## 0.1.0-rc.3 (2026-11-16)
+
+### 🩹 Fixes
+
+- **publish:** helm-publish packages into a private temp dir and pushes the exact name ([5b46c2f32](https://github.com/aureliusenterprise/aurelius-atlas/commit/5b46c2f32))
+
 ## 0.1.0-rc.2 (2026-11-16)
 
 ### 🩹 Fixes
