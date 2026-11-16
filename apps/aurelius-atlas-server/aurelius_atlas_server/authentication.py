@@ -29,6 +29,12 @@ SESSION_COOKIE = "ATLASSESSIONID"
 REALM = "atlas.com"
 """The realm the 401's challenge names, as Atlas's entry point sets it."""
 
+SIGNED_OUT_COOKIE = "ATLASSIGNEDOUT"
+"""Set by the sign-out, cleared by the next sign-in: while it is there, a sign-in asks for credentials (DD-640)."""
+
+SIGNED_OUT_SECONDS = 600
+"""How long a browser counts as signed out by its own hand: long enough to outlast an aborted sign-out."""
+
 LOGIN_PATH = "/login.jsp"
 LOGOUT_PATH = "/logout.html"
 
@@ -293,7 +299,10 @@ def _unauthenticated(request: Request, session: Session | None) -> Response:
     sessions: SessionStore = request.app.state.sessions
     session = session if session is not None else sessions.create()
     query = f"?{request.url.query}" if request.url.query else ""
-    session.return_to = f"{request.url.path}{query}"
+    path = request.url.path
+    # dashboardv3's script sends a browser to its relative login.jsp, /n/login.jsp, which is no page to return to: the
+    # sign-in returns to the dashboard it came from instead (AUT-04, DD-640)
+    session.return_to = path.removesuffix("login.jsp") if path.endswith("/login.jsp") else f"{path}{query}"
     response = RedirectResponse(under_root(request.scope, LOGIN_PATH), status_code=302)
     set_session_cookie(response, session)
     return response

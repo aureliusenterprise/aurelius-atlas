@@ -82,10 +82,10 @@ class OidcClient:
         """Close the HTTP client (the application's shutdown)."""
         await self._http.aclose()
 
-    async def authorization_url(self, login: Login, redirect_uri: str) -> str:
+    async def authorization_url(self, login: Login, redirect_uri: str, *, prompt: str | None = None) -> str:
         """Where a browser signs in: the authorization endpoint with the client, state, nonce and PKCE (AUT-05); while
         tenancy is on, the organization scope too, so the provider has the person choose one organization (RLM-03,
-        DD-582).
+        DD-582); with ``prompt``, OpenID Connect's ``prompt``, such as ``login`` after a sign-out (DD-640).
         """  # noqa: D205 - one sentence
         endpoint = (await self._discovery())["authorization_endpoint"]
         challenge = base64.urlsafe_b64encode(hashlib.sha256(login.verifier.encode()).digest()).rstrip(b"=").decode()
@@ -99,6 +99,7 @@ class OidcClient:
                 "nonce": login.nonce,
                 "code_challenge": challenge,
                 "code_challenge_method": "S256",
+                **({} if prompt is None else {"prompt": prompt}),
             }
         )
         return f"{endpoint}?{query}"

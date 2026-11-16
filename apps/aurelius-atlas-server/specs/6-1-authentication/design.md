@@ -55,3 +55,36 @@ instances, at a store round-trip per request.
 
 **Consequences.** A restart signs browsers out; they sign in again at once while their provider session lasts.
 Several server instances need sticky sessions.
+
+### DD-640. A sign-out marks the browser, so the next sign-in asks for credentials
+
+- **Status:** Proposed
+- **Increment:** 6.1a (a fix, 2026-11-16)
+- **Date:** 2026-11-16
+- **Supersedes:** none
+
+**Decision.** `logout.html` sets the cookie `ATLASSIGNEDOUT` for 10 minutes. A sign-in that `login.jsp`
+starts while it is there asks the provider with `prompt=login`, and a completed sign-in clears it. A request
+without a user for a `login.jsp` below a dashboard, such as `/n/login.jsp`, remembers that dashboard as the
+page to return to, never the `login.jsp` itself.
+
+**Reason.** dashboardv3 sends the browser to its relative `login.jsp`, `/n/login.jsp`, whenever one of its calls
+answers 401. During a sign-out its calls answer 401 as soon as the server ends the session, and that navigation
+can cancel the sign-out before the browser reaches the provider. The provider then still holds its session: the
+next sign-in came back without a question, the browser was signed in again, and it was sent to the remembered
+`/n/login.jsp`, which is no page. A person who signed out stayed signed in on a "Not Found", and the dashboards'
+e2e sign-out failed now and then. With the mark, the provider asks for credentials whether its sign-out ran or
+not. The dashboards stay unchanged (DD-017): the server answers what they ask.
+
+**Alternatives.**
+
+- Patch dashboardv3's error handler not to redirect during a sign-out: the vendored dashboards change, which
+  DD-017 forbids for a fault the server can answer.
+- End the session only when the browser returns from the provider's sign-out: a sign-out the browser never
+  finishes would leave the server's session alive.
+- `logout.html` as a page that redirects by script once the dashboard is gone: it answers 200 where Atlas
+  answers a redirect (AUT-07).
+
+**Consequences.** When the provider's sign-out was cut short, the provider's own session lasts until it expires;
+only the next sign-in to Atlas asks for credentials. Other applications signed in through the same provider
+session stay signed in, as they would after any sign-out the browser doesn't complete.

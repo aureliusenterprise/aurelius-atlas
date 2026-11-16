@@ -9,6 +9,8 @@ from fastapi.responses import PlainTextResponse, RedirectResponse
 from aurelius_atlas_server.authentication import (
     LOGIN_PATH,
     SESSION_COOKIE,
+    SIGNED_OUT_COOKIE,
+    SIGNED_OUT_SECONDS,
     Login,
     SessionStore,
     current_tenancy,
@@ -61,17 +63,25 @@ async def login(request: Request) -> Response:
         target, session.return_to = _local(session.return_to, under_root(request.scope, "/")), None
         response = RedirectResponse(target, status_code=302)
         set_session_cookie(response, session)
+        response.delete_cookie(SIGNED_OUT_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
         return response
     session = session if session is not None else sessions.create()
     session.login = Login()
-    response = RedirectResponse(await oidc.authorization_url(session.login, redirect_uri), status_code=302)
+    # Signed out by its own hand: the provider asks for credentials, even when the dashboard's script cut the
+    # sign-out short and the provider still holds its session (DD-640).
+    prompt = "login" if SIGNED_OUT_COOKIE in request.cookies else None
+    response = RedirectResponse(
+        await oidc.authorization_url(session.login, redirect_uri, prompt=prompt), status_code=302
+    )
     set_session_cookie(response, session)
     return response
 
 
 @LOGIN.get("/logout.html", responses={302: {"description": "To the provider's sign-out, then back to the dashboards."}})
 async def logout(request: Request) -> Response:
-    """End the session and sign out at the provider, back to the dashboards (AUT-07)."""
+    """End the session and sign out at the provider, back to the dashboards; the next sign-in asks for credentials
+    (AUT-07, DD-640).
+    """  # noqa: D205 - one sentence
     sessions: SessionStore = request.app.state.sessions
     oidc: OidcClient = request.app.state.oidc
     session = sessions.get(request.cookies.get(SESSION_COOKIE))
@@ -80,6 +90,10 @@ async def logout(request: Request) -> Response:
         sessions.remove(session.id)
     response = RedirectResponse(await oidc.end_session_url(id_token, str(request.base_url)), status_code=302)
     response.delete_cookie(SESSION_COOKIE, path="/", secure=True, httponly=True, samesite="lax")
+    # the next sign-in asks for credentials, whether or not the browser completes the provider's sign-out (DD-640)
+    response.set_cookie(
+        SIGNED_OUT_COOKIE, "1", max_age=SIGNED_OUT_SECONDS, httponly=True, secure=True, samesite="lax", path="/"
+    )
     return response
 
 

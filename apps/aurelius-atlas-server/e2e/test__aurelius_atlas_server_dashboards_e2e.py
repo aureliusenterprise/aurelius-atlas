@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
 import re
@@ -12,6 +13,7 @@ import httpx2 as httpx
 import pytest
 from aurelius_atlas_server_client import AtlasClient
 from playwright.async_api import Browser, Page, Response, async_playwright
+from playwright.async_api import Error as PlaywrightError
 
 SESSION = "/api/atlas/admin/session"
 USERNAME = "aurelius-writer"
@@ -94,6 +96,42 @@ async def test__dashboard_loads_and_asks_the_server_for_the_session(browser: Bro
     # page's location instead and wait for where the sign-out ends.
     await page.evaluate("window.location.assign('/logout.html')")
     await _rest_at_the_sign_in_page(page)
+    await context.close()
+
+
+# impact=severe, likelihood=low (a sign-out that leaves the person signed in)
+@pytest.mark.high
+@pytest.mark.asyncio(loop_scope="module")
+@pytest.mark.covers(rules=["AUT-04", "AUT-05", "AUT-07"])
+async def test__a_sign_out_cut_short_still_ends_at_the_sign_in_page(browser: Browser, server: str) -> None:
+    """A sign-out dashboardv3 cuts short still ends at Keycloak's sign-in page, asking for credentials (DD-640).
+
+    dashboardv3 sends the browser to its relative ``login.jsp`` when its calls answer 401, which can cancel the
+    sign-out before the browser reaches Keycloak. Keycloak then still holds its session; the next sign-in must ask
+    for credentials all the same, not sign the browser back in onto ``/n/login.jsp``. The cut is made certain:
+    the server's sign-out runs without the browser following it to Keycloak, then the browser goes to
+    ``/n/login.jsp`` as dashboardv3's script sends it.
+    """
+    context = await browser.new_context(ignore_https_errors=True)
+    page = await context.new_page()
+    await page.goto(f"{server}/n/")
+    await page.wait_for_url(SIGN_IN_PAGE)
+    await page.locator("#username").fill(USERNAME)
+    await page.locator("#password").fill(os.environ["DEV_USER_WRITER_PASSWORD"])
+    async with page.expect_response(lambda response: SESSION in response.url, timeout=30_000):
+        await page.get_by_role("button", name="Sign in").click()
+
+    # The cut: the server's sign-out runs, through the browser's own cookie jar, and the browser never follows its
+    # redirect to Keycloak's end-session endpoint, so Keycloak keeps its session. Playwright's routes see only a
+    # redirect chain's first request, so the cut is made here, not by dropping the provider's call.
+    out = await context.request.get(f"{server}/logout.html", max_redirects=0)
+    assert out.status == 302
+    assert "/protocol/openid-connect/logout" in out.headers["location"]
+    # dashboardv3's script may already be on its way there, which ends the page this runs in
+    with contextlib.suppress(PlaywrightError):
+        await page.evaluate("window.location.assign('/n/login.jsp')")
+    await _rest_at_the_sign_in_page(page)
+    assert await page.locator("#password").is_visible()
     await context.close()
 
 
