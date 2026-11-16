@@ -40,6 +40,11 @@
     "aliases": []
   },
   {
+    "version": "dependabot-uv-psycopg-binary--gte-3.3.8",
+    "title": "dependabot-uv-psycopg-binary--gte-3.3.8",
+    "aliases": []
+  },
+  {
     "version": "dependabot-uv-all-2202d9e1ba",
     "title": "dependabot-uv-all-2202d9e1ba",
     "aliases": []
