@@ -20,11 +20,6 @@
     "aliases": []
   },
   {
-    "version": "fix-e2e-dashboard-sign-out",
-    "title": "fix-e2e-dashboard-sign-out",
-    "aliases": []
-  },
-  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
