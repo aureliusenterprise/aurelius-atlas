@@ -90,7 +90,7 @@ def test__telemetry_join_names_collector_and_issuer() -> None:
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT") == "https://atlas-observability:4319"
     assert (
         env_value(envs, "AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     client_secret = envs["AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert client_secret == {"name": "atlas-otel-clients", "key": "otel-atlas-server"}
@@ -164,7 +164,7 @@ def test__auth_env_block_joins_issuer_realm_and_secret(server_docs: list[dict[st
     (CHT-109).
     """
     envs = env_map(container(find(server_docs, "Deployment", "atlas-server"), "server"))
-    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.test"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://auth.atlas.test"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
     # CHT-120 (12.3): the scanners' client-credentials tokens are accepted

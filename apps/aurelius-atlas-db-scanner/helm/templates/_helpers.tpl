@@ -70,7 +70,7 @@ fallback derives from global.domain exactly as the service charts derive it. */}
 {{- if not $issuer -}}
 {{- $domain := trimSuffix "/" (default "" .Values.global.domain) -}}
 {{- if $domain -}}
-{{- $issuer = printf "https://keycloak.%s" $domain -}}
+{{- $issuer = printf "https://auth.%s" $domain -}}
 {{- end -}}
 {{- end -}}
 {{- $issuer -}}

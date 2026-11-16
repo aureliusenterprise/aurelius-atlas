@@ -35,14 +35,15 @@ global:
     # the Keycloak chart imports. "" takes the chart default
     # (aurelius-atlas).
     realm: ""
-    # The browser hosts the umbrella routes (CHT-03: declared whole, as the
-    # keycloak chart does). Grafana needs its own: OIDC logins only complete
-    # when root_url names the host the browser arrives on (DD-654). The
-    # chart's own default keeps the port-forward posture (DD-276): root_url
-    # renders only when the umbrella passes its host block on (umbrella
-    # default on since DD-653) or a host is named directly.
+    # The browser hosts the umbrella routes (CHT-03, CHT-135: declared
+    # whole, as the keycloak chart does). Grafana needs its own: OIDC logins
+    # only complete when root_url names the host the browser arrives on
+    # (DD-654). The key reads by product role (DD-658): o11y. The chart's
+    # own default keeps the port-forward posture (DD-276): root_url renders
+    # only when the umbrella passes its host block on (umbrella default on
+    # since DD-653) or a host is named directly.
     hosts:
-        grafana:
+        o11y:
             enabled: false
             host: ""
 

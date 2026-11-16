@@ -31,15 +31,18 @@ global:
     # chart default (aurelius-atlas, the hardened production realm).
     realm: ""
     # The browser hosts the realm asset's redirect URIs and web origins are
-    # substituted with (CHT-77). "" takes the umbrella's host rule: the host
-    # over the domain, else <name>.<domain>, else <release>.localhost for a
-    # bare render.
+    # substituted with (CHT-77, CHT-135). "" takes the umbrella's host rule:
+    # the host over the domain, else <name>.<domain>, else
+    # <release>.localhost for a bare render. The keys read by product role
+    # (DD-658): app, auth, o11y.
     hosts:
-        atlas:
+        app:
+            host: ""
+        auth:
             host: ""
         dashboard:
             host: ""
-        grafana:
+        o11y:
             host: ""
     # The issuer signing this pod's certificates (DD-286). Namespaced by
     # default — the umbrella's chart-managed chain is an Issuer (DD-259).

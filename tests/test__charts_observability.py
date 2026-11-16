@@ -115,7 +115,7 @@ def test__collector_pipeline_is_the_dev_shape(obs_docs: list[dict[str, Any]]) ->
     # the health_check extension pinned off loopback (CHT-33).
     (provider,) = rendered["extensions"]["oidc"]["providers"]
     assert provider == {
-        "issuer_url": "https://keycloak.atlas.test/realms/aurelius-atlas",
+        "issuer_url": "https://auth.atlas.test/realms/aurelius-atlas",
         "audience": "otel-collector",
         "issuer_ca_path": "/certs/ca.pem",
     }
@@ -270,7 +270,7 @@ def test__issuer_wait_polls_the_public_well_known(obs_docs: list[dict[str, Any]]
     assert "--insecure" in command  # a boot gate, not a trust decision
     assert "--retry" in command
     assert "--retry-connrefused" in command
-    assert command[-1] == "https://keycloak.atlas.test/realms/aurelius-atlas/.well-known/openid-configuration"
+    assert command[-1] == "https://auth.atlas.test/realms/aurelius-atlas/.well-known/openid-configuration"
     # curl writes nothing: the boot gate carries a read-only root on top of
     # the shared posture (DD-282 follow-up — KSV-0014; the collector itself
     # keeps its own root decision).
@@ -439,12 +439,12 @@ def test__grafana_logs_in_through_the_realm(obs_docs: list[dict[str, Any]]) -> N
         "name": "atlas-grafana-oauth",
         "key": "client-secret",
     }
-    issuer = "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect"
+    issuer = "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect"
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_AUTH_URL") == f"{issuer}/auth"
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_TOKEN_URL") == f"{issuer}/token"
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_API_URL") == f"{issuer}/userinfo"
     # The chart's own render keeps DD-276's request-derived shape (its
-    # chart-local global.hosts.grafana.enabled default is off); the
+    # chart-local global.hosts.o11y.enabled default is off); the
     # umbrella's default-on host flips it — tested below.
     assert "GF_SERVER_ROOT_URL" not in envs
     # The claims the login asks for, and the PKCE the client enforces
@@ -454,7 +454,7 @@ def test__grafana_logs_in_through_the_realm(obs_docs: list[dict[str, Any]]) -> N
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_USE_PKCE") == "true"
 
 
-@pytest.mark.covers(rules=["CHT-133"])
+@pytest.mark.covers(rules=["CHT-133", "CHT-135"])
 def test__grafana_root_url_follows_the_host() -> None:
     """The umbrella's host posture pins GF_SERVER_ROOT_URL (CHT-133, DD-654/653).
 
@@ -465,20 +465,20 @@ def test__grafana_root_url_follows_the_host() -> None:
     (port-forward posture) drops the pin back to DD-276's shape even when
     a stale host lingers in the values.
     """
-    on = helm_render(OBS_CHART, value_files=TEST_VALUES, sets=("global.hosts.grafana.enabled=true",))
+    on = helm_render(OBS_CHART, value_files=TEST_VALUES, sets=("global.hosts.o11y.enabled=true",))
     envs = env_map(container(find(on, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
-    assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://grafana.atlas.test"
+    assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://o11y.atlas.test"
     named = helm_render(
         OBS_CHART,
         value_files=TEST_VALUES,
-        sets=("global.hosts.grafana.enabled=true", "global.hosts.grafana.host=metrics.example"),
+        sets=("global.hosts.o11y.enabled=true", "global.hosts.o11y.host=metrics.example"),
     )
     envs = env_map(container(find(named, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
     assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://metrics.example"
     off = helm_render(
         OBS_CHART,
         value_files=TEST_VALUES,
-        sets=("global.hosts.grafana.enabled=false", "global.hosts.grafana.host=metrics.example"),
+        sets=("global.hosts.o11y.enabled=false", "global.hosts.o11y.host=metrics.example"),
     )
     envs = env_map(container(find(off, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
     assert "GF_SERVER_ROOT_URL" not in envs
@@ -499,15 +499,25 @@ def test__grafana_oauth_urls_follow_the_realm_and_issuer() -> None:
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_TOKEN_URL") == f"{issuer}/token"
 
 
-@pytest.mark.covers(rules=["CHT-85"])
+@pytest.mark.covers(rules=["CHT-85", "CHT-136"])
 def test__grafana_rbac_maps_grafana_client_roles(obs_docs: list[dict[str, Any]]) -> None:
-    """Viewer default, editor/admin client roles escalate (CHT-85, DD-275)."""
+    """The client roles gate the door: admin/editor escalate, no role is denied (CHT-85, CHT-136, DD-659).
+
+    The Viewer fallback of DD-275 made every realm user a reader of every
+    workload's telemetry; the strict mapping denies a user holding neither
+    grafana client role instead.
+    """
     app = container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
     envs = env_map(app)
-    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH") == (
-        'contains(resource_access.grafana.roles[*], "admin") ? "Admin" '
-        ': contains(resource_access.grafana.roles[*], "editor") ? "Editor" : "Viewer"'
+    path = env_value(envs, "GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_PATH")
+    # The denied case is the JMESPath empty-string literal (''), not "Viewer".
+    # JMESPath has no ternary operator, so the chain uses && and ||.
+    assert path == (
+        "contains(resource_access.grafana.roles[*], 'admin') && 'Admin' "
+        "|| contains(resource_access.grafana.roles[*], 'editor') && 'Editor' || ''"
     )
+    assert '"Viewer"' not in path  # the denied case carries no role (DD-659)
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_ROLE_ATTRIBUTE_STRICT") == "true"
     # The realm is the boundary: no role-list path, no org allow-list.
     assert "GF_AUTH_GENERIC_OAUTH_ROLE_LIST_PATH" not in envs
     assert "GF_AUTH_GENERIC_OAUTH_ALLOWED_ORGANIZATIONS" not in envs

@@ -107,7 +107,7 @@ def test__hostname_chain() -> None:
 
     assert hostname(("hostname=kc.example.com",)) == "kc.example.com"
     assert hostname(("global.issuer.url=https://auth.example.com/", "hostname=")) == "auth.example.com"
-    assert hostname(("global.domain=atlas.example", "hostname=", "global.issuer.url=")) == "keycloak.atlas.example"
+    assert hostname(("global.domain=atlas.example", "hostname=", "global.issuer.url=")) == "auth.atlas.example"
 
 
 @pytest.mark.covers(rules=["CHT-16", "CHT-80", "CHT-89", "CHT-110"])
@@ -296,7 +296,7 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     assert receiver["databases"] == ["keycloak"]
     assert config["exporters"]["otlp"]["endpoint"] == "https://atlas-observability:4317"
     oauth = config["extensions"]["oauth2client"]
-    assert oauth["token_url"] == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
+    assert oauth["token_url"] == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105  # a public URL, not a secret
     assert oauth["client_id"] == "otel-keycloak"
 
     envs = env_map(app)
@@ -453,7 +453,7 @@ def test__certificate_covers_issuer_and_cluster_names() -> None:
     docs = helm_render(KC_CHART, sets=("global.domain=atlas.example",))
     cert = find(docs, "Certificate", "atlas-keycloak")
     sans = set(cert["spec"]["dnsNames"])
-    assert "keycloak.atlas.example" in sans
+    assert "auth.atlas.example" in sans
     assert {"atlas-keycloak", "atlas-keycloak.atlas.svc.cluster.local", "atlas-keycloak-rss"} <= sans
     assert cert["spec"]["secretName"] == "atlas-keycloak-tls"
 
@@ -750,7 +750,7 @@ def test__prod_realm_carries_no_scanner_registration(kc_docs: list[dict[str, Any
     assert not [n for n in envs if n.endswith("_SCANNER_CLIENT_SECRET")]
 
 
-@pytest.mark.covers(rules=["CHT-75", "CHT-110"])
+@pytest.mark.covers(rules=["CHT-75", "CHT-110", "CHT-137"])
 def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str, Any]]) -> None:
     """Minimal authoring: the app's clients/roles/scope, no Keycloak built-ins.
 
@@ -789,12 +789,13 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
     assert [user["username"] for user in asset.get("users", [])] == ["service-account-aurelius-atlas-provisioning"]
     assert "defaultRole" not in asset
     assert not asset.get("realmRoles")
-    # email/profile (CHT-133, DD-656): the clients name them in their
-    # default scopes, and Keycloak drops unresolvable references at import,
-    # so an undefined scope silently vanishes from tokens. Grafana's login
-    # proved it live: the authorize request died with invalid_scope until
-    # the realm defined them. The audience scope stays the only custom one.
-    assert [s["name"] for s in asset["clientScopes"]] == ["email", "profile", "otel-ingest"]
+    # email/profile/roles (CHT-133, DD-656, DD-659): the clients name them
+    # in their default scopes, and Keycloak drops unresolvable references at
+    # import, so an undefined scope silently vanishes from tokens. Grafana's
+    # login proved it live twice: the authorize request died with
+    # invalid_scope, and later the role gate denied every user, until the
+    # realm defined them. The audience scope stays the only custom one.
+    assert [s["name"] for s in asset["clientScopes"]] == ["email", "profile", "otel-ingest", "roles"]
     assert not asset.get("components")
     assert not asset.get("authenticationFlows")
     roles = asset["roles"]["client"]
@@ -872,29 +873,29 @@ def test__browser_origins_carry_the_deployed_hosts() -> None:
     docs = helm_render(KC_CHART, sets=("global.domain=atlas.example",))
     asset = _rendered_asset(docs)
     (aur,) = [c for c in asset["clients"] if c["clientId"] == "aurelius"]
-    assert aur["redirectUris"] == ["https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"]
-    assert aur["webOrigins"] == ["https://atlas.atlas.example", "https://dashboard.atlas.example"]
+    assert aur["redirectUris"] == ["https://app.atlas.example/*", "https://dashboard.atlas.example/*"]
+    assert aur["webOrigins"] == ["https://app.atlas.example", "https://dashboard.atlas.example"]
     post_logout = aur["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR)
-    assert set(post_logout) == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
+    assert set(post_logout) == {"https://app.atlas.example/*", "https://dashboard.atlas.example/*"}
     # CHT-110 (10.12): the server client's AUT-05 return leg lands on its own
     # login.jsp — the browser hosts, per-host.
     (srv,) = [c for c in asset["clients"] if c["clientId"] == "aurelius-atlas-server"]
-    assert srv["redirectUris"] == ["https://atlas.atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
+    assert srv["redirectUris"] == ["https://app.atlas.example/login.jsp", "https://dashboard.atlas.example/login.jsp"]
     srv_post_logout = set(srv["attributes"]["post.logout.redirect.uris"].split(URI_SEPARATOR))
-    assert srv_post_logout == {"https://atlas.atlas.example/*", "https://dashboard.atlas.example/*"}
+    assert srv_post_logout == {"https://app.atlas.example/*", "https://dashboard.atlas.example/*"}
 
     docs = helm_render(
         KC_CHART,
         sets=(
             "global.domain=atlas.example",
-            "global.hosts.atlas.host=docs.example",
+            "global.hosts.app.host=docs.example",
             "global.hosts.dashboard.host=dash.example",
         ),
     )
     text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
     assert "https://docs.example/*" in text
     assert "https://dash.example" in text
-    assert "atlas.atlas.example" not in text
+    assert "app.atlas.example" not in text
 
     # No cluster render of the prod asset carries a localhost browser origin
     # or a + — the aurelius client's, checked per-client since the grafana
@@ -942,10 +943,10 @@ def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
     assert g["secret"] == "${GRAFANA_CLIENT_SECRET}"  # noqa: S105  # the placeholder, never a secret
     assert g["attributes"]["pkce.code.challenge.method"] == "S256"
     assert g["redirectUris"] == [
-        "https://grafana.atlas.example/login/generic_oauth",
+        "https://o11y.atlas.example/login/generic_oauth",
         "http://localhost:3000/login/generic_oauth",
     ]
-    assert g["webOrigins"] == ["https://grafana.atlas.example"]
+    assert g["webOrigins"] == ["https://o11y.atlas.example"]
 
     roles = {r["name"]: r for r in asset["roles"]["client"]["grafana"]}
     assert set(roles) == {"admin", "editor"}
@@ -956,25 +957,25 @@ def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
 
 @pytest.mark.covers(rules=["CHT-82"])
 def test__grafana_host_token_follows_the_host_rule() -> None:
-    """__GRAFANA_HOST__ substitutes like the browser hosts (CHT-82).
+    """__O11Y_HOST__ substitutes like the browser hosts (CHT-82).
 
     Values override wins, else grafana.<domain>; the bare render falls back
     to <release>.localhost so lint/template succeed.
     """
     docs = helm_render(
         KC_CHART,
-        sets=("global.domain=atlas.example", "global.hosts.grafana.host=metrics.example"),
+        sets=("global.domain=atlas.example", "global.hosts.o11y.host=metrics.example"),
     )
     text = find(docs, "ConfigMap", "atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
     assert "https://metrics.example/login/generic_oauth" in text
-    assert "grafana.atlas.example" not in text
+    assert "o11y.atlas.example" not in text
 
     bare = helm_render(KC_CHART, release="foo")
     text = find(bare, "ConfigMap", "foo-atlas-keycloak-realm")["data"]["aurelius-atlas.json"]
     assert "https://foo.localhost/login/generic_oauth" in text
 
 
-@pytest.mark.covers(rules=["CHT-79", "CHT-110", "AUZ-15"])
+@pytest.mark.covers(rules=["CHT-79", "CHT-110", "AUZ-15", "CHT-137"])
 def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     """The two-realm drift guard (CHT-79): application peers must match.
 
@@ -1022,11 +1023,23 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     # the grafana client they serve (the dev compose's Grafana stays
     # anonymous, DV-113) — trimmed to the mappers the logins read, in the
     # shape the live realm proved. They share no peer to drift from.
-    assert {s["name"] for s in prod["clientScopes"]} == {"email", "profile", "otel-ingest"}
+    assert {s["name"] for s in prod["clientScopes"]} == {"email", "profile", "otel-ingest", "roles"}
     email = next(s for s in prod["clientScopes"] if s["name"] == "email")
     assert {m["name"] for m in email["protocolMappers"]} == {"email", "email_verified"}
     profile = next(s for s in prod["clientScopes"] if s["name"] == "profile")
     assert {m["name"] for m in profile["protocolMappers"]} == {"username", "given name", "family name"}
+    # roles (DD-661, CHT-137): the resource_access.<client>.roles claim the
+    # Grafana gate and the server authorization read. Without the definition
+    # the clients' scope references resolve to nothing and no token carries
+    # the claim (the live denial that proved it).
+    roles_scope = next(s for s in prod["clientScopes"] if s["name"] == "roles")
+    mapper = next(
+        m for m in roles_scope["protocolMappers"] if m["protocolMapper"] == "oidc-usermodel-client-role-mapper"
+    )
+    assert mapper["config"]["claim.name"] == "resource_access.${client_id}.roles"
+    assert mapper["config"]["id.token.claim"] == "true"
+    assert mapper["config"]["access.token.claim"] == "true"
+    assert mapper["config"]["multivalued"] == "true"
 
     dev_aur, prod_aur = dev_by_id["aurelius"], prod_by_id["aurelius"]
     assert set(dev_aur) == set(prod_aur)

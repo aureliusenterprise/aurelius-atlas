@@ -1,17 +1,17 @@
 Aurelius Atlas {{ .Chart.AppVersion }} installed into namespace {{ include "aurelius-atlas.namespace" . }}.
 
 Edge (DD-285, Gateway API {{ .Values.global.gateway.className }}):
-{{- if .Values.global.hosts.atlas.enabled }}
+{{- if .Values.global.hosts.app.enabled }}
   https://{{ include "aurelius-atlas.atlasHost" . }}          webapp (SPA, /api, /otel)
 {{- end }}
-{{- if .Values.global.hosts.keycloak.enabled }}
-  https://{{ include "aurelius-atlas.keycloakHost" . }}    identity provider (issuer: {{ include "aurelius-atlas.issuerUrl" . }})
+{{- if .Values.global.hosts.auth.enabled }}
+  https://{{ include "aurelius-atlas.keycloakHost" . }}        identity provider (issuer: {{ include "aurelius-atlas.issuerUrl" . }})
 {{- end }}
 {{- if .Values.global.hosts.dashboard.enabled }}
   https://{{ include "aurelius-atlas.dashboardHost" . }}    legacy dashboards (server /, /n/)
 {{- end }}
-{{- if .Values.global.hosts.grafana.enabled }}
-  https://{{ include "aurelius-atlas.grafanaHost" . }}      Grafana
+{{- if .Values.global.hosts.o11y.enabled }}
+  https://{{ include "aurelius-atlas.grafanaHost" . }}          Grafana (sign-in needs the grafana client role)
 {{- end }}
 
 Generated credentials (DD-287) live in Secrets; read one with:
@@ -24,7 +24,7 @@ named {{ .Values.global.gateway.className | quote }}, and the dhi.io pull secret
 if the cluster cannot pull dhi.io images without credentials.
 {{- if .Values.global.gateway.edge.issuerRef.name }}
 
-IMPORTANT (DD-651): with an edge issuer set, give keycloak.{{ .Values.global.domain }}
+IMPORTANT (DD-651): with an edge issuer set, give auth.{{ .Values.global.domain }}
 an in-cluster DNS view that resolves to the Keycloak Service (the runbook's
 split-horizon step). Without it, in-cluster issuer calls hairpin through the
 Gateway, return the public edge leaf, and fail the private-CA pins (the

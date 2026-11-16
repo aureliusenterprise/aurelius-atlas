@@ -155,6 +155,31 @@
                     "protocolMapper": "oidc-audience-mapper"
                 }
             ]
+        },
+        {
+            "attributes": {
+                "display.on.consent.screen": "false",
+                "include.in.token.scope": "false"
+            },
+            "description": "Client roles as resource_access.<client>.roles claims (10.15, DD-659): the key the Grafana and server role gates read. The asset's browser clients always listed this scope, but the definition was missing, so no token ever carried the claim.",
+            "name": "roles",
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "resource_access.${client_id}.roles",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "multivalued": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "resource access",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-client-role-mapper"
+                }
+            ]
         }
     ],
     "clients": [
@@ -169,7 +194,7 @@
                 "oauth2.device.authorization.grant.enabled": "false",
                 "oidc.ciba.grant.enabled": "false",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://__ATLAS_HOST__/*##https://__DASHBOARD_HOST__/*",
+                "post.logout.redirect.uris": "https://__APP_HOST__/*##https://__DASHBOARD_HOST__/*",
                 "realm_client": "false",
                 "standard.token.exchange.enabled": "false"
             },
@@ -206,12 +231,12 @@
                 }
             ],
             "publicClient": true,
-            "redirectUris": ["https://__ATLAS_HOST__/*", "https://__DASHBOARD_HOST__/*"],
+            "redirectUris": ["https://__APP_HOST__/*", "https://__DASHBOARD_HOST__/*"],
             "rootUrl": "",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "surrogateAuthRequired": false,
-            "webOrigins": ["https://__ATLAS_HOST__", "https://__DASHBOARD_HOST__"]
+            "webOrigins": ["https://__APP_HOST__", "https://__DASHBOARD_HOST__"]
         },
         {
             "attributes": {
@@ -219,7 +244,7 @@
                 "display.on.consent.screen": "false",
                 "frontchannel.logout.session.required": "true",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://__ATLAS_HOST__/*##https://__DASHBOARD_HOST__/*"
+                "post.logout.redirect.uris": "https://__APP_HOST__/*##https://__DASHBOARD_HOST__/*"
             },
             "authorizationServicesEnabled": false,
             "bearerOnly": false,
@@ -252,7 +277,7 @@
                 }
             ],
             "publicClient": false,
-            "redirectUris": ["https://__ATLAS_HOST__/login.jsp", "https://__DASHBOARD_HOST__/login.jsp"],
+            "redirectUris": ["https://__APP_HOST__/login.jsp", "https://__DASHBOARD_HOST__/login.jsp"],
             "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
@@ -270,7 +295,7 @@
                 "oauth2.device.authorization.grant.enabled": "false",
                 "oidc.ciba.grant.enabled": "false",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://__GRAFANA_HOST__/login/generic_oauth",
+                "post.logout.redirect.uris": "https://__O11Y_HOST__/login/generic_oauth",
                 "realm_client": "false",
                 "standard.token.exchange.enabled": "false"
             },
@@ -294,16 +319,13 @@
             "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
             "protocol": "openid-connect",
             "publicClient": false,
-            "redirectUris": [
-                "https://__GRAFANA_HOST__/login/generic_oauth",
-                "http://localhost:3000/login/generic_oauth"
-            ],
+            "redirectUris": ["https://__O11Y_HOST__/login/generic_oauth", "http://localhost:3000/login/generic_oauth"],
             "rootUrl": "",
             "secret": "${GRAFANA_CLIENT_SECRET}",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "surrogateAuthRequired": false,
-            "webOrigins": ["https://__GRAFANA_HOST__"]
+            "webOrigins": ["https://__O11Y_HOST__"]
         },
         {
             "authorizationServicesEnabled": false,

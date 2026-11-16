@@ -153,7 +153,7 @@ not here.
 {{- $u := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" .Values.global.issuer.url)) -}}
 {{- $u | trimSuffix "/" | splitList "/" | first -}}
 {{- else if .Values.global.domain -}}
-{{- printf "keycloak.%s" .Values.global.domain -}}
+{{- printf "auth.%s" .Values.global.domain -}}
 {{- else -}}
 {{- printf "%s.localhost" .Release.Name -}}
 {{- end -}}
@@ -195,10 +195,10 @@ succeed — the realm ConfigMap itself fails render when no domain, issuer
 URL, or host is set anywhere and the asset needs one.
 */}}
 {{- define "atlas-keycloak.atlasHost" -}}
-{{- if .Values.global.hosts.atlas.host -}}
-{{- .Values.global.hosts.atlas.host -}}
+{{- if .Values.global.hosts.app.host -}}
+{{- .Values.global.hosts.app.host -}}
 {{- else if .Values.global.domain -}}
-{{- printf "atlas.%s" .Values.global.domain -}}
+{{- printf "app.%s" .Values.global.domain -}}
 {{- else -}}
 {{- printf "%s.localhost" .Release.Name -}}
 {{- end -}}
@@ -215,13 +215,13 @@ URL, or host is set anywhere and the asset needs one.
 {{- end -}}
 
 {{/* The Grafana host the grafana client's redirect URIs substitute for
-(CHT-82): same rule as the browser hosts above, so a standalone render
-derives what the umbrella's aurelius-atlas.grafanaHost would. */}}
+(CHT-82, CHT-135): same rule as the browser hosts above, so a standalone
+render derives what the umbrella's aurelius-atlas.grafanaHost would. */}}
 {{- define "atlas-keycloak.grafanaHost" -}}
-{{- if .Values.global.hosts.grafana.host -}}
-{{- .Values.global.hosts.grafana.host -}}
+{{- if .Values.global.hosts.o11y.host -}}
+{{- .Values.global.hosts.o11y.host -}}
 {{- else if .Values.global.domain -}}
-{{- printf "grafana.%s" .Values.global.domain -}}
+{{- printf "o11y.%s" .Values.global.domain -}}
 {{- else -}}
 {{- printf "%s.localhost" .Release.Name -}}
 {{- end -}}

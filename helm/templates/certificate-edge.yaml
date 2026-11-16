@@ -1,8 +1,8 @@
 {{/*
-The browser-host certificate (CHT-29). One umbrella Certificate covering the
-browser-facing names the umbrella owns — the atlas host and, when enabled, the
-dashboard and grafana hosts — into the Secret the HTTPS listeners terminate
-from (<release>-edge-tls). The keycloak host is deliberately absent: its
+The browser-host certificate (CHT-29, CHT-135). One umbrella Certificate
+covering the browser-facing names the umbrella owns — the app host and, when
+enabled, the dashboard and o11y hosts — into the Secret the HTTPS listeners
+terminate from (<release>-edge-tls). The auth host is deliberately absent: its
 certificate belongs to the Keycloak chart (its issuer pin, CHT-16) and the
 keycloak listener reuses that Secret — unless global.gateway.edge.issuerRef
 names a separate browser issuer (DD-643), which moves both browser leaves
@@ -16,13 +16,13 @@ trust issuer (DD-286) — the same root every in-cluster leaf chains to.
 {{- $webapp := index .Values "atlas-webapp" | default dict -}}
 {{- $server := index .Values "atlas-server" | default dict -}}
 {{- $obs := index .Values "atlas-observability" | default dict -}}
-{{- if and .Values.global.hosts.atlas.enabled $webapp.enabled -}}
+{{- if and .Values.global.hosts.app.enabled $webapp.enabled -}}
 {{- $hosts = append $hosts (include "aurelius-atlas.atlasHost" .) -}}
 {{- end -}}
 {{- if and .Values.global.hosts.dashboard.enabled $server.enabled -}}
 {{- $hosts = append $hosts (include "aurelius-atlas.dashboardHost" .) -}}
 {{- end -}}
-{{- if and .Values.global.hosts.grafana.enabled $obs.enabled -}}
+{{- if and .Values.global.hosts.o11y.enabled $obs.enabled -}}
 {{- $hosts = append $hosts (include "aurelius-atlas.grafanaHost" .) -}}
 {{- end -}}
 {{- if $hosts }}
@@ -60,7 +60,7 @@ spec:
         {{- end }}
         {{- end }}
 {{- end }}
-{{- if and .Values.global.hosts.keycloak.enabled (index .Values "atlas-keycloak").enabled .Values.global.gateway.edge.issuerRef.name -}}
+{{- if and .Values.global.hosts.auth.enabled (index .Values "atlas-keycloak").enabled .Values.global.gateway.edge.issuerRef.name -}}
 {{/*
 The keycloak browser leaf for a separate edge issuer (DD-643). The keycloak
 chart's own certificate carries the public host AND the Service-name SANs

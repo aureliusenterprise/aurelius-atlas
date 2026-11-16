@@ -140,10 +140,10 @@ global:
             unhealthyThreshold: 3
             # One path per listener, riding each backend's readiness answer.
             paths:
-                atlas: /config.json
-                keycloak: /realms/master
+                app: /config.json
+                auth: /realms/master
                 dashboard: /api/atlas/admin/readiness
-                grafana: /api/health
+                o11y: /api/health
         # The backend-CA trust sync (DD-652, superseding the hook Job of
         # DD-644): when the gateway is enabled and the chart owns a CA
         # (createIssuer or a BYO caBundle), the umbrella renders a
@@ -157,23 +157,26 @@ global:
         # here controls the Bundle — the same flags that owned the CA before
         # gate it.
 
-    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285). Each host
-    # joins to one backend Service; `service`/`port` override the name-rule
-    # join and the component's service port when a deployment diverges.
+    # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285, CHT-135).
+    # The entry keys read by product role (DD-658): app, auth, o11y; the
+    # dashboard host keeps its component name. Each host joins to one backend
+    # Service; `service`/`port` override the name-rule join and the
+    # component's service port when a deployment diverges.
     hosts:
-        atlas:
+        app:
             enabled: true
-            # "" defaults to atlas.<domain> — the webapp: SPA, /config.json,
+            # "" defaults to app.<domain> — the webapp: SPA, /config.json,
             # and the /api and /otel proxies (the tested data path, DD-142).
             host: ""
             # Backend: the webapp Service ("" = the CHT-13 name rule) and its
             # port (matches atlas-webapp.service.port).
             service: ""
             port: 8080
-        keycloak:
+        auth:
             enabled: true
-            # "" defaults to keycloak.<domain> — the identity provider the
-            # browser redirects to (ADR 007).
+            # "" defaults to auth.<domain> — the identity provider the
+            # browser redirects to (ADR 007). Keycloak pins its issuer from
+            # this host, so the issuer reads https://auth.<domain> too.
             host: ""
             # Backend: the Keycloak Service ("" = the CHT-13 name rule) and
             # its TLS port (matches atlas-keycloak.service.port; a
@@ -191,14 +194,14 @@ global:
             # TLS port (matches atlas-server.service.port; BackendTLSPolicy).
             service: ""
             port: 21000
-        grafana:
+        o11y:
             # On by default (DD-653): the login is the realm's (CHT-84,
             # DD-275) and the host feeds both the grafana client's redirect
             # URIs (CHT-82) and Grafana's own root_url, so a deployment
             # without this host cannot complete a login at all. Set false to
             # keep the port-forward access path (runbook).
             enabled: true
-            # "" defaults to grafana.<domain>.
+            # "" defaults to o11y.<domain> (DD-658).
             host: ""
             # Backend: the observability chart's Grafana Service ("" = the
             # CHT-13 name rule + "-grafana") and its plaintext UI port. The

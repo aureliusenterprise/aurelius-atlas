@@ -126,7 +126,7 @@ def test__telemetry_join_names_collector_and_public_issuer(component: str) -> No
     assert env_value(envs, f"{prefix}OTEL_ENDPOINT") == "https://atlas-observability:4319"
     assert (
         env_value(envs, f"{prefix}OTEL_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     secret = envs[f"{prefix}OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert secret == {"name": "atlas-otel-clients", "key": _OTEL_CLIENT_IDS[component]}
@@ -292,7 +292,7 @@ def test__validate_entity_catalogue_leg_joins_server_secret_and_issuer(tmp_path:
     assert env_value(envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL") == "https://atlas-server:21000"
     assert (
         env_value(envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     join = envs["AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "atlas-validate-entity-client", "key": "client-secret"}
@@ -302,7 +302,7 @@ def test__validate_entity_catalogue_leg_joins_server_secret_and_issuer(tmp_path:
     master_envs = env_map(_app(master))
     assert (
         env_value(master_envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/master/protocol/openid-connect/token"
     )
 
     # The bring-your-own path (CHT-109's twin): a named Secret wins verbatim.

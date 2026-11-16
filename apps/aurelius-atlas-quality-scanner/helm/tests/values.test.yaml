@@ -3,7 +3,7 @@
 global:
     domain: atlas.test
     issuer:
-        url: https://keycloak.atlas.test
+        url: https://auth.atlas.test
 schedule: "0 3 * * *"
 catalogue:
     serverUrl: https://atlas-server.atlas.svc.cluster.local:21000

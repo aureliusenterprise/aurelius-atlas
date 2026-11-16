@@ -31,7 +31,7 @@ from conftest import (
 TEST_VALUES = (UMBRELLA_CHART / "tests/values.test.yaml",)
 
 
-@pytest.mark.covers(rules=["CHT-29"])
+@pytest.mark.covers(rules=["CHT-29", "CHT-135"])
 def test__gateway_listeners_per_enabled_host(umbrella_docs: list[dict[str, Any]]) -> None:
     """One HTTPS listener per browser host; keycloak reuses its own cert."""
     gateway = find(umbrella_docs, "Gateway", "atlas")
@@ -39,27 +39,27 @@ def test__gateway_listeners_per_enabled_host(umbrella_docs: list[dict[str, Any]]
     listeners = {lst["name"]: lst for lst in gateway["spec"]["listeners"]}
     # Grafana rides the edge by default (CHT-132, DD-653): its login is the
     # realm's, and root_url needs the host (DD-654) — port-forward-only is
-    # the opt-out now.
-    assert set(listeners) == {"atlas", "keycloak", "grafana"}
+    # the opt-out now. The names read by product role (CHT-135, DD-658).
+    assert set(listeners) == {"app", "auth", "o11y"}
     for listener in listeners.values():
         assert listener["port"] == 443
         assert listener["protocol"] == "HTTPS"
         assert listener["allowedRoutes"]["namespaces"]["from"] == "Same"
         assert listener["tls"]["mode"] == "Terminate"
-    assert listeners["atlas"]["hostname"] == "atlas.atlas.example"
-    assert listeners["atlas"]["tls"]["certificateRefs"] == [{"name": "atlas-edge-tls", "kind": "Secret"}]
+    assert listeners["app"]["hostname"] == "app.atlas.example"
+    assert listeners["app"]["tls"]["certificateRefs"] == [{"name": "atlas-edge-tls", "kind": "Secret"}]
     # Keycloak's listener reuses the cert its own chart issues (CHT-29).
-    assert listeners["keycloak"]["hostname"] == "keycloak.atlas.example"
-    assert listeners["keycloak"]["tls"]["certificateRefs"] == [{"name": "atlas-keycloak-tls", "kind": "Secret"}]
+    assert listeners["auth"]["hostname"] == "auth.atlas.example"
+    assert listeners["auth"]["tls"]["certificateRefs"] == [{"name": "atlas-keycloak-tls", "kind": "Secret"}]
     # The chart never renders a GatewayClass — it is a runbook prerequisite.
     assert "GatewayClass" not in {d["kind"] for d in umbrella_docs}
 
 
 @pytest.mark.covers(rules=["CHT-29"])
 def test__edge_leaf_covers_the_browser_hosts(umbrella_docs: list[dict[str, Any]]) -> None:
-    """The shared edge cert's SANs: atlas + grafana (default-on, CHT-132); keycloak is not (its chart owns it)."""
+    """The shared edge cert's SANs: app + o11y (default-on, CHT-132); auth is not (its chart owns it)."""
     cert = find(umbrella_docs, "Certificate", "atlas-edge-tls")
-    assert cert["spec"]["dnsNames"] == ["atlas.atlas.example", "grafana.atlas.example"]
+    assert cert["spec"]["dnsNames"] == ["app.atlas.example", "o11y.atlas.example"]
     assert cert["spec"]["secretName"] == "atlas-edge-tls"
     assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
 
@@ -70,25 +70,25 @@ def test__all_hosts_widen_listeners_and_sans() -> None:
     docs = helm_render(
         UMBRELLA_CHART,
         value_files=TEST_VALUES,
-        sets=("global.hosts.dashboard.enabled=true", "global.hosts.grafana.enabled=true"),
+        sets=("global.hosts.dashboard.enabled=true", "global.hosts.o11y.enabled=true"),
     )
     gateway = find(docs, "Gateway", "atlas")
-    assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"atlas", "keycloak", "dashboard", "grafana"}
+    assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"app", "auth", "dashboard", "o11y"}
     cert = find(docs, "Certificate", "atlas-edge-tls")
-    assert cert["spec"]["dnsNames"] == ["atlas.atlas.example", "dashboard.atlas.example", "grafana.atlas.example"]
-    # The shared leaf serves the non-keycloak listeners; keycloak keeps its own.
+    assert cert["spec"]["dnsNames"] == ["app.atlas.example", "dashboard.atlas.example", "o11y.atlas.example"]
+    # The shared leaf serves the non-auth listeners; auth keeps its own.
     for listener in gateway["spec"]["listeners"]:
-        expected = "atlas-keycloak-tls" if listener["name"] == "keycloak" else "atlas-edge-tls"
+        expected = "atlas-keycloak-tls" if listener["name"] == "auth" else "atlas-edge-tls"
         assert listener["tls"]["certificateRefs"][0]["name"] == expected, listener["name"]
 
 
 @pytest.mark.covers(rules=["CHT-29"])
 def test__disabled_component_loses_its_listener() -> None:
-    """Webapp off drops the atlas listener — the keycloak-only render survives."""
+    """Webapp off drops the app listener — the auth-only render survives."""
     docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("atlas-webapp.enabled=false",))
     gateway = find(docs, "Gateway", "atlas")
-    assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"keycloak", "grafana"}
-    assert names(docs, "HTTPRoute") == {"atlas-keycloak", "atlas-grafana"}
+    assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"auth", "o11y"}
+    assert names(docs, "HTTPRoute") == {"atlas-auth", "atlas-o11y"}
 
 
 @pytest.mark.covers(rules=["CHT-29"])
@@ -107,9 +107,9 @@ def test__gateway_without_hosts_fails_loudly() -> None:
         UMBRELLA_CHART,
         value_files=TEST_VALUES,
         sets=(
-            "global.hosts.atlas.enabled=false",
-            "global.hosts.keycloak.enabled=false",
-            "global.hosts.grafana.enabled=false",  # default-on since DD-653: switch it off too
+            "global.hosts.app.enabled=false",
+            "global.hosts.auth.enabled=false",
+            "global.hosts.o11y.enabled=false",  # default-on since DD-653: switch it off too
         ),
     )
     assert "no browser host resolves" in stderr
@@ -119,15 +119,15 @@ def test__gateway_without_hosts_fails_loudly() -> None:
 def test__one_route_per_listener_with_one_backend(umbrella_docs: list[dict[str, Any]]) -> None:
     """Each listener gets its own pinned-hostname HTTPRoute, one backend each."""
     routes = find_all(umbrella_docs, "HTTPRoute")
-    assert {r["metadata"]["name"] for r in routes} == {"atlas-atlas", "atlas-keycloak", "atlas-grafana"}
+    assert {r["metadata"]["name"] for r in routes} == {"atlas-app", "atlas-auth", "atlas-o11y"}
     for route in routes:
         (parent,) = route["spec"]["parentRefs"]
         assert parent["name"] == "atlas"
         assert parent["sectionName"] == route["metadata"]["name"].removeprefix("atlas-")
         (rule,) = route["spec"]["rules"]
         assert len(rule["backendRefs"]) == 1
-    route = find(umbrella_docs, "HTTPRoute", "atlas-atlas")
-    assert route["spec"]["hostnames"] == ["atlas.atlas.example"]
+    route = find(umbrella_docs, "HTTPRoute", "atlas-app")
+    assert route["spec"]["hostnames"] == ["app.atlas.example"]
     assert route["spec"]["rules"][0]["backendRefs"] == [{"name": "atlas-webapp", "port": 8080}]
 
 
@@ -209,8 +209,8 @@ def test__dashboard_route_joins_server_with_a_tls_policy() -> None:
     assert set(policies) == {"atlas-atlas-keycloak", "atlas-atlas-server", "atlas-atlas-webapp"}
     assert policies["atlas-atlas-server"]["spec"]["targetRefs"][0]["name"] == "atlas-server"
     # grafana's route (when on) is the plaintext one — no policy.
-    docs_g = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("global.hosts.grafana.enabled=true",))
-    assert find(docs_g, "HTTPRoute", "atlas-grafana")["spec"]["rules"][0]["backendRefs"] == [
+    docs_g = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("global.hosts.o11y.enabled=true",))
+    assert find(docs_g, "HTTPRoute", "atlas-o11y")["spec"]["rules"][0]["backendRefs"] == [
         {"name": "atlas-observability-grafana", "port": 3000}
     ]
     assert {p["metadata"]["name"] for p in find_all(docs_g, "BackendTLSPolicy")} == {
@@ -236,11 +236,11 @@ def test__edge_issuer_splits_browser_trust_from_internal(umbrella_docs: list[dic
     assert edge["spec"]["issuerRef"] == {"name": "atlas-public", "kind": "ClusterIssuer"}
     assert edge["spec"]["privateKey"] == {"algorithm": "ECDSA", "size": 256}
     companion = find(docs, "Certificate", "atlas-keycloak-edge-tls")
-    assert companion["spec"]["dnsNames"] == ["keycloak.atlas.example"]
+    assert companion["spec"]["dnsNames"] == ["auth.atlas.example"]
     assert companion["spec"]["issuerRef"]["name"] == "atlas-public"
     gateway = find(docs, "Gateway", "atlas")
     listeners = {lst["name"]: lst for lst in gateway["spec"]["listeners"]}
-    assert listeners["keycloak"]["tls"]["certificateRefs"][0]["name"] == "atlas-keycloak-edge-tls"
+    assert listeners["auth"]["tls"]["certificateRefs"][0]["name"] == "atlas-keycloak-edge-tls"
     # Internal leaves stay on the private CA (ACME cannot mint svc names).
     for name in ("atlas-webapp", "atlas-keycloak", "atlas-server"):
         cert = find(docs, "Certificate", name)
@@ -252,7 +252,7 @@ def test__edge_issuer_splits_browser_trust_from_internal(umbrella_docs: list[dic
     assert "atlas-keycloak-edge-tls" not in names(umbrella_docs, "Certificate")
 
 
-@pytest.mark.covers(rules=["CHT-128", "CHT-132"])
+@pytest.mark.covers(rules=["CHT-128", "CHT-132", "CHT-135"])
 def test__health_check_policies_cover_every_backend(umbrella_docs: list[dict[str, Any]]) -> None:
     """healthCheck.enabled (DD-645, DD-653): an HTTPS probe per TLS backend, an HTTP one for grafana.
 
@@ -267,16 +267,14 @@ def test__health_check_policies_cover_every_backend(umbrella_docs: list[dict[str
         sets=("global.gateway.healthCheck.enabled=true",),
     )
     policies = {p["metadata"]["name"]: p for p in find_all(docs, "HealthCheckPolicy")}
-    assert set(policies) == {"atlas-atlas", "atlas-keycloak", "atlas-grafana"}
-    atlas = policies["atlas-atlas"]
+    assert set(policies) == {"atlas-app", "atlas-auth", "atlas-o11y"}
+    atlas = policies["atlas-app"]
     assert atlas["apiVersion"] == "networking.gke.io/v1"
     assert atlas["spec"]["targetRef"]["name"] == "atlas-webapp"
     assert atlas["spec"]["default"]["config"]["type"] == "HTTPS"
     assert atlas["spec"]["default"]["config"]["httpsHealthCheck"]["requestPath"] == "/config.json"
-    assert policies["atlas-keycloak"]["spec"]["default"]["config"]["httpsHealthCheck"]["requestPath"] == (
-        "/realms/master"
-    )
-    grafana = policies["atlas-grafana"]
+    assert policies["atlas-auth"]["spec"]["default"]["config"]["httpsHealthCheck"]["requestPath"] == ("/realms/master")
+    grafana = policies["atlas-o11y"]
     assert grafana["spec"]["targetRef"]["name"] == "atlas-observability-grafana"
     assert grafana["spec"]["default"]["config"]["type"] == "HTTP"  # plaintext backend (DD-653)
     assert grafana["spec"]["default"]["config"]["httpHealthCheck"]["requestPath"] == "/api/health"
@@ -337,14 +335,14 @@ def test__gateway_admits_browsers_to_every_listener(umbrella_docs: list[dict[str
     public browser edge (DD-272); the component charts' allows segment the
     pod network, so [] exposes only the browser-facing listeners.
     """
-    edge_atlas = find(umbrella_docs, "NetworkPolicy", "atlas-edge-atlas")
+    edge_atlas = find(umbrella_docs, "NetworkPolicy", "atlas-edge-app")
     assert edge_atlas["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-webapp")
     assert edge_atlas["spec"]["policyTypes"] == ["Ingress"]
     rule = edge_atlas["spec"]["ingress"][0]
     assert rule["from"] == [{"namespaceSelector": {}}]
     assert rule["ports"] == [{"port": 8080, "protocol": "TCP"}]
 
-    edge_kc = find(umbrella_docs, "NetworkPolicy", "atlas-edge-keycloak")
+    edge_kc = find(umbrella_docs, "NetworkPolicy", "atlas-edge-auth")
     assert edge_kc["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak")
     assert edge_kc["spec"]["ingress"][0]["ports"] == [{"port": 8443, "protocol": "TCP"}]
 
@@ -365,11 +363,11 @@ def test__edge_policies_follow_the_httproute_gates() -> None:
         sets=("global.hosts.dashboard.enabled=true",),
     )
     policies = names(docs, "NetworkPolicy")
-    assert {"atlas-edge-atlas", "atlas-edge-keycloak", "atlas-edge-dashboard", "atlas-edge-grafana"} <= policies
+    assert {"atlas-edge-app", "atlas-edge-auth", "atlas-edge-dashboard", "atlas-edge-o11y"} <= policies
     dashboard = find(docs, "NetworkPolicy", "atlas-edge-dashboard")
     assert dashboard["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-server")
     assert dashboard["spec"]["ingress"][0]["ports"] == [{"port": 21000, "protocol": "TCP"}]
-    grafana = find(docs, "NetworkPolicy", "atlas-edge-grafana")
+    grafana = find(docs, "NetworkPolicy", "atlas-edge-o11y")
     assert grafana["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-observability", component="grafana")
     assert grafana["spec"]["ingress"][0]["ports"] == [{"port": 3000, "protocol": "TCP"}]
 
@@ -394,7 +392,7 @@ def test__gateway_namespaces_pin_admits_only_them() -> None:
         value_files=TEST_VALUES,
         sets=("networkPolicy.gatewayNamespaces[0]=envoy-gateway",),
     )
-    edge_atlas = find(docs, "NetworkPolicy", "atlas-edge-atlas")
+    edge_atlas = find(docs, "NetworkPolicy", "atlas-edge-app")
     assert edge_atlas["spec"]["ingress"][0]["from"] == [
         {"namespaceSelector": {"matchLabels": {"kubernetes.io/metadata.name": "envoy-gateway"}}}
     ]

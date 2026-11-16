@@ -188,7 +188,7 @@ def test__placeholder_values_are_chart_joins(webapp_docs: list[dict[str, Any]]) 
         env_value(envs, "AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT")
         == "https://atlas-observability.atlas.svc.cluster.local:4320"
     )
-    assert env_value(envs, "AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS") == "https://keycloak.atlas.test"
+    assert env_value(envs, "AURELIUS_ATLAS_WEBAPP_KEYCLOAK_ORIGINS") == "https://auth.atlas.test"
     assert env_value(envs, "AURELIUS_ATLAS_WEBAPP_DNS_RESOLVER") == "10.96.0.10"
     assert env_value(envs, "AURELIUS_ATLAS_WEBAPP_TLS_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
     # The listener leaf paths (DD-270): the cert-manager Secret's key names,
@@ -231,7 +231,7 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     configmap = find(webapp_docs, "ConfigMap", "atlas-webapp-config")
     config = yaml.safe_load(configmap["data"]["config.json"])
     assert config["apiBaseUrl"] == "/api"
-    assert config["keycloak"]["url"] == "https://keycloak.atlas.test"
+    assert config["keycloak"]["url"] == "https://auth.atlas.test"
     assert config["keycloak"]["realm"] == "aurelius-atlas"  # CHT-74: global.realm
     assert config["otelExporterUrl"] == "/otel/v1/traces"
     assert config["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324

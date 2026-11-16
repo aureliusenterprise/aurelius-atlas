@@ -4,4 +4,4 @@
 global:
     domain: atlas.test
     issuer:
-        url: https://keycloak.atlas.test
+        url: https://auth.atlas.test

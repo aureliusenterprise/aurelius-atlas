@@ -14,9 +14,9 @@ the sequence to run.
 
 - **kubectl** + a cluster context. Minikube: start it and run
   `minikube tunnel` in a second terminal (the Gateway gets an external IP
-  through it); add `atlas.test`, `keycloak.atlas.test` (and
-  `dashboard.atlas.test`, `grafana.atlas.test` if enabled) to `/etc/hosts`
-  pointing at `127.0.0.1`.
+  through it); add `app.atlas.test`, `auth.atlas.test` (and
+  `dashboard.atlas.test`, `o11y.atlas.test` if enabled) to `/etc/hosts`
+  pointing at `127.0.0.1` (CHT-135).
 - **cert-manager** installed (CRDs + controller):
 
     ```bash
@@ -48,8 +48,8 @@ the sequence to run.
   enable your cluster's managed-Gateway TLS APIs (on GKE, the Certificate
   Manager API — the Gateway refuses TLS and health-check features without
   it); create a DNS-01 `ClusterIssuer` (Let's Encrypt needs public DNS for
-  every enabled browser host — atlas, keycloak, and any dashboard or
-  grafana host); and set `global.gateway.healthCheck.enabled=true` on GKE,
+  every enabled browser host — `app`, `auth`, and any `dashboard` or
+  `o11y` host); and set `global.gateway.healthCheck.enabled=true` on GKE,
   where the plain-HTTP default probe never passes a TLS-only backend. The
   overlay `helm/environments/gke.yaml` sets all three. A stock or on-cluster
   CA deployment needs none of this.
@@ -121,7 +121,7 @@ the sequence to run.
 - **Split-horizon DNS for the issuer** (DD-265, with `atlas-observability`
   enabled): in-cluster producers (the collector's OIDC validator, the apps'
   OTLP mints, the store pullers) reach the issuer over its **public** name —
-  `keycloak.<domain>` — so that name must resolve to the Keycloak Service
+  `auth.<domain>` — so that name must resolve to the Keycloak Service
   inside the cluster too (the cluster port of the dev stack's per-producer
   `extra_hosts`). A real deployment's DNS usually does this already:
   `atlas.test` is your domain, and its internal view points at the cluster.
@@ -134,7 +134,7 @@ the sequence to run.
 
     ```text
     # inside the `Corefile:` data, beside the `kubernetes` block:
-    rewrite stop name keycloak.atlas.test atlas-keycloak.atlas.svc.cluster.local
+    rewrite stop name auth.atlas.test atlas-keycloak.atlas.svc.cluster.local
     ```
 
     Then `kubectl -n kube-system rollout restart deployment coredns`. The
@@ -150,7 +150,7 @@ the sequence to run.
     ```bash
     gcloud dns managed-zones create atlas-internal \
         --dns-name=<domain>. --visibility=private --networks=<vpc-network>
-    gcloud dns record-sets create keycloak.<domain>. --zone=atlas-internal \
+    gcloud dns record-sets create auth.<domain>. --zone=atlas-internal \
         --type=A --rrdatas=<keycloak-service-cluster-ip> --ttl=60
     ```
 
@@ -180,12 +180,12 @@ the sequence to run.
 
     ```bash
     kubectl -n atlas run mint-probe --rm -i --restart=Never --image=curlimages/curl -- \
-      -s -k "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token" \
+      -s -k "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token" \
       -d grant_type=client_credentials -d client_id=otel-atlas-server \
       -d client_secret="$(kubectl -n atlas get secret atlas-otel-clients -o jsonpath='{.data.otel-atlas-server}' | base64 -d)" | tr ',' '\n' | grep -A1 '"iss"'
     ```
 
-    The `iss` must be `https://keycloak.atlas.test/realms/aurelius-atlas` — no
+    The `iss` must be `https://auth.atlas.test/realms/aurelius-atlas` — no
     port, no Service name. (`aurelius-atlas` is `global.realm`'s default — the
     hardened realm the chart imports, DD-273. Like the issuer hostname, the
     realm name is first-boot-immutable: Keycloak pins the realm's issuer when
@@ -259,8 +259,8 @@ either way, which is the point of the per-client shape.
 ```bash
 kubectl -n atlas get pods                          # all Running/Completed
 kubectl -n atlas get gateway,gatewayclass,httproute
-curl -k https://atlas.<domain>/api/atlas/admin/liveness
-curl -k https://keycloak.<domain>/realms/aurelius-atlas    # issuer reachable
+curl -k https://app.<domain>/api/atlas/admin/liveness
+curl -k https://auth.<domain>/realms/aurelius-atlas    # issuer reachable
 ```
 
 (The full smoke suite — login, entity write/read, lineage, telemetry — lands
@@ -269,19 +269,22 @@ with increment 10.5.)
 ### Grafana
 
 Grafana has no anonymous access: the login screen's **Keycloak** button goes
-to the `aurelius-atlas` realm (CHT-84, DD-275). Any realm user lands as
-**Viewer**; grant the `grafana` client's `editor` or `admin` client role in
-the Keycloak console to escalate (CHT-85). The daily door is the browser
-host: `global.hosts.grafana.enabled` is true by default (DD-653), and
-Grafana builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart
-pins to `https://grafana.<domain>` whenever the host is on (DD-654):
+to the `aurelius-atlas` realm (CHT-84, DD-275). The roles on the `grafana`
+client gate the door (CHT-85, CHT-136, DD-659). The `admin` role lands as
+Grafana **Admin**, and the `editor` role lands as **Editor**. A realm user
+who holds neither role is denied at the callback, because the mapping has no
+Viewer fallback any more. You assign the roles on the `grafana` client in
+the Keycloak console or through the admin API. The daily door is the browser
+host: `global.hosts.o11y.enabled` is true by default (DD-653), and Grafana
+builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart pins to
+`https://o11y.<domain>` whenever the host is on (DD-654):
 
 ```text
-https://grafana.<domain>   # log in with the Keycloak button
+https://o11y.<domain>   # log in with the Keycloak button
 ```
 
 The port-forward path still works when you set
-`global.hosts.grafana.enabled=false`: the pin drops, the UI becomes
+`global.hosts.o11y.enabled=false`: the pin drops, the UI becomes
 request-derived again, and the client's registered
 `http://localhost:3000/login/generic_oauth` completes the login (DD-276).
 With the host on, a forwarded port redirects to the public host instead.
@@ -308,6 +311,137 @@ helm upgrade atlas oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas \
     -f helm/environments/<env>.yaml \
     --namespace atlas
 ```
+
+### Rename the browser hosts
+
+A release installed before 10.15 names its hosts `atlas`, `keycloak`, and
+`grafana`. The keys are `app`, `auth`, `dashboard`, and `o11y` now
+(CHT-135, DD-658), and the chart has no alias for the old keys, because a
+half-renamed install serves two hostnames for one app. Rename the records
+first, then upgrade, then retire the old names.
+
+!!! WARNING
+**The issuer moves with the rename.** Keycloak advertises
+`https://auth.<domain>` after it, and every token embeds the `iss` it
+was minted with. Tokens, sessions, and Grafana logins issued before the
+upgrade stop validating. Do the rename as one change, in one
+maintenance window.
+
+1. Add the new public records next to the old ones. Let's Encrypt must see
+   them before the upgrade, because ACME validates all SANs of the new
+   edge leaf:
+
+    ```bash
+    for host in app auth o11y; do
+        gcloud dns record-sets create "$host.<domain>." --zone=<public-zone> \
+            --type=A --rrdatas=<gateway-ip> --ttl=300
+    done
+    ```
+
+2. Update the private zone (DD-651): `auth.<domain>` must resolve to the
+   Keycloak Service ClusterIP in-cluster, exactly as `keycloak.<domain>`
+   did before. Keep the old records until the last step.
+3. Upgrade the release. With an environment overlay, change its `hosts:`
+   keys the same way (a `hosts.grafana.enabled` entry becomes
+   `hosts.o11y.enabled`). The Keycloak pod restarts and re-imports the
+   realm with the new placeholder hosts; restart the collectors and every
+   OIDC client afterwards so they re-read the issuer metadata.
+4. Verify the new hosts answer (section 2), then delete the old `atlas`,
+   `keycloak`, and `grafana` records from both zones.
+
+### Admin accounts
+
+The realm asset carries no users (CHT-80), so you create the first humans
+through the admin API. Three doors read three separate parts of the token:
+the `admin` role of the `grafana` client opens Grafana (CHT-136), the
+`realm-admin` role of the `realm-management` client opens the Keycloak
+console, and the four `atlas-*` client roles of the `aurelius-atlas-server`
+client open the Atlas API (AUZ-02). An admin grant opens only its own
+door, so the sequence
+below gives each account all of them, plus a temporary password with a
+forced change at first login, plus membership in the `aurelius`
+organization's read group. Server tenancy stays off until 15.x, so the
+organization membership stages the data and changes no access yet.
+
+```bash
+KC=https://localhost:8444   # after: kubectl port-forward svc/atlas-keycloak 8444:8443
+TOKEN=$(curl -sk -X POST "$KC/realms/master/protocol/openid-connect/token" \
+    -d grant_type=password -d client_id=admin-cli \
+    -d username="$(kubectl -n atlas get secret atlas-keycloak-admin -o jsonpath='{.data.user}' | base64 -d)" \
+    -d password="$(kubectl -n atlas get secret atlas-keycloak-admin -o jsonpath='{.data.password}' | base64 -d)" \
+    | uv run python -c 'import json,sys; print(json.load(sys.stdin)["access_token"])')
+```
+
+!!! WARNING
+**`clientRoles` keys are client _names_, and a wrong key fails
+silently.** Keycloak applies the map only for keys that name a client
+of the realm; an id-keyed or misspelled map creates the user with no
+roles and answers 201. Make sure that a later
+`GET /users/<id>/role-mappings/clients/<client-id>` lists each role
+before you hand over the account. (The same endpoint answers a bare
+`[]`, not a `clientMappings` object, while the user holds no roles.)
+
+For each account, create the user with the roles and required action (save
+the password to a file you delete after the handover, never to a log):
+
+```bash
+USER=<username>                 # e.g. thijs.franck
+PASS=$(openssl rand -base64 15)
+curl -sk -X POST "$KC/admin/realms/aurelius-atlas/users" -H "Authorization: Bearer $TOKEN" \
+    -H 'Content-Type: application/json' -d "{
+  \"username\": \"$USER\", \"enabled\": true,
+  \"email\": \"$USER@aureliusenterprise.com\", \"emailVerified\": true,
+  \"requiredActions\": [\"UPDATE_PASSWORD\"],
+    \"credentials\": [{\"type\": \"password\", \"value\": \"$PASS\", \"temporary\": true}],
+  \"clientRoles\": {\"grafana\": [\"admin\"],
+    \"aurelius-atlas-server\": [\"atlas-read\", \"atlas-write\", \"atlas-types\", \"atlas-admin\"]}
+}"
+echo "$USER $PASS" >>/tmp/admin-accounts.txt
+```
+
+The console door needs one more call, because `realm-admin` is a client
+role of the internal `realm-management` client: fetch that client's id and
+`POST` the role object to `/users/<id>/role-mappings/clients/<rm-id>`. A
+user of that role signs in once with the temporary password, sets a real
+one, and reaches Grafana as Admin, the Keycloak console as administrator,
+and the Atlas API with its full four-role set. The `atlas-*` roles are client roles of
+`aurelius-atlas-server` today, and the organization's four groups carry
+the same names for the tenancy-on posture (TEN-02), so the 15.x switch
+re-reads what each account already holds. A realm user that holds no
+`grafana` client role shows the denial case: the strict mapping refuses it
+at the callback (CHT-136).
+
+Finish with the organization, once per realm. The calls mirror what the
+server's provisioning module does when tenancy is on (`realm_tenants.py`,
+ADR 063), so 15.x finds the tenant already staged:
+
+```bash
+ORG_ID=$(curl -sk -X POST "$KC/admin/realms/aurelius-atlas/organizations" \
+    -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+    -d '{"name": "aurelius", "alias": "aurelius", "enabled": true}' \
+    | cut -d/ -f9)
+for GROUP in atlas-read atlas-write atlas-types atlas-admin; do
+    curl -sk -X POST "$KC/admin/realms/aurelius-atlas/organizations/$ORG_ID/groups" \
+        -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+        -d "{\"name\": \"$GROUP\"}"
+done
+READ_ID=$(curl -sk "$KC/admin/realms/aurelius-atlas/organizations/$ORG_ID/groups" \
+    | uv run python -c 'import json,sys; print([g["id"] for g in json.load(sys.stdin) if g["name"]=="atlas-read"][0])')
+for USER in thijs.franck andreas.wombacher; do
+    UID_=$(curl -sk "$KC/admin/realms/aurelius-atlas/users?username=$USER&exact=true" \
+        -H "Authorization: Bearer $TOKEN" \
+        | uv run python -c 'import json,sys; print(json.load(sys.stdin)[0]["id"])')
+    curl -sk -X POST "$KC/admin/realms/aurelius-atlas/organizations/$ORG_ID/members" \
+        -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d "\"$UID_\""
+    curl -sk -X PUT "$KC/admin/realms/aurelius-atlas/organizations/$ORG_ID/groups/$READ_ID/members/$UID_" \
+        -H "Authorization: Bearer $TOKEN"
+done
+```
+
+The member POST takes the bare user id as `text/plain` (the shape
+`realm_tenants.py` uses). With tenancy off, the membership changes no
+access yet; with it on, the `organization` claim and the
+`organization.aurelius.groups` list decide what each user reads and writes.
 
 ## 4. Uninstall
 

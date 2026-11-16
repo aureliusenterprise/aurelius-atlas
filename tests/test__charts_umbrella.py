@@ -287,7 +287,7 @@ def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[
     """
     deployment = find(umbrella_docs, "Deployment", "atlas-server")
     envs = env_map(container(deployment, "server"))
-    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://keycloak.atlas.example"
+    assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL") == "https://auth.atlas.example"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_REALM") == "aurelius-atlas"
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
     # 12.7 (VEV-04) plus CHT-120 (12.3): the chart default admits the
@@ -368,7 +368,7 @@ def test__the_master_realm_closes_the_validate_entity_leg() -> None:
     assert env_value(app_envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL") == "https://atlas-server:21000"
     assert (
         env_value(app_envs, "AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL")
-        == "https://keycloak.atlas.example/realms/master/protocol/openid-connect/token"
+        == "https://auth.atlas.example/realms/master/protocol/openid-connect/token"
     )
     join = app_envs["AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
     assert join == {"name": "atlas-validate-entity-client", "key": "client-secret"}

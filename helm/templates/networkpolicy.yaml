@@ -39,13 +39,14 @@ spec:
     policyTypes:
         - Ingress
 {{- if .Values.global.gateway.enabled }}
-{{/* Listener name -> the owning component's pod labels (CHT-70). The chart
-names are the constants the dependencies block already fixes. */}}
+{{/* Listener name -> the owning component's pod labels (CHT-70, CHT-135).
+The keys ride the listener names (DD-658: app, auth, dashboard, o11y); the
+chart names are the constants the dependencies block already fixes. */}}
 {{- $peers := dict
-    "atlas" (dict "name" "atlas-webapp")
-    "keycloak" (dict "name" "atlas-keycloak")
+    "app" (dict "name" "atlas-webapp")
+    "auth" (dict "name" "atlas-keycloak")
     "dashboard" (dict "name" "atlas-server")
-    "grafana" (dict "name" "atlas-observability" "component" "grafana")
+    "o11y" (dict "name" "atlas-observability" "component" "grafana")
 -}}
 {{- range $l := fromJsonArray (include "aurelius-atlas.edge.listeners" .) }}
 {{- $peer := index $peers (index $l "name") }}

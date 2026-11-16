@@ -15,9 +15,9 @@ edge, on one OIDC issuer:
 flowchart LR
     browser([Browser]) -->|HTTPS| gw[Gateway<br/>edge]
     gw -->|"/api, TLS"| server[atlas-server]
-    gw -->|"atlas.host /, TLS"| webapp[atlas-webapp<br/>nginx]
-    gw -->|"keycloak.host, TLS"| keycloak[atlas-keycloak]
-    gw -.->|grafana.host, optional| grafana[Grafana]
+    gw -->|"app host /, TLS"| webapp[atlas-webapp<br/>nginx]
+    gw -->|"auth host, TLS"| keycloak[atlas-keycloak]
+    gw -.->|o11y host, optional| grafana[Grafana]
 
     server --> es[(atlas-elasticsearch)]
     server --> keycloak

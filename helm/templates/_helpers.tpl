@@ -33,13 +33,19 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- trimSuffix "/" $url -}}
 {{- end -}}
 
-{{/* Browser hosts (CHT-03). A host set in values wins; the default derives from the domain. */}}
+{{/* Browser hosts (CHT-03, CHT-135). A host set in values wins; the default
+derives from the domain. The entry keys and default labels read by product
+role (DD-658): app (webapp), auth (identity provider), o11y (Grafana); the
+dashboard host keeps its component name. The helper function names stay
+atlasHost/keycloakHost/grafanaHost (their fully-qualified names are
+cross-referenced by the component charts); the key each reads and the
+default label it derives are what the rename moved. */}}
 {{- define "aurelius-atlas.atlasHost" -}}
-{{- default (printf "atlas.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.atlas.host -}}
+{{- default (printf "app.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.app.host -}}
 {{- end -}}
 
 {{- define "aurelius-atlas.keycloakHost" -}}
-{{- default (printf "keycloak.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.keycloak.host -}}
+{{- default (printf "auth.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.auth.host -}}
 {{- end -}}
 
 {{- define "aurelius-atlas.dashboardHost" -}}
@@ -47,7 +53,7 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end -}}
 
 {{- define "aurelius-atlas.grafanaHost" -}}
-{{- default (printf "grafana.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.grafana.host -}}
+{{- default (printf "o11y.%s" (include "aurelius-atlas.domain" .)) .Values.global.hosts.o11y.host -}}
 {{- end -}}
 
 {{/*
@@ -106,7 +112,7 @@ webapp's /api and /otel proxy is the tested data path); tlsBackend = the
 backend speaks TLS and gets the BackendTLSPolicy trust pin (CHT-30).
 */}}
 {{- define "aurelius-atlas.keycloakEdgeSecret" -}}
-{{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.keycloak.service) -}}
+{{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.auth.service) -}}
 {{- if .Values.global.gateway.edge.issuerRef.name -}}
 {{- printf "%s-keycloak-edge-tls" .Release.Name -}}
 {{- else -}}
@@ -119,19 +125,19 @@ backend speaks TLS and gets the BackendTLSPolicy trust pin (CHT-30).
 {{- $keycloak := index .Values "atlas-keycloak" | default dict -}}
 {{- $server := index .Values "atlas-server" | default dict -}}
 {{- $obs := index .Values "atlas-observability" | default dict -}}
-{{- if and .Values.global.hosts.atlas.enabled $webapp.enabled -}}
-{{- $l = append $l (dict "name" "atlas" "host" (include "aurelius-atlas.atlasHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-webapp" "release" .Release.Name "override" .Values.global.hosts.atlas.service)) "port" (int .Values.global.hosts.atlas.port) "tlsBackend" true) -}}
+{{- if and .Values.global.hosts.app.enabled $webapp.enabled -}}
+{{- $l = append $l (dict "name" "app" "host" (include "aurelius-atlas.atlasHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-webapp" "release" .Release.Name "override" .Values.global.hosts.app.service)) "port" (int .Values.global.hosts.app.port) "tlsBackend" true) -}}
 {{- end -}}
-{{- if and .Values.global.hosts.keycloak.enabled $keycloak.enabled -}}
-{{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.keycloak.service) -}}
-{{- $l = append $l (dict "name" "keycloak" "host" (include "aurelius-atlas.keycloakHost" .) "secret" (include "aurelius-atlas.keycloakEdgeSecret" .) "backend" $kc "port" (int .Values.global.hosts.keycloak.port) "tlsBackend" true) -}}
+{{- if and .Values.global.hosts.auth.enabled $keycloak.enabled -}}
+{{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.auth.service) -}}
+{{- $l = append $l (dict "name" "auth" "host" (include "aurelius-atlas.keycloakHost" .) "secret" (include "aurelius-atlas.keycloakEdgeSecret" .) "backend" $kc "port" (int .Values.global.hosts.auth.port) "tlsBackend" true) -}}
 {{- end -}}
 {{- if and .Values.global.hosts.dashboard.enabled $server.enabled -}}
 {{- $srv := include "aurelius-atlas.componentService" (dict "name" "atlas-server" "release" .Release.Name "override" .Values.global.hosts.dashboard.service) -}}
 {{- $l = append $l (dict "name" "dashboard" "host" (include "aurelius-atlas.dashboardHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" $srv "port" (int .Values.global.hosts.dashboard.port) "tlsBackend" true) -}}
 {{- end -}}
-{{- if and .Values.global.hosts.grafana.enabled $obs.enabled -}}
-{{- $l = append $l (dict "name" "grafana" "host" (include "aurelius-atlas.grafanaHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-observability-grafana" "release" .Release.Name "override" .Values.global.hosts.grafana.service)) "port" (int .Values.global.hosts.grafana.port) "tlsBackend" false) -}}
+{{- if and .Values.global.hosts.o11y.enabled $obs.enabled -}}
+{{- $l = append $l (dict "name" "o11y" "host" (include "aurelius-atlas.grafanaHost" .) "secret" (printf "%s-edge-tls" .Release.Name) "backend" (include "aurelius-atlas.componentService" (dict "name" "atlas-observability-grafana" "release" .Release.Name "override" .Values.global.hosts.o11y.service)) "port" (int .Values.global.hosts.o11y.port) "tlsBackend" false) -}}
 {{- end -}}
 {{- toJson $l -}}
 {{- end -}}
@@ -151,8 +157,8 @@ install, loudly, not at first request). Renders nothing; fails the render.
 {{- if not .Values.global.trust.issuerRef.name -}}
 {{- $e = append $e "global.trust.issuerRef.name is required (the issuer signing every certificate, DD-286)" -}}
 {{- end -}}
-{{- if and .Values.global.hosts.atlas.enabled (not (include "aurelius-atlas.atlasHost" .)) -}}
-{{- $e = append $e "global.hosts.atlas.host resolves empty — set global.domain or the host" -}}
+{{- if and .Values.global.hosts.app.enabled (not (include "aurelius-atlas.atlasHost" .)) -}}
+{{- $e = append $e "global.hosts.app.host resolves empty — set global.domain or the host" -}}
 {{- end -}}
 {{- if $e -}}
 {{- fail (printf "Invalid values:\n  - %s" (join "\n  - " $e)) -}}

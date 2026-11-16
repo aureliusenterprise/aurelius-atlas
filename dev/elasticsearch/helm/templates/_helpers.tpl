@@ -58,7 +58,7 @@ DD-265): the public name, split-horizon-resolved in-cluster. */}}
 {{- $u := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" .Values.global.issuer.url)) -}}
 {{- $u | trimSuffix "/" | splitList "/" | first -}}
 {{- else -}}
-{{- printf "keycloak.%s" (required "global.domain or global.issuer.url is required (the puller mints ingest tokens against the issuer)" .Values.global.domain) -}}
+{{- printf "auth.%s" (required "global.domain or global.issuer.url is required (the puller mints ingest tokens against the issuer)" .Values.global.domain) -}}
 {{- end -}}
 {{- end -}}
 {{- define "atlas-elasticsearch.issuerUrl" -}}

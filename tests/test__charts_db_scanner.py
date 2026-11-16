@@ -66,7 +66,7 @@ def test__identity_env_block_is_joins_not_literals(scanner_docs: list[dict[str, 
     assert env_value(envs, f"{PREFIX}SERVER_URL") == "https://atlas-server.atlas.svc.cluster.local:21000"
     assert (
         env_value(envs, f"{PREFIX}TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     assert env_value(envs, f"{PREFIX}CLIENT_ID") == CLIENT_ID
     join = envs[f"{PREFIX}CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
@@ -75,8 +75,7 @@ def test__identity_env_block_is_joins_not_literals(scanner_docs: list[dict[str, 
     master = helm_render(CHART, value_files=TEST_VALUES, sets=("global.realm=master",))
     menvs = env_map(_container(master))
     assert (
-        env_value(menvs, f"{PREFIX}TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"
+        env_value(menvs, f"{PREFIX}TOKEN_URL") == "https://auth.atlas.test/realms/master/protocol/openid-connect/token"
     )
 
 
@@ -207,7 +206,7 @@ def test__telemetry_auth_on_joins_the_app_leg_and_reuses_identity() -> None:
     assert env_value(envs, f"{PREFIX}OTEL_ENDPOINT") == "https://otel.example:4319"
     assert (
         env_value(envs, f"{PREFIX}OTEL_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     assert env_value(envs, f"{PREFIX}OTEL_CLIENT_ID") == CLIENT_ID
     assert envs[f"{PREFIX}OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {

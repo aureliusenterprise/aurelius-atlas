@@ -79,7 +79,7 @@ standalone render derives the same name (CHT-03). */}}
 {{- $u := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" .Values.global.issuer.url)) -}}
 {{- $u | trimSuffix "/" | splitList "/" | first -}}
 {{- else -}}
-{{- printf "keycloak.%s" (required "global.domain or global.issuer.url is required (the issuer the collector validates ingest tokens against)" .Values.global.domain) -}}
+{{- printf "auth.%s" (required "global.domain or global.issuer.url is required (the issuer the collector validates ingest tokens against)" .Values.global.domain) -}}
 {{- end -}}
 {{- end -}}
 
@@ -142,7 +142,7 @@ and ca.crt, the three items the deployments mount). */}}
 {{/* The root URL Grafana serves at (DD-654): the browser host the umbrella
 routes it on, over the domain rule, mirroring the umbrella's and the
 keycloak chart's helper so a standalone render derives the same name
-(CHT-03). The derivation stops when global.hosts.grafana.enabled is false
+(CHT-03, CHT-135). The derivation stops when global.hosts.o11y.enabled is false
 (the operator took the host back down) or nothing names a host (a bare
 render): Grafana then keeps DD-276's request-derived shape and the
 port-forward login completes at the localhost redirect the client
@@ -150,11 +150,11 @@ registers. A host riding the edge always needs the pin — Grafana builds
 the OIDC redirect from root_url when set, and the realm client registers
 only the public host. */}}
 {{- define "atlas-observability.grafanaRootUrl" -}}
-{{- if ne (.Values.global.hosts.grafana.enabled | toString) "false" -}}
-{{- if .Values.global.hosts.grafana.host -}}
-{{- printf "https://%s" .Values.global.hosts.grafana.host -}}
+{{- if ne (.Values.global.hosts.o11y.enabled | toString) "false" -}}
+{{- if .Values.global.hosts.o11y.host -}}
+{{- printf "https://%s" .Values.global.hosts.o11y.host -}}
 {{- else if .Values.global.domain -}}
-{{- printf "https://grafana.%s" .Values.global.domain -}}
+{{- printf "https://o11y.%s" .Values.global.domain -}}
 {{- end -}}
 {{- end -}}
 {{- end -}}

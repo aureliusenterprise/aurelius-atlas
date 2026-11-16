@@ -91,7 +91,7 @@ otel-data2model
 {{- if not $issuer -}}
 {{- $domain := trimSuffix "/" (default "" .Values.global.domain) -}}
 {{- if $domain -}}
-{{- $issuer = printf "https://keycloak.%s" $domain -}}
+{{- $issuer = printf "https://auth.%s" $domain -}}
 {{- end -}}
 {{- end -}}
 {{- $issuer -}}

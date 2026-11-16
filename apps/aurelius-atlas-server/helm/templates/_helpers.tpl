@@ -49,7 +49,7 @@ standalone render derives the same name (CHT-03). */}}
 {{- $u := trimSuffix "/" (trimPrefix "https://" (trimPrefix "http://" .Values.global.issuer.url)) -}}
 {{- $u | trimSuffix "/" | splitList "/" | first -}}
 {{- else -}}
-{{- printf "keycloak.%s" (required "global.domain or global.issuer.url is required (the issuer the server verifies tokens against)" .Values.global.domain) -}}
+{{- printf "auth.%s" (required "global.domain or global.issuer.url is required (the issuer the server verifies tokens against)" .Values.global.domain) -}}
 {{- end -}}
 {{- end -}}
 

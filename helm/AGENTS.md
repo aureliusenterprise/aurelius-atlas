@@ -45,8 +45,9 @@ The contract: `namespace`, `labels`, `image{registry,namespace,tag,pullSecrets}`
 `storageClass`, `domain`, `realm` (CHT-74: the Keycloak realm every issuer URL
 names and the Keycloak chart imports `files/<realm>.json` from — default
 `aurelius-atlas`, first-boot-immutable like the issuer; `master` is the dev
-escape hatch, DD-273; the KC chart additionally declares `hosts.{atlas,
-dashboard}.host` for the realm asset's browser-host substitution, CHT-77),
+escape hatch, DD-273; the KC chart additionally declares `hosts.{app,
+dashboard}.host` for the realm asset's browser-host substitution, CHT-77,
+CHT-135),
 `issuer.url`, `dnsResolver`, and
 `trust.issuerRef` (`{name, kind}` — the issuer every component `Certificate`
 signs against; with `trust.createIssuer` on (the default) the umbrella
@@ -84,7 +85,7 @@ cert-manager's ConfigMap injection does not work at the tested version, and
 the CA bytes do not exist at template time. The
 browser leaf
 `atlas-edge-tls` covers
-the atlas/dashboard/grafana hosts; the keycloak listener reuses
+the app/dashboard/o11y hosts (CHT-135); the keycloak listener reuses
 `<release>-keycloak-tls` (the keycloak chart owns that Certificate — never
 re-issue another name for the same hostname, SAN duplication is not free),
 or `<release>-keycloak-edge-tls` when an edge issuer is set (below; the

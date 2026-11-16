@@ -126,7 +126,7 @@ def test__identity_env_block_is_joins_not_literals(scanner_docs: list[dict[str, 
     assert env_value(envs, f"{PREFIX}SERVER_URL") == "https://atlas-server.atlas.svc.cluster.local:21000"
     assert (
         env_value(envs, f"{PREFIX}TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     assert env_value(envs, f"{PREFIX}CLIENT_ID") == CLIENT_ID
     join = envs[f"{PREFIX}CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
@@ -144,8 +144,7 @@ def test__token_url_follows_the_issuer_and_realm_facts() -> None:
     master = helm_render(CHART, value_files=TEST_VALUES, sets=("global.realm=master",))
     envs = env_map(_container(master))
     assert (
-        env_value(envs, f"{PREFIX}TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/master/protocol/openid-connect/token"
+        env_value(envs, f"{PREFIX}TOKEN_URL") == "https://auth.atlas.test/realms/master/protocol/openid-connect/token"
     )
 
     fallback = helm_render(
@@ -156,7 +155,7 @@ def test__token_url_follows_the_issuer_and_realm_facts() -> None:
     fenvs = env_map(_container(fallback))
     assert (
         env_value(fenvs, f"{PREFIX}TOKEN_URL")
-        == "https://keycloak.atlas.example/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.example/realms/aurelius-atlas/protocol/openid-connect/token"
     )
 
 
@@ -314,7 +313,7 @@ def test__telemetry_auth_on_joins_the_app_leg_and_reuses_identity() -> None:
     assert env_value(envs, f"{PREFIX}OTEL_ENDPOINT") == "https://otel.example:4319"
     assert (
         env_value(envs, f"{PREFIX}OTEL_TOKEN_URL")
-        == "https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
+        == "https://auth.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"
     )
     assert env_value(envs, f"{PREFIX}OTEL_CLIENT_ID") == CLIENT_ID
     assert envs[f"{PREFIX}OTEL_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"] == {
