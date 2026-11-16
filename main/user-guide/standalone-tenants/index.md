@@ -1,6 +1,6 @@
 # Add a Tenant to the Standalone Server
 
-This page adds a tenant, a customer or department with its own catalogue and its own people, to a running [Standalone Server](<https://aureliusenterprise.github.io/main/user-guide/standalone-server/index.md>) with tenancy on. The stack's Keycloak keeps no data of its own and imports `keycloak/demo.json` at every start, so a tenant that should last is added to the stack's files, not only in Keycloak's console. The example tenant is `acme`; replace it with yours throughout.
+This page adds a tenant, a customer or department with its own catalogue and its own people, to a running [Standalone Server](<https://aureliusenterprise.github.io/main/user-guide/standalone-server/index.md>) with tenancy on. The stack's Keycloak keeps no data of its own and imports `keycloak/atlas.json` at every start, so a tenant that should last is added to the stack's files, not only in Keycloak's console. The example tenant is `acme`; replace it with yours throughout.
 
 > [!NOTE]
 >
@@ -16,8 +16,8 @@ A tenant is a Keycloak organization with its own indices in the store (ADR 063).
 
 | Where | What you add |
 | --- | --- |
-| `standalone/keycloak/demo.json`, `organizations` | the organization, its four role groups and its members |
-| `standalone/keycloak/demo.json`, `users` | the tenant's own users, each with a password of its own |
+| `standalone/keycloak/atlas.json`, `organizations` | the organization, its four role groups and its members |
+| `standalone/keycloak/atlas.json`, `users` | the tenant's own users, each with a password of its own |
 | `dev/keycloak/.env.enc` | those passwords, encrypted |
 | `standalone/docker-compose.yaml`, service `keycloak` | the passwords passed to Keycloak's import |
 | `standalone/tenants.py` | the provisioning of the tenant's indices, at every start |
@@ -53,7 +53,7 @@ npx nx encrypt aurelius-atlas-dev-keycloak
 
 ## Add the organization and its users to the realm
 
-Add the tenant to `standalone/keycloak/demo.json`. Every person, organization and group has a fixed id, so the tenant's record still names them after Keycloak imports the realm again. Generate eight ids, one for the organization, four for its groups and three for its users:
+Add the tenant to `standalone/keycloak/atlas.json`. Every person, organization and group has a fixed id, so the tenant's record still names them after Keycloak imports the realm again. Generate eight ids, one for the organization, four for its groups and three for its users:
 
 ```
 python3 -c 'import uuid; [print(uuid.uuid4()) for _ in range(8)]'
@@ -175,7 +175,7 @@ ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalo
     -m aurelius_atlas_server.provisioning provision acme
 ```
 
-The command makes the organization and its four groups and adds `operator` to it. Add people at `https://localhost:9000/auth/admin/`, signed in as `KC_BOOTSTRAP_ADMIN_USERNAME` of `dev/keycloak/.env`: realm `demo`, Users to create them, then Organizations, `acme`, Members to add them and give them groups.
+The command makes the organization and its four groups and adds `operator` to it. Add people at `https://localhost:9000/auth/admin/`, signed in as `KC_BOOTSTRAP_ADMIN_USERNAME` of `dev/keycloak/.env`: realm `atlas`, Users to create them, then Organizations, `acme`, Members to add them and give them groups.
 
 ## Remove a tenant
 
