@@ -113,5 +113,10 @@
     "version": "chore-dependabot-batch",
     "title": "chore-dependabot-batch",
     "aliases": []
+  },
+  {
+    "version": "v0.1.0-rc.2",
+    "title": "v0.1.0-rc.2",
+    "aliases": []
   }
 ]
