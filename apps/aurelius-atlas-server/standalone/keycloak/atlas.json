@@ -276,6 +276,7 @@
             "firstName": "Atlas",
             "id": "ded00000-0000-4000-9000-000000000001",
             "lastName": "Administrator",
+            "realmRoles": ["default-roles-atlas"],
             "username": "demo_atlas"
         },
         {
@@ -293,6 +294,7 @@
             "firstName": "Data",
             "id": "ded00000-0000-4000-9000-000000000002",
             "lastName": "Steward",
+            "realmRoles": ["default-roles-atlas"],
             "username": "demo_steward"
         },
         {
@@ -310,6 +312,7 @@
             "firstName": "Data",
             "id": "ded00000-0000-4000-9000-000000000003",
             "lastName": "Scientist",
+            "realmRoles": ["default-roles-atlas"],
             "username": "demo_scientist"
         },
         {
@@ -327,6 +330,7 @@
             "firstName": "Atlas",
             "id": "dee00000-0000-4000-9000-000000000001",
             "lastName": "Administrator",
+            "realmRoles": ["default-roles-atlas"],
             "username": "meyn_atlas"
         },
         {
@@ -344,6 +348,7 @@
             "firstName": "Data",
             "id": "dee00000-0000-4000-9000-000000000002",
             "lastName": "Steward",
+            "realmRoles": ["default-roles-atlas"],
             "username": "meyn_steward"
         },
         {
@@ -361,6 +366,7 @@
             "firstName": "Data",
             "id": "dee00000-0000-4000-9000-000000000003",
             "lastName": "Scientist",
+            "realmRoles": ["default-roles-atlas"],
             "username": "meyn_scientist"
         },
         {
@@ -397,7 +403,7 @@
             "firstName": "Platform",
             "id": "de0e0000-0000-4000-9000-000000000001",
             "lastName": "Operator",
-            "realmRoles": ["atlas-operator"],
+            "realmRoles": ["atlas-operator", "default-roles-atlas"],
             "username": "operator"
         }
     ]
