@@ -45,6 +45,11 @@
     "aliases": []
   },
   {
+    "version": "dependabot-uv-cachetools-8.0.0",
+    "title": "dependabot-uv-cachetools-8.0.0",
+    "aliases": []
+  },
+  {
     "version": "dependabot-npm_and_yarn-typescript-7.0.2",
     "title": "dependabot-npm_and_yarn-typescript-7.0.2",
     "aliases": []
