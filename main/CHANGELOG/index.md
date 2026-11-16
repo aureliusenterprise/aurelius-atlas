@@ -1,3 +1,9 @@
+## 0.1.0-rc.9 (2026-11-16)
+
+### 🩹 Fixes
+
+- **helm:** mount the Keycloak Postgres volume with fsGroupChangePolicy OnRootMismatch ([721cfd5b4](<https://github.com/aureliusenterprise/aurelius-atlas/commit/721cfd5b4>))
+
 ## 0.1.0-rc.8 (2026-11-16)
 
 ### 🚀 Features
