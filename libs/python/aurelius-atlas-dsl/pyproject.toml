@@ -3,7 +3,7 @@ dependencies = ["aurelius-atlas-model", "antlr4-python3-runtime==4.13.2"]
 description = "The Atlas DSL for Aurelius Atlas: Atlas's grammar, its parser and the query's syntax tree."
 name = "aurelius-atlas-dsl"
 requires-python = ">=3.14"
-version = "0.1.0-rc.5"
+version = "0.1.0-rc.6"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

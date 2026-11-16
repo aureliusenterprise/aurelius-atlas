@@ -18,7 +18,7 @@ dependencies = [
 description = "The Aurelius Atlas validate-entity API: an entity draft in, the live governance verdicts out."
 name = "aurelius-atlas-validate-entity"
 requires-python = ">=3.14"
-version = "0.1.0-rc.5"
+version = "0.1.0-rc.6"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

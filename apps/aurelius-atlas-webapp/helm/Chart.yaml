@@ -2,8 +2,8 @@ apiVersion: v2
 name: atlas-webapp
 description: "The Aurelius Atlas webapp: the Angular SPA's nginx edge — SPA, /config.json, the /api and /otel proxies, browser tracing export (DD-139, DD-239)."
 type: application
-version: 0.1.0-rc.5
-appVersion: "v0.1.0-rc.5"
+version: 0.1.0-rc.6
+appVersion: "v0.1.0-rc.6"
 keywords:
     - aurelius-atlas
 home: https://aureliusenterprise.github.io/aurelius-atlas/
