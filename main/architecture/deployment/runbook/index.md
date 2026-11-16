@@ -28,6 +28,12 @@ Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the rea
       controllerName: gateway.envoyproxy.io/gatewayclass-controller
   EOF
   ```
+- **A public ACME issuer for a public edge** (10.13, DD-643). The chart signs every certificate from its private CA by default, and a browser does not trust that CA. When the edge serves hosts the public internet visits, set `global.gateway.edge.issuerRef` to a cluster issuer the browsers already trust. Before the first install of that posture: enable your cluster's managed-Gateway TLS APIs (on GKE, the Certificate Manager API — the Gateway refuses TLS and health-check features without it); create a DNS-01 `ClusterIssuer` (Let's Encrypt needs public DNS for every enabled browser host — atlas, keycloak, and any dashboard or grafana host); and set `global.gateway.healthCheck.enabled=true` on GKE, where the plain-HTTP default probe never passes a TLS-only backend. The overlay `helm/environments/gke.yaml` sets all three. A stock or on-cluster CA deployment needs none of this.
+
+  ```
+  # GKE: the APIs a TLS edge needs beyond Gateway itself.
+  gcloud services enable certificatemanager.googleapis.com
+  ```
 - **Pull secrets** (private registries) in the target namespace:
 
   ```

@@ -6893,6 +6893,24 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 </code></pre></div>
 </li>
 <li>
+<p><strong>A public ACME issuer for a public edge</strong> (10.13, DD-643). The chart
+  signs every certificate from its private CA by default, and a browser
+  does not trust that CA. When the edge serves hosts the public internet
+  visits, set <code>global.gateway.edge.issuerRef</code> to a cluster issuer the
+  browsers already trust. Before the first install of that posture:
+  enable your cluster's managed-Gateway TLS APIs (on GKE, the Certificate
+  Manager API — the Gateway refuses TLS and health-check features without
+  it); create a DNS-01 <code>ClusterIssuer</code> (Let's Encrypt needs public DNS for
+  every enabled browser host — atlas, keycloak, and any dashboard or
+  grafana host); and set <code>global.gateway.healthCheck.enabled=true</code> on GKE,
+  where the plain-HTTP default probe never passes a TLS-only backend. The
+  overlay <code>helm/environments/gke.yaml</code> sets all three. A stock or on-cluster
+  CA deployment needs none of this.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># GKE: the APIs a TLS edge needs beyond Gateway itself.</span>
+gcloud<span class="w"> </span>services<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>certificatemanager.googleapis.com
+</code></pre></div>
+</li>
+<li>
 <p><strong>Pull secrets</strong> (private registries) in the target namespace:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>atlas
 kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="w"> </span>docker-registry<span class="w"> </span>dhi-pull<span class="w"> </span><span class="se">\</span>

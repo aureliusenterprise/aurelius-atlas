@@ -1,3 +1,21 @@
+## 0.1.0-rc.6 (2026-11-16)
+
+### 🩹 Fixes
+
+- **ci:** serialise the cosign attest and sign targets ([a2bec7437](<https://github.com/aureliusenterprise/aurelius-atlas/commit/a2bec7437>))
+
+## 0.1.0-rc.5 (2026-11-16)
+
+### 🩹 Fixes
+
+- **helm:** ca-sync reads its CA Secret; version-free volumeClaimTemplates ([196410cca](<https://github.com/aureliusenterprise/aurelius-atlas/commit/196410cca>))
+
+## 0.1.0-rc.4 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** split edge trust, backend-CA ConfigMap, HTTPS health checks (10.13) ([4fd97adf7](<https://github.com/aureliusenterprise/aurelius-atlas/commit/4fd97adf7>))
+
 ## 0.1.0-rc.3 (2026-11-16)
 
 ### 🩹 Fixes
