@@ -7858,6 +7858,13 @@ checks a PR must pass:</p>
 <td>done</td>
 </tr>
 <tr>
+<td>10.13</td>
+<td>GKE-ready edge: split trust, CA sync, health checks</td>
+<td>The rc.3 GKE deployment's lessons land in the chart: an optional <code>edge.issuerRef</code> moves only the browser leaves to a public CA while the mesh keeps the private CA, a <code>&lt;release&gt;-backend-ca</code> ConfigMap plus hook Job feeds the <code>BackendTLSPolicy</code> CA reference the implementation accepts, a gated <code>HealthCheckPolicy</code> pair makes the TLS backends passable, <code>appProtocol: HTTPS</code> names the wire, and nginx's root redirect goes relative (CHT-126..130, DD-643..647)</td>
+<td>this PR</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>11.1</td>
 <td>Spike: Apache HugeGraph as the store</td>
 <td>Whether HugeGraph, with HugeGraph-AI, can replace Elasticsearch behind the three store protocols: conditional writes, unique values, runtime schema, text ranking, facets by <code>groupCount()</code>, filtered kNN, backup (HGS-01..11); measured against Elasticsearch at up to 1,000,000 entities (HGS-20..26); ends in ADR 059, Proposed</td>

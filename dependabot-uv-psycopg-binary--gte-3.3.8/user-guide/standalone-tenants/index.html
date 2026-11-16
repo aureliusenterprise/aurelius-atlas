@@ -6867,7 +6867,7 @@
 <h1 id="add-a-tenant-to-the-standalone-server">Add a Tenant to the Standalone Server<a class="headerlink" href="#add-a-tenant-to-the-standalone-server" title="Permanent link">&para;</a></h1>
 <p>This page adds a tenant, a customer or department with its own catalogue and its own people, to a running
 <a href=".././standalone-server/">Standalone Server</a> with tenancy on. The stack's Keycloak keeps no data of its own and
-imports <code>keycloak/demo.json</code> at every start, so a tenant that should last is added to the stack's files, not
+imports <code>keycloak/atlas.json</code> at every start, so a tenant that should last is added to the stack's files, not
 only in Keycloak's console. The example tenant is <code>acme</code>; replace it with yours throughout.</p>
 <div class="admonition note">
 <p class="admonition-title">Before you start</p>
@@ -6891,11 +6891,11 @@ only in Keycloak's console. The example tenant is <code>acme</code>; replace it 
 </thead>
 <tbody>
 <tr>
-<td><code>standalone/keycloak/demo.json</code>, <code>organizations</code></td>
+<td><code>standalone/keycloak/atlas.json</code>, <code>organizations</code></td>
 <td>the organization, its four role groups and its members</td>
 </tr>
 <tr>
-<td><code>standalone/keycloak/demo.json</code>, <code>users</code></td>
+<td><code>standalone/keycloak/atlas.json</code>, <code>users</code></td>
 <td>the tenant's own users, each with a password of its own</td>
 </tr>
 <tr>
@@ -6938,7 +6938,7 @@ npx<span class="w"> </span>nx<span class="w"> </span>encrypt<span class="w"> </s
 <code>npx nx decrypt aurelius-atlas-dev-keycloak</code> first, or the encryption drops the keys your copy lacks.</p>
 </div>
 <h2 id="add-the-organization-and-its-users-to-the-realm">Add the organization and its users to the realm<a class="headerlink" href="#add-the-organization-and-its-users-to-the-realm" title="Permanent link">&para;</a></h2>
-<p>Add the tenant to <code>standalone/keycloak/demo.json</code>. Every person, organization and group has a fixed id, so the
+<p>Add the tenant to <code>standalone/keycloak/atlas.json</code>. Every person, organization and group has a fixed id, so the
 tenant's record still names them after Keycloak imports the realm again. Generate eight ids, one for the
 organization, four for its groups and three for its users:</p>
 <div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-c<span class="w"> </span><span class="s1">'import uuid; [print(uuid.uuid4()) for _ in range(8)]'</span>
@@ -7064,7 +7064,7 @@ Keycloak forgets them when its container is recreated; the tenant's indices stay
 </code></pre></div>
 <p>The command makes the organization and its four groups and adds <code>operator</code> to it. Add people at
 <code>https://localhost:9000/auth/admin/</code>, signed in as <code>KC_BOOTSTRAP_ADMIN_USERNAME</code> of <code>dev/keycloak/.env</code>: realm
-<code>demo</code>, Users to create them, then Organizations, <code>acme</code>, Members to add them and give them groups.</p>
+<code>atlas</code>, Users to create them, then Organizations, <code>acme</code>, Members to add them and give them groups.</p>
 <h2 id="remove-a-tenant">Remove a tenant<a class="headerlink" href="#remove-a-tenant" title="Permanent link">&para;</a></h2>
 <p><code>remove</code> deletes the tenant's indices, about a minute after the server stops serving it, then its organization
 and its record:</p>
