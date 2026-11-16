@@ -184,3 +184,41 @@ applies live (the realm cannot re-import without wiping the DD-660
 accounts, so the scope is created through the admin API and attached to
 each client that names it). Anyone reading a pre-DD-661 token capture
 finds no roles claim — expected, nothing minted one.
+
+### DD-662. The Postgres volume mounts with fsGroupChangePolicy OnRootMismatch
+
+- **Status:** Proposed
+- **Increment:** 10.15
+- **Date:** 2026-11-16
+
+**Context.** The rc.8 upgrade of atlas-dev failed its `--atomic` gate:
+the recreated Postgres pod crashlooped on `data directory
+"/var/lib/postgresql/18/data" has invalid permissions`. Postgres 18
+insists on 0700 or 0750; the mounted directory read 2770. The kubelet's
+default `fsGroupChangePolicy` (`Always`) recursively re-applies
+group-ownership with setgid and group-writability on **every** remount,
+and a StatefulSet pod recreate is a remount — the first boot was fine
+because the volume provisioned at the right mode and was never remounted
+under rc.7.
+
+**Decision.** The Postgres pod's security context gains
+`fsGroupChangePolicy: OnRootMismatch`: the group change applies only
+when the volume root's ownership actually mismatches, which a provisioned
+volume already satisfies, so the recursive chmod stops and the 0700 data
+dir survives remounts. The chart test pins the policy next to the boot
+assertions. On atlas-dev the same policy was patched onto the running
+StatefulSet and the data dir chmod'ed back to 0700 once (root), which is
+what the next helm upgrade now also ships.
+
+**Alternatives.** (a) Drop `fsGroup` and run the data dir as uid 70 with
+no group: rejected — the cert-copy boot and socket dir rely on the group
+today, and the policy fix is the documented answer for strict-mode
+databases (e.g. the upstream Postgres chart does the same). (b) Chmod at
+boot from an init container: rejected — it re-chowns 5 Gi every start,
+and the recursion is what caused the problem. (c) A hand-patch only:
+rejected — every future recreate would hit it again.
+
+**Consequences.** Any strict-mode database pod follows the same line:
+fsGroup needs the policy, or the first recreate breaks it. The rc.7
+cluster never showed the defect because its Postgres pod was created
+once; upgrades that recreate pods are where it surfaces. Next free DD: 663.

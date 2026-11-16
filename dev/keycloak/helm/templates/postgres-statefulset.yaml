@@ -10,6 +10,13 @@ pair is copied into a fresh mktemp dir every boot (fixed paths collide on a
 warm node). The /tmp tmpfs pins the mode: emptyDir medium=Memory is kubelet's
 tmpfs mount at mode 1777, the same pin the compose sets explicitly, so the
 boot does not depend on the image digest's own /tmp.
+
+The data volume mounts with fsGroupChangePolicy OnRootMismatch: the kubelet's
+default (Always) recursively re-chmods the whole volume to 2770 on every
+remount, and Postgres 18 refuses to boot on a data dir that is group-writable
+("data directory has invalid permissions", DD-662). OnRootMismatch applies the
+group only when the root's ownership says it must — which the fresh volume
+already got right at first provisioning.
 */}}
 {{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
 {{- $pg := include "atlas-keycloak.pgFullname" . -}}
@@ -40,6 +47,9 @@ spec:
                 runAsUser: 70
                 runAsGroup: 70
                 fsGroup: 70
+                # Postgres 18 needs its data dir at 0700/0750; the default
+                # policy would chmod it to 2770 on every remount (DD-662).
+                fsGroupChangePolicy: OnRootMismatch
                 seccompProfile:
                     type: RuntimeDefault
             containers:

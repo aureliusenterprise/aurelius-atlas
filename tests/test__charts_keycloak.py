@@ -499,6 +499,9 @@ def test__bundled_postgres_boot(kc_docs: list[dict[str, Any]]) -> None:
     assert "emptyDir" in volumes["run"]  # the unix-socket dir (DD-282 Tier 3)
     assert volumes["certs"]["secret"]["secretName"] == "atlas-keycloak-postgres-tls"
     assert volumes["conf"]["configMap"]["name"] == "atlas-keycloak-postgres"
+    # Postgres 18 refuses a group-writable data dir; the kubelet's default
+    # fsGroup policy would chmod the volume to 2770 on every remount (DD-662).
+    assert spec["securityContext"]["fsGroupChangePolicy"] == "OnRootMismatch"
     assert container(ss, "postgres")["securityContext"]["readOnlyRootFilesystem"] is True
     run_mount = next(m for m in container(ss, "postgres")["volumeMounts"] if m["name"] == "run")
     assert run_mount["mountPath"] == "/run/postgresql"
