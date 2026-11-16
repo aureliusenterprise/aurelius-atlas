@@ -6771,9 +6771,9 @@ edge, on one OIDC issuer:</p>
 <pre class="mermaid"><code>flowchart LR
     browser([Browser]) --&gt;|HTTPS| gw[Gateway&lt;br/&gt;edge]
     gw --&gt;|"/api, TLS"| server[atlas-server]
-    gw --&gt;|"atlas.host /, TLS"| webapp[atlas-webapp&lt;br/&gt;nginx]
-    gw --&gt;|"keycloak.host, TLS"| keycloak[atlas-keycloak]
-    gw -.-&gt;|grafana.host, optional| grafana[Grafana]
+    gw --&gt;|"app host /, TLS"| webapp[atlas-webapp&lt;br/&gt;nginx]
+    gw --&gt;|"auth host, TLS"| keycloak[atlas-keycloak]
+    gw -.-&gt;|o11y host, optional| grafana[Grafana]
 
     server --&gt; es[(atlas-elasticsearch)]
     server --&gt; keycloak
