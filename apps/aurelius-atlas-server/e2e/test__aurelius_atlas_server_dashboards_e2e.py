@@ -131,7 +131,9 @@ async def test__a_sign_out_cut_short_still_ends_at_the_sign_in_page(browser: Bro
     with contextlib.suppress(PlaywrightError):
         await page.evaluate("window.location.assign('/n/login.jsp')")
     await _rest_at_the_sign_in_page(page)
-    assert await page.locator("#password").is_visible()
+    # The address can be the sign-in page's before its form is drawn: wait for the field. A browser Keycloak signed
+    # back in leaves the page instead, so the wait fails then.
+    await page.locator("#password").wait_for(state="visible", timeout=15_000)
     await context.close()
 
 
