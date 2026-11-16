@@ -210,48 +210,51 @@ upgrade to rc.4 because the chart now ships the same content.
 
 ### DD-648. The ca-sync Role may `get` its CA Secret
 
-**Date.** 2026-07-31 (atlas-dev deploy)
-**Status.** Accepted
-**Deciders.** AI (found live), Thijs
-**Related.** DD-644
+- **Status:** Proposed
+- **Increment:** 10.13
+- **Date:** 2026-11-16
 
-**Context.** The first upgrade through the hook failed: the Job's Role
-granted `configmaps` only, so its poll loop was forbidden from reading the
-CA Secret it copies, retried until the deadline, and the failed post-hook
-marked the whole release failed. (The Secret read had been left out of
-the least-privilege list while the list was written around the output,
-not the input.)
-**Options considered.** (a) Grant `get` on `secrets` in this Role —
-namespaced, and the Job's env names the one secret it reads. (b) Mount
-the CA Secret into the Job — rejected: the secret appears ~90 s after the
-hook starts, and a mount fixed at pod creation cannot follow cert-manager
-issuing it. (c) Have the ConfigMap read via the mounted service-account
-token against an escalated role — no.
-**Decision.** (a): the Role gains `{secrets: [get]}` beside
-`{configmaps: [get, create, patch, update]}`; the test pins both rules.
-**Consequences.** The hook completes in seconds once the CA exists. The
-permission is narrow: read one secret class in the edge namespace.
+**Context.** The first upgrade through the hook failed. The Job's Role
+granted `configmaps` only, so its poll loop could not read the CA Secret
+it copies. It retried until the deadline, and the failed post-hook marked
+the whole release failed. The Secret read was missing from the
+least-privilege list, which was written around the output and not the
+input.
+
+**Decision.** The Role gains `{secrets: [get]}` beside
+`{configmaps: [get, create, patch, update]}`. The test pins both rules.
+
+**Alternatives.** (a) Mount the CA Secret into the Job: rejected, because
+the secret appears about 90 s after the hook starts, and a mount fixed at
+pod creation cannot follow cert-manager issuing it. (b) Read the ConfigMap
+through the mounted service-account token against an escalated role:
+rejected, it widens the permission instead of naming the one read.
+
+**Consequences.** The hook finishes in seconds once the CA exists. The
+permission is narrow: it reads one secret class in the edge namespace.
 
 ### DD-649. `volumeClaimTemplates` carry version-free labels
 
-**Date.** 2026-07-31 (atlas-dev deploy)
-**Status.** Accepted
-**Deciders.** AI (found live), Thijs
-**Related.** ADR 057
+- **Status:** Proposed
+- **Increment:** 10.13
+- **Date:** 2026-11-16
 
 **Context.** The upgrade refused to apply the elasticsearch StatefulSet:
 "`volumeClaimTemplates: Invalid value: field can not be updated`". The
-template block had picked up the full label set — `helm.sh/chart` and
-`app.kubernetes.io/version` included — so every release changed a field
-Kubernetes freezes after the first install, making every upgrade from
-rc.3 onward impossible. The keycloak-postgres template had always used
-selector labels only and never hit this.
-**Options considered.** (a) Selector labels plus the component label in
-the claim template — matches the working precedent; PVCs made from it
-keep stable identity, which is what a storage object wants. (b) Keep
-versioned labels and delete/recreate the StatefulSet each upgrade —
-rejected: that is the move this increment exists to remove.
-**Decision.** (a). The claim template labels are the selector labels
-plus `app.kubernetes.io/component`.
-**Consequences.** The chart is upgradeable in place; the PVCs created at
-install never look like they belong to a particular release.
+claim template carried the full label set, `helm.sh/chart` and
+`app.kubernetes.io/version` included, so every release changed a field
+Kubernetes freezes after the first install. That locked out every upgrade
+after rc.3. The keycloak-postgres template always used selector labels
+only and never hit this.
+
+**Decision.** The claim template labels are the selector labels plus
+`app.kubernetes.io/component`.
+
+**Alternatives.** (a) Keep the versioned labels and delete then recreate
+the StatefulSet each upgrade: rejected, that is the move this increment
+exists to remove. Selector labels plus the component label match the
+working precedent, and a PVC made from the claim keeps a stable identity,
+which is what a storage object wants.
+
+**Consequences.** The chart upgrades in place. A PVC made at install
+never looks like it belongs to one release.
