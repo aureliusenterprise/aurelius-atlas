@@ -2,8 +2,8 @@ apiVersion: v2
 name: atlas-keycloak
 description: "The shared identity provider: Keycloak 26 with the Aurelius realm (clients, otel-ingest scope, demo users) and its Postgres database (ADR 007)."
 type: application
-version: 0.1.0
-appVersion: "latest"
+version: 0.1.0-rc.1
+appVersion: "v0.1.0-rc.1"
 keywords:
     - aurelius-atlas
 home: https://aureliusenterprise.github.io/aurelius-atlas/

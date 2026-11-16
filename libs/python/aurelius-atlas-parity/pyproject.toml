@@ -3,7 +3,7 @@ dependencies = ["httpx2>=2.0.0", "pydantic>=2.14.2", "pytest>=8.4.1", "pyyaml>=6
 description = "Parity scenarios for Aurelius Atlas: the scenario format, the runner and the comparison."
 name = "aurelius-atlas-parity"
 requires-python = ">=3.14"
-version = "0.6.1"
+version = "0.1.0-rc.1"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

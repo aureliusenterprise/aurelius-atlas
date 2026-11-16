@@ -1,6 +1,6 @@
 {
     "name": "aurelius-atlas-observability",
-    "version": "0.6.1",
+    "version": "0.1.0-rc.1",
     "peerDependencies": {
         "@angular/common": "^21.0.0",
         "@angular/core": "^21.0.0",

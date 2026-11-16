@@ -12,7 +12,7 @@ dependencies = [
 description = "The Aurelius Atlas embedder: text in, its embedding out, with a multilingual model on the CPU."
 name = "aurelius-atlas-embedder"
 requires-python = ">=3.14"
-version = "0.1.0"
+version = "0.1.0-rc.1"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

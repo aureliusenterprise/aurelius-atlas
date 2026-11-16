@@ -2,7 +2,7 @@
 name = "aurelius-atlas"
 readme = "docs/README.md"
 requires-python = ">=3.14"
-version = "0.6.1"
+version = "0.1.0-rc.1"
 
 [[project.authors]]
 name = "Aurelius Enterprise"
