@@ -1,12 +1,17 @@
 {{/*
-Prometheus (CHT-38): Deployment + PVC with the compose's argv
+Prometheus (CHT-38, DD-655): Deployment + PVC with the compose's argv
 (--config.file, --storage.tsdb.path, --web.enable-otlp-receiver — the flag
 the compose runs and the shape's contract even though this system pushes via
-the collector's exporter, CHT-38) and retention. The image's declared uid +
-fsGroup (DD-257); the dhi image runs 65532 (values' podSecurityContext).
+the collector's exporter, CHT-38) and retention, plus --web.config.file:
+the server serves TLS over its own leaf (the Secret's tls.crt/tls.key
+mounted at tls.mountPath, the web-config.yaml key naming them), so every
+scrape and the Grafana datasource arrive encrypted. The probes read over
+HTTPS (kubelet skips verification). The image's declared uid + fsGroup
+(DD-257); the dhi image runs 65532 (values' podSecurityContext).
 */}}
 {{- if .Values.prometheus.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $mount := trimSuffix "/" .Values.tls.mountPath -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -50,6 +55,7 @@ spec:
                         - "--storage.tsdb.path=/var/prometheus"
                         - "--storage.tsdb.retention.time={{ .Values.prometheus.retention }}"
                         - "--web.enable-otlp-receiver"
+                        - "--web.config.file=/etc/prometheus/web-config.yaml"
                     ports:
                         -   name: http
                             containerPort: {{ int .Values.prometheus.probes.port }}
@@ -58,6 +64,7 @@ spec:
                         httpGet:
                             path: /-/healthy
                             port: http
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.prometheus.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.prometheus.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.prometheus.probes.timeoutSeconds }}
@@ -66,6 +73,7 @@ spec:
                         httpGet:
                             path: /-/ready
                             port: http
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.prometheus.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.prometheus.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.prometheus.probes.timeoutSeconds }}
@@ -79,12 +87,24 @@ spec:
                             mountPath: /etc/prometheus/prometheus.yaml
                             subPath: prometheus.yaml
                             readOnly: true
+                        -   name: config
+                            mountPath: /etc/prometheus/web-config.yaml
+                            subPath: web-config.yaml
+                            readOnly: true
+                        # The leaf --web.config.file's tls_server names
+                        # (DD-655).
+                        -   name: tls
+                            mountPath: {{ $mount | quote }}
+                            readOnly: true
                         -   name: data
                             mountPath: /var/prometheus
             volumes:
                 -   name: config
                     configMap:
                         name: {{ $fullname }}-prometheus
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-observability.componentTlsSecretName" (dict "ctx" . "name" "prometheus") }}
                 -   name: data
                     persistentVolumeClaim:
                         claimName: {{ $fullname }}-prometheus

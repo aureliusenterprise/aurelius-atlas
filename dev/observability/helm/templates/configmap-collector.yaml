@@ -116,12 +116,24 @@ data:
         exporters:
             debug:
                 verbosity: basic
+            # Every egress rides TLS (DD-655): the backends' leaves name
+            # their own Service, so the CA pin here verifies both the chain
+            # and the hostname. The prometheus exporter is a server — its
+            # /metrics endpoint serves the collector's own leaf, and the
+            # scrape (job otel-collector) verifies it against the same CA.
             otlp_http/loki:
-                endpoint: http://{{ $fullname }}-loki:3100/otlp
+                endpoint: https://{{ $fullname }}-loki:{{ int .Values.loki.probes.port }}/otlp
+                tls:
+                    ca_file: {{ $ca }}
             otlp_http/tempo:
-                endpoint: http://{{ $fullname }}-tempo:4318
+                endpoint: https://{{ $fullname }}-tempo:4318
+                tls:
+                    ca_file: {{ $ca }}
             prometheus:
                 endpoint: 0.0.0.0:{{ int .Values.service.metricsPort }}
+                tls:
+                    cert_file: {{ $cert }}
+                    key_file: {{ $key }}
                 # OTel SDKs aggregate histograms exponentially; the classic
                 # text format would flatten them to a lone +Inf bucket. Emit
                 # Prometheus native histograms so p95 panels work.

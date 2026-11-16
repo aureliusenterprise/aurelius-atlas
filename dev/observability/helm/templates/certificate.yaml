@@ -1,36 +1,55 @@
 {{/*
-The collector's Certificate (CHT-36): cluster names only — the Service's
-bare/namespace/FQDN forms. Never a browser host: the collector is producer-
-facing, and the browser's leg arrives through the webapp's /otel/ proxy, which
-verifies this leaf against the trust root (DD-285's audience split, DD-286).
-tls.secretName brings your own and this renders nothing.
+The internal TLS leaves (CHT-36, DD-655): one Certificate per serving
+component — the collector plus the three backends it exports to (loki,
+tempo, prometheus), so every hop inside the stack verifies against the
+trust root. Cluster names only, never a browser host: the collector is
+producer-facing, and the browser's leg arrives through the webapp's /otel/
+proxy, which verifies this leaf against the trust root (DD-285's audience
+split, DD-286); the backends are cluster-internal reads (CHT-36, CHT-40).
+Each SAN set is the component Service's bare/namespace/FQDN forms — the
+same four-name shape every chart Certificate carries — so the SNI hostname
+the client pins (the Service name) doubles as the SAN check. tls.secretName
+(collector) and tls.componentSecrets.<name> bring your own leaves, and the
+matching Certificate renders nothing.
 */}}
-{{- if and .Values.certificate.enabled (not .Values.tls.secretName) }}
+{{- if .Values.certificate.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
 {{- $ns := include "atlas-observability.namespace" . -}}
 {{- $issuerRef := .Values.global.trust.issuerRef -}}
+{{- $components := dict "collector" (dict "secret" (include "atlas-observability.tlsSecretName" .) "service" $fullname) "loki" (dict "secret" (include "atlas-observability.componentTlsSecretName" (dict "ctx" . "name" "loki")) "service" (printf "%s-loki" $fullname)) "tempo" (dict "secret" (include "atlas-observability.componentTlsSecretName" (dict "ctx" . "name" "tempo")) "service" (printf "%s-tempo" $fullname)) "prometheus" (dict "secret" (include "atlas-observability.componentTlsSecretName" (dict "ctx" . "name" "prometheus")) "service" (printf "%s-prometheus" $fullname)) -}}
+{{- range $name, $c := $components -}}
+{{- $byo := "" -}}
+{{- if eq $name "collector" -}}
+{{- $byo = $.Values.tls.secretName -}}
+{{- else -}}
+{{- $byo = default "" (get (default dict $.Values.tls.componentSecrets) $name) -}}
+{{- end -}}
+{{- if not $byo }}
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-    name: {{ $fullname }}
+    name: {{ if eq $name "collector" }}{{ $fullname }}{{ else }}{{ $c.service }}{{ end }}
     namespace: {{ $ns }}
     labels:
-        {{- include "atlas-observability.labels" . | nindent 8 }}
+        {{- include "atlas-observability.labels" $ | nindent 8 }}
 spec:
-    secretName: {{ include "atlas-observability.tlsSecretName" . }}
-    duration: {{ .Values.certificate.duration }}
-    renewBefore: {{ .Values.certificate.renewBefore }}
+    secretName: {{ $c.secret }}
+    duration: {{ $.Values.certificate.duration }}
+    renewBefore: {{ $.Values.certificate.renewBefore }}
     subject:
         organizations:
             - aurelius-atlas
     dnsNames:
-        - {{ $fullname }}
-        - {{ printf "%s.%s" $fullname $ns }}
-        - {{ printf "%s.%s.svc" $fullname $ns }}
-        - {{ printf "%s.%s.svc.cluster.local" $fullname $ns }}
+        - {{ $c.service }}
+        - {{ printf "%s.%s" $c.service $ns }}
+        - {{ printf "%s.%s.svc" $c.service $ns }}
+        - {{ printf "%s.%s.svc.cluster.local" $c.service $ns }}
     issuerRef:
         name: {{ required "global.trust.issuerRef.name is required (DD-286)" $issuerRef.name }}
         {{- with $issuerRef.kind }}
         kind: {{ . }}
         {{- end }}
+{{- end }}
+{{- end }}
 {{- end }}

@@ -124,12 +124,14 @@ global:
                     algorithm: ""
                     size: 256
         # Backend health checks (DD-645): a managed Gateway probes backends
-        # with plain HTTP by default, which never passes against these
-        # TLS-only backends — the implementation then serves 500s from a
-        # synthetic failure backend. On renders the implementation's HTTPS
-        # health-check policy per TLS backend. Default off: the policy kind
-        # is implementation-specific (GKE's managed Gateway CRD) and other
-        # Gateways have no such resource to install.
+        # with plain HTTP on / by default, which never passes against these
+        # backends — the implementation then serves 500s from a synthetic
+        # failure backend. On renders the implementation's health-check
+        # policy per backend: HTTPS for a TLS backend (DD-645), plain HTTP
+        # for a plaintext one (DD-653 — Grafana's UI answers / on neither).
+        # Default off: the policy kind is implementation-specific (GKE's
+        # managed Gateway CRD) and other Gateways have no such resource to
+        # install.
         healthCheck:
             enabled: false
             checkIntervalSec: 10
@@ -141,6 +143,7 @@ global:
                 atlas: /config.json
                 keycloak: /realms/master
                 dashboard: /api/atlas/admin/readiness
+                grafana: /api/health
         # The backend-CA trust sync (DD-652, superseding the hook Job of
         # DD-644): when the gateway is enabled and the chart owns a CA
         # (createIssuer or a BYO caBundle), the umbrella renders a
@@ -189,11 +192,12 @@ global:
             service: ""
             port: 21000
         grafana:
-            # Off by default; `kubectl port-forward` reaches it (runbook).
-            # Safe to expose now that it is off: the login is the realm's
-            # (CHT-84, DD-275) and the host feeds the grafana client's
-            # redirect URIs (CHT-82).
-            enabled: false
+            # On by default (DD-653): the login is the realm's (CHT-84,
+            # DD-275) and the host feeds both the grafana client's redirect
+            # URIs (CHT-82) and Grafana's own root_url, so a deployment
+            # without this host cannot complete a login at all. Set false to
+            # keep the port-forward access path (runbook).
+            enabled: true
             # "" defaults to grafana.<domain>.
             host: ""
             # Backend: the observability chart's Grafana Service ("" = the

@@ -16,8 +16,11 @@ outright, while cert-manager keeps CAs in Secrets (DD-259) — the
 <release>-backend-ca ConfigMap, synced from the CA Secret by the
 trust-manager Bundle (ca-bundle.yaml, DD-652), carries the same PEM across
 the two kinds. Grafana is the one plaintext
-backend behind the gateway (anonymous Viewer, login disabled, DD-267) and
-gets none.
+backend behind the gateway and gets none: the edge terminates TLS in front
+of it and its login is the realm's (CHT-84, DD-275 — supersedes the
+anonymous-Viewer posture of DD-267), so no BackendTLSPolicy hop exists. The
+plaintext hop still needs a health check, which healthchecks.yaml renders
+as the HTTP variant (DD-653).
 */}}
 {{- if .Values.global.gateway.enabled -}}
 {{- $ns := include "aurelius-atlas.namespace" . -}}

@@ -5,18 +5,29 @@ disabled clause). The generic_oauth provider is the daily door: any
 authenticated realm user lands as Viewer, and the grafana client's
 editor/admin roles escalate via the role-attribute path (CHT-85). The auth
 URLs derive from the same issuer/realm facts as the collector's OIDC
-receiver (CHT-74). GF_SERVER_ROOT_URL stays unset — request-derived, so a
-port-forward to the pod completes the login against the localhost redirect
-the client registers (DD-276). The admin credential joins from
+receiver (CHT-74). GF_SERVER_ROOT_URL names the host the browser arrives on
+when one is in the values (DD-654, superseding DD-276's always-request-
+derived rule): Grafana builds the OIDC redirect from root_url when set, and
+the realm's client registers only the public host, so a request-derived
+redirect 400s at the issuer once the host rides the edge. With no host in
+the values (a bare render) root_url stays unset and the port-forward login
+completes at the localhost redirect as DD-276 kept it. The login asks for
+the realm's email/profile scopes (the client's defaults carry them; SCOPES
+states them explicitly) and the client enforces PKCE S256, so USE_PKCE
+turns the challenge on (DD-654). The admin credential joins from
 <release>-grafana-admin as before (CHT-40): with the login form back on it
-is account recovery, not the daily door. Provisioning (datasources +
-dashboard provider), the dashboards and the alerting (OBS-03/04) ride ConfigMaps; the GF_PATHS_* pair
-keeps every writable path on the one PVC (a dhi-image convention, the
-compose's shape).
+is account recovery, not the daily door. The trust CA mounts into the
+system trust dir so the https datasources verify against it (DD-655).
+Provisioning (datasources + dashboard provider), the dashboards and the
+alerting (OBS-03/04) ride ConfigMaps; the GF_PATHS_* pair keeps every
+writable path on the one PVC (a dhi-image convention, the compose's shape),
+and a tmpfs-backed /tmp carries the startup plugin installs (DD-657).
 */}}
 {{- $realmUrl := printf "%s/realms/%s/protocol/openid-connect" (include "atlas-observability.issuerUrl" .) (include "atlas-observability.realm" .) -}}
 {{- if .Values.grafana.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $rootUrl := include "atlas-observability.grafanaRootUrl" . -}}
+{{- $caMount := printf "%s/ca.crt" (trimSuffix "/" .Values.tls.mountPath) -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -60,12 +71,25 @@ spec:
                             value: "false"
                         -   name: GF_AUTH_DISABLE_LOGIN_FORM
                             value: "false"
+                        {{- with $rootUrl }}
+                        -   name: GF_SERVER_ROOT_URL
+                            value: {{ . | quote }}
+                        {{- end }}
                         -   name: GF_AUTH_GENERIC_OAUTH_ENABLED
                             value: "true"
                         -   name: GF_AUTH_GENERIC_OAUTH_NAME
                             value: Keycloak
                         -   name: GF_AUTH_GENERIC_OAUTH_CLIENT_ID
                             value: grafana
+                        # The claims login needs, named (DD-654): the realm's
+                        # grafana client carries profile/email as default
+                        # scopes, and its attribute pkce.code.challenge.method
+                        # (S256) makes the issuer reject an authorize request
+                        # without a code_challenge — USE_PKCE supplies it.
+                        -   name: GF_AUTH_GENERIC_OAUTH_SCOPES
+                            value: "openid profile email"
+                        -   name: GF_AUTH_GENERIC_OAUTH_USE_PKCE
+                            value: "true"
                         -   name: GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET
                             valueFrom:
                                 secretKeyRef:
@@ -143,9 +167,34 @@ spec:
                         -   name: alerting
                             mountPath: /etc/grafana/provisioning/alerting
                             readOnly: true
+                        # The trust CA: at the path the datasources'
+                        # provisioning names (secureJsonDataFiles, DD-655)
+                        # and in the system trust dir, where Go's x509 pool
+                        # picks it up where the distro's pool scan reaches
+                        # it (DD-655; the live login shape).
+                        -   name: trust-ca
+                            mountPath: {{ $caMount | quote }}
+                            subPath: ca.crt
+                            readOnly: true
+                        -   name: trust-ca
+                            mountPath: /etc/ssl/certs/atlas-ca.crt
+                            subPath: ca.crt
+                            readOnly: true
                         -   name: data
                             mountPath: /var/lib/grafana
+                        -   name: tmp
+                            # Grafana 13 ships prometheus/loki/tempo as external
+                            # plugins and installs the missing ones at startup
+                            # (DD-657): the downloader writes its zips to /tmp,
+                            # so a read-only one fails every install and the
+                            # panels die plugin.notRegistered (proved live).
+                            # The installed plugins land on the PVC's plugin
+                            # path and persist; this volume backs the one
+                            # root-FS write (the collector-cache pattern).
+                            mountPath: /tmp
             volumes:
+                -   name: tmp
+                    emptyDir: {}
                 -   name: datasources
                     configMap:
                         name: {{ $fullname }}-grafana-datasources
@@ -158,6 +207,12 @@ spec:
                 -   name: alerting
                     configMap:
                         name: {{ $fullname }}-grafana-alerting
+                -   name: trust-ca
+                    secret:
+                        secretName: {{ include "atlas-observability.tlsSecretName" . }}
+                        items:
+                            -   key: ca.crt
+                                path: ca.crt
                 -   name: data
                     persistentVolumeClaim:
                         claimName: {{ $fullname }}-grafana

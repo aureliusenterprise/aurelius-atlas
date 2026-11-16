@@ -84,6 +84,9 @@ def test__certificates_reference_the_umbrella_issuer(umbrella_docs: list[dict[st
         "atlas-lineage-model",
         "atlas-validate-entity",
         "atlas-observability",  # the collector's cluster-names-only leaf (CHT-36)
+        "atlas-observability-loki",  # the mesh leaves (CHT-134, DD-655)
+        "atlas-observability-tempo",
+        "atlas-observability-prometheus",
         "atlas-edge-tls",  # the browser-facing edge leaf (CHT-29)
     }
     for cert in certs:

@@ -59,6 +59,30 @@ the sequence to run.
     gcloud services enable certificatemanager.googleapis.com
     ```
 
+    !!! WARNING
+    **cert-manager must solve DNS-01 against public DNS.** On a cluster
+    with split-horizon DNS (a private zone that shadows your public
+    domain), the controller's default resolver asks the private zone and
+    never sees the `_acme-challenge` TXT record, so every public leaf
+    stays `Pending` with no error past "presented". Patch the deployment
+    before the first ACME issuance:
+
+        ```bash
+        kubectl -n cert-manager patch deploy cert-manager --type merge -p '
+        spec:
+            template:
+                spec:
+                    containers:
+                        - name: controller
+                          args:
+                              - /app/cert-manager
+                              - --dns01-recursive-nameservers=8.8.8.8:53,1.1.1.1:53
+                              - --dns01-recursive-nameservers-only'
+        ```
+
+        The flag pair is cluster-wide, applies to every ACME issuer, and is
+        not part of any chart here (10.14, live-proven on `atlas-dev`).
+
 - **Pull secrets** (private registries) in the target namespace:
 
     ```bash
@@ -247,23 +271,34 @@ with increment 10.5.)
 Grafana has no anonymous access: the login screen's **Keycloak** button goes
 to the `aurelius-atlas` realm (CHT-84, DD-275). Any realm user lands as
 **Viewer**; grant the `grafana` client's `editor` or `admin` client role in
-the Keycloak console to escalate (CHT-85). The default access path is a
-port-forward, and it works end-to-end — the client registers
-`http://localhost:3000/login/generic_oauth` and Grafana's root URL is
-request-derived (DD-276):
+the Keycloak console to escalate (CHT-85). The daily door is the browser
+host: `global.hosts.grafana.enabled` is true by default (DD-653), and
+Grafana builds its login redirect from `GF_SERVER_ROOT_URL`, which the chart
+pins to `https://grafana.<domain>` whenever the host is on (DD-654):
 
-```bash
-kubectl -n atlas port-forward deploy/atlas-observability-grafana 3000:3000
-# then open http://localhost:3000 and log in with Keycloak
+```text
+https://grafana.<domain>   # log in with the Keycloak button
 ```
 
-With `global.hosts.grafana.enabled=true` the same login answers at
-`https://grafana.<domain>` (the edge route is already wired). The generated
-local admin (`<release>-grafana-admin`, keys `user`/`password` via
-`kubectl get secret`) is the account-recovery credential — use it only when
-the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana for
-the token exchange (CHT-86); if the login redirects but never completes,
-check that hop first.
+The port-forward path still works when you set
+`global.hosts.grafana.enabled=false`: the pin drops, the UI becomes
+request-derived again, and the client's registered
+`http://localhost:3000/login/generic_oauth` completes the login (DD-276).
+With the host on, a forwarded port redirects to the public host instead.
+The generated local admin (`<release>-grafana-admin`, keys `user`/`password`
+via `kubectl get secret`) is the account-recovery credential — use it only
+when the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana
+for the token exchange (CHT-86); if the login redirects but never completes,
+check that hop first. The OIDC call needs the private CA in the pod's trust
+store, which the chart mounts (DD-654); the backend hop to Grafana is
+plaintext, and the edge's HTTP health check probes `/api/health` (DD-653).
+
+On first boot Grafana downloads its datasource plugins (prometheus, loki,
+tempo — external in 13) from the public catalog, so the pod needs egress to
+it; a cluster without one must prefill the Grafana PVC's plugin directory
+by other means (DD-657). Until that download finishes, panels answer
+`plugin.notRegistered` — this is expected on a fresh install, not a broken
+setup.
 
 ## 3. Upgrade
 

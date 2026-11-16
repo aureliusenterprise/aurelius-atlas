@@ -1,11 +1,16 @@
 {{/*
-Loki (CHT-39): Deployment + PVC with the byte-copied config. The config's
-filesystem storage lives under /loki (the PVC's mount), the ring is in-memory
-(single replica), auth is off — the collector is the authenticated seam and
-this Service is cluster-internal (CHT-36).
+Loki (CHT-39, DD-655): Deployment + PVC with the deep-merged config (the
+byte-copy base + the TLS overlay, configmap-loki.yaml). The config's
+filesystem storage lives under /loki (the PVC's mount), the ring is
+in-memory (single replica), auth is off — the collector is the
+authenticated seam and this Service is cluster-internal (CHT-36). The
+component's own leaf mounts at tls.mountPath for the server's
+http_tls_config; the probes read /ready over HTTPS (the kubelet does not
+verify the chain — a private-CA server needs no extra config here).
 */}}
 {{- if .Values.loki.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $mount := trimSuffix "/" .Values.tls.mountPath -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -54,6 +59,7 @@ spec:
                         httpGet:
                             path: /ready
                             port: http
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.loki.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.loki.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.loki.probes.timeoutSeconds }}
@@ -62,6 +68,7 @@ spec:
                         httpGet:
                             path: /ready
                             port: http
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.loki.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.loki.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.loki.probes.timeoutSeconds }}
@@ -75,12 +82,21 @@ spec:
                             mountPath: /etc/loki/config.yaml
                             subPath: config.yaml
                             readOnly: true
+                        # The leaf the server's http_tls_config names
+                        # (DD-655) — plain item names, not the collector's
+                        # projected .pem forms.
+                        -   name: tls
+                            mountPath: {{ $mount | quote }}
+                            readOnly: true
                         -   name: data
                             mountPath: /loki
             volumes:
                 -   name: config
                     configMap:
                         name: {{ $fullname }}-loki
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-observability.componentTlsSecretName" (dict "ctx" . "name" "loki") }}
                 -   name: data
                     persistentVolumeClaim:
                         claimName: {{ $fullname }}-loki

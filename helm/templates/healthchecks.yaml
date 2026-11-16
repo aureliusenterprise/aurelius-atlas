@@ -1,22 +1,25 @@
 {{/*
-Backend health checks for the gateway edge (DD-645). A managed Gateway probes
-backends to decide who may serve; its default probe is plain HTTP, which
-never succeeds against the TLS-only backends this edge fronts, and the
-implementation then serves every route from a synthetic failure backend
-(GKE: a 500 "fault filter abort"). The HTTPS health-check policy is the
-implementation's own API for the check: rendered only when
-global.gateway.healthCheck.enabled, because the resource kind is specific to
-the Gateway implementation — GKE's managed Gateway reads it; other
-implementations have no such CRD and would refuse to install the release.
-The paths ride on each backend's readiness answer (the webapp's config,
-Keycloak's always-present master realm, the server's readiness endpoint),
-so the LB declares a backend healthy exactly when its own pod is.
+Backend health checks for the gateway edge (DD-645, DD-653). A managed
+Gateway probes backends to decide who may serve; its default probe is plain
+HTTP on /, which never succeeds — the TLS-only backends reject it, and
+Grafana's UI answers 404 there — so the implementation serves every route
+from a synthetic failure backend (GKE: a 500 "fault filter abort"). The
+health-check policy is the implementation's own API for the check: rendered
+only when global.gateway.healthCheck.enabled, because the resource kind is
+specific to the Gateway implementation — GKE's managed Gateway reads it;
+other implementations have no such CRD and would refuse to install the
+release. A TLS backend (a BackendTLSPolicy on its hop) gets an HTTPS check;
+a plaintext one gets an HTTP check (DD-653 — Grafana behind the edge, with
+the edge terminating TLS in front of it). The paths ride on each backend's
+readiness answer (the webapp's config, Keycloak's always-present master
+realm, the server's readiness endpoint, Grafana's health endpoint), so the
+LB declares a backend healthy exactly when its own pod is.
 */}}
 {{- if and .Values.global.gateway.enabled .Values.global.gateway.healthCheck.enabled -}}
 {{- $ns := include "aurelius-atlas.namespace" . -}}
 {{- $hc := .Values.global.gateway.healthCheck -}}
 {{- range $l := fromJsonArray (include "aurelius-atlas.edge.listeners" .) }}
-{{- if index $l "tlsBackend" }}
+{{- $path := index $hc.paths (index $l "name") | required (printf "global.gateway.healthCheck.paths.%s is required (the health path for the %s listener)" (index $l "name") (index $l "name")) }}
 ---
 apiVersion: networking.gke.io/v1
 kind: HealthCheckPolicy
@@ -36,9 +39,14 @@ spec:
         healthyThreshold: {{ int $hc.healthyThreshold }}
         unhealthyThreshold: {{ int $hc.unhealthyThreshold }}
         config:
+            {{- if index $l "tlsBackend" }}
             type: HTTPS
             httpsHealthCheck:
-                requestPath: {{ index $hc.paths (index $l "name") | required (printf "global.gateway.healthCheck.paths.%s is required (the health path for the %s listener)" (index $l "name") (index $l "name")) }}
-{{- end }}
+                requestPath: {{ $path }}
+            {{- else }}
+            type: HTTP
+            httpHealthCheck:
+                requestPath: {{ $path }}
+            {{- end }}
 {{- end }}
 {{- end }}

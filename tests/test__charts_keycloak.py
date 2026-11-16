@@ -789,7 +789,12 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
     assert [user["username"] for user in asset.get("users", [])] == ["service-account-aurelius-atlas-provisioning"]
     assert "defaultRole" not in asset
     assert not asset.get("realmRoles")
-    assert [s["name"] for s in asset["clientScopes"]] == ["otel-ingest"]
+    # email/profile (CHT-133, DD-656): the clients name them in their
+    # default scopes, and Keycloak drops unresolvable references at import,
+    # so an undefined scope silently vanishes from tokens. Grafana's login
+    # proved it live: the authorize request died with invalid_scope until
+    # the realm defined them. The audience scope stays the only custom one.
+    assert [s["name"] for s in asset["clientScopes"]] == ["email", "profile", "otel-ingest"]
     assert not asset.get("components")
     assert not asset.get("authenticationFlows")
     roles = asset["roles"]["client"]
@@ -1011,8 +1016,17 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
         return out
 
     dev_scope = next(s for s in dev["clientScopes"] if s["name"] == "otel-ingest")
-    (prod_scope,) = prod["clientScopes"]
+    prod_scope = next(s for s in prod["clientScopes"] if s["name"] == "otel-ingest")
     assert strip_ids(prod_scope) == strip_ids(dev_scope)
+    # CHT-133 (DD-656): the two built-in scopes prod adds are prod-only like
+    # the grafana client they serve (the dev compose's Grafana stays
+    # anonymous, DV-113) — trimmed to the mappers the logins read, in the
+    # shape the live realm proved. They share no peer to drift from.
+    assert {s["name"] for s in prod["clientScopes"]} == {"email", "profile", "otel-ingest"}
+    email = next(s for s in prod["clientScopes"] if s["name"] == "email")
+    assert {m["name"] for m in email["protocolMappers"]} == {"email", "email_verified"}
+    profile = next(s for s in prod["clientScopes"] if s["name"] == "profile")
+    assert {m["name"] for m in profile["protocolMappers"]} == {"username", "given name", "family name"}
 
     dev_aur, prod_aur = dev_by_id["aurelius"], prod_by_id["aurelius"]
     assert set(dev_aur) == set(prod_aur)

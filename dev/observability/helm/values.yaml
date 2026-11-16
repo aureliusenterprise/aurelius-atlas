@@ -35,6 +35,16 @@ global:
     # the Keycloak chart imports. "" takes the chart default
     # (aurelius-atlas).
     realm: ""
+    # The browser hosts the umbrella routes (CHT-03: declared whole, as the
+    # keycloak chart does). Grafana needs its own: OIDC logins only complete
+    # when root_url names the host the browser arrives on (DD-654). The
+    # chart's own default keeps the port-forward posture (DD-276): root_url
+    # renders only when the umbrella passes its host block on (umbrella
+    # default on since DD-653) or a host is named directly.
+    hosts:
+        grafana:
+            enabled: false
+            host: ""
 
 enabled: true
 component: observability
@@ -193,8 +203,11 @@ grafana:
         repeatInterval: 4h
         # How long Grafana keeps the alerts' state history (RET-05).
         historyMaxAge: 30d
-    # The umbrella routes grafana.<domain> when global.hosts.grafana.enabled;
-    # the default posture is kubectl port-forward (runbook).
+    # The umbrella routes grafana.<domain> by default (DD-653); the host
+    # also feeds GF_SERVER_ROOT_URL, which the OIDC login needs (DD-654).
+    # With no host in the values (a bare render), root_url stays unset and
+    # the request-derived port-forward login works (DD-276, superseded in
+    # part — see 10.14).
     probes:
         port: 3000
         initialDelaySeconds: 15
@@ -229,6 +242,15 @@ tls:
     # (/certs): the Secret's items are projected to otel-collector.pem /
     # otel-collector-key.pem / ca.pem so the ConfigMap matches dev verbatim.
     mountPath: /certs
+    # Per-component TLS Secrets for the internal backends (DD-655): ""
+    # derives <fullname>-<name>-tls from the chart's own Certificates; set a
+    # name to bring your own (keys tls.crt/tls.key/ca.crt). loki, tempo, and
+    # prometheus — every hop inside the stack rides TLS (the collector's own
+    # leaf stays tls.secretName).
+    componentSecrets:
+        loki: ""
+        tempo: ""
+        prometheus: ""
 
 serviceAccount:
     create: true

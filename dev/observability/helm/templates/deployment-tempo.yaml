@@ -1,13 +1,16 @@
 {{/*
-Tempo (CHT-39): Deployment + PVC with the byte-copied config (OTLP HTTP on
-4318, HTTP/API on 3200, storage under /var/tempo — the PVC's mount). The
-Service carries both: the collector exports traces to :4318, Grafana's tempo
+Tempo (CHT-39, DD-655): Deployment + PVC with the deep-merged config (the
+byte-copy base + the TLS overlay, configmap-tempo.yaml; OTLP HTTP on 4318,
+HTTP/API on 3200, storage under /var/tempo — the PVC's mount). The Service
+carries both: the collector exports traces to :4318, Grafana's tempo
 datasource and Prometheus's tempo job read :3200. Tempo's own gRPC OTLP
 receiver (:4317) stays unused in-cluster — only the collector is an ingest
-seam (CHT-36).
+seam (CHT-36). The component's own leaf mounts at tls.mountPath so both the
+server and the OTLP receivers serve TLS; the probes read /ready over HTTPS.
 */}}
 {{- if .Values.tempo.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $mount := trimSuffix "/" .Values.tls.mountPath -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -59,6 +62,7 @@ spec:
                         httpGet:
                             path: /ready
                             port: http
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.tempo.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.tempo.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.tempo.probes.timeoutSeconds }}
@@ -67,6 +71,7 @@ spec:
                         httpGet:
                             path: /ready
                             port: http
+                            scheme: HTTPS
                         initialDelaySeconds: {{ int .Values.tempo.probes.initialDelaySeconds }}
                         periodSeconds: {{ int .Values.tempo.probes.periodSeconds }}
                         timeoutSeconds: {{ int .Values.tempo.probes.timeoutSeconds }}
@@ -80,12 +85,20 @@ spec:
                             mountPath: /etc/tempo/config.yaml
                             subPath: config.yaml
                             readOnly: true
+                        # The leaf the server and the OTLP receivers serve
+                        # (DD-655).
+                        -   name: tls
+                            mountPath: {{ $mount | quote }}
+                            readOnly: true
                         -   name: data
                             mountPath: /var/tempo
             volumes:
                 -   name: config
                     configMap:
                         name: {{ $fullname }}-tempo
+                -   name: tls
+                    secret:
+                        secretName: {{ include "atlas-observability.componentTlsSecretName" (dict "ctx" . "name" "tempo") }}
                 -   name: data
                     persistentVolumeClaim:
                         claimName: {{ $fullname }}-tempo

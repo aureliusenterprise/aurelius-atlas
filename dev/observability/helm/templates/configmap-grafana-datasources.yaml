@@ -1,12 +1,17 @@
 {{/*
-The Grafana datasources ConfigMap (CHT-40): dev's shape (uids
+The Grafana datasources ConfigMap (CHT-40, DD-655): dev's shape (uids
 prometheus/loki/tempo, the serviceMap and tracesToLogsV2 cross-links) with
 urls computed to this chart's Services — the one Grafana asset that cannot be
 a byte-copy (the compose service names are not cluster names). The cross-link
-uids are pinned by the chart-contract suite; only the urls differ from dev.
+uids are pinned by the chart-contract suite; only the urls and the TLS trust
+differ from dev. The urls ride https because every backend serves TLS
+internally (DD-655); each datasource pins the trust CA by file — the path
+the deployment mounts the CA Secret to — with tlsAuthWithCACert on, so a
+hand-made cert on the hop fails the query rather than silently trusting it.
 */}}
 {{- if .Values.grafana.enabled -}}
 {{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $ca := printf "%s/ca.crt" (trimSuffix "/" .Values.tls.mountPath) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -23,21 +28,30 @@ data:
               uid: prometheus
               type: prometheus
               access: proxy
-              url: http://{{ $fullname }}-prometheus:{{ int .Values.prometheus.probes.port }}
+              url: https://{{ $fullname }}-prometheus:{{ int .Values.prometheus.probes.port }}
               isDefault: true
+              jsonData:
+                  tlsAuthWithCACert: true
+              secureJsonDataFiles:
+                  tlsCACert: {{ $ca | quote }}
 
             - name: Loki
               uid: loki
               type: loki
               access: proxy
-              url: http://{{ $fullname }}-loki:{{ int .Values.loki.probes.port }}
+              url: https://{{ $fullname }}-loki:{{ int .Values.loki.probes.port }}
+              jsonData:
+                  tlsAuthWithCACert: true
+              secureJsonDataFiles:
+                  tlsCACert: {{ $ca | quote }}
 
             - name: Tempo
               uid: tempo
               type: tempo
               access: proxy
-              url: http://{{ $fullname }}-tempo:{{ int .Values.tempo.probes.port }}
+              url: https://{{ $fullname }}-tempo:{{ int .Values.tempo.probes.port }}
               jsonData:
+                  tlsAuthWithCACert: true
                   serviceMap:
                       datasourceUid: prometheus
                   tracesToLogsV2:
@@ -47,4 +61,6 @@ data:
                       spanStartTimeShift: "-1h"
                       spanEndTimeShift: "1h"
                       tags: ["service.name"]
+              secureJsonDataFiles:
+                  tlsCACert: {{ $ca | quote }}
 {{- end }}

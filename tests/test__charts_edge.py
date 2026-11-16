@@ -37,7 +37,10 @@ def test__gateway_listeners_per_enabled_host(umbrella_docs: list[dict[str, Any]]
     gateway = find(umbrella_docs, "Gateway", "atlas")
     assert gateway["spec"]["gatewayClassName"] == "envoy-gateway"
     listeners = {lst["name"]: lst for lst in gateway["spec"]["listeners"]}
-    assert set(listeners) == {"atlas", "keycloak"}
+    # Grafana rides the edge by default (CHT-132, DD-653): its login is the
+    # realm's, and root_url needs the host (DD-654) — port-forward-only is
+    # the opt-out now.
+    assert set(listeners) == {"atlas", "keycloak", "grafana"}
     for listener in listeners.values():
         assert listener["port"] == 443
         assert listener["protocol"] == "HTTPS"
@@ -54,9 +57,9 @@ def test__gateway_listeners_per_enabled_host(umbrella_docs: list[dict[str, Any]]
 
 @pytest.mark.covers(rules=["CHT-29"])
 def test__edge_leaf_covers_the_browser_hosts(umbrella_docs: list[dict[str, Any]]) -> None:
-    """The shared edge cert's SANs: atlas here; keycloak is not (its chart owns it)."""
+    """The shared edge cert's SANs: atlas + grafana (default-on, CHT-132); keycloak is not (its chart owns it)."""
     cert = find(umbrella_docs, "Certificate", "atlas-edge-tls")
-    assert cert["spec"]["dnsNames"] == ["atlas.atlas.example"]
+    assert cert["spec"]["dnsNames"] == ["atlas.atlas.example", "grafana.atlas.example"]
     assert cert["spec"]["secretName"] == "atlas-edge-tls"
     assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
 
@@ -84,8 +87,8 @@ def test__disabled_component_loses_its_listener() -> None:
     """Webapp off drops the atlas listener — the keycloak-only render survives."""
     docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("atlas-webapp.enabled=false",))
     gateway = find(docs, "Gateway", "atlas")
-    assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"keycloak"}
-    assert names(docs, "HTTPRoute") == {"atlas-keycloak"}
+    assert {lst["name"] for lst in gateway["spec"]["listeners"]} == {"keycloak", "grafana"}
+    assert names(docs, "HTTPRoute") == {"atlas-keycloak", "atlas-grafana"}
 
 
 @pytest.mark.covers(rules=["CHT-29"])
@@ -103,7 +106,11 @@ def test__gateway_without_hosts_fails_loudly() -> None:
     stderr = helm_render_fails(
         UMBRELLA_CHART,
         value_files=TEST_VALUES,
-        sets=("global.hosts.atlas.enabled=false", "global.hosts.keycloak.enabled=false"),
+        sets=(
+            "global.hosts.atlas.enabled=false",
+            "global.hosts.keycloak.enabled=false",
+            "global.hosts.grafana.enabled=false",  # default-on since DD-653: switch it off too
+        ),
     )
     assert "no browser host resolves" in stderr
 
@@ -112,7 +119,7 @@ def test__gateway_without_hosts_fails_loudly() -> None:
 def test__one_route_per_listener_with_one_backend(umbrella_docs: list[dict[str, Any]]) -> None:
     """Each listener gets its own pinned-hostname HTTPRoute, one backend each."""
     routes = find_all(umbrella_docs, "HTTPRoute")
-    assert {r["metadata"]["name"] for r in routes} == {"atlas-atlas", "atlas-keycloak"}
+    assert {r["metadata"]["name"] for r in routes} == {"atlas-atlas", "atlas-keycloak", "atlas-grafana"}
     for route in routes:
         (parent,) = route["spec"]["parentRefs"]
         assert parent["name"] == "atlas"
@@ -245,16 +252,22 @@ def test__edge_issuer_splits_browser_trust_from_internal(umbrella_docs: list[dic
     assert "atlas-keycloak-edge-tls" not in names(umbrella_docs, "Certificate")
 
 
-@pytest.mark.covers(rules=["CHT-128"])
-def test__health_check_policies_cover_the_tls_backends(umbrella_docs: list[dict[str, Any]]) -> None:
-    """healthCheck.enabled (DD-645): one HTTPS probe per TLS backend, none for grafana."""
+@pytest.mark.covers(rules=["CHT-128", "CHT-132"])
+def test__health_check_policies_cover_every_backend(umbrella_docs: list[dict[str, Any]]) -> None:
+    """healthCheck.enabled (DD-645, DD-653): an HTTPS probe per TLS backend, an HTTP one for grafana.
+
+    The default probe (HTTP on /) fails everywhere: the TLS backends
+    reject it, and Grafana's UI answers 404 on /. Without the policy the
+    load balancer routes nothing (DD-645) — proven live for grafana on
+    atlas-dev, where every edge route 503'd until the HTTP policy existed.
+    """
     docs = helm_render(
         UMBRELLA_CHART,
         value_files=TEST_VALUES,
-        sets=("global.gateway.healthCheck.enabled=true", "global.hosts.grafana.enabled=true"),
+        sets=("global.gateway.healthCheck.enabled=true",),
     )
     policies = {p["metadata"]["name"]: p for p in find_all(docs, "HealthCheckPolicy")}
-    assert set(policies) == {"atlas-atlas", "atlas-keycloak"}
+    assert set(policies) == {"atlas-atlas", "atlas-keycloak", "atlas-grafana"}
     atlas = policies["atlas-atlas"]
     assert atlas["apiVersion"] == "networking.gke.io/v1"
     assert atlas["spec"]["targetRef"]["name"] == "atlas-webapp"
@@ -263,6 +276,10 @@ def test__health_check_policies_cover_the_tls_backends(umbrella_docs: list[dict[
     assert policies["atlas-keycloak"]["spec"]["default"]["config"]["httpsHealthCheck"]["requestPath"] == (
         "/realms/master"
     )
+    grafana = policies["atlas-grafana"]
+    assert grafana["spec"]["targetRef"]["name"] == "atlas-observability-grafana"
+    assert grafana["spec"]["default"]["config"]["type"] == "HTTP"  # plaintext backend (DD-653)
+    assert grafana["spec"]["default"]["config"]["httpHealthCheck"]["requestPath"] == "/api/health"
     # Stock renders none — the CRD is implementation-specific (GKE only).
     assert not find_all(umbrella_docs, "HealthCheckPolicy")
 
@@ -337,13 +354,15 @@ def test__edge_policies_follow_the_httproute_gates() -> None:
     """Dashboard/grafana policies render exactly when their host is enabled (CHT-65/69).
 
     Who the edge exposes is one fact: the HTTPRoute and its NetworkPolicy
-    share a gate, so no allow exists for an unrouted backend — grafana's
-    stock posture is port-forward-only, with no allow at all (CHT-69).
+    share a gate, so no allow exists for an unrouted backend. Grafana's
+    host is on by default now (DD-653); this render turns the dashboard
+    host on and grafana renders its allow without being set (CHT-69's
+    pairing, not a grafana-specific posture).
     """
     docs = helm_render(
         UMBRELLA_CHART,
         value_files=TEST_VALUES,
-        sets=("global.hosts.dashboard.enabled=true", "global.hosts.grafana.enabled=true"),
+        sets=("global.hosts.dashboard.enabled=true",),
     )
     policies = names(docs, "NetworkPolicy")
     assert {"atlas-edge-atlas", "atlas-edge-keycloak", "atlas-edge-dashboard", "atlas-edge-grafana"} <= policies

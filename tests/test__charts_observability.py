@@ -126,9 +126,24 @@ def test__collector_pipeline_is_the_dev_shape(obs_docs: list[dict[str, Any]]) ->
     dev_env = next(a for a in dev["processors"]["resource"]["attributes"] if a["key"] == "deployment.environment.name")
     assert rendered_env["value"] == "cluster"
     assert dev_env["value"] == "development"
-    assert rendered["exporters"]["otlp_http/loki"] == {"endpoint": f"http://{FULLNAME}-loki:3100/otlp"}
-    assert rendered["exporters"]["otlp_http/tempo"] == {"endpoint": f"http://{FULLNAME}-tempo:4318"}
-    assert rendered["exporters"]["prometheus"] == dev["exporters"]["prometheus"]  # 0.0.0.0:9464, native histograms
+    # CHT-134 (DD-655): every egress rides TLS — the backends are CA-pinned
+    # clients, the prometheus exporter is a TLS server. Dev's egress stays
+    # plaintext (a named deviation: the compose carries no mesh CA), so
+    # every other exporter key stays dev's exactly.
+    assert rendered["exporters"]["otlp_http/loki"] == {
+        "endpoint": f"https://{FULLNAME}-loki:3100/otlp",
+        "tls": {"ca_file": "/certs/ca.pem"},
+    }
+    assert rendered["exporters"]["otlp_http/tempo"] == {
+        "endpoint": f"https://{FULLNAME}-tempo:4318",
+        "tls": {"ca_file": "/certs/ca.pem"},
+    }
+    rendered_prom, dev_prom = rendered["exporters"]["prometheus"], dev["exporters"]["prometheus"]
+    assert rendered_prom["tls"] == {
+        "cert_file": "/certs/otel-collector.pem",
+        "key_file": "/certs/otel-collector-key.pem",
+    }
+    assert {k: v for k, v in rendered_prom.items() if k != "tls"} == dev_prom  # 0.0.0.0:9464, native histograms
     assert rendered["extensions"]["health_check"] == {"endpoint": "0.0.0.0:13133"}
     assert rendered["service"]["telemetry"] == dev["service"]["telemetry"]  # :8888 both
 
@@ -178,25 +193,64 @@ def test__receiver_tls_files_are_the_projected_secret_names(obs_docs: list[dict[
     ]
 
 
-@pytest.mark.covers(rules=["CHT-36"])
-def test__only_the_collector_has_a_certificate_with_cluster_names(obs_docs: list[dict[str, Any]]) -> None:
-    """One Certificate, cluster names only (CHT-36).
+@pytest.mark.covers(rules=["CHT-36", "CHT-134"])
+def test__the_mesh_serves_tls_with_cluster_names_only(obs_docs: list[dict[str, Any]]) -> None:
+    """Four Certificates — the collector plus the three backends — cluster names only (CHT-36, DD-655).
 
-    The collector is producer-facing; Grafana/Prometheus/Loki/Tempo serve
-    plaintext ClusterIP.
+    Every internal hop verifies against the trust root. No leaf carries a
+    browser host: the collector is producer-facing and the backends are
+    cluster-internal reads; Grafana's browser-facing leaf is the umbrella's
+    edge cert, never one here. tls.secretName / tls.componentSecrets bring
+    your own leaves and drop the matching Certificate.
     """
-    certs = find_all(obs_docs, "Certificate")
-    assert [c["metadata"]["name"] for c in certs] == [FULLNAME]
-    assert certs[0]["spec"]["dnsNames"] == [
-        FULLNAME,
-        f"{FULLNAME}.atlas",
-        f"{FULLNAME}.atlas.svc",
-        f"{FULLNAME}.atlas.svc.cluster.local",
-    ]
-    assert not any("test" in host for host in certs[0]["spec"]["dnsNames"])  # never a browser host
-    assert certs[0]["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned"
+    by_name = {c["metadata"]["name"]: c for c in find_all(obs_docs, "Certificate")}
+    assert set(by_name) == {FULLNAME, f"{FULLNAME}-loki", f"{FULLNAME}-tempo", f"{FULLNAME}-prometheus"}
+    for name, cert in by_name.items():
+        assert cert["spec"]["dnsNames"] == [  # the cert names its own component Service
+            name,
+            f"{name}.atlas",
+            f"{name}.atlas.svc",
+            f"{name}.atlas.svc.cluster.local",
+        ], name
+        assert not any("test" in host for host in cert["spec"]["dnsNames"]), name  # never a browser host
+        assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned", name
+        assert cert["spec"]["secretName"] == f"{name}-tls", name
     for service in find_all(obs_docs, "Service"):
         assert service["spec"]["type"] == "ClusterIP", service["metadata"]["name"]
+
+
+@pytest.mark.covers(rules=["CHT-134"])
+def test__brought_leaves_drop_the_matching_certificates() -> None:
+    """tls.secretName and tls.componentSecrets are per-leaf BYO switches (CHT-134)."""
+    docs = helm_render(
+        OBS_CHART,
+        value_files=TEST_VALUES,
+        sets=("tls.secretName=byo-collector", "tls.componentSecrets.loki=byo-loki"),
+    )
+    assert names(docs, "Certificate") == {f"{FULLNAME}-tempo", f"{FULLNAME}-prometheus"}
+    volumes = {v["name"]: v for v in pod_spec(find(docs, "Deployment", f"{FULLNAME}-loki"))["volumes"]}
+    assert volumes["tls"]["secret"]["secretName"] == "byo-loki"
+
+
+@pytest.mark.covers(rules=["CHT-134"])
+def test__backends_mount_their_leaf_and_probe_https(obs_docs: list[dict[str, Any]]) -> None:
+    """Each backend mounts its own leaf at tls.mountPath and probes over HTTPS (CHT-134).
+
+    The kubelet does not verify the chain, so a private-CA server needs no
+    probe secret. Grafana keeps HTTP probes: its UI stays plaintext and the
+    edge terminates TLS in front of it (DD-653).
+    """
+    for component in ("loki", "tempo", "prometheus"):
+        deployment = find(obs_docs, "Deployment", f"{FULLNAME}-{component}")
+        app = container(deployment, component)
+        for probe in ("livenessProbe", "readinessProbe"):
+            assert app[probe]["httpGet"]["scheme"] == "HTTPS", (component, probe)
+        volumes = {v["name"]: v for v in pod_spec(deployment)["volumes"]}
+        assert volumes["tls"]["secret"]["secretName"] == f"{FULLNAME}-{component}-tls", component
+        mounts = {m["name"]: m["mountPath"] for m in app["volumeMounts"]}
+        assert mounts["tls"] == "/certs", component
+    grafana = container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
+    assert grafana["readinessProbe"]["httpGet"].get("scheme", "HTTP") == "HTTP"
 
 
 @pytest.mark.covers(rules=["CHT-37"])
@@ -246,10 +300,22 @@ def test__prometheus_argv_and_scrape_config_retargeted(obs_docs: list[dict[str, 
     claim = find(obs_docs, "PersistentVolumeClaim", f"{FULLNAME}-prometheus")
     assert claim["spec"]["resources"]["requests"]["storage"] == "20Gi"
 
+    assert "--web.config.file=/etc/prometheus/web-config.yaml" in app["args"]  # the server serves TLS (CHT-134)
     rendered = yaml.safe_load(find(obs_docs, "ConfigMap", f"{FULLNAME}-prometheus")["data"]["prometheus.yaml"])
     dev = yaml.safe_load((DEV_CONFIG / "prometheus.yaml").read_text())
     jobs = {job["job_name"]: job for job in rendered["scrape_configs"]}
     assert set(jobs) == {job["job_name"] for job in dev["scrape_configs"]}
+    # CHT-134 (DD-655): CA-pinned https scrapes, the one exception named.
+    web = yaml.safe_load(find(obs_docs, "ConfigMap", f"{FULLNAME}-prometheus")["data"]["web-config.yaml"])
+    # The key is the exporter-toolkit's tls_server_config — a bare
+    # tls_server fails Prometheus's strict startup validation.
+    assert web["tls_server_config"] == {"cert_file": "/certs/tls.crt", "key_file": "/certs/tls.key"}
+    for job_name, job in jobs.items():
+        if job_name == "otel-collector-internal":  # :8888 has no TLS option (DD-655)
+            assert job.get("scheme", "http") == "http", job_name
+        else:
+            assert job["scheme"] == "https", job_name
+            assert job["tls_config"] == {"ca_file": "/certs/ca.crt"}, job_name
     dev_collector = next(job for job in dev["scrape_configs"] if job["job_name"] == "otel-collector")
     assert jobs["otel-collector"]["scrape_protocols"] == dev_collector["scrape_protocols"]
     assert jobs["otel-collector"]["scrape_native_histograms"] is True
@@ -268,17 +334,39 @@ def test__no_prometheus_operator_appears(obs_docs: list[dict[str, Any]]) -> None
     assert not {"ServiceMonitor", "PodMonitor"} & {d["kind"] for d in obs_docs}
 
 
-@pytest.mark.covers(rules=["CHT-39"])
+@pytest.mark.covers(rules=["CHT-39", "CHT-134"])
 @pytest.mark.parametrize("asset", ["loki.yaml", "tempo.yaml"])
-def test__loki_and_tempo_config_is_a_byte_copy(obs_docs: list[dict[str, Any]], asset: str) -> None:
-    """files/<asset> is byte-identical to the dev config (CHT-39, DD-256).
+def test__loki_and_tempo_config_is_the_dev_asset_plus_the_tls_overlay(
+    obs_docs: list[dict[str, Any]], asset: str
+) -> None:
+    """files/<asset> stays byte-identical to dev; the ConfigMap deep-merges the TLS overlay (CHT-39, DD-256/655).
 
-    The ConfigMap ships it verbatim.
+    Append is not an option: Loki parses strictly, a duplicate top-level
+    key is a fatal parse error, and -config.file's comma-list loads only
+    the first existing file — both proved against 3.7.9. So the merge is
+    rendered into the ConfigMap and the asset never gains TLS keys, which
+    keeps the dev compose (plaintext, no mesh CA) riding the same bytes.
     """
     cm = find(obs_docs, "ConfigMap", f"{FULLNAME}-{asset.removesuffix('.yaml')}")
     asset_bytes = (OBS_CHART / "files" / asset).read_bytes()
-    assert cm["data"]["config.yaml"].encode() == asset_bytes
-    assert asset_bytes == (DEV_CONFIG / asset).read_bytes()
+    assert asset_bytes == (DEV_CONFIG / asset).read_bytes()  # dev's bytes never gain TLS (DV: dev stays plaintext)
+    tls_block = {"cert_file": "/certs/tls.crt", "key_file": "/certs/tls.key"}
+    base = yaml.safe_load(asset_bytes)
+    rendered = yaml.safe_load(cm["data"]["config.yaml"])
+    assert rendered["server"]["http_tls_config"] == tls_block
+    if asset == "tempo.yaml":  # the OTLP receivers ride TLS too — no plaintext ingest door
+        protocols = rendered["distributor"]["receivers"]["otlp"]["protocols"]
+        assert protocols["grpc"]["tls"] == tls_block
+        assert protocols["http"]["tls"] == tls_block
+        protocols["grpc"].pop("tls")
+        protocols["http"].pop("tls")
+    rendered["server"].pop("http_tls_config")
+    # Helm re-renders YAML scalars, so the base's bare date in
+    # schema_config comes back a quoted string. Normalise it before
+    # comparing so only the TLS merge can show a difference.
+    for config in base.get("schema_config", {}).get("configs", []):
+        config["from"] = str(config["from"])
+    assert rendered == base  # everything else is dev's config, structurally
 
 
 @pytest.mark.covers(rules=["CHT-39"])
@@ -309,14 +397,34 @@ def test__grafana_admin_recovery_join(obs_docs: list[dict[str, Any]]) -> None:
     find(obs_docs, "PersistentVolumeClaim", f"{FULLNAME}-grafana")
 
 
+@pytest.mark.covers(rules=["CHT-134"])
+def test__grafana_writable_tmp_carries_the_plugin_installs(obs_docs: list[dict[str, Any]]) -> None:
+    """Grafana's /tmp rides an emptyDir so the startup plugin installs land (CHT-134, DD-657).
+
+    Grafana 13 ships prometheus/loki/tempo as external plugins and installs
+    the missing ones at boot; the downloader writes its zips to /tmp, and a
+    read-only root (CHT-hardening) makes /tmp read-only too, so every install
+    fails and the panels die plugin.notRegistered. Proved live on atlas-dev:
+    the emptyDir fix turns the dashboards green, and their queries ride the
+    TLS mesh. The plugins persist on the PVC's plugin path, not here.
+    """
+    deployment = find(obs_docs, "Deployment", f"{FULLNAME}-grafana")
+    volumes = {v["name"]: v for v in pod_spec(deployment)["volumes"]}
+    assert volumes["tmp"] == {"name": "tmp", "emptyDir": {}}
+    mounts = {m["name"]: m["mountPath"] for m in container(deployment, "grafana")["volumeMounts"]}
+    assert mounts["tmp"] == "/tmp"  # noqa: S108  # a mountPath assertion, not a temp-file use
+
+
 @pytest.mark.covers(rules=["CHT-84"])
 def test__grafana_logs_in_through_the_realm(obs_docs: list[dict[str, Any]]) -> None:
     """Anonymous off, login form on, generic_oauth against the imported realm (CHT-84).
 
     The auth URLs derive from the same issuer/realm facts as the collector's
     OIDC receiver (CHT-74); the client secret joins from
-    <release>-grafana-oauth; GF_SERVER_ROOT_URL stays unset so a
-    port-forward completes the login (DD-276).
+    <release>-grafana-oauth. GF_SERVER_ROOT_URL stays unset in this render:
+    the chart's own posture keeps the port-forward login (DD-276, part-
+    superseded by DD-654 — the host-driven pin is tested next to the
+    scopes/PKCE below).
     """
     app = container(find(obs_docs, "Deployment", f"{FULLNAME}-grafana"), "grafana")
     envs = env_map(app)
@@ -335,6 +443,44 @@ def test__grafana_logs_in_through_the_realm(obs_docs: list[dict[str, Any]]) -> N
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_AUTH_URL") == f"{issuer}/auth"
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_TOKEN_URL") == f"{issuer}/token"
     assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_API_URL") == f"{issuer}/userinfo"
+    # The chart's own render keeps DD-276's request-derived shape (its
+    # chart-local global.hosts.grafana.enabled default is off); the
+    # umbrella's default-on host flips it — tested below.
+    assert "GF_SERVER_ROOT_URL" not in envs
+    # The claims the login asks for, and the PKCE the client enforces
+    # (CHT-133, DD-654): without the challenge the issuer rejects the
+    # authorize request (attribute pkce.code.challenge.method S256).
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_SCOPES") == "openid profile email"
+    assert env_value(envs, "GF_AUTH_GENERIC_OAUTH_USE_PKCE") == "true"
+
+
+@pytest.mark.covers(rules=["CHT-133"])
+def test__grafana_root_url_follows_the_host() -> None:
+    """The umbrella's host posture pins GF_SERVER_ROOT_URL (CHT-133, DD-654/653).
+
+    With the host on, Grafana builds the OIDC redirect from root_url — the
+    realm client registers only the public host, so the request-derived
+    redirect 400s at the issuer. The pin follows the listener rule: a
+    named host wins over the domain one, and turning the host off
+    (port-forward posture) drops the pin back to DD-276's shape even when
+    a stale host lingers in the values.
+    """
+    on = helm_render(OBS_CHART, value_files=TEST_VALUES, sets=("global.hosts.grafana.enabled=true",))
+    envs = env_map(container(find(on, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
+    assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://grafana.atlas.test"
+    named = helm_render(
+        OBS_CHART,
+        value_files=TEST_VALUES,
+        sets=("global.hosts.grafana.enabled=true", "global.hosts.grafana.host=metrics.example"),
+    )
+    envs = env_map(container(find(named, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
+    assert env_value(envs, "GF_SERVER_ROOT_URL") == "https://metrics.example"
+    off = helm_render(
+        OBS_CHART,
+        value_files=TEST_VALUES,
+        sets=("global.hosts.grafana.enabled=false", "global.hosts.grafana.host=metrics.example"),
+    )
+    envs = env_map(container(find(off, "Deployment", f"{FULLNAME}-grafana"), "grafana"))
     assert "GF_SERVER_ROOT_URL" not in envs
 
 
@@ -367,19 +513,24 @@ def test__grafana_rbac_maps_grafana_client_roles(obs_docs: list[dict[str, Any]])
     assert "GF_AUTH_GENERIC_OAUTH_ALLOWED_ORGANIZATIONS" not in envs
 
 
-@pytest.mark.covers(rules=["CHT-40"])
-def test__datasources_pin_uids_and_crosslinks(obs_docs: list[dict[str, Any]]) -> None:
-    """Datasource uids prometheus/loki/tempo and the cross-links (CHT-40).
+@pytest.mark.covers(rules=["CHT-40", "CHT-134"])
+def test__datasources_pin_uids_the_crosslinks_and_the_ca(obs_docs: list[dict[str, Any]]) -> None:
+    """Datasource uids prometheus/loki/tempo, the cross-links, and the CA-pinned https url (CHT-40, DD-655).
 
     serviceMap to prometheus, tracesToLogsV2 to loki, filterByTraceID, and
-    the service.name tag join.
+    the service.name tag join. Every url rides https — the backends serve
+    TLS internally — with the trust CA pinned by file, so a hand-made cert
+    on the hop fails the query instead of trusting it.
     """
     sources = yaml.safe_load(find(obs_docs, "ConfigMap", f"{FULLNAME}-grafana-datasources")["data"]["datasources.yaml"])
     by_uid = {d["uid"]: d for d in sources["datasources"]}
     assert set(by_uid) == {"prometheus", "loki", "tempo"}
-    assert by_uid["prometheus"]["url"] == f"http://{FULLNAME}-prometheus:9090"
-    assert by_uid["loki"]["url"] == f"http://{FULLNAME}-loki:3100"
-    assert by_uid["tempo"]["url"] == f"http://{FULLNAME}-tempo:3200"
+    assert by_uid["prometheus"]["url"] == f"https://{FULLNAME}-prometheus:9090"
+    assert by_uid["loki"]["url"] == f"https://{FULLNAME}-loki:3100"
+    assert by_uid["tempo"]["url"] == f"https://{FULLNAME}-tempo:3200"
+    for source in by_uid.values():
+        assert source["jsonData"]["tlsAuthWithCACert"] is True
+        assert source["secureJsonDataFiles"]["tlsCACert"] == "/certs/ca.crt"
     tempo_json = by_uid["tempo"]["jsonData"]
     assert tempo_json["serviceMap"]["datasourceUid"] == "prometheus"
     assert tempo_json["tracesToLogsV2"]["datasourceUid"] == "loki"
@@ -586,8 +737,9 @@ def test__backends_admit_prometheus_grafana_and_the_collector(obs_docs: list[dic
 def test__grafana_receives_no_chart_owned_allow(obs_docs: list[dict[str, Any]]) -> None:
     """No policy in this chart selects Grafana's pods (CHT-69).
 
-    Grafana's only allow is the umbrella's gateway rule, and only when the
-    host is enabled — tested there. Port-forward rides the kubelet.
+    Grafana's only allow is the umbrella's gateway edge rule, and that
+    exists once the browser host is on — the umbrella's default since
+    DD-653 — tested there. Port-forward rides the kubelet.
     """
     grafana_targets = [
         p["metadata"]["name"]

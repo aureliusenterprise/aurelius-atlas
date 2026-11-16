@@ -41,6 +41,97 @@
     },
     "clientScopes": [
         {
+            "attributes": {},
+            "description": "email",
+            "name": "email",
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "email",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "user.attribute": "email",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "email",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-property-mapper"
+                },
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "email_verified",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "boolean",
+                        "user.attribute": "emailVerified",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "email_verified",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-attribute-mapper"
+                }
+            ]
+        },
+        {
+            "attributes": {},
+            "description": "profile",
+            "name": "profile",
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "preferred_username",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "user.attribute": "username",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "username",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-property-mapper"
+                },
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "given_name",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "user.attribute": "firstName",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "given name",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-property-mapper"
+                },
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "family_name",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "user.attribute": "lastName",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "family name",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-property-mapper"
+                }
+            ]
+        },
+        {
             "attributes": {
                 "consent.screen.text": "${rolesScopeConsentText}",
                 "display.on.consent.screen": "false",
