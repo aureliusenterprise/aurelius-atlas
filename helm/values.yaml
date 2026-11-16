@@ -257,6 +257,14 @@ secrets:
         # import (${PROVISIONING_CLIENT_SECRET}) and the server chart's tenant
         # provisioning Job and operators CronJob.
         clientSecret: ""
+    adminClient:
+        # The platform admin service client's secret (DD-663) → Secret
+        # <release>-admin-client, key client-secret. Read by the realm import
+        # (${ATLAS_ADMIN_CLIENT_SECRET}); its client-credentials token carries
+        # the four server roles and drives the admin operations without a
+        # human sign-in. Read it from the Secret to call the API as the
+        # platform.
+        clientSecret: ""
     serverClient:
         # The Atlas server's confidential-client secret (CHT-109, 10.12) →
         # Secret <release>-server-client, key client-secret. Read by both the

@@ -23,6 +23,7 @@ SERVICE_CLIENTS = (
     "aurelius-atlas-kafka-scanner",
     "aurelius-atlas-quality-scanner",
     "aurelius-atlas-validate-entity",
+    "aurelius-atlas-admin",
 )
 OPERATOR_ROLE = {
     "cluster": ["monitor"],
@@ -150,11 +151,14 @@ def test__the_demo_realm_has_an_operator_and_the_two_tenants() -> None:
 
 @pytest.mark.covers(rules=["RLM-07"])
 def test__the_production_realm_still_seeds_no_person() -> None:
-    """The operator organization has its groups and no member; the realm's one user is the provisioning client's
-    service account (TRM-11).
+    """The operator organization has its groups and no member; the realm's only users are the service
+    accounts of the provisioning (TRM-11) and admin (DD-663) clients.
     """  # noqa: D205 - one sentence
     loaded = realm(PROD_REALM)
-    assert [user["username"] for user in loaded["users"]] == ["service-account-aurelius-atlas-provisioning"]
+    assert sorted(user["username"] for user in loaded["users"]) == [
+        "service-account-aurelius-atlas-admin",
+        "service-account-aurelius-atlas-provisioning",
+    ]
     assert all(not o.get("members") for o in loaded["organizations"])
 
 

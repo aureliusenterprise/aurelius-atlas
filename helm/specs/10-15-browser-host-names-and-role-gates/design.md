@@ -222,3 +222,58 @@ rejected — every future recreate would hit it again.
 fsGroup needs the policy, or the first recreate breaks it. The rc.7
 cluster never showed the defect because its Postgres pod was created
 once; upgrades that recreate pods are where it surfaces. Next free DD: 663.
+
+### DD-663. The platform gets its own admin service client
+
+- **Status:** Proposed
+- **Increment:** 10.15
+- **Date:** 2026-11-16
+
+**Context.** The admin operations (import, export, purge, audits) ask
+for `atlas-admin`, a role only a human user carried, so driving them
+programmatically meant changing Keycloak configuration first: enabling
+direct access grants on the server's own client, signing in as a
+person with a password, then undoing the change. That is both a manual
+fiddle and a hole left open while it runs. The four scanner clients and
+the provisioning client (DD-458, DD-469, DD-506, DD-499, DD-600) prove
+the shape that works: a confidential service client whose
+client-credentials token the server accepts by `azp` (AUT-02), with the
+client id in the chart's default `AUTH_AUDIENCES` (DD-513). What was
+missing is one carrying `atlas-admin` too — no machine client held all
+four roles.
+
+**Decision.** A new realm client `aurelius-atlas-admin` in both shipped
+assets (and the dev asset): confidential, service accounts only, every
+browser flow off, the organization-group mapper as a default scope
+(RLM-04). Its service account holds the four roles of the server's
+client (`atlas-read`/`-write`/`-types`/`-admin`); in the dev realm it is
+a member of `operators` in the four matching groups, which is what
+tenants-on needs to resolve a store. Its secret is a `${...}`
+placeholder fed by `<release>-admin-client` (key `client-secret`), the
+umbrella generating and preserving it as the server client's Secret is
+(CHT-109), and the client id joins the server chart's default audiences
+beside the scanners' and validate-entity's. The secret in that Secret is
+the operator's handle: read it, mint a client-credentials token, call
+the API — no Keycloak change, and no human password involved.
+
+**Alternatives.** (a) Turn on direct access grants and password-grant as
+a user: rejected — it is what happened for the first demo import, and
+every caller would repeat the toggle; leaving it on opens password
+grants on the server's client. (b) Reuse the provisioning client:
+rejected — it is deliberately an identity-provider client (its roles are
+`realm-management`'s, not the catalogue's) and giving it catalogue rights
+blurs what a tenant-provisioning breach reaches. (c) A generic
+`atlas-admin` realm role: rejected — the authorizer reads the four roles
+off the server's client (AUZ-01); a realm role grants nothing.
+
+**Consequences.** Any client-credentials caller — an operator's script,
+a future command, the demo importer — works out of the box, and the
+credential rotates through the Secret like every other. The client
+ships in the hardened realm too, so a stock install has an admin
+identity; a deployment that wants none trims the audience and deletes
+the client. With tenancy on, a token must name one organization: the dev
+realm's service account is a member of `operators` in its four groups,
+and a deployment running tenancy on the hardened realm adds the same
+membership where it provisions its organizations — the step its human
+operators take there anyway.
+Next free DD: 664.

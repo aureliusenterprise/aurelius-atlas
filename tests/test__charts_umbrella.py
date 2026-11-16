@@ -116,6 +116,7 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         "atlas-server-client": {"client-secret"},  # CHT-109: the realm import and the server's auth join
         # CHT-113 (12.7): the app's rules leg joins it; the master import too.
         "atlas-validate-entity-client": {"client-secret"},
+        "atlas-admin-client": {"client-secret"},  # DD-663: the realm import's admin client
     }
     assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
@@ -276,6 +277,34 @@ def test__server_client_secret_gates_on_both_consumers() -> None:
     assert secret["data"]["client-secret"] == "c3VwcGxpZWQtc3J2"  # b64("supplied-srv")
 
 
+@pytest.mark.covers(rules=["CHT-19"])
+def test__admin_client_secret_gates_on_both_consumers() -> None:
+    """<release>-admin-client generates for either consumer (DD-663).
+
+    The Keycloak import placeholder rides both shipped realm assets, and the
+    operator reads the same Secret as the client credential — either consumer
+    alone keeps it, both disabled stops it, a supplied value wins verbatim.
+    """
+    for off in ("atlas-server.enabled=false", "atlas-keycloak.enabled=false"):
+        docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=(off,))
+        assert "atlas-admin-client" in names(docs, "Secret"), off
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("atlas-keycloak.enabled=false", "atlas-server.enabled=false"),
+    )
+    assert "atlas-admin-client" not in names(docs, "Secret")
+
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("secrets.adminClient.clientSecret=supplied-adm",),
+    )
+    secret = find(docs, "Secret", "atlas-admin-client")
+    assert secret["data"]["client-secret"] == "c3VwcGxpZWQtYWRt"  # b64("supplied-adm")
+
+
 @pytest.mark.covers(rules=["CHT-108", "CHT-109", "CHT-110"])
 def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[str, Any]]) -> None:
     """The composed render closes the loop: server join == import env == Secret.
@@ -292,9 +321,10 @@ def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
     # 12.7 (VEV-04) plus CHT-120 (12.3): the chart default admits the
     # validate-entity app's client and the scanner clients beside the webapp's
-    # — acceptance is the server's grant, not a registration.
+    # — acceptance is the server's grant, not a registration — and the
+    # platform admin client (DD-663).
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == json.dumps(
-        ["aurelius", "aurelius-atlas-validate-entity", *SCANNER_CLIENT_IDS],
+        ["aurelius", "aurelius-atlas-validate-entity", *SCANNER_CLIENT_IDS, "aurelius-atlas-admin"],
         separators=(",", ":"),
     )
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"

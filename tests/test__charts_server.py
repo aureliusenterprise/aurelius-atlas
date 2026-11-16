@@ -169,11 +169,13 @@ def test__auth_env_block_joins_issuer_realm_and_secret(server_docs: list[dict[st
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CLIENT_ID") == "aurelius-atlas-server"
     # CHT-120 (12.3): the scanners' client-credentials tokens are accepted
     # too — the default admits each scanner client id beside the webapp's,
-    # and the validate-entity app's own client beside them (VEV-04).
+    # and the validate-entity app's own client beside them (VEV-04), plus the
+    # platform admin client (DD-663).
     assert json.loads(env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES")) == [
         "aurelius",
         "aurelius-atlas-validate-entity",
         *SCANNER_CLIENT_IDS,
+        "aurelius-atlas-admin",
     ]
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_CA_FILE") == "/etc/aurelius-atlas/tls/ca.crt"
     join = envs["AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]

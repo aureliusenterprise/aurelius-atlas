@@ -178,12 +178,16 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
             "ATLAS_SERVER_CLIENT_SECRET",
             "VALIDATE_ENTITY_CLIENT_SECRET",
             "PROVISIONING_CLIENT_SECRET",
+            "ATLAS_ADMIN_CLIENT_SECRET",
         )
     ]
     # TRM-11 (15.5b): both assets carry the provisioning client, so its env rides every realm.
+    # DD-663: the platform admin client follows the same rule, on both realms.
     for envs in (master_envs, env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))):
         ref = envs["PROVISIONING_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
         assert ref == {"name": "atlas-provisioning-client", "key": "client-secret"}
+        ref = envs["ATLAS_ADMIN_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
+        assert ref == {"name": "atlas-admin-client", "key": "client-secret"}
     # master's asset has no grafana client: no env, no credential (CHT-80's rule).
     assert "GRAFANA_CLIENT_SECRET" not in master_envs
 
@@ -774,8 +778,17 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         "otel-validate-entity",
     }
     assert (
-        client_ids == {"aurelius", "aurelius-atlas-server", "grafana", "aurelius-atlas-provisioning"} | otel
-    )  # grafana: CHT-81; server client: CHT-110, both realms; the provisioning client: TRM-11
+        client_ids
+        == {
+            "aurelius",
+            "aurelius-atlas-server",
+            "grafana",
+            "aurelius-atlas-provisioning",
+            "aurelius-atlas-admin",
+        }
+        | otel
+    )  # grafana: CHT-81; server client: CHT-110, both realms; the provisioning client: TRM-11;
+    # the admin client: DD-663
     assert (
         not {
             "account",
@@ -788,8 +801,11 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         }
         & client_ids
     )
-    # No person: the provisioning client's service account alone, for its realm-management roles (TRM-11).
-    assert [user["username"] for user in asset.get("users", [])] == ["service-account-aurelius-atlas-provisioning"]
+    # No person: the provisioning (TRM-11) and admin (DD-663) clients' service accounts.
+    assert sorted(user["username"] for user in asset.get("users", [])) == [
+        "service-account-aurelius-atlas-admin",
+        "service-account-aurelius-atlas-provisioning",
+    ]
     assert "defaultRole" not in asset
     assert not asset.get("realmRoles")
     # email/profile/roles (CHT-133, DD-656, DD-659): the clients name them
@@ -998,10 +1014,18 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     dev_by_id = {c["clientId"]: c for c in dev["clients"]}
     prod_by_id = {c["clientId"]: c for c in prod["clients"]}
 
-    own = {"aurelius", "aurelius-atlas-server", "grafana", "aurelius-atlas-provisioning"}
+    own = {
+        "aurelius",
+        "aurelius-atlas-server",
+        "grafana",
+        "aurelius-atlas-provisioning",
+        "aurelius-atlas-admin",
+    }
     assert set(prod_by_id) - own == {c for c in dev_by_id if c.startswith("otel-")}
     # TRM-11: the provisioning client is the same in both realms.
     assert prod_by_id["aurelius-atlas-provisioning"] == dev_by_id["aurelius-atlas-provisioning"]
+    # DD-663: so is the platform admin client.
+    assert prod_by_id["aurelius-atlas-admin"] == dev_by_id["aurelius-atlas-admin"]
     assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
     for name in set(prod_by_id) - own:
         prod_client, dev_client = prod_by_id[name], dev_by_id[name]

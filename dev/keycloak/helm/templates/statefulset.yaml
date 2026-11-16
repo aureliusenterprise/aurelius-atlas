@@ -226,6 +226,13 @@ spec:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.provisioningClientSecretName" . }}
                                   key: client-secret
+                        {{- /* DD-663: the platform admin client, carried by both
+                        shipped assets. */}}
+                        - name: ATLAS_ADMIN_CLIENT_SECRET
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.adminClientSecretName" . }}
+                                  key: client-secret
                         {{- /* CHT-113 (12.7): the validate-entity app's client
                         placeholder — the MASTER asset carries it (the prod
                         realm's join lands with 12.3), so the env renders on

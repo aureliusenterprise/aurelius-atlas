@@ -525,6 +525,45 @@
             "secret": "${PROVISIONING_CLIENT_SECRET}",
             "serviceAccountsEnabled": true,
             "standardFlowEnabled": false
+        },
+        {
+            "authorizationServicesEnabled": false,
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-admin",
+            "consentRequired": false,
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
+            "description": "The platform's own admin service identity (DD-663): a client-credentials token carrying the four server-client roles drives import, export, purge and audits without a human sign-in.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "implicitFlowEnabled": false,
+            "name": "aurelius-atlas-admin",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${ATLAS_ADMIN_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
         }
     ],
     "defaultDefaultClientScopes": [
@@ -692,6 +731,14 @@
             "enabled": true,
             "serviceAccountClientId": "aurelius-atlas-provisioning",
             "username": "service-account-aurelius-atlas-provisioning"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-admin",
+            "username": "service-account-aurelius-atlas-admin"
         }
     ],
     "verifyEmail": false,

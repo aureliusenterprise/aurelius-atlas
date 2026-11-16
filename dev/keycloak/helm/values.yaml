@@ -111,6 +111,10 @@ realm:
     # (key client-secret) feeds the ${PROVISIONING_CLIENT_SECRET} import
     # placeholder (TRM-11, DD-600). Both shipped assets carry the client.
     provisioningClientSecretName: ""
+    # The platform admin's service client secret: <release>-admin-client
+    # (key client-secret) feeds the ${ATLAS_ADMIN_CLIENT_SECRET} import
+    # placeholder (DD-663). Both shipped assets carry the client.
+    adminClientSecretName: ""
 
 # Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so
 # its own OTLP cannot ride a Keycloak-minted JWT (DD-193/196) — it exports on

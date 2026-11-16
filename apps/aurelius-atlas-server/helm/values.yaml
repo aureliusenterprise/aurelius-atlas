@@ -115,7 +115,9 @@ credentialSecrets:
 # three batch scanner clients, whose client-credentials tokens the scans
 # present (CHT-120, 12.3 — DD-513: a stock install accepts a scanner out of the
 # box; trim the list if you install neither the realm clients nor the
-# scanners). AUTH_SERVER_URL/AUTH_REALM arrive from the issuer/realm joins;
+# scanners), and the platform admin client, whose client-credentials token
+# carries the four roles and drives import/export/purge/audits (DD-663).
+# AUTH_SERVER_URL/AUTH_REALM arrive from the issuer/realm joins;
 # AUTH_CLIENT_SECRET from credentialSecrets.serverClient; AUTH_CA_FILE from
 # the mounted Certificate (config below).
 auth:
@@ -126,6 +128,7 @@ auth:
         - aurelius-atlas-quality-scanner
         - aurelius-atlas-kafka-scanner
         - aurelius-atlas-db-scanner
+        - aurelius-atlas-admin
 
 # Client-IP trust (SRV-10, DD-238, DD-261): which peers may rewrite the client
 # address via X-Forwarded-For, passed to uvicorn. Loopback only in a stock

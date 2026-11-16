@@ -259,6 +259,13 @@ the env renders on every realm. */}}
 {{- default (printf "%s-provisioning-client" .Release.Name) .Values.realm.provisioningClientSecretName -}}
 {{- end -}}
 
+{{/* The platform admin client's Secret (DD-663): feeds the realm import's
+${ATLAS_ADMIN_CLIENT_SECRET}; both shipped assets carry the client, so the env
+renders on every realm. */}}
+{{- define "atlas-keycloak.adminClientSecretName" -}}
+{{- default (printf "%s-admin-client" .Release.Name) .Values.realm.adminClientSecretName -}}
+{{- end -}}
+
 {{/* The validate-entity app's client Secret (CHT-113, 12.7): feeds the realm
 import's ${VALIDATE_ENTITY_CLIENT_SECRET}, carried by the MASTER asset only —
 the prod realm's client join lands with 12.3 — so the env below renders on
