@@ -1,4 +1,5 @@
 {
+    "accountTheme": "aurelius",
     "adminPermissionsEnabled": true,
     "clientScopeMappings": {
         "aurelius-atlas-server": [

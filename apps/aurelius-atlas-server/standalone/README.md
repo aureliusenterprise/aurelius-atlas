@@ -30,7 +30,9 @@ added to the realm gets three more, so no tenant's people know another's passwor
 
 The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
-one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.
+one white box on a light band, with a teal sign-in button. The account console, which the webapp's Account
+security opens, wears the webapp's navbar band and logo over a light sidebar (DD-663). Its logo and favicon
+are copies of the webapp's.
 
 ## Start
 
