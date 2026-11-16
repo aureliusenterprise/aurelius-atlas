@@ -6982,10 +6982,13 @@ gcloud<span class="w"> </span>dns<span class="w"> </span>record-sets<span class=
 </code></pre></div>
 <p>A <code>helm upgrade</code> keeps these records: they are cluster DNS, not release
 objects. Read the Keycloak Service ClusterIP and the Gateway address from
-the running release before you create the records. This entry is a hard
-prerequisite whenever <code>global.gateway.edge.issuerRef</code> is set, because
-the public edge leaf then breaks a private-CA pin across the load
-balancer (DD-651).</p>
+the running release before you create the records. A reinstall does not
+keep them: a fresh Gateway takes a freshly allocated global IP, and a
+recreated Service takes a new ClusterIP, so every record must be updated
+to the new pair (a stalled <code>issuer-wait</code> init container is the in-cluster
+symptom of the stale ones). This entry is a hard prerequisite whenever
+<code>global.gateway.edge.issuerRef</code> is set, because the public edge leaf then
+breaks a private-CA pin across the load balancer (DD-651).</p>
 <p>Verify both horizons after install:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>run<span class="w"> </span>mint-probe<span class="w"> </span>--rm<span class="w"> </span>-i<span class="w"> </span>--restart<span class="o">=</span>Never<span class="w"> </span>--image<span class="o">=</span>curlimages/curl<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-s<span class="w"> </span>-k<span class="w"> </span><span class="s2">"https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"</span><span class="w"> </span><span class="se">\</span>

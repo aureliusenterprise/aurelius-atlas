@@ -87,7 +87,7 @@ Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the rea
       --type=A --rrdatas=<gateway-ip> --ttl=300
   ```
 
-  A `helm upgrade` keeps these records: they are cluster DNS, not release objects. Read the Keycloak Service ClusterIP and the Gateway address from the running release before you create the records. This entry is a hard prerequisite whenever `global.gateway.edge.issuerRef` is set, because the public edge leaf then breaks a private-CA pin across the load balancer (DD-651).
+  A `helm upgrade` keeps these records: they are cluster DNS, not release objects. Read the Keycloak Service ClusterIP and the Gateway address from the running release before you create the records. A reinstall does not keep them: a fresh Gateway takes a freshly allocated global IP, and a recreated Service takes a new ClusterIP, so every record must be updated to the new pair (a stalled `issuer-wait` init container is the in-cluster symptom of the stale ones). This entry is a hard prerequisite whenever `global.gateway.edge.issuerRef` is set, because the public edge leaf then breaks a private-CA pin across the load balancer (DD-651).
 
   Verify both horizons after install:
 
