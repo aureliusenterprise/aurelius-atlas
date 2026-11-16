@@ -100,6 +100,17 @@ def test__each_tenants_users_have_passwords_of_their_own(realm: dict[str, Any]) 
             assert placeholder == f"${{{tenant.upper()}_USER_{role.upper()}_PASSWORD}}", name
 
 
+@pytest.mark.covers(rules=["DMO-02"])
+def test__every_person_holds_the_realms_default_roles_for_the_account_console(realm: dict[str, Any]) -> None:
+    """Keycloak's import grants no default roles, so each person names them: without `account`'s roles the
+    account console behind the webapp's Account security answers "Something went wrong".
+    """  # noqa: D205 - one sentence
+    people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
+    assert people
+    for user in people:
+        assert f"default-roles-{realm['realm']}" in user.get("realmRoles", []), user["username"]
+
+
 @pytest.mark.covers(rules=["TRM-06"])
 def test__the_demo_realms_people_keep_their_ids_across_imports(realm: dict[str, Any]) -> None:
     """Fixed, distinct ids: a tenant's record names its administrators and operators by id, and every new Keycloak
