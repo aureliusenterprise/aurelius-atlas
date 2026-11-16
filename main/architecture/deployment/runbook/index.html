@@ -6909,6 +6909,32 @@ kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> <
 <div class="highlight"><pre><span></span><code><span class="c1"># GKE: the APIs a TLS edge needs beyond Gateway itself.</span>
 gcloud<span class="w"> </span>services<span class="w"> </span><span class="nb">enable</span><span class="w"> </span>certificatemanager.googleapis.com
 </code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+</div>
+<p><strong>cert-manager must solve DNS-01 against public DNS.</strong> On a cluster
+with split-horizon DNS (a private zone that shadows your public
+domain), the controller's default resolver asks the private zone and
+never sees the <code>_acme-challenge</code> TXT record, so every public leaf
+stays <code>Pending</code> with no error past "presented". Patch the deployment
+before the first ACME issuance:</p>
+<div class="codehilite"><pre><span></span><code><span class="err">```</span><span class="nx">bash</span>
+<span class="nx">kubectl</span><span class="w"> </span><span class="o">-</span><span class="nx">n</span><span class="w"> </span><span class="nx">cert</span><span class="o">-</span><span class="nx">manager</span><span class="w"> </span><span class="nx">patch</span><span class="w"> </span><span class="nx">deploy</span><span class="w"> </span><span class="nx">cert</span><span class="o">-</span><span class="nx">manager</span><span class="w"> </span><span class="o">--</span><span class="k">type</span><span class="w"> </span><span class="nx">merge</span><span class="w"> </span><span class="o">-</span><span class="nx">p</span><span class="w"> </span><span class="err">'</span>
+<span class="nx">spec</span><span class="p">:</span>
+<span class="w">    </span><span class="nx">template</span><span class="p">:</span>
+<span class="w">        </span><span class="nx">spec</span><span class="p">:</span>
+<span class="w">            </span><span class="nx">containers</span><span class="p">:</span>
+<span class="w">                </span><span class="o">-</span><span class="w"> </span><span class="nx">name</span><span class="p">:</span><span class="w"> </span><span class="nx">controller</span>
+<span class="w">                  </span><span class="nx">args</span><span class="p">:</span>
+<span class="w">                      </span><span class="o">-</span><span class="w"> </span><span class="o">/</span><span class="nx">app</span><span class="o">/</span><span class="nx">cert</span><span class="o">-</span><span class="nx">manager</span>
+<span class="w">                      </span><span class="o">-</span><span class="w"> </span><span class="o">--</span><span class="nx">dns01</span><span class="o">-</span><span class="nx">recursive</span><span class="o">-</span><span class="nx">nameservers</span><span class="p">=</span><span class="m m-Double">8.8.8.8</span><span class="p">:</span><span class="mi">53</span><span class="p">,</span><span class="m m-Double">1.1.1.1</span><span class="p">:</span><span class="mi">53</span>
+<span class="w">                      </span><span class="o">-</span><span class="w"> </span><span class="o">--</span><span class="nx">dns01</span><span class="o">-</span><span class="nx">recursive</span><span class="o">-</span><span class="nx">nameservers</span><span class="o">-</span><span class="nx">only</span><span class="err">'</span>
+<span class="err">```</span>
+
+<span class="nx">The</span><span class="w"> </span><span class="nx">flag</span><span class="w"> </span><span class="nx">pair</span><span class="w"> </span><span class="k">is</span><span class="w"> </span><span class="nx">cluster</span><span class="o">-</span><span class="nx">wide</span><span class="p">,</span><span class="w"> </span><span class="nx">applies</span><span class="w"> </span><span class="nx">to</span><span class="w"> </span><span class="nx">every</span><span class="w"> </span><span class="nx">ACME</span><span class="w"> </span><span class="nx">issuer</span><span class="p">,</span><span class="w"> </span><span class="k">and</span><span class="w"> </span><span class="k">is</span>
+<span class="k">not</span><span class="w"> </span><span class="nx">part</span><span class="w"> </span><span class="nx">of</span><span class="w"> </span><span class="nx">any</span><span class="w"> </span><span class="nx">chart</span><span class="w"> </span><span class="nx">here</span><span class="w"> </span><span class="p">(</span><span class="m m-Double">10.14</span><span class="p">,</span><span class="w"> </span><span class="nx">live</span><span class="o">-</span><span class="nx">proven</span><span class="w"> </span><span class="nx">on</span><span class="w"> </span><span class="err">`</span><span class="nx">atlas</span><span class="o">-</span><span class="nx">dev</span><span class="err">`</span><span class="p">).</span>
+</code></pre></div>
+
 </li>
 <li>
 <p><strong>Pull secrets</strong> (private registries) in the target namespace:</p>
@@ -7069,20 +7095,30 @@ with increment 10.5.)</p>
 <p>Grafana has no anonymous access: the login screen's <strong>Keycloak</strong> button goes
 to the <code>aurelius-atlas</code> realm (CHT-84, DD-275). Any realm user lands as
 <strong>Viewer</strong>; grant the <code>grafana</code> client's <code>editor</code> or <code>admin</code> client role in
-the Keycloak console to escalate (CHT-85). The default access path is a
-port-forward, and it works end-to-end — the client registers
-<code>http://localhost:3000/login/generic_oauth</code> and Grafana's root URL is
-request-derived (DD-276):</p>
-<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>port-forward<span class="w"> </span>deploy/atlas-observability-grafana<span class="w"> </span><span class="m">3000</span>:3000
-<span class="c1"># then open http://localhost:3000 and log in with Keycloak</span>
+the Keycloak console to escalate (CHT-85). The daily door is the browser
+host: <code>global.hosts.grafana.enabled</code> is true by default (DD-653), and
+Grafana builds its login redirect from <code>GF_SERVER_ROOT_URL</code>, which the chart
+pins to <code>https://grafana.&lt;domain&gt;</code> whenever the host is on (DD-654):</p>
+<div class="highlight"><pre><span></span><code>https://grafana.&lt;domain&gt;   # log in with the Keycloak button
 </code></pre></div>
-<p>With <code>global.hosts.grafana.enabled=true</code> the same login answers at
-<code>https://grafana.&lt;domain&gt;</code> (the edge route is already wired). The generated
-local admin (<code>&lt;release&gt;-grafana-admin</code>, keys <code>user</code>/<code>password</code> via
-<code>kubectl get secret</code>) is the account-recovery credential — use it only when
-the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana for
-the token exchange (CHT-86); if the login redirects but never completes,
-check that hop first.</p>
+<p>The port-forward path still works when you set
+<code>global.hosts.grafana.enabled=false</code>: the pin drops, the UI becomes
+request-derived again, and the client's registered
+<code>http://localhost:3000/login/generic_oauth</code> completes the login (DD-276).
+With the host on, a forwarded port redirects to the public host instead.
+The generated local admin (<code>&lt;release&gt;-grafana-admin</code>, keys <code>user</code>/<code>password</code>
+via <code>kubectl get secret</code>) is the account-recovery credential — use it only
+when the realm path is broken. Keycloak's 8443 NetworkPolicy admits Grafana
+for the token exchange (CHT-86); if the login redirects but never completes,
+check that hop first. The OIDC call needs the private CA in the pod's trust
+store, which the chart mounts (DD-654); the backend hop to Grafana is
+plaintext, and the edge's HTTP health check probes <code>/api/health</code> (DD-653).</p>
+<p>On first boot Grafana downloads its datasource plugins (prometheus, loki,
+tempo — external in 13) from the public catalog, so the pod needs egress to
+it; a cluster without one must prefill the Grafana PVC's plugin directory
+by other means (DD-657). Until that download finishes, panels answer
+<code>plugin.notRegistered</code> — this is expected on a fresh install, not a broken
+setup.</p>
 <h2 id="3-upgrade">3. Upgrade<a class="headerlink" href="#3-upgrade" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code>helm<span class="w"> </span>upgrade<span class="w"> </span>atlas<span class="w"> </span>oci://ghcr.io/aureliusenterprise/charts/aurelius-atlas<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--version<span class="w"> </span>&lt;chart-version&gt;<span class="w"> </span><span class="se">\</span>
