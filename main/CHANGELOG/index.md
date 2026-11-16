@@ -1,3 +1,9 @@
+## 0.1.0-rc.7 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** sync the backend CA with a trust-manager Bundle ([63172ad68](<https://github.com/aureliusenterprise/aurelius-atlas/commit/63172ad68>))
+
 ## 0.1.0-rc.6 (2026-11-16)
 
 ### 🩹 Fixes
