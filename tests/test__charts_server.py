@@ -30,12 +30,18 @@ from conftest import (
 TEST_VALUES = (SERVER_CHART / "tests/values.test.yaml",)
 
 
-@pytest.mark.covers(rules=["CHT-20"])
+@pytest.mark.covers(rules=["CHT-20", "CHT-129"])
 def test__deployment_and_https_service(server_docs: list[dict[str, Any]]) -> None:
-    """ClusterIP Service on the settings port; probes are HTTPS (SRV-06)."""
+    """ClusterIP Service on the settings port; probes are HTTPS (SRV-06).
+
+    The https port carries `appProtocol: HTTPS` (DD-646) so a gateway that
+    reads the standard field speaks TLS to this backend.
+    """
     service = find(server_docs, "Service", "atlas-server")
     assert service["spec"]["type"] == "ClusterIP"
-    assert service["spec"]["ports"] == [{"name": "https", "port": 21000, "targetPort": 21000, "protocol": "TCP"}]
+    assert service["spec"]["ports"] == [
+        {"name": "https", "port": 21000, "targetPort": 21000, "protocol": "TCP", "appProtocol": "HTTPS"}
+    ]
     deployment = find(server_docs, "Deployment", "atlas-server")
     assert deployment["spec"]["replicas"] == 1
     app = container(deployment, "server")

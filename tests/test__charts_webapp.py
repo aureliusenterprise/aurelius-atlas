@@ -46,12 +46,15 @@ PLACEHOLDERS = [
 ]
 
 
-@pytest.mark.covers(rules=["CHT-23"])
+@pytest.mark.covers(rules=["CHT-23", "CHT-129"])
 def test__tls_service_and_https_probes(webapp_docs: list[dict[str, Any]]) -> None:
-    """8080 ClusterIP with a TLS listener (DD-270): HTTPS probes and a chart-issued leaf."""
+    """8080 ClusterIP with a TLS listener (DD-270), HTTPS probes, chart leaf."""
+    # The https port carries appProtocol: HTTPS (DD-646, CHT-129).
     service = find(webapp_docs, "Service", "atlas-webapp")
     assert service["spec"]["type"] == "ClusterIP"
-    assert service["spec"]["ports"] == [{"name": "https", "port": 8080, "targetPort": 8080, "protocol": "TCP"}]
+    assert service["spec"]["ports"] == [
+        {"name": "https", "port": 8080, "targetPort": 8080, "protocol": "TCP", "appProtocol": "HTTPS"}
+    ]
     app = container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")
     assert app["readinessProbe"]["httpGet"]["scheme"] == "HTTPS"
     assert app["readinessProbe"]["httpGet"]["path"] == "/config.json"
@@ -124,6 +127,16 @@ def test__configmap_ships_the_raw_template(webapp_docs: list[dict[str, Any]]) ->
     template = configmap["data"]["nginx.conf.template"]
     for name in PLACEHOLDERS:
         assert "${" + name + "}" in template, name
+
+
+@pytest.mark.covers(rules=["CHT-130"])
+def test__root_redirect_is_relative(webapp_docs: list[dict[str, Any]]) -> None:
+    """`absolute_redirect off` keeps the root redirect relative (DD-647)."""
+    # The container port must never reach Location: the Gateway's portmap
+    # rewrite cannot undo it browser-side.
+    template = find(webapp_docs, "ConfigMap", "atlas-webapp-nginx")["data"]["nginx.conf.template"]
+    assert "absolute_redirect off;" in template
+    assert template.index("absolute_redirect off;") < template.index("location = / {")
 
 
 @pytest.mark.covers(rules=["CHT-24"])

@@ -15,10 +15,14 @@ metadata:
 spec:
     type: {{ .Values.service.type }}
     ports:
+        # appProtocol names the wire (DD-646): every gateway that reads the
+        # standard field (GKE's managed Gateway) speaks TLS to this backend
+        # and health-checks it over TLS — the port serves nothing else.
         - name: https
           port: {{ int .Values.service.port }}
           targetPort: {{ int .Values.port }}
           protocol: TCP
+          appProtocol: HTTPS
     selector:
         {{- include "atlas-server.selectorLabels" . | nindent 12 }}
             app.kubernetes.io/component: {{ default .Chart.Name .Values.component }}

@@ -15,10 +15,14 @@ metadata:
 spec:
     type: ClusterIP
     ports:
+        # appProtocol names the wire (DD-646): every gateway that reads the
+        # standard field (GKE's managed Gateway) speaks TLS to this backend
+        # and health-checks it over TLS — the port serves nothing else.
         - name: https
           port: {{ int .Values.service.port }}
           targetPort: https
           protocol: TCP
+          appProtocol: HTTPS
         {{- if .Values.service.issuerPort }}
         {{/* DD-265: the HTTPS-standard alias in-cluster producers dial when
         they reach the issuer by its public name (the browser URL implies 443

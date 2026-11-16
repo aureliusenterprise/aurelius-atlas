@@ -1,0 +1,44 @@
+{{/*
+Backend health checks for the gateway edge (DD-645). A managed Gateway probes
+backends to decide who may serve; its default probe is plain HTTP, which
+never succeeds against the TLS-only backends this edge fronts, and the
+implementation then serves every route from a synthetic failure backend
+(GKE: a 500 "fault filter abort"). The HTTPS health-check policy is the
+implementation's own API for the check: rendered only when
+global.gateway.healthCheck.enabled, because the resource kind is specific to
+the Gateway implementation — GKE's managed Gateway reads it; other
+implementations have no such CRD and would refuse to install the release.
+The paths ride on each backend's readiness answer (the webapp's config,
+Keycloak's always-present master realm, the server's readiness endpoint),
+so the LB declares a backend healthy exactly when its own pod is.
+*/}}
+{{- if and .Values.global.gateway.enabled .Values.global.gateway.healthCheck.enabled -}}
+{{- $ns := include "aurelius-atlas.namespace" . -}}
+{{- $hc := .Values.global.gateway.healthCheck -}}
+{{- range $l := fromJsonArray (include "aurelius-atlas.edge.listeners" .) }}
+{{- if index $l "tlsBackend" }}
+---
+apiVersion: networking.gke.io/v1
+kind: HealthCheckPolicy
+metadata:
+    name: {{ printf "%s-%s" $.Release.Name (index $l "name") }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" $ | nindent 8 }}
+spec:
+    targetRef:
+        group: ""
+        kind: Service
+        name: {{ index $l "backend" }}
+    default:
+        checkIntervalSec: {{ int $hc.checkIntervalSec }}
+        timeoutSec: {{ int $hc.timeoutSec }}
+        healthyThreshold: {{ int $hc.healthyThreshold }}
+        unhealthyThreshold: {{ int $hc.unhealthyThreshold }}
+        config:
+            type: HTTPS
+            httpsHealthCheck:
+                requestPath: {{ index $hc.paths (index $l "name") | required (printf "global.gateway.healthCheck.paths.%s is required (the health path for the %s listener)" (index $l "name") (index $l "name")) }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -103,6 +103,60 @@ global:
         certificate:
             duration: 2160h
             renewBefore: 720h
+        # The browser trust split (DD-643). "" (default): the browser leaves
+        # come from global.trust.issuerRef — the private CA signs everything
+        # and a browser needs the CA installed to trust the edge. Set it to a
+        # CA the browsers already trust (a public ACME ClusterIssuer, the gke
+        # overlay) and only the browser leaves move there: the internal
+        # Service leaves stay on the private CA, because a public CA cannot
+        # mint .svc.cluster.local names. An ACME edge needs the runbook's
+        # DNS-01 solver plus public DNS for every enabled browser host.
+        edge:
+            issuerRef:
+                name: ""
+                kind: ClusterIssuer
+            # Key algorithm for the browser leaves when the edge issuer is
+            # public: Let's Encrypt throttles RSA issuance per registered
+            # domain ("too many certificates"), ECDSA clears it. "" keeps
+            # cert-manager's default (RSA 2048) — unchanged stock render.
+            certificate:
+                privateKey:
+                    algorithm: ""
+                    size: 256
+        # Backend health checks (DD-645): a managed Gateway probes backends
+        # with plain HTTP by default, which never passes against these
+        # TLS-only backends — the implementation then serves 500s from a
+        # synthetic failure backend. On renders the implementation's HTTPS
+        # health-check policy per TLS backend. Default off: the policy kind
+        # is implementation-specific (GKE's managed Gateway CRD) and other
+        # Gateways have no such resource to install.
+        healthCheck:
+            enabled: false
+            checkIntervalSec: 10
+            timeoutSec: 5
+            healthyThreshold: 2
+            unhealthyThreshold: 3
+            # One path per listener, riding each backend's readiness answer.
+            paths:
+                atlas: /config.json
+                keycloak: /realms/master
+                dashboard: /api/atlas/admin/readiness
+        # The backend-CA sync (DD-644): the post-install Job that copies the
+        # CA Secret's ca.crt into the backend-CA ConfigMap the
+        # BackendTLSPolicies pin (Gateway implementations read ConfigMaps,
+        # cert-manager writes Secrets). The image is the workspace Python
+        # base (default cmd python3, uid 65532), digest-pinned (CHT-96).
+        caSync:
+            image:
+                repository: dhi.io/python
+                tag: "3.14-alpine3.24"
+                digest: sha256:a87e57be650aa21c7afd82abb5307a8208bc559eba66d471c0dad3b1a49c8294
+            resources:
+                requests:
+                    cpu: 10m
+                    memory: 32Mi
+                limits:
+                    memory: 64Mi
 
     # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285). Each host
     # joins to one backend Service; `service`/`port` override the name-rule

@@ -60,7 +60,7 @@ helper drops the prefix when the release name already starts with it, so the
 release `atlas` keeps names bare (`atlas-server`) and service DNS matches
 what the components' settings reference.
 
-## The edge (CHT-29..32)
+## The edge (CHT-29..32, 126..130)
 
 `global.gateway.enabled` (default on) renders: one `Gateway` named after the
 release, one HTTPS listener per **enabled browser host** (`global.hosts.*`
@@ -69,13 +69,23 @@ in `_helpers.tpl` builds the list once and `gateway.yaml`/`httproutes.yaml`
 both loop the same `fromJsonArray`), and one HTTPRoute per listener with a
 single coarse `backendRef` (DD-285 — no per-path split; the webapp's nginx is
 the path router). TLS backends (`atlas-server`, `atlas-keycloak`) also get a
-`BackendTLSPolicy` (v1) pinning `validation.caCertificateRefs` to the trust CA
-Secret and `validation.hostname` to the Service name — the Gateway verifies
-the leaf the same way an in-cluster client does. The browser leaf
+`BackendTLSPolicy` (v1) pinning `validation.caCertificateRefs` to the
+`<release>-backend-ca` **ConfigMap** (CHT-127, DD-644 — GKE's Gateway
+implementation resolves only ConfigMap refs; a Secret ref renders as
+"no-valid-refs") and `validation.hostname` to the Service name — the Gateway
+verifies the leaf the same way an in-cluster client does. The same ConfigMap
+feeds any implementation that verifies backends; a post-install/post-upgrade
+hook Job (`<release>-ca-sync`, digest-pinned `dhi.io/python`,
+SA-scoped to configmaps in the release namespace) copies the CA Secret's
+`ca.crt` into it — cert-manager's ConfigMap injection does not work at the
+tested version, and the CA bytes do not exist at template time. The
+browser leaf
 `atlas-edge-tls` covers
 the atlas/dashboard/grafana hosts; the keycloak listener reuses
 `<release>-keycloak-tls` (the keycloak chart owns that Certificate — never
-re-issue another name for the same hostname, SAN duplication is not free).
+re-issue another name for the same hostname, SAN duplication is not free),
+or `<release>-keycloak-edge-tls` when an edge issuer is set (below; the
+`aurelius-atlas.keycloakEdgeSecret` helper is the single mapping).
 `atlas-collector-legacy` (CHT-31) is the webapp's browser-side OTLP token,
 generated like every other credential (DD-254) and gated on either consumer.
 `<release>-grafana-oauth` (CHT-83, 10.8) is the same two-consumer shape: the
@@ -122,6 +132,20 @@ The two-hop client-IP trust (DD-261/CHT-32): stock renders trust nothing
 That value composes into `AURELIUS_ATLAS_WEBAPP_REALIP_BLOCK` **on one line**
 — it is `sed`-substituted into nginx at pod start, and a newline breaks the
 substitution.
+The browser trust split (CHT-126, DD-643): `global.gateway.edge.issuerRef`
+(default `""`) names a public issuer for the browser leaves **only** — the
+edge Certificate and the companion keycloak browser leaf move there, every
+internal Service leaf stays on `global.trust.issuerRef` (a public CA cannot
+mint `.svc.cluster.local`). `edge.certificate.privateKey.algorithm` is the
+ACME rate-limit knob (LE throttles RSA per registered domain; `ECDSA`
+clears it, `""` keeps RSA and the stock render). Backend health checks
+(CHT-128, DD-645): `global.gateway.healthCheck.enabled` (default off,
+because `HealthCheckPolicy` is the GKE implementation's CRD) renders one
+per TLS-backend listener with `config.type: HTTPS` and the values' path —
+the plain-HTTP default probe never passes a TLS-only backend, and the LB
+then answers 500s from a synthetic failure backend. The TLS Services
+(webapp/server/keycloak) carry `appProtocol: HTTPS` on the https port
+(CHT-129, DD-646) — the Gateway reads it to pick the backend wire protocol.
 
 Helpers are chart-local by design (DD-290): each chart's `templates/_helpers.tpl`
 carries the helpers its templates use, following the same naming convention

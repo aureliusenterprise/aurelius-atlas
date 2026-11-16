@@ -87,6 +87,16 @@ two sides of the join cannot drift while the rule is the same. `override`
 {{- end -}}
 
 {{/*
+The Secret a listener terminates TLS from. Every listener uses the browser
+leaf the umbrella issues (<release>-edge-tls) except while
+`global.gateway.edge.issuerRef` is unset: then the keycloak listener keeps
+reusing the keycloak chart's own leaf, which serves the browser SNI and
+Keycloak's issuer pin from one private-CA certificate (CHT-16/CHT-29).
+With a separate edge issuer (DD-643), an ACME issuer cannot mint the
+Service-name SANs that leaf carries, so a public-SAN-only companion
+certificate (<release>-keycloak-edge-tls, certificate-edge.yaml) serves the
+browser leg and the private-CA leaf stays behind the BackendTLSPolicy pin.
+
 The edge listener set (CHT-29/30) as JSON, so gateway.yaml, httproutes.yaml,
 and certificate-edge.yaml share one derivation. One entry per enabled browser
 host whose component is also enabled — a route to a disabled backend is a
@@ -95,6 +105,14 @@ backend/port = the single coarse backend (DD-285: routing is host-level, the
 webapp's /api and /otel proxy is the tested data path); tlsBackend = the
 backend speaks TLS and gets the BackendTLSPolicy trust pin (CHT-30).
 */}}
+{{- define "aurelius-atlas.keycloakEdgeSecret" -}}
+{{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.keycloak.service) -}}
+{{- if .Values.global.gateway.edge.issuerRef.name -}}
+{{- printf "%s-keycloak-edge-tls" .Release.Name -}}
+{{- else -}}
+{{- printf "%s-tls" $kc -}}
+{{- end -}}
+{{- end -}}
 {{- define "aurelius-atlas.edge.listeners" -}}
 {{- $l := list -}}
 {{- $webapp := index .Values "atlas-webapp" | default dict -}}
@@ -106,7 +124,7 @@ backend speaks TLS and gets the BackendTLSPolicy trust pin (CHT-30).
 {{- end -}}
 {{- if and .Values.global.hosts.keycloak.enabled $keycloak.enabled -}}
 {{- $kc := include "aurelius-atlas.componentService" (dict "name" "atlas-keycloak" "release" .Release.Name "override" .Values.global.hosts.keycloak.service) -}}
-{{- $l = append $l (dict "name" "keycloak" "host" (include "aurelius-atlas.keycloakHost" .) "secret" (printf "%s-tls" $kc) "backend" $kc "port" (int .Values.global.hosts.keycloak.port) "tlsBackend" true) -}}
+{{- $l = append $l (dict "name" "keycloak" "host" (include "aurelius-atlas.keycloakHost" .) "secret" (include "aurelius-atlas.keycloakEdgeSecret" .) "backend" $kc "port" (int .Values.global.hosts.keycloak.port) "tlsBackend" true) -}}
 {{- end -}}
 {{- if and .Values.global.hosts.dashboard.enabled $server.enabled -}}
 {{- $srv := include "aurelius-atlas.componentService" (dict "name" "atlas-server" "release" .Release.Name "override" .Values.global.hosts.dashboard.service) -}}

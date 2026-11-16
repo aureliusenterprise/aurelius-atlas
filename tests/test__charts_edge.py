@@ -123,9 +123,14 @@ def test__one_route_per_listener_with_one_backend(umbrella_docs: list[dict[str, 
     assert route["spec"]["rules"][0]["backendRefs"] == [{"name": "atlas-webapp", "port": 8080}]
 
 
-@pytest.mark.covers(rules=["CHT-30"])
+@pytest.mark.covers(rules=["CHT-30", "CHT-127"])
 def test__backend_tls_policies_pin_the_trusted_ca(umbrella_docs: list[dict[str, Any]]) -> None:
-    """Every TLS backend (webapp, DD-270; keycloak) gets a CA-pinned BackendTLSPolicy."""
+    """Every TLS backend (webapp, DD-270; keycloak) gets a CA-pinned BackendTLSPolicy.
+
+    The pin names the backend-CA ConfigMap, not the CA Secret: a managed
+    Gateway (GKE) rejects a Secret caCertificateRefs outright while the API
+    allows both kinds, so the chart carries the PEM across (DD-644).
+    """
     policies = {p["metadata"]["name"]: p for p in find_all(umbrella_docs, "BackendTLSPolicy")}
     assert set(policies) == {"atlas-atlas-keycloak", "atlas-atlas-webapp"}
     webapp_policy = policies["atlas-atlas-webapp"]
@@ -137,8 +142,31 @@ def test__backend_tls_policies_pin_the_trusted_ca(umbrella_docs: list[dict[str, 
     assert policy["apiVersion"] == "gateway.networking.k8s.io/v1"
     assert policy["spec"]["validation"]["hostname"] == "atlas-keycloak"
     assert policy["spec"]["validation"]["caCertificateRefs"] == [
-        {"group": "", "kind": "Secret", "name": "aurelius-atlas-selfsigned-ca"}
+        {"group": "", "kind": "ConfigMap", "name": "atlas-backend-ca"}
     ]
+
+
+@pytest.mark.covers(rules=["CHT-127"])
+def test__backend_ca_configmap_and_sync_job_render(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The trust-root ConfigMap ships beside the CA Secret with its sync Job (DD-644)."""
+    cm = find(umbrella_docs, "ConfigMap", "atlas-backend-ca")
+    assert cm["data"] == {"ca.crt": ""}
+    job = find(umbrella_docs, "Job", "atlas-ca-sync")
+    assert job["metadata"]["annotations"]["helm.sh/hook"] == "post-install,post-upgrade"
+    container = pod_spec(job)["containers"][0]
+    assert container["command"][:3] == ["python3", "-B", "-c"]
+    assert container["image"].startswith("dhi.io/python@sha256:")
+    envs = env_map(container)
+    assert env_value(envs, "CA_SOURCE_SECRET") == "aurelius-atlas-selfsigned-ca"
+    assert env_value(envs, "CA_TARGET_CONFIGMAP") == "atlas-backend-ca"
+    # Rights bounded: this ConfigMap namespace only, no cluster access.
+    roles = find_all(umbrella_docs, "Role")
+    assert [r["metadata"]["name"] for r in roles] == ["atlas-ca-sync"]
+    assert roles[0]["rules"][0]["resources"] == ["configmaps"]
+    # gateway off takes the whole edge machinery with it (CHT-29 pattern).
+    docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("global.gateway.enabled=false",))
+    assert "atlas-backend-ca" not in names(docs, "ConfigMap")
+    assert not find_all(docs, "Job")
 
 
 @pytest.mark.covers(rules=["CHT-30"])
@@ -159,6 +187,61 @@ def test__dashboard_route_joins_server_with_a_tls_policy() -> None:
         "atlas-atlas-keycloak",
         "atlas-atlas-webapp",
     }
+
+
+@pytest.mark.covers(rules=["CHT-126"])
+def test__edge_issuer_splits_browser_trust_from_internal(umbrella_docs: list[dict[str, Any]]) -> None:
+    """gateway.edge.issuerRef (DD-643): browser leaves move, internal leaves stay.
+
+    The GKE overlay's posture: Let's Encrypt signs the browser hosts, the
+    private CA keeps signing every Service leaf — and the keycloak listener
+    switches to a public-SAN-only companion, because the ACME issuer cannot
+    mint the .svc.cluster.local SANs the chart-issued keycloak leaf carries.
+    """
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=(WORKSPACE / "helm/environments/gke.yaml", *TEST_VALUES),
+    )
+    edge = find(docs, "Certificate", "atlas-edge-tls")
+    assert edge["spec"]["issuerRef"] == {"name": "atlas-public", "kind": "ClusterIssuer"}
+    assert edge["spec"]["privateKey"] == {"algorithm": "ECDSA", "size": 256}
+    companion = find(docs, "Certificate", "atlas-keycloak-edge-tls")
+    assert companion["spec"]["dnsNames"] == ["keycloak.atlas.example"]
+    assert companion["spec"]["issuerRef"]["name"] == "atlas-public"
+    gateway = find(docs, "Gateway", "atlas")
+    listeners = {lst["name"]: lst for lst in gateway["spec"]["listeners"]}
+    assert listeners["keycloak"]["tls"]["certificateRefs"][0]["name"] == "atlas-keycloak-edge-tls"
+    # Internal leaves stay on the private CA (ACME cannot mint svc names).
+    for name in ("atlas-webapp", "atlas-keycloak", "atlas-server"):
+        cert = find(docs, "Certificate", name)
+        assert cert["spec"]["secretName"].endswith("-tls"), name
+        assert cert["spec"]["issuerRef"]["name"] == "aurelius-atlas-selfsigned", name
+    # And the private CA chain itself still renders (createIssuer stays on).
+    assert find(docs, "Issuer", "aurelius-atlas-selfsigned")
+    # Stock (no edge issuer): no companion, keycloak listener reuses its own leaf.
+    assert "atlas-keycloak-edge-tls" not in names(umbrella_docs, "Certificate")
+
+
+@pytest.mark.covers(rules=["CHT-128"])
+def test__health_check_policies_cover_the_tls_backends(umbrella_docs: list[dict[str, Any]]) -> None:
+    """healthCheck.enabled (DD-645): one HTTPS probe per TLS backend, none for grafana."""
+    docs = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=("global.gateway.healthCheck.enabled=true", "global.hosts.grafana.enabled=true"),
+    )
+    policies = {p["metadata"]["name"]: p for p in find_all(docs, "HealthCheckPolicy")}
+    assert set(policies) == {"atlas-atlas", "atlas-keycloak"}
+    atlas = policies["atlas-atlas"]
+    assert atlas["apiVersion"] == "networking.gke.io/v1"
+    assert atlas["spec"]["targetRef"]["name"] == "atlas-webapp"
+    assert atlas["spec"]["default"]["config"]["type"] == "HTTPS"
+    assert atlas["spec"]["default"]["config"]["httpsHealthCheck"]["requestPath"] == "/config.json"
+    assert policies["atlas-keycloak"]["spec"]["default"]["config"]["httpsHealthCheck"]["requestPath"] == (
+        "/realms/master"
+    )
+    # Stock renders none — the CRD is implementation-specific (GKE only).
+    assert not find_all(umbrella_docs, "HealthCheckPolicy")
 
 
 @pytest.mark.covers(rules=["CHT-31"])

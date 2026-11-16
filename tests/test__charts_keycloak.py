@@ -263,6 +263,10 @@ def test__service_answers_the_https_standard_port(kc_docs: list[dict[str, Any]])
     service = find(kc_docs, "Service", "atlas-keycloak")
     ports = {p["port"]: p["targetPort"] for p in service["spec"]["ports"]}
     assert ports == {8443: "https", 443: "https"}
+    # CHT-129 (DD-646): the TLS port names its wire so a gateway that reads
+    # appProtocol speaks TLS to it; the issuer alias is the same listener.
+    https_port = next(p for p in service["spec"]["ports"] if p["name"] == "https")
+    assert https_port["appProtocol"] == "HTTPS"
     # The issuer host stays the browser hostname — the chart adds no
     # hostname-v2 option; the claim follows the request's Host (CHT-41).
     envs = env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))

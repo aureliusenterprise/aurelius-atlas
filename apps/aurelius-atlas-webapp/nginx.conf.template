@@ -289,6 +289,12 @@ server {
     }
 
     # Redirect "/" to the preferred locale, defaulting to en-US.
+    # absolute_redirect off: nginx's default expands a relative `return` to
+    # an absolute URL from the listening socket — behind a Gateway that ends
+    # the browser's TLS at 443, the answer carries the container's :8080 and
+    # dies in the client (DD-647). A same-origin relative Location is what
+    # the 302 must be.
+    absolute_redirect off;
     location = / {
         if ($http_accept_language ~* "^nl") {
             set $accept_language nl-NL;

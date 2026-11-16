@@ -1,0 +1,162 @@
+{{/*
+The backend-CA ConfigMap (DD-644). A Gateway implementation that verifies
+backend certificates reads the trust anchor from a ConfigMap, not a Secret:
+GKE's Gateway controller rejects a Secret caCertificateRefs outright
+("no-valid-refs") while the Gateway API accepts both kinds. The trust root
+lives in a Secret (cert-manager writes CAs as Secrets — DD-259, DD-286), so
+the chart renders a ConfigMap beside it and syncs the PEM across with a
+post-install/post-upgrade hook Job. The ConfigMap ships empty; the Job fills
+it (createIssuer=true: after cert-manager issues the CA, seconds after
+install; caBundle: immediately — the chart rendered the Secret itself).
+Helm's three-way merge leaves the filled value alone on later upgrades, and
+the hook re-syncs every upgrade in case the CA rotated.
+
+The Job talks to the API with its own mounted service-account token over the
+cluster CA — no kubeconfig, no cluster-wide rights: the Role admits get and
+patch on this one namespace's ConfigMaps only.
+*/}}
+{{- if and .Values.global.gateway.enabled (or .Values.global.trust.createIssuer .Values.global.trust.caBundle) -}}
+{{- $ns := include "aurelius-atlas.namespace" . -}}
+{{- $source := include "aurelius-atlas.caSecretName" . -}}
+{{- $target := printf "%s-backend-ca" .Release.Name -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $target }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+data:
+    ca.crt: ""
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+    name: {{ printf "%s-ca-sync" .Release.Name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+    name: {{ printf "%s-ca-sync" .Release.Name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+rules:
+    -   apiGroups: [""]
+        resources: ["configmaps"]
+        verbs: ["get", "create", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+    name: {{ printf "%s-ca-sync" .Release.Name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: Role
+    name: {{ printf "%s-ca-sync" .Release.Name }}
+subjects:
+    -   kind: ServiceAccount
+        name: {{ printf "%s-ca-sync" .Release.Name }}
+        namespace: {{ $ns }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+    name: {{ printf "%s-ca-sync" .Release.Name }}
+    namespace: {{ $ns }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+    annotations:
+        helm.sh/hook: post-install,post-upgrade
+        helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+        helm.sh/hook-weight: "5"
+spec:
+    backoffLimit: 3
+    activeDeadlineSeconds: 600
+    ttlSecondsAfterFinished: 3600
+    template:
+        metadata:
+            labels:
+                {{- include "aurelius-atlas.labels" . | nindent 16 }}
+        spec:
+            restartPolicy: Never
+            serviceAccountName: {{ printf "%s-ca-sync" .Release.Name }}
+            {{- with .Values.global.image.pullSecrets }}
+            imagePullSecrets:
+                {{- toYaml . | nindent 16 }}
+            {{- end }}
+            securityContext:
+                runAsNonRoot: true
+                runAsUser: 65532
+                seccompProfile:
+                    type: RuntimeDefault
+            containers:
+                {{- $img := printf "%s:%s" .Values.global.gateway.caSync.image.repository .Values.global.gateway.caSync.image.tag -}}
+                {{- with .Values.global.gateway.caSync.image.digest -}}
+                {{- $img = printf "%s@%s" $.Values.global.gateway.caSync.image.repository . -}}
+                {{- end }}
+                -   name: ca-sync
+                    image: {{ $img | quote }}
+                    imagePullPolicy: IfNotPresent
+                    command:
+                        - python3
+                        - -B
+                        - -c
+                        - |
+                            import base64, json, os, ssl, time, urllib.error, urllib.request
+                            api = "https://kubernetes.default.svc"
+                            ns = os.environ["CA_NAMESPACE"]
+                            src, dst = os.environ["CA_SOURCE_SECRET"], os.environ["CA_TARGET_CONFIGMAP"]
+                            sa = "/var/run/secrets/kubernetes.io/serviceaccount"
+                            ctx = ssl.create_default_context(cafile=sa + "/ca.crt")
+                            token = open(sa + "/token").read()
+                            def req(method, path, body=None):
+                                headers = {"Authorization": "Bearer " + token}
+                                if body is not None:
+                                    headers["Content-Type"] = (
+                                        "application/merge-patch+json" if method == "PATCH" else "application/json"
+                                    )
+                                data = json.dumps(body).encode() if body is not None else None
+                                return urllib.request.urlopen(
+                                    urllib.request.Request(api + path, method=method, data=data, headers=headers),
+                                    context=ctx,
+                                )
+                            pem = None
+                            for _ in range(90):
+                                try:
+                                    pem = json.load(req("GET", f"/api/v1/namespaces/{ns}/secrets/{src}"))["data"]["ca.crt"]
+                                    break
+                                except Exception:
+                                    time.sleep(5)
+                            if pem is None:
+                                raise SystemExit(f"CA Secret {ns}/{src} never appeared")
+                            body = {"metadata": {"name": dst, "namespace": ns}, "data": {"ca.crt": base64.b64decode(pem).decode()}}
+                            try:
+                                req("PATCH", f"/api/v1/namespaces/{ns}/configmaps/{dst}", body)
+                            except urllib.error.HTTPError as err:
+                                if err.code == 404:
+                                    req("POST", f"/api/v1/namespaces/{ns}/configmaps", body)
+                                else:
+                                    raise
+                            print("ca.crt synced to configmap " + dst)
+                    env:
+                        -   name: CA_NAMESPACE
+                            value: {{ $ns | quote }}
+                        -   name: CA_SOURCE_SECRET
+                            value: {{ $source | quote }}
+                        -   name: CA_TARGET_CONFIGMAP
+                            value: {{ $target | quote }}
+                    securityContext:
+                        allowPrivilegeEscalation: false
+                        capabilities:
+                            drop: ["ALL"]
+                        readOnlyRootFilesystem: true
+                    resources:
+                        {{- toYaml .Values.global.gateway.caSync.resources | nindent 24 }}
+{{- end }}
