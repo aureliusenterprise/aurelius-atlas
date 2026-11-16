@@ -1,5 +1,5 @@
 [project]
-dependencies = ["pydantic>=2.14.2"]
+dependencies = ["pydantic>=2.14.3"]
 description = "Atlas data shapes for Aurelius Atlas: type definitions and their REST JSON."
 name = "aurelius-atlas-model"
 requires-python = ">=3.14"
