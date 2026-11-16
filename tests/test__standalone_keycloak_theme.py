@@ -27,7 +27,7 @@ def test__the_demo_realm_signs_in_on_the_mounted_theme() -> None:
     """Keycloak mounts the theme read-only, apart from the import; the demo realm names it its login theme (SKT-01)."""
     keycloak: dict[str, Any] = yaml.safe_load((STANDALONE / "docker-compose.yaml").read_text())["services"]["keycloak"]
     assert "./keycloak-themes/aurelius:/opt/keycloak/themes/aurelius:ro" in keycloak["volumes"]
-    realm = json.loads((STANDALONE / "keycloak/demo.json").read_text())
+    realm = json.loads((STANDALONE / "keycloak/atlas.json").read_text())
     assert realm["loginTheme"] == "aurelius"
 
 

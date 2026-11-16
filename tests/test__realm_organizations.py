@@ -15,7 +15,7 @@ from conftest import ES_CHART, WORKSPACE, container, helm_render, pod_spec
 
 DEV_REALM = WORKSPACE / "dev/keycloak/import/master.json"
 PROD_REALM = WORKSPACE / "dev/keycloak/helm/files/aurelius-atlas.json"
-DEMO_REALM = WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/demo.json"
+DEMO_REALM = WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/atlas.json"
 ROLES = ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
 MAPPER = "oidc-organization-group-membership-mapper"
 SERVICE_CLIENTS = (

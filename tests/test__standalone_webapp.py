@@ -68,11 +68,11 @@ def test__the_proxy_routes_the_api_to_the_server_and_the_rest_to_the_webapp() ->
 
 @pytest.mark.covers(rules=["SWA-04"])
 def test__the_webapp_signs_in_to_the_demo_realm() -> None:
-    """config.json names the demo realm under /auth and the public client, which returns to the stack (SWA-04)."""
+    """config.json names the realm atlas under /auth and the public client, which returns to the stack (SWA-04)."""
     config = json.loads((STANDALONE / "webapp/config.json").read_text())
-    assert config["keycloak"] == {"clientId": "aurelius", "realm": "demo", "url": "https://localhost:9000/auth"}
+    assert config["keycloak"] == {"clientId": "aurelius", "realm": "atlas", "url": "https://localhost:9000/auth"}
     assert (config["apiBaseUrl"], config["atlasClientId"]) == ("/api", "aurelius-atlas-server")
-    realm = json.loads((STANDALONE / "keycloak/demo.json").read_text())
+    realm = json.loads((STANDALONE / "keycloak/atlas.json").read_text())
     public = next(client for client in realm["clients"] if client["clientId"] == "aurelius")
     assert public["standardFlowEnabled"]
     assert public["redirectUris"] == ["https://localhost:9000/*"]

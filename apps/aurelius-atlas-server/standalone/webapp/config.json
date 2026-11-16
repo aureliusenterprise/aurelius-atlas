@@ -6,7 +6,7 @@
     "atlasClientId": "aurelius-atlas-server",
     "keycloak": {
         "clientId": "aurelius",
-        "realm": "demo",
+        "realm": "atlas",
         "url": "https://localhost:9000/auth"
     },
     "otelExporterUrl": "/otel/v1/traces"

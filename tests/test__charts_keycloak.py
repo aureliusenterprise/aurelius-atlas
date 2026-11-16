@@ -1077,7 +1077,7 @@ def test__digest_wins_over_tag_at_keycloak_and_postgres() -> None:
     [
         WORKSPACE / "dev/keycloak/import/master.json",
         KC_CHART / "files/aurelius-atlas.json",
-        WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/demo.json",
+        WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/atlas.json",
     ],
     ids=["dev", "chart", "demo"],
 )

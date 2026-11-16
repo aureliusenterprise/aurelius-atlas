@@ -1,7 +1,7 @@
 """The standalone stack's tenants: the ``tenants`` service of the profile ``tenancy`` (ADR 063, series 15).
 
 It provisions the tenant ``demo`` with the sample ``TENANT_SAMPLE`` from ``SAMPLE_DIR`` and the tenant ``meyn``
-without one, through the server's own command, which keeps their organizations in the demo realm too (TRM-02),
+without one, through the server's own command, which keeps their organizations in the realm atlas too (TRM-02),
 and makes each tenant's ``<tenant>_atlas`` its administrator there (TRM-06).
 A tenant already provisioned is left as it is, so the service runs at every start. Then it gives the realm's
 ``operator`` a user of the same name in the store, with the role ``aurelius_atlas_store_admin``: every privilege
