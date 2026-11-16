@@ -20,7 +20,7 @@
         <link rel="prev" href="../">
       
       
-        <link rel="next" href="../../contributor-guide/">
+        <link rel="next" href="../standalone-tenants/">
       
       
         
@@ -225,6 +225,8 @@
       
         
           
+        
+      
         
       
         
@@ -446,6 +448,8 @@
       
         
       
+        
+      
     
     
     
@@ -628,6 +632,33 @@
   
 </nav>
       
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../standalone-tenants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Add a Tenant to the Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -6690,6 +6721,8 @@
       
         
       
+        
+      
     
     
     
@@ -6751,7 +6784,8 @@ on port 9000. It is a way to try them by hand. <code>nx serve</code> and the e2e
 <p>The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or
 <code>nx serve</code> write to the dev store (DD-367). Keycloak is the stack's own too, because the dev Keycloak's
 address is the issuer the other dev services trust (DD-363). At every start it imports the realm <code>demo</code> from
-<code>keycloak/demo.json</code>, with three users (DD-366):</p>
+<code>keycloak/demo.json</code>, with three users per tenant, <code>demo</code> and <code>meyn</code>, each a member of its own tenant alone,
+and the platform's <code>operator</code> (DD-366, see Tenants):</p>
 <table>
 <thead>
 <tr>
@@ -6762,24 +6796,32 @@ address is the issuer the other dev services trust (DD-363). At every start it i
 </thead>
 <tbody>
 <tr>
-<td><code>atlas</code></td>
+<td><code>demo_atlas</code>, <code>meyn_atlas</code></td>
 <td><code>atlas-read</code>, <code>atlas-write</code>, <code>atlas-types</code>, <code>atlas-admin</code></td>
 <td>Everything: the catalogue, the types, import, export and purge</td>
 </tr>
 <tr>
-<td><code>steward</code></td>
+<td><code>demo_steward</code>, <code>meyn_steward</code></td>
 <td><code>atlas-read</code>, <code>atlas-write</code></td>
 <td>Read and change the entities, their relationships and classifications</td>
 </tr>
 <tr>
-<td><code>scientist</code></td>
+<td><code>demo_scientist</code>, <code>meyn_scientist</code></td>
 <td><code>atlas-read</code></td>
 <td>Read the types and the entities</td>
 </tr>
+<tr>
+<td><code>operator</code></td>
+<td><code>atlas-read</code></td>
+<td>Read every tenant, and administer the store</td>
+</tr>
 </tbody>
 </table>
-<p>Their passwords are <code>DEMO_USER_ATLAS_PASSWORD</code>, <code>DEMO_USER_STEWARD_PASSWORD</code> and <code>DEMO_USER_SCIENTIST_PASSWORD</code>
-in the dev Keycloak's <code>.env</code>, decrypted from its <code>.env.enc</code>.</p>
+<p>Each tenant's users have passwords of their own, named <code>&lt;TENANT&gt;_USER_&lt;ROLE&gt;_PASSWORD</code>: demo's
+<code>DEMO_USER_ATLAS_PASSWORD</code>, <code>DEMO_USER_STEWARD_PASSWORD</code> and <code>DEMO_USER_SCIENTIST_PASSWORD</code>, meyn's
+<code>MEYN_USER_ATLAS_PASSWORD</code>, <code>MEYN_USER_STEWARD_PASSWORD</code> and <code>MEYN_USER_SCIENTIST_PASSWORD</code>, and the
+operator's <code>DEMO_USER_OPERATOR_PASSWORD</code>, in the dev Keycloak's <code>.env</code>, decrypted from its <code>.env.enc</code>. A tenant
+added to the realm gets three more, so no tenant's people know another's passwords.</p>
 <p>The realm's sign-in pages wear the Aurelius look (DD-414): the theme <code>aurelius</code> in <code>keycloak-themes/</code>, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
 one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.</p>
@@ -6802,7 +6844,7 @@ certificate is the dev CA's, so the browser asks once, for <code>localhost:9000<
 certgen aurelius-atlas-embedder</code>.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
 <p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
-is ready, the <code>sample-import</code> service signs in as <code>atlas</code> and posts it to <code>admin/import</code>, through
+is ready, the <code>sample-import</code> service signs in as <code>demo_atlas</code> and posts it to <code>admin/import</code>, through
 the proxy. Without <code>SAMPLE_ZIP</code>, or when no file has that name, the option is ignored: the service logs why
 and exits, and the server runs as without it.</p>
 <div class="highlight"><pre><span></span><code><span class="nv">SAMPLE_ZIP</span><span class="o">=</span>sample_data.zip<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
@@ -6852,11 +6894,71 @@ entities it finds by GUID, so running it again is safe. Other settings:</p>
 later.</p>
 <h2 id="tenants">Tenants<a class="headerlink" href="#tenants" title="Permanent link">&para;</a></h2>
 <p><code>ATLAS_TENANCY_ENABLED=true</code> serves several tenants from the one stack (ADR 063): a request acts in the one
-Keycloak organization its token names, and each tenant has its own indices and background work. The
-organization <code>operators</code> keeps the catalogue the stack has without tenancy. Off by default, the server answers
-as Apache Atlas does. A tenant is provisioned by the server's command, run in the server's image with its
+Keycloak organization its token names, and each tenant has its own indices and background work. Off by default,
+the server answers as Apache Atlas does. The profile <code>tenancy</code> adds the one shot <code>tenants</code>, which provisions the
+demo realm's two tenants at every start, leaving one already there as it is:</p>
+<div class="highlight"><pre><span></span><code><span class="nv">ATLAS_TENANCY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span>--profile<span class="w"> </span>tenancy<span class="w"> </span>up<span class="w"> </span>-d
+docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span>logs<span class="w"> </span>tenants
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Organization</th>
+<th><code>&lt;tenant&gt;_atlas</code></th>
+<th><code>&lt;tenant&gt;_steward</code></th>
+<th><code>&lt;tenant&gt;_scientist</code></th>
+<th><code>operator</code></th>
+<th>Catalogue</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>demo</code></td>
+<td>all four roles</td>
+<td>read and write</td>
+<td>read</td>
+<td>read</td>
+<td>the sample, <code>TENANT_SAMPLE</code></td>
+</tr>
+<tr>
+<td><code>meyn</code></td>
+<td>all four roles</td>
+<td>read and write</td>
+<td>read</td>
+<td>read</td>
+<td>empty</td>
+</tr>
+<tr>
+<td><code>operators</code></td>
+<td></td>
+<td></td>
+<td></td>
+<td>read</td>
+<td>the stack's catalogue without tenancy</td>
+</tr>
+</tbody>
+</table>
+<p>A tenant's users belong to their tenant alone, so they sign in to it without a choice. Each tenant's
+<code>&lt;tenant&gt;_atlas</code> is also its administrator in Keycloak (DD-602), through Keycloak's admin API: it reads its
+tenant's organization and role groups and sets the groups of its tenant's members, and is refused on the other
+tenant, its people and the realm's users. It can't use Keycloak's admin console: the console needs the realm's
+settings, and its members page every user of the realm, which would show one tenant's administrator the other
+tenant's people (ADR 063). A realm administrator adds and removes members, in the console at
+<code>https://localhost:9000/auth/admin/</code> as <code>KC_BOOTSTRAP_ADMIN_USERNAME</code> of <code>dev/keycloak/.env</code>, realm <code>demo</code>,
+under Organizations.</p>
+<p><code>operator</code> runs the platform: it holds the operator role, so the server holds it at read access outside
+<code>operators</code>, and the one shot gives it a user of its own in the store, an admin of every index (ADR 063's direct
+store access). Its password is <code>DEMO_USER_OPERATOR_PASSWORD</code> in <code>dev/keycloak/.env</code>; the store has no published
+port, so it is reached from the stack's network. <code>TENANT_SAMPLE</code> names the export ZIP in <code>SAMPLE_DIR</code> that demo
+starts with, <code>sample_data.zip</code> by default. With tenancy on, <code>SAMPLE_ZIP</code> is left unset: the sample goes into
+demo, not into the stack's own catalogue.</p>
+<p>To add a tenant of your own that lasts, follow the user guide's page <code>docs/user-guide/standalone-tenants.md</code>.</p>
+<p>At sign-in, a person in several organizations, such as <code>operator</code>, chooses which to act in. The webapp shows
+the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by
+signing out and in. Another tenant is provisioned by the server's command, run in the server's image with its
 settings:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
+<div class="highlight"><pre><span></span><code><span class="nv">ATLAS_TENANCY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>apps/aurelius-atlas-server/standalone/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>dev/keycloak/.env<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>run<span class="w"> </span>--rm<span class="w"> </span>--no-deps<span class="w"> </span>--entrypoint<span class="w"> </span>python<span class="w"> </span>aurelius-atlas-server<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>-m<span class="w"> </span>aurelius_atlas_server.provisioning<span class="w"> </span>provision<span class="w"> </span>acme
@@ -6867,14 +6969,10 @@ trusts the operators. <code>list</code> shows the tenants. <code>trust acme off<
 them from it. <code>operators</code> brings every tenant in step after an operator joins or leaves <code>operators</code>.
 <code>admin acme add &lt;username&gt;</code> lets that user manage the role groups of acme's members, and nothing outside acme.
 <code>remove acme</code> deletes its indices, about a minute after it stops serving the tenant, then its organization. The
-server picks up a new tenant within <code>tenancy_refresh_seconds</code>, 30 by default, without a restart.</p>
-<p>The demo realm has the organization <code>operators</code>, whose member <code>atlas</code> runs the platform, and the sample tenant
-<code>acme</code>, the organization the command above provisions: <code>steward</code> writes there, <code>scientist</code> reads, and <code>atlas</code>
-reads as an operator. At sign-in, <code>atlas</code> chooses which of the two to act in. The webapp shows the tenant in its
-account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in.
-A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
-administrator list or add them. The realm is imported at the stack's first start only, so a stack started
-before keeps its realm until <code>down -v</code>.</p>
+server picks up a new tenant within <code>tenancy_refresh_seconds</code>, 30 by default, without a restart. A tenant's
+members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
+administrator list or add them. The stack's Keycloak keeps no data of its own: each new container imports
+<code>keycloak/demo.json</code> again, so a change made in its console lasts until the container is recreated.</p>
 <h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
 <ul>
 <li><code>nginx.conf</code>: TLS on port 9000 with the server's certificate. <code>/atlas2/</code> goes to the server without the

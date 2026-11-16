@@ -8,15 +8,16 @@ The server image with the Apache Atlas 2.4.0 dashboards and the Aurelius Atlas w
 | `https://localhost:9000/atlas2/` | The server and its Atlas dashboards |
 | `https://localhost:9000/auth/` | The stack's own Keycloak with the demo realm, and its admin |
 
-The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or `nx serve` write to the dev store (DD-367). Keycloak is the stack's own too, because the dev Keycloak's address is the issuer the other dev services trust (DD-363). At every start it imports the realm `demo` from `keycloak/demo.json`, with three users (DD-366):
+The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or `nx serve` write to the dev store (DD-367). Keycloak is the stack's own too, because the dev Keycloak's address is the issuer the other dev services trust (DD-363). At every start it imports the realm `demo` from `keycloak/demo.json`, with three users per tenant, `demo` and `meyn`, each a member of its own tenant alone, and the platform's `operator` (DD-366, see Tenants):
 
 | User | Roles | May |
 | --- | --- | --- |
-| `atlas` | `atlas-read`, `atlas-write`, `atlas-types`, `atlas-admin` | Everything: the catalogue, the types, import, export and purge |
-| `steward` | `atlas-read`, `atlas-write` | Read and change the entities, their relationships and classifications |
-| `scientist` | `atlas-read` | Read the types and the entities |
+| `demo_atlas`, `meyn_atlas` | `atlas-read`, `atlas-write`, `atlas-types`, `atlas-admin` | Everything: the catalogue, the types, import, export and purge |
+| `demo_steward`, `meyn_steward` | `atlas-read`, `atlas-write` | Read and change the entities, their relationships and classifications |
+| `demo_scientist`, `meyn_scientist` | `atlas-read` | Read the types and the entities |
+| `operator` | `atlas-read` | Read every tenant, and administer the store |
 
-Their passwords are `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD` in the dev Keycloak's `.env`, decrypted from its `.env.enc`.
+Each tenant's users have passwords of their own, named `<TENANT>_USER_<ROLE>_PASSWORD`: demo's `DEMO_USER_ATLAS_PASSWORD`, `DEMO_USER_STEWARD_PASSWORD` and `DEMO_USER_SCIENTIST_PASSWORD`, meyn's `MEYN_USER_ATLAS_PASSWORD`, `MEYN_USER_STEWARD_PASSWORD` and `MEYN_USER_SCIENTIST_PASSWORD`, and the operator's `DEMO_USER_OPERATOR_PASSWORD`, in the dev Keycloak's `.env`, decrypted from its `.env.enc`. A tenant added to the realm gets three more, so no tenant's people know another's passwords.
 
 The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `keycloak-themes/`, a stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.
 
@@ -35,7 +36,7 @@ The images are `aurelius-atlas-server:local`, `aurelius-atlas-webapp:local` and 
 
 ## A sample dataset
 
-`SAMPLE_ZIP` names an Apache Atlas export ZIP in `data/atlas-sample/` at the repository root. Once the server is ready, the `sample-import` service signs in as `atlas` and posts it to `admin/import`, through the proxy. Without `SAMPLE_ZIP`, or when no file has that name, the option is ignored: the service logs why and exits, and the server runs as without it.
+`SAMPLE_ZIP` names an Apache Atlas export ZIP in `data/atlas-sample/` at the repository root. Once the server is ready, the `sample-import` service signs in as `demo_atlas` and posts it to `admin/import`, through the proxy. Without `SAMPLE_ZIP`, or when no file has that name, the option is ignored: the service logs why and exits, and the server runs as without it.
 
 ```
 SAMPLE_ZIP=sample_data.zip docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
@@ -57,18 +58,36 @@ An import's propagation runs once it ends (DD-361), so an entity shows what is p
 
 ## Tenants
 
-`ATLAS_TENANCY_ENABLED=true` serves several tenants from the one stack (ADR 063): a request acts in the one Keycloak organization its token names, and each tenant has its own indices and background work. The organization `operators` keeps the catalogue the stack has without tenancy. Off by default, the server answers as Apache Atlas does. A tenant is provisioned by the server's command, run in the server's image with its settings:
+`ATLAS_TENANCY_ENABLED=true` serves several tenants from the one stack (ADR 063): a request acts in the one Keycloak organization its token names, and each tenant has its own indices and background work. Off by default, the server answers as Apache Atlas does. The profile `tenancy` adds the one shot `tenants`, which provisions the demo realm's two tenants at every start, leaving one already there as it is:
 
 ```
-docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
+ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
+    --env-file apps/aurelius-atlas-server/.env --env-file dev/keycloak/.env --profile tenancy up -d
+docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml logs tenants
+```
+
+| Organization | `<tenant>_atlas` | `<tenant>_steward` | `<tenant>_scientist` | `operator` | Catalogue |
+| --- | --- | --- | --- | --- | --- |
+| `demo` | all four roles | read and write | read | read | the sample, `TENANT_SAMPLE` |
+| `meyn` | all four roles | read and write | read | read | empty |
+| `operators` |  |  |  | read | the stack's catalogue without tenancy |
+
+A tenant's users belong to their tenant alone, so they sign in to it without a choice. Each tenant's `<tenant>_atlas` is also its administrator in Keycloak (DD-602), through Keycloak's admin API: it reads its tenant's organization and role groups and sets the groups of its tenant's members, and is refused on the other tenant, its people and the realm's users. It can't use Keycloak's admin console: the console needs the realm's settings, and its members page every user of the realm, which would show one tenant's administrator the other tenant's people (ADR 063). A realm administrator adds and removes members, in the console at `https://localhost:9000/auth/admin/` as `KC_BOOTSTRAP_ADMIN_USERNAME` of `dev/keycloak/.env`, realm `demo`, under Organizations.
+
+`operator` runs the platform: it holds the operator role, so the server holds it at read access outside `operators`, and the one shot gives it a user of its own in the store, an admin of every index (ADR 063's direct store access). Its password is `DEMO_USER_OPERATOR_PASSWORD` in `dev/keycloak/.env`; the store has no published port, so it is reached from the stack's network. `TENANT_SAMPLE` names the export ZIP in `SAMPLE_DIR` that demo starts with, `sample_data.zip` by default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into demo, not into the stack's own catalogue.
+
+To add a tenant of your own that lasts, follow the user guide's page `docs/user-guide/standalone-tenants.md`.
+
+At sign-in, a person in several organizations, such as `operator`, chooses which to act in. The webapp shows the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in. Another tenant is provisioned by the server's command, run in the server's image with its settings:
+
+```
+ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
     --env-file apps/aurelius-atlas-server/.env --env-file dev/keycloak/.env \
     run --rm --no-deps --entrypoint python aurelius-atlas-server \
     -m aurelius_atlas_server.provisioning provision acme
 ```
 
-The command keeps the realm in step too, as the client `aurelius-atlas-provisioning`: it makes the tenant's organization and its four `/atlas-*` groups, and makes each operator a member who reads it while the tenant trusts the operators. `list` shows the tenants. `trust acme off` closes a tenant to the operators and removes them from it. `operators` brings every tenant in step after an operator joins or leaves `operators`. `admin acme add <username>` lets that user manage the role groups of acme's members, and nothing outside acme. `remove acme` deletes its indices, about a minute after it stops serving the tenant, then its organization. The server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, without a restart.
-
-The demo realm has the organization `operators`, whose member `atlas` runs the platform, and the sample tenant `acme`, the organization the command above provisions: `steward` writes there, `scientist` reads, and `atlas` reads as an operator. At sign-in, `atlas` chooses which of the two to act in. The webapp shows the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by signing out and in. A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's administrator list or add them. The realm is imported at the stack's first start only, so a stack started before keeps its realm until `down -v`.
+The command keeps the realm in step too, as the client `aurelius-atlas-provisioning`: it makes the tenant's organization and its four `/atlas-*` groups, and makes each operator a member who reads it while the tenant trusts the operators. `list` shows the tenants. `trust acme off` closes a tenant to the operators and removes them from it. `operators` brings every tenant in step after an operator joins or leaves `operators`. `admin acme add <username>` lets that user manage the role groups of acme's members, and nothing outside acme. `remove acme` deletes its indices, about a minute after it stops serving the tenant, then its organization. The server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, without a restart. A tenant's members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's administrator list or add them. The stack's Keycloak keeps no data of its own: each new container imports `keycloak/demo.json` again, so a change made in its console lasts until the container is recreated.
 
 ## How it fits together
 

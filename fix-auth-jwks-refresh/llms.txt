@@ -4,6 +4,7 @@
 
 - [User Guide](<https://aureliusenterprise.github.io/fix-auth-jwks-refresh/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/fix-auth-jwks-refresh/user-guide/standalone-server/index.md>)
+- [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/fix-auth-jwks-refresh/user-guide/standalone-tenants/index.md>)
 
 ## Contributor Guide
 

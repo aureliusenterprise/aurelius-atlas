@@ -513,4 +513,7 @@
       <url>
         <loc>https://aureliusenterprise.github.io/fix-auth-jwks-refresh/user-guide/standalone-server/</loc>
       </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/fix-auth-jwks-refresh/user-guide/standalone-tenants/</loc>
+      </url>
 </urlset>
