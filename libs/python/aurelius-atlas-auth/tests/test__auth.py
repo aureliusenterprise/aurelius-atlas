@@ -9,11 +9,12 @@ from typing import Any
 
 import httpx2 as httpx
 import pytest
-from aurelius_atlas_auth.auth import AuthConfig, KeycloakAuth, client_roles
+from aurelius_atlas_auth.auth import KEY_REFRESH_SECONDS, AuthConfig, KeycloakAuth, client_roles
 from cryptography.hazmat.primitives.asymmetric import rsa
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.testclient import TestClient
+from jwt.algorithms import RSAAlgorithm
 
 
 def _app(auth: KeycloakAuth) -> FastAPI:
@@ -371,3 +372,80 @@ def test__a_clients_roles_are_its_own_only() -> None:
     assert client_roles(claims, "server") == frozenset({"atlas-read"})
     assert client_roles(claims, "missing") == frozenset()
     assert client_roles({}, "server") == frozenset()
+
+
+class RotatingIssuer:
+    """A fake issuer whose signing keys can be replaced, counting its JWKS reads."""
+
+    def __init__(self) -> None:
+        self.keys: dict[str, rsa.RSAPrivateKey] = {}
+        self.jwks_reads = 0
+
+    def handler(self, request: httpx.Request) -> httpx.Response:
+        """Answer discovery, and the JWKS of the current keys."""
+        if request.url.path.endswith("/.well-known/openid-configuration"):
+            return httpx.Response(200, json={"jwks_uri": "https://keycloak.localhost:8443/realms/master/certs"})
+        self.jwks_reads += 1
+        jwks = []
+        for kid, private in self.keys.items():
+            jwk = json.loads(RSAAlgorithm.to_jwk(private.public_key()))
+            jwks.append({**jwk, "kid": kid, "alg": "RS256", "use": "sig"})
+        return httpx.Response(200, json={"keys": jwks})
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_auth.auth.KeycloakAuth.verify",
+    rules=["AUX-05"],
+)
+def test__a_rotated_key_verifies_once_the_jwks_is_read_again(audience: str, token: Callable[..., str]) -> None:
+    """The issuer's new key: refused within a minute of the last JWKS read, without a call; then read again once,
+    and verified; the key it dropped is refused without another call (AUX-05).
+    """  # noqa: D205 - one sentence
+    now = [0.0]
+    issuer = RotatingIssuer()
+    old = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    new = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    issuer.keys = {"old": old}
+    auth = KeycloakAuth(
+        AuthConfig(server_url="https://keycloak.localhost:8443", realm="master", audience=audience),
+        http=httpx.Client(transport=httpx.MockTransport(issuer.handler)),
+        clock=lambda: now[0],
+    )
+    assert auth.verify(token(kid="old", key=old))["sub"] == "user-1"
+    issuer.keys = {"new": new}
+    now[0] = KEY_REFRESH_SECONDS - 1
+    with pytest.raises(HTTPException) as refused:
+        auth.verify(token(kid="new", key=new))
+    assert (refused.value.status_code, issuer.jwks_reads) == (401, 1)
+    now[0] = KEY_REFRESH_SECONDS
+    assert auth.verify(token(kid="new", key=new))["sub"] == "user-1"
+    assert issuer.jwks_reads == 2
+    now[0] += 1
+    with pytest.raises(HTTPException):
+        auth.verify(token(kid="old", key=old))
+    assert issuer.jwks_reads == 2
+    auth.close()
+
+
+@pytest.mark.covers(
+    "aurelius_atlas_auth.auth.KeycloakAuth.verify",
+    rules=["AUX-05"],
+)
+def test__made_up_key_ids_read_the_jwks_at_most_once_a_minute(audience: str, token: Callable[..., str]) -> None:
+    """Fifty tokens with key ids the issuer never had cost one JWKS read, not fifty (AUX-05)."""
+    now = [0.0]
+    issuer = RotatingIssuer()
+    known = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    issuer.keys = {"known": known}
+    auth = KeycloakAuth(
+        AuthConfig(server_url="https://keycloak.localhost:8443", realm="master", audience=audience),
+        http=httpx.Client(transport=httpx.MockTransport(issuer.handler)),
+        clock=lambda: now[0],
+    )
+    auth.verify(token(kid="known", key=known))
+    now[0] = 10 * KEY_REFRESH_SECONDS
+    for index in range(50):
+        with pytest.raises(HTTPException):
+            auth.verify(token(kid=f"made-up-{index}", key=known))
+    assert issuer.jwks_reads == 2
+    auth.close()
