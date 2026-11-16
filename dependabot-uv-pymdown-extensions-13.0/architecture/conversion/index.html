@@ -7865,6 +7865,20 @@ checks a PR must pass:</p>
 <td>in review</td>
 </tr>
 <tr>
+<td>10.14</td>
+<td>Grafana at the edge, TLS-internal observability</td>
+<td>The rc.7 GKE deployment's Grafana login and mesh land in the chart: <code>global.hosts.grafana</code> is on by default with an HTTP health-check variant for its plaintext backend, <code>GF_SERVER_ROOT_URL</code> follows the browser host and the login carries PKCE and the email/profile scopes (the prod realm defines both), and Prometheus, Loki, and Tempo serve TLS on private-CA leaves with CA-pinned scrapes, exporters, and datasources (CHT-132..134, DD-653..656)</td>
+<td>this PR</td>
+<td>in review</td>
+</tr>
+<tr>
+<td>10.15</td>
+<td>Browser host names, Grafana role gate</td>
+<td>The browser hosts read by role: the <code>global.hosts</code> keys become <code>app</code>, <code>auth</code>, <code>dashboard</code>, and <code>o11y</code> with no old-name alias (CHT-135, DD-658; the issuer moves to <code>auth.&lt;domain&gt;</code> with the rename), and Grafana's role mapping goes strict so a realm user without a <code>grafana</code> client role is denied instead of landing as Viewer (CHT-136, DD-659); the runbook gains the rename step and the admin-accounts procedure (DD-660)</td>
+<td>this PR</td>
+<td>in review</td>
+</tr>
+<tr>
 <td>11.1</td>
 <td>Spike: Apache HugeGraph as the store</td>
 <td>Whether HugeGraph, with HugeGraph-AI, can replace Elasticsearch behind the three store protocols: conditional writes, unique values, runtime schema, text ranking, facets by <code>groupCount()</code>, filtered kNN, backup (HGS-01..11); measured against Elasticsearch at up to 1,000,000 entities (HGS-20..26); ends in ADR 059, Proposed</td>

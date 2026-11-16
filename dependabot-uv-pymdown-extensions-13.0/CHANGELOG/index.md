@@ -1,3 +1,22 @@
+## 0.1.0-rc.8 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** move the observability mesh onto internal TLS ([a6f898272](<https://github.com/aureliusenterprise/aurelius-atlas/commit/a6f898272>))
+- **helm:** read the browser hosts by role and gate the sign-ins ([5d23b0650](<https://github.com/aureliusenterprise/aurelius-atlas/commit/5d23b0650>))
+
+## 0.1.0-rc.7 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** sync the backend CA with a trust-manager Bundle ([63172ad68](<https://github.com/aureliusenterprise/aurelius-atlas/commit/63172ad68>))
+
+## 0.1.0-rc.6 (2026-11-16)
+
+### 🩹 Fixes
+
+- **ci:** serialise the cosign attest and sign targets ([a2bec7437](<https://github.com/aureliusenterprise/aurelius-atlas/commit/a2bec7437>))
+
 ## 0.1.0-rc.5 (2026-11-16)
 
 ### 🩹 Fixes

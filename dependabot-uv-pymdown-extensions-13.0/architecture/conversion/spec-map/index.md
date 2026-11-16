@@ -102,3 +102,5 @@ This table is the reference for a move: it fixes the home before files are touch
 | 10.11 | Low-findings hardening | `helm/` | CHT |
 | 10.12 | Server authentication, chart wiring | `helm/` | CHT |
 | 10.13 | GKE-ready edge: split trust, CA sync, health checks | `helm/` | CHT |
+| 10.14 | Grafana at the edge, TLS-internal observability | `helm/` + `dev/observability` + `dev/keycloak` | CHT |
+| 10.15 | Browser host names, Grafana role gate | `helm/` + `dev/observability` + `dev/keycloak` | CHT |
