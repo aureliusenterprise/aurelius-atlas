@@ -227,6 +227,8 @@
       
         
       
+        
+      
     
     
     
@@ -444,6 +446,8 @@
       
         
       
+        
+      
     
     
     
@@ -512,6 +516,33 @@
     
   
   Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/standalone-tenants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Add a Tenant to the Standalone Server
 
     
   </span>
@@ -2002,6 +2033,8 @@
       
         
           
+        
+      
         
       
         
@@ -3904,6 +3937,33 @@
     
   
   063. Each tenant is an organization with its own store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  064. The webapp reads rich catalogue data through one Aurelius view family
 
     
   </span>
@@ -6520,6 +6580,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tenants" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        Tenants
+      </span>
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#trust" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -6870,6 +6941,24 @@ overlay, and the two shipped overlays are the tested shapes:</p>
 </ul>
 <p>CI renders every chart against both overlays on every change (CHT-06), so
 "renders on a stock cluster" is a gate, not a hope.</p>
+<h2 id="tenants">Tenants<a class="headerlink" href="#tenants" title="Permanent link">&para;</a></h2>
+<p>Tenancy is off by default, and the server answers as Apache Atlas does. The
+server chart's <code>tenancy.enabled</code> turns it on (ADR 063, WPT-08). Each request
+then acts in the one Keycloak organization its token names, with that
+tenant's own indices and background work. Each tenant listed in
+<code>tenancy.tenants</code> is provisioned by a hook Job after every install and
+upgrade, and a tenant already there is left as it is (DD-579). A tenant is
+removed only by the server's command, <code>python -m
+aurelius_atlas_server.provisioning remove &lt;alias&gt;</code>, never by dropping it from
+the list. The command keeps the realm in step as the client
+<code>aurelius-atlas-provisioning</code> (DD-600): the tenant's organization and its four
+role groups, the operators as read members of each tenant that trusts them,
+and the rights of each tenant's administrators over its role groups (DD-602).
+A CronJob runs <code>operators</code> every 15 minutes, so an operator who joins or
+leaves is in step with every tenant (<code>tenancy.operatorSync.schedule</code>). A
+tenant's members join through a platform administrator or by invitation:
+Keycloak doesn't yet let a tenant administrator list them without reading
+every user of the realm.</p>
 <h2 id="trust">Trust<a class="headerlink" href="#trust" title="Permanent link">&para;</a></h2>
 <p>cert-manager signs every certificate (DD-286, corrected by DD-259). The
 default posture is the chart-created private root: a self-signed bootstrap

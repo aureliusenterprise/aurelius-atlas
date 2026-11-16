@@ -66,6 +66,22 @@ One ACTIVE governance rule's answer about the draft (VEV-02; CL-40).
       "title": "Attribute",
       "type": "string"
     },
+    "anyOf": {
+      "anyOf": [
+        {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "description": "The other attributes the rule measures beside its first, the ``|`` alternatives of a stored expression (GQ-06, VEV-09). Absent when the rule measures one attribute.",
+      "title": "Anyof"
+    },
     "dimension": {
       "description": "The rule's quality dimension, e.g. ``COMPLETENESS``.",
       "title": "Dimension",
@@ -106,9 +122,18 @@ Fields:
 - `rule_guid` (`str`)
 - `rule_name` (`str`)
 - `attribute` (`str`)
+- `any_of` (`list[str] | None`)
 - `dimension` (`str`)
 - `compliant` (`StrictBool`)
 - `message` (`str`)
+
+#### any\_of
+
+```
+any_of: list[str] | None = None
+```
+
+The other attributes the rule measures beside its first, the `|` alternatives of a stored expression (GQ-06, VEV-09). Absent when the rule measures one attribute.
 
 #### attribute
 
@@ -274,6 +299,22 @@ The `POST /` answer: the verdicts of the ACTIVE rules, and the unread ones (VEV-
           "description": "The entity attribute the rule measures: the banner groups by it.",
           "title": "Attribute",
           "type": "string"
+        },
+        "anyOf": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The other attributes the rule measures beside its first, the ``|`` alternatives of a stored expression (GQ-06, VEV-09). Absent when the rule measures one attribute.",
+          "title": "Anyof"
         },
         "dimension": {
           "description": "The rule's quality dimension, e.g. ``COMPLETENESS``.",

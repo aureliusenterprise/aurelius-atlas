@@ -19,6 +19,12 @@ The version step is `nx release`: it reads conventional commits and bumps the wo
 
 `npm run prerelease` runs `nx release --preid=rc --skip-publish`: it versions, writes the changelog, and cuts an `rc` tag locally, publishing nothing. The tag is for pulling a release candidate and testing it as an artifact; `npm run release` is the step that publishes and signs ([ADR 029](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable/index.md>)).
 
+> [!NOTE]
+>
+> **The first release names its version**
+>
+> Before the first `v*` tag exists, Nx cannot read the current version or the previous release ref from git. The version falls back to the disk (`fallbackCurrentVersionResolver: "disk"`); the changelog needs `--first-release`, which starts it at the first commit. The conventional-commits bump also moves past `0.1.0`. To make `v0.1.0` the first tag, name the version once: `npx nx release 0.1.0 --first-release --skip-publish`. An exact version ignores `--preid`, so to iterate release candidates after it, use `npm run prerelease` (it cuts `0.1.1-rc.0`, `0.1.1-rc.1`, and so on). After the first tag, `nx release` reads both from git as usual.
+
 ## What publishing runs
 
 Per project, `docker-build` produces the wheel (workspace libraries bundled) and the image; the publish pipeline attaches a CycloneDX SBOM ([ADR 033](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/033-shipped-artifacts-carry-a-contents-inventory/index.md>)) and the signed artifacts are published so a deployment can promote the validated release along its declared path ([ADR 024](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/024-a-validated-release-is-promoted-by-a-declared-path/index.md>)).

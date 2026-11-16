@@ -101,3 +101,4 @@ This table is the reference for a move: it fixes the home before files are touch
 | 10.10 | Digest-pinned images and signed charts | `helm/` | CHT |
 | 10.11 | Low-findings hardening | `helm/` | CHT |
 | 10.12 | Server authentication, chart wiring | `helm/` | CHT |
+| 10.13 | GKE-ready edge: split trust, CA sync, health checks | `helm/` | CHT |

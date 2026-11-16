@@ -227,6 +227,8 @@
       
         
       
+        
+      
     
     
     
@@ -444,6 +446,8 @@
       
         
       
+        
+      
     
     
     
@@ -512,6 +516,33 @@
     
   
   Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../user-guide/standalone-tenants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Add a Tenant to the Standalone Server
 
     
   </span>
@@ -1537,6 +1568,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_auth.auth.KEY_REFRESH_SECONDS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;KEY_REFRESH_SECONDS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_auth.auth.LOGGER" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -2420,6 +2462,8 @@
       
         
           
+        
+      
         
       
         
@@ -4319,6 +4363,33 @@
     
   
   063. Each tenant is an organization with its own store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  064. The webapp reads rich catalogue data through one Aurelius view family
 
     
   </span>
@@ -6927,6 +6998,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_auth.auth.KEY_REFRESH_SECONDS" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;KEY_REFRESH_SECONDS
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_auth.auth.LOGGER" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -7436,7 +7518,9 @@ shared across applications.</p>
 <p>The verification story (AUX-02..AUX-05):</p>
 <ul>
 <li>OIDC discovery and JWKS are fetched through a circuit breaker (a Keycloak
-  outage is a 503, not a hang) and cached for an hour.</li>
+  outage is a 503, not a hang) and cached for an hour. A token signed by a key
+  the cached JWKS lacks reads the JWKS again, at most once a minute: the issuer
+  rotated its keys, or a new one started, and its tokens verify at once.</li>
 <li>Tokens are verified with PyJWT by <code>kid</code>: RS256 signature, issuer and
   expiry. The audience is checked after decoding against the union of the
   <code>azp</code> and <code>aud</code> claims, which pyjwt's built-in check cannot express.</li>
@@ -7563,6 +7647,31 @@ shared across applications.</p>
     <div class="doc doc-contents ">
 
         <p>Timeout for the issuer calls (discovery, JWKS).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_auth.auth.KEY_REFRESH_SECONDS" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">KEY_REFRESH_SECONDS</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-module-attribute"><code>module-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_auth.auth.KEY_REFRESH_SECONDS" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">KEY_REFRESH_SECONDS</span> <span class="o">=</span> <span class="mi">60</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The shortest time between two reads of the JWKS: a token whose key the cached JWKS lacks reads it again only
+once this long has passed since the last read, so tokens with made-up key ids can't flood the issuer.</p>
 
     </div>
 
@@ -8059,7 +8168,7 @@ OpenAPI security scheme singular across the dependencies below.</p>
 
   
       dataclass
-   (aurelius_atlas_auth.auth.AuthConfig)" href="./#aurelius_atlas_auth.auth.AuthConfig">AuthConfig</a></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_auth.auth.KeycloakAuth(http)">http</span></span><span class="p">:</span> <span class="n"><span title="httpx2.Client">Client</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+   (aurelius_atlas_auth.auth.AuthConfig)" href="./#aurelius_atlas_auth.auth.AuthConfig">AuthConfig</a></span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_auth.auth.KeycloakAuth(http)">http</span></span><span class="p">:</span> <span class="n"><span title="httpx2.Client">Client</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n"><span title="aurelius_atlas_auth.auth.KeycloakAuth(clock)">clock</span></span><span class="p">:</span> <span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[],</span> <span class="n"><span title="float">float</span></span><span class="p">]</span> <span class="o">=</span> <span class="n"><span title="time.monotonic">monotonic</span></span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">

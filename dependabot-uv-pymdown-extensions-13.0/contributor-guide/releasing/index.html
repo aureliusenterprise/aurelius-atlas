@@ -227,6 +227,8 @@
       
         
       
+        
+      
     
     
     
@@ -444,6 +446,8 @@
       
         
       
+        
+      
     
     
     
@@ -512,6 +516,33 @@
     
   
   Standalone Server
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/standalone-tenants/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Add a Tenant to the Standalone Server
 
     
   </span>
@@ -2084,6 +2115,8 @@
       
         
           
+        
+      
         
       
         
@@ -3983,6 +4016,33 @@
     
   
   063. Each tenant is an organization with its own store
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  064. The webapp reads rich catalogue data through one Aurelius view family
 
     
   </span>
@@ -6692,6 +6752,16 @@ makes that number every part's number.</p>
 changelog, and cuts an <code>rc</code> tag locally, publishing nothing. The tag is for pulling a release
 candidate and testing it as an artifact; <code>npm run release</code> is the step that publishes and signs
 (<a href="../../architecture/adr/029-shipped-artifacts-are-signed-and-their-origin-is-provable/">ADR 029</a>).</p>
+<div class="admonition note">
+<p class="admonition-title">The first release names its version</p>
+<p>Before the first <code>v*</code> tag exists, Nx cannot read the current version or the previous release ref
+from git. The version falls back to the disk (<code>fallbackCurrentVersionResolver: "disk"</code>); the
+changelog needs <code>--first-release</code>, which starts it at the first commit. The conventional-commits
+bump also moves past <code>0.1.0</code>. To make <code>v0.1.0</code> the first tag, name the version once:
+<code>npx nx release 0.1.0 --first-release --skip-publish</code>. An exact version ignores <code>--preid</code>, so to
+iterate release candidates after it, use <code>npm run prerelease</code> (it cuts <code>0.1.1-rc.0</code>, <code>0.1.1-rc.1</code>,
+and so on). After the first tag, <code>nx release</code> reads both from git as usual.</p>
+</div>
 <h2 id="what-publishing-runs">What publishing runs<a class="headerlink" href="#what-publishing-runs" title="Permanent link">&para;</a></h2>
 <p>Per project, <code>docker-build</code> produces the wheel (workspace libraries bundled) and the image; the
 publish pipeline attaches a CycloneDX SBOM (<a href="../../architecture/adr/033-shipped-artifacts-carry-a-contents-inventory/">ADR 033</a>)

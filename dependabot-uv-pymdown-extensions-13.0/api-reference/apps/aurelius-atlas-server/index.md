@@ -592,6 +592,25 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "minimum": 0,
 >       "title": "Tenancy Refresh Seconds",
 >       "type": "number"
+>     },
+>     "tenancy_admin_client_id": {
+>       "default": "aurelius-atlas-provisioning",
+>       "title": "Tenancy Admin Client Id",
+>       "type": "string"
+>     },
+>     "tenancy_admin_client_secret": {
+>       "anyOf": [
+>         {
+>           "format": "password",
+>           "type": "string",
+>           "writeOnly": true
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Tenancy Admin Client Secret"
 >     }
 >   },
 >   "required": [
@@ -692,6 +711,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_operator_organization` (`str`)
 > - `tenancy_operator_role` (`str`)
 > - `tenancy_refresh_seconds` (`float`)
+> - `tenancy_admin_client_id` (`str`)
+> - `tenancy_admin_client_secret` (`SecretStr | None`)
 >
 > ### app\_search\_batch\_size
 >
@@ -1315,6 +1336,22 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >
 > Whether propagation is deferred to tasks a worker runs after the request: `atlas.tasks.enabled` (TSK-02, DD-081).
 >
+> ### tenancy\_admin\_client\_id
+>
+> ```
+> tenancy_admin_client_id: str = 'aurelius-atlas-provisioning'
+> ```
+>
+> The client the provisioning command reaches the realm's admin API as (TRM-01, DD-600).
+>
+> ### tenancy\_admin\_client\_secret
+>
+> ```
+> tenancy_admin_client_secret: SecretStr | None = None
+> ```
+>
+> Its secret; unset, the command leaves the realm as it is (TRM-01, DD-603).
+>
 > ### tenancy\_enabled
 >
 > ```
@@ -1653,6 +1690,8 @@ Answer an `AtlasError` with its status and `{"errorCode", "errorMessage"[, "erro
 
 A server error (5xx) keeps Atlas's two-field shape and adds the trace id of the request as `requestId` (SRV-07, DD-235): the cause's text goes to the log, never to the wire, so a wrapped store or transport failure cannot leak internals; the id ties the response to the logged stack and the trace. A client error (4xx) echoes the cause as Atlas does (SRV-04) — there the cause is the request's own defect, not server internals.
 
+An error that refuses several problems at once adds `messages`, one text each (AVR-13, DD-588): the Aurelius error shape beside the one `errorMessage` a single refusal has.
+
 ## aurelius\_atlas\_server.routes.admin
 
 The admin endpoints of `AdminResource`: version, status, session, liveness, readiness, patches, metrics, purge, tasks, export, import, servers and their audit trail.
@@ -1863,7 +1902,7 @@ export(request: Request, store: Store, body: Body) -> Response
 
 `export`: the entities the request reaches, with their types and the result, as a ZIP (EXP-01 to EXP-06).
 
-One export or import runs at a time unless the request's options name `skipLineage` or `replicatedTo`.
+One export or import runs at a time in the request's store set (WPT-06) unless the request's options name `skipLineage` or `replicatedTo`.
 
 Raises:
 

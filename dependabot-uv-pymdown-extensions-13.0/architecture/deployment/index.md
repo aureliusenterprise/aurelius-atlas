@@ -78,6 +78,10 @@ CHT-04: **no chart names a cloud provider.** An environment is a values overlay,
 
 CI renders every chart against both overlays on every change (CHT-06), so "renders on a stock cluster" is a gate, not a hope.
 
+## Tenants
+
+Tenancy is off by default, and the server answers as Apache Atlas does. The server chart's `tenancy.enabled` turns it on (ADR 063, WPT-08). Each request then acts in the one Keycloak organization its token names, with that tenant's own indices and background work. Each tenant listed in `tenancy.tenants` is provisioned by a hook Job after every install and upgrade, and a tenant already there is left as it is (DD-579). A tenant is removed only by the server's command, `python -m aurelius_atlas_server.provisioning remove <alias>`, never by dropping it from the list. The command keeps the realm in step as the client `aurelius-atlas-provisioning` (DD-600): the tenant's organization and its four role groups, the operators as read members of each tenant that trusts them, and the rights of each tenant's administrators over its role groups (DD-602). A CronJob runs `operators` every 15 minutes, so an operator who joins or leaves is in step with every tenant (`tenancy.operatorSync.schedule`). A tenant's members join through a platform administrator or by invitation: Keycloak doesn't yet let a tenant administrator list them without reading every user of the realm.
+
 ## Trust
 
 cert-manager signs every certificate (DD-286, corrected by DD-259). The default posture is the chart-created private root: a self-signed bootstrap `Issuer` signs one CA `Certificate` (its Secret is `global.trust.caSecretName`), and a CA-type `Issuer` of that CA — namespaced, since a `ClusterIssuer` cannot read a CA Secret the chart writes into the app namespace — signs every leaf, so every certificate descends from one root and each component's mounted `ca.crt` verifies every peer. A production deployment brings its own issuer (`global.trust.createIssuer: false`, `issuerRef` to the org's, typically a `ClusterIssuer`) and either the CA secret name or a literal CA bundle.

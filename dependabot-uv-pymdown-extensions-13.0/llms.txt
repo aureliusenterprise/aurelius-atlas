@@ -4,6 +4,7 @@
 
 - [User Guide](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/user-guide/index.md>)
 - [Standalone Server](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/user-guide/standalone-server/index.md>)
+- [Add a Tenant to the Standalone Server](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/user-guide/standalone-tenants/index.md>)
 
 ## Contributor Guide
 
@@ -112,6 +113,7 @@
 - [061\. The governance banner answers live verdicts](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/061-the-governance-banner-answers-live-verdicts/index.md>)
 - [062\. The pull-request gate proves the critical and high scenarios](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios/index.md>)
 - [063\. Each tenant is an organization with its own store](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/index.md>)
+- [064\. The webapp reads rich catalogue data through one Aurelius view family](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/dependabot-uv-pymdown-extensions-13.0/architecture/conversion/design-log/index.md>)
