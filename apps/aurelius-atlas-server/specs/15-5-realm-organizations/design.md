@@ -17,7 +17,8 @@ is never edited except its status line, and a changed decision is a new entry th
 groups, at fixed group ids, and the realm role `atlas-operator`. A member's groups in an organization are listed
 under the member, by group id, as Keycloak's own export writes them. A tenant's organization is made when the
 tenant is provisioned (15.5b), so the dev and chart realms carry no tenant. The standalone demo realm carries
-the sample tenant `acme`, which its README provisions.
+the tenants `demo`, with the sample catalogue, and `meyn`, without one, which the stack's profile `tenancy`
+provisions, and the operator `operator`.
 
 **Reason.** The operator organization exists in every deployment from its start (DD-567), so it belongs to the
 realm, as the server's client does. A tenant exists only once provisioned, and the command that provisions it

@@ -156,3 +156,9 @@ person belong to several, and lets the person choose which one to act for at sig
     - Provisioning, trust and removing a tenant become operator tasks.
     - The increments of series 15 deliver this step by step. While tenancy is off, nothing changes for
       existing deployments.
+    - If an organization needs to manage its own users, we will consider a Keycloak instance of its own,
+      which the platform's Keycloak trusts as that organization's identity provider. The organization's
+      administrators then add and remove its people there. The platform's realm still holds the
+      organization, its role groups and the operators' trust, so the catalogue decides rights as before.
+      Keycloak's own organization-scoped administration can't do this yet without exposing every user of
+      the realm.
