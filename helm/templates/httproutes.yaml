@@ -13,8 +13,9 @@ every chart Certificate carries (CHT-22). The pin names the backend-CA
 ConfigMap, not the CA Secret: Gateway implementations that read this API
 (GKE's managed Gateway) accept only ConfigMap refs and reject the Secret
 outright, while cert-manager keeps CAs in Secrets (DD-259) — the
-<release>-backend-ca ConfigMap and its sync Job (ca-configmap.yaml, DD-644)
-carry the same PEM across the two kinds. Grafana is the one plaintext
+<release>-backend-ca ConfigMap, synced from the CA Secret by the
+trust-manager Bundle (ca-bundle.yaml, DD-652), carries the same PEM across
+the two kinds. Grafana is the one plaintext
 backend behind the gateway (anonymous Viewer, login disabled, DD-267) and
 gets none.
 */}}

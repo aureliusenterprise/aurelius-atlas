@@ -141,22 +141,18 @@ global:
                 atlas: /config.json
                 keycloak: /realms/master
                 dashboard: /api/atlas/admin/readiness
-        # The backend-CA sync (DD-644): the post-install Job that copies the
-        # CA Secret's ca.crt into the backend-CA ConfigMap the
-        # BackendTLSPolicies pin (Gateway implementations read ConfigMaps,
-        # cert-manager writes Secrets). The image is the workspace Python
-        # base (default cmd python3, uid 65532), digest-pinned (CHT-96).
-        caSync:
-            image:
-                repository: dhi.io/python
-                tag: "3.14-alpine3.24"
-                digest: sha256:a87e57be650aa21c7afd82abb5307a8208bc559eba66d471c0dad3b1a49c8294
-            resources:
-                requests:
-                    cpu: 10m
-                    memory: 32Mi
-                limits:
-                    memory: 64Mi
+        # The backend-CA trust sync (DD-652, superseding the hook Job of
+        # DD-644): when the gateway is enabled and the chart owns a CA
+        # (createIssuer or a BYO caBundle), the umbrella renders a
+        # trust-manager Bundle that copies the CA Secret's ca.crt into the
+        # <release>-backend-ca ConfigMap the BackendTLSPolicies pin (Gateway
+        # implementations read ConfigMaps, cert-manager writes Secrets).
+        # trust-manager is a cluster prerequisite (runbook), like
+        # cert-manager. It reads sources only from its configured trust
+        # namespace, so that install sets app.trust.namespace to the
+        # namespace this chart installs into (global.namespace). No value
+        # here controls the Bundle — the same flags that owned the CA before
+        # gate it.
 
     # Browser-facing hosts (HTTPRoutes the umbrella owns, DD-285). Each host
     # joins to one backend Service; `service`/`port` override the name-rule

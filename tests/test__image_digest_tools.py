@@ -128,9 +128,9 @@ def test__fix_text_rewrites_and_inserts_digest_lines() -> None:
 
 @pytest.mark.covers(rules=["CHT-96"])
 def test__workspace_triples_match_the_committed_pin_map() -> None:
-    """The 14 committed pins agree with the suites' PINNED map (CHT-93/96)."""
+    """The 13 committed pins agree with the suites' PINNED map (CHT-93/96)."""
     triples = digests.extract_all(WORKSPACE)
-    assert len(triples) == 14
+    assert len(triples) == 13
     assert all(t.digest for t in triples), [t.repository for t in triples if not t.digest]
     for triple in triples:
         assert triple.digest == PINNED[triple.repository], triple.repository

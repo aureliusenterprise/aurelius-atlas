@@ -1,0 +1,38 @@
+{{/*
+The backend-CA Bundle (DD-652, superseding the hook Job of DD-644). A Gateway
+implementation that verifies backend certificates reads the trust anchor from
+a ConfigMap, not a Secret: GKE's Gateway controller rejects a Secret
+caCertificateRefs outright ("no-valid-refs") while the Gateway API accepts
+both kinds. The trust root lives in a Secret (cert-manager writes CAs as
+Secrets — DD-259, DD-286), so a trust-manager Bundle carries the PEM across:
+its controller keeps the <release>-backend-ca ConfigMap — the one the
+BackendTLSPolicies pin — equal to the CA Secret, continuously, rotation
+included. trust-manager is a cluster prerequisite the chart does not install
+(runbook), and it reads sources only from its configured trust namespace, so
+that install sets app.trust.namespace to this chart's namespace.
+
+The Bundle is cluster-scoped and an empty namespaceSelector writes the target
+into EVERY namespace, so the selector names this one by its auto-labelled
+kubernetes.io/metadata.name. The controller owns the target ConfigMap; the
+chart renders none of its own.
+*/}}
+{{- if and .Values.global.gateway.enabled (or .Values.global.trust.createIssuer .Values.global.trust.caBundle) -}}
+{{- $ns := include "aurelius-atlas.namespace" . -}}
+apiVersion: trust.cert-manager.io/v1alpha1
+kind: Bundle
+metadata:
+    name: {{ printf "%s-backend-ca" .Release.Name }}
+    labels:
+        {{- include "aurelius-atlas.labels" . | nindent 8 }}
+spec:
+    sources:
+        -   secret:
+                name: {{ include "aurelius-atlas.caSecretName" . }}
+                key: ca.crt
+    target:
+        configMap:
+            key: ca.crt
+        namespaceSelector:
+            matchLabels:
+                kubernetes.io/metadata.name: {{ $ns }}
+{{- end -}}

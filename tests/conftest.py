@@ -66,7 +66,7 @@ SCANNER_CLIENT_IDS = (
     "aurelius-atlas-db-scanner",
 )
 
-# The committed third-party digests (CHT-93, DD-278): the nine distinct dhi.io
+# The committed third-party digests (CHT-93, DD-278): the eight distinct dhi.io
 # pins the chart values carry. Chart suites assert their own renders against
 # this map; ``tools/images/chart_digests.py --check`` is the registry-side
 # twin, and the umbrella guard (CHT-97) knows these repos as the legal
@@ -79,7 +79,6 @@ PINNED = {
     "dhi.io/postgres": "sha256:c075241e0b60eca5cb40e61484feb582b17bd756e8c48a482d93321607a332ce",
     "dhi.io/opentelemetry-collector": "sha256:79de5a3a0319b189dfb428d3fa36a39b8d83ee6605e106089ce78153f7f5ac6e",
     "dhi.io/curl": "sha256:229a580c4b21bffe98970883ae1c11248e82390454e5fec79109132f4b774862",
-    "dhi.io/python": "sha256:a87e57be650aa21c7afd82abb5307a8208bc559eba66d471c0dad3b1a49c8294",
     "dhi.io/prometheus": "sha256:585a54e52b97d4400aaa4c7ef9470add072362b236cd7fb4e8aacdd371121109",
     "dhi.io/loki": "sha256:4e7325c57c492c02e8944b22cf0c80299a49d657eced3ed9f56853a01f622a41",
     "dhi.io/tempo": "sha256:e6355af759ed371adca5b1fc76303b9eb7db3da15739ba76def54a3f336734c8",

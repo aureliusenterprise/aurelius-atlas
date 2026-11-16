@@ -74,11 +74,14 @@ the path router). TLS backends (`atlas-server`, `atlas-keycloak`) also get a
 implementation resolves only ConfigMap refs; a Secret ref renders as
 "no-valid-refs") and `validation.hostname` to the Service name — the Gateway
 verifies the leaf the same way an in-cluster client does. The same ConfigMap
-feeds any implementation that verifies backends; a post-install/post-upgrade
-hook Job (`<release>-ca-sync`, digest-pinned `dhi.io/python`,
-SA-scoped to configmaps in the release namespace) copies the CA Secret's
-`ca.crt` into it — cert-manager's ConfigMap injection does not work at the
-tested version, and the CA bytes do not exist at template time. The
+feeds any implementation that verifies backends. The chart does not render
+that ConfigMap: it renders a cluster-scoped trust-manager `Bundle` named
+`<release>-backend-ca` (`ca-bundle.yaml`, CHT-131, DD-652 — supersedes the
+DD-644 hook Job) and the trust-manager controller (a cluster prerequisite,
+runbook §0, installed with `app.trust.namespace` set to the release
+namespace) owns and keeps the target ConfigMap in sync from the CA Secret —
+cert-manager's ConfigMap injection does not work at the tested version, and
+the CA bytes do not exist at template time. The
 browser leaf
 `atlas-edge-tls` covers
 the atlas/dashboard/grafana hosts; the keycloak listener reuses

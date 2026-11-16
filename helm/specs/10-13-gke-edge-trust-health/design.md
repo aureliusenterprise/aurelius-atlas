@@ -59,9 +59,8 @@ stock benefit.
 
 ### DD-644. The backend-CA trust lands in a ConfigMap, synced by a hook Job
 
-- **Status:** Proposed
-- **Increment:** 10.13
-- **Date:** 2026-11-16
+- **Status:** Superseded by DD-652 (the ConfigMap pin stands, the sync
+  becomes a trust-manager Bundle)
 
 **Context.** `BackendTLSPolicy.validation.caCertificateRefs` tells the
 Gateway implementation which root to verify the backends with. rc.3 pinned
@@ -210,6 +209,8 @@ upgrade to rc.4 because the chart now ships the same content.
 
 ### DD-648. The ca-sync Role may `get` its CA Secret
 
+(Superseded with DD-644 by DD-652: the Role is gone.)
+
 - **Status:** Proposed
 - **Increment:** 10.13
 - **Date:** 2026-11-16
@@ -339,3 +340,59 @@ edge issuer is set, not only when observability runs. The runbook gains the
 GKE private-zone recipe, with the one sharp edge: a private zone is
 authoritative for the whole apex in-cluster, so every other host under it
 (atlas, and any future one) needs a record too, else it returns no answer.
+
+### DD-652. The backend-CA sync is a trust-manager Bundle, not a hook Job
+
+- **Status:** Proposed
+- **Increment:** 10.13
+- **Date:** 2026-11-16
+- **Related:** Supersedes DD-644 (and DD-648 with it); relies on DD-259,
+  DD-286
+
+**Context.** DD-644 carried the CA PEM from the Secret to the ConfigMap
+with a hook Job: five chart objects (ConfigMap, ServiceAccount, Role,
+RoleBinding, Job), a digest-pinned Python image, an embedded `python3 -c`
+script, and the widened RBAC DD-648 needed. It runs only at install and
+upgrade, so a CA change between releases waits for the next
+`helm upgrade`. cert-manager names the supported mechanism for exactly
+this hop: its trust docs tell a `BackendTLSPolicy` consumer to "point those
+fields at a trust-manager `Bundle` target", and a `Bundle` names a source
+Secret and keeps a same-named target ConfigMap in sync continuously.
+
+**Decision.** The umbrella renders one cluster-scoped `Bundle`
+(`trust.cert-manager.io/v1alpha1`) named `<release>-backend-ca` instead of
+the five objects. Its source is the CA Secret's `ca.crt` key; its target is
+the same-named ConfigMap, which the trust-manager controller creates and
+owns. Two API facts shape the render. An empty `namespaceSelector` syncs
+the target to every namespace, so the Bundle pins it with
+`matchLabels: {kubernetes.io/metadata.name: <namespace>}`. Sources are read
+only from trust-manager's configured trust namespace, so the runbook
+installs trust-manager with `app.trust.namespace` set to the release
+namespace (which must exist first). The chart stops rendering the
+ConfigMap: the controller owns it, and a chart-owned copy fights the owned
+copy on every upgrade. Gate and name stay as DD-644 set them. The
+`dhi.io/python` pin leaves the umbrella's values, and `conftest.PINNED`
+with it: the committed-pin map drops to thirteen triples, the stock
+umbrella render to eight third-party images.
+
+**Alternatives.** (a) Keep the Job — rejected: the Bundle is smaller,
+declarative, rotation-continuous, and the supported path. The Job earns
+its keep only on clusters that refuse a second prerequisite, and the chart
+already names cert-manager as one. (b) cert-manager cainjector —
+impossible: it injects only `caBundle` on webhook-registry kinds, never a
+ConfigMap. (c) `wellKnownCACertificates: System` on the policy — wrong for
+a private-CA backend. (d) Point the Bundle straight at the CA Secret (the
+docs' "intentionally copying" section suggests a dedicated intermediate
+source for root rotation) — rejected for now: the self-signed root lives
+ten years and every leaf rotates with it, so a copy step guards a rotation
+the trust model does not have. Revisit if root rotation ever goes live.
+
+**Consequences.** trust-manager joins the runbook prerequisite list next to
+cert-manager, which breaks both stock posture paths (minikube and GKE) until
+the cluster carries it — accepted deliberately, per the owner's
+architecture call. The `conftest.PINNED` map and the digest guard lose
+`dhi.io/python` (it stays pinned in the app charts). The install hook
+machinery, its RBAC, and its image supply all disappear. A chart-owned
+`<release>-backend-ca` ConfigMap from an rc.6-or-earlier release is
+replaced by the controller-owned copy on the first upgrade (an ownership
+label change, not an outage — the policy pin is unchanged).

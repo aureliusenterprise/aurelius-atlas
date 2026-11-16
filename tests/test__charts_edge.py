@@ -10,6 +10,7 @@ matrix renders are the interesting part — each render here is a scenario.
 
 import base64
 from typing import Any
+from unittest.mock import ANY
 
 import pytest
 from conftest import (
@@ -129,7 +130,7 @@ def test__backend_tls_policies_pin_the_trusted_ca(umbrella_docs: list[dict[str, 
 
     The pin names the backend-CA ConfigMap, not the CA Secret: a managed
     Gateway (GKE) rejects a Secret caCertificateRefs outright while the API
-    allows both kinds, so the chart carries the PEM across (DD-644).
+    allows both kinds, so a trust-manager Bundle carries the PEM across (DD-652).
     """
     policies = {p["metadata"]["name"]: p for p in find_all(umbrella_docs, "BackendTLSPolicy")}
     assert set(policies) == {"atlas-atlas-keycloak", "atlas-atlas-webapp"}
@@ -147,30 +148,48 @@ def test__backend_tls_policies_pin_the_trusted_ca(umbrella_docs: list[dict[str, 
 
 
 @pytest.mark.covers(rules=["CHT-127"])
-def test__backend_ca_configmap_and_sync_job_render(umbrella_docs: list[dict[str, Any]]) -> None:
-    """The trust-root ConfigMap ships beside the CA Secret with its sync Job (DD-644)."""
-    cm = find(umbrella_docs, "ConfigMap", "atlas-backend-ca")
-    assert cm["data"] == {"ca.crt": ""}
-    job = find(umbrella_docs, "Job", "atlas-ca-sync")
-    assert job["metadata"]["annotations"]["helm.sh/hook"] == "post-install,post-upgrade"
-    container = pod_spec(job)["containers"][0]
-    assert container["command"][:3] == ["python3", "-B", "-c"]
-    assert container["image"].startswith("dhi.io/python@sha256:")
-    envs = env_map(container)
-    assert env_value(envs, "CA_SOURCE_SECRET") == "aurelius-atlas-selfsigned-ca"
-    assert env_value(envs, "CA_TARGET_CONFIGMAP") == "atlas-backend-ca"
-    # Rights bounded: this namespace only, no cluster access — get on the
-    # CA Secret it reads (DD-648), get/write on the one ConfigMap it writes.
-    roles = find_all(umbrella_docs, "Role")
-    assert [r["metadata"]["name"] for r in roles] == ["atlas-ca-sync"]
-    assert {(tuple(r["resources"]), tuple(r["verbs"])) for r in roles[0]["rules"]} == {
-        (("secrets",), ("get",)),
-        (("configmaps",), ("get", "create", "patch", "update")),
-    }
+def test__backend_ca_bundle_replaces_the_sync_job(umbrella_docs: list[dict[str, Any]]) -> None:
+    """The trust-root sync is one trust-manager Bundle — no Job, no RBAC (DD-652).
+
+    The Bundle names the CA Secret as its source and the release namespace as
+    its only target. Sources must live in trust-manager's trust namespace, so
+    the runbook installs that controller with app.trust.namespace pointed at
+    the release namespace.
+    """
+    (bundle,) = find_all(umbrella_docs, "Bundle")
+    assert bundle["apiVersion"] == "trust.cert-manager.io/v1alpha1"
+    assert bundle["metadata"] == {"name": "atlas-backend-ca", "labels": ANY}
+    # Cluster-scoped: no namespace of its own — the selector below is what
+    # keeps the target out of every other namespace.
+    assert "namespace" not in bundle["metadata"]
+    (source,) = bundle["spec"]["sources"]
+    assert source["secret"] == {"name": "aurelius-atlas-selfsigned-ca", "key": "ca.crt"}
+    assert bundle["spec"]["target"]["configMap"] == {"key": "ca.crt"}
+    assert bundle["spec"]["target"]["namespaceSelector"] == {"matchLabels": {"kubernetes.io/metadata.name": "atlas"}}
+    # The controller owns the target ConfigMap (DD-652). The chart must not
+    # render one of its own, or it fights the owned copy on every install.
+    assert "atlas-backend-ca" not in names(umbrella_docs, "ConfigMap")
+    # The whole hook-Job machinery is gone: no Job, no sync RBAC (DD-644/648).
+    assert not find_all(umbrella_docs, "Job")
+    assert "atlas-ca-sync" not in names(umbrella_docs, "Role")
+    assert "atlas-ca-sync" not in names(umbrella_docs, "ServiceAccount")
+    # BYO trust root: the Bundle follows the caBundle Secret's name (the
+    # umbrella renders that Secret itself, so it exists for the source).
+    byo = helm_render(
+        UMBRELLA_CHART,
+        value_files=TEST_VALUES,
+        sets=(
+            "global.trust.createIssuer=false",
+            "global.trust.caBundle=placeholder-pem",
+            "global.trust.caSecretName=brought-by-operators",
+        ),
+    )
+    (byo_bundle,) = find_all(byo, "Bundle")
+    assert byo_bundle["spec"]["sources"][0]["secret"]["name"] == "brought-by-operators"
+    assert find(byo, "Secret", "brought-by-operators")
     # gateway off takes the whole edge machinery with it (CHT-29 pattern).
     docs = helm_render(UMBRELLA_CHART, value_files=TEST_VALUES, sets=("global.gateway.enabled=false",))
-    assert "atlas-backend-ca" not in names(docs, "ConfigMap")
-    assert not find_all(docs, "Job")
+    assert not find_all(docs, "Bundle")
 
 
 @pytest.mark.covers(rules=["CHT-30"])
