@@ -3,7 +3,7 @@ dependencies = ["aurelius-atlas-model", "httpx2>=2.0.0", "pydantic>=2.14.2"]
 description = "The Aurelius Atlas server API as a contract and a client: pydantic models for the Atlas REST routes, and an async client for them."
 name = "aurelius-atlas-server-client"
 requires-python = ">=3.14"
-version = "0.1.0-rc.7"
+version = "0.1.0-rc.8"
 
 [[project.authors]]
 name = "Aurelius Enterprise"
