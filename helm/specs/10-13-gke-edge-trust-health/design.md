@@ -404,4 +404,9 @@ this chart completed with no hook Job rendered. The Bundle reports
 `Synced`, the controller took ownership of the pre-existing chart-owned
 ConfigMap, and its `ca.crt` equals the CA Secret's PEM byte for byte except
 a stripped trailing newline (the controller trims, and a PEM parser ignores
-it). Both browser hosts serve 200 through the BackendTLSPolicies.
+it). Both browser hosts serve 200 through the BackendTLSPolicies. The
+clean-install path proves the same on rc.7: an empty namespace installed
+from OCI rendered the Bundle alone (no Job, no RBAC), it reported `Synced`
+seconds after install against the CA issued at the same install, all 16
+pods came up, and both hosts serve 200 (the runbook's DNS note covers the
+IP churn a reinstall causes).
