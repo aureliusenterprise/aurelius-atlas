@@ -1,3 +1,9 @@
+## 0.1.0-rc.4 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** split edge trust, backend-CA ConfigMap, HTTPS health checks (10.13) ([4fd97adf7](https://github.com/aureliusenterprise/aurelius-atlas/commit/4fd97adf7))
+
 ## 0.1.0-rc.3 (2026-11-16)
 
 ### 🩹 Fixes
