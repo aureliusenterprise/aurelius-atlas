@@ -80,6 +80,13 @@ function createNodesInternal(
                         metadata: {
                             description: "Attest the Docker image using Cosign and the generated SBOM",
                         },
+                        // Cosign fetches the Sigstore TUF trusted root before
+                        // each attest; a parallel burst gets rate-limited by
+                        // the TUF CDN, and the refresh races its own persist
+                        // on the shared cache (DD-641's reason, seen live:
+                        // "failed to persist metadata" failed the publish
+                        // sign step three times, 2026-11-16).
+                        parallelism: false,
                     },
                     [buildTargetName]: {
                         configurations: {
@@ -154,6 +161,10 @@ function createNodesInternal(
                         metadata: {
                             description: "Sign the Docker image with Cosign",
                         },
+                        // Same TUF root fetch as attest/verify (DD-641): the
+                        // ten keyless signs on one runner must not burst it
+                        // in parallel.
+                        parallelism: false,
                     },
                     [verifyTargetName]: {
                         command:

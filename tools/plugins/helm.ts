@@ -240,6 +240,8 @@ function createNodesInternal(
             metadata: {
                 description: "Sign the published chart OCI artifact with Cosign (CHT-95)",
             },
+            // Same TUF rate-limit reason as the chart verify (DD-641).
+            parallelism: false,
         },
         [verifyTargetName]: {
             command:

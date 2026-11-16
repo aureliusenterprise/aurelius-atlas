@@ -258,3 +258,41 @@ which is what a storage object wants.
 
 **Consequences.** The chart upgrades in place. A PVC made at install
 never looks like it belongs to one release.
+
+### DD-650. The cosign attest and sign targets run serially too
+
+- **Status:** Proposed
+- **Increment:** 10.13 (a fix, 2026-11-16)
+- **Date:** 2026-11-16
+- **Related:** DD-641
+
+**Context.** DD-641 serialized only the two verify targets, so the publish
+chain still fanned `docker-attest`, `docker-sign`, and `helm-sign` out
+across ten projects at once. Each cosign call touches a resource the
+runner shares, and the burst broke it two ways. The TUF root fetch failed
+to persist its cache metadata ("failed to persist metadata", tag
+`v0.1.0-rc.4` and `v0.1.0-rc.5` first attempts). After a rerun, the same
+step failed differently: ten parallel `cosign attest` calls requested an
+ambient OIDC token at once and the Actions token service answered one of
+them with a non-JSON body ("invalid character 'u' looking for beginning
+of value", `v0.1.0-rc.5` second attempt). Both faults killed the sign
+step while the images themselves published fine.
+
+**Decision.** `docker-attest`, `docker-sign`, and `helm-sign` carry
+`parallelism: false`, the flag DD-641 gave the verify pair. Nx runs each
+cosign call alone, so the runner fetches the TUF root and the OIDC token
+one at a time. Only these targets change. The build, publish, and scan
+fan-out stay parallel.
+
+**Alternatives.** (a) Retry the failed step by hand, as rc.4 and rc.5 both
+needed: rejected, it treats the symptom and every release repeats it.
+(b) Add a retry loop around each cosign command: rejected, it hides a
+race that serialization removes outright, and a retry on the OIDC token
+still races the same endpoint. (c) Serialize the whole `run-many` in
+`nx.json`: rejected, it slows the many independent build and publish
+tasks for a fault only the cosign pair has.
+
+**Consequences.** The publish sign step is deterministic. The signing work
+runs serially, which the earlier verify serialization already proved is
+cheap next to the build it follows. A future cosign target copies this
+flag for the same reason.
