@@ -20,11 +20,6 @@
     "aliases": []
   },
   {
-    "version": "fix-auth-jwks-refresh",
-    "title": "fix-auth-jwks-refresh",
-    "aliases": []
-  },
-  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
