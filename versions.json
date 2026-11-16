@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "fix-standalone-account-console",
+    "title": "fix-standalone-account-console",
+    "aliases": []
+  },
+  {
     "version": "feat-cluster-validation-10-5",
     "title": "feat-cluster-validation-10-5",
     "aliases": []
