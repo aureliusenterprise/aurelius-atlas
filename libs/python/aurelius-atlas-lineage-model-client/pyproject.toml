@@ -3,7 +3,7 @@ dependencies = ["aurelius-atlas-server-client", "httpx2>=2.0.0", "pydantic>=2.14
 description = "The Aurelius Atlas lineage-model API as a contract and a client: the lineage-flattening endpoint as pydantic models, and an async client for it."
 name = "aurelius-atlas-lineage-model-client"
 requires-python = ">=3.14"
-version = "0.1.0-rc.4"
+version = "0.1.0-rc.5"
 
 [[project.authors]]
 name = "Aurelius Enterprise"

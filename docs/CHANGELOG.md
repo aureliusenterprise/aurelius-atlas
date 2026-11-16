@@ -1,3 +1,9 @@
+## 0.1.0-rc.5 (2026-11-16)
+
+### 🩹 Fixes
+
+- **helm:** ca-sync reads its CA Secret; version-free volumeClaimTemplates ([196410cca](https://github.com/aureliusenterprise/aurelius-atlas/commit/196410cca))
+
 ## 0.1.0-rc.4 (2026-11-16)
 
 ### 🚀 Features
