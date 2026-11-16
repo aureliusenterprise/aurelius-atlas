@@ -1,3 +1,9 @@
+## 0.1.0-rc.2 (2026-11-16)
+
+### 🩹 Fixes
+
+- **publish:** run cosign verifies serially; chart verify names its flag right ([9d6e2e51b](<https://github.com/aureliusenterprise/aurelius-atlas/commit/9d6e2e51b>))
+
 ## 0.1.0-rc.1 (2026-11-16)
 
 ### 🚀 Features
