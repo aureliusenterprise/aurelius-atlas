@@ -357,3 +357,46 @@ def test__an_operator_only_reads_outside_the_operator_organization() -> None:
     assert tenant_user(organization={"operators": {"groups": every}}, realm_access=operator).roles == TENANT_ROLES
     assert tenant_user(organization={"acme": {"groups": every}}, realm_access={"roles": []}).roles == TENANT_ROLES
     assert tenant_roles({"realm_access": "x"}, TENANCY, "acme", {"groups": every}) == TENANT_ROLES
+
+
+@pytest.mark.covers(f"{L}.login", f"{L}.logout", f"{C}.authorization_url", rules=["AUT-05", "AUT-07"])
+async def test__after_signing_out_the_next_sign_in_asks_for_credentials(
+    anonymous: tuple[FastAPI, httpx.AsyncClient], issuer: FakeIssuer
+) -> None:
+    """The sign-out marks the browser signed out; its next sign-in asks the provider for credentials, even when
+    the provider's own session survived an aborted sign-out; once signed in, the mark goes (DD-640).
+    """  # noqa: D205 - one sentence
+    _, client = anonymous
+    first = await client.get("/login.jsp")
+    assert "prompt" not in parse_qs(urlparse(first.headers["location"]).query)
+    client.cookies.clear()
+    await sign_in(client, issuer)
+    out = await client.get("/logout.html")
+    assert "ATLASSIGNEDOUT=1" in str(out.headers.get_list("set-cookie"))
+    started = await client.get("/login.jsp")
+    query = parse_qs(urlparse(started.headers["location"]).query)
+    assert query["prompt"] == ["login"]
+    returned = {"code": issuer.grant_code(query["nonce"][0]), "state": query["state"][0]}
+    back = await client.get("/login.jsp", params=returned)
+    assert back.status_code == 302
+    assert 'ATLASSIGNEDOUT=""' in str(back.headers.get_list("set-cookie"))
+    assert "ATLASSIGNEDOUT" not in client.cookies
+    again = await client.get("/login.jsp")
+    assert "prompt" not in parse_qs(urlparse(again.headers["location"]).query)
+
+
+@pytest.mark.covers(f"{A}.AuthenticationMiddleware.dispatch", f"{L}.login", rules=["AUT-04", "AUT-05"])
+async def test__dashboardv3s_relative_sign_in_returns_to_its_dashboard_not_to_login_jsp(
+    anonymous: tuple[FastAPI, httpx.AsyncClient], issuer: FakeIssuer
+) -> None:
+    """``dashboardv3`` sends a browser it lost the session of to ``login.jsp`` relative to ``/n/``: the sign-in
+    returns to ``/n/``, never to ``/n/login.jsp``, which is no page (DD-640).
+    """  # noqa: D205 - one sentence
+    _, client = anonymous
+    asked = await client.get("/n/login.jsp")
+    assert (asked.status_code, asked.headers["location"]) == (302, "/login.jsp")
+    started = await client.get("/login.jsp")
+    query = parse_qs(urlparse(started.headers["location"]).query)
+    returned = {"code": issuer.grant_code(query["nonce"][0]), "state": query["state"][0]}
+    back = await client.get("/login.jsp", params=returned)
+    assert (back.status_code, back.headers["location"]) == (302, "/n/")
