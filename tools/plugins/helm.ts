@@ -241,7 +241,7 @@ function createNodesInternal(
         [verifyTargetName]: {
             command:
                 `cosign verify {args.namespace}/${chartName}:{args.version} ` +
-                `--certificate-identity-regex '{args.identity}' ` +
+                `--certificate-identity-regexp '{args.identity}' ` +
                 `--certificate-oidc-issuer-regexp '{args.issuer}'`,
             options: {
                 identity: ".*",
@@ -252,6 +252,8 @@ function createNodesInternal(
             metadata: {
                 description: "Verify Cosign signatures for the chart OCI artifact (CHT-95)",
             },
+            // Same TUF rate-limit reason as docker-verify (DD-641).
+            parallelism: false,
         },
     };
 

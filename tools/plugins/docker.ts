@@ -167,6 +167,10 @@ function createNodesInternal(
                         metadata: {
                             description: "Verify Cosign signatures for the Docker image",
                         },
+                        // Cosign fetches the Sigstore TUF trusted root before each
+                        // verify; a parallel burst of verifies gets rate-limited by
+                        // the TUF CDN (DD-641, first publish 2026-11-16).
+                        parallelism: false,
                     },
                     [licenseScanTargetName]: {
                         configurations: {
