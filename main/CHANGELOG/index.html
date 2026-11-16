@@ -6467,6 +6467,23 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  Changelog
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="././" class="md-nav__link md-nav__link--active">
         
   
@@ -6482,6 +6499,63 @@
   
 
       </a>
+      
+        
+
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#010-rc1-2026-11-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        0.1.0-rc.1 (2026-11-16)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0-rc.1 (2026-11-16)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        🚀 Features
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        🩹 Fixes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -6506,6 +6580,53 @@
   
   
   
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#010-rc1-2026-11-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        0.1.0-rc.1 (2026-11-16)
+      </span>
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.0-rc.1 (2026-11-16)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#features" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        🚀 Features
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        🩹 Fixes
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -6535,6 +6656,168 @@
 
   <h1>Changelog</h1>
 
+<h2 id="010-rc1-2026-11-16">0.1.0-rc.1 (2026-11-16)<a class="headerlink" href="#010-rc1-2026-11-16" title="Permanent link">&para;</a></h2>
+<h3 id="features">🚀 Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h3>
+<ul>
+<li>webapp shell, aux APIs, client libraries, and failure hardening (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/143">#143</a>)</li>
+<li>search cost and client-IP trust (ENS-11, SRV-09/10, DD-237/238, DV-87) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/155">#155</a>)</li>
+<li><strong>12.7a:</strong> scope the governance verdicts to the draft's type (VEV-07/08, DD-631..633) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/370">#370</a>)</li>
+<li><strong>16.5f:</strong> role-labelled people on the rich cards (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/366">#366</a>)</li>
+<li><strong>16.5g:</strong> draw no trail when the entity has no stored parent (VDR-11, DD-630) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/367">#367</a>)</li>
+<li><strong>api:</strong> REST requests are models with GUID shape rules (DV-161, DV-162) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/337">#337</a>)</li>
+<li><strong>api:</strong> 8.23 aux API OpenAPI contracts (AUX-06/07, DD-557..559) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/338">#338</a>)</li>
+<li><strong>aurelius-atlas-server:</strong> open the view family's search and read doors (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/358">#358</a>)</li>
+<li><strong>aurelius-atlas-server:</strong> open the view family's mutation door (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/359">#359</a>)</li>
+<li><strong>aurelius-atlas-server:</strong> open the view family's semantic door (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/360">#360</a>)</li>
+<li><strong>aurelius-atlas-webapp:</strong> 16.5b the details screen on the read door (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/362">#362</a>)</li>
+<li><strong>aurelius-atlas-webapp:</strong> 16.5c the editor on the mutation door (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/363">#363</a>)</li>
+<li><strong>aurelius-atlas-webapp:</strong> 16.5d one rich card on both screens (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/364">#364</a>)</li>
+<li><strong>aurelius-atlas-webapp:</strong> filter the details card sections through the funnel (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/368">#368</a>)</li>
+<li><strong>charts:</strong> 10.x deployment charts (whole chart track, supersedes stack #193) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/205">#205</a>, <a href="https://github.com/aureliusenterprise/aurelius-atlas/issues/193">#193</a>)</li>
+<li><strong>ci:</strong> publish dev container image with smoke gate for CI parity (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/149">#149</a>)</li>
+<li><strong>ci:</strong> run the CI pipeline inside the dev container image (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/150">#150</a>)</li>
+<li><strong>client:</strong> 8.24/8.25 client route coverage (DD-560..562) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/339">#339</a>)</li>
+<li><strong>clients:</strong> the search API client on both sides of the wire (CL-13, APC-11, DD-217) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/151">#151</a>)</li>
+<li><strong>core:</strong> 1.4 typedef store (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/89">#89</a>)</li>
+<li><strong>core:</strong> 1.5 built-in models and patches (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/90">#90</a>)</li>
+<li><strong>core:</strong> 2.2 entity store (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/111">#111</a>)</li>
+<li><strong>core:</strong> 3.1b relationship attributes (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/116">#116</a>)</li>
+<li><strong>core:</strong> 3.2 ownership cascades (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/117">#117</a>)</li>
+<li><strong>core:</strong> 3.3a direct classifications (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/118">#118</a>)</li>
+<li><strong>core:</strong> 3.3b bulk classifications (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/120">#120</a>)</li>
+<li><strong>core:</strong> 3.4a classification propagation (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/122">#122</a>)</li>
+<li><strong>core:</strong> 3.4b propagation tasks (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/125">#125</a>)</li>
+<li><strong>core:</strong> 3.5a entity audit (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/127">#127</a>)</li>
+<li><strong>core:</strong> 3.5b classification audit (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/136">#136</a>)</li>
+<li><strong>core:</strong> 4.1a entity search (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/140">#140</a>)</li>
+<li><strong>core:</strong> 4.1b classification search (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/142">#142</a>)</li>
+<li><strong>core:</strong> 4.2a free text (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/145">#145</a>)</li>
+<li><strong>core:</strong> 4.2b quick search and suggestions (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/146">#146</a>)</li>
+<li><strong>core:</strong> 4.4a DSL search of entities (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/164">#164</a>)</li>
+<li><strong>core:</strong> 4.4b DSL projections and traversals (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/165">#165</a>)</li>
+<li><strong>core:</strong> 5.1 lineage (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/167">#167</a>)</li>
+<li><strong>core:</strong> 5.2a glossaries and categories (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/168">#168</a>)</li>
+<li><strong>core:</strong> 5.2b glossary terms (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/180">#180</a>)</li>
+<li><strong>core:</strong> 5.2c term assignment (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/181">#181</a>)</li>
+<li><strong>core:</strong> 5.2d glossary import (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/185">#185</a>)</li>
+<li><strong>core:</strong> 4.5 saved searches and user profile (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/194">#194</a>)</li>
+<li><strong>core:</strong> 6.3b1 import mode of the entity writer (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/230">#230</a>)</li>
+<li><strong>core:</strong> 6.3c1 import transforms (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/232">#232</a>)</li>
+<li><strong>core:</strong> 1.5b the m4i data dictionary types at start-up (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/274">#274</a>)</li>
+<li><strong>core:</strong> 11.3 entity vectors, embedded in the background (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/304">#304</a>)</li>
+<li><strong>core:</strong> 14.2 the derived App Search documents on the entity documents (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/322">#322</a>)</li>
+<li><strong>core:</strong> 14.3 the App Search documents kept up to date (ASU-01..07, DD-518..521) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/328">#328</a>)</li>
+<li><strong>core:</strong> 14.7 the derived documents in the embedding (EMC-01..05, DD-538..540) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/335">#335</a>)</li>
+<li><strong>core:</strong> 16.1 the view shape: the card and the view (AVS-01..09, DD-580..583) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/357">#357</a>)</li>
+<li><strong>dashboard:</strong> 0.6 dashboards served (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/85">#85</a>)</li>
+<li><strong>data-access:</strong> 8.22 the Angular glossary twin's category routes (stack 8.13–8.22) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/252">#252</a>)</li>
+<li><strong>dsl:</strong> 4.3 DSL parser (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/163">#163</a>)</li>
+<li><strong>embedder:</strong> 11.2 the embedding service (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/303">#303</a>)</li>
+<li><strong>kafka:</strong> 13.1 the Kafka cluster scanner (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/314">#314</a>)</li>
+<li><strong>model:</strong> 1.1 typedef models (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/86">#86</a>)</li>
+<li><strong>model:</strong> 2.1a entity models (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/96">#96</a>)</li>
+<li><strong>observability:</strong> add the Elasticsearch Grafana dashboard (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/83">#83</a>)</li>
+<li><strong>observability:</strong> 6.4f resilience pages and the first incident rehearsal (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/269">#269</a>)</li>
+<li><strong>parity:</strong> 0.4 parity harness (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/82">#82</a>)</li>
+<li><strong>quality:</strong> 12.1-12.4a the data quality track (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/313">#313</a>)</li>
+<li><strong>quality:</strong> 12.5 the rule vocabulary and 7.27 the rules editor (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/317">#317</a>)</li>
+<li><strong>realm:</strong> 15.5a organizations in the realm (RLM-01..09, DD-580..583) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/355">#355</a>)</li>
+<li><strong>realm:</strong> 15.5b tenants in the realm (TRM-01..12, DD-600..603) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/369">#369</a>)</li>
+<li><strong>scanner:</strong> 13.3 the relational database scanner (DBS-01..12, DD-502..507, DV-150) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/323">#323</a>)</li>
+<li><strong>scanner:</strong> 12.3/13.2/13.4 the scanner CronJob charts (CHT-114..125, DD-508..517) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/326">#326</a>)</li>
+<li><strong>server:</strong> 0.5 server skeleton with the admin endpoints (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/84">#84</a>)</li>
+<li><strong>server:</strong> 1.6 types REST (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/95">#95</a>)</li>
+<li><strong>server:</strong> 2.3 entity read REST (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/112">#112</a>)</li>
+<li><strong>server:</strong> 2.4 entity write REST (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/113">#113</a>)</li>
+<li><strong>server:</strong> 2.5 delete semantics (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/114">#114</a>)</li>
+<li><strong>server:</strong> 3.1a relationship instances (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/115">#115</a>)</li>
+<li><strong>server:</strong> TLS at start-up, opaque 5xx, security headers (SRV-06..08) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/154">#154</a>)</li>
+<li><strong>server:</strong> 6.1a authentication (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/188">#188</a>)</li>
+<li><strong>server:</strong> 6.1b the acting user on writes (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/192">#192</a>)</li>
+<li><strong>server:</strong> 6.2a authorization, types and admin (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/204">#204</a>)</li>
+<li><strong>server:</strong> 6.2b authorization of entities, classifications, relationships and the glossary (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/206">#206</a>)</li>
+<li><strong>server:</strong> 6.2c authorization of search, lineage and type listings (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/207">#207</a>)</li>
+<li><strong>server:</strong> 5.3a labels (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/209">#209</a>)</li>
+<li><strong>server:</strong> 5.3b business metadata (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/212">#212</a>)</li>
+<li><strong>server:</strong> 5.3c business metadata import (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/213">#213</a>)</li>
+<li><strong>server:</strong> 5.3d business metadata in search (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/214">#214</a>)</li>
+<li><strong>server:</strong> 6.3a export (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/229">#229</a>)</li>
+<li><strong>server:</strong> 6.3b2 import and migration (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/231">#231</a>)</li>
+<li><strong>server:</strong> 6.3c2 replication and the export/import audit trail (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/235">#235</a>)</li>
+<li><strong>server:</strong> 6.3c3 admin audits (<a href="https://github.com/aureliusenterprise/aurelius-atlas/commit/5b195ac2c">5b195ac2c</a>)</li>
+<li><strong>server:</strong> 6.3c3 admin audits (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/251">#251</a>)</li>
+<li><strong>server:</strong> 6.3c4 entity audit aging (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/259">#259</a>)</li>
+<li><strong>server:</strong> 6.4a admin metrics (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/260">#260</a>)</li>
+<li><strong>server:</strong> 6.4b metrics history (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/261">#261</a>)</li>
+<li><strong>server:</strong> 6.4c observability, alerting and load test (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/263">#263</a>)</li>
+<li><strong>server:</strong> 6.4d retention and index tuning (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/264">#264</a>)</li>
+<li><strong>server:</strong> 6.4e snapshots and restore (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/267">#267</a>)</li>
+<li><strong>server:</strong> standalone compose with an optional sample import (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/272">#272</a>)</li>
+<li><strong>server:</strong> 9.5 the server under a path prefix, the standalone stack behind nginx (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/276">#276</a>)</li>
+<li><strong>server:</strong> the Statistics chart shows all entity types (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/278">#278</a>)</li>
+<li><strong>server:</strong> 11.4 search by meaning (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/305">#305</a>)</li>
+<li><strong>server:</strong> 14.4 the App Search API /elastic (ASE-01..12, DD-523..527) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/330">#330</a>)</li>
+<li><strong>server:</strong> 14.5 the App Search API /data_quality and the score roll-up (ASQ-01..08, DD-528..532) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/331">#331</a>)</li>
+<li><strong>server:</strong> 14.6 the App Search API /gov_quality (ASG-01..07, DD-533..537) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/334">#334</a>)</li>
+<li><strong>server:</strong> 15.1 tenant claims (TEN-01..09, DD-563..567) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/351">#351</a>)</li>
+<li><strong>server:</strong> 15.2 tenant-scoped stores (TSS-01..09, DD-568..571) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/352">#352</a>)</li>
+<li><strong>server:</strong> 15.3 tenant provisioning (TPR-01..09, DD-572..575) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/353">#353</a>)</li>
+<li><strong>server:</strong> 15.4 workers per tenant (WPT-01..11, DD-576..579) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/354">#354</a>)</li>
+<li><strong>standalone:</strong> 9.5b the demo realm with the users atlas, steward and scientist (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/281">#281</a>)</li>
+<li><strong>standalone:</strong> 9.5c the stack's own Elasticsearch, apart from the dev store (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/282">#282</a>)</li>
+<li><strong>standalone:</strong> 9.5d the Aurelius Atlas webapp at the root of the stack (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/284">#284</a>)</li>
+<li><strong>standalone:</strong> 9.5e the demo realm signs in on the Aurelius look (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/291">#291</a>)</li>
+<li><strong>standalone:</strong> tenants demo and meyn with their own users, and a platform operator (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/377">#377</a>)</li>
+<li><strong>store:</strong> 0.2 add the Elasticsearch 9.5 dev store and the store-es library (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/78">#78</a>)</li>
+<li><strong>trace:</strong> 0.3 test report and traceability (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/79">#79</a>)</li>
+<li><strong>typesystem:</strong> 1.2 type registry (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/87">#87</a>)</li>
+<li><strong>typesystem:</strong> 1.3 type hierarchies (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/88">#88</a>)</li>
+<li><strong>typesystem:</strong> 2.1b value types (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/106">#106</a>)</li>
+<li><strong>typesystem:</strong> 2.1c entity validation (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/108">#108</a>)</li>
+<li><strong>ui:</strong> 7.7d markdown fields in the entity editor (EDT-20, UIC-26, DD-352/353) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/266">#266</a>)</li>
+<li><strong>validate-entity:</strong> 12.7 the governance verdicts, live (VEV-01..06, DD-498..501, CHT-113, DV-149, ADR 061) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/321">#321</a>)</li>
+<li><strong>webapp:</strong> 7.4a search results — hero search, infinite scroll, browse affordances (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/152">#152</a>)</li>
+<li><strong>webapp:</strong> the nginx edge exports spans on the legacy leg (ETR-01..03, DD-239) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/commit/69f5019f8">69f5019f8</a>)</li>
+<li><strong>webapp:</strong> 7.20 the details data spine (DET-08..14) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/257">#257</a>)</li>
+<li><strong>webapp:</strong> 7.7a the entity editor drawer (EDT-01..12) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/258">#258</a>)</li>
+<li><strong>webapp:</strong> 7.7c the editor picks relationships (EDT-13..18, DD-338..343) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/262">#262</a>)</li>
+<li><strong>webapp:</strong> 7.21a + 7.21c details sections and the process page (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/285">#285</a>)</li>
+<li><strong>webapp:</strong> 7.22a the lineage-model data path (LDG-01..08, DD-384..387, DV-142) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/286">#286</a>)</li>
+<li><strong>webapp:</strong> 7.22b the lineage box and the SVG renderer (LDG-09..18, DD-388..392) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/287">#287</a>)</li>
+<li><strong>webapp:</strong> 7.22c the lineage quickview panel (LDG-19..26, DD-393..396, DD-401) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/288">#288</a>)</li>
+<li><strong>webapp:</strong> the lineage toolbar, the PNG, and the page entries (LDG-27..32, DD-397..400) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/289">#289</a>)</li>
+<li><strong>webapp:</strong> the lineage drawing learns the archimate shapes (LDG-33..37, DD-418) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/292">#292</a>)</li>
+<li><strong>webapp:</strong> the model viewer draws colour views (UIC-30/UIC-31, DD-420) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/294">#294</a>)</li>
+<li><strong>webapp:</strong> 7.4b the search facet sidebar (SDX-01..09, UIC-33..35, DD-424..427, DV-143) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/297">#297</a>)</li>
+<li><strong>webapp:</strong> 11.5 search by meaning in the webapp (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/309">#309</a>)</li>
+<li><strong>webapp:</strong> 7.24 the field rules box and the editor governance banner (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/307">#307</a>)</li>
+<li><strong>webapp:</strong> 7.29 the m4i_person details page (DET-39..43, DD-518..522, DV-154..156) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/327">#327</a>)</li>
+<li><strong>webapp:</strong> 15.6 the webapp's tenant (TNW-01..10, DD-634..636) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/375">#375</a>)</li>
+</ul>
+<h3 id="fixes">🩹 Fixes<a class="headerlink" href="#fixes" title="Permanent link">&para;</a></h3>
+<ul>
+<li><strong>12.7b:</strong> the dataset rules answer as OR pairs and the verdict names both pickers (VEV-09, DD-635/DD-636) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/371">#371</a>)</li>
+<li><strong>12.7c:</strong> the field and data-entity rules answer as hierarchy pairs (DV-172, DD-637) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/372">#372</a>)</li>
+<li><strong>12.7d:</strong> the two field-flag rules retire instead of becoming toggles (DV-173, DD-638) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/373">#373</a>)</li>
+<li><strong>12.7e:</strong> the system rule answers as a collection-or-subsystem pair (DV-174, DD-639) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/374">#374</a>)</li>
+<li><strong>auth:</strong> read the JWKS again for a key the cache lacks, at most once a minute (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/378">#378</a>)</li>
+<li><strong>auth:</strong> a sign-out dashboardv3 cuts short still asks for credentials at the next sign-in (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/379">#379</a>)</li>
+<li><strong>core:</strong> journal writes do not wait for a refresh (DD-247) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/177">#177</a>)</li>
+<li><strong>core:</strong> 6.3d an import holds its propagation tasks until it ends (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/273">#273</a>)</li>
+<li><strong>dashboard:</strong> patch 03, the Statistics chart stays open when the Entities table closes (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/280">#280</a>)</li>
+<li><strong>keycloak:</strong> production realm imports on Keycloak 26.7 (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/356">#356</a>)</li>
+<li><strong>lint:</strong> 0.1d make the pre-commit ESLint hook run and clear its warnings (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/64">#64</a>)</li>
+<li><strong>observability:</strong> the OTLP interceptor passes calls through when telemetry is off (SPL-11, DD-158) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/311">#311</a>)</li>
+<li><strong>release:</strong> fall back to the disk version so the first release resolves (<a href="https://github.com/aureliusenterprise/aurelius-atlas/commit/3da3a1b1f">3da3a1b1f</a>)</li>
+<li><strong>server:</strong> write the start's typedef audits in one batch (DD-316) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/253">#253</a>)</li>
+<li><strong>server:</strong> the search pseudo types read the roots, as the dashboards need (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/277">#277</a>)</li>
+<li><strong>tls:</strong> stacks own the TLS material they mount (DD-216) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/148">#148</a>)</li>
+<li><strong>trace:</strong> make aurelius-atlas-trace check runnable again (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/306">#306</a>)</li>
+<li><strong>webapp:</strong> 7.23 close the Sonar findings with real fixes (DD-428, CHT-112) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/298">#298</a>)</li>
+<li><strong>webapp:</strong> 7.26 retry an idempotent call whose connection died (APC-12/13, DD-449, DV-145) (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/310">#310</a>)</li>
+<li><strong>webapp:</strong> 11.5b the search mode in the settings, no Similar entities box (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/316">#316</a>)</li>
+<li><strong>webapp:</strong> 7.30 overlay, scheme and accessibility platform fixes (<a href="https://github.com/aureliusenterprise/aurelius-atlas/pull/336">#336</a>)</li>
+</ul>
 <!-- markdownlint-disable-file MD041 -->
 
 
