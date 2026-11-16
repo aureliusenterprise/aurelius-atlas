@@ -43,6 +43,17 @@ Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the rea
   kubectl create secret docker-registry ghcr-pull \
       --docker-server=ghcr.io --docker-username=<gh-user> --docker-password=<gh-pat> -n atlas
   ```
+- **trust-manager** (DD-652, with the gateway on — the default): the backend-CA sync. The chart renders one `Bundle` per release, and the trust-manager controller copies the CA Secret into the ConfigMap the BackendTLSPolicies pin. Install it with its **trust namespace** set to the namespace the system installs into — trust-manager reads Bundle sources only from that one namespace, and the namespace must exist before the install:
+
+  ```
+  kubectl create namespace atlas --dry-run=client -o yaml | kubectl apply -f -
+  helm upgrade --install trust-manager \
+      oci://quay.io/jetstack/charts/trust-manager \
+      --namespace cert-manager --create-namespace \
+      --set app.trust.namespace=atlas --wait
+  ```
+
+  Its webhook certificate comes from the cert-manager already installed above. Without this controller, `helm install` of the umbrella fails on the missing `Bundle` CRD — install it before the first install, and before any upgrade of a release older than the switch.
 - **The issuer decision is permanent.** The Keycloak issuer URL derives from `global.domain` and tokens embed it; changing it after entities exist invalidates every token. Choose the domain at first install.
 - **Split-horizon DNS for the issuer** (DD-265, with `atlas-observability` enabled): in-cluster producers (the collector's OIDC validator, the apps' OTLP mints, the store pullers) reach the issuer over its **public** name — `keycloak.<domain>` — so that name must resolve to the Keycloak Service inside the cluster too (the cluster port of the dev stack's per-producer `extra_hosts`). A real deployment's DNS usually does this already: `atlas.test` is your domain, and its internal view points at the cluster. On a dev cluster, give CoreDNS the entry:
 
@@ -56,7 +67,29 @@ Install Aurelius Atlas into a Kubernetes cluster. The system's shape and the rea
   rewrite stop name keycloak.atlas.test atlas-keycloak.atlas.svc.cluster.local
   ```
 
-  Then `kubectl -n kube-system rollout restart deployment coredns`. The Keycloak Service answers the public URL's implicit port (it serves 443 beside 8443, CHT-41), and the request's Host stays the public name, so every token keeps the canonical `iss` whichever horizon it dials from. Verify both horizons after install:
+  Then `kubectl -n kube-system rollout restart deployment coredns`. The Keycloak Service answers the public URL's implicit port (it serves 443 beside 8443, CHT-41), and the request's Host stays the public name, so every token keeps the canonical `iss` whichever horizon it dials from.
+
+  On GKE with the hosted (RUN) resolver, the `kube-dns` ConfigMap is empty and pods dial the VPC resolver, so a CoreDNS rewrite never reaches them. Give the VPC a split view with a private Cloud DNS zone instead (DD-651). `gcloud` names the cluster network with `--networks`:
+
+  ```
+  gcloud dns managed-zones create atlas-internal \
+      --dns-name=<domain>. --visibility=private --networks=<vpc-network>
+  gcloud dns record-sets create keycloak.<domain>. --zone=atlas-internal \
+      --type=A --rrdatas=<keycloak-service-cluster-ip> --ttl=60
+  ```
+
+  The private zone is authoritative for the whole apex in-cluster, so every other host under it needs a record too, or it answers nothing. Add the webapp host and a catch-all pointing at the Gateway IP (browsers keep the public view; only pods in the network see this one):
+
+  ```
+  gcloud dns record-sets create <domain>. --zone=atlas-internal \
+      --type=A --rrdatas=<gateway-ip> --ttl=300
+  gcloud dns record-sets create "*.<domain>." --zone=atlas-internal \
+      --type=A --rrdatas=<gateway-ip> --ttl=300
+  ```
+
+  A `helm upgrade` keeps these records: they are cluster DNS, not release objects. Read the Keycloak Service ClusterIP and the Gateway address from the running release before you create the records. This entry is a hard prerequisite whenever `global.gateway.edge.issuerRef` is set, because the public edge leaf then breaks a private-CA pin across the load balancer (DD-651).
+
+  Verify both horizons after install:
 
   ```
   kubectl -n atlas run mint-probe --rm -i --restart=Never --image=curlimages/curl -- \

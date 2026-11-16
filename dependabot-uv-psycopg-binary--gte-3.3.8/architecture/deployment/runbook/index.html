@@ -6920,6 +6920,25 @@ kubectl<span class="w"> </span>create<span class="w"> </span>secret<span class="
 </code></pre></div>
 </li>
 <li>
+<p><strong>trust-manager</strong> (DD-652, with the gateway on — the default): the
+  backend-CA sync. The chart renders one <code>Bundle</code> per release, and the
+  trust-manager controller copies the CA Secret into the ConfigMap the
+  BackendTLSPolicies pin. Install it with its <strong>trust namespace</strong> set to
+  the namespace the system installs into — trust-manager reads Bundle
+  sources only from that one namespace, and the namespace must exist
+  before the install:</p>
+<div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>create<span class="w"> </span>namespace<span class="w"> </span>atlas<span class="w"> </span>--dry-run<span class="o">=</span>client<span class="w"> </span>-o<span class="w"> </span>yaml<span class="w"> </span><span class="p">|</span><span class="w"> </span>kubectl<span class="w"> </span>apply<span class="w"> </span>-f<span class="w"> </span>-
+helm<span class="w"> </span>upgrade<span class="w"> </span>--install<span class="w"> </span>trust-manager<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>oci://quay.io/jetstack/charts/trust-manager<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--namespace<span class="w"> </span>cert-manager<span class="w"> </span>--create-namespace<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--set<span class="w"> </span>app.trust.namespace<span class="o">=</span>atlas<span class="w"> </span>--wait
+</code></pre></div>
+<p>Its webhook certificate comes from the cert-manager already installed
+above. Without this controller, <code>helm install</code> of the umbrella fails
+on the missing <code>Bundle</code> CRD — install it before the first install, and
+before any upgrade of a release older than the switch.</p>
+</li>
+<li>
 <p><strong>The issuer decision is permanent.</strong> The Keycloak issuer URL derives from
   <code>global.domain</code> and tokens embed it; changing it after entities exist
   invalidates every token. Choose the domain at first install.</p>
@@ -6942,8 +6961,32 @@ rewrite stop name keycloak.atlas.test atlas-keycloak.atlas.svc.cluster.local
 <p>Then <code>kubectl -n kube-system rollout restart deployment coredns</code>. The
 Keycloak Service answers the public URL's implicit port (it serves 443
 beside 8443, CHT-41), and the request's Host stays the public name, so
-every token keeps the canonical <code>iss</code> whichever horizon it dials from.
-Verify both horizons after install:</p>
+every token keeps the canonical <code>iss</code> whichever horizon it dials from.</p>
+<p>On GKE with the hosted (RUN) resolver, the <code>kube-dns</code> ConfigMap is empty
+and pods dial the VPC resolver, so a CoreDNS rewrite never reaches them.
+Give the VPC a split view with a private Cloud DNS zone instead (DD-651).
+<code>gcloud</code> names the cluster network with <code>--networks</code>:</p>
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>dns<span class="w"> </span>managed-zones<span class="w"> </span>create<span class="w"> </span>atlas-internal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--dns-name<span class="o">=</span>&lt;domain&gt;.<span class="w"> </span>--visibility<span class="o">=</span>private<span class="w"> </span>--networks<span class="o">=</span>&lt;vpc-network&gt;
+gcloud<span class="w"> </span>dns<span class="w"> </span>record-sets<span class="w"> </span>create<span class="w"> </span>keycloak.&lt;domain&gt;.<span class="w"> </span>--zone<span class="o">=</span>atlas-internal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--type<span class="o">=</span>A<span class="w"> </span>--rrdatas<span class="o">=</span>&lt;keycloak-service-cluster-ip&gt;<span class="w"> </span>--ttl<span class="o">=</span><span class="m">60</span>
+</code></pre></div>
+<p>The private zone is authoritative for the whole apex in-cluster, so
+every other host under it needs a record too, or it answers nothing. Add
+the webapp host and a catch-all pointing at the Gateway IP (browsers keep
+the public view; only pods in the network see this one):</p>
+<div class="highlight"><pre><span></span><code>gcloud<span class="w"> </span>dns<span class="w"> </span>record-sets<span class="w"> </span>create<span class="w"> </span>&lt;domain&gt;.<span class="w"> </span>--zone<span class="o">=</span>atlas-internal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--type<span class="o">=</span>A<span class="w"> </span>--rrdatas<span class="o">=</span>&lt;gateway-ip&gt;<span class="w"> </span>--ttl<span class="o">=</span><span class="m">300</span>
+gcloud<span class="w"> </span>dns<span class="w"> </span>record-sets<span class="w"> </span>create<span class="w"> </span><span class="s2">"*.&lt;domain&gt;."</span><span class="w"> </span>--zone<span class="o">=</span>atlas-internal<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--type<span class="o">=</span>A<span class="w"> </span>--rrdatas<span class="o">=</span>&lt;gateway-ip&gt;<span class="w"> </span>--ttl<span class="o">=</span><span class="m">300</span>
+</code></pre></div>
+<p>A <code>helm upgrade</code> keeps these records: they are cluster DNS, not release
+objects. Read the Keycloak Service ClusterIP and the Gateway address from
+the running release before you create the records. This entry is a hard
+prerequisite whenever <code>global.gateway.edge.issuerRef</code> is set, because
+the public edge leaf then breaks a private-CA pin across the load
+balancer (DD-651).</p>
+<p>Verify both horizons after install:</p>
 <div class="highlight"><pre><span></span><code>kubectl<span class="w"> </span>-n<span class="w"> </span>atlas<span class="w"> </span>run<span class="w"> </span>mint-probe<span class="w"> </span>--rm<span class="w"> </span>-i<span class="w"> </span>--restart<span class="o">=</span>Never<span class="w"> </span>--image<span class="o">=</span>curlimages/curl<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-s<span class="w"> </span>-k<span class="w"> </span><span class="s2">"https://keycloak.atlas.test/realms/aurelius-atlas/protocol/openid-connect/token"</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-d<span class="w"> </span><span class="nv">grant_type</span><span class="o">=</span>client_credentials<span class="w"> </span>-d<span class="w"> </span><span class="nv">client_id</span><span class="o">=</span>otel-atlas-server<span class="w"> </span><span class="se">\</span>
