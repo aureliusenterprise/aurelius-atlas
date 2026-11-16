@@ -92,7 +92,7 @@
             "standardFlowEnabled": false
         }
     ],
-    "displayName": "Aurelius Atlas demo",
+    "displayName": "Aurelius Atlas",
     "enabled": true,
     "loginTheme": "aurelius",
     "loginWithEmailAllowed": false,
@@ -226,7 +226,7 @@
         }
     ],
     "organizationsEnabled": true,
-    "realm": "demo",
+    "realm": "atlas",
     "registrationAllowed": false,
     "roles": {
         "client": {

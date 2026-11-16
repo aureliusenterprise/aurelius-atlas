@@ -1,4 +1,4 @@
-"""The standalone stack's demo realm (DMO-01..03, 9.5b).
+"""The standalone stack's realm `atlas` (DMO-01..03, 9.5b, DD-641).
 
 The realm file and the compose file are read as written: the clients and their roles against the server's
 ``ROLE_PRIVILEGES``, each user's roles, the password placeholders, and the stack's wiring to the realm.
@@ -21,7 +21,7 @@ PLACEHOLDER = re.compile(r"^\$\{[A-Z_]+\}$")
 @pytest.fixture(scope="module")
 def realm() -> dict[str, Any]:
     """The realm file the stack's Keycloak imports."""
-    return json.loads((STANDALONE / "keycloak/demo.json").read_text())
+    return json.loads((STANDALONE / "keycloak/atlas.json").read_text())
 
 
 @pytest.fixture(scope="module")
@@ -37,7 +37,7 @@ def _client(realm: dict[str, Any], client_id: str) -> dict[str, Any]:
 @pytest.mark.covers(rules=["DMO-01"])
 def test__demo_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any]) -> None:
     """The server's client holds the server's four roles; the public client's tokens carry them (DMO-01)."""
-    assert realm["realm"] == "demo"
+    assert realm["realm"] == "atlas"
     roles = {role["name"] for role in realm["roles"]["client"][SERVER_CLIENT]}
     assert roles == set(ROLE_PRIVILEGES)
     server = _client(realm, SERVER_CLIENT)
@@ -72,18 +72,18 @@ def test__demo_users_hold_all_write_and_read_rights(realm: dict[str, Any]) -> No
 
 @pytest.mark.covers(rules=["DMO-03"])
 def test__stack_signs_in_to_demo_alone(services: dict[str, Any], realm: dict[str, Any]) -> None:
-    """Keycloak imports `demo` alone with its placeholders; the server and the sample import use it (DMO-03)."""
+    """Keycloak imports `atlas` alone with its placeholders; the server and the sample import use it (DMO-03)."""
     keycloak = services["keycloak"]
     assert "./keycloak:/opt/keycloak/data/import:ro" in keycloak["volumes"]
-    assert sorted(path.name for path in (STANDALONE / "keycloak").iterdir()) == ["demo.json"]
+    assert sorted(path.name for path in (STANDALONE / "keycloak").iterdir()) == ["atlas.json"]
     people = [user for user in realm["users"] if "serviceAccountClientId" not in user]
     placeholders = {credential["value"][2:-1] for user in people for credential in user["credentials"]} | {
         _client(realm, client_id)["secret"][2:-1] for client_id in (SERVER_CLIENT, "aurelius-atlas-provisioning")
     }
     assert placeholders <= set(keycloak["environment"])
-    assert services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_REALM"] == "demo"
+    assert services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_REALM"] == "atlas"
     sample = services["sample-import"]["environment"]
-    assert sample["TOKEN_URL"] == "https://localhost:9000/auth/realms/demo/protocol/openid-connect/token"  # noqa: S105 - a URL
+    assert sample["TOKEN_URL"] == "https://localhost:9000/auth/realms/atlas/protocol/openid-connect/token"  # noqa: S105 - a URL
     assert sample["ATLAS_USERNAME"] == "demo_atlas"
     assert sample["ATLAS_PASSWORD"] == "${DEMO_USER_ATLAS_PASSWORD:-}"  # noqa: S105 - a placeholder
 

@@ -3,16 +3,16 @@
 The server image with the Apache Atlas 2.4.0 dashboards and the Aurelius Atlas webapp, behind one nginx entry
 on port 9000. It is a way to try them by hand. `nx serve` and the e2e stacks are unchanged.
 
-| Path                             | Service                                                     |
-| -------------------------------- | ----------------------------------------------------------- |
-| `https://localhost:9000/`        | The Aurelius Atlas webapp, in English or Dutch              |
-| `https://localhost:9000/atlas2/` | The server and its Atlas dashboards                         |
-| `https://localhost:9000/auth/`   | The stack's own Keycloak with the demo realm, and its admin |
+| Path                             | Service                                                        |
+| -------------------------------- | -------------------------------------------------------------- |
+| `https://localhost:9000/`        | The Aurelius Atlas webapp, in English or Dutch                 |
+| `https://localhost:9000/atlas2/` | The server and its Atlas dashboards                            |
+| `https://localhost:9000/auth/`   | The stack's own Keycloak with the realm `atlas`, and its admin |
 
 The store is the stack's own Elasticsearch, so it holds what you import and nothing the e2e suites or
 `nx serve` write to the dev store (DD-367). Keycloak is the stack's own too, because the dev Keycloak's
-address is the issuer the other dev services trust (DD-363). At every start it imports the realm `demo` from
-`keycloak/demo.json`, with three users per tenant, `demo` and `meyn`, each a member of its own tenant alone,
+address is the issuer the other dev services trust (DD-363). At every start it imports the realm `atlas` from
+`keycloak/atlas.json`, with three users per tenant, `demo` and `meyn`, each a member of its own tenant alone,
 and the platform's `operator` (DD-366, see Tenants):
 
 | User                               | Roles                                                     | May                                                                   |
@@ -88,7 +88,7 @@ later.
 `ATLAS_TENANCY_ENABLED=true` serves several tenants from the one stack (ADR 063): a request acts in the one
 Keycloak organization its token names, and each tenant has its own indices and background work. Off by default,
 the server answers as Apache Atlas does. The profile `tenancy` adds the one shot `tenants`, which provisions the
-demo realm's two tenants at every start, leaving one already there as it is:
+realm's two tenants at every start, leaving one already there as it is:
 
 ```bash
 ATLAS_TENANCY_ENABLED=true docker compose -f apps/aurelius-atlas-server/standalone/docker-compose.yaml \
@@ -108,7 +108,7 @@ tenant's organization and role groups and sets the groups of its tenant's member
 tenant, its people and the realm's users. It can't use Keycloak's admin console: the console needs the realm's
 settings, and its members page every user of the realm, which would show one tenant's administrator the other
 tenant's people (ADR 063). A realm administrator adds and removes members, in the console at
-`https://localhost:9000/auth/admin/` as `KC_BOOTSTRAP_ADMIN_USERNAME` of `dev/keycloak/.env`, realm `demo`,
+`https://localhost:9000/auth/admin/` as `KC_BOOTSTRAP_ADMIN_USERNAME` of `dev/keycloak/.env`, realm `atlas`,
 under Organizations.
 
 `operator` runs the platform: it holds the operator role, so the server holds it at read access outside
@@ -141,7 +141,7 @@ them from it. `operators` brings every tenant in step after an operator joins or
 server picks up a new tenant within `tenancy_refresh_seconds`, 30 by default, without a restart. A tenant's
 members are added in Keycloak's admin console, or by invitation: Keycloak doesn't yet let a tenant's
 administrator list or add them. The stack's Keycloak keeps no data of its own: each new container imports
-`keycloak/demo.json` again, so a change made in its console lasts until the container is recreated.
+`keycloak/atlas.json` again, so a change made in its console lasts until the container is recreated.
 
 ## How it fits together
 
@@ -155,7 +155,7 @@ administrator list or add them. The stack's Keycloak keeps no data of its own: e
   other path to the webapp, whose own nginx, in a container of its own, only serves the webapp's files.
   `webapp-config` fills that nginx's template into the volume `webapp-nginx-conf` before it starts
   (`webapp/resolve-nginx.sh`, as the chart's init container does), and `webapp/config.json` points the webapp
-  at the demo realm. The stack has no telemetry collector, so `/otel/` takes the webapp's pushes and drops
+  at the realm `atlas`. The stack has no telemetry collector, so `/otel/` takes the webapp's pushes and drops
   them.
 - `embedder`: the embedding model of search by meaning (ADR 059), `https://embedder:21004` on the stack's network
   with its own certificate. It checks no tokens, so it has no published port (DD-432), and nothing waits for it.

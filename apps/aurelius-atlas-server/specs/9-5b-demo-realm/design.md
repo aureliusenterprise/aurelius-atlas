@@ -38,3 +38,27 @@ rights, named after the roles of Atlas's simple authorizer, for a demonstration 
 **Consequences.** `aurelius-writer` and `aurelius-reader` don't sign in to the stack; `atlas`, `steward` and
 `scientist` do, with the passwords in `dev/keycloak/.env`. The dev realm's `aurelius-atlas-server` client
 drops the stack's sign-in and sign-out addresses that DD-363 added.
+
+### DD-641. The standalone stack's realm is named `atlas`, not `demo`
+
+- **Status:** Proposed
+- **Increment:** 9.5b (a change, 2026-11-16)
+- **Date:** 2026-11-16
+- **Supersedes:** DD-366's name of the realm, `demo`, and of its file, `demo.json`; the rest of DD-366 stands
+
+**Decision.** The stack's Keycloak imports the realm `atlas` from `standalone/keycloak/atlas.json`, shown as
+"Aurelius Atlas". The server, the webapp and the sample import sign in to it. The organization `demo`, its
+users and its sample data stay as they are.
+
+**Reason.** Since the stack serves tenants (series 15), `demo` is one of the realm's organizations. A realm of
+the same name read as if it belonged to that tenant, and the admin console, the sign-in URLs and the guides
+named the tenant where they meant the platform. The realm is the platform's, so it carries the product's name.
+
+**Alternatives.**
+
+- Keep `demo`: no change, and the realm and the tenant stay confused.
+- Rename the organization instead: its users, indices and record would all move, for the same gain.
+
+**Consequences.** Keycloak keeps no data in the stack, so the next start imports `atlas` and no `demo` realm
+remains. Browsers signed in to `demo` sign in again. Tokens are issued by
+`https://localhost:9000/auth/realms/atlas`.
