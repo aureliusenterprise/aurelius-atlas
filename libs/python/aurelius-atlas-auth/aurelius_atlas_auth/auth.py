@@ -8,7 +8,9 @@ shared across applications.
 The verification story (AUX-02..AUX-05):
 
 - OIDC discovery and JWKS are fetched through a circuit breaker (a Keycloak
-  outage is a 503, not a hang) and cached for an hour.
+  outage is a 503, not a hang) and cached for an hour. A token signed by a key
+  the cached JWKS lacks reads the JWKS again, at most once a minute: the issuer
+  rotated its keys, or a new one started, and its tokens verify at once.
 - Tokens are verified with PyJWT by ``kid``: RS256 signature, issuer and
   expiry. The audience is checked after decoding against the union of the
   ``azp`` and ``aud`` claims, which pyjwt's built-in check cannot express.
@@ -21,6 +23,8 @@ from __future__ import annotations
 
 import logging
 import ssl
+import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, cast
 
@@ -43,6 +47,10 @@ HTTP_TIMEOUT_SECONDS = 5.0
 
 CACHE_TTL_SECONDS = 3600
 """How long the discovery and JWKS documents are cached."""
+
+KEY_REFRESH_SECONDS = 60
+"""The shortest time between two reads of the JWKS: a token whose key the cached JWKS lacks reads it again only
+once this long has passed since the last read, so tokens with made-up key ids can't flood the issuer."""
 
 _SERVER_ERROR_STATUS = 500
 """The status from which an issuer response counts as an outage for the circuit."""
@@ -120,8 +128,16 @@ class KeycloakAuth:
     _jwks: dict[str, dict[str, RSAPublicKey]]
     """The signing keys by issuer URL: a TTLCache, read and written as a dict."""
 
-    def __init__(self, config: AuthConfig, http: httpx.Client | None = None) -> None:
+    def __init__(
+        self,
+        config: AuthConfig,
+        http: httpx.Client | None = None,
+        *,
+        clock: Callable[[], float] = time.monotonic,
+    ) -> None:
         self.config = config
+        self._clock = clock
+        self._keys_read_at: float | None = None
         self.base_url = f"{config.server_url.rstrip('/')}/realms/{config.realm}"
         self._breaker = CircuitBreaker(
             name=f"auth_{config.audience}",
@@ -168,16 +184,31 @@ class KeycloakAuth:
         self._discovery[self.base_url] = found
         return found
 
-    def _jwks_keys(self) -> dict[str, RSAPublicKey]:
-        """The issuer's signing keys by ``kid``: fetched once, cached an hour."""
-        if self.base_url in self._jwks:
+    def _jwks_keys(self, *, fresh: bool = False) -> dict[str, RSAPublicKey]:
+        """The issuer's signing keys by ``kid``: fetched once, cached an hour; ``fresh`` reads them again."""
+        if not fresh and self.base_url in self._jwks:
             return self._jwks[self.base_url]
         jwks_uri = self.discovery()["jwks_uri"]
         keys = self._issuer_get(jwks_uri).json()["keys"]
         result = {key["kid"]: cast("RSAPublicKey", RSAAlgorithm.from_jwk(key)) for key in keys}
         self._jwks[self.base_url] = result
+        self._keys_read_at = self._clock()
         LOGGER.info("Loaded JWKS from %s", jwks_uri)
         return result
+
+    def _signing_key(self, kid: str | None) -> RSAPublicKey | None:
+        """The key of ``kid``: from the cached JWKS, else from the JWKS read again when the last read is at least
+        :data:`KEY_REFRESH_SECONDS` old, so an issuer's new keys verify without waiting for the cache to expire.
+        """  # noqa: D205 - one sentence
+        if not kid:
+            return None
+        key = self._jwks_keys().get(kid)
+        if key is not None:
+            return key
+        if self._keys_read_at is not None and self._clock() - self._keys_read_at < KEY_REFRESH_SECONDS:
+            return None
+        LOGGER.info("No key for key ID %s in the cached JWKS: reading the JWKS again", kid)
+        return self._jwks_keys(fresh=True).get(kid)
 
     # -- FastAPI dependencies -------------------------------------------------
 
@@ -207,8 +238,7 @@ class KeycloakAuth:
                 raise HTTPException(status_code=401, detail="Unsupported token algorithm")
 
             kid = headers.get("kid")
-            keys = self._jwks_keys()
-            key = keys.get(kid) if kid else None
+            key = self._signing_key(kid)
             if key is None:
                 LOGGER.warning("No key found for key ID %s", kid)
                 raise HTTPException(status_code=401, detail="Authentication key not available")
