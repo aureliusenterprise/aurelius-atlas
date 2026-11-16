@@ -7359,6 +7359,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>6.1</td>
 </tr>
 <tr>
+<td>DV-175</td>
+<td>Authentication</td>
+<td>A sign-in after a sign-out reuses the provider's session when the provider still holds one, signing the browser in without a question</td>
+<td>The first sign-in after a sign-out asks the provider for credentials (<code>prompt=login</code>)</td>
+<td>dashboardv3 can cut the provider's sign-out short; a person who signed out must not be signed in again by it (DD-640)</td>
+<td>6.1</td>
+</tr>
+<tr>
 <td>DV-110</td>
 <td>Search</td>
 <td>Saving or updating without a search, or running a saved search without parameters, fails on a null: an internal error</td>

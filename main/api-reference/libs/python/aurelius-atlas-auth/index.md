@@ -24,7 +24,7 @@ Ported from the template's FastAPI example (since removed, ADR 050), reshaped as
 
 The verification story (AUX-02..AUX-05):
 
-- OIDC discovery and JWKS are fetched through a circuit breaker (a Keycloak outage is a 503, not a hang) and cached for an hour.
+- OIDC discovery and JWKS are fetched through a circuit breaker (a Keycloak outage is a 503, not a hang) and cached for an hour. A token signed by a key the cached JWKS lacks reads the JWKS again, at most once a minute: the issuer rotated its keys, or a new one started, and its tokens verify at once.
 - Tokens are verified with PyJWT by `kid`: RS256 signature, issuer and expiry. The audience is checked after decoding against the union of the `azp` and `aud` claims, which pyjwt's built-in check cannot express.
 - The write gate accepts the configured role from `realm_access.roles` or `resource_access.<audience>.roles` — Keycloak namespaces client roles per client, so only this service's own client entry counts.
 
@@ -64,6 +64,14 @@ HTTP_TIMEOUT_SECONDS = 5.0
 ```
 
 Timeout for the issuer calls (discovery, JWKS).
+
+### KEY\_REFRESH\_SECONDS
+
+```
+KEY_REFRESH_SECONDS = 60
+```
+
+The shortest time between two reads of the JWKS: a token whose key the cached JWKS lacks reads it again only once this long has passed since the last read, so tokens with made-up key ids can't flood the issuer.
 
 ### LOGGER
 
@@ -181,7 +189,7 @@ write_role: str = ''
 ### KeycloakAuth
 
 ```
-KeycloakAuth(config: AuthConfig, http: Client | None = None)
+KeycloakAuth(config: AuthConfig, http: Client | None = None, *, clock: Callable[[], float] = monotonic)
 ```
 
 One service's Keycloak verifier: dependencies for FastAPI routers.
