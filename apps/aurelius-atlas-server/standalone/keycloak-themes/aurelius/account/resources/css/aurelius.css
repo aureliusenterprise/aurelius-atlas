@@ -1,0 +1,139 @@
+/*
+ * The Aurelius look on Keycloak's v3 account console (SKT-05): the webapp's navbar band with its logo over a
+ * light sidebar, the body ink, the brand's links and the login page's teal primary button (SHM-03, SHM-04).
+ */
+
+:root {
+    --aurelius-ink: #4a4a4a;
+    --aurelius-ink-strong: #363636;
+    --aurelius-band: #f5f5f5;
+    --aurelius-rule: #dbdbdb;
+    --aurelius-primary: #00d1b2;
+    --aurelius-primary-hover: #00c4a7;
+    --aurelius-primary-active: #00b89c;
+    --aurelius-link: #0073dd;
+    --aurelius-font:
+        BlinkMacSystemFont, -apple-system, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+        "Helvetica Neue", Helvetica, Arial, sans-serif;
+
+    --pf-v5-global--FontFamily--text: var(--aurelius-font);
+    --pf-v5-global--FontFamily--heading: var(--aurelius-font);
+    --pf-v5-global--Color--100: var(--aurelius-ink);
+    --pf-v5-global--link--Color: var(--aurelius-link);
+    --pf-v5-global--link--Color--hover: var(--aurelius-link);
+    --pf-v5-global--primary-color--100: var(--aurelius-primary);
+    --pf-v5-global--primary-color--200: var(--aurelius-primary-active);
+}
+
+body {
+    color: var(--aurelius-ink);
+}
+
+/* The header: the webapp's navbar band, its logo and its ink, in place of PatternFly's dark masthead. */
+.pf-v5-c-masthead {
+    --pf-v5-c-masthead--BackgroundColor: var(--aurelius-band);
+    --pf-v5-c-masthead--BorderBottomWidth: 1px;
+    --pf-v5-global--Color--100: var(--aurelius-ink);
+    --pf-v5-global--Color--200: var(--aurelius-ink);
+    --pf-v5-global--BorderColor--100: var(--aurelius-rule);
+    --pf-v5-global--icon--Color--light: var(--aurelius-ink);
+    --pf-v5-global--icon--Color--light--hover: #000;
+    --pf-v5-c-button--m-plain--Color: var(--aurelius-ink);
+    --pf-v5-c-button--m-plain--hover--Color: #000;
+    --pf-v5-c-menu-toggle--Color: var(--aurelius-ink);
+    --pf-v5-c-menu-toggle--BackgroundColor: transparent;
+    --pf-v5-c-menu-toggle--before--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-menu-toggle--hover--Color: #000;
+    --pf-v5-c-menu-toggle--expanded--Color: #000;
+    --pf-v5-c-menu-toggle__toggle-icon--Color: var(--aurelius-ink);
+    --pf-v5-c-menu-toggle--m-plain--Color: var(--aurelius-ink);
+    color: var(--aurelius-ink);
+    border-bottom: 1px solid var(--aurelius-rule);
+}
+
+.pf-v5-c-masthead .pf-v5-c-menu-toggle,
+.pf-v5-c-masthead .pf-v5-c-button.pf-m-plain {
+    color: var(--aurelius-ink);
+}
+
+/* The logo at the webapp's navbar height. */
+.pf-v5-c-masthead .pf-v5-c-brand,
+.pf-v5-c-masthead__brand img {
+    height: 40px;
+    width: auto;
+}
+
+/* The sidebar: light, as the webapp's pages, the current page marked in the brand's teal. */
+.pf-v5-c-page__sidebar {
+    --pf-v5-c-page__sidebar--BackgroundColor: #fff;
+    border-right: 1px solid var(--aurelius-rule);
+}
+
+.pf-v5-c-page__sidebar .pf-v5-c-nav {
+    --pf-v5-c-nav--BackgroundColor: #fff;
+    --pf-v5-c-nav__link--Color: var(--aurelius-ink);
+    --pf-v5-c-nav__link--hover--Color: #000;
+    --pf-v5-c-nav__link--focus--Color: #000;
+    --pf-v5-c-nav__link--active--Color: #000;
+    --pf-v5-c-nav__link--m-current--Color: #000;
+    --pf-v5-c-nav__link--BackgroundColor: transparent;
+    --pf-v5-c-nav__link--hover--BackgroundColor: var(--aurelius-band);
+    --pf-v5-c-nav__link--focus--BackgroundColor: var(--aurelius-band);
+    --pf-v5-c-nav__link--active--BackgroundColor: var(--aurelius-band);
+    --pf-v5-c-nav__link--m-current--BackgroundColor: var(--aurelius-band);
+    --pf-v5-c-nav__link--after--BorderColor: transparent;
+    --pf-v5-c-nav__link--m-current--after--BorderColor: var(--aurelius-primary);
+    --pf-v5-c-nav__link--hover--after--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-nav__link--before--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-nav__item--before--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-nav__link-toggle--Color: var(--aurelius-ink);
+    --pf-v5-c-nav__link-toggle-icon--Color: var(--aurelius-ink);
+    --pf-v5-c-nav__subnav--xl--PaddingLeft: 1rem;
+    --pf-v5-c-nav__subnav__link--hover--after--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-nav__subnav__link--m-current--after--BorderColor: var(--aurelius-primary);
+    --pf-v5-c-nav__subnav--before--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-nav__scroll-button--Color: var(--aurelius-ink);
+}
+
+/* Headings in the brand's title ink. */
+.pf-v5-c-title {
+    color: var(--aurelius-ink-strong);
+}
+
+/* Primary buttons: Bulma's teal, as the login page's sign-in button. */
+.pf-v5-c-button.pf-m-primary {
+    --pf-v5-c-button--m-primary--BackgroundColor: var(--aurelius-primary);
+    --pf-v5-c-button--m-primary--hover--BackgroundColor: var(--aurelius-primary-hover);
+    --pf-v5-c-button--m-primary--focus--BackgroundColor: var(--aurelius-primary-hover);
+    --pf-v5-c-button--m-primary--active--BackgroundColor: var(--aurelius-primary-active);
+    --pf-v5-c-button--m-primary--Color: #fff;
+}
+
+/* Link buttons and the jump links in the brand's blue; the current jump link marked in teal. */
+.pf-v5-c-button.pf-m-link {
+    --pf-v5-c-button--m-link--Color: var(--aurelius-link);
+    --pf-v5-c-button--m-link--hover--Color: var(--aurelius-link);
+}
+
+.pf-v5-c-jump-links {
+    --pf-v5-c-jump-links__link--before--BorderColor: var(--aurelius-rule);
+    --pf-v5-c-jump-links__item--m-current__link--before--BorderColor: var(--aurelius-primary);
+}
+
+/* The user menu as the webapp's: a plain navbar link, no box. */
+.pf-v5-c-masthead .pf-v5-c-menu-toggle::before,
+.pf-v5-c-masthead .pf-v5-c-menu-toggle::after {
+    border-color: transparent;
+}
+
+.pf-v5-c-masthead .pf-v5-c-menu-toggle:hover {
+    background: #e8e8e8;
+}
+
+/* Secondary buttons outlined in the brand's blue. */
+.pf-v5-c-button.pf-m-secondary {
+    --pf-v5-c-button--m-secondary--Color: var(--aurelius-link);
+    --pf-v5-c-button--m-secondary--hover--Color: var(--aurelius-link);
+    --pf-v5-c-button--m-secondary--after--BorderColor: var(--aurelius-link);
+    --pf-v5-c-button--m-secondary--hover--after--BorderColor: var(--aurelius-link);
+}

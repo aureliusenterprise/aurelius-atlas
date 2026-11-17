@@ -1,4 +1,4 @@
-"""The standalone stack's sign-in theme (SKT-01..03, 9.5e).
+"""The standalone stack's sign-in and account theme (SKT-01..05, 9.5e, DD-663).
 
 The compose file, the demo realm and the theme are read as written; the theme's brand assets against the
 webapp's own.
@@ -6,6 +6,7 @@ webapp's own.
 
 import json
 import re
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -14,11 +15,12 @@ from conftest import WORKSPACE
 
 STANDALONE = WORKSPACE / "apps/aurelius-atlas-server/standalone"
 THEME = STANDALONE / "keycloak-themes/aurelius/login"
+ACCOUNT = STANDALONE / "keycloak-themes/aurelius/account"
 WEBAPP = WORKSPACE / "apps/aurelius-atlas-webapp/public"
 
 
-def _properties() -> dict[str, str]:
-    lines = (THEME / "theme.properties").read_text().splitlines()
+def _properties(part: Path = THEME) -> dict[str, str]:
+    lines = (part / "theme.properties").read_text().splitlines()
     return dict(line.split("=", 1) for line in lines if line and not line.startswith("#"))
 
 
@@ -29,6 +31,7 @@ def test__the_demo_realm_signs_in_on_the_mounted_theme() -> None:
     assert "./keycloak-themes/aurelius:/opt/keycloak/themes/aurelius:ro" in keycloak["volumes"]
     realm = json.loads((STANDALONE / "keycloak/atlas.json").read_text())
     assert realm["loginTheme"] == "aurelius"
+    assert realm["accountTheme"] == "aurelius"
 
 
 @pytest.mark.covers(rules=["SKT-02"])
@@ -47,7 +50,34 @@ def test__the_theme_restyles_keycloak_s_own_login_in_light_mode() -> None:
 
 @pytest.mark.covers(rules=["SKT-03"])
 def test__the_theme_s_logo_and_favicon_are_the_webapp_s() -> None:
-    """The logo and favicon are byte copies of the webapp's (SKT-03)."""
-    images = THEME / "resources/img"
-    assert (images / "aurelius-atlas-logo.png").read_bytes() == (WEBAPP / "assets/aurelius-atlas-logo.png").read_bytes()
-    assert (images / "favicon.ico").read_bytes() == (WEBAPP / "favicon.ico").read_bytes()
+    """The logo and favicon of the login and the account parts are byte copies of the webapp's (SKT-03)."""
+    for part in (THEME, ACCOUNT):
+        images = part / "resources/img"
+        logo = (images / "aurelius-atlas-logo.png").read_bytes()
+        assert logo == (WEBAPP / "assets/aurelius-atlas-logo.png").read_bytes()
+        assert (images / "favicon.ico").read_bytes() == (WEBAPP / "favicon.ico").read_bytes()
+
+
+@pytest.mark.covers(rules=["SKT-04"])
+def test__the_account_console_extends_keycloak_s_own_with_the_webapp_s_logo() -> None:
+    """Keycloak's v3 account console is the parent, with the Aurelius sheet, the logo and favicon; light only."""
+    properties = _properties(ACCOUNT)
+    assert properties["parent"] == "keycloak.v3"
+    assert properties["styles"].split() == ["css/aurelius.css"]
+    assert properties["darkMode"] == "false"
+    assert properties["logoUrl"] == "https://localhost:9000/"
+    for key in ("logo", "favIcon"):
+        assert (ACCOUNT / "resources" / properties[key].lstrip("/")).is_file(), key
+
+
+@pytest.mark.covers(rules=["SKT-05"])
+def test__the_account_console_wears_the_webapp_s_band_ink_teal_and_blue() -> None:
+    """The header takes the navbar band and ink; the sidebar is light; teal primary, blue links (SKT-05)."""
+    sheet = (ACCOUNT / "resources/css/aurelius.css").read_text()
+    for token in ("--aurelius-band: #f5f5f5;", "--aurelius-ink: #4a4a4a;", "--aurelius-primary: #00d1b2;"):
+        assert token in sheet
+    assert "--aurelius-link: #0073dd;" in sheet
+    assert re.search(r"\.pf-v5-c-masthead \{[^}]*--pf-v5-c-masthead--BackgroundColor: var\(--aurelius-band\)", sheet)
+    assert re.search(r"\.pf-v5-c-page__sidebar \{[^}]*--pf-v5-c-page__sidebar--BackgroundColor: #fff", sheet)
+    assert re.search(r"--pf-v5-c-nav__link--m-current--after--BorderColor: var\(--aurelius-primary\)", sheet)
+    assert re.search(r"--pf-v5-c-button--m-primary--BackgroundColor: var\(--aurelius-primary\)", sheet)

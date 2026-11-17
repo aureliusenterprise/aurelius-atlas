@@ -102,12 +102,15 @@ export class ShellHeader {
     /**
      * Keycloak's account console for the configured realm — the legacy
      * `accountManagement()` (keycloak-js dropped its `accountManager`, so the
-     * port composes the URL from the runtime config, SHC-05).
+     * port composes the URL from the runtime config, SHC-05). Keycloak's URL
+     * may sit below a path, as the standalone stack's `/auth`: it is read as a
+     * folder, or the relative path would replace its last segment.
      */
     protected get accountUrl(): string {
         const { url, realm } = this.config.keycloak;
+        const base = url.endsWith("/") ? url : `${url}/`;
 
-        return new URL(`realms/${realm}/account`, url).href;
+        return new URL(`realms/${realm}/account`, base).href;
     }
 
     /** Whether the server serves tenants: the menu then shows the tenant and switching (TNW-06). */
