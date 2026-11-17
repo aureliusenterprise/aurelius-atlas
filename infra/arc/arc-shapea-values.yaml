@@ -147,10 +147,10 @@ template:
                       chown 1000:999 /work/.ci-cache/* 2>/dev/null || true
                       # The checkout tree must be uid-1000-owned: e2e
                       # compose/bind mounts run as container root and
-                      # write INTO the checkout (dist/, dev/*/certs,
+                      # write INTO the checkout (dist/, infra/*/certs,
                       # coverage), and root-owned dirs make the next
                       # job's checkout die with "EACCES: permission
-                      # denied, rmdir" (gate 40225615871, dev/). Runs as
+                      # denied, rmdir" (gate 40225615871). Runs as
                       # root (this container), so it fixes what the
                       # uid-1000 worker cannot. Scoped to the checkout
                       # ONLY - recursive over .ci-cache (7 GB containerd)

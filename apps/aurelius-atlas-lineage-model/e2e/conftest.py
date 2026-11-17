@@ -85,7 +85,7 @@ def keycloak() -> DockerCompose:
     there. Like the other suites, this fixture starts the stack and does not
     stop it: a running dev stack is reused across sessions.
     """
-    context = Path(__file__).parents[3].absolute() / "dev" / "keycloak"
+    context = Path(__file__).parents[3].absolute() / "infra" / "keycloak"
     compose = DockerCompose(context=context)
     compose.start()
     return compose

@@ -2,7 +2,7 @@
 
 The collector is the system's one signal seam (ADR 034); its ConfigMap is the
 contract surface, so the two drift guards run here: the structural diff of the
-rendered pipeline against dev/observability/config/otel-collector.yaml
+rendered pipeline against infra/observability/config/otel-collector.yaml
 (CHT-34, the DD-256 guard in structural form) and byte-identity of the four
 environment-free assets (CHT-39/40). The cross-chart joins (pullers, aux
 telemetry, the issuer's 443) are asserted in the files of the charts that own
@@ -29,7 +29,7 @@ from conftest import (
     policy_peers_by_port,
 )
 
-DEV_CONFIG = WORKSPACE / "dev/observability/config"
+DEV_CONFIG = WORKSPACE / "infra/observability/config"
 TEST_VALUES = (OBS_CHART / "tests/values.test.yaml",)
 FULLNAME = "atlas-observability"
 

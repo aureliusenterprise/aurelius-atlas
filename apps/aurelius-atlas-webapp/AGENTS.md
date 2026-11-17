@@ -40,11 +40,23 @@ and the increment specs in `docs/architecture/conversion/increments/`.
   rewrite** — the client composes the `/api` prefix, DD-139), `/otel` → 4318
   (HTTPS, CA-verified)
 - `e2e/` — pytest + Playwright (chromium, firefox, webkit) against the built
-- `helm/` — the `atlas-webapp` chart (its own section below)
   image, with the real atlas-server container behind nginx `/api/` (DD-142) and
   Keycloak sign-in via the `authenticated` fixture (APC-10), which replays a
   per-browser session state — one form login per browser, silent check-sso for
-  every test, form-login self-heal when the shared session dies (DD-224)
+  every test, form-login self-heal when the shared session dies (DD-224).
+  `e2e/docker-compose.yaml` keeps only the webapp service, which `extends` this
+  project's own piece `docker/compose.yaml` and overrides the test's shape
+  (`!override` volumes, since the configs supply nginx.conf and config.json);
+  the atlas-server, data2model, lineage-model, and validate-entity services
+  `extends` their owner project's e2e base, so each carries its own settings
+  and mounts its owner's `certs/` (this stack used to mount every project's
+  leaf certs), and the aux ports are reset — the browser reaches them only
+  through nginx.
+- `helm/` — the `atlas-webapp` chart (its own section below)
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR
+  065), included by `docker/docker-compose.yaml` at the root; beside it
+  `config.json` and `resolve-nginx.sh`, the files it mounts. Not runnable on
+  its own — run the umbrella.
 
 ## Porting rules (every slice)
 
@@ -161,6 +173,6 @@ Auth removal: the `provideKeycloak`/`INCLUDE_BEARER_TOKEN_INTERCEPTOR_CONFIG`
 providers, `createAuthGuard` wrapper and `rootAuthGuard` in `routes.ts`,
 `public/silent-check-sso.html`, the Keycloak locations in the nginx configs, the
 webapp-port origins on the `aurelius` client in
-`dev/keycloak/import/master.json`, and the `authenticated` fixture in
+`infra/keycloak/import/master.json`, and the `authenticated` fixture in
 `e2e/conftest.py` (the webapp is that client's only consumer, so its import
 entry leaves with the auth wiring).

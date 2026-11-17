@@ -1,0 +1,30 @@
+{{/*
+Loki's ConfigMap (CHT-39, DD-655): infra/observability/config/loki.yaml deep-
+merged with the internal-TLS overlay. The base is the byte-copy asset
+(DD-256) — environment-free, auth off, in-memory ring, filesystem storage
+under /loki (the PVC's mount); the overlay adds server.http_tls_config over
+the component's own leaf (the Secret's items mounted at tls.mountPath, the
+same shape as the collector's, CHT-36). Merge, not append: Loki parses
+strictly (duplicate top-level keys are a fatal parse error, and the
+-config.file comma-list loads only the FIRST existing file, not a merge —
+both proved against 3.7.9), and parse-merge-renders also keeps the asset
+byte-identical for the dev compose, which stays plaintext (a deliberate
+deviation, 10.14). Loki's own dskit gRPC (:9095) stays plaintext: with one
+replica and an in-memory ring every call to it stays inside this pod's
+network namespace.
+*/}}
+{{- if .Values.loki.enabled -}}
+{{- $fullname := include "atlas-observability.fullname" . -}}
+{{- $mount := trimSuffix "/" .Values.tls.mountPath -}}
+{{- $tls := dict "server" (dict "http_tls_config" (dict "cert_file" (printf "%s/tls.crt" $mount) "key_file" (printf "%s/tls.key" $mount))) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+    name: {{ $fullname }}-loki
+    namespace: {{ include "atlas-observability.namespace" . }}
+    labels:
+        {{- include "atlas-observability.labels" . | nindent 8 }}
+data:
+    config.yaml: |
+        {{- merge (fromYaml (.Files.Get "files/loki.yaml")) $tls | toYaml | nindent 8 }}
+{{- end }}

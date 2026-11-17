@@ -4,7 +4,7 @@ Keycloak's cluster shape asserted at the render: prod-mode boot, the issuer
 hostname chain, the RSS companion, the realm asset and its placeholder
 resolution, the management-port probes, and the bundled Postgres — the cert-
 copy boot, the pg_hba, the verify-full JDBC pin (the dev compose sibling is
-the reference, ``dev/keycloak/docker-compose.yaml``).
+the reference, ``infra/keycloak/docker-compose.yaml``).
 """
 
 import json
@@ -205,7 +205,7 @@ def test__realm_configmap_byte_copies_the_dev_import() -> None:
     cm = find(docs, "ConfigMap", "atlas-keycloak-realm")
     asset = (KC_CHART / "files/master.json").read_bytes()
     assert cm["data"]["master.json"].encode() == asset
-    dev_import = (WORKSPACE / "dev/keycloak/import/master.json").read_bytes()
+    dev_import = (WORKSPACE / "infra/keycloak/import/master.json").read_bytes()
     assert asset == dev_import
 
 
@@ -991,7 +991,7 @@ def test__grafana_client_is_a_prod_only_confidential_rp() -> None:
     prod_text = (KC_CHART / "files/aurelius-atlas.json").read_text()
     assert "${GRAFANA_CLIENT_SECRET}" in prod_text  # the placeholder, never a secret
     assert "grafana" not in (KC_CHART / "files/master.json").read_text()
-    assert "grafana" not in (WORKSPACE / "dev/keycloak/import/master.json").read_text()
+    assert "grafana" not in (WORKSPACE / "infra/keycloak/import/master.json").read_text()
 
     asset = _rendered_asset(helm_render(KC_CHART, sets=("global.domain=atlas.example",)))
     (g,) = [c for c in asset["clients"] if c["clientId"] == "grafana"]
@@ -1175,11 +1175,11 @@ def test__digest_wins_over_tag_at_keycloak_and_postgres() -> None:
 @pytest.mark.parametrize(
     "path",
     [
-        WORKSPACE / "dev/keycloak/import/master.json",
+        WORKSPACE / "infra/keycloak/import/master.json",
         KC_CHART / "files/aurelius-atlas.json",
-        WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/atlas.json",
+        WORKSPACE / "docker/keycloak/aurelius-atlas.json",
     ],
-    ids=["dev", "chart", "demo"],
+    ids=["dev", "chart", "stack"],
 )
 def test__every_realm_file_is_one_keycloak_imports(path: Any) -> None:  # noqa: ANN401 - a path
     """What Keycloak 26.7 refuses at import, and the realm with it: a description over its 255-character column,

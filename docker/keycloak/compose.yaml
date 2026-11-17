@@ -1,0 +1,199 @@
+# The standalone stack's identity piece, included by ../../docker-compose.yaml (ADR 065, ADR 066).
+# The provider is the infra slice's Keycloak and its Postgres, extended (DD-670): the image pins,
+# the memory caps, the Postgres boot (the certificate-copy entrypoint, the scram config, the
+# healthcheck) and the credentials arrive by inheritance from
+# ../../infra/keycloak/docker-compose.yaml, whose relative paths rebase to that folder — the same
+# certificates and pg_hba the dev slice runs. The stack keeps the production topology: a
+# Postgres-backed Keycloak, not the in-memory one the first demo carried, booted in production
+# mode like the chart (`start`, never `start-dev`, DD-676) — which is why `keycloak-build` exists
+# here as the chart's `kc-build` init stage exists there. What the stack states
+# are its differences: the listener behind its own proxy (the issuer https://localhost:9000/auth,
+# which is the issuer the server verifies), the realm `aurelius-atlas` imported from ./keycloak —
+# the Helm realm's posture, service identities and no default users — the shared theme, the
+# realm's placeholders in the environment, no published port, and its own named
+# volumes, so `down -v` clears the demo and nothing else. The stack carries its own telemetry
+# (DD-675): the native OTLP push rides the legacy leg of the stack's collector, as it does in
+# the slice — the issuer cannot present its own token at cold boot (DD-196) — and the realm's
+# four otel-* ingest clients mint the per-service leg's credentials with the shared dev secret.
+# Compose interpolates the base with this project's environment before applying the overrides,
+# so the base's ${VAR:?} guards must pass even where a fragment replaces the value: the stack's
+# start names infra/keycloak/.env among its env-files (DD-669).
+name: aurelius-atlas-standalone
+
+services:
+    # The identity store, extended as it is: image, boot, credentials (${KEYCLOAK_DATABASE_*}),
+    # healthcheck and certificate mounts inherited. Only its volume is the stack's own.
+    postgres-keycloak:
+        extends:
+            file: ../../infra/keycloak/docker-compose.yaml
+            service: postgres-keycloak
+        # No host port: the stack reaches it in-network only (SST-02's rule, the same way).
+        ports: !reset []
+        volumes:
+            # Appended at the base's mount point, so the demo's identity store is its own.
+            - keycloak-postgres-data:/var/lib/postgresql
+
+    # The build stage of the chart's prod boot, as a one shot (DD-676, the chart's kc-build init
+    # container): production mode persists its build options (the database, health, the relative
+    # path, the features) into the home, and the image's /opt/keycloak is read-only for the image's
+    # uid. The named volume is seeded by Docker with the image's tree (ownership included) on first
+    # mount, so this stage needs no copy — it builds in place and leaves a current home for the
+    # start. The three options are the ones the runtime warns are unpersisted (kc.db,
+    # kc.health-enabled, kc.http-relative-path) plus the features, as env; the build is a JVM, so
+    # the slice's memory cap carries over by inheritance.
+    keycloak-build:
+        extends:
+            file: ../../infra/keycloak/docker-compose.yaml
+            service: keycloak
+        # The options are exactly the build options the start passes (the four telemetry enables
+        # are build options in prod mode, measured: the runtime names them in its drift check)
+        # plus the env-persisted three - parity with the start keeps its boot free of
+        # re-augmentation, as the chart's build persists its start's --http-relative-path.
+        command:
+            !override [
+                "build",
+                "--http-relative-path=/auth",
+                "--metrics-enabled=true",
+                "--tracing-enabled=true",
+                "--telemetry-metrics-enabled=true",
+                "--telemetry-logs-enabled=true",
+            ]
+        environment: !override
+            KC_DB: postgres
+            KC_HEALTH_ENABLED: "true"
+            KC_FEATURES: opentelemetry-metrics,preview
+            # The build is a JVM: the cap keeps its heap inside the inherited 1g memory cap, as the
+            # chart's kcBuild limit does.
+            JAVA_OPTS: -Xms256m -Xmx512m
+        ports: !reset []
+        healthcheck: !reset null
+        # The build opens no database, so it does not wait for the inherited Postgres, and it joins
+        # no network beyond the stack's (the base's observability network is not in this project).
+        depends_on: !reset []
+        networks: !reset []
+        volumes:
+            # The seeded home: Docker fills the fresh volume from the image, the build rewrites it.
+            - kc-home:/opt/keycloak
+
+    # The stack's Keycloak: the slice's image and caps, with the listener shape the proxy needs
+    # written here, because extends cannot delete one key of an inherited map and the base's
+    # carries the telemetry leg, the truststore and the HTTPS listener (DD-670).
+    keycloak:
+        extends:
+            file: ../../infra/keycloak/docker-compose.yaml
+            service: keycloak
+        # Prod mode, like the chart (CHT-16's rule, DD-676): `start`, never `start-dev`. The base's
+        # command carries the RSS query and the host routing; the stack's cold boot is the plain one,
+        # with the telemetry features the base enables (DD-675: the stack runs its own collector, so
+        # the native OTLP push rides the legacy leg here too - Keycloak is the issuer and cannot
+        # present its own JWT at cold boot, DD-196). The flags it passes are build options in prod
+        # mode, so the build one shot persisted their exact values - the boot finds parity and
+        # re-augments nothing. (`!override` replaces the key; `!reset` deletes it.)
+        command:
+            !override [
+                "start",
+                "--import-realm",
+                "--metrics-enabled=true",
+                "--tracing-enabled=true",
+                "--telemetry-metrics-enabled=true",
+                "--telemetry-logs-enabled=true",
+                "--telemetry-endpoint=https://otel-collector:4320",
+            ]
+        # The Postgres, and the built home: start finds a current build, so its boot writes nothing
+        # into the image and no re-augmentation runs (DD-676).
+        depends_on: !override
+            postgres-keycloak:
+                condition: service_healthy
+            keycloak-build:
+                condition: service_completed_successfully
+        # The base's environment carries the telemetry leg, the truststore and the HTTPS
+        # listener keys, and extends cannot delete one key of an inherited map — so the map is
+        # replaced wholesale with the stack's (DD-670).
+        environment: !override
+            # Prod mode's secure-by-default gate wants a TLS listener; the stack names the relaxation
+            # off (the proxy is the TLS terminator, the issuer stays https://localhost:9000/auth, and
+            # the plaintext in-network hop is the shape the stack runs today - ADR 039's named
+            # relaxation, kept). Set false explicitly, or `start` looks for a keystore and refuses.
+            KC_HTTPS_ENABLED: "false"
+            KC_HTTP_ENABLED: "true"
+            KC_HTTP_PORT: "8080"
+            KC_HTTP_RELATIVE_PATH: /auth
+            # The build-time options, at their built values (DD-676): the runtime checks each against
+            # the persisted build and re-augments on a difference, so these state what the build one
+            # shot baked in - they never change it.
+            KC_FEATURES: opentelemetry-metrics,preview
+            KC_HOSTNAME: https://localhost:9000/auth
+            KC_PROXY_HEADERS: xforwarded
+            KC_HEALTH_ENABLED: "true"
+            KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
+            KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
+            # The realm's placeholders (keycloak/aurelius-atlas.json), served by the inherited
+            # Postgres: the production topology, one realm for the stack. The realm holds service
+            # identities only, as the Helm realm does, so these are client secrets, no user passwords.
+            ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The provisioning command's client (15.5b, TRM-11), in infra/keycloak/.env.
+            PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
+            # The admin service identity (DD-666) and the validate-entity app (12.7, DD-499), the
+            # sample import and the rules leg signing through them; both in infra/keycloak/.env.
+            ATLAS_ADMIN_CLIENT_SECRET: ${ATLAS_ADMIN_CLIENT_SECRET:?}
+            VALIDATE_ENTITY_CLIENT_SECRET: ${VALIDATE_ENTITY_CLIENT_SECRET:?}
+            # The one secret the realm's four otel-* ingest clients share (DD-675, the dev
+            # posture): the server and the aux apps mint their per-service OTLP credentials
+            # with it; in infra/keycloak/.env.
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The identity database, as the slice runs it (DD-670): the inherited certificate
+            # mount is the trust; the credentials come from infra/keycloak/.env.
+            KC_DB: postgres
+            KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak?sslmode=verify-full&sslrootcert=/certs/ca.pem
+            KC_DB_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
+            KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+            # The native OTLP push (DD-675): the slice's legacy-leg shape, the collector
+            # reached as `otel-collector` on the stack's network. Quarkus' Vert.x sender
+            # ignores the generic pair, so the QUARKUS_-prefixed pair carries the identical
+            # values (DD-664's rule, inherited). The truststore is the inherited certificate
+            # mount's - the same mkcert root that signed the collector's leaf.
+            OTEL_SERVICE_NAME: keycloak
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
+            OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
+            QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
+            QUARKUS_OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
+            OTEL_TRACES_SAMPLER: parentbased_traceidratio
+            OTEL_TRACES_SAMPLER_ARG: "0.1"
+            JAVA_OPTS: -Xms256m -Xmx512m -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
+        # The slice's healthcheck probes the root-relative listener; here the server lives under
+        # /auth (KC_HTTP_RELATIVE_PATH), so the probe path is the stack's.
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /auth/health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | sed -n '/\"status\":\"UP\"/q' || exit 1",
+                ]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 180s
+        # No published port: only the stack's proxy reaches it, on the plaintext listener
+        # (nginx.conf). `!reset` deletes the key, which is what "none" means here.
+        ports: !reset  # The slice's network carries the issuer alias and the observability leg; the stack
+
+        # needs neither, so the key is deleted and the service joins the stack's default
+        # network, where the proxy resolves `keycloak` (nginx.conf).
+        networks: !reset  # Appended at the base's mount points (compose keeps the last entry per target): the
+
+        # stack's realm import replaces the slice's ./import, and the base's cert mount,
+        # rebased to infra/keycloak/certs, is the trust KC_DB_URL verifies Postgres with.
+        volumes:
+            # The build stage's output, over the image's home (DD-676). The mounts below nest inside it:
+            # Docker mounts the longer paths after the volume, so the import and the theme land in the
+            # built home as they did in the image's.
+            - kc-home:/opt/keycloak
+            # The realm folder this fragment lives in: aurelius-atlas.json beside it, imported at boot.
+            - .:/opt/keycloak/data/import:ro
+            # The realm's login theme (keycloak/aurelius-atlas.json's loginTheme), the shared asset in infra/keycloak.
+            - ../../infra/keycloak/themes/aurelius:/opt/keycloak/themes/aurelius:ro
+
+volumes:
+    keycloak-postgres-data:
+    # The built Keycloak home, produced by keycloak-build (DD-676). Cleared by `down -v`, which is
+    # when it rebuilds - as the chart's emptyDir is, once per pod.
+    kc-home:

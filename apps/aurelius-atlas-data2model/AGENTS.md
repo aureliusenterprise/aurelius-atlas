@@ -65,6 +65,20 @@ the webapp's parser's input.
   liveness healthcheck.
 - `e2e/docker-compose.yaml` — the app on the observability network (`otel-collector:4319`),
   Keycloak reached through `keycloak.localhost:host-gateway` (the loopback-pinned mint).
+  It `extends` `compose.data2model.yaml` beside it and states only its OTel client secret
+  (guarded under this project's `.env` name).
+- `e2e/compose.data2model.yaml` — this app's e2e service as a **base**: the chain stacks
+  that run the real extraction beside their app (lineage-model's 8.2, the webapp) extend
+  it. It extends this project's piece `../docker/compose.yaml` (DD-674), resets
+  `network_mode` back onto its own network, and states only the e2e differences (the
+  host-mapped issuer, the OTel leg, the published port). The cert mount (`../certs`)
+  rebases to the piece, so the chain verifies this project's own leaf; the OTel client
+  secret is deliberately not guarded in the base (each consumer names it from its own
+  `.env`).
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR 065,
+  DD-674), included by `docker/docker-compose.yaml` at the root: the app in the proxy's
+  network, its issuer `https://localhost:9000/auth/`, the realm `aurelius-atlas`, the
+  audience `aurelius`. Not runnable on its own — run the umbrella.
 
 ## Helm chart
 
@@ -92,5 +106,5 @@ values-toggle rows (`helm/AGENTS.md`).
 
 The app is one ADR 055 surface: remove `apps/aurelius-atlas-data2model`, its root
 `pyproject.toml` entries (member, dev group, uv source), the `otel-data2model` client in
-`dev/keycloak/import/master.json`, and the 8.1 roadmap/spec rows. `aurelius-atlas-auth`
+`infra/keycloak/import/master.json`, and the 8.1 roadmap/spec rows. `aurelius-atlas-auth`
 and `aurelius-atlas-otel` stay — 8.2/8.3 use them.

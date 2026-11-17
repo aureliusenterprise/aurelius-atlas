@@ -86,7 +86,24 @@ by 12.7a) survives in the webapp (EDT-23).
   liveness healthcheck.
 - `e2e/docker-compose.yaml` — this app plus a real `atlas-server` (host port 21008) on
   the dev Elasticsearch and observability networks; the server accepts the app's client
-  as an audience (DD-499); Keycloak through `keycloak.localhost:host-gateway`.
+  as an audience (DD-499); Keycloak through `keycloak.localhost:host-gateway`. The
+  `atlas-server` service `extends` the server project's e2e base
+  (`../aurelius-atlas-server/e2e/compose.server.yaml`) and states only its port and
+  audience; the base's cert mount rebases to the server project's own `certs/`. The
+  validate-entity service `extends` this project's e2e base
+  (`compose.validate-entity.yaml`), which layers on the piece `../docker/compose.yaml`
+  (DD-674). The webapp's e2e stack extends the base too.
+- `e2e/compose.validate-entity.yaml` — this app's e2e service as a **base**: it extends
+  this project's piece `../docker/compose.yaml` (DD-674), resets `network_mode` back
+  onto its own network, and states only the e2e differences (the host-mapped issuer,
+  the in-network server address, the OTel leg, the published port). The secret of the
+  client it signs with is guarded here under the shared name
+  `AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET`, which each consumer's `.env`
+  names (DD-669's rule).
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR 065,
+  DD-674), included by `docker/docker-compose.yaml` at the root: the app in the proxy's
+  network, its issuer `https://localhost:9000/auth/`, the realm `aurelius-atlas`, the
+  audience `aurelius`. Not runnable on its own — run the umbrella.
 
 ## Helm chart
 
@@ -115,7 +132,7 @@ entry, and the master realm's client and import env (`helm/AGENTS.md`).
 
 The app is one ADR 055 surface: remove `apps/aurelius-atlas-validate-entity`, its root
 `pyproject.toml` entries (member, dev group, uv source), the `aurelius-atlas-validate-entity`
-and `otel-validate-entity` clients in `dev/keycloak/import/master.json` (the former with
+and `otel-validate-entity` clients in `infra/keycloak/import/master.json` (the former with
 its `${VALIDATE_ENTITY_CLIENT_SECRET}` import env and the umbrella's
 `secret-validate-entity-client.yaml`), the webapp compose's leg env, and the roadmap/spec
 rows. `aurelius-atlas-auth` and `aurelius-atlas-otel` stay — the other 8.x apps use them.

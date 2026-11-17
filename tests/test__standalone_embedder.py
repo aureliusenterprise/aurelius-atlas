@@ -1,22 +1,23 @@
 """The standalone stack's embedder (EMB-11, 11.2) and the server embedding through it (VEC-11, 11.3).
 
-The compose file is read as written: the service, its certificate, and what it does not have.
+The stack's compose is read as written, the umbrella and the embedder's fragment merged as compose
+merges them (ADR 065): the service, its certificate, and what it does not have.
 """
 
 from typing import Any
 
 import pytest
 import yaml
-from conftest import WORKSPACE
+from conftest import WORKSPACE, standalone_compose
 
-STANDALONE = WORKSPACE / "apps/aurelius-atlas-server/standalone"
+FRAGMENT = WORKSPACE / "apps/aurelius-atlas-embedder/docker"
 EMBEDDER_CERTS = WORKSPACE / "apps/aurelius-atlas-embedder/certs"
 
 
 @pytest.fixture(scope="module")
 def services() -> dict[str, Any]:
-    """The stack's compose services."""
-    return yaml.safe_load((STANDALONE / "docker-compose.yaml").read_text())["services"]
+    """The stack's compose services, the included fragments merged in."""
+    return standalone_compose()["services"]
 
 
 @pytest.mark.covers(rules=["EMB-11"])
@@ -24,7 +25,8 @@ def test__the_embedder_runs_on_the_stack_network_with_no_published_port(services
     """Only the stack's network reaches it: no ports, no other network mode (DD-432)."""
     embedder = services["embedder"]
 
-    assert embedder["image"] == "ghcr.io/aureliusenterprise/aurelius-atlas-embedder:local"
+    # The image is an install's knob over the nx docker-build default (the stack builds, never pulls).
+    assert embedder["image"] == "${EMBEDDER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-embedder:local}"
     assert "ports" not in embedder
     assert "network_mode" not in embedder
     assert "networks" not in embedder
@@ -35,7 +37,9 @@ def test__the_embedder_serves_tls_with_its_own_certificate(services: dict[str, A
     """Its certificate is the embedder project's, mounted read-only; the SANs name the stack's service."""
     embedder = services["embedder"]
 
-    assert embedder["volumes"] == ["../../aurelius-atlas-embedder/certs:/certs:ro"]
+    # The certificate folder is an install's knob over this project's certgen folder; a relative
+    # value still reads from the fragment's folder, like the default it carries.
+    assert embedder["volumes"] == ["${EMBEDDER_CERTS_DIR:-../certs}:/certs:ro"]
     assert embedder["environment"] == {
         "AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE": "/certs/aurelius-atlas-embedder.pem",
         "AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE": "/certs/aurelius-atlas-embedder-key.pem",
@@ -43,7 +47,7 @@ def test__the_embedder_serves_tls_with_its_own_certificate(services: dict[str, A
     }
     tls = yaml.safe_load((WORKSPACE / "apps/aurelius-atlas-embedder/tls.json").read_text())
     assert "embedder" in tls["services"]["aurelius-atlas-embedder"]
-    assert (STANDALONE / "../../aurelius-atlas-embedder/certs").resolve() == EMBEDDER_CERTS
+    assert (FRAGMENT / "../certs").resolve() == EMBEDDER_CERTS
 
 
 @pytest.mark.covers(rules=["EMB-11"])

@@ -36,7 +36,7 @@ const glob = "**/Chart.yaml";
  * The composite version-actions module chart owners get (DD-293): it versions
  * the owner's ecosystem manifest (pyproject.toml — python.ts wires the same
  * module for the uv projects) AND the chart's Chart.yaml, re-pins the
- * umbrella, and refreshes its Chart.lock. Owners with a project.json (dev/*)
+ * umbrella, and refreshes its Chart.lock. Owners with a project.json (infra/*)
  * set it there; python.ts (wired after helm) overwrites this field with the
  * same module plus its lock-skip options.
  */
@@ -93,7 +93,7 @@ function createNodesInternal(
 ): CreateNodesResult {
     const chartDir = dirname(configFilePath);
     // The OWNER root: the chart dir's parent. A component chart under
-    // apps/<x>/helm (or dev/<x>/helm) merges onto the app; `helm` at the
+    // apps/<x>/helm (or infra/<x>/helm) merges onto the app; `helm` at the
     // workspace root merges onto the root project (`.`).
     const ownerRoot = chartDir === "helm" ? "." : dirname(chartDir);
     const chartYaml = readFileSync(configFilePath, "utf-8");
@@ -272,7 +272,7 @@ function createNodesInternal(
     // uv apps and the root — python.ts runs after helm and overwrites this
     // field with the same module plus its options) AND the chart's
     // Chart.yaml/appVersion, re-pins the umbrella, and refreshes its
-    // Chart.lock. Owners with a project.json (dev/*) set the composite there
+    // Chart.lock. Owners with a project.json (infra/*) set the composite there
     // — project.json overrides inference (DD-293).
     return {
         projects: {

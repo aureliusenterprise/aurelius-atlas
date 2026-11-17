@@ -1,0 +1,63 @@
+# The standalone stack's validator piece, included by ../../../docker/docker-compose.yaml (ADR 065).
+# Relative paths read from this file's folder; the service name is the stack's, so keep it.
+# The 12.7 governance validator (12.7, AUX-04, DD-435): an entity payload in, live verdicts out, read
+# against the rules the catalogue holds. In the stack the webapp's nginx reaches it under
+# /validate-entity/ with the browser's token, so like the server it shares the proxy's network: its
+# issuer is https://localhost:9000/auth, the address the browser uses, which is the issuer its bearer
+# check compares. The caller-side audience is the browser's public client by design (AUX-04, DV-75):
+# the endpoint is the browser's from begin to end, the app forwards nothing. The 12.7 rules leg signs
+# as this app's own service client (VEV-04) against the stack's server, localhost:21000 in the proxy's
+# network — the server lists this client among its audiences. The leg's secret is the realm's
+# ${VALIDATE_ENTITY_CLIENT_SECRET} of infra/keycloak/.env, unguarded here (DD-669's rule: a consumer
+# cannot rescue a failed base guard): unset, the leg stays closed and POST / answers 502 (VEV-06),
+# never a no-rules verdict. The app publishes no port. Its own e2e stack (../e2e/docker-compose.yaml)
+# extends this service and states the e2e differences: the host-mapped issuer, its OTel client
+# secret, the collector network and a published port.
+# VALIDATE_ENTITY_IMAGE and VALIDATE_ENTITY_CERTS_DIR name the image and the certificate folder
+# (compose-time variables, like SAMPLE_ZIP: not .env settings). Unset, they are this file's own
+# answers — the `nx docker-build` tag and this project's `nx certgen` folder (ADR 065: the stack
+# builds, never pulls) — and a relative path still reads from this file's folder. An install that
+# ships published images sets VALIDATE_ENTITY_IMAGE to the registry reference or a digest, and its
+# own certificate folder to VALIDATE_ENTITY_CERTS_DIR; the e2e stack extends this service and leaves
+# both unset.
+name: aurelius-atlas-standalone
+
+services:
+    aurelius-atlas-validate-entity:
+        image: ${VALIDATE_ENTITY_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-validate-entity:local}
+        # In the proxy's network: the issuer it verifies is the browser's address, localhost:9000, the
+        # webapp's nginx reaches it on 127.0.0.1:21003, and the rules leg reaches the server on
+        # 127.0.0.1:21000 — both certificates cover localhost. The gate on the stack's server is the
+        # consumer's: the umbrella's own start order serves it, and the e2e consumer's server answers
+        # under its own name.
+        network_mode: service:proxy
+        environment:
+            AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info
+            # HTTPS with this project's certificate (`nx certgen`); the healthcheck verifies it.
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CERT_FILE: /certs/aurelius-atlas-validate-entity.pem
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_KEY_FILE: /certs/aurelius-atlas-validate-entity-key.pem
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CA_FILE: /certs/ca.pem
+            # The stack's issuer, behind the proxy: POST / verifies the caller's bearer token (VE-03).
+            # The audience is the browser's public client, a literal (AUX-04).
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: aurelius-atlas
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /certs/ca.pem
+            # The 12.7 catalogue leg (VEV-03/VEV-04): the rules ride the stack's server, in the proxy's
+            # network on 127.0.0.1 — the name localhost is in the server's certificate. The app signs
+            # as its own service client; the secret joins unguarded (see the header), so a stack
+            # without it answers 502 instead of a false verdict (VEV-06).
+            AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL: https://localhost:21000
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET: ${VALIDATE_ENTITY_CLIENT_SECRET:-}
+            # OTLP ingest (DD-197, DD-675): the app mints as otel-validate-entity through the
+            # stack's issuer and exports on the per-service leg of the stack's collector,
+            # reached as otel-collector on the stack's network. The secret is the realm's
+            # shared ingest secret (infra/keycloak/.env), joined unguarded (DD-669): unset,
+            # the app exports no OTLP.
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:-}
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CA_FILE: /certs/ca.pem
+        volumes:
+            - ${VALIDATE_ENTITY_CERTS_DIR:-../certs}:/certs:ro

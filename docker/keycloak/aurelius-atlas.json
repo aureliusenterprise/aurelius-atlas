@@ -1,0 +1,416 @@
+{
+    "accessTokenLifespan": 900,
+    "accountTheme": "aurelius",
+    "adminPermissionsEnabled": true,
+    "browserSecurityHeaders": {
+        "contentSecurityPolicy": "frame-src 'self'; frame-ancestors 'self'; object-src 'none';",
+        "contentSecurityPolicyReportOnly": "",
+        "referrerPolicy": "no-referrer",
+        "strictTransportSecurity": "max-age=31536000; includeSubDomains",
+        "xContentTypeOptions": "nosniff",
+        "xFrameOptions": "SAMEORIGIN",
+        "xRobotsTag": "none"
+    },
+    "bruteForceProtected": true,
+    "clientScopeMappings": {
+        "account": [
+            {
+                "client": "aurelius",
+                "roles": ["manage-account", "view-profile"]
+            }
+        ],
+        "aurelius-atlas-server": [
+            {
+                "client": "aurelius",
+                "roles": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            }
+        ]
+    },
+    "clientScopes": [
+        {
+            "attributes": {
+                "consent.screen.text": "${rolesScopeConsentText}",
+                "display.on.consent.screen": "false",
+                "include.in.token.scope": "false"
+            },
+            "description": "Pins the OTel collector audience on tokens (DD-193, DD-675): the collector's OIDC receiver accepts only tokens minted for it, not for the webapp API itself. The Helm realm's asset carries the same scope.",
+            "name": "otel-ingest",
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "access.token.response.type": "String",
+                        "id.token.claim": "false",
+                        "included.custom.audience": "otel-collector",
+                        "introspection.token.claim": "false"
+                    },
+                    "consentRequired": false,
+                    "name": "otel-collector-audience",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-mapper"
+                }
+            ]
+        },
+        {
+            "attributes": {
+                "display.on.consent.screen": "false",
+                "include.in.token.scope": "false"
+            },
+            "description": "Client roles as resource_access.<client>.roles claims (10.15, DD-659): the key the server's role gates read, as the Helm realm's asset carries it.",
+            "name": "roles",
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "resource_access.${client_id}.roles",
+                        "id.token.claim": "true",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "multivalued": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "resource access",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-client-role-mapper"
+                }
+            ]
+        }
+    ],
+    "clients": [
+        {
+            "attributes": {
+                "display.on.consent.screen": "false",
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:9000/*"
+            },
+            "clientId": "aurelius",
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email", "otel-ingest"],
+            "description": "The public client the webapp and the vendored dashboards sign in through (authorization code with PKCE); its tokens carry the server's roles.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": false,
+            "name": "aurelius",
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": true,
+            "redirectUris": ["https://localhost:9000/*"],
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "webOrigins": ["https://localhost:9000"]
+        },
+        {
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:9000/atlas2/"
+            },
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-server",
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "The Atlas server's confidential client (6.1a, DD-250): the vendored dashboards sign in through it (authorization code with PKCE), and its tokens are accepted by the server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": true,
+            "name": "aurelius-atlas-server",
+            "optionalClientScopes": ["organization"],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": ["https://localhost:9000/atlas2/login.jsp"],
+            "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "webOrigins": []
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-provisioning",
+            "defaultClientScopes": ["basic", "roles"],
+            "description": "The provisioning command's client (15.5b, TRM-11, DD-600): keeps the tenants' organizations, operators and administrators in step.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "implicitFlowEnabled": false,
+            "name": "Aurelius Atlas provisioning",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "${PROVISIONING_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-admin",
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
+            "description": "The platform's own admin service identity (DD-666): a client-credentials token carrying the four server-client roles drives import, export, purge and audits without a human sign-in. The stack's sample import signs in through it.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": true,
+            "name": "aurelius-atlas-admin",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${ATLAS_ADMIN_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-validate-entity",
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
+            "description": "The validate-entity API's own service identity (12.7, DD-499): its client-credentials token, accepted by azp (AUT-02), names the app in every governance-rule read. Its service account holds atlas-read on aurelius-atlas-server.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": true,
+            "name": "aurelius-atlas-validate-entity",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${VALIDATE_ENTITY_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "otel-atlas-server",
+            "defaultClientScopes": ["basic", "otel-ingest", "roles"],
+            "description": "Per-service OTLP ingest identity (DD-196, DD-675): a service-account client whose client-credentials JWT carries the otel-collector audience via the otel-ingest scope; the collector verifies it and stamps azp.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": false,
+            "name": "otel-atlas-server",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${OTEL_INGEST_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "otel-data2model",
+            "defaultClientScopes": ["basic", "otel-ingest", "roles"],
+            "description": "Per-service OTLP ingest identity (DD-197, DD-675): the extractor's mint for the collector's per-service leg; the same shared ingest secret and otel-ingest scope as the server's.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": false,
+            "name": "otel-data2model",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${OTEL_INGEST_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "otel-lineage-model",
+            "defaultClientScopes": ["basic", "otel-ingest", "roles"],
+            "description": "Per-service OTLP ingest identity (DD-197, DD-675): the lineage API's mint for the collector's per-service leg; the same shared ingest secret and otel-ingest scope as the server's.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": false,
+            "name": "otel-lineage-model",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${OTEL_INGEST_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "otel-validate-entity",
+            "defaultClientScopes": ["basic", "otel-ingest", "roles"],
+            "description": "Per-service OTLP ingest identity (DD-197, DD-675): the validator's mint for the collector's per-service leg; the same shared ingest secret and otel-ingest scope as the server's.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": false,
+            "name": "otel-validate-entity",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${OTEL_INGEST_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        }
+    ],
+    "defaultDefaultClientScopes": [
+        "role_list",
+        "saml_organization",
+        "profile",
+        "email",
+        "roles",
+        "web-origins",
+        "acr",
+        "basic"
+    ],
+    "defaultLocale": "en",
+    "defaultOptionalClientScopes": ["offline_access", "address", "phone", "microprofile-jwt", "organization"],
+    "displayName": "Aurelius Atlas",
+    "enabled": true,
+    "internationalizationEnabled": true,
+    "loginTheme": "aurelius",
+    "loginWithEmailAllowed": false,
+    "organizations": [
+        {
+            "alias": "operators",
+            "description": "The operator organization: runs the platform, keeps the default indices (ADR 063)",
+            "enabled": true,
+            "groups": [
+                {
+                    "id": "f00e0000-0000-4000-8000-000000000001",
+                    "name": "atlas-read"
+                },
+                {
+                    "id": "f00e0000-0000-4000-8000-000000000002",
+                    "name": "atlas-write"
+                },
+                {
+                    "id": "f00e0000-0000-4000-8000-000000000003",
+                    "name": "atlas-types"
+                },
+                {
+                    "id": "f00e0000-0000-4000-8000-000000000004",
+                    "name": "atlas-admin"
+                }
+            ],
+            "id": "f00e0000-0000-4000-a000-000000000001",
+            "members": [],
+            "name": "operators"
+        }
+    ],
+    "organizationsEnabled": true,
+    "passwordPolicy": "length(12) and upperCase(1) and lowerCase(1) and digits(1) and specialChars(1) and notUsername",
+    "realm": "aurelius-atlas",
+    "registrationAllowed": false,
+    "roles": {
+        "client": {
+            "aurelius-atlas-server": [
+                {
+                    "description": "Read the types, the entities and their classifications",
+                    "name": "atlas-read"
+                },
+                {
+                    "description": "Create, change and delete entities, relationships and their classifications",
+                    "name": "atlas-write"
+                },
+                {
+                    "description": "Create, change and delete types",
+                    "name": "atlas-types"
+                },
+                {
+                    "description": "Import, export, purge and the admin audits",
+                    "name": "atlas-admin"
+                }
+            ]
+        },
+        "realm": [
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "Runs the platform: holds at most atlas-read outside the operator organization (TEN-06, ADR 063)",
+                "name": "atlas-operator"
+            }
+        ]
+    },
+    "sslRequired": "external",
+    "supportedLocales": ["en", "nl"],
+    "users": [
+        {
+            "clientRoles": {
+                "realm-management": [
+                    "manage-organizations",
+                    "view-organizations",
+                    "query-organizations",
+                    "manage-users",
+                    "view-users",
+                    "query-users",
+                    "query-groups",
+                    "view-clients",
+                    "manage-realm"
+                ]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-provisioning",
+            "username": "service-account-aurelius-atlas-provisioning"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-admin",
+            "username": "service-account-aurelius-atlas-admin"
+        },
+        {
+            "clientRoles": {
+                "aurelius-atlas-server": ["atlas-read"]
+            },
+            "enabled": true,
+            "serviceAccountClientId": "aurelius-atlas-validate-entity",
+            "username": "service-account-aurelius-atlas-validate-entity"
+        }
+    ]
+}

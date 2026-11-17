@@ -24,7 +24,7 @@ from aurelius_atlas_store_es.health import HEALTHY_CLUSTER_STATUSES
 from aurelius_atlas_store_es.settings import StoreSettings
 
 ELASTICSEARCH_IMAGE = "dhi.io/elasticsearch:9.5-debian13"
-"""Hardened Elasticsearch image; the same tag as ``dev/elasticsearch``."""
+"""Hardened Elasticsearch image; the same tag as ``infra/elasticsearch``."""
 
 ELASTICSEARCH_HOST = "localhost"
 """Host test clients connect to: the ephemeral certificate covers only loopback names."""
@@ -35,7 +35,7 @@ STARTUP_TIMEOUT_SECONDS = 180.0
 _CONFIG_DIR = "/usr/share/elasticsearch/config"
 
 SNAPSHOTS_DIR = "/usr/share/elasticsearch/snapshots"
-"""The node's ``path.repo``, as in ``dev/elasticsearch``: a snapshot repository's location is below it."""
+"""The node's ``path.repo``, as in ``infra/elasticsearch``: a snapshot repository's location is below it."""
 
 _REPO_ROOT = next(
     p for p in Path(__file__).resolve().parents if (p / "tools/es-coredump-agent/coredump-noop.jar").is_file()
@@ -63,7 +63,7 @@ node.store.allow_mmap: false
 cluster.routing.allocation.disk.threshold_enabled: false
 path.repo: [/usr/share/elasticsearch/snapshots]
 """
-"""The settings of ``dev/elasticsearch/config/elasticsearch.yml`` that matter for tests."""
+"""The settings of ``infra/elasticsearch/config/elasticsearch.yml`` that matter for tests."""
 
 STARTUP_TIMEOUT_ERROR = "Elasticsearch did not become healthy within {timeout} seconds"
 
@@ -127,7 +127,7 @@ def elasticsearch_container(
 ) -> Generator[StoreSettings]:
     """Start a single-node Elasticsearch with TLS and authentication on, and yield settings for it.
 
-    The node is configured like ``dev/elasticsearch`` (DD-006): HTTPS only with a certificate from an
+    The node is configured like ``infra/elasticsearch`` (DD-006): HTTPS only with a certificate from an
     ephemeral CA, basic authentication for ``elastic`` with a random password. The container and the
     TLS material are removed on exit.
 

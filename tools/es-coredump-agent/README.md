@@ -5,7 +5,7 @@ sole job is to be present: ES 9.x treats a failed `java_lang` coredump attempt
 as fatal at bootstrap on GKE's containerd nodes, and loading a
 `Premain-Class` that does nothing makes the dump "succeed" and the node boot.
 
-The `dev/elasticsearch` store chart mounts this image as an init container
+The `infra/elasticsearch` store chart mounts this image as an init container
 that copies `coredump-noop.jar` to an `emptyDir` the JVM's
 `-javaagent:/agent/coredump-noop.jar` flag reads (CHT-15).
 

@@ -1,0 +1,39 @@
+# The standalone stack's webapp piece, included by ../../../docker/docker-compose.yaml (ADR 065).
+# Relative paths read from this file's folder; service names are the stack's, so keep them.
+# The webapp's own nginx serves only the webapp, in a container of its own: the proxy in front
+# (../docker-compose.yaml) routes to it by name and sends /api/ to the server itself. It signs in
+# to the realm aurelius-atlas through the public client aurelius.
+name: aurelius-atlas-standalone
+
+x-webapp-image: &webapp-image ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
+
+services:
+    # One shot: fills the webapp image's nginx template for this stack into a volume, as the chart's init
+    # container does (DD-262); a placeholder left fails it. The edge's OTLP leg rides the stack's
+    # collector's legacy gRPC port with the shared ingest bearer (DD-675, the chart's shape).
+    webapp-config:
+        image: *webapp-image
+        user: "0"
+        entrypoint: ["/bin/sh", "/standalone/resolve-nginx.sh"]
+        restart: "no"
+        environment:
+            AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT: https://otel-collector:4320
+            AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN: ${OTEL_COLLECTOR_INGEST_TOKEN:-none}
+        volumes:
+            - ./resolve-nginx.sh:/standalone/resolve-nginx.sh:ro
+            - webapp-nginx-conf:/out
+
+    aurelius-atlas-webapp:
+        image: *webapp-image
+        depends_on:
+            webapp-config:
+                condition: service_completed_successfully
+            aurelius-atlas-server:
+                condition: service_started
+        volumes:
+            - webapp-nginx-conf:/etc/nginx/conf.d:ro
+            - ./config.json:/usr/share/nginx/html/config.json:ro
+            - ../certs:/certs:ro
+
+volumes:
+    webapp-nginx-conf:

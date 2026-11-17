@@ -7,30 +7,30 @@ from aurelius_atlas_store_es import ElasticsearchStore, StoreSettings
 from dotenv import dotenv_values
 
 WORKSPACE = Path(__file__).resolve().parents[4]
-DEV_ELASTICSEARCH = WORKSPACE / "dev" / "elasticsearch"
+INFRA_ELASTICSEARCH = WORKSPACE / "infra" / "elasticsearch"
 
 
 @pytest.fixture(scope="session")
 def dev_dir() -> Path:
-    """The ``dev/elasticsearch`` project directory."""
-    return DEV_ELASTICSEARCH
+    """The ``infra/elasticsearch`` project directory."""
+    return INFRA_ELASTICSEARCH
 
 
 @pytest.fixture(scope="session")
 def dev_env() -> dict[str, str]:
     """The dev store's decrypted ``.env``; the e2e target decrypts it before the run."""
-    values = dotenv_values(DEV_ELASTICSEARCH / ".env")
+    values = dotenv_values(INFRA_ELASTICSEARCH / ".env")
     return {key: value for key, value in values.items() if value is not None}
 
 
 @pytest.fixture(scope="session")
 def dev_settings(dev_env: dict[str, str]) -> StoreSettings:
-    """Settings for the store started by ``nx up aurelius-atlas-dev-elasticsearch``."""
+    """Settings for the store started by ``nx up aurelius-atlas-infra-elasticsearch``."""
     return StoreSettings.model_validate(
         {
             "hosts": [f"https://localhost:{dev_env['ELASTICSEARCH_PORT']}"],
             "password": dev_env["ELASTICSEARCH_PASSWORD"],
-            "ca_certs": DEV_ELASTICSEARCH / "certs" / "ca.pem",
+            "ca_certs": INFRA_ELASTICSEARCH / "certs" / "ca.pem",
         },
     )
 

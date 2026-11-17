@@ -1,7 +1,7 @@
 """Chart-contract suite for ``atlas-elasticsearch`` (CHT-10..15, 10.2).
 
 The store's cluster shape is asserted at the render, the same invariants the
-dev compose sibling states (``dev/elasticsearch/docker-compose.yaml``): the
+dev compose sibling states (``infra/elasticsearch/docker-compose.yaml``): the
 single-node arrangement, the hardened ``elasticsearch.yml``, the cert-manager
 Certificate and its SANs, the generated-secret bootstrap password, the exec
 healthcheck, and the coredump-agent wiring.

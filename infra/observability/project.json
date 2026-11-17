@@ -1,0 +1,12 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "name": "aurelius-atlas-infra-observability",
+    "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/chart-yaml-version-actions.ts"
+        }
+    },
+    "tags": [],
+    "targets": {}
+}

@@ -1,14 +1,46 @@
 name: aurelius-atlas-webapp-e2e
 
+# Every service behind the nginx proxy is the owning project's e2e service,
+# extended (the pattern of ADR 065/066): the Atlas server from
+# ../../aurelius-atlas-server/e2e/compose.server.yaml, and the three aux APIs
+# from the owner's e2e layer beside its stack piece - the extractor from
+# ../../aurelius-atlas-data2model/e2e/compose.data2model.yaml, the lineage API
+# from ../../aurelius-atlas-lineage-model/e2e/compose.lineage-model.yaml, and
+# the validator from ../../aurelius-atlas-validate-entity/e2e/
+# compose.validate-entity.yaml. Each of those layers extends the project's
+# stack piece (../docker/compose.yaml), the identity the standalone stack
+# includes, and states the e2e identity on top: the host-mapped issuer, the
+# OTel leg, the collector network and a published port. Each base's cert
+# mount rebases to its owner's certs folder - every leaf nginx and the
+# in-network calls verify is the one its service presents, issued once by
+# that project's `nx certgen` (this project's tls.json copies of them are no
+# longer mounted; its own webapp leaf still is, below). This stack states
+# only its differences: the real server as the lineage app's upstream (the
+# fixture-less posture of the 8.2 suite), the browser-client audiences, each
+# OTel client secret under this stack's .env name, the proxied services'
+# networks (no host publish - the tests reach them through the proxy, the
+# path under test, LDG-06), and the second-cadence export. The webapp service
+# is this project's own stack piece (../docker/compose.yaml) extended: the
+# image and its cert mount arrive by inheritance, and this stack states its
+# differences - the suite's resolved nginx config and config.json (the
+# configs land on the pieces' volume/bind targets, deeper path winning where
+# they overlap), the e2e one-shot's absence (no webapp-config gate), and the
+# fixed host port.
 services:
     aurelius-atlas-webapp:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
+        extends:
+            file: ../docker/compose.yaml
+            service: aurelius-atlas-webapp
         configs:
             - source: webapp_config
               target: /usr/share/nginx/html/config.json
             - source: webapp_nginx_config
               target: /etc/nginx/conf.d/default.conf
         volumes:
+            # The piece's webapp-nginx-conf volume is filled by the standalone
+            # one-shot this stack does not run, and its config.json bind loses
+            # to the suite's config above; the certs are the stack's own.
+            !override
             - ../certs:/certs:ro
         extra_hosts:
             # The resolved e2e nginx config proxies /api/ to the Atlas server
@@ -21,12 +53,16 @@ services:
             # Fixed host port, mirroring the example app's e2e stack.
             - 18444:8080
         depends_on:
-            # The /lineage-model/ proxy's chain rides this stack (7.22a,
-            # LDG-08): the aux app's healthcheck gates the webapp's start, and
-            # the aux app gates on data2model below — so when nginx serves, the
-            # chain is up. The /validate-entity/ twin joined with 7.24
-            # (EDT-22). No host publish: the tests reach it through the
+            # The piece's gates are the standalone one-shot webapp-config and
+            # the stack's server, neither of which this stack names (the suite
+            # mounts its own nginx config, and its server is atlas-server
+            # below). The /lineage-model/ proxy's chain rides this stack
+            # (7.22a, LDG-08): the aux app's healthcheck gates the webapp's
+            # start, and the aux app gates on data2model below — so when nginx
+            # serves, the chain is up. The /validate-entity/ twin joined with
+            # 7.24 (EDT-22). No host publish: the tests reach it through the
             # proxy, which is the path under test (LDG-06).
+            !override
             aurelius-atlas-lineage-model:
                 condition: service_healthy
             aurelius-atlas-validate-entity:
@@ -39,78 +75,53 @@ services:
     # The 8.1 extractor, the chain's far end (mirrors the lineage-model e2e
     # compose). It verifies the forwarded browser token (LM-04, DTM-10), so
     # its audience is `aurelius` — fixed by design, not a deployment knob
-    # (AUX-04): the chain forwards the webapp user's own token.
+    # (AUX-04): the chain forwards the webapp user's own token. No host
+    # publish: the app reaches it in-network and the tests ride the proxy.
     aurelius-atlas-data2model:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-data2model:local
-        environment:
-            # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
-            # environment; the aux app names carry their own prefixes but the
-            # values are this stack's (the ingest secret is the shared dev one).
-            AURELIUS_ATLAS_DATA2MODEL_LOG_LEVEL: info
-            AURELIUS_ATLAS_DATA2MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-data2model.pem
-            AURELIUS_ATLAS_DATA2MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-data2model-key.pem
-            AURELIUS_ATLAS_DATA2MODEL_TLS_CA_FILE: /certs/ca.pem
-            AURELIUS_ATLAS_DATA2MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
-            AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: master
-            AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
-            AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
-            # The per-service OTLP leg (DD-196): mint at the TLS :8443 issuer,
-            # export to the collector's :4319 over the observability network.
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_ID: otel-data2model
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /certs/ca.pem
-            OTEL_BSP_SCHEDULE_DELAY: "1000"
-        extra_hosts:
-            - keycloak.localhost:host-gateway
+        extends:
+            file: ../../aurelius-atlas-data2model/e2e/compose.data2model.yaml
+            service: aurelius-atlas-data2model
         networks:
+            # The chain's services reach each other over the stack's default
+            # network; the base's collector network merges in by key.
             - default
-            - observability
-        volumes:
-            - ../certs:/certs:ro
+        environment:
+            # The shared dev ingest secret (DD-196), under this stack's .env
+            # name (the base states no guard — each consumer uses its own).
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
+        ports: !reset null
 
     # The 8.2 lineage-model API behind the nginx /lineage-model/ location
     # (LDG-06/LDG-08): its upstreams are this stack's real services — the
     # Atlas server over the atlas network (the alias is in its certificate),
     # data2model over the default network. The e2e mints browser tokens for
     # `aurelius`, so the app keeps its own audience and joins the browser
-    # client as the extra audience (DD-385) — exactly the chart posture.
+    # client as the extra audience (DD-385) — exactly the chart posture. No
+    # host publish: the tests ride the proxy.
     aurelius-atlas-lineage-model:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-lineage-model:local
-        depends_on:
-            aurelius-atlas-data2model:
-                condition: service_healthy
+        extends:
+            file: ../../aurelius-atlas-lineage-model/e2e/compose.lineage-model.yaml
+            service: aurelius-atlas-lineage-model
+        networks:
+            # The Atlas server answers as `aurelius-atlas-server` here — the
+            # name in its certificate, the alias its service declares. The
+            # base's default and collector networks merge in by key.
+            - atlas
         environment:
-            AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info
-            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-lineage-model.pem
-            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-lineage-model-key.pem
-            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CA_FILE: /certs/ca.pem
-            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
-            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
+            # The chain's upstream: the real server (the 8.2 suite's fixture
+            # is its difference there), in-network and TLS-verified against
+            # the dev CA (LM-04), as the name its certificate carries.
+            AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL: https://aurelius-atlas-server:21000
+            # The app keeps its own audience and joins the browser client as
+            # the extra audience (DD-385) — fixed here, as the chart posture
+            # (the 8.2 suite's values ride its own .env).
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: aurelius-atlas-lineage-model
             AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES: '["aurelius"]'
-            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /certs/ca.pem
-            # The chain's upstreams, in-network and TLS-verified against the
-            # dev CA (LM-04): the server as the name its certificate carries.
-            AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL: https://aurelius-atlas-server:21000
-            AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL: https://aurelius-atlas-data2model:21001
-            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
-            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_ID: otel-lineage-model
+            # The shared dev ingest secret (DD-196), under this stack's .env
+            # name (the base states no guard — each consumer uses its own).
             AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_ENDPOINT: https://otel-collector:4319
-            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CA_FILE: /certs/ca.pem
-            OTEL_BSP_SCHEDULE_DELAY: "1000"
-        extra_hosts:
-            - keycloak.localhost:host-gateway
-        networks:
-            - default
-            # The Atlas server answers as `aurelius-atlas-server` here — the
-            # name in its certificate, the alias its service declares.
-            - atlas
-            - observability
-        volumes:
-            - ../certs:/certs:ro
+        ports: !reset null
 
     # The validate-entity API behind the nginx /validate-entity/ location
     # (7.24, EDT-22, DD-435): the editor's governance banner validates through
@@ -120,82 +131,40 @@ services:
     # app's DD-385 pair). Since 12.7 the app reads its governance rules from
     # the chain's server as its OWN service identity (VEV-04, DD-499): the
     # leg's secret is mirrored in the webapp .env and the app reaches the
-    # server on the atlas network, under its certificate name.
+    # server on the atlas network, under its certificate name — all in the
+    # base. No host publish: the tests ride the proxy.
     aurelius-atlas-validate-entity:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-validate-entity:local
-        environment:
-            # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
-            # environment; the aux app names carry their own prefixes but the
-            # values are this stack's (the ingest secret is the shared dev one).
-            AURELIUS_ATLAS_VALIDATE_ENTITY_LOG_LEVEL: info
-            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CERT_FILE: /certs/aurelius-atlas-validate-entity.pem
-            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_KEY_FILE: /certs/aurelius-atlas-validate-entity-key.pem
-            AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CA_FILE: /certs/ca.pem
-            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://keycloak.localhost:8443/
-            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: master
-            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius
-            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /certs/ca.pem
-            # The per-service OTLP leg (DD-196): mint at the TLS :8443 issuer,
-            # export to the collector's :4319 over the observability network.
-            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
-            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_ID: otel-validate-entity
-            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_ENDPOINT: https://otel-collector:4319
-            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CA_FILE: /certs/ca.pem
-            OTEL_BSP_SCHEDULE_DELAY: "1000"
-            # The 12.7 catalogue leg (VEV-04): the chain's server under its
-            # certificate name on the atlas network, minted for as the app's
-            # own client. RULES_CACHE_SECONDS 0 so the banner test's freshly
-            # seeded rules answer on the next call (VEV-05).
-            AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL: https://aurelius-atlas-server:21000
-            AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
-            AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET: ${AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET:?}
-            AURELIUS_ATLAS_VALIDATE_ENTITY_RULES_CACHE_SECONDS: "0"
-        extra_hosts:
-            - keycloak.localhost:host-gateway
+        extends:
+            file: ../../aurelius-atlas-validate-entity/e2e/compose.validate-entity.yaml
+            service: aurelius-atlas-validate-entity
         networks:
+            # The nginx proxy reaches the app over the stack's default
+            # network; the base's store and collector networks merge in.
             - default
-            # The Atlas server answers as `aurelius-atlas-server` here — the
-            # name in its certificate, the alias its service declares.
-            - atlas
-            - observability
-        volumes:
-            - ../certs:/certs:ro
+        environment:
+            # The shared dev ingest secret (DD-196), under this stack's .env
+            # name (the base states no guard — each consumer uses its own).
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
+        ports: !reset null
 
     # The real Atlas server behind the nginx /api/ proxy (DD-142): the chain
     # nginx -> TLS -> server -> Elasticsearch answers /api/atlas/admin/version,
-    # so the proxy test proves the whole data path, not just nginx config.
-    # Mirrors apps/aurelius-atlas-server/e2e/docker-compose.yaml. The certs are
-    # this project's own: tls.json issues the aurelius-atlas-server leaf nginx
-    # verifies against, so the stack mounts only its owning project's certs/
-    # (DD-216). The store is reached on the dev Elasticsearch network.
+    # so the proxy test proves the whole data path, not just nginx config. The
+    # server's own e2e base carries its identity and settings; the nginx
+    # proxy_ssl_name is the atlas-network alias the base declares. The store is
+    # reached on the dev Elasticsearch network.
     atlas-server:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
-        networks:
-            atlas:
-                # The alias is the name in the server certificate and the nginx
-                # proxy_ssl_name; the compose service name stays atlas-server.
-                aliases:
-                    - aurelius-atlas-server
-            # The dev telemetry stack (started by conftest first): the collector
-            # answers as `otel-collector` here — the name in its certificate.
-            # Its publishes are loopback-pinned (CIA-03), so service DNS is the
-            # only path.
-            observability: {}
+        extends:
+            file: ../../aurelius-atlas-server/e2e/compose.server.yaml
+            service: atlas-server
         ports:
             # Fixed host port, mirroring the webapp's 18444: the conftest's
             # readiness strategy probes the server's version endpoint directly.
             - 18445:21000
         environment:
-            # ${VAR:?} guards: Nx injects the webapp's .env into the e2e task
-            # environment; a missing value fails the compose start loudly.
-            AURELIUS_ATLAS_SERVER_LOG_LEVEL: info
-            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_HOSTS: '["https://elasticsearch:9200"]'
-            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
-            AURELIUS_ATLAS_SERVER_ELASTICSEARCH_CA_CERTS: /certs/ca.pem
-            AURELIUS_ATLAS_SERVER_TLS_CERT_FILE: /certs/aurelius-atlas-server.pem
-            AURELIUS_ATLAS_SERVER_TLS_KEY_FILE: /certs/aurelius-atlas-server-key.pem
-            AURELIUS_ATLAS_SERVER_TLS_CA_FILE: /certs/ca.pem
+            # Two keys over the base's map: this stack's own client-IP trust
+            # and the audience pair.
             # Client-IP trust (SRV-10, DD-238): the nginx proxy is the front
             # door and rewrites X-Forwarded-For, so the server is told to trust
             # the Docker bridge range — uvicorn's default (loopback) would make
@@ -203,42 +172,11 @@ services:
             # hop declared, the server's access log and OTel peer attributes
             # name the browser's address.
             AURELIUS_ATLAS_SERVER_FORWARDED_ALLOW_IPS: 172.16.0.0/12
-            # HSTS off in e2e (DD-236): the webapp e2e browser reaches Keycloak over
-            # keycloak.localhost; includeSubDomains on localhost would pin it to HTTPS.
-            AURELIUS_ATLAS_SERVER_HSTS_ENABLED: "false"
-            # OTLP ingest identity (7.18, DD-196): the server exports through
-            # its own pipeline (aurelius-atlas-otel), minting client-credentials
-            # JWTs as otel-atlas-server for the per-service leg — the OIDC
-            # receiver on :4319 answers the shared token 401 (CIA-08), so the
-            # 7.17 static OTEL_EXPORTER_* trio is gone. The mint goes to the
-            # e2e Keycloak's TLS listener (the conftest's issuer flip); the
-            # secret is Nx-injected from the webapp .env (mirrored there).
-            AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
-            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_ID: otel-atlas-server
-            AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
-            AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
-            AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
-            # Authentication (6.1a, DD-250): the webapp's tokens, which the
-            # proxy forwards, verified against the e2e Keycloak's TLS listener.
-            # The server's own sign-in (its confidential client) is not used
-            # by this stack; its secret is mirrored in the webapp .env.
-            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://keycloak.localhost:8443/
-            AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET:?}
-            # 12.7: the validate-entity app reads the rules with its own
-            # client-credentials token (VEV-04), so its client id is a
-            # second accepted audience besides the browser's (DD-499).
+            # Both identities of this suite are accepted (AUT-02): the
+            # browser's `aurelius` token, which the proxy forwards, and the
+            # validate-entity app's own client-credentials token, whose azp
+            # joins the audiences here (VEV-04, DD-499).
             AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES: '["aurelius", "aurelius-atlas-validate-entity"]'
-            AURELIUS_ATLAS_SERVER_AUTH_CA_FILE: /certs/ca.pem
-            # Export every second in test containers so Tempo read-back
-            # probes land sooner (DD-225); mirrors the server e2e compose.
-            OTEL_BSP_SCHEDULE_DELAY: "1000"
-        extra_hosts:
-            # The mint target: the e2e Keycloak's :8443 listener, published
-            # loopback-wide on this machine (the webapp service maps it for
-            # /api/ too; per-service it is the issuer, not a proxy upstream).
-            - keycloak.localhost:host-gateway
-        volumes:
-            - ../certs:/certs:ro
 
 networks:
     # The dev Elasticsearch stack (started by the e2e target); the server
@@ -246,12 +184,12 @@ networks:
     # lineage-model reaches the server as `aurelius-atlas-server` (its
     # certificate name, the alias the server's service declares).
     atlas:
-        name: aurelius-atlas-dev-elasticsearch-network
+        name: aurelius-atlas-infra-elasticsearch-network
         external: true
-    # The dev telemetry stack (dev/observability); both the server's OTLP
+    # The dev telemetry stack (infra/observability); both the server's OTLP
     # export and the nginx /otel/ proxy reach the collector on it (SHL-11).
     observability:
-        name: aurelius-atlas-dev-observability-network
+        name: aurelius-atlas-infra-observability-network
         external: true
 
 configs:

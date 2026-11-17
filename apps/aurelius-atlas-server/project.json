@@ -4,9 +4,9 @@
         "aurelius-atlas-auth",
         "aurelius-atlas-core",
         "aurelius-atlas-dashboard",
-        "aurelius-atlas-dev-elasticsearch",
-        "aurelius-atlas-dev-keycloak",
-        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-infra-elasticsearch",
+        "aurelius-atlas-infra-keycloak",
+        "aurelius-atlas-infra-observability",
         "aurelius-atlas-model",
         "aurelius-atlas-otel",
         "aurelius-atlas-quality",
@@ -38,9 +38,9 @@
                 { "target": "certgen" },
                 {
                     "projects": [
-                        "aurelius-atlas-dev-elasticsearch",
-                        "aurelius-atlas-dev-keycloak",
-                        "aurelius-atlas-dev-observability"
+                        "aurelius-atlas-infra-elasticsearch",
+                        "aurelius-atlas-infra-keycloak",
+                        "aurelius-atlas-infra-observability"
                     ],
                     "target": "up"
                 },

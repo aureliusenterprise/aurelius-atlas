@@ -1,0 +1,96 @@
+# aurelius-atlas-infra-elasticsearch
+
+Local development Elasticsearch (increment 0.2, rules ESD-01 to ESD-06). This file covers wiring
+specific to this project; workspace-wide rules live in the root `AGENTS.md`.
+
+## Layout
+
+- `docker-compose.yaml` — `elasticsearch`, the one-shot `volume-init`, and the `metrics-puller` sidecar
+- `config/elasticsearch.yml` — every node setting (mounted over the image's file)
+- `config/metrics-puller.yaml` — OTel Collector config for the puller (scrapes this cluster, pushes
+  OTLP to infra/observability)
+- `tls.json` — certificate for the `elasticsearch` service (`certgen` writes `certs/`)
+- `.env` / `.env.enc` — SOPS-encrypted dev settings (`ELASTICSEARCH_PASSWORD`, `_PORT`, `_HEAP`)
+- `helm/` — the `atlas-elasticsearch` chart (its own section below)
+
+## Wiring Checklist
+
+- Exposes the Docker network `aurelius-atlas-infra-elasticsearch-network`.
+- `implicitDependencies` on `aurelius-atlas-infra-observability`: the
+  `metrics-puller` joins the external `aurelius-atlas-infra-observability-network`. Prometheus series carry
+  `exported_job="dev-elasticsearch"`.
+- The puller exports on the collector's **per-service leg** with its own
+  identity (DD-196): the `oauth2client` extension mints client-credentials
+  JWTs as the `otel-elasticsearch` realm client (infra/keycloak import) and
+  attaches them per export. Env in compose:
+  `OTEL_INGEST_CLIENT_ID`/`_SECRET` (from `.env.enc`) +
+  `OTEL_INGEST_TOKEN_URL`/`_CA_FILE` — **literals**, the dev Keycloak's TLS
+  `:8443` listener + this slice's CA, via `keycloak.localhost:host-gateway`
+  (this slice has no Keycloak of its own; DD-202). Do not template the mint
+  URL from env: the mint issuer is baked into the container at creation, and
+  an env default let suite order split it from the collector's validator
+  (the ESD-06 starvation). The collector validates both listeners. The puller
+  carries `restart: on-failure`, unbounded (the DD-195 boot race, issuer-shaped:
+  the mint needs Keycloak up; DD-226 — an attempt count burns out before
+  Keycloak is reliably up). The slice no longer carries the shared ingest
+  token — its puller was the only consumer.
+- The image tag is shared with `aurelius_atlas_store_es.testing.container`; change both together.
+
+## Hardened-image quirks (dhi.io/elasticsearch)
+
+- **Dotted environment variables are ignored**, unlike the official image — settings go in
+  `config/elasticsearch.yml`. `ELASTIC_PASSWORD` still works (the entrypoint writes it to the keystore).
+- **No `curl`/`wget`** — the healthcheck speaks HTTPS through `openssl s_client`.
+- **No data directory in the image** — `volume-init` chowns the named volume to uid 1000.
+- **Certificates live in `config/tls`**, not `config/certs`: security auto-configuration owns that
+  directory and fails to start when it is a mount. Auto-configuration is also switched off.
+- **`node.store.allow_mmap: false`** removes the `vm.max_map_count >= 262144` bootstrap check, which
+  dev machines and CI runners (65530 by default) do not meet.
+- **Snapshots live on their own volume** (SNP-01, 6.4e): `path.repo` is `/usr/share/elasticsearch/snapshots`,
+  the `snapshots` volume, chowned by `volume-init` with the data. In the chart it is the standalone claim
+  `<fullname>-snapshots` (`snapshots.size`), kept on uninstall — not a second `volumeClaimTemplate`, which an
+  installed StatefulSet cannot take. The server registers the repository and policy; the cluster stays empty.
+
+## Commands
+
+```bash
+nx up aurelius-atlas-infra-elasticsearch      # detached, waits for healthy
+docker compose -f infra/elasticsearch/docker-compose.yaml down -v   # reset all data
+```
+
+## Conventions
+
+- Keep it an empty cluster: index templates and mappings belong to the application (1.3, 2.2).
+- `ELASTICSEARCH_PORT` (default 9200) is part of the workspace contract — coordinate before changing.
+
+## Helm chart
+
+`helm/` — the `atlas-elasticsearch` chart (CHT-02): the port, TLS layout,
+heap, and data volume contract of the production store (ADR 047). Landed in
+10.2 (CHT-10..15): the single-node StatefulSet (the image's own uid-1000 boot —
+the hardened image does no root/gosu privilege drop and its JVM refuses root,
+DD-257 — with `fsGroup: 1000`, the in-cluster shape of the compose's separate
+`volume-init` chown), the `elasticsearch.yml`
+ConfigMap (the shape of `config/elasticsearch.yml` — the hardened image
+ignores dotted env vars, so the file is the only settings channel), the
+cert-manager `Certificate` mounted at `config/tls` in the image's PEM names
+(never `config/certs` — auto-configuration's directory), the GKE
+coredump-agent init from the `aurelius-atlas-elasticsearch-agent` image
+(`tools/es-coredump-agent/`, DD-255), and the openssl-s_client exec
+healthcheck (`/_cluster/health`, green-or-yellow, CA-pinned).
+`ELASTIC_PASSWORD` reads the umbrella-generated Secret
+(`<release>-elasticsearch`, key `elastic-password`) — the chart never renders
+a password. `replicas > 1` fails the render (the quorum switch is a later
+increment). This `helm/` deploys to clusters; the `docker-compose.yaml` stays
+the dev-mode service (they are siblings, not duplicates). 10.6 adds the
+ingress allow (CHT-64): 9200 from the server pods and this release's metrics
+puller only (9300 denied by absence); `networkPolicy.peers.server` renames
+the server's pod-name label. Conventions: `helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-infra-elasticsearch:helm-template
+```
+
+## Removal
+
+Part of the spine; not removable (ADR 047).

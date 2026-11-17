@@ -53,7 +53,7 @@ The components and their charts:
 | `aurelius-atlas`        | Umbrella: edge, trust, secrets, the `global.*` contract | 443       | composes the eight charts above                                             |
 
 Each component chart lives next to the project it deploys
-(`apps/<app>/helm/`, `dev/<name>/helm/`, DD-290); the umbrella `aurelius-atlas`
+(`apps/<app>/helm/`, `infra/<name>/helm/`, DD-290, ADR-066); the umbrella `aurelius-atlas`
 is the one chart without an owning project and sits at the workspace root,
 `helm/` (DD-292). Helpers are chart-local — the naming convention is the
 dedupe, no library charts.

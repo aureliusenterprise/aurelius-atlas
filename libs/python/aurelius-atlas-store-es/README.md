@@ -15,7 +15,7 @@ from aurelius_atlas_store_es import ElasticsearchStore, StoreSettings
 settings = StoreSettings(
     hosts=["https://localhost:9200"],
     password="…",
-    ca_certs="dev/elasticsearch/certs/ca.pem",
+    ca_certs="infra/elasticsearch/certs/ca.pem",
 )
 
 async with ElasticsearchStore(settings) as store:  # fails fast unless the server is Elasticsearch 9

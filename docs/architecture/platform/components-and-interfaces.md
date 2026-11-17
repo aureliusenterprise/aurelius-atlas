@@ -23,7 +23,7 @@ beside the path, not on it.
 `dashboardv2`/`dashboardv3`, built from 2.4.0 source; the search store is Elasticsearch 9,
 reached through `aurelius-atlas-store-es`; the identity provider is Keycloak, on its own
 Postgres; the collector and the signal backends are an OpenTelemetry Collector with Prometheus,
-Tempo, Loki, and Grafana (`dev/observability`).
+Tempo, Loki, and Grafana (`infra/observability`).
 
 ??? QUESTION "Where is the event plane?"
 

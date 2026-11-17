@@ -1,0 +1,145 @@
+name: aurelius-atlas-infra-elasticsearch
+
+services:
+    volume-init:
+        # The image has no data directory, so Docker creates the named volume's
+        # mount point owned by root, and Elasticsearch (uid 1000) cannot write
+        # to it. This one-shot step hands the volumes to uid 1000 before start.
+        image: dhi.io/elasticsearch:9.5-debian13
+        user: "0"
+        entrypoint: ["chown", "1000:1000", "/usr/share/elasticsearch/data", "/usr/share/elasticsearch/snapshots"]
+        volumes:
+            - data:/usr/share/elasticsearch/data
+            - snapshots:/usr/share/elasticsearch/snapshots
+
+    elasticsearch:
+        image: dhi.io/elasticsearch:9.5-debian13
+        # No user: override. The image's root entrypoint (chown + gosu to uid
+        # 1000) is the supported boot path; starting the container directly at
+        # uid 1000 makes the entrypoint fail instantly (exit 1, CI run
+        # 40275092577). The coredump_filter write the JVM does at bootstrap is
+        # refused on GKE nodes for every container, uid 0, 1000, or otherwise
+        # (runs 40237701606..40274182707); the -javaagent below is what fixes
+        # that, not the user.
+        # Memory cap (CI capacity): the e2e fan-out runs this stack inside
+        # the CI runner's dind daemon on a shared node, where an uncapped
+        # JVM competes with the parallel suites. 2g = the 1g heap below plus
+        # off-heap headroom.
+        mem_limit: 2g
+        depends_on:
+            volume-init:
+                condition: service_completed_successfully
+        environment:
+            # The image's entrypoint turns ELASTIC_PASSWORD into the bootstrap
+            # password of the built-in elastic user. Every other setting is in
+            # config/elasticsearch.yml. ${VAR:?} guards: an empty password would
+            # start a cluster nobody can log in to.
+            # -javaagent: tools/es-coredump-agent (GKE nodes deny the
+            # coredump_filter write ES does at bootstrap - fatal since 9.x,
+            # cosmetic setting; see the agent's header. Harmless elsewhere:
+            # the write goes to /tmp, which ES would use anyway.)
+            ES_JAVA_OPTS: -Xms${ELASTICSEARCH_HEAP:?} -Xmx${ELASTICSEARCH_HEAP:?} -javaagent:/agent/coredump-noop.jar
+            ELASTIC_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
+        healthcheck:
+            # The hardened image has no curl; openssl speaks HTTPS, verifies the
+            # server against the workspace CA, and authenticates as elastic.
+            # Healthy means the cluster status is green or yellow (DD-008).
+            test:
+                [
+                    "CMD-SHELL",
+                    "printf 'GET /_cluster/health HTTP/1.1\\r\\nHost: localhost\\r\\nAuthorization: Basic %s\\r\\nConnection: close\\r\\n\\r\\n' \"$$(printf 'elastic:%s' \"$$ELASTIC_PASSWORD\" | base64 -w0)\" | timeout 5 openssl s_client -quiet -verify_return_error -CAfile config/tls/ca.pem -connect localhost:9200 2>/dev/null | grep -qE '\"status\":\"(green|yellow)\"'",
+                ]
+            interval: 10s
+            timeout: 10s
+            retries: 30
+            start_period: 30s
+        ports:
+            # Loopback-pinned (CHT-101): the store's dev publish rides the host
+            # gateway by default, so a shared/CI host serves the catalogue to
+            # its LAN. Consumers reach it on localhost (e2e) or in-network.
+            - "127.0.0.1:${ELASTICSEARCH_PORT}:9200"
+        volumes:
+            - data:/usr/share/elasticsearch/data
+            # The node's path.repo (SNP-01): snapshots, apart from the data.
+            - snapshots:/usr/share/elasticsearch/snapshots
+            - ../../tools/es-coredump-agent/coredump-noop.jar:/agent/coredump-noop.jar:ro
+            - ./config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+            # The store's roles, the operators' read role among them (RLM-08).
+            - ./config/roles.yml:/usr/share/elasticsearch/config/roles.yml:ro
+            # Not config/certs: see config/elasticsearch.yml.
+            - ./certs:/usr/share/elasticsearch/config/tls:ro
+        ulimits:
+            memlock:
+                soft: -1
+                hard: -1
+            nofile:
+                soft: 65536
+                hard: 65536
+
+    metrics-puller:
+        # Slice-owned OTel collector: scrapes this cluster and pushes OTLP to
+        # the dev collector, so infra/observability never learns this project
+        # exists. Targets and attribution live in config/metrics-puller.yaml.
+        image: dhi.io/opentelemetry-collector:0.164-debian13-contrib
+        mem_limit: 256m
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        # The oauth2client extension mints its ingest JWT from Keycloak at
+        # startup (DD-196): the collector's DD-195 restart pattern, applied
+        # to the pullers now that the issuer — not a static token — gates
+        # their export.
+        # Unbounded: with a Keycloak-gated mint, the restart budget must be
+        # in TIME, not attempts. Docker's on-failure backoff doubles
+        # (100 ms -> 60 s), so ":15" burns out in ~6 minutes - and if
+        # Keycloak's TLS listener is not ready by then (the e2e fan-out
+        # shares one 4-vCPU node), docker stops restarting the puller
+        # permanently and the slice's metrics never arrive: run
+        # 40292544843, ESD-06 polled 420 s against a dead puller. The 60 s
+        # backoff ceiling means an unbounded puller lands on its feet
+        # within a minute of Keycloak readiness; a permanently bad config
+        # shows as a restarting container in `docker compose ps`.
+        restart: on-failure
+        environment:
+            ELASTICSEARCH_PASSWORD: ${ELASTICSEARCH_PASSWORD:?}
+            # Per-service ingest identity (7.18, DD-196): the puller mints
+            # client-credentials JWTs as the otel-elasticsearch realm client
+            # — the oauth2client extension in config/metrics-puller.yaml
+            # (mint, cache, refresh).
+            OTEL_INGEST_CLIENT_ID: otel-elasticsearch
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The mint target is the Keycloak TLS listener, literal (DD-202):
+            # the iss a token carries is the listener that minted it, and this
+            # value is baked into the container at creation — an env default
+            # let suite start-order mix mint issuer with collector validator
+            # (the ESD-06 401 starvation). The collector validates both
+            # listeners; every producer mints here, so one world, no flip.
+            # CA: this slice's certs/ (the shared mkcert root, same material).
+            OTEL_INGEST_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            OTEL_INGEST_CA_FILE: /certs/ca.pem
+        extra_hosts:
+            # The mint target: this slice has no Keycloak of its own, so
+            # keycloak.localhost is the dev Keycloak's published listener on
+            # this machine (the collector's JWKS fetch uses the same mapping).
+            - keycloak.localhost:host-gateway
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            elasticsearch:
+                condition: service_healthy
+        networks:
+            - default
+            - observability
+
+networks:
+    default:
+        name: aurelius-atlas-infra-elasticsearch-network
+    # The dev telemetry stack (infra/observability). Attaching to the external
+    # network is safe: the puller is the only joiner and names its series
+    # `exported_job="dev-elasticsearch"`.
+    observability:
+        name: aurelius-atlas-infra-observability-network
+        external: true
+
+volumes:
+    data:
+    snapshots:

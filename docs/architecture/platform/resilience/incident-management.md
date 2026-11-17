@@ -14,7 +14,7 @@ Grafana shows the link on the rule and sends it with each notification. A sectio
 what to check first, what may be done to mitigate without asking, and when to escalate.
 
 The commands are for a cluster release named `atlas` in the namespace `atlas`. In dev the same parts run as
-compose services: `docker compose -f dev/<stack>/docker-compose.yaml ps` and `logs` stand in for `kubectl`.
+compose services: `docker compose -f infra/<name>/docker-compose.yaml ps` and `logs` stand in for `kubectl`.
 
 ## The alerts
 
