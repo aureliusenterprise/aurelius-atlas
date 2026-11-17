@@ -6873,11 +6873,11 @@ on port 9000. It is a way to try them by hand. <code>nx serve</code> and the e2e
 </tbody>
 </table>
 <p>The store is the stack's own Elasticsearch — <code>infra/elasticsearch</code>'s node, extended with the stack's
-volumes (ADR 066, DD-666) — so it holds what you import and nothing the e2e suites or <code>nx serve</code>
+volumes (ADR 066, DD-668) — so it holds what you import and nothing the e2e suites or <code>nx serve</code>
 write to the infra store (DD-367). The identity provider is <code>infra/keycloak</code>'s too, Postgres-backed
-as the charts run it (DD-668), with the stack's own database volume; its address is the issuer the
+as the charts run it (DD-670), with the stack's own database volume; its address is the issuer the
 server verifies, served behind the proxy at <code>/auth</code> (DD-363). At every start it imports the realm
-<code>aurelius-atlas</code> from <code>keycloak/aurelius-atlas.json</code> (DD-671). The realm has the same posture as the
+<code>aurelius-atlas</code> from <code>keycloak/aurelius-atlas.json</code> (DD-673). The realm has the same posture as the
 deployment's realm of the same name: the service identities the system needs, with each client
 secret a placeholder filled from <code>infra/keycloak/.env</code>, and the <code>operators</code> organization with its
 four role groups. It holds no user. To sign in from a browser, you add a person yourself, in
@@ -6889,7 +6889,7 @@ security opens, wears the webapp's navbar band and logo over a light sidebar (DD
 are copies of the webapp's.</p>
 <h2 id="start">Start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h2>
 <p>The secrets come from three <code>.env</code> files: the server's, <code>infra/keycloak/.env</code> and
-<code>infra/elasticsearch/.env</code> (DD-667). The stack extends the infra services, so the base files' own
+<code>infra/elasticsearch/.env</code> (DD-669). The stack extends the infra services, so the base files' own
 required variables must resolve even where the stack states its own value — all three files are
 named at every command below. The store and the identity provider use the infra slices'
 configuration and certificates, <code>infra/elasticsearch/certs/</code> and <code>infra/keycloak/certs/</code>, and the
@@ -6902,8 +6902,8 @@ and <code>npx nx certgen aurelius-atlas-webapp</code> make them.</p>
 </code></pre></div>
 <p>The webapp answers at <a href="https://localhost:9000/">https://localhost:9000/</a> and the dashboards at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a>
 once Keycloak is ready. A cold start takes about two minutes now: the stack's Keycloak builds its
-runtime once and boots against its Postgres, in production mode as the deployment's does (DD-668,
-DD-674); the next start skips the build, until <code>down -v</code>. The realm holds no user (DD-671), so the sign-in is
+runtime once and boots against its Postgres, in production mode as the deployment's does (DD-670,
+DD-676); the next start skips the build, until <code>down -v</code>. The realm holds no user (DD-673), so the sign-in is
 bring-your-own-user. Open Keycloak's admin console at <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a> as
 <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>, in the realm <code>master</code>, select the realm <code>aurelius-atlas</code>, and add a
 person under Users with a password. Then give the person a role: open the user's Role mapping tab and
@@ -6923,7 +6923,7 @@ services need their own certificates too: <code>npx nx certgen aurelius-atlas-em
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
 <p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
 is ready, the <code>sample-import</code> service signs in as the client <code>aurelius-atlas-admin</code> by the client-credentials
-grant (DD-671: the realm holds no user, so the import uses a service identity, whose service account holds
+grant (DD-673: the realm holds no user, so the import uses a service identity, whose service account holds
 the server's four roles), and posts the ZIP to <code>admin/import</code>, through the proxy. Without <code>SAMPLE_ZIP</code>, or
 when no file has that name, the option is ignored: the service logs why and exits, and the server runs as
 without it.</p>
@@ -7009,7 +7009,7 @@ docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> 
 </tr>
 </tbody>
 </table>
-<p>The realm holds no user (DD-671), so a tenant starts with no members. Add a person to a tenant in
+<p>The realm holds no user (DD-673), so a tenant starts with no members. Add a person to a tenant in
 Keycloak's admin console: under Organizations, open the tenant and add the person as a member, then
 give the member the tenant's role groups under Groups. A person who belongs to one tenant signs in
 to it without a choice. A tenant's administrator, set by <code>admin &lt;tenant&gt; add &lt;username&gt;</code> below,
@@ -7052,30 +7052,30 @@ volume: each new container imports <code>keycloak/aurelius-atlas.json</code> aga
 console lasts across restarts but not across <code>down -v</code>.</p>
 <h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
 <p>The stack is one compose project: <code>docker/docker-compose.yaml</code> names it and <code>include</code>s every
-piece (ADR 065, DD-675) — the gateway from <code>docker/gateway/</code>, the server and its one shots from
+piece (ADR 065, DD-677) — the gateway from <code>docker/gateway/</code>, the server and its one shots from
 <code>apps/aurelius-atlas-server/docker/</code>, the webapp from <code>apps/aurelius-atlas-webapp/docker/</code>, the extractor from
 <code>apps/aurelius-atlas-data2model/docker/</code>, the lineage API from
 <code>apps/aurelius-atlas-lineage-model/docker/</code>, the validator from
-<code>apps/aurelius-atlas-validate-entity/docker/</code> (DD-672), the embedder from
-<code>apps/aurelius-atlas-embedder/docker/</code>, the telemetry piece from <code>docker/observability/</code> (DD-673),
+<code>apps/aurelius-atlas-validate-entity/docker/</code> (DD-674), the embedder from
+<code>apps/aurelius-atlas-embedder/docker/</code>, the telemetry piece from <code>docker/observability/</code> (DD-675),
 and the store and the identity provider from <code>docker/elasticsearch/</code> and <code>docker/keycloak/</code>, which
 <code>extend</code> the infra slices' services and state only the stack's differences (ADR 066). Run the
 umbrella; the fragments are not a target of their own.</p>
 <ul>
 <li><code>docker/gateway/compose.yaml</code>: the <code>proxy</code>, the stack's only published port (loopback 9000, TLS
-  with the server's certificate) and its TLS terminator — the piece DD-675 gives the gateway its own
+  with the server's certificate) and its TLS terminator — the piece DD-677 gives the gateway its own
   folder, beside the store, identity and telemetry pieces. <code>docker/gateway/nginx.conf</code> holds its
   routing (the next bullet).</li>
 <li><code>docker/elasticsearch/compose.yaml</code>: <code>infra/elasticsearch</code>'s node, extended — its image,
   configuration, roles, certificate, java agent and healthcheck inherited; the stack's volumes
-  <code>elasticsearch-data</code> and <code>elasticsearch-snapshots</code>; no published port (DD-666). The server reaches
+  <code>elasticsearch-data</code> and <code>elasticsearch-snapshots</code>; no published port (DD-668). The server reaches
   it as <code>https://elasticsearch:9200</code> with its own password, which is the <code>elastic</code> user's here.</li>
-<li><code>docker/keycloak/compose.yaml</code>: <code>infra/keycloak</code>'s Keycloak and its Postgres, extended (DD-668) —
+<li><code>docker/keycloak/compose.yaml</code>: <code>infra/keycloak</code>'s Keycloak and its Postgres, extended (DD-670) —
   Postgres-backed and prod-mode booted as the charts run it (the <code>keycloak-build</code> one shot builds,
-  the start mounts its home — DD-674), the shared theme mounted, the realm <code>aurelius-atlas</code> imported
+  the start mounts its home — DD-676), the shared theme mounted, the realm <code>aurelius-atlas</code> imported
   from <code>docker/keycloak/</code>, and the stack's own database volume <code>keycloak-postgres-data</code>; no published
   port. The proxy reaches it on its plaintext listener, and its own traces and metrics push to the
-  stack's collector (DD-673).</li>
+  stack's collector (DD-675).</li>
 <li>The proxy's <code>nginx.conf</code> is the stack's only reverse proxy. <code>/atlas2/</code> goes to the server without
   the prefix (the server knows it as <code>AURELIUS_ATLAS_SERVER_ROOT_PATH</code>, so its redirects and its
   sign-in's return lead back under it, 9.5), <code>/auth/</code> to Keycloak unchanged (which serves under
@@ -7086,12 +7086,12 @@ umbrella; the fragments are not a target of their own.</p>
   webapp fragment's <code>config.json</code> points the webapp at the realm <code>aurelius-atlas</code>. Its nginx forwards
   <code>/lineage-model/</code> and <code>/validate-entity/</code> to the aux services through the proxy's ports, and
   <code>/otel/</code> to the collector's browser leg, so the webapp's traces leave the browser through the
-  proxy's own port (DD-673).</li>
+  proxy's own port (DD-675).</li>
 <li><code>aurelius-atlas-data2model</code>, <code>aurelius-atlas-lineage-model</code> and <code>aurelius-atlas-validate-entity</code>:
-  the extractor, the lineage API and the validator (DD-672), each in the proxy's network like the
+  the extractor, the lineage API and the validator (DD-674), each in the proxy's network like the
   server, so their issuer is the browser's address and their audience is the chart's posture (the
   lineage pair keeps <code>aurelius</code> as its extra, DD-385). They publish no port of their own.</li>
-<li><code>docker/observability/compose.yaml</code>: the stack's telemetry (DD-673) — <code>infra/observability</code>'s
+<li><code>docker/observability/compose.yaml</code>: the stack's telemetry (DD-675) — <code>infra/observability</code>'s
   collector, Prometheus, Loki, Tempo and Grafana, extended with the stack's volumes. The collector
   checks tokens against the stack's issuer, read once from Keycloak into a shared file, and the
   server, the aux services, Keycloak and the webapp all push to it. Grafana answers on

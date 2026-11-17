@@ -1,6 +1,6 @@
 # Add a Tenant to the Standalone Server
 
-This page adds a tenant, a customer or department with its own catalogue and its own people, to a running [Standalone Server](<https://aureliusenterprise.github.io/feat-infra-root/user-guide/standalone-server/index.md>) with tenancy on. The stack's Keycloak imports `keycloak/aurelius-atlas.json` at every start, so a tenant's organization that should last is added to the stack's files, not only in Keycloak's console. The realm holds no users (DD-671), so a tenant's people are always made in Keycloak's console. The example tenant is `acme`; replace it with yours throughout.
+This page adds a tenant, a customer or department with its own catalogue and its own people, to a running [Standalone Server](<https://aureliusenterprise.github.io/feat-infra-root/user-guide/standalone-server/index.md>) with tenancy on. The stack's Keycloak imports `keycloak/aurelius-atlas.json` at every start, so a tenant's organization that should last is added to the stack's files, not only in Keycloak's console. The realm holds no users (DD-673), so a tenant's people are always made in Keycloak's console. The example tenant is `acme`; replace it with yours throughout.
 
 > [!NOTE]
 >
