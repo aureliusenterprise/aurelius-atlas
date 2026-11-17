@@ -2,8 +2,8 @@
 
 - **Status:** in review
 - **Pull request:** [#284](https://github.com/aureliusenterprise/aurelius-atlas/pull/284)
-- **Records:** DD-369; relies on DD-363 (the standalone stack behind nginx), DD-366 (its demo realm), DD-262
-  (the webapp's nginx template resolved by the deployment) and DD-139 (the `/api` prefix passed intact)
+- **Records:** DD-369, DD-665; relies on DD-363 (the standalone stack behind nginx), DD-366 (its demo realm),
+  DD-262 (the webapp's nginx template resolved by the deployment) and DD-139 (the `/api` prefix passed intact)
 
 The standalone stack serves the Aurelius Atlas webapp at the root of its one entry, beside the Atlas
 dashboards under `/atlas2/`. The stack's proxy routes every request, the webapp's API calls among them; the
@@ -27,6 +27,7 @@ stack does not collect.
 | SWA-02 | `webapp-config` fills every placeholder of the image's nginx template, and fails on one left; the webapp's own API upstream is the server, `https://proxy:21000`, verified as `aurelius-atlas-server`                                                                                                                                                                                     |
 | SWA-03 | The proxy in front is the stack's only reverse proxy: it passes `/api/` to the server on `https://127.0.0.1:21000`, the prefix intact; `/` and every path but `/api/`, `/atlas2/`, `/auth/` and `/otel/` to the webapp at `https://aurelius-atlas-webapp:8080`, looked up per request and verified as `aurelius-atlas-webapp`, its redirects rewritten to port 9000; `/otel/` answers 204 |
 | SWA-04 | The webapp signs in to the realm `atlas` (DD-641) at `https://localhost:9000/auth` through the public client `aurelius`, with PKCE, which returns to any page of `https://localhost:9000/`; its write affordances read the roles of `aurelius-atlas-server`                                                                                                                               |
+| SWA-05 | The realm speaks English and Dutch, English by default, and the public client `aurelius` carries the `account` client's `view-profile` and `manage-account`, so the webapp may save the user's language in their own profile (SHC-10, DD-665)                                                                                                                                             |
 
 ## Java origin
 

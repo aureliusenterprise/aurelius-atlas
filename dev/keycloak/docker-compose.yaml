@@ -63,7 +63,7 @@ services:
             # ${DB_SCANNER_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here — the same mechanism as the secrets above.
             DB_SCANNER_CLIENT_SECRET: ${DB_SCANNER_CLIENT_SECRET:?}
-            # The platform admin service client (DD-663): its
+            # The platform admin service client (DD-666): its
             # ${ATLAS_ADMIN_CLIENT_SECRET} placeholder in import/master.json
             # resolves from here — the same mechanism as the secrets above.
             ATLAS_ADMIN_CLIENT_SECRET: ${ATLAS_ADMIN_CLIENT_SECRET:?}

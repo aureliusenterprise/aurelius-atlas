@@ -226,7 +226,7 @@ spec:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.provisioningClientSecretName" . }}
                                   key: client-secret
-                        {{- /* DD-663: the platform admin client, carried by both
+                        {{- /* DD-666: the platform admin client, carried by both
                         shipped assets. */}}
                         - name: ATLAS_ADMIN_CLIENT_SECRET
                           valueFrom:

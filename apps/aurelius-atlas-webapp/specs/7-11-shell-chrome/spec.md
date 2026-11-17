@@ -2,7 +2,7 @@
 
 - **Status:** done
 - **Pull request:** [#102](https://github.com/aureliusenterprise/aurelius-atlas/pull/102)
-- **Records:** ADR 053; DD-145 (supersedes the Shell half of DD-143); relies on ADR 007,
+- **Records:** ADR 053; DD-145, DD-665 (supersedes the Shell half of DD-143); relies on ADR 007,
   ADR 018, DD-128, DD-130, DD-135, DD-136, DD-141, SHL rules (7.1), UIC rules (7.2)
 
 Part of the [7.0 umbrella](../7-0-webapp-foundation/spec.md), whose rules WBP-01 to WBP-07 this
@@ -51,6 +51,7 @@ title).
 | SHC-07 | Every chrome string carries its legacy `libs/shell` dictionary key as its i18n id (`@@shell.header.*`, `@@shell.footer.*`); the shell dictionaries (en, nl) are vendored as fixtures and bridged into the XLIFF catalogues beside the app and components dictionaries (SHL-08, UIC-04's category), and the completeness spec proves both locales                                                                                                                                                 |
 | SHC-08 | The chrome is zoneless/Angular-idiom (standalone, OnPush, signals, `inject()`): the identity is a signal read from the Keycloak client at construction (the guard has resolved before any render), session actions call the Keycloak client directly, no store, no `BehaviorSubject` (DD-135, purity gate). The client is the `Keycloak` (keycloak-js) instance `provideKeycloak` registers — keycloak-angular v21's `KeycloakService` is the deprecated pre-v19 class and is not provided by it |
 | SHC-09 | e2e (authenticated, chromium/firefox/webkit): the navbar shows the welcome line with the signed-in user (`aurelius-writer`); the language dropdown's `nl-NL` item navigates the page into the Dutch build (a real click, not a hand-written URL — the locale-tree channel proven end to end); the footer shows copyright year, app name, and version; the Documentation link points at the Aurelius docs with `rel="noopener noreferrer"`                                                        |
+| SHC-10 | Once signed in, the webapp saves its language (`nl` for `nl-NL`, else `en`) as the user's `locale` through Keycloak's account API with the user's token, unless the token or the saved profile already names it; a refusal or an unreachable Keycloak leaves the language as it was, without an alert. Keycloak's account console and sign-in pages then speak the webapp's language (DD-665)                                                                                                    |
 
 ## Aurelius origin
 

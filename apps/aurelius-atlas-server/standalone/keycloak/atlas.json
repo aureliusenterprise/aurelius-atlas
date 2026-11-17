@@ -2,6 +2,12 @@
     "accountTheme": "aurelius",
     "adminPermissionsEnabled": true,
     "clientScopeMappings": {
+        "account": [
+            {
+                "client": "aurelius",
+                "roles": ["manage-account", "view-profile"]
+            }
+        ],
         "aurelius-atlas-server": [
             {
                 "client": "aurelius",
@@ -93,8 +99,10 @@
             "standardFlowEnabled": false
         }
     ],
+    "defaultLocale": "en",
     "displayName": "Aurelius Atlas",
     "enabled": true,
+    "internationalizationEnabled": true,
     "loginTheme": "aurelius",
     "loginWithEmailAllowed": false,
     "organizations": [
@@ -261,6 +269,7 @@
         ]
     },
     "sslRequired": "external",
+    "supportedLocales": ["en", "nl"],
     "users": [
         {
             "clientRoles": {

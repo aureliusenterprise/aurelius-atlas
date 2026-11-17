@@ -259,7 +259,7 @@ the env renders on every realm. */}}
 {{- default (printf "%s-provisioning-client" .Release.Name) .Values.realm.provisioningClientSecretName -}}
 {{- end -}}
 
-{{/* The platform admin client's Secret (DD-663): feeds the realm import's
+{{/* The platform admin client's Secret (DD-666): feeds the realm import's
 ${ATLAS_ADMIN_CLIENT_SECRET}; both shipped assets carry the client, so the env
 renders on every realm. */}}
 {{- define "atlas-keycloak.adminClientSecretName" -}}

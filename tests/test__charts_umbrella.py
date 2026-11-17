@@ -116,7 +116,7 @@ def test__generated_secrets_with_expected_keys(umbrella_docs: list[dict[str, Any
         "atlas-server-client": {"client-secret"},  # CHT-109: the realm import and the server's auth join
         # CHT-113 (12.7): the app's rules leg joins it; the master import too.
         "atlas-validate-entity-client": {"client-secret"},
-        "atlas-admin-client": {"client-secret"},  # DD-663: the realm import's admin client
+        "atlas-admin-client": {"client-secret"},  # DD-666: the realm import's admin client
     }
     assert "atlas-keycloak-users" not in secrets
     assert expected.keys() <= secrets.keys()
@@ -279,7 +279,7 @@ def test__server_client_secret_gates_on_both_consumers() -> None:
 
 @pytest.mark.covers(rules=["CHT-19"])
 def test__admin_client_secret_gates_on_both_consumers() -> None:
-    """<release>-admin-client generates for either consumer (DD-663).
+    """<release>-admin-client generates for either consumer (DD-666).
 
     The Keycloak import placeholder rides both shipped realm assets, and the
     operator reads the same Secret as the client credential — either consumer
@@ -322,7 +322,7 @@ def test__server_auth_joins_meet_the_import_credential(umbrella_docs: list[dict[
     # 12.7 (VEV-04) plus CHT-120 (12.3): the chart default admits the
     # validate-entity app's client and the scanner clients beside the webapp's
     # — acceptance is the server's grant, not a registration — and the
-    # platform admin client (DD-663).
+    # platform admin client (DD-666).
     assert env_value(envs, "AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES") == json.dumps(
         ["aurelius", "aurelius-atlas-validate-entity", *SCANNER_CLIENT_IDS, "aurelius-atlas-admin"],
         separators=(",", ":"),

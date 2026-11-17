@@ -1,6 +1,7 @@
 import { TestBed } from "@angular/core/testing";
 import Keycloak from "keycloak-js";
 
+import { AccountLanguage } from "../settings/account-language.service";
 import { TENANT_KEY } from "../settings/user-preference";
 import { TENANCY } from "../tenancy";
 import { Session } from "./session.service";
@@ -33,6 +34,22 @@ describe("Session", () => {
         provideKeycloak(undefined);
 
         expect(TestBed.inject(Session).identity()).toBe("");
+    });
+});
+
+describe("Session's language (SHC-10, DD-665)", () => {
+    it("saves the webapp's language with the user once the session exists", () => {
+        const accountLanguage = { save: vi.fn().mockResolvedValue(false) };
+        TestBed.configureTestingModule({
+            providers: [
+                { provide: Keycloak, useValue: { tokenParsed: { preferred_username: "aurelius-writer" } } },
+                { provide: AccountLanguage, useValue: accountLanguage },
+            ],
+        });
+
+        TestBed.inject(Session);
+
+        expect(accountLanguage.save).toHaveBeenCalledTimes(1);
     });
 });
 
