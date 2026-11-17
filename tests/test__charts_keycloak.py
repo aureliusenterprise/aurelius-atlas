@@ -231,6 +231,10 @@ def test__telemetry_renders_only_when_pointed_at_a_collector() -> None:
     bare = find(helm_render(KC_CHART), "StatefulSet", "atlas-keycloak")
     bare_envs = env_map(container(bare, "keycloak"))
     assert not [n for n in bare_envs if n.startswith("OTEL_EXPORTER") or n == "OTEL_SERVICE_NAME"]
+    # DD-664: the feature flags ride the same gate — with no endpoint there
+    # is nothing to export, and KC_METRICS_ENABLED alone would only open /
+    # metrics on the (unpublished) management port.
+    assert not [n for n in bare_envs if n in ("KC_METRICS_ENABLED", "KC_TRACING_ENABLED")]
 
     docs = helm_render(KC_CHART, sets=("telemetry.endpoint=https://collector:4320",))
     ss = find(docs, "StatefulSet", "atlas-keycloak")
@@ -240,6 +244,16 @@ def test__telemetry_renders_only_when_pointed_at_a_collector() -> None:
     assert env_value(envs, "OTEL_EXPORTER_OTLP_CERTIFICATE") == "/etc/aurelius-atlas/tls/ca.crt"
     header = envs["OTEL_EXPORTER_OTLP_HEADERS"]["valueFrom"]["secretKeyRef"]
     assert header == {"name": "atlas-collector-legacy", "key": "otel-header"}
+    # DD-664: both features ship off — without these the exporter carries
+    # nothing (the live proof: 0 series in Prometheus for 7 days).
+    assert env_value(envs, "KC_METRICS_ENABLED") == "true"
+    assert env_value(envs, "KC_TRACING_ENABLED") == "true"
+    # DD-664: the Vert.x sender ignores the generic ENDPOINT/HEADERS (it
+    # dials localhost:4317 un-authenticated) — the QUARKUS_-prefixed pair
+    # carries the identical values, the secret the same header.
+    assert env_value(envs, "QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT") == "https://collector:4320"
+    qheader = envs["QUARKUS_OTEL_EXPORTER_OTLP_HEADERS"]["valueFrom"]["secretKeyRef"]
+    assert qheader == {"name": "atlas-collector-legacy", "key": "otel-header"}
 
 
 @pytest.mark.covers(rules=["CHT-42"])
@@ -262,7 +276,8 @@ def test__service_answers_the_https_standard_port(kc_docs: list[dict[str, Any]])
     """The Service answers the https standard port (CHT-41, DD-265).
 
     443 beside 8443 (both → the browser listener) so the public issuer URL
-    dials in-cluster without a port suffix.
+    dials in-cluster without a port suffix. At the defaults (no telemetry) 9000
+    carries no entry (CHT-71 stands); the puller's scrape adds it (DD-664).
     """
     service = find(kc_docs, "Service", "atlas-keycloak")
     ports = {p["port"]: p["targetPort"] for p in service["spec"]["ports"]}
@@ -295,6 +310,23 @@ def test__metrics_puller_renders_when_telemetry_enabled() -> None:
     config = yaml.safe_load(find(docs, "ConfigMap", "atlas-keycloak-metrics-puller")["data"]["config.yaml"])
     (upsert,) = config["processors"]["resource"]["attributes"]
     assert upsert["value"] == "keycloak-infra"  # the dashboard's exported_job pin
+    # DD-664: the second pipeline scrapes the server's management port, and
+    # attributes its series to service.name=keycloak (the dashboard's other
+    # exported_job pin). Separate resource processor — one upsert cannot
+    # serve two pipelines.
+    (server_upsert,) = config["processors"]["resource/server"]["attributes"]
+    assert server_upsert["value"] == "keycloak"
+    scrape = config["receivers"]["prometheus"]["config"]["scrape_configs"][0]
+    assert scrape["job_name"] == "keycloak"
+    assert scrape["scheme"] == "https"  # prod mode puts TLS on mgmt too (DD-260)
+    (target,) = scrape["static_configs"][0]["targets"]
+    assert target == "atlas-keycloak:9000"
+    assert scrape["tls_config"]["ca_file"] == "/etc/aurelius-atlas/tls/ca.crt"
+    assert config["service"]["pipelines"]["metrics/server"] == {
+        "receivers": ["prometheus"],
+        "processors": ["resource/server", "batch"],
+        "exporters": ["otlp"],
+    }
     receiver = config["receivers"]["postgresql"]
     assert receiver["endpoint"] == "atlas-keycloak-postgres:5432"
     assert receiver["databases"] == ["keycloak"]
@@ -583,12 +615,13 @@ def test__postgres_volume_claim_storage_class() -> None:
 
 @pytest.mark.covers(rules=["CHT-62", "CHT-71"])
 def test__keycloak_admits_the_in_cluster_dialers(kc_docs: list[dict[str, Any]]) -> None:
-    """8443 accepts every credential-holder; 7800 only Keycloak; never 9000 (CHT-62/71).
+    """8443 accepts every credential-holder; 7800 only Keycloak; no 9000 at defaults (CHT-62/71).
 
     The dialer set is the full one — the four apps, the collector (JWKS and
     issuer-wait, DD-265's split-horizon), and the ES puller (its mint URL) —
     not a per-flag negotiation the chart cannot see. The management port
-    appears in no rule; kubelet probes ride the node.
+    appears in no bare rule; kubelet probes ride the node (the telemetry
+    render adds the chart's own puller — DD-664, pinned below).
     """
     policy = find(kc_docs, "NetworkPolicy", "atlas-keycloak-ingress")
     assert policy["spec"]["podSelector"]["matchLabels"] == peer_labels("atlas-keycloak")
@@ -617,9 +650,18 @@ def test__keycloak_admits_the_in_cluster_dialers(kc_docs: list[dict[str, Any]]) 
 
 @pytest.mark.covers(rules=["CHT-62", "CHT-63"])
 def test__telemetry_adds_the_keycloak_puller_to_both_policies() -> None:
-    """The chart's own puller (telemetry-gated) dials Keycloak and Postgres."""
+    """The chart's own puller (telemetry-gated) dials Keycloak, Postgres, and (DD-664) the management scrape."""
     docs = helm_render(KC_CHART, sets=("global.domain=atlas.test", "telemetry.enabled=true"))
     dialers = policy_peers_by_port(docs, "atlas-keycloak-ingress")
+    assert dialers[9000] == {"atlas-keycloak-metrics-puller"}  # DD-664: scrape, puller only
+    # DD-664: the scrape target needs a Service entry beside the rule — the
+    # same puller gate (no puller at the defaults, so no 9000 there).
+    service = find(docs, "Service", "atlas-keycloak")
+    assert {p["port"]: p["targetPort"] for p in service["spec"]["ports"]} == {
+        8443: "https",
+        443: "https",
+        9000: "management",
+    }
     assert dialers[8443] == {
         "atlas-server",
         "atlas-data2model",

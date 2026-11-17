@@ -34,6 +34,16 @@ spec:
           targetPort: https
           protocol: TCP
         {{- end }}
+        {{- if and .Values.telemetry.enabled (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
+        {{/* DD-664: the management listener, published for the puller's
+        prometheus receiver (its scrape of Keycloak's own /metrics). Same
+        gate as the puller itself — with no puller, no port. Still nothing
+        from the gateway: the umbrella routes only the https port. */}}
+        - name: management
+          port: {{ int .Values.service.managementPort }}
+          targetPort: management
+          protocol: TCP
+        {{- end }}
     selector:
         {{- include "atlas-keycloak.selectorLabels" . | nindent 12 }}
 ---

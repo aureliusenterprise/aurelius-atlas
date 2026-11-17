@@ -222,8 +222,15 @@ chart's `global.domain`/issuer URL is immutable for a volume. 10.6 adds the
 ingress allows (CHT-62/63): 8443 from the credential-holding pods (server,
 the aux APIs, the collector, both pullers; Grafana joins in 10.8 for its
 login's token exchange and JWKS fetch, CHT-86) plus jgroups 7800 self, and the
-bundled Postgres' 5432 from Keycloak and its puller only; the management
-port 9000 is rule-free (kubelet-exempt, CHT-71). Conventions:
+bundled Postgres' 5432 from Keycloak and its puller only. The management
+port 9000 stays rule-free at the defaults (kubelet-exempt, CHT-71); with
+telemetry on, the puller's scrape joins the rule and the Service (DD-664).
+Keycloak ships metrics and tracing off by default and its Quarkus OTLP
+sender ignores the generic `OTEL_*` endpoint/header vars, so the chart sets
+`KC_METRICS_ENABLED`/`KC_TRACING_ENABLED` plus the `QUARKUS_`-prefixed
+endpoint/headers (DD-664). The puller's second pipeline scrapes the server
+(`/metrics`, `service.name=keycloak`); its postgres pipeline stays
+`keycloak-infra`. Conventions:
 `helm/AGENTS.md`.
 
 ```bash

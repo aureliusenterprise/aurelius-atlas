@@ -1,16 +1,35 @@
-# Slice-owned metrics puller: scrapes Keycloak's metadata Postgres and pushes
-# OTLP to the dev collector (https://otel-collector:4317 — the stack is
-# already on the observability network for the server's own OTLP export).
-# The Keycloak SERVER already exports traces/metrics/logs natively (Quarkus
-# OTel); this covers the database behind it, which speaks no OTLP.
+# Slice-owned metrics puller: scrapes Keycloak's metadata Postgres AND
+# Keycloak's own Micrometer registry (the management port's /metrics —
+# DD-664) and pushes OTLP to the dev collector
+# (https://otel-collector:4317 — the stack is already on the observability
+# network for the server's own OTLP export).
+#
+# Why the SERVER is scraped (DD-664): Keycloak's own OTLP push (a) needs the
+# QUARKUS_-prefixed endpoint/headers to reach the collector at all (compose
+# sets them; it carries the traces) and (b) lands OTLP-native metric names
+# that clash with every other service's JVM/HTTP series. The scrape keeps
+# Micrometer's own names (http_server_requests_seconds_*) — the contract the
+# dashboards pin. The scrape's service.name ("keycloak") joins the
+# dashboard's exported_job pins; the DB pipeline stays "keycloak-infra".
 #
 # Env vars: the same dev defaults the keycloak service uses for KC_DB_*;
 # compose interpolates them into the container env, the collector expands
 # ${env:...} at load time. TLS: the certs/ "postgres" leaf has SANs
 # postgres-keycloak/localhost — verify-full against ca.pem works. The DB name
-# is the literal `keycloak` (same constant as KC_DB_URL in compose).
+# is the literal `keycloak` (same constant as KC_DB_URL in compose). The
+# scrape target arrives as KEYCLOAK_METRICS_URL (plain HTTP on the dev
+# management listener — ADR 039's named relaxation; prod puts TLS there).
 
 receivers:
+    prometheus:
+        config:
+            scrape_configs:
+                - job_name: keycloak
+                  metrics_path: /metrics
+                  scrape_interval: 30s
+                  static_configs:
+                      - targets:
+                            - ${env:KEYCLOAK_METRICS_URL}
     postgresql:
         endpoint: postgres-keycloak:5432
         # Block sequence on purpose: in a flow list ([...]) the YAML parser

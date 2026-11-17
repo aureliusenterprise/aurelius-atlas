@@ -91,7 +91,12 @@ services:
             # the dev browser (named relaxation, ADR 039).
             KC_HTTPS_CERTIFICATE_FILE: /certs/keycloak.pem
             KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/keycloak-key.pem
-            # OpenTelemetry native configuration
+            # OpenTelemetry native configuration (DD-664: both features ship
+            # off by default — without these the exporter carries nothing,
+            # and the /metrics endpoint on the management port does not exist
+            # for the puller's scrape).
+            KC_METRICS_ENABLED: true
+            KC_TRACING_ENABLED: true
             OTEL_SERVICE_NAME: keycloak
             # The legacy leg (DD-196): Keycloak is the OIDC issuer, so it
             # cannot present a Keycloak-minted JWT at its own cold boot
@@ -100,9 +105,15 @@ services:
             # legacy leg (4320; the webapp's edge exporter is its other user).
             OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
             OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
-            # The collector requires the shared ingest token (DD-193, CIA-04);
-            # Quarkus' OTLP sender honours the standard headers env var.
+            # The collector requires the shared ingest token (DD-193, CIA-04).
             OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
+            # DD-664: the same Quarkus rule as the certificate above — the
+            # Vert.x OTLP sender ignores the generic ENDPOINT/HEADERS (it
+            # dials localhost:4317 un-authenticated; the collector answers
+            # gRPC 16). The QUARKUS_-prefixed pair carries the identical
+            # values; the generic pair stays for the non-Quarkus readers.
+            QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
+            QUARKUS_OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
             OTEL_TRACES_SAMPLER: parentbased_traceidratio
             OTEL_TRACES_SAMPLER_ARG: "0.1"
         healthcheck:
@@ -211,6 +222,13 @@ services:
             # CA: this slice's certs/ (the shared mkcert root, same material).
             OTEL_INGEST_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
             OTEL_INGEST_CA_FILE: /certs/ca.pem
+            # DD-664: the server scrape target (the prometheus receiver in
+            # config/metrics-puller.yaml). The management listener is
+            # plaintext here (ADR 039's named relaxation — prod mode puts TLS
+            # on it, the chart's scrape is https); keycloak:9000 is the
+            # in-network name, so no host routing (the issuer-alias note on
+            # the keycloak service applies the same way).
+            KEYCLOAK_METRICS_URL: http://keycloak:9000
         volumes:
             - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
             - ./certs:/certs:ro

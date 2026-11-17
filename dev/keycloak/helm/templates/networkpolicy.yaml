@@ -12,7 +12,9 @@ full dialer set (CHT-62), not a per-flag negotiation the chart cannot see.
 The browser's path to Keycloak is the gateway's, rendered by the umbrella
 with the keycloak HTTPRoute (CHT-62's edge half). jgroups 7800 admits
 Keycloak pods only (the RSS mesh, one release). The management port 9000
-gets no rule (CHT-71): kubelet probes ride the node. The bundled Postgres
+admits the chart's own puller and nothing else (DD-664: the prometheus
+receiver scraping Keycloak's /metrics); kubelet probes ride the node and
+need no rule (CHT-71 stands for every other peer). The bundled Postgres
 (CHT-63) admits only the Keycloak pods (KC_DB_URL, sslmode=verify-full) and
 the puller (its postgresql receiver) — no one else in the namespace reads
 the Idp's data. Puller peer names are fullname-derived (pullerName /
@@ -72,6 +74,19 @@ spec:
             ports:
                 -   port: 7800
                     protocol: TCP
+        {{- if and .Values.telemetry.enabled (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
+        {{/* DD-664: the puller's scrape of the management listener (the
+        prometheus receiver in its ConfigMap). The gate is the puller's own
+        (configmap-metrics-puller) — no puller, no rule. */}}
+        -   from:
+                -   podSelector:
+                        matchLabels:
+                            app.kubernetes.io/name: {{ include "atlas-keycloak.pullerName" . | quote }}
+                            app.kubernetes.io/instance: {{ $release | quote }}
+            ports:
+                -   port: {{ int .Values.service.managementPort }}
+                    protocol: TCP
+        {{- end }}
 {{- if and (eq .Values.database.flavor "bundled") .Values.postgres.enabled }}
 ---
 apiVersion: networking.k8s.io/v1

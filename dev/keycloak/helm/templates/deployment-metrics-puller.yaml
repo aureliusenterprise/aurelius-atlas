@@ -33,10 +33,16 @@ spec:
         metadata:
             labels:
                 {{- include "atlas-keycloak.pullerLabels" . | nindent 16 }}
-            {{- with .Values.podAnnotations }}
             annotations:
-                {{- toYaml . | nindent 14 }}
-            {{- end }}
+                {{- /* DD-664: the collector reads its ConfigMap once at boot
+                and never reloads, so a config change must roll the pod. The
+                checksum of the rendered ConfigMap is the pod-template input
+                that does it (the puller grew its second pipeline exactly
+                this way the hard way, live). */}}
+                checksum/config: {{ include (print $.Template.BasePath "/configmap-metrics-puller.yaml") . | sha256sum }}
+                {{- with .Values.podAnnotations }}
+                {{- toYaml . | nindent 16 }}
+                {{- end }}
         spec:
             {{/* The puller is a plain workload that talks to no API — the
             server's SA keeps RBAC surface at zero new identities. */}}

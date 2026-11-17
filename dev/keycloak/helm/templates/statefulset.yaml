@@ -250,6 +250,13 @@ spec:
                         an endpoint (CHT-16/42): Keycloak is the issuer, so it
                         cannot present a Keycloak-minted JWT at its own boot
                         (DD-193/196). */}}
+                        {{- /* DD-664: Keycloak ships both features off by
+                        default (KC_METRICS_ENABLED, KC_TRACING_ENABLED), so
+                        without these the exporter below carries nothing. */}}
+                        - name: KC_METRICS_ENABLED
+                          value: "true"
+                        - name: KC_TRACING_ENABLED
+                          value: "true"
                         - name: OTEL_SERVICE_NAME
                           value: keycloak
                         - name: OTEL_EXPORTER_OTLP_ENDPOINT
@@ -270,6 +277,20 @@ spec:
                           # The secret carries the composed header value
                           # ("Authorization=Bearer <token>") — env values
                           # cannot concat from a secretKeyRef.
+                          valueFrom:
+                              secretKeyRef:
+                                  name: {{ include "atlas-keycloak.legacyTokenSecretName" $ }}
+                                  key: otel-header
+                        {{- /* DD-664: the same Quarkus rule as the certificate
+                        above, proven live — the Vert.x OTLP sender dials
+                        localhost:4317 and exports without a bearer while only
+                        the generic OTEL_EXPORTER_OTLP_ENDPOINT/HEADERS exist
+                        (the collector answers gRPC 16 "missing or empty
+                        authorization header"). The two prefixed vars carry
+                        the identical values. */}}
+                        - name: QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT
+                          value: {{ . | quote }}
+                        - name: QUARKUS_OTEL_EXPORTER_OTLP_HEADERS
                           valueFrom:
                               secretKeyRef:
                                   name: {{ include "atlas-keycloak.legacyTokenSecretName" $ }}

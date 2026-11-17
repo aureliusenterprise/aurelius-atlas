@@ -276,4 +276,73 @@ realm's service account is a member of `operators` in its four groups,
 and a deployment running tenancy on the hardened realm adds the same
 membership where it provisions its organizations — the step its human
 operators take there anyway.
-Next free DD: 664.
+
+### DD-664. The dashboard's Keycloak panels ride a scrape, not the push
+
+- **Status:** Proposed
+- **Increment:** 10.15
+- **Date:** 2026-11-17
+
+**Context.** Every Keycloak server panel on the dashboard (requests,
+latency, 5xx, GC, threads) has never shown data. Three independent faults
+sat on top of each other (live-proved on atlas-dev). First, Keycloak
+ships `KC_METRICS_ENABLED` and `KC_TRACING_ENABLED` off by default, so
+its exporter carried nothing. Second, Keycloak's Quarkus OTLP sender
+ignores the generic `OTEL_EXPORTER_OTLP_ENDPOINT` and
+`OTEL_EXPORTER_OTLP_HEADERS` (the chart already knew this for the
+certificate and set `QUARKUS_OTEL_EXPORTER_OTLP_TRUST_CERT_CERTS`).
+Enabled as-is, Keycloak dials `localhost:4317` and, when pointed at the
+collector by the prefixed endpoint alone, the collector answers gRPC 16
+"missing or empty authorization header". Third, even a working push
+lands OTLP-native names (`http_server_request_duration_seconds_bucket`,
+`jvm_memory_heap_used_bytes`) which are the names every other service's
+Python/Java pusher already uses, so the pushed series join
+`aurelius-atlas-server`-style jobs, and the dashboard's
+`http_server_requests_milliseconds_*` names match nothing in either
+world. The management port's own `/metrics` (Micrometer text, no auth,
+TLS from the same CA, SANs covering the Service name) was verified
+working, but CHT-71 keeps 9000 out of every rule and the Service.
+
+**Decision.** Scrape what the push cannot carry, and fix the push for
+what it can. (a) The chart sets `KC_METRICS_ENABLED=true` and
+`KC_TRACING_ENABLED=true` and mirrors the collector endpoint and the
+legacy-token header into `QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT` and
+`QUARKUS_OTEL_EXPORTER_OTLP_HEADERS` (the same secret key). Traces
+arrive that way, proved live (export failures stop, spans reach Tempo's
+collector leg). (b) The keycloak puller grows a second pipeline: a
+prometheus receiver scraping `<release>-keycloak:9000/metrics` over TLS
+with the chart CA, attributed by its own resource processor to
+`service.name=keycloak` (the dashboard's `exported_job` pin). The
+postgres pipeline keeps `keycloak-infra` unchanged. This needs a
+Service entry for 9000 and a NetworkPolicy rule admitting the puller
+alone, both gated exactly as the puller is (telemetry plus the bundled
+database). (c) The dashboard renames its server-row queries to the raw
+Micrometer names (`http_server_requests_seconds_*`,
+`jvm_gc_pause_seconds_count`, `jvm_threads_states_threads`,
+`http_server_requests_seconds_max`) and the Duration panel's unit from
+ms to s. (d) The Logs row is deleted: Keycloak exports no logs by
+design (Loki is the server slice's only log store, DD-239's scope). The
+compose pair gains the same four envs and the same second pipeline
+(plain HTTP there, ADR 039's named relaxation on the dev management
+listener).
+
+**Alternatives.** (a) Fix the push only: rejected. The pushed names
+clash with every other service's JVM/HTTP series, and the dashboard
+would pin `jvm_memory_heap_used_bytes` shared with Elasticsearch's push
+under `dev-elasticsearch`. (b) Remove the dead rows and keep only the
+Postgres row: rejected while a clean scrape path exists. The identity
+provider's RED signals are what an operator checks during a login
+outage. (c) Scrape over plain HTTP in-cluster: rejected. Prod mode puts
+TLS on the management listener (DD-260) and the chart CA covers the
+Service name, so TLS costs one `tls_config` block.
+
+**Consequences.** The dashboard's server row fills within one scrape
+interval of a deploy, with the dashboard's own `exported_job="keycloak"`
+pin honored. Tracing works through the same prefixed pair. The pushed
+OTLP-named JVM/HTTP series also arrive (from the metrics feature) and
+sit unused. They attribute to `keycloak`, so they stay out of the other
+jobs' series. A deployment that disables telemetry loses the 9000
+Service entry and rule again, as every puller surface already does. The
+`keycloak-metrics-puller` Deployment now carries the whole keycloak
+metrics story (server plus database), and its name reads right.
+Next free DD: 665.

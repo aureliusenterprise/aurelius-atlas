@@ -230,10 +230,13 @@ postgres:
 
 service:
     # 8443 is the browser-facing TLS port (the gateway routes keycloak host);
-    # 9000 is the management port (health probes, never routed). Kept with note
-    # (CHT-101 triage): 9000 carries no Service entry (the chart suite pins the
-    # Service's ports) and no NetPol rule (CHT-71), and the probes answering it
-    # unauthenticated ride H1's probe-auth work, not this increment.
+    # 9000 is the management port (health probes, never routed by the
+    # gateway). DD-664: with the puller rendered (telemetry + bundled
+    # database) 9000 gains a Service entry and a NetPol rule admitting only
+    # that puller — its prometheus receiver scrapes Keycloak's /metrics
+    # there. The probes still answer unauthenticated (CHT-101 triage: the
+    # auth rides H1's probe-auth work); the rule admits a chart-owned peer,
+    # not the namespace.
     port: 8443
     managementPort: 9000
     # The HTTPS-standard port in-cluster producers dial when they reach the

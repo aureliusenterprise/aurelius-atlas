@@ -8,6 +8,15 @@ endpoint (which now resolves in-cluster through the CoreDNS entry). The
 `service.name` upsert stays the dev value — the accepted dashboards'
 exported_job pins are the contract (DD-265). No credential in here (R5):
 the database password and the client secret arrive as env.
+DD-664 adds the second pipeline: Keycloak's own Micrometer registry, scraped
+from the management port (its /metrics, served since KC_METRICS_ENABLED —
+the endpoint is un-authenticated and TLS with the same CA). Scraping beats
+the OTLP push here: Keycloak's pusher (a) ignores the generic
+OTEL_EXPORTER_OTLP_ENDPOINT/HEADERS (dials localhost:4317 un-authenticated —
+only the QUARKUS_-prefixed pair reaches the collector) and (b) lands
+OTLP-native metric names that clash with every other service's JVM/HTTP
+series, while the scrape keeps Micrometer's own names — the contract the
+accepted dashboard now pins.
 */}}
 {{- if and .Values.telemetry.enabled (eq .Values.database.flavor "bundled") .Values.postgres.enabled -}}
 apiVersion: v1
@@ -32,6 +41,18 @@ data:
                 tls:
                     ca_file: {{ include "atlas-keycloak.caPath" . | quote }}
                 collection_interval: 30s
+            prometheus:
+                config:
+                    scrape_configs:
+                        -   job_name: keycloak
+                            metrics_path: /metrics
+                            scrape_interval: 30s
+                            scheme: https
+                            static_configs:
+                                -   targets:
+                                        - {{ printf "%s:%d" (include "atlas-keycloak.fullname" .) (int .Values.service.managementPort) | quote }}
+                            tls_config:
+                                ca_file: {{ include "atlas-keycloak.caPath" . | quote }}
 
         processors:
             resource:
@@ -43,6 +64,13 @@ data:
                     - action: upsert
                       key: service.name
                       value: keycloak-infra
+            resource/server:
+                attributes:
+                    # DD-664: the server's own scraped metrics — the
+                    # dashboard's exported_job="keycloak" pins.
+                    - action: upsert
+                      key: service.name
+                      value: keycloak
             batch:
 
         exporters:
@@ -77,5 +105,9 @@ data:
                 metrics:
                     receivers: [postgresql]
                     processors: [resource, batch]
+                    exporters: [otlp]
+                metrics/server:
+                    receivers: [prometheus]
+                    processors: [resource/server, batch]
                     exporters: [otlp]
 {{- end }}
