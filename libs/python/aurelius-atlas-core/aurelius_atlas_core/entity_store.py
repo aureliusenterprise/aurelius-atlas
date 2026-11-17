@@ -139,6 +139,8 @@ class EntityStore:
         self._new_id = new_id
         self.task_listeners: list[Callable[[], None]] = []
         """Called after a write that recorded tasks, to wake a worker (DD-080)."""
+        self.write_listeners: list[Callable[[], None]] = []
+        """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-676)."""
 
     async def prepare(self) -> None:
         """Create the indices that are missing (ENS-01)."""
@@ -322,7 +324,11 @@ class EntityStore:
         self._notify(task_changes)
 
     def _notify(self, task_changes: Sequence[TaskChange]) -> None:
-        """Wake the task listeners after a write that recorded new tasks (DD-080)."""
+        """Wake the write listeners after every committed write (ASU-07), and the task listeners after one that
+        recorded new tasks (DD-080).
+        """  # noqa: D205 - one sentence
+        for listener in self.write_listeners:
+            listener()
         if any(change.expected is None and not change.remove for change in task_changes):
             for listener in self.task_listeners:
                 listener()

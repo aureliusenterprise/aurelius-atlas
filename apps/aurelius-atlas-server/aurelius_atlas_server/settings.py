@@ -155,7 +155,12 @@ class ServerSettings(StoreAccessSettings):
     """Entities, and relationships, per page of the App Search indexer (ASD-04)."""
 
     app_search_poll_seconds: float = Field(default=10.0, gt=0)
-    """How often the App Search indexer looks for missing and stale documents (ASU-02, ASU-06)."""
+    """How often, at the latest, the App Search indexer looks for missing and stale documents (ASU-02, ASU-06):
+    a write wakes it sooner (ASU-07)."""
+
+    app_search_settle_seconds: float = Field(default=0.5, ge=0)
+    """How long the App Search indexer waits after a write wakes it, so a burst of writes lands in one round
+    (ASU-07, DD-676)."""
 
     hybrid_vector_weight: float = Field(default=10.0, ge=0)
     """What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442)."""

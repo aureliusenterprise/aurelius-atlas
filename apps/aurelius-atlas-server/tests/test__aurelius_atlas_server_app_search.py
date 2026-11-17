@@ -77,13 +77,66 @@ async def test__the_worker_runs_a_round_at_start_and_then_every_poll_interval() 
     assert indexer.rounds >= 3
 
 
-@pytest.mark.covers(rules=["ASU-06", "LAS-10"])
+async def _rounds_reach(indexer: Indexer, rounds: int) -> None:
+    for _ in range(200):
+        if indexer.rounds >= rounds:
+            return
+        await asyncio.sleep(0.005)
+
+
+@pytest.mark.covers(f"{W}.wake", f"{W}.start", rules=["ASU-07"])
+async def test__a_write_wakes_the_worker_long_before_its_poll() -> None:
+    """After the round at start it waits; woken, it runs the next round within its settle, not its hour of poll."""
+    indexer = Indexer()
+    worker = AppSearchWorker(indexer, Indexer(), Indexer(), poll_seconds=3600, settle_seconds=0.01)  # type: ignore[arg-type]
+    worker.start()
+    await _rounds_reach(indexer, 1)
+    await asyncio.sleep(0.05)
+    assert indexer.rounds == 1
+
+    worker.wake()
+    await _rounds_reach(indexer, 2)
+    await worker.stop()
+
+    assert indexer.rounds == 2
+
+
+class SlowIndexer(Indexer):
+    """An indexer whose round takes a while, waking ``worker`` during its first, as a write would."""
+
+    worker: AppSearchWorker
+
+    async def run_once(self) -> int:
+        """A round of 20 ms; a write lands during the first."""
+        result = await super().run_once()
+        if self.rounds == 1:
+            self.worker.wake()
+        await asyncio.sleep(0.02)
+        return result
+
+
+@pytest.mark.covers(f"{W}.wake", rules=["ASU-07"])
+async def test__a_write_during_a_round_brings_the_next_round_at_once() -> None:
+    """The changes a round didn't see are derived in the very next one, batch after batch, not a poll later."""
+    indexer = SlowIndexer()
+    worker = AppSearchWorker(indexer, Indexer(), Indexer(), poll_seconds=3600)  # type: ignore[arg-type]
+    indexer.worker = worker
+    worker.start()
+    await _rounds_reach(indexer, 2)
+    await asyncio.sleep(0.05)
+    await worker.stop()
+
+    assert indexer.rounds == 2
+
+
+@pytest.mark.covers(rules=["ASU-06", "ASU-07", "LAS-10"])
 def test__the_worker_is_on_by_default_and_configured_by_its_settings() -> None:
     """On, 100 a page, every ten seconds; the environment turns it off and sets the rest."""
     defaults = ServerSettings.model_fields
 
     assert defaults["app_search_enabled"].default is True
     assert (defaults["app_search_batch_size"].default, defaults["app_search_poll_seconds"].default) == (100, 10.0)
+    assert defaults["app_search_settle_seconds"].default == 0.5
 
 
 @pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["ASU-06", "LAS-10"])
@@ -104,6 +157,23 @@ async def test__the_server_derives_a_written_entity_s_document_in_the_background
 
     assert stored.app_search is not None
     assert stored.app_search.referenceablequalifiedname == "d"
+
+
+@pytest.mark.covers("aurelius_atlas_server.tenant_workers.app_search_worker", rules=["ASU-07"])
+async def test__the_server_s_entity_store_wakes_its_app_search_worker(
+    settings: ServerSettings, fake_es: FakeClient
+) -> None:
+    """The running worker's wake is one of the entity store's write listeners (DD-676)."""
+    del fake_es  # the store the app connects to
+    app = create_app(settings.model_copy(update={"app_search_enabled": True, "app_search_poll_seconds": 3600}))
+
+    async with app.router.lifespan_context(app):
+        running = next(iter(app.state.tenant_workers.running.values()))
+        workers = [worker for worker in running.others if isinstance(worker, AppSearchWorker)]
+        listeners = list(app.state.entity_store.write_listeners)
+
+    assert len(workers) == 1
+    assert workers[0].wake in listeners
 
 
 @pytest.mark.covers("aurelius_atlas_server.app.create_app", rules=["ASU-06"])

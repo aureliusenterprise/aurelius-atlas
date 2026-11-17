@@ -108,3 +108,33 @@ lose work, never documents.
 
 **Consequences.** An installation that does not use the original webapp's search pays for the rounds. The
 setting turns them off.
+
+### DD-676. A write wakes the App Search indexer; the poll stays as the floor
+
+- **Status:** Proposed
+- **Increment:** 14.3 (a change, 2026-11-17)
+- **Date:** 2026-11-17
+- **Supersedes:** DD-521's pace of a round every poll interval; the rest of DD-521 stands
+
+**Decision.** The entity store calls its write listeners after every committed write, and each store set's App
+Search worker is one of them. Woken, the worker waits the settle time, 0.5 seconds by default
+(`AURELIUS_ATLAS_SERVER_APP_SEARCH_SETTLE_SECONDS`), then runs a round. It clears the wake before each round,
+so a write during a round brings the next one as soon as it ends. Without a wake it still runs a round every
+poll interval, 10 seconds by default.
+
+**Reason.** A breadcrumb, a derived relation or a quality total trailed its change by up to the poll interval,
+so a person who renamed a domain or moved a dataset saw the old path for up to ten seconds. Waking on the
+write derives it within about the settle time. When many entities change, as in an import, the writes keep
+the worker awake, and it derives them in its pages of 100 back to back, not one page per poll. The settle
+gathers a burst of single writes into one round instead of one round each.
+
+**Alternatives.**
+
+- A shorter poll: rounds and store reads every second on an idle catalogue, and still a second of delay.
+- Deriving the documents inside the write: every write pays for the breadcrumbs and relations it affects, and
+  a failure there would fail the write; the worker keeps both apart (DD-521).
+- A queue of changed GUIDs: the store already lists the stale documents, so a wake is enough.
+
+**Consequences.** A write wakes only its own process's worker; writes through another server process reach
+it at its next poll. A recovered write (ENS-07) also waits for the poll. On a busy catalogue the worker runs
+almost continuously, bounded by its page size.

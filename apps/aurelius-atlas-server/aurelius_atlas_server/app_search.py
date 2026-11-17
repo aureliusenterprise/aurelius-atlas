@@ -19,9 +19,12 @@ LOGGER = logging.getLogger("aurelius-atlas-server")
 
 
 class AppSearchWorker:
-    """Runs rounds of ``indexer``, then of ``quality``, then of ``governance``, in the background, one at start and
-    then every ``poll_seconds`` (ASU-06, ASQ-07, ASG-06).
-    """  # noqa: D205 - one sentence
+    """Runs rounds of ``indexer``, then ``quality``, then ``governance`` in the background (ASU-06, ASQ-07, ASG-06).
+
+    One round runs at start, one ``settle_seconds`` after a write wakes it, and one at the latest every
+    ``poll_seconds`` (ASU-07). A write during a round wakes the next one at once, so a stream of changes is
+    derived batch after batch; the settle lets a burst of writes land in one round (DD-676).
+    """
 
     def __init__(
         self,
@@ -30,13 +33,22 @@ class AppSearchWorker:
         governance: GovernanceIndexer,
         *,
         poll_seconds: float,
+        settle_seconds: float = 0.0,
     ) -> None:
-        """A worker of ``indexer``, ``quality`` and ``governance``, looking again every ``poll_seconds``."""
+        """A worker of ``indexer``, ``quality`` and ``governance``, woken by writes, looking again every
+        ``poll_seconds``.
+        """  # noqa: D205 - one sentence
         self._indexer = indexer
         self._quality = quality
         self._governance = governance
         self._poll_seconds = poll_seconds
+        self._settle_seconds = settle_seconds
+        self._wake = asyncio.Event()
         self._running: asyncio.Task[None] | None = None
+
+    def wake(self) -> None:
+        """Run a round soon: a write changed the entities the documents derive from (ASU-07)."""
+        self._wake.set()
 
     def start(self) -> None:
         """Run in the background, beginning at once."""
@@ -65,5 +77,8 @@ class AppSearchWorker:
 
     async def _loop(self) -> None:
         while True:
+            self._wake.clear()
             await self.run_once()
-            await asyncio.sleep(self._poll_seconds)
+            with contextlib.suppress(TimeoutError):
+                await asyncio.wait_for(self._wake.wait(), timeout=self._poll_seconds)
+                await asyncio.sleep(self._settle_seconds)

@@ -104,7 +104,7 @@ class WorkerFactory:
                 audit_aging(settings, stores.entity_store),
                 metrics_schedule(settings, self._store, self._metrics_util, stores.entity_store),
                 embedding_worker(settings, self._embedder, stores.documents),
-                app_search_worker(settings, stores.documents, stores.registry),
+                app_search_worker(settings, stores.documents, stores.registry, stores.entity_store),
             )
             if worker is not None
         ]
@@ -230,16 +230,27 @@ def embedding_worker(
 
 
 def app_search_worker(
-    settings: ServerSettings, documents: ElasticsearchEntityDocuments, registry: TypeRegistry
+    settings: ServerSettings,
+    documents: ElasticsearchEntityDocuments,
+    registry: TypeRegistry,
+    store: EntityStore | None = None,
 ) -> AppSearchWorker | None:
-    """The worker that keeps the App Search documents, results, totals and verdicts up to date, started unless
-    turned off (ASU-06, ASQ-07, ASG-06, DD-521).
+    """The worker that keeps the App Search documents, results, totals and verdicts up to date, woken by
+    ``store``'s writes and started, unless turned off (ASU-06, ASU-07, ASQ-07, ASG-06, DD-521).
     """  # noqa: D205 - one sentence
     if not settings.app_search_enabled:
         return None
     indexer = AppSearchIndexer(documents, registry, batch_size=settings.app_search_batch_size)
     quality = QualityIndexer(documents, batch_size=settings.app_search_batch_size)
     governance = GovernanceIndexer(documents, registry, batch_size=settings.app_search_batch_size)
-    worker = AppSearchWorker(indexer, quality, governance, poll_seconds=settings.app_search_poll_seconds)
+    worker = AppSearchWorker(
+        indexer,
+        quality,
+        governance,
+        poll_seconds=settings.app_search_poll_seconds,
+        settle_seconds=settings.app_search_settle_seconds,
+    )
+    if store is not None:
+        store.write_listeners.append(worker.wake)
     worker.start()
     return worker
