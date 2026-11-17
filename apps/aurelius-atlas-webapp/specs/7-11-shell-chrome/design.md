@@ -123,3 +123,38 @@ e2e. Applying the change to a running stack requires recreating the
 users — a boot re-import skips an existing realm wholesale — the recipe
 is in `dev/keycloak/AGENTS.md`. New realm-default-role needs (e.g.
 `offline_access` for refresh tokens) arrive here, not per client.
+
+### DD-665. The webapp saves its language with the user, so Keycloak's pages speak it
+
+- **Status:** Proposed
+- **Increment:** 7.11 (a change, 2026-11-17)
+- **Date:** 2026-11-17
+- **Supersedes:** none
+
+**Decision.** Once signed in, the webapp saves its language as the user's `locale` in Keycloak: `nl` for the
+`nl-NL` build, `en` for every other. It reads the user's profile through Keycloak's account API with the
+user's own token and writes it back with `locale` set, all other attributes kept, only when neither the
+token nor the profile already names that language. The save is best effort: a refusal or an unreachable
+Keycloak changes nothing and raises no alert. The standalone realm speaks English and Dutch, English by
+default, and its public client `aurelius` carries the `account` client's `view-profile` and `manage-account`,
+which also gives the webapp's token the audience `account`.
+
+**Reason.** Keycloak's account console, which Account security opens, and its sign-in pages choose their
+language themselves: the user's saved `locale`, else the browser's. A `kc_locale` or `ui_locales` on the link
+doesn't last, and Keycloak resets its language cookie at every sign-in from the saved `locale`. The saved
+language is the one setting that carries over, so the webapp keeps it in step with its own. Switching the
+webapp's language loads the other build, which saves the other language at once.
+
+**Alternatives.**
+
+- Follow the browser's language only: no client rights, but a user who switches the webapp's language finds
+  Keycloak's pages in the other one.
+- Set Keycloak's language cookie from the webapp: Keycloak replaces it at the next sign-in, and it only works
+  where both share an origin.
+- Save the language through the server with Keycloak's admin API: a server-side service account that may
+  change every user, for a choice each user can save about themselves.
+
+**Consequences.** The webapp's token may change its own user's profile in Keycloak (names, e-mail, language),
+as the account console already lets that user do. A realm that doesn't grant the client those roles, such as
+the dev and chart realms today, keeps Keycloak's own choice of language. The token's `locale` claim catches
+up at the next refresh, until then the profile read prevents a second write.

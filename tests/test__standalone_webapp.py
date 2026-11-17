@@ -78,3 +78,13 @@ def test__the_webapp_signs_in_to_the_demo_realm() -> None:
     assert public["redirectUris"] == ["https://localhost:9000/*"]
     assert public["webOrigins"] == ["https://localhost:9000"]
     assert public["attributes"]["pkce.code.challenge.method"] == "S256"
+
+
+@pytest.mark.covers(rules=["SWA-05"])
+def test__the_realm_speaks_english_and_dutch_and_lets_the_webapp_save_the_language() -> None:
+    """English and Dutch, English first; the public client may read and change its user's profile (SWA-05)."""
+    realm = json.loads((STANDALONE / "keycloak/atlas.json").read_text())
+    assert realm["internationalizationEnabled"]
+    assert (realm["supportedLocales"], realm["defaultLocale"]) == (["en", "nl"], "en")
+    mappings = realm["clientScopeMappings"]["account"]
+    assert mappings == [{"client": "aurelius", "roles": ["manage-account", "view-profile"]}]

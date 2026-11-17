@@ -1,6 +1,7 @@
 import { Injectable, inject, signal } from "@angular/core";
 import Keycloak from "keycloak-js";
 
+import { AccountLanguage } from "../settings/account-language.service";
 import { rememberTenant, TENANCY, tenantOf } from "../tenancy";
 
 /**
@@ -34,6 +35,8 @@ export class Session {
         if (tenant !== undefined) {
             rememberTenant(tenant);
         }
+        // Keycloak's account console and sign-in speak the webapp's language (SHC-10, DD-665).
+        void inject(AccountLanguage).save();
     }
 
     /** The identity to greet the user by, `""` when no session is readable. */
