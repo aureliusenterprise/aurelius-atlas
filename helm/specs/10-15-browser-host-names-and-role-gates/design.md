@@ -223,7 +223,7 @@ fsGroup needs the policy, or the first recreate breaks it. The rc.7
 cluster never showed the defect because its Postgres pod was created
 once; upgrades that recreate pods are where it surfaces. Next free DD: 663.
 
-### DD-663. The platform gets its own admin service client
+### DD-666. The platform gets its own admin service client
 
 - **Status:** Proposed
 - **Increment:** 10.15

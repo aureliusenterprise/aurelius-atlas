@@ -182,7 +182,7 @@ def test__credentials_from_generated_secrets(kc_docs: list[dict[str, Any]]) -> N
         )
     ]
     # TRM-11 (15.5b): both assets carry the provisioning client, so its env rides every realm.
-    # DD-663: the platform admin client follows the same rule, on both realms.
+    # DD-666: the platform admin client follows the same rule, on both realms.
     for envs in (master_envs, env_map(container(find(kc_docs, "StatefulSet", "atlas-keycloak"), "keycloak"))):
         ref = envs["PROVISIONING_CLIENT_SECRET"]["valueFrom"]["secretKeyRef"]
         assert ref == {"name": "atlas-provisioning-client", "key": "client-secret"}
@@ -830,7 +830,7 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         }
         | otel
     )  # grafana: CHT-81; server client: CHT-110, both realms; the provisioning client: TRM-11;
-    # the admin client: DD-663
+    # the admin client: DD-666
     assert (
         not {
             "account",
@@ -843,7 +843,7 @@ def test__prod_asset_carries_only_the_application_surface(kc_docs: list[dict[str
         }
         & client_ids
     )
-    # No person: the provisioning (TRM-11) and admin (DD-663) clients' service accounts.
+    # No person: the provisioning (TRM-11) and admin (DD-666) clients' service accounts.
     assert sorted(user["username"] for user in asset.get("users", [])) == [
         "service-account-aurelius-atlas-admin",
         "service-account-aurelius-atlas-provisioning",
@@ -1066,7 +1066,7 @@ def test__prod_asset_stays_peer_faithful_to_the_dev_asset() -> None:
     assert set(prod_by_id) - own == {c for c in dev_by_id if c.startswith("otel-")}
     # TRM-11: the provisioning client is the same in both realms.
     assert prod_by_id["aurelius-atlas-provisioning"] == dev_by_id["aurelius-atlas-provisioning"]
-    # DD-663: so is the platform admin client.
+    # DD-666: so is the platform admin client.
     assert prod_by_id["aurelius-atlas-admin"] == dev_by_id["aurelius-atlas-admin"]
     assert "grafana" not in dev_by_id  # CHT-81: the exception is prod-only
     for name in set(prod_by_id) - own:

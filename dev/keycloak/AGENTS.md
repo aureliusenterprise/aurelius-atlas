@@ -162,7 +162,7 @@ nx up aurelius-atlas-dev-keycloak      # decrypt + build + observability, waits 
   with fine-grained admin permissions on. Its secret is
   `PROVISIONING_CLIENT_SECRET` in `.env.enc`; the chart's is
   `<release>-provisioning-client`.
-- The platform admin client `aurelius-atlas-admin` (DD-663) is in every
+- The platform admin client `aurelius-atlas-admin` (DD-666) is in every
   realm, the same in dev and the chart: a confidential service account
   holding the four roles of the server's client, so a client-credentials
   token drives import/export/purge/audits with no human sign-in and no

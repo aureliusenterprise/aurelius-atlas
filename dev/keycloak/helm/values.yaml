@@ -113,7 +113,7 @@ realm:
     provisioningClientSecretName: ""
     # The platform admin's service client secret: <release>-admin-client
     # (key client-secret) feeds the ${ATLAS_ADMIN_CLIENT_SECRET} import
-    # placeholder (DD-663). Both shipped assets carry the client.
+    # placeholder (DD-666). Both shipped assets carry the client.
     adminClientSecretName: ""
 
 # Native telemetry (CHT-16, live in CHT-42): Keycloak is the OIDC issuer, so

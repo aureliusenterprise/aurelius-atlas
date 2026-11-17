@@ -533,7 +533,7 @@
             "clientId": "aurelius-atlas-admin",
             "consentRequired": false,
             "defaultClientScopes": ["basic", "profile", "roles", "organization"],
-            "description": "The platform's own admin service identity (DD-663): a client-credentials token carrying the four server-client roles drives import, export, purge and audits without a human sign-in.",
+            "description": "The platform's own admin service identity (DD-666): a client-credentials token carrying the four server-client roles drives import, export, purge and audits without a human sign-in.",
             "directAccessGrantsEnabled": false,
             "enabled": true,
             "frontchannelLogout": true,
