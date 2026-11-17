@@ -35,6 +35,11 @@
     "aliases": []
   },
   {
+    "version": "docs-deployment-guide",
+    "title": "docs-deployment-guide",
+    "aliases": []
+  },
+  {
     "version": "dependabot-uv-pymdown-extensions-13.0",
     "title": "dependabot-uv-pymdown-extensions-13.0",
     "aliases": []
