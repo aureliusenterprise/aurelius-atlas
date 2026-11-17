@@ -27,6 +27,7 @@ from fastapi.staticfiles import StaticFiles
 from opentelemetry import metrics
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
+from aurelius_atlas_server.app_search import DeriveBeforeAnsweringMiddleware
 from aurelius_atlas_server.authentication import AuthenticationMiddleware, SessionStore
 from aurelius_atlas_server.embedding import EmbeddingClient, embedding_http
 from aurelius_atlas_server.errors import AtlasError, AtlasJSONResponse, atlas_error_handler
@@ -235,6 +236,10 @@ def _telemetry(app: FastAPI, settings: ServerSettings) -> None:
 
 def _mount(app: FastAPI, settings: ServerSettings) -> None:
     """The middleware, the error handler, the routers and the dashboards."""
+    # A writing request's App Search documents derived before it answers (ASU-08): added first, so it wraps the
+    # routers alone, inside the request's context and user.
+    if settings.app_search_enabled:
+        app.add_middleware(DeriveBeforeAnsweringMiddleware, timeout_seconds=settings.app_search_answer_seconds)
     # Each request's user and client bound for the admin audits its changes write (ADA-02): added before the
     # authentication, so it runs inside it, once the user is known.
     app.add_middleware(RequestContextMiddleware)

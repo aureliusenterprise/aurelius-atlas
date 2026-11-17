@@ -251,6 +251,6 @@ def app_search_worker(
         settle_seconds=settings.app_search_settle_seconds,
     )
     if store is not None:
-        store.write_listeners.append(worker.wake)
+        store.write_listeners.append(worker.wrote)
     worker.start()
     return worker

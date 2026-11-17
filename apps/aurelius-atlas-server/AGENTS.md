@@ -25,11 +25,12 @@ workspace-wide rules, including the conversion workflow, live in the root `AGENT
 - `aurelius_atlas_server/app_search.py` — `AppSearchWorker`: unless `app_search_enabled` is false, the
   lifespan starts it on the entity documents, and it runs `AppSearchIndexer` rounds when the entity store's
   writes wake it (`app_search_settle_seconds` later, ASU-07, DD-676) and at the latest every
-  `app_search_poll_seconds`, deriving the original webapp's missing and stale App Search documents (ASU-06,
-  DD-521), each followed by a `QualityIndexer` round deriving the quality results and score totals (ASQ-07,
-  DD-529) and a `GovernanceIndexer` round judging the governance verdicts (ASG-06, DD-535).
-  The unit tests' settings turn it off so no round writes beside their requests;
-  `tests/test__aurelius_atlas_server_app_search.py` turns it on
+  `app_search_poll_seconds`; a writing request answers once a round has ended, up to
+  `app_search_answer_seconds` (`DeriveBeforeAnsweringMiddleware`, ASU-08, DD-678), deriving the original
+  webapp's missing and stale App Search documents (ASU-06, DD-521), each followed by a `QualityIndexer` round
+  deriving the quality results and score totals (ASQ-07, DD-529) and a `GovernanceIndexer` round judging the
+  governance verdicts (ASG-06, DD-535). The unit tests' settings turn it off so no round writes beside their
+  requests; `tests/test__aurelius_atlas_server_app_search.py` turns it on
 - `aurelius_atlas_server/snapshot_watcher.py` — `SnapshotWatcher`: with `snapshot_enabled` the lifespan puts
   the store's snapshot policy and starts it; it logs failed runs and reports the gauge
   `aurelius_atlas.snapshot.last_success` (SNP-01 to SNP-03, 6.4e)

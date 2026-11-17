@@ -158,6 +158,10 @@ class ServerSettings(StoreAccessSettings):
     """How often, at the latest, the App Search indexer looks for missing and stale documents (ASU-02, ASU-06):
     a write wakes it sooner (ASU-07)."""
 
+    app_search_answer_seconds: float = Field(default=5.0, ge=0)
+    """How long a writing request waits for its App Search documents before it answers; 0 doesn't wait (ASU-08,
+    DD-678)."""
+
     app_search_settle_seconds: float = Field(default=0.5, ge=0)
     """How long the App Search indexer waits after a write wakes it, so a burst of writes lands in one round
     (ASU-07, DD-676)."""
