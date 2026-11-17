@@ -6824,7 +6824,9 @@ operator's <code>DEMO_USER_OPERATOR_PASSWORD</code>, in the dev Keycloak's <code
 added to the realm gets three more, so no tenant's people know another's passwords.</p>
 <p>The realm's sign-in pages wear the Aurelius look (DD-414): the theme <code>aurelius</code> in <code>keycloak-themes/</code>, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
-one white box on a light band, with a teal sign-in button. Its logo and favicon are copies of the webapp's.</p>
+one white box on a light band, with a teal sign-in button. The account console, which the webapp's Account
+security opens, wears the webapp's navbar band and logo over a light sidebar (DD-663). Its logo and favicon
+are copies of the webapp's.</p>
 <h2 id="start">Start<a class="headerlink" href="#start" title="Permanent link">&para;</a></h2>
 <p>The secrets come from the server's <code>.env</code> and the dev Keycloak's <code>.env</code>. The store uses the dev store's
 configuration and certificate, <code>dev/elasticsearch/certs/</code>, and the webapp its own, <code>apps/aurelius-atlas-webapp/certs/</code>.
