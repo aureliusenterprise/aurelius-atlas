@@ -30,6 +30,11 @@
     "aliases": []
   },
   {
+    "version": "feat-account-page-language",
+    "title": "feat-account-page-language",
+    "aliases": []
+  },
+  {
     "version": "docs-11-1-hugegraph-findings",
     "title": "docs-11-1-hugegraph-findings",
     "aliases": []
