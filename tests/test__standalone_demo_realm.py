@@ -60,16 +60,20 @@ def test__the_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any])
     assert mapped == [{"client": "aurelius", "roles": sorted(roles, key=list(ROLE_PRIVILEGES).index)}]
 
 
-@pytest.mark.covers(rules=["DMO-02"])
-def test__the_realm_holds_service_identities_and_no_person(realm: dict[str, Any]) -> None:
-    """The realm's only users are the service accounts of the three service clients (DD-673): the provisioning
-    client holds the realm-management roles, the admin holds the server's four, the validator holds its one
-    read; no user carries a password.
+@pytest.mark.covers(rules=["DMO-02", "IRT-06"])
+def test__the_realm_holds_service_identities_and_the_operator_alone(realm: dict[str, Any]) -> None:
+    """The realm's users are the service accounts of the three service clients and the platform operator (DD-680):
+    the provisioning client holds the realm-management roles, the admin holds the server's four, the validator its
+    one read. The operator alone carries a password, a placeholder; no tenant's user is in the realm file.
     """  # noqa: D205 - one sentence
     users = {user["username"]: user for user in realm["users"]}
-    assert sorted(users) == [f"service-account-{client_id}" for client_id in sorted(SERVICE_CLIENTS)]
-    assert all("credentials" not in user for user in users.values())
-    assert "${DEMO_USER" not in json.dumps(realm)
+    services = [f"service-account-{client_id}" for client_id in sorted(SERVICE_CLIENTS)]
+    assert sorted(users) == sorted([*services, "operator"])
+    assert all("credentials" not in users[name] for name in services)
+    operator = users["operator"]
+    assert operator["credentials"] == [{"type": "password", "value": "${DEMO_USER_OPERATOR_PASSWORD}"}]
+    assert sorted(operator["realmRoles"]) == ["atlas-operator", "default-roles-aurelius-atlas"]
+    assert "${DEMO_USER_ATLAS" not in json.dumps(realm)
     assert "${MEYN_USER" not in json.dumps(realm)
     prov = users["service-account-aurelius-atlas-provisioning"]
     assert "manage-users" in prov["clientRoles"]["realm-management"]
@@ -105,7 +109,8 @@ def test__the_realm_matches_the_helm_realms_service_identities(realm: dict[str, 
             stack_client.get("serviceAccountsEnabled"),
             stack_client.get("standardFlowEnabled"),
         ) == (helm_client.get("serviceAccountsEnabled"), helm_client.get("standardFlowEnabled")), client_id
-    assert sorted(u["username"] for u in prod["users"]) <= sorted(u["username"] for u in realm["users"])
+    # The Helm realm's users are a subset of the stack's, which adds the validator and the operator (DD-680).
+    assert {u["username"] for u in prod["users"]} <= {u["username"] for u in realm["users"]}
 
 
 @pytest.mark.covers(rules=["DMO-03"])

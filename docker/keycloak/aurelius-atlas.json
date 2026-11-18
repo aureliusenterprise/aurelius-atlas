@@ -336,7 +336,12 @@
                 }
             ],
             "id": "f00e0000-0000-4000-a000-000000000001",
-            "members": [],
+            "members": [
+                {
+                    "groups": ["f00e0000-0000-4000-8000-000000000001"],
+                    "username": "operator"
+                }
+            ],
             "name": "operators"
         }
     ],
@@ -411,6 +416,22 @@
             "enabled": true,
             "serviceAccountClientId": "aurelius-atlas-validate-entity",
             "username": "service-account-aurelius-atlas-validate-entity"
+        },
+        {
+            "credentials": [
+                {
+                    "type": "password",
+                    "value": "${DEMO_USER_OPERATOR_PASSWORD}"
+                }
+            ],
+            "email": "operator@example.com",
+            "emailVerified": true,
+            "enabled": true,
+            "firstName": "Platform",
+            "id": "0be00000-0000-4000-8000-000000000001",
+            "lastName": "Operator",
+            "realmRoles": ["atlas-operator", "default-roles-aurelius-atlas"],
+            "username": "operator"
         }
     ]
 }

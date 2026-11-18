@@ -37,7 +37,8 @@ page, included by it.
   the dev observability slice publish the same loopback ports, so only one of
   them runs at a time.
 - `gateway/nginx.conf`, `keycloak/aurelius-atlas.json` (the stack's realm, in
-  the production posture with its service identities and no users, DD-673) —
+  the production posture with its service identities, and the platform operator its one person,
+  DD-673, DD-680; tenants' users are made by `tenants.py`) —
   the stack's
   own files; each sits in the piece whose container mounts it, and changes
   together with that piece's compose file. Beside each fragment are the files it mounts: the server's

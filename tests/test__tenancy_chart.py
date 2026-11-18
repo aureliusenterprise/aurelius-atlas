@@ -173,7 +173,8 @@ def test__the_umbrella_generates_the_provisioning_clients_secret(umbrella_docs: 
 @pytest.mark.covers(rules=["WPT-10", "TRM-02"])
 def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_demand() -> None:
     """The profile tenancy's one shot: the server's image and settings, tenancy on, the operator's password, the
-    sample folder; it runs the stack's tenants script, which provisions demo with the sample and meyn without.
+    sample folder, the tenants' user passwords; it runs the stack's tenants script, which provisions demo with the
+    sample and meyn without, each with its users (DD-680).
     """  # noqa: D205 - one sentence
     compose = standalone_compose()
     tenants = compose["services"]["tenants"]
@@ -188,7 +189,12 @@ def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_de
     assert environment["OPERATOR_PASSWORD"] == "${DEMO_USER_OPERATOR_PASSWORD:?}"  # noqa: S105 - a placeholder
     assert environment["PYTHONPATH"] == "/application"  # the image's packages, beside the script
     assert "./tenants.py:/standalone/tenants.py:ro" in tenants["volumes"]
+    for tenant in ("DEMO", "MEYN"):
+        for role in ("ATLAS", "STEWARD", "SCIENTIST"):
+            variable = f"{tenant}_USER_{role}_PASSWORD"
+            assert environment[variable] == f"${{{variable}:-}}", variable  # optional: no password, no user
     script = (WORKSPACE / "apps/aurelius-atlas-server/docker/tenants.py").read_text()
-    # The realm holds no users (DD-673), so the one shot names no administrator.
-    assert '"provision", "demo", "--existing-ok", "--sample", str(sample)]' in script
-    assert '"provision", "meyn", "--existing-ok"]' in script
+    # demo with the sample, meyn without; each with its users, its <tenant>_atlas the administrator (DD-680).
+    assert '(("demo", ["--sample", str(sample)]), ("meyn", []))' in script
+    assert '["provision", alias, "--existing-ok", *extra]' in script
+    assert '["admin", alias, "add", f"{alias}_atlas"]' in script

@@ -102,6 +102,13 @@ services:
             # The image's packages are in its working directory, which a script's own path leaves out.
             PYTHONPATH: /application
             OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
+            # Each tenant's users, made when their tenant is provisioned (DD-680); a tenant without them has none.
+            DEMO_USER_ATLAS_PASSWORD: ${DEMO_USER_ATLAS_PASSWORD:-}
+            DEMO_USER_STEWARD_PASSWORD: ${DEMO_USER_STEWARD_PASSWORD:-}
+            DEMO_USER_SCIENTIST_PASSWORD: ${DEMO_USER_SCIENTIST_PASSWORD:-}
+            MEYN_USER_ATLAS_PASSWORD: ${MEYN_USER_ATLAS_PASSWORD:-}
+            MEYN_USER_STEWARD_PASSWORD: ${MEYN_USER_STEWARD_PASSWORD:-}
+            MEYN_USER_SCIENTIST_PASSWORD: ${MEYN_USER_SCIENTIST_PASSWORD:-}
             SAMPLE_DIR: /sample
             TENANT_SAMPLE: ${TENANT_SAMPLE:-sample_data.zip}
         volumes:

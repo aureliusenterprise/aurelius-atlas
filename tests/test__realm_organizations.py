@@ -114,16 +114,19 @@ def test__in_the_dev_realm_people_and_service_accounts_act_in_the_operator_organ
 
 
 @pytest.mark.covers(rules=["RLM-06", "RLM-07"])
-def test__the_stack_realm_seeds_no_person_as_the_production_realm_does() -> None:
-    """The stack's realm carries the production realm's posture (DD-673): ``operators`` with its four groups
-    and no member, and no person anywhere. The tenants' organizations are not seeded either: the one shot of
-    the profile tenancy provisions them, as it provisions any tenant a visitor adds.
+def test__the_stack_realm_seeds_the_operator_and_no_tenant() -> None:
+    """The stack's realm has ``operators`` with its four groups and the platform operator as its one member, who
+    reads it (DD-680). The tenants' organizations and people are not seeded: the one shot of the profile tenancy
+    provisions them, as it provisions any tenant a visitor adds.
     """  # noqa: D205 - one sentence
     loaded = realm(DEMO_REALM)
     assert [org["alias"] for org in loaded["organizations"]] == ["operators"]
-    assert all(not org.get("members") for org in loaded["organizations"])
-    assert [group["name"] for group in organization(loaded, "operators")["groups"]] == ROLES
-    assert all(user.get("serviceAccountClientId") for user in loaded["users"])
+    operators = organization(loaded, "operators")
+    assert [group["name"] for group in operators["groups"]] == ROLES
+    read = next(group["id"] for group in operators["groups"] if group["name"] == "atlas-read")
+    assert operators["members"] == [{"groups": [read], "username": "operator"}]
+    people = [user["username"] for user in loaded["users"] if not user.get("serviceAccountClientId")]
+    assert people == ["operator"]
 
 
 @pytest.mark.covers(rules=["RLM-07"])
