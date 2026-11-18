@@ -40,7 +40,7 @@ Not delivered, with the increment that will:
 
 | Not delivered                                                | Lands with  |
 | ------------------------------------------------------------ | ----------- |
-| Publishing a compose stack as a delivery artifact            | not planned |
+| Publishing a compose stack as a delivery artifact            | 17.2, 17.3  |
 | Retiring `dev/`'s metrics pullers or the dev networks' shape | not planned |
 
 The folder `infra/arc/` (the cloud-shape tooling) already lives at `infra/` and stays as it is. This

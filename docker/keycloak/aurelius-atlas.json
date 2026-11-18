@@ -83,7 +83,7 @@
             "attributes": {
                 "display.on.consent.screen": "false",
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://localhost:9000/*"
+                "post.logout.redirect.uris": "https://${STANDALONE_HOST}:9000/*"
             },
             "clientId": "aurelius",
             "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email", "otel-ingest"],
@@ -109,15 +109,15 @@
                 }
             ],
             "publicClient": true,
-            "redirectUris": ["https://localhost:9000/*"],
+            "redirectUris": ["https://${STANDALONE_HOST}:9000/*"],
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
-            "webOrigins": ["https://localhost:9000"]
+            "webOrigins": ["https://${STANDALONE_HOST}:9000"]
         },
         {
             "attributes": {
                 "pkce.code.challenge.method": "S256",
-                "post.logout.redirect.uris": "https://localhost:9000/atlas2/"
+                "post.logout.redirect.uris": "https://${STANDALONE_HOST}:9000/atlas2/"
             },
             "clientAuthenticatorType": "client-secret",
             "clientId": "aurelius-atlas-server",
@@ -144,7 +144,7 @@
                 }
             ],
             "publicClient": false,
-            "redirectUris": ["https://localhost:9000/atlas2/login.jsp"],
+            "redirectUris": ["https://${STANDALONE_HOST}:9000/atlas2/login.jsp"],
             "secret": "${ATLAS_SERVER_CLIENT_SECRET}",
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,

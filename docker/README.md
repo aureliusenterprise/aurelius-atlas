@@ -35,7 +35,9 @@ named at every command below. The store and the identity provider use the infra 
 configuration and certificates, `infra/elasticsearch/certs/` and `infra/keycloak/certs/`, and the
 webapp its own, `apps/aurelius-atlas-webapp/certs/`. On a new clone,
 `npx nx certgen aurelius-atlas-infra-elasticsearch`, `npx nx certgen aurelius-atlas-infra-keycloak`
-and `npx nx certgen aurelius-atlas-webapp` make them.
+and `npx nx certgen aurelius-atlas-webapp` make them. The stack also ships `docker/make-certs.sh`,
+which makes the same material with `openssl` alone and needs none of the repository's tooling (see
+Your host and your certificates below).
 
 ```bash
 docker compose -f docker/docker-compose.yaml \
@@ -164,6 +166,82 @@ administrator list or add them. The stack's Keycloak keeps no data of its own be
 volume: each new container imports `keycloak/aurelius-atlas.json` again, so a change made in its
 console lasts across restarts but not across `down -v`.
 
+## Your host and your certificates
+
+The stack serves `https://localhost:9000`. To serve a name of your own, set one value,
+`STANDALONE_HOST`, on the start command:
+
+```bash
+STANDALONE_HOST=atlas.example docker compose -f docker/docker-compose.yaml \
+    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env \
+    --env-file infra/elasticsearch/.env up -d
+```
+
+The name sets the address Keycloak signs its tokens with, the return addresses the realm allows, the
+certificate the browser checks, and the address the applications dial inside the stack. You add the name
+on the browser machine yourself — a hosts-file entry or a DNS record. Inside the stack you set nothing
+per service: the proxy answers the name for the applications, so each dials exactly the browser's URL.
+The stack publishes the port on this machine only, whatever the name is; reaching it from the local
+network is out of scope.
+
+Give the name its certificates before the first start, with the script that ships here:
+
+```bash
+docker/make-certs.sh atlas.example
+```
+
+The script creates a certificate authority and issues every certificate the stack mounts, with `openssl`
+alone. It installs nothing into a trust store (17.2's rule SPS-09): the stack trusts the CA by mount, and
+the browser warns once for the host because the CA is private. That warning is expected. Either trust
+`docker/certs/ca.pem` in the browser, or accept it.
+
+You can bring your own certificates instead, and then the script stays unused: place your CA and leaves at
+the paths `docker/certs.txt` names. Your edge certificate names the host, `localhost` and `127.0.0.1`;
+every other certificate names its own service. Changing the host re-issues the edge certificate alone —
+the certificates between services never name the browser's host, because those calls go by service name.
+The stack's Keycloak also opens a PKCS12 truststore, `infra/keycloak/certs/truststore.p12`, with
+`TLS_TRUSTSTORE_PASSWORD`. The script writes that file with the value your env-files carry, so the two
+match. Bring your own certificates and you write that file yourself, with the same password, or the
+identity provider fails to start.
+
+`docker/.env.example` lists every setting the stack needs. In this checkout the three project `.env` files
+carry working defaults, so you normally need neither file; an install that ships the stack alone copies it
+to `docker/.env` and fills it.
+
+### Changing the host on a stack that holds data
+
+Keycloak imports its realm when its database is empty and skips a realm that already exists. A restart with
+a new `STANDALONE_HOST` therefore moves the issuer, the proxy and the applications, but not the return
+addresses stored in the realm, and sign-in fails. Two paths fix it:
+
+Empty the store. `down -v` and start again with the new host. Keycloak imports the realm for the new host
+and the store begins empty, as the Stop section says. The catalogue is gone.
+
+Keep the data. Move the realm's two browser clients to the new host through Keycloak's admin API, after
+starting the stack on the new host. The bootstrap administrator in the `master` realm signs the calls:
+
+```bash
+NEW=atlas.example
+KC="https://$NEW:9000/auth"
+TOKEN=$(curl -ks -d grant_type=password -d client_id=admin-cli \
+    -d username="$KC_BOOTSTRAP_ADMIN_USERNAME" -d password="$KC_BOOTSTRAP_ADMIN_PASSWORD" \
+    "$KC/realms/master/protocol/openid-connect/token" | jq -r .access_token)
+FIX='(.redirectUris |= map(gsub("//[^:]+:9000"; "//" + $NEW + ":9000")))
+    | (.webOrigins |= map(gsub("//[^:]+:9000"; "//" + $NEW + ":9000")))
+    | (.attributes["post.logout.redirect.uris"] |= gsub("//[^:]+:9000"; "//" + $NEW + ":9000"))'
+for id in aurelius aurelius-atlas-server; do
+    client=$(curl -ks -H "Authorization: Bearer $TOKEN" \
+        "$KC/admin/realms/aurelius-atlas/clients?clientId=$id" | jq '.[0]')
+    uuid=$(printf '%s' "$client" | jq -r .id)
+    curl -ks -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' \
+        -d "$(printf '%s' "$client" | jq --arg NEW "$NEW" "$FIX")" \
+        "$KC/admin/realms/aurelius-atlas/clients/$uuid"
+done
+```
+
+Sign in afterwards to prove the move. The catalogue, the users and the sample survive both paths only in
+the second one — the first deletes them.
+
 ## How it fits together
 
 The stack is one compose project: `docker/docker-compose.yaml` names it and `include`s every
@@ -180,7 +258,9 @@ umbrella; the fragments are not a target of their own.
 - `docker/gateway/compose.yaml`: the `proxy`, the stack's only published port (loopback 9000, TLS
   with the server's certificate) and its TLS terminator — the piece DD-677 gives the gateway its own
   folder, beside the store, identity and telemetry pieces. `docker/gateway/nginx.conf` holds its
-  routing (the next bullet).
+  routing (the next bullet); the `gateway-config` one shot renders that file, and the webapp's
+  `config.json`, for the browser host before the proxy starts (the hardened nginx image has no
+  envsubst, SPS-01).
 - `docker/elasticsearch/compose.yaml`: `infra/elasticsearch`'s node, extended — its image,
   configuration, roles, certificate, java agent and healthcheck inherited; the stack's volumes
   `elasticsearch-data` and `elasticsearch-snapshots`; no published port (DD-668). The server reaches
@@ -197,8 +277,10 @@ umbrella; the fragments are not a target of their own.
   `/auth` itself), `/api/` to the server with its prefix, and `/` and every
   other path to the webapp, whose own nginx, in a container of its own, only serves the webapp's files.
   `webapp-config` fills that nginx's template into the volume `webapp-nginx-conf` before it starts
-  (`apps/aurelius-atlas-webapp/docker/resolve-nginx.sh`, as the chart's init container does), and the
-  webapp fragment's `config.json` points the webapp at the realm `aurelius-atlas`. Its nginx forwards
+  (`apps/aurelius-atlas-webapp/docker/resolve-nginx.sh`, as the chart's init container does). The webapp
+  fragment's `config.json` points the webapp at the realm `aurelius-atlas`; the proxy answers
+  `/config.json` itself, from the host-rendered copy, because the file names the issuer the browser
+  signs in to (SPS-01). Its nginx forwards
   `/lineage-model/` and `/validate-entity/` to the aux services through the proxy's ports, and
   `/otel/` to the collector's browser leg, so the webapp's traces leave the browser through the
   proxy's own port (DD-675).

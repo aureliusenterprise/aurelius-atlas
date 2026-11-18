@@ -39,7 +39,7 @@ services:
             AURELIUS_ATLAS_VALIDATE_ENTITY_TLS_CA_FILE: /certs/ca.pem
             # The stack's issuer, behind the proxy: POST / verifies the caller's bearer token (VE-03).
             # The audience is the browser's public client, a literal (AUX-04).
-            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_SERVER_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_REALM: aurelius-atlas
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_AUDIENCE: aurelius
             AURELIUS_ATLAS_VALIDATE_ENTITY_AUTH_CA_FILE: /certs/ca.pem
@@ -48,14 +48,14 @@ services:
             # as its own service client; the secret joins unguarded (see the header), so a stack
             # without it answers 502 instead of a false verdict (VEV-06).
             AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_BASE_URL: https://localhost:21000
-            AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
             AURELIUS_ATLAS_VALIDATE_ENTITY_SERVER_CLIENT_SECRET: ${VALIDATE_ENTITY_CLIENT_SECRET:-}
             # OTLP ingest (DD-197, DD-675): the app mints as otel-validate-entity through the
             # stack's issuer and exports on the per-service leg of the stack's collector,
             # reached as otel-collector on the stack's network. The secret is the realm's
             # shared ingest secret (infra/keycloak/.env), joined unguarded (DD-669): unset,
             # the app exports no OTLP.
-            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_TOKEN_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
             AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:-}
             AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_VALIDATE_ENTITY_OTEL_CA_FILE: /certs/ca.pem

@@ -14,6 +14,7 @@ them with ``helm dependency update`` first — the suite is self-contained.
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 from pathlib import Path
@@ -153,6 +154,28 @@ def compose_load(path: Path) -> dict[str, Any]:
     refuses ``!reset``/``!override``.
     """
     return _load(path)
+
+
+# The stack's one host value (17.2, SPS-01): compose interpolates ${STANDALONE_HOST:-localhost}
+# from the host shell's environment, and an unset value takes the default. A suite asserting a
+# value that carries the variable resolves it the same way, so the assertion reads as the concrete
+# answer it always read. A test of the variable itself (test__standalone_host.py) reads the raw
+# string instead.
+DEFAULT_HOST = "localhost"
+
+
+def resolved(value: str) -> str:
+    """The stack's compose interpolation of value with STANDALONE_HOST unset."""
+    return value.replace("${STANDALONE_HOST:-localhost}", DEFAULT_HOST)
+
+
+def resolved_from(value: str, host: str) -> str:
+    """Compose's interpolation of value with STANDALONE_HOST set to host (defaults honoured)."""
+    return re.sub(
+        r"\$\{STANDALONE_HOST(?::-([^}]*))?\}",
+        lambda m: host or (m.group(1) or ""),
+        value,
+    )
 
 
 def standalone_compose() -> dict[str, Any]:

@@ -44,6 +44,11 @@ services:
         volumes:
             - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
             - jwks-data:/jwks:ro
+        # SPS-08: the validator's issuer_url reads ${env:STANDALONE_HOST} (confmap has no default
+        # syntax, so the variable must be present); compose interpolates the default for the host
+        # shell here, and extends keeps the base's ingest-token guard.
+        environment:
+            STANDALONE_HOST: ${STANDALONE_HOST:-localhost}
         ports: !reset []
         # The base's boot order (Loki started, Tempo healthy) plus the keys: the OIDC extension
         # reads /jwks/jwks.json at start and exits without it, so the fetch must have completed.

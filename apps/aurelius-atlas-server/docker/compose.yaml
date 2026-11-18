@@ -32,7 +32,10 @@ services:
             AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
             # Tenancy (15.4, ADR 063): off by default; on, each tenant is provisioned by the command (README.md).
             AURELIUS_ATLAS_SERVER_TENANCY_ENABLED: ${ATLAS_TENANCY_ENABLED:-false}
-            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
+            # The browser host (SPS-01, DD-678): in this container's shared network namespace the
+            # proxy answers https://<host>:9000, whatever the host is (its extra_hosts, gateway's
+            # compose.yaml), so the issuer URL and the browser are one and the same string.
+            AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/
             AURELIUS_ATLAS_SERVER_AUTH_REALM: aurelius-atlas
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             # The provisioning command, run in this service's image, keeps the realm's tenants (TRM-01, TRM-11).
@@ -51,7 +54,7 @@ services:
             # on the per-service leg, reached as otel-collector on the stack's network. The
             # secret is the one the realm's ingest clients share (infra/keycloak/.env), joined
             # unguarded (DD-669): unset, the server exports no OTLP.
-            AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_SERVER_OTEL_TOKEN_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
             AURELIUS_ATLAS_SERVER_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:-}
             AURELIUS_ATLAS_SERVER_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_SERVER_OTEL_CA_FILE: /certs/ca.pem
@@ -68,8 +71,8 @@ services:
             - aurelius-atlas-server
         restart: "no"
         environment:
-            ATLAS_URL: https://localhost:9000/atlas2
-            TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            ATLAS_URL: https://${STANDALONE_HOST:-localhost}:9000/atlas2
+            TOKEN_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
             ATLAS_CLIENT_ID: aurelius-atlas-admin
             ATLAS_CLIENT_SECRET: ${ATLAS_ADMIN_CLIENT_SECRET:-}
             CA_FILE: /certs/ca.pem

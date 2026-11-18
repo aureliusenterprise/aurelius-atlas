@@ -17,7 +17,10 @@ page, included by it.
   fragments; no service of its own (DD-677). Each piece is included from
   beside its owner (ADR 065): the gateway `proxy` (nginx, the only published
   port, 9000) from `gateway/compose.yaml`, which also carries the stack's
-  `nginx.conf`; the
+  `nginx.conf` and the `gateway-config` one shot that renders the host into
+  the two files a browser reads (`nginx.conf` and the webapp's `config.json`)
+  into the volumes the proxy mounts. The proxy then answers `/config.json`
+  itself, so the browser always gets the file naming its own host (DD-678). The
   server (in the proxy's network, `/atlas2`) and the one shots `sample-import`
   and, under the profile `tenancy`, `tenants`, from
   `apps/aurelius-atlas-server/docker/`; the webapp (its own nginx, fed by the
@@ -47,10 +50,38 @@ page, included by it.
 - Shared assets live with their owner, not here: the Keycloak `aurelius`
   theme is `infra/keycloak/themes/aurelius` (mounted read-only), the store's
   configuration and CA are `infra/elasticsearch/`, the certificates are each
-  project's own `certs/` (`nx certgen`), and the sample folder is
+  project's own `certs/`, and the sample folder is
   `data/atlas-sample/`.
+- `make-certs.sh`, `certs.txt`, `certs/` and `.env.example` are the
+  stack's own TLS and settings material (SPS-09, DD-681). `make-certs.sh [host]`
+  reads `certs.txt` (one line per leaf: `<certs dir> <service>
+<SAN>...`) and issues the leaves with `openssl` alone, plus the JVM
+  `truststore.p12`, under a CA kept in `docker/certs/` outside the mount trees.
+  Only the edge line of the manifest carries the `$HOST` token. The script
+  never installs a CA, so it is distinct from `nx certgen`. The stack trusts by
+  mount, and the browser warns once for the private CA (SPS-10). Bring your own
+  certificates as the default posture: place a CA and leaves at the manifest's
+  paths and never run the script. `.env.example` lists the guarded variables for
+  a stack that ships alone.
 
 ## Conventions
+
+- **One value sets the browser host** (SPS-01, DD-678): `STANDALONE_HOST`,
+  default `localhost`, interpolated into the issuer, `KC_HOSTNAME`, each
+  application's token URLs, the collector's `issuer_url`, and the proxy's
+  `extra_hosts` (host → `127.0.0.1`, so every container sharing the proxy's
+  network dials the browser's exact URL). No application splits dial from
+  expected issuer. The two files a browser reads (`nginx.conf`, the webapp's
+  `config.json`) carry a `@STANDALONE_HOST@` token the `gateway-config` one
+  shot renders, because their images have no templating at rest (DD-678).
+- **The stack's certificates and the dev certificates collide on purpose**
+  (DD-681): both live in the same `certs/` directories. `nx certgen` and
+  `make-certs.sh` each keep a directory idempotent by what its CA signed. So
+  running one after the other re-issues the leaves the other owns, and you run
+  only one of them in a checkout. A running container holds its material in
+  memory, so restart it after re-issuing. The script's truststore password comes
+  from `TLS_TRUSTSTORE_PASSWORD` in the stack's env-files, the same value `nx
+certgen` reads.
 
 - **The stack is apart from the infra stores on purpose** (DD-363, DD-367,
   ADR-066): its fragments `extend` the infra Elasticsearch, Keycloak and
@@ -96,8 +127,13 @@ The infra-owned parts (image, healthcheck, configuration mounts) are proved
 as inherited, not copied (IRT-05, IRT-06). `docker compose -f
 docker/docker-compose.yaml ... config --quiet` is the offline check that
 every mount and env-file resolves. Rule ids of the series 9.5 specs (DMO-,
-SST-, SWA-, SKT-, EMB-11, WPT-10, TRM-11) and of 17.1 (IRT-) name these
-tests.
+SST-, SWA-, SKT-, EMB-11, WPT-10, TRM-11), of 17.1 (IRT-) and of 17.2 (SPS-)
+name these tests. `tests/test__standalone_host.py` pins the single host value
+across the issuer, the realm placeholders, the proxy's `extra_hosts`, the
+render one shot and its two `@STANDALONE_HOST@` templates, the collector, the
+certificate script and its manifest, and the README (SPS-01..10). The script's
+live run and a sign-in are level-2 checks a human records in the PR, not part
+of this suite.
 
 ## Removal
 
@@ -105,7 +141,7 @@ The stack is `docker/` (umbrella and the gateway, store, identity and
 telemetry fragments in `gateway/`, `elasticsearch/`, `keycloak/` and
 `observability/` beside it) and
 the six `docker/` folders beside the server, webapp, embedder and the three aux
-projects: delete them, its nine root tests, the two
+projects: delete them, its ten root tests, the two
 `mkdocs.yaml` nav entries (`Standalone Server`, `Add a Tenant to the
 Standalone Server`) and the links from `docs/user-guide/index.md`,
 `docs/user-guide/deployment.md`, `apps/aurelius-atlas-server/README.md`,
