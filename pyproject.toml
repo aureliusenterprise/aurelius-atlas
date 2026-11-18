@@ -241,8 +241,8 @@ root = "apps/aurelius-atlas-db-scanner"
 extraPaths = ["apps/aurelius-atlas-quality-scanner/e2e", "apps/aurelius-atlas-quality-scanner/tests"]
 root = "apps/aurelius-atlas-quality-scanner"
 
-# The root chart-contract suite and the tools/ scripts share the compose resolver in
-# tools/compose_stack.py: conftest puts tools/ on sys.path and imports it, and the tools
+# The root chart-contract suite and the tools/ scripts share the compose helper in
+# tools/compose_cli.py: conftest puts tools/ on sys.path and imports it, and the tools
 # scripts import each other by module name (both run as plain scripts). The path keeps
 # those imports resolvable for pyright (DD-682).
 [[tool.pyright.executionEnvironments]]

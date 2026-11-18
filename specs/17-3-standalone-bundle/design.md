@@ -337,11 +337,12 @@ pieces and their owner records. User documentation replaces the lost provenance 
   tree is the drift hazard DD-682 rejected, and the operator must work out which file `up` reads.
 
 **Consequences.** The bundler loses its compose reading code and gains one subprocess call plus mechanical
-fixes (DD-690). `tools/compose_stack.py` stays for the repository's own suites, but the bundler reads only the
-umbrella's path from it. The bundle's file set shrinks to one compose file, the mounted assets, the sample,
+fixes (DD-690). The bundle's file set shrinks to one compose file, the mounted assets, the sample,
 the roster, and the certificate script. The SBD-02 check compares service, image, and volume names instead of
 byte-identical files, because a flat definition is never byte-identical to a fragment. An operator who edits
-the flat file loses the edit on a rebuild, and the bundle README says so (SBD-09).
+the flat file loses the edit on a rebuild, and the bundle README says so (SBD-09). At the time of this record
+the repository's own suites still resolved the stack in Python (`tools/compose_stack.py`); DD-693 retired that
+too, so compose answers for the suites as well.
 
 ### DD-690. The bundler fixes the flat file's three mechanical flaws
 
@@ -453,3 +454,42 @@ of that tree.
 **Consequences.** The suite resolves a bundle through the same helper, so a test and the shipped check see the
 same answers. A developer's exported settings no longer change the artifact, and `docker compose` keeps its
 daemon access.
+
+### DD-693. The repository's suites resolve the stack through `docker compose` too
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-19
+- **Supersedes:** nothing. It completes DD-689 for the repository's own tests and retires the last use of
+  `tools/compose_stack.py`.
+
+**Decision.** `tools/compose_stack.py` is deleted. The chart-contract and standalone suites ask
+`docker compose -f docker/docker-compose.yaml --env-file docker/stack.env config --no-interpolate` for the
+stack, by way of one shared helper in `tools/compose_cli.py`, and read the answer. The helper also reads a
+single piece as written, with compose's `!reset` and `!override` kept as markers, because a few assertions are
+about one fragment rather than the whole stack. Each suite keeps its own view of the resolved document: the
+root suite normalises compose's canonical spellings back to the short form its assertions use (DD-694).
+
+**Reason.** Two resolvers answered one question, and they drifted. The bundler had moved to compose (DD-689)
+while the suites kept a Python reader, so a change to a piece had to satisfy two readings of the same YAML. The
+user asked for the smallest amount of custom logic; the Python reader is the largest piece of compose logic in
+the repository, and it re-implements merge rules compose already maintains upstream. Compose also answers a
+question the Python reader cannot: whether the umbrella is resolvable at all. The suites now fail when compose
+itself refuses the tree, which is the failure a person meets first.
+
+**Alternatives.**
+
+- Keep the Python resolver for the suites and compose for the bundler. Rejected: it keeps two answers to one
+  question, and the Python one needs new code for every compose feature the stack adopts.
+- Resolve with `include: !override` so a suite can swap one piece. Measured and rejected: compose still merges
+  the included service with the one the umbrella declares, so a suite testing a piece alone sees both — the
+  same trap DD-690 hit.
+- Let each suite call `docker compose` itself. Rejected: every suite would repeat the clean-environment rule of
+  DD-692 and the `stack.env` answer to DD-687's guards, and a suite that forgets one resolves a different stack.
+
+**Consequences.** The root suite needs the `docker compose` CLI, which it did not before; CI installs it, and
+the release workflow builds the bundle with it (DD-682). Bind sources arrive relative to the workspace and
+published ports as compose writes them, so the suite's normaliser converts those back to the shapes the
+assertions use, and four assertions now name the path the container actually reads. `tools/compose_cli.py`
+carries the CLI call, the clean environment of DD-692, and the single-piece reader, which is all the tooling
+now needs of compose.

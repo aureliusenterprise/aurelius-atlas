@@ -46,7 +46,33 @@ import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from compose_stack import UMBRELLA, WORKSPACE, compose_files
+from compose_cli import UMBRELLA, WORKSPACE, ComposeError, compose_config, load_piece, minimal_env
+
+
+def _piece_files(umbrella: Path = UMBRELLA) -> list[Path]:
+    """Every compose file the umbrella reaches: the `include` list and every `extends` base, transitively.
+
+    The folder of each file is what compose anchors a relative path to, so the folder answers below read
+    each guard's value from the piece that wrote it (SBD-12). The walk needs no merge: `load_piece` reads
+    one file with compose's tags as identity (DD-693).
+    """
+    found: list[Path] = []
+
+    def walk(path: Path) -> None:
+        if path in found:
+            return
+        found.append(path)
+        document = load_piece(path)
+        for entry in document.get("include") or ():
+            walk((path.parent / entry["path"]).resolve())
+        for service in (document.get("services") or {}).values():
+            spec = service.get("extends") if isinstance(service, dict) else None
+            if spec:
+                walk((path.parent / spec["file"]).resolve())
+
+    walk(umbrella.resolve())
+    return found
+
 
 #: The folder inside the bundle that holds the flat compose file and the operator's ``.env``. Compose reads a
 #: relative bind source from the folder of the compose file, so this is the anchor every path rebases to.
@@ -83,32 +109,6 @@ SECRET_SUFFIX = ("PASSWORD", "SECRET", "TOKEN", "KEY")
 #: A throwaway project name for the daemon-free ``config`` runs, so a check never touches the stack's project.
 SCRATCH_PROJECT = "aurelius-atlas-bundle-build"
 
-#: The only environment variables a ``docker compose`` run of this tool may see. Compose lets a shell variable
-#: beat an ``--env-file``, so a developer who exports ``SERVER_IMAGE`` or ``COMPOSE_PROFILES`` for another task
-#: would otherwise change what the bundler builds or checks (SBD-01). The allowlist holds what the Docker CLI
-#: itself needs to reach the daemon — nothing the stack reads.
-COMPOSE_ENV_ALLOWLIST = (
-    "PATH",
-    "HOME",
-    "USER",
-    "LANG",
-    "TMPDIR",
-    "XDG_RUNTIME_DIR",
-    "NODE_EXTRA_CA_CERTS",
-    "SSL_CERT_FILE",
-    "SSL_CERT_DIR",
-    "DOCKER_HOST",
-    "DOCKER_CONFIG",
-    "DOCKER_CONTEXT",
-    "DOCKER_TLS_VERIFY",
-    "DOCKER_CERT_PATH",
-)
-
-
-def _minimal_compose_env() -> dict[str, str]:
-    """A clean environment for ``docker compose``: daemon access only, so no shell variable edits the stack."""
-    return {name: value for name in COMPOSE_ENV_ALLOWLIST if (value := os.environ.get(name)) is not None}
-
 
 class BundleError(SystemExit):
     """The bundle cannot be built as specced; the message names the rule the tree would break."""
@@ -125,21 +125,16 @@ def _compose_document(text: str) -> dict:
 def _run_compose_config(*, interpolate: bool) -> str:
     """Run ``docker compose config`` on the repository umbrella and return the document text.
 
-    The CLI resolves ``config`` without a daemon (DD-689). ``--env-file /dev/null`` keeps the build off the
-    developer's own ``docker/.env``, and the minimal environment keeps their exported shell variables off it
-    too, so the flat file depends on the tracked tree alone (SBD-01). ``interpolate=False`` keeps every
-    ``${VAR}`` the pieces wrote. No ``-p``: the document keeps the project name the umbrella declares, because
-    a bundler's scratch name must not travel in the shipped file.
+    The CLI resolves ``config`` without a daemon (DD-689), with no env file and the minimal environment
+    ``compose_cli`` gives every run here, so the flat file depends on the tracked tree alone (SBD-01,
+    DD-692). ``interpolate=False`` keeps every ``${VAR}`` the pieces wrote. No ``-p``: the document keeps
+    the project name the umbrella declares, because a bundler's scratch name must not travel in the
+    shipped file.
     """
-    command = ["docker", "compose", "-f", str(UMBRELLA), "--env-file", os.devnull, "config"]
-    if not interpolate:
-        command.append("--no-interpolate")
-    done = subprocess.run(
-        command, capture_output=True, text=True, check=False, env=_minimal_compose_env(), cwd=WORKSPACE
-    )
-    if done.returncode != 0:
-        raise BundleError(f"`docker compose config` failed: {done.stderr.strip()} (DD-689)")
-    return done.stdout
+    try:
+        return compose_config(interpolate=interpolate)
+    except ComposeError as error:
+        raise BundleError(f"{error} (DD-689)") from error
 
 
 def _guarded_folder_names(flat: dict) -> set[str]:
@@ -176,7 +171,7 @@ def _folder_answers(flat: dict) -> dict[str, str]:
     stack — no second list of cert or sample paths, and no second ``config`` run (SBD-07).
     """
     stack = _stack_env_answers()
-    pieces = [(path, path.read_text()) for path in compose_files(UMBRELLA)]
+    pieces = [(path, path.read_text()) for path in _piece_files(UMBRELLA)]
     answers: dict[str, str] = {}
     for guard in sorted(_guarded_folder_names(flat)):
         if guard not in stack:
@@ -477,7 +472,7 @@ def _resolves_release(output: Path, version: str) -> None:
         str(roster),
         "config",
     ]
-    done = subprocess.run(command, capture_output=True, text=True, check=False, cwd=output, env=_minimal_compose_env())
+    done = subprocess.run(command, capture_output=True, text=True, check=False, cwd=output, env=minimal_env())
     roster.unlink()
     if done.returncode != 0 or done.stderr.strip():
         raise BundleError(f"the bundle does not resolve cleanly: rc={done.returncode} {done.stderr.strip()} (SBD-08)")
