@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "feat-standalone-host-certs",
+    "title": "feat-standalone-host-certs",
+    "aliases": []
+  },
+  {
     "version": "feat-standalone-bundle",
     "title": "feat-standalone-bundle",
     "aliases": []
