@@ -325,3 +325,19 @@ The data stays in the stack's volumes for the next start. `down -v` deletes them
 with an empty store: the server creates Atlas's and the m4i types again, and `SAMPLE_ZIP` imports the sample.
 The Statistics chart fills from the hourly snapshots, so a new store's chart is empty until the first full
 hour.
+
+## Ship the bundle
+
+This page runs the stack from a repository checkout. A person without the repository gets a **bundle** instead:
+one archive with the compose pieces, the files they mount, the sample, and the certificate script (ADR 067,
+increment 17.3). The release publishes it on the release's download page, and it needs only Docker,
+`docker compose`, `bash`, and `openssl`.
+
+From a checkout, `npx nx standalone-bundle -- --version v1.2.3` builds the same archive under `dist/`. The tool
+is `tools/standalone_bundle.py`. The bundle is never a committed file (SBD-01). Unpack it, read its `README.md`,
+and the three steps in that file start the stack: `bash docker/make-certs.sh`, fill the empty secrets in
+`docker/.env`, and `docker compose -f docker/docker-compose.yaml up -d`.
+
+The bundle mirrors this tree, so its pieces, its paths, and its rules are the ones on this page. It carries no
+secret, no certificate, and no private key (SBD-04), and it names the release images instead of the `:local`
+tags (SBD-06). A `docker/` change reaches a bundle only when the release rebuilds it.

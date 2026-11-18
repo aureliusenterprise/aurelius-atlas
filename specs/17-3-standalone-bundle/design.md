@@ -257,3 +257,47 @@ bundle and SBD-05 no longer describes a default. The SBD-12 pin reads the merged
 adds a mount of a folder without a guard, or a default path, or a required name `stack.env` does not answer.
 `nx serve`, the e2e stacks, and the documented commands see no change, because `stack.env` and the projects'
 `.env` files answer the guards.
+
+### DD-688. The bundle is a pruned mirror of the repository, with no path rewrite
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-19
+- **Supersedes:** the path-rewriting mechanism of DD-683 (its "no flattening" choice stands) and the
+  "the bundle's path rewriter relocates the literal" wording of DD-687 and SBD-12.
+
+**Decision.** The bundler copies the stack's files to the _same relative path_ each holds in the repository,
+under a pruned mirror of the tree: `docker/docker-compose.yaml` stays `docker/docker-compose.yaml`, the server
+piece stays `apps/aurelius-atlas-server/docker/compose.yaml`, and the infra bases stay under `infra/`. Only the
+files the stack reads travel, so no `src/`, `helm/`, `tests/` or `secrets/` folder comes along (SBD-04). The
+bundler rewrites no path in any copied file. Every compose copy is byte-identical to the tracked file
+(SBD-02), and each relative path inside it still resolves, because the mirror keeps the depth the path was
+written for: a piece's `../` include, the infra pieces' literal `./certs`, the umbrella's `stack.env`, and the
+`../../../data/atlas-sample` the server requires (SBD-03, SBD-05, SBD-12). The two files the tool writes are
+the ones the spec assigns it: the bundle's `.env` (the roster with the release image variables and
+`SAMPLE_DIR`) and the README (SBD-04, SBD-05, SBD-06).
+
+**Reason.** A mirror closes by construction, and closure is the rule the bundle must prove offline (SBD-08).
+A rewriter must know every path shape compose accepts and re-derive each one from the folder of the file that
+wrote it, and a path it rewrites makes the copy differ from the tracked file, so the SBD-08 comparison and an
+operator's diff both get harder to read. The repository already reads this exact tree by these exact paths, so
+the mirror inherits a layout that is known to resolve. The literal `./certs` mounts the three infra pieces keep
+(DD-687) need no work here: in the mirror they name the folder `make-certs.sh` fills at the same location
+inside the bundle (SBD-12). The cost is a deeper tree than a rewriter would produce, which the bundle README
+answers with the layout, and it is what keeps the copies reviewable.
+
+**Alternatives.**
+
+- Rewrite the out-of-tree paths to shorter bundle paths, as DD-683 first planned. Rejected on build: a rewrite
+  makes every touched copy differ from the tracked file, so the SBD-08 check can no longer compare like with
+  like, and the rewriter's path arithmetic becomes a tested surface that a plain copy does not have. The
+  shorter paths buy nothing the README does not already give.
+- Flatten with `docker compose config`. Rejected for the reason DD-683 already records: it freezes environment
+  values and erases the per-piece comments.
+
+**Consequences.** The bundler holds no path-rewriting rule, so the SBD-03 check becomes "every copied bind
+source sits inside the bundle and exists", which the suite runs offline (SBD-08). The bundle folder mirrors the
+repository's shape, so its README names the two generated files and the certificate step rather than a new
+layout. A new piece travels with no change to the tool, because the copy list comes from the compose files and
+not from a folder list (SBD-07). `make-certs.sh` still computes `root` from its own location, so it fills the
+mirror's certificate folders with no edit (SBD-09).
