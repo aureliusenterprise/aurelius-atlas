@@ -35,6 +35,11 @@
     "aliases": []
   },
   {
+    "version": "feat-app-search-wake-on-write",
+    "title": "feat-app-search-wake-on-write",
+    "aliases": []
+  },
+  {
     "version": "docs-11-1-hugegraph-findings",
     "title": "docs-11-1-hugegraph-findings",
     "aliases": []
