@@ -65,8 +65,10 @@ services:
     # in-network, so no certificate is needed here. Keycloak generates the realm's key on its
     # first boot and keeps it in its database: the file is rewritten at every stack start, so a
     # fresh store (after `down -v`) lands the new key.
+    # SERVER_IMAGE is the server piece's variable: this one shot runs that image for its Python
+    # and its CA trust, so one value moves it with the server (SBD-06).
     jwks-fetch:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         entrypoint: [python, /observability/fetch_jwks.py]
         restart: "no"
         # The fresh named volume is root-owned and the server image runs unprivileged, so the

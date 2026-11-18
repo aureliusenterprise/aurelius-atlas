@@ -59,10 +59,10 @@ Tenants). One sign-in serves the webapp and the dashboards, as they share the re
 console's own session does not sign you in to them. The certificate is the dev CA's, so the browser
 asks once, for `localhost:9000`.
 
-The images are `aurelius-atlas-server:local`, `aurelius-atlas-webapp:local`,
-`aurelius-atlas-embedder:local`, `aurelius-atlas-data2model:local`,
-`aurelius-atlas-lineage-model:local` and `aurelius-atlas-validate-entity:local`;
-`npx nx docker-build` of each project builds it from the checkout. The embedder and the three aux
+The six images are the `:local` tags `npx nx docker-build` of each project builds from the checkout. Each
+piece names its image through a compose variable: `SERVER_IMAGE`, `WEBAPP_IMAGE`, `EMBEDDER_IMAGE`,
+`DATA2MODEL_IMAGE`, `LINEAGE_MODEL_IMAGE`, `VALIDATE_ENTITY_IMAGE`. An install that runs published images
+sets those six values and leaves the defaults alone. The embedder and the three aux
 services need their own certificates too: `npx nx certgen aurelius-atlas-embedder`,
 `npx nx certgen aurelius-atlas-data2model`, `npx nx certgen aurelius-atlas-lineage-model` and
 `npx nx certgen aurelius-atlas-validate-entity`.
