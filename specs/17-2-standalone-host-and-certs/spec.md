@@ -3,9 +3,9 @@
 - **Status:** in progress
 - **Pull request:** to follow
 - **Records:** DD-678 to DD-681 (here); relies on
-  [ADR 065](../../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
+  [ADR 065](../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
   (the compose fragments and the root `docker/`),
-  [ADR 066](../../../docs/architecture/adr/066-infrastructure-components-live-at-the-repository-root.md)
+  [ADR 066](../../docs/architecture/adr/066-infrastructure-components-live-at-the-repository-root.md)
   (the infra slices the stack extends), and increment 17.1 (IRT, DD-667..677).
 
 ## Scope

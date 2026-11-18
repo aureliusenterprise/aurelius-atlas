@@ -17,6 +17,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -41,120 +42,96 @@ SCANNER_CHARTS = {
 OBS_CHART = WORKSPACE / "infra/observability/helm"
 UMBRELLA_CHART = WORKSPACE / "helm"
 
-# The standalone compose stack (9.5, ADR 065): the umbrella at the root with the fragments it
-# includes merged in, and each fragment's service merged over the infra service it extends, as
-# compose does (ADR 066). The suite reads the stack as written, so the loader knows the clauses
-# the stack actually uses: services and volumes merged by name; for `extends` a deep merge of
-# the fragment over the base, where `!reset` deletes a key and `!override` replaces it whole
-# (both measured on compose v5.7.1), `environment`/`depends_on` maps merge by key, and a
-# `volumes` entry replaces the base's at the same mount target (compose keeps the last entry
-# per target). A base's relative bind paths rebase to the base's own folder; the merged
-# service spells every bind source workspace-relative, which is the path the container reads.
-# A name used twice outside an extends is an error here, where compose only warns.
+# The standalone compose stack (9.5, ADR 065): the suite reads it the way a start reads it, by
+# asking `docker compose config` (DD-693, DD-689). Compose itself resolves the `include` tree, the
+# `extends` chains, and the `!reset`/`!override` tags, so no Python re-implements compose here.
+# `compose_load` is the shared `compose_cli.load_piece`: one piece as written, its tags kept as
+# `Tagged` markers, so a suite can assert on a fragment without resolving the stack.
+#
+# `standalone_compose` below is the suite's own view of the whole stack: it asks compose and then
+# normalises compose's canonical answer back to the short syntax the suites assert on — a volume
+# entry as the one string `source:target[:ro]`, an environment as a map, a published port as
+# `host:published:target`, and a bind source relative to the workspace, which is the path the
+# container reads. That shape is a suite preference, so the normalisation lives here and not in the
+# tool; the tool answers the document exactly as compose writes it.
+sys.path.insert(0, str(WORKSPACE / "tools"))
+
+from compose_cli import compose_config  # noqa: E402
+from compose_cli import load_piece as compose_load  # noqa: E402
+
 STACK = WORKSPACE / "docker"
 
 
-class _Tagged:
-    """A compose `!reset` (delete) or `!override` (replace) marker over its value."""
+def _volume_entry(entry: dict[str, Any]) -> str:
+    """One canonical volume entry as the short string the stack wrote it in."""
+    source = str(entry["source"])
+    # Compose anchors a bind source to the declaring piece's folder and spells it absolute; the
+    # suites want it workspace-relative, which is the path the repository tree holds.
+    if source.startswith(f"{WORKSPACE}/"):
+        source = str(Path(source).relative_to(WORKSPACE))
+    elif source == str(WORKSPACE):
+        source = "."
+    short = f"{source}:{entry['target']}"
+    return f"{short}:ro" if entry.get("read_only") else short
 
-    def __init__(self, kind: str, value: Any) -> None:  # noqa: ANN401 - a YAML node's value
-        self.kind = kind
-        self.value = value
 
+def _normalize_service(service: dict[str, Any]) -> dict[str, Any]:
+    """A canonical service back to the shape the stack's pieces spell (DD-693).
 
-class _ComposeLoader(yaml.SafeLoader):
-    """SafeLoader that reads compose's custom tags (DD-671).
-
-    `!reset` as a delete marker, `!override` as a replace marker, everything else as
-    SafeLoader does.
+    Compose answers a canonical document (maps for volumes and ports, a list for the environment);
+    the suites assert on the short syntax the pieces wrote, because that is the text a person edits.
     """
+    service = dict(service)
+    if isinstance(service.get("volumes"), list):
+        service["volumes"] = [_volume_entry(v) if isinstance(v, dict) else str(v) for v in service["volumes"]]
+    if isinstance(service.get("environment"), list):
+        environment: dict[str, str] = {}
+        for item in service["environment"]:
+            key, _, value = str(item).partition("=")
+            environment[key] = value
+        service["environment"] = environment
+    if isinstance(service.get("ports"), list):
+        service["ports"] = [
+            ":".join(filter(None, [str(p.get("host_ip", "")), str(p.get("published", "")), str(p["target"])]))
+            if isinstance(p, dict)
+            else str(p)
+            for p in service["ports"]
+        ]
+    if isinstance(service.get("depends_on"), dict):
+        service["depends_on"] = {
+            name: ({k: v for k, v in spec.items() if k != "required"} if isinstance(spec, dict) else spec)
+            for name, spec in service["depends_on"].items()
+        }
+    return service
 
 
-def _tagged(kind: str) -> Any:  # noqa: ANN401 - returns a constructor, typed loosely by PyYAML
-    def build(loader: _ComposeLoader, node: yaml.Node) -> _Tagged:
-        if isinstance(node, yaml.MappingNode):
-            return _Tagged(kind, loader.construct_mapping(node, deep=True))
-        if isinstance(node, yaml.SequenceNode):
-            return _Tagged(kind, loader.construct_sequence(node, deep=True))
-        assert isinstance(node, yaml.ScalarNode), f"!{kind} over {type(node)}"
-        return _Tagged(kind, loader.construct_scalar(node))
+def standalone_compose() -> dict[str, Any]:
+    """The repository stack as ``docker compose config --no-interpolate`` resolves it (DD-693).
 
-    return build
+    Compose merges the includes and resolves the extends and tags; the helper above brings the
+    answer back to the pieces' short syntax. A guarded mount keeps its ``${VAR:?...}`` source, and
+    compose types it ``volume`` there — a known quirk of ``--no-interpolate`` (DD-690) that the
+    bundle's rewriter answers, and the suites assert around.
 
-
-_ComposeLoader.add_constructor("!reset", _tagged("reset"))
-_ComposeLoader.add_constructor("!override", _tagged("override"))
-
-
-def _load(path: Path) -> dict[str, Any]:
-    return yaml.load(path.read_text(), Loader=_ComposeLoader)  # noqa: S506 - _ComposeLoader extends SafeLoader
-
-
-def _bind_target(item: str) -> str:
-    """The mount target of a short-syntax volume entry (the part after the first colon)."""
-    return item.split(":")[1] if ":" in item else item
-
-
-def _rebase_volume(item: Any, base_dir: Path) -> Any:  # noqa: ANN401 - a YAML scalar or mapping entry
-    """A short-syntax volume whose bind source is relative, spelled workspace-relative.
-
-    A named volume (``data:/target``) and an environment-mapped path (``${V}:/target``)
-    pass through; a ``./`` or ``../`` source is read against the folder of the file that
-    wrote the entry.
+    Compose's own fill-ins go: the implicit ``default`` network, top-level and per service, is not
+    a declaration any piece wrote, and the suites ask what the stack declares.
     """
-    if not isinstance(item, str) or ":" not in item:
-        return item
-    head, *rest = item.split(":")
-    if head != "." and not head.startswith(("./", "../")):
-        return item
-    source = (base_dir / head).resolve().relative_to(WORKSPACE)
-    return ":".join([str(source), *rest])
+    document = yaml.safe_load(compose_config(interpolate=False))
+    assert isinstance(document, dict)
+    document = dict(document)
+    if document.get("networks") == {"default": {"name": f"{document.get('name', '')}_default"}}:
+        document.pop("networks")
+    services = {}
+    for name, declared in (document.get("services") or {}).items():
+        service = _normalize_service(declared)
+        if service.get("networks") == {"default": None}:
+            service.pop("networks")
+        services[name] = service
+    document["services"] = services
+    return document
 
 
-def _merge_service(
-    base: dict[str, Any], base_dir: Path, override: dict[str, Any], override_dir: Path
-) -> dict[str, Any]:
-    """Compose's extends merge: the override deep-merged over the base, tags honoured.
-
-    Each side's relative bind sources are spelled workspace-relative against its own folder
-    first, so the merged service carries the paths the container reads.
-    """
-    merged = dict(base)
-    if isinstance(merged.get("volumes"), list):
-        merged["volumes"] = [_rebase_volume(item, base_dir) for item in merged["volumes"]]
-    override = dict(override)
-    if isinstance(override.get("volumes"), list) and not (isinstance(override["volumes"], _Tagged)):
-        override["volumes"] = [_rebase_volume(item, override_dir) for item in override["volumes"]]
-    for key, raw in override.items():
-        if isinstance(raw, _Tagged):
-            if raw.kind == "reset":
-                merged.pop(key, None)
-                continue
-            value: Any = raw.value
-            if key == "volumes" and isinstance(value, list):
-                value = [_rebase_volume(item, override_dir) for item in value]
-            merged[key] = value
-            continue
-        lower = merged.get(key)
-        if key == "volumes" and isinstance(raw, list) and isinstance(lower, list):
-            targets = {_bind_target(item) for item in raw}
-            kept = [item for item in lower if _bind_target(item) not in targets]
-            merged[key] = kept + list(raw)
-        elif isinstance(raw, dict) and isinstance(lower, dict) and key != "extends":
-            merged[key] = {**lower, **raw}
-        else:
-            merged[key] = raw
-    return merged
-
-
-def compose_load(path: Path) -> dict[str, Any]:
-    """A compose file read with the stack's tags understood (DD-671).
-
-    A suite asserting on a fragment as written uses this, not ``yaml.safe_load``, which
-    refuses ``!reset``/``!override``.
-    """
-    return _load(path)
-
+__all__ = ["compose_load", "standalone_compose"]
 
 # The stack's one host value (17.2, SPS-01): compose interpolates ${STANDALONE_HOST:-localhost}
 # from the host shell's environment, and an unset value takes the default. A suite asserting a
@@ -176,33 +153,6 @@ def resolved_from(value: str, host: str) -> str:
         lambda m: host or (m.group(1) or ""),
         value,
     )
-
-
-def standalone_compose() -> dict[str, Any]:
-    """The stack's compose file with its fragments merged and its `extends` resolved."""
-    umbrella = _load(STACK / "docker-compose.yaml")
-    merged: dict[str, Any] = dict(umbrella)
-    for section in ("services", "volumes"):
-        merged[section] = dict(umbrella.get(section) or {})
-    for entry in umbrella.get("include") or ():
-        fragment_path = (STACK / entry["path"]).resolve()
-        fragment = _load(fragment_path)
-        for name, value in (fragment.get("services") or {}).items():
-            assert name not in merged["services"], f"{name}: {entry['path']} and the rest of the stack"
-            service = dict(value)
-            if "extends" in service:
-                # The stack uses one level of extends (DD-671); a nested one grows the loader.
-                assert "extends" not in service["extends"], service["extends"]
-                spec = service.pop("extends")
-                base_file = (fragment_path.parent / spec["file"]).resolve()
-                base = _load(base_file)["services"][spec["service"]]
-                assert "extends" not in base, f"{spec['file']}: the loader knows one level"
-                service = _merge_service(base, base_file.parent, service, fragment_path.parent)
-            merged["services"][name] = service
-        for name, value in (fragment.get("volumes") or {}).items():
-            assert name not in merged["volumes"], f"volume {name}: {entry['path']} and the rest of the stack"
-            merged["volumes"][name] = value
-    return merged
 
 
 # The ingest-client roster (CHT-87..90, DD-277): the otel-* clients the prod

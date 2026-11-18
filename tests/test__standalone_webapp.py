@@ -28,15 +28,18 @@ def services() -> dict[str, Any]:
 def test__the_webapp_runs_apart_from_the_proxy_on_its_resolved_config(services: dict[str, Any]) -> None:
     """A container of its own on the stack network, reading the filled template, config.json, certs (SWA-01)."""
     config, webapp = services["webapp-config"], services["aurelius-atlas-webapp"]
-    assert config["image"] == webapp["image"] == "ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local"
+    # The image is an install's knob over the nx docker-build default (the stack builds, never pulls).
+    assert (
+        config["image"] == webapp["image"] == "${WEBAPP_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local}"
+    )
     assert "webapp-nginx-conf:/out" in config["volumes"]
     assert "network_mode" not in webapp
     assert services["aurelius-atlas-server"]["network_mode"] == "service:proxy"
     assert webapp["depends_on"]["webapp-config"] == {"condition": "service_completed_successfully"}
     assert set(webapp["volumes"]) == {
         "webapp-nginx-conf:/etc/nginx/conf.d:ro",
-        "./config.json:/usr/share/nginx/html/config.json:ro",
-        "../certs:/certs:ro",
+        "apps/aurelius-atlas-webapp/docker/config.json:/usr/share/nginx/html/config.json:ro",
+        "${WEBAPP_CERTS_DIR:?name the webapp certificate folder}:/certs:ro",
     }
 
 

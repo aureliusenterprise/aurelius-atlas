@@ -42,10 +42,11 @@ def test__the_gateway_piece_owns_the_stacks_only_published_port(services: dict[s
     # The rendered config volume replaced the direct nginx.conf bind (17.2, SPS-02); the one shot
     # reads the config and the webapp's config.json from beside it.
     assert "gateway-conf:/etc/nginx/conf.d:ro" in gateway["volumes"]
-    assert "../../apps/aurelius-atlas-server/certs:/certs:ro" in gateway["volumes"]
+    # The edge leaf is the server's, named through the gateway's own required knob (DD-687).
+    assert "${GATEWAY_CERTS_DIR:?name the gateway certificate folder}:/certs:ro" in gateway["volumes"]
     render = services["gateway-config"]
-    assert "./nginx.conf:/template/nginx.conf:ro" in render["volumes"]
-    assert "../../apps/aurelius-atlas-webapp/docker/config.json:/template/config.json:ro" in render["volumes"]
+    assert "docker/gateway/nginx.conf:/template/nginx.conf:ro" in render["volumes"]
+    assert "apps/aurelius-atlas-webapp/docker/config.json:/template/config.json:ro" in render["volumes"]
     assert proxy["depends_on"]["gateway-config"] == {"condition": "service_completed_successfully"}
     # The proxy is the app surface's only host publish; the four observability backends keep
     # their inherited loopback views (DD-675), and the collector's publish is reset.

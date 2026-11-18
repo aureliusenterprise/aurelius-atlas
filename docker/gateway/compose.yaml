@@ -28,7 +28,7 @@ services:
         extra_hosts:
             - "${STANDALONE_HOST:-localhost}:127.0.0.1"
         volumes:
-            - ../../apps/aurelius-atlas-server/certs:/certs:ro
+            - ${GATEWAY_CERTS_DIR:?name the gateway certificate folder}:/certs:ro
             # Rendered by the gateway-config one shot from ./nginx.conf (SPS-06's mechanism):
             # hardened nginx images carry no envsubst, so server_name is templated at boot.
             - gateway-conf:/etc/nginx/conf.d:ro

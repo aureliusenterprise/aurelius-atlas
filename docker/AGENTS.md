@@ -62,7 +62,38 @@ page, included by it.
   mount, and the browser warns once for the private CA (SPS-10). Bring your own
   certificates as the default posture: place a CA and leaves at the manifest's
   paths and never run the script. `.env.example` lists the guarded variables for
-  a stack that ships alone.
+  a stack that ships alone. `stack.env` is the committed answer for the eight
+  folder knobs (SBD-12, DD-687): the umbrella names it in each app `include`, and
+  a customer's own `.env` overrides it.
+
+## The release bundle
+
+`nx standalone-bundle -- --version v1.2.3` builds the release artifact (17.3,
+SBD-01..08, ADR 067, DD-689/690): a folder with **one flat compose file** under
+`dist/standalone-bundle/`, tarred beside it, and never committed. The bundler is
+`tools/standalone_bundle.py`.
+
+- The flat file is `docker compose config --no-interpolate` output for the
+  umbrella, so compose itself resolves the `include` tree and the `extends`
+  bases and the tool carries no compose reading code (DD-689). `--no-interpolate`
+  keeps every `${VAR}` the pieces wrote, so each setting stays open. The tool
+  copies the files and folders that flat file mounts (DD-690).
+- Three mechanical fixes ride on the output (DD-690): baked absolute bind
+  sources are rebased to bundle-relative paths, guarded folder mounts gain
+  `type: bind` (compose types them `volume` when it cannot interpolate), and the
+  guarded folders are answered in the bundle's `.env` with bundle-relative
+  values, read by pairing a second interpolated `config` run.
+- Two files are written, not copied: `docker/.env` (the `.env.example` roster
+  with empty secrets, the folder answers, and the image variables at the
+  release tag) and `README.md`.
+- Never copied: any `.env`/`.env.enc`, `certs/`, `secrets/`, and any
+  `.pem`/`.key`/`.p12`/`.crt` (SBD-04). A bind that leaves the checkout or
+  misses its material fails the build instead of shipping a broken stack
+  (SBD-03). `make-certs.sh` fills the bundle's `certs/` folders, which is why
+  no `certs/` dir needs to travel (SBD-12).
+- A new piece or mount travels with no change to the tool, because the flat
+  file and the copy list both come from compose itself. A piece that builds an
+  image is a shape the bundler refuses by name.
 
 ## Conventions
 
@@ -81,7 +112,9 @@ page, included by it.
   only one of them in a checkout. A running container holds its material in
   memory, so restart it after re-issuing. The script's truststore password comes
   from `TLS_TRUSTSTORE_PASSWORD` in the stack's env-files, the same value `nx
-certgen` reads.
+certgen` reads. When nothing sets it, the script makes one and records it in
+  `docker/.env`, so a bundle start follows its README order (certificates first) without a secret to fill
+  (DD-691).
 
 - **The stack is apart from the infra stores on purpose** (DD-363, DD-367,
   ADR-066): its fragments `extend` the infra Elasticsearch, Keycloak and
@@ -108,6 +141,17 @@ infra/elasticsearch/.env` (decrypted SOPS defaults, DD-669). Compose
   webapp, embedder and the three aux projects produce; each piece names its
   image through a compose-time variable (`<PROJECT>_IMAGE`) with the `:local`
   tag as its default. The stack never pulls from a registry.
+- **Folders are required, never defaulted** (SBD-12, DD-687). Each app piece
+  names the certificate or sample folder it mounts through a required variable
+  (`${NAME_CERTS_DIR:?...}`, `${SAMPLE_DIR:?...}`) with no path default, so a
+  customer install cannot inherit a repository path. The umbrella names
+  `docker/stack.env` in each app `include` as `env_file`. That committed file
+  holds the repository's eight answers (paths, no secret), which keeps the
+  README and CI commands unchanged. An e2e stack extends the pieces directly,
+  so each project answers the names it transitively extends from its own `.env`
+  (Nx injects it into every task). A relative value reads from the declaring
+  piece's own folder. The three infra pieces keep their literal `./certs` paths
+  (no default to remove; the bundle's path rebase relocates them, SBD-03).
 - The compose project name `aurelius-atlas-standalone` and the container
   names it derives are in the README and the user guide (e.g. `docker restart
 aurelius-atlas-standalone-aurelius-atlas-server-1`); a rename updates them.
@@ -127,13 +171,16 @@ The infra-owned parts (image, healthcheck, configuration mounts) are proved
 as inherited, not copied (IRT-05, IRT-06). `docker compose -f
 docker/docker-compose.yaml ... config --quiet` is the offline check that
 every mount and env-file resolves. Rule ids of the series 9.5 specs (DMO-,
-SST-, SWA-, SKT-, EMB-11, WPT-10, TRM-11), of 17.1 (IRT-) and of 17.2 (SPS-)
-name these tests. `tests/test__standalone_host.py` pins the single host value
-across the issuer, the realm placeholders, the proxy's `extra_hosts`, the
-render one shot and its two `@STANDALONE_HOST@` templates, the collector, the
-certificate script and its manifest, and the README (SPS-01..10). The script's
-live run and a sign-in are level-2 checks a human records in the PR, not part
-of this suite.
+SST-, SWA-, SKT-, EMB-11, WPT-10, TRM-11), of 17.1 (IRT-), of 17.2 (SPS-) and
+of 17.3 (SBD-) name these tests. `tests/test__standalone_host.py` pins the
+single host value across the issuer, the realm placeholders, the proxy's
+`extra_hosts`, the render one shot and its two `@STANDALONE_HOST@` templates,
+the collector, the certificate script and its manifest, and the README
+(SPS-01..10). `tests/test__standalone_bundle.py` builds a bundle from the tree
+into a temp folder and checks it offline: closed, secret-free, resolved free of
+`:local` with its own `.env`, and its flattened service set equal to
+`standalone_compose()`'s (SBD-01..08). The script's live run and a sign-in are
+level-2 checks a human records in the PR, not part of this suite.
 
 ## Removal
 

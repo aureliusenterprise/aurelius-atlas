@@ -39,6 +39,11 @@ and `npx nx certgen aurelius-atlas-webapp` make them. The stack also ships `dock
 which makes the same material with `openssl` alone and needs none of the repository's tooling (see
 Your host and your certificates below).
 
+The seven app pieces name the folder they mount through a required variable, so a stack that names no folder
+fails the start with that folder's name and never reads a path of this repository (SBD-12, DD-687). In a
+checkout `docker/stack.env` answers the eight names, and the commands below need no extra argument. An install
+that ships the stack without the repository names them in its own `.env`, as `docker/.env.example` explains.
+
 ```bash
 docker compose -f docker/docker-compose.yaml \
     --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env \
@@ -59,10 +64,10 @@ Tenants). One sign-in serves the webapp and the dashboards, as they share the re
 console's own session does not sign you in to them. The certificate is the dev CA's, so the browser
 asks once, for `localhost:9000`.
 
-The images are `aurelius-atlas-server:local`, `aurelius-atlas-webapp:local`,
-`aurelius-atlas-embedder:local`, `aurelius-atlas-data2model:local`,
-`aurelius-atlas-lineage-model:local` and `aurelius-atlas-validate-entity:local`;
-`npx nx docker-build` of each project builds it from the checkout. The embedder and the three aux
+The six images are the `:local` tags `npx nx docker-build` of each project builds from the checkout. Each
+piece names its image through a compose variable: `SERVER_IMAGE`, `WEBAPP_IMAGE`, `EMBEDDER_IMAGE`,
+`DATA2MODEL_IMAGE`, `LINEAGE_MODEL_IMAGE`, `VALIDATE_ENTITY_IMAGE`. An install that runs published images
+sets those six values and leaves the defaults alone. The embedder and the three aux
 services need their own certificates too: `npx nx certgen aurelius-atlas-embedder`,
 `npx nx certgen aurelius-atlas-data2model`, `npx nx certgen aurelius-atlas-lineage-model` and
 `npx nx certgen aurelius-atlas-validate-entity`.
@@ -87,13 +92,13 @@ The server creates the m4i types of the samples at start-up (ADR 058), so an imp
 with the import's status and its counts by type; a failed import exits non-zero. An import updates the
 entities it finds by GUID, so running it again is safe. Other settings:
 
-| Variable                | Default              | What it sets                                                         |
-| ----------------------- | -------------------- | -------------------------------------------------------------------- |
-| `SAMPLE_ZIP`            | empty: ignored       | The ZIP's file name in the sample folder                             |
-| `SAMPLE_DIR`            | `data/atlas-sample/` | The sample folder; a relative path is read from this directory       |
-| `SAMPLE_IMPORT_REQUEST` | `{}`                 | Atlas's `AtlasImportRequest` as JSON, such as its `options`          |
-| `ATLAS_TASKS_ENABLED`   | `true`: as Atlas     | Whether the task worker propagates classifications after the request |
-| `ATLAS_TENANCY_ENABLED` | `false`: as Atlas    | Whether the server serves several tenants (see Tenants below)        |
+| Variable                | Default            | What it sets                                                         |
+| ----------------------- | ------------------ | -------------------------------------------------------------------- |
+| `SAMPLE_ZIP`            | empty: ignored     | The ZIP's file name in the sample folder                             |
+| `SAMPLE_DIR`            | `docker/stack.env` | The required sample folder to mount (a checkout answers it)          |
+| `SAMPLE_IMPORT_REQUEST` | `{}`               | Atlas's `AtlasImportRequest` as JSON, such as its `options`          |
+| `ATLAS_TASKS_ENABLED`   | `true`: as Atlas   | Whether the task worker propagates classifications after the request |
+| `ATLAS_TENANCY_ENABLED` | `false`: as Atlas  | Whether the server serves several tenants (see Tenants below)        |
 
 An import's propagation runs once it ends (DD-361), so an entity shows what is propagated to it a little
 later.
@@ -204,9 +209,11 @@ The stack's Keycloak also opens a PKCS12 truststore, `infra/keycloak/certs/trust
 match. Bring your own certificates and you write that file yourself, with the same password, or the
 identity provider fails to start.
 
-`docker/.env.example` lists every setting the stack needs. In this checkout the three project `.env` files
-carry working defaults, so you normally need neither file; an install that ships the stack alone copies it
-to `docker/.env` and fills it.
+`docker/.env.example` lists every setting the stack needs. It states the eight folder names as comments rather
+than empty keys. Compose prefers an empty value in `.env`, and an empty folder fails the start. In a checkout,
+the three project `.env` files carry the secret defaults and `docker/stack.env` carries the folder paths, so
+you normally change nothing. An install that ships the stack alone copies the example to `docker/.env` and
+fills the secrets and the eight folders.
 
 ### Changing the host on a stack that holds data
 
@@ -318,3 +325,21 @@ The data stays in the stack's volumes for the next start. `down -v` deletes them
 with an empty store: the server creates Atlas's and the m4i types again, and `SAMPLE_ZIP` imports the sample.
 The Statistics chart fills from the hourly snapshots, so a new store's chart is empty until the first full
 hour.
+
+## Ship the bundle
+
+This page runs the stack from a repository checkout. A person without the repository gets a **bundle** instead:
+one archive with one flat compose file, the files it mounts, the sample, and the certificate script (ADR 067,
+increment 17.3). The release publishes it on the release's download page, and it needs only Docker,
+`docker compose`, `bash`, and `openssl`.
+
+From a checkout, `npx nx standalone-bundle -- --version v1.2.3` builds the same archive under `dist/`. The tool
+is `tools/standalone_bundle.py`. The bundle is never a committed file (SBD-01). Unpack it, read its `README.md`,
+and the three steps in that file start the stack: `bash docker/make-certs.sh`, fill the empty secrets in
+`docker/.env`, and `docker compose -f docker/docker-compose.yaml up -d`.
+
+The bundle's one compose file is this stack resolved by `docker compose config`, so its services and its rules
+are the ones on this page, and every `${VAR}` setting still applies. Its folder paths are relative to the
+bundle, and the folder answers sit in its `docker/.env` (DD-690). It carries no secret, no certificate, and no
+private key (SBD-04), and it names the release images instead of the `:local` tags (SBD-06). A `docker/` change
+reaches a bundle only when the release rebuilds it.
