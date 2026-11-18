@@ -1,7 +1,7 @@
 # 17.4 Simplify the standalone stack to Docker Compose
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#395](https://github.com/aureliusenterprise/aurelius-atlas/pull/395)
 - **Records:** DD-694 to DD-699 (here); relies on
   [ADR 065](../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
   (the compose fragments and the root `docker/`),
