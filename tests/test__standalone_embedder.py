@@ -37,9 +37,9 @@ def test__the_embedder_serves_tls_with_its_own_certificate(services: dict[str, A
     """Its certificate is the embedder project's, mounted read-only; the SANs name the stack's service."""
     embedder = services["embedder"]
 
-    # The certificate folder is an install's knob over this project's certgen folder; a relative
-    # value still reads from the fragment's folder, like the default it carries.
-    assert embedder["volumes"] == ["${EMBEDDER_CERTS_DIR:-../certs}:/certs:ro"]
+    # The certificate folder is an install's required knob (DD-687): the piece names no default,
+    # and a relative value still reads from the fragment's folder.
+    assert embedder["volumes"] == ["${EMBEDDER_CERTS_DIR:?name the embedder certificate folder}:/certs:ro"]
     assert embedder["environment"] == {
         "AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE": "/certs/aurelius-atlas-embedder.pem",
         "AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE": "/certs/aurelius-atlas-embedder-key.pem",

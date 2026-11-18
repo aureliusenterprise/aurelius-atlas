@@ -4,13 +4,13 @@
 # stack's network reaches it, as https://embedder:21004 with its own certificate; it checks no tokens,
 # so it has no published port (DD-432). Nothing waits for it, and nothing calls it until the server
 # embeds entities (11.3).
-# EMBEDDER_IMAGE and EMBEDDER_CERTS_DIR name the image and the certificate folder (compose-time
-# variables, like SAMPLE_ZIP: not .env settings). Unset, they are this file's own answers — the
-# `nx docker-build` tag and this project's `nx certgen` folder (ADR 065: the stack builds, never
-# pulls) — and a relative EMBEDDER_CERTS_DIR still reads from this file's folder. An install that
-# ships published images sets EMBEDDER_IMAGE to the registry reference or a digest, and its own
-# certificate folder to EMBEDDER_CERTS_DIR; the e2e stack (../e2e/docker-compose.yaml) extends
-# this service and leaves both unset.
+# EMBEDDER_IMAGE names the image (compose-time variable, like SAMPLE_ZIP: not a .env setting).
+# Unset, it is the `nx docker-build` tag (ADR 065: the stack builds, never pulls). An install that
+# ships published images sets it to the registry reference or a digest. EMBEDDER_CERTS_DIR names
+# the certificate folder and carries no default: an install names it, so the stack holds no
+# repository-relative path an outside deployment inherits by mistake. A relative value reads from
+# this file's folder, so `../certs` is this project's `nx certgen` folder. The repository names it
+# in this project's .env; the e2e stack (../e2e/docker-compose.yaml) reads the same value.
 name: aurelius-atlas-standalone
 
 services:
@@ -21,4 +21,4 @@ services:
             AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE: /certs/aurelius-atlas-embedder-key.pem
             AURELIUS_ATLAS_EMBEDDER_TLS_CA_FILE: /certs/ca.pem
         volumes:
-            - ${EMBEDDER_CERTS_DIR:-../certs}:/certs:ro
+            - ${EMBEDDER_CERTS_DIR:?name the embedder certificate folder}:/certs:ro

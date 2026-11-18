@@ -42,7 +42,7 @@ services:
             # it names localhost, and the webapp has no published port, so only the proxy's copy
             # reaches a browser.
             - ./config.json:/usr/share/nginx/html/config.json:ro
-            - ../certs:/certs:ro
+            - ${WEBAPP_CERTS_DIR:?name the webapp certificate folder}:/certs:ro
 
 volumes:
     webapp-nginx-conf:

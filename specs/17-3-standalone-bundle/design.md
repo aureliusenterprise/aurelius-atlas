@@ -99,9 +99,9 @@ release step's job.
 - **Supersedes:** nothing. It settles what travels with the stack and what the operator supplies.
 
 **Decision.** The bundler copies the sample folder `data/atlas-sample/` (about 1 MB) into the bundle and
-leaves the server piece's `SAMPLE_DIR` default pointing at it, so the sample import and the tenants one shot
-find a file to import with no setting (SBD-05). The bundler copies no `.env` file, no `secrets/` folder, no
-`certs/` folder, and no `*.enc` file. It writes the bundle's own `.env` from the roster of
+names `SAMPLE_DIR` in the bundle's `.env`, so the sample import and the tenants one shot find a file to
+import while the person sets no folder (SBD-05, DD-687). The bundler copies no `.env` file, no `secrets/`
+folder, no `certs/` folder, and no `*.enc` file. It writes the bundle's own `.env` from the roster of
 `docker/.env.example`: every secret name the stack guards, with an empty value, plus the six image variables
 with their release values (DD-685). It ships `make-certs.sh` and its manifest `certs.txt` beside it
 (increment 17.2). The operator runs the script, or places their own material at the same paths, and fills the
@@ -125,8 +125,8 @@ start, and no instruction to run `nx` (SBD-09).
   made for one archive makes no sense on the operator's machine (SBD-04).
 
 **Consequences.** The bundle is self-contained but starts only after the operator fills `.env` and runs the
-script. The SBD-08 level 2 run exercises exactly those two steps. `SAMPLE_DIR` stays an override for an
-operator who wants their own export.
+script. The SBD-08 level 2 run exercises exactly those two steps. The bundle's `.env` names `SAMPLE_DIR`, and
+an operator who wants their own export changes that one value (DD-687).
 
 ### DD-685. The release step injects the image tag into the bundle
 
@@ -202,3 +202,58 @@ produces, so `nx serve`, the e2e stacks, and the documented README commands see 
 **Consequences.** Six variables name the stack's images, and the SBD-11 pin names them, so a new piece that
 bakes a literal fails. The JWKS one shot moves with the server on purpose. A checkout needs no change: the
 defaults are the tags it built.
+
+### DD-687. The stack requires every certificate and sample folder through a variable
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-18
+- **Supersedes:** nothing. It tightens DD-684 and 17.1: the certificate and sample folders those records left
+  as defaults or literals in the app pieces are required settings now.
+
+**Decision.** A required compose variable names the folder each app piece mounts, and no app piece carries a
+path default. The server piece requires `SERVER_CERTS_DIR` and `SAMPLE_DIR`, the gateway requires
+`GATEWAY_CERTS_DIR` for its copy of the server's edge leaf, and the webapp and the three aux pieces each
+require their own `..._CERTS_DIR`. Each guard names the setting in its message, so a person who sets none of
+them sees a failed start that names the variable, not a mount of a path of the repository (SBD-12). The
+umbrella names `docker/stack.env` in each app include as an `env_file`, so the repository's own commands
+answer the eight names with no extra argument. `stack.env` is committed and holds no secret, because a folder
+path is not a credential (DD-684). Each e2e stack answers the names it transitively extends from its
+project's own `.env`, and Nx injects that file into every task of the project. A relative value reads from
+the folder of the piece that declares it.
+
+**Reason.** A customer install answers a path default even when the default names a folder of this repository.
+`SAMPLE_DIR` defaulted to `../../../data/atlas-sample`, and the webapp and the aux pieces each mounted
+`../certs`, which is a folder of the repository tree. A person who copies one piece to their own machine
+inherits a path that does not exist there, and the failure is a service that cannot read its own certificate.
+The guard fails one step earlier and names the setting (SBD-12). The bundler cannot cover this: it rewrites
+a literal path (DD-683),
+but SBD-04 says the bundle ships no secret and fills no value a person did not set, so it must not rewrite a
+customer's `.env`. The gateway showed the second shape: it mounted the server's leaf through the repository
+path `../../apps/aurelius-atlas-server/certs`, which no install outside the tree can answer. `stack.env` keeps
+the repository working as documented: compose reads an included piece with the `env_file` the umbrella names
+for it (ADR 065), so the README and CI commands keep the three secret files they name today (DD-669).
+
+**Alternatives.**
+
+- Keep the defaults and let the bundler rewrite them into bundle paths. Rejected: the repository keeps
+  shipping a folder name only the repository can answer, and a customer who never sees this tree must set the
+  eight variables in every command.
+- Put the eight names in the server's `.env` and pass that file everywhere. Rejected: compose reads an outer
+  `--env-file` for every piece, so the names sit in a file the server owns (DD-669) and join the chart
+  and test tasks that share it.
+- Name them like the app settings, with the project prefix. Rejected: pydantic's `env_prefix` is why app
+  settings carry a prefix. Compose reads these names from the stack's own env-files, and DD-686 settled the
+  same unprefixed shape for the image variables.
+- Require the three infra pieces as well. Rejected: no infra piece has a default to remove. The store, the
+  identity provider, and the collector read the slices' own `./certs` paths, and the bundle's path rewriter
+  relocates the literal (SBD-03).
+
+**Consequences.** Eight names join the settings a customer fills, and `docker/.env.example` explains them as
+comments rather than empty keys. Compose prefers an empty value of an outer `--env-file` over `stack.env`, and
+an empty value trips a guard, so an empty key breaks a stack that names no folder. `SAMPLE_DIR` is now
+a required setting of the server piece, so the bundle's `.env` names it with the sample's path inside the
+bundle and SBD-05 no longer describes a default. The SBD-12 pin reads the merged stack and fails a piece that
+adds a mount of a folder without a guard, or a default path, or a required name `stack.env` does not answer.
+`nx serve`, the e2e stacks, and the documented commands see no change, because `stack.env` and the projects'
+`.env` files answer the guards.
