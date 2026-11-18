@@ -1,6 +1,6 @@
 # Observability
 
-How Aurelius Atlas raises its hand when it is broken (ADR 040): metrics, logs, traces, and alerts. Every part sends its signals to one collection point, the OpenTelemetry collector, which passes them to Prometheus, Loki and Tempo; Grafana shows them and evaluates the alert rules. The development arrangement runs that stack in `dev/observability`; which products, and their ports, are in [Dev Topology](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/contributor-guide/development-environment/#dev-topology>). The observability chart runs the same stack on a cluster.
+How Aurelius Atlas raises its hand when it is broken (ADR 040): metrics, logs, traces, and alerts. Every part sends its signals to one collection point, the OpenTelemetry collector, which passes them to Prometheus, Loki and Tempo; Grafana shows them and evaluates the alert rules. The development arrangement runs that stack in `infra/observability`; which products, and their ports, are in [Dev Topology](<https://aureliusenterprise.github.io/dependabot-uv-cachetools-8.0.0/contributor-guide/development-environment/#dev-topology>). The observability chart runs the same stack on a cluster.
 
 | Page | Scope | Written by |
 | --- | --- | --- |

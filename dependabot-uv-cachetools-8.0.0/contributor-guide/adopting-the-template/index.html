@@ -2380,6 +2380,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -4176,6 +4182,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -7049,7 +7136,7 @@ they must be edited by hand. Work through this list top to bottom; each item nam
 </tbody>
 </table>
 <h3 id="2-project-names-and-directories">2. Project names and directories<a class="headerlink" href="#2-project-names-and-directories" title="Permanent link">&para;</a></h3>
-<p>Every project under <code>apps/</code>, <code>libs/</code>, <code>connectors/</code>, <code>dev/</code>, <code>docker/</code>, and <code>reports/</code> carries the
+<p>Every project under <code>apps/</code>, <code>libs/</code>, <code>connectors/</code>, <code>infra/</code>, <code>docker/</code>, and <code>reports/</code> carries the
 <code>aurelius-</code> prefix in its directory name, its <code>project.json</code> <code>name</code>, and its package manifest
 (<code>package.json</code> / <code>pyproject.toml</code> / Gradle project). Renaming a project means updating <strong>all</strong> of:</p>
 <ul>
@@ -7059,7 +7146,7 @@ they must be edited by hand. Work through this list top to bottom; each item nam
   (Java modules), <code>package.json</code> (<code>file:</code> dependencies), <code>tsconfig.base.json</code> (<code>paths</code>).</li>
 <li><code>mkdocs.yaml</code> nav entries and <code>docs/api-reference/</code> page paths.</li>
 <li>ESLint config <code>prefix</code> values in per-project <code>eslint.config.mjs</code> files.</li>
-<li>Compose project/network names in <code>dev/**/docker-compose.yaml</code> and <code>apps/*/e2e/docker-compose.yaml</code>.</li>
+<li>Compose project/network names in <code>infra/**/docker-compose.yaml</code> and <code>apps/*/e2e/docker-compose.yaml</code>.</li>
 </ul>
 <details class="tip">
 <summary>Check your work with Nx</summary>
@@ -7111,7 +7198,7 @@ Developers need a <code>docker login</code> on their host too — see
 <code>sonar-project.properties</code>. Point these at your SonarCloud organization (or disable the <code>sonar</code> step in CI
 until your projects exist there).</p>
 <h3 id="8-keycloak-realm-and-clients">8. Keycloak realm and clients<a class="headerlink" href="#8-keycloak-realm-and-clients" title="Permanent link">&para;</a></h3>
-<p>The development realm import (<code>dev/keycloak/import/master.json</code>) defines a client with id <code>aurelius</code>.
+<p>The development realm import (<code>infra/keycloak/import/master.json</code>) defines a client with id <code>aurelius</code>.
 Rename it there and in both consumers: <code>apps/aurelius-atlas-webapp/dev/config.json</code> and
 <code>apps/aurelius-atlas-webapp/e2e/config/config.json</code> (<code>clientId</code>).</p>
 <h3 id="9-documentation-references">9. Documentation references<a class="headerlink" href="#9-documentation-references" title="Permanent link">&para;</a></h3>

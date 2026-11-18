@@ -2167,6 +2167,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3966,6 +3972,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="./067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6843,6 +6930,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -7204,6 +7297,16 @@ area you are about to work in; the rest can wait.</p>
 <tr>
 <td><a href="./064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/">064</a></td>
 <td>The rewritten webapp reads rich catalogue data through one Aurelius view family over the derived documents of ADR 060, in one client shape; a mutation answers with the new view, and every endpoint states its freshness.</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="./065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/">065</a></td>
+<td>A deployment target sits where its scope sits: the compose stack that deploys the whole system lives in <code>docker/</code> at the root, beside the umbrella; a stack for one component lives beside it.</td>
+<td>Proposed</td>
+</tr>
+<tr>
+<td><a href="./066-infrastructure-components-live-at-the-repository-root/">066</a></td>
+<td>Infrastructure components, whose charts the umbrella installs, live at <code>infra/</code> at the root beside the umbrella; each states its run once and a stack extends it, superseding the placement of DD-006 and the dev-slice DDs.</td>
 <td>Proposed</td>
 </tr>
 </tbody>

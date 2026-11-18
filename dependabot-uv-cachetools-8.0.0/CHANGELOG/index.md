@@ -1,3 +1,46 @@
+## 0.1.0-rc.9 (2026-11-16)
+
+### 🩹 Fixes
+
+- **helm:** mount the Keycloak Postgres volume with fsGroupChangePolicy OnRootMismatch ([721cfd5b4](<https://github.com/aureliusenterprise/aurelius-atlas/commit/721cfd5b4>))
+
+## 0.1.0-rc.8 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** move the observability mesh onto internal TLS ([a6f898272](<https://github.com/aureliusenterprise/aurelius-atlas/commit/a6f898272>))
+- **helm:** read the browser hosts by role and gate the sign-ins ([5d23b0650](<https://github.com/aureliusenterprise/aurelius-atlas/commit/5d23b0650>))
+
+## 0.1.0-rc.7 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** sync the backend CA with a trust-manager Bundle ([63172ad68](<https://github.com/aureliusenterprise/aurelius-atlas/commit/63172ad68>))
+
+## 0.1.0-rc.6 (2026-11-16)
+
+### 🩹 Fixes
+
+- **ci:** serialise the cosign attest and sign targets ([a2bec7437](<https://github.com/aureliusenterprise/aurelius-atlas/commit/a2bec7437>))
+
+## 0.1.0-rc.5 (2026-11-16)
+
+### 🩹 Fixes
+
+- **helm:** ca-sync reads its CA Secret; version-free volumeClaimTemplates ([196410cca](<https://github.com/aureliusenterprise/aurelius-atlas/commit/196410cca>))
+
+## 0.1.0-rc.4 (2026-11-16)
+
+### 🚀 Features
+
+- **helm:** split edge trust, backend-CA ConfigMap, HTTPS health checks (10.13) ([4fd97adf7](<https://github.com/aureliusenterprise/aurelius-atlas/commit/4fd97adf7>))
+
+## 0.1.0-rc.3 (2026-11-16)
+
+### 🩹 Fixes
+
+- **publish:** helm-publish packages into a private temp dir and pushes the exact name ([5b46c2f32](<https://github.com/aureliusenterprise/aurelius-atlas/commit/5b46c2f32>))
+
 ## 0.1.0-rc.2 (2026-11-16)
 
 ### 🩹 Fixes

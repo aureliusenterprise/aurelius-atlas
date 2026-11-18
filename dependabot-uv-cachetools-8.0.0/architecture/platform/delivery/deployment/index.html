@@ -2165,6 +2165,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3964,6 +3970,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6847,8 +6934,9 @@ steps, are in the <a href="../../../deployment/">deployment reference</a> and it
 agent. Each part has a chart, and the umbrella chart installs them as one release (<a href="../../../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/">ADR
 057</a>). An environment differs
 from another by its values, never by a changed chart.</p>
-<p>In development the same parts run as compose stacks, one per project (<code>dev/*/docker-compose.yaml</code>), started by
-the targets that need them (<a href="../../../adr/005-dev-infra-starts-with-the-app/">ADR 005</a>). The compose files and
+<p>In development the same parts run as compose stacks, one per project (<code>infra/*/docker-compose.yaml</code> for the
+shared infrastructure), started by the targets that need them
+(<a href="../../../adr/005-dev-infra-starts-with-the-app/">ADR 005</a>). The compose files and
 the charts are siblings: the chart suites hold the settings they share equal, such as the alert rules, the
 collector's configuration and the lifetimes.</p>
 <h2 id="promoting-a-release">Promoting a release<a class="headerlink" href="#promoting-a-release" title="Permanent link">&para;</a></h2>
