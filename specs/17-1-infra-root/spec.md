@@ -1,7 +1,7 @@
 # 17.1 Infrastructure components live at the repository root
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#387](https://github.com/aureliusenterprise/aurelius-atlas/pull/387)
 - **Records:** ADR 066 (Proposed, here); DD-667 to DD-677 (here); relies on
   [ADR 065](../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
   (the compose fragments and the root `docker/`), ADR 057 (charts as the delivery), ADR 051
