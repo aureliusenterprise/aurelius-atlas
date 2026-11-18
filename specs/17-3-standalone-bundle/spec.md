@@ -1,7 +1,7 @@
 # 17.3 The standalone bundle
 
 - **Status:** planned
-- **Pull request:** to follow
+- **Pull request:** [#396](https://github.com/aureliusenterprise/aurelius-atlas/pull/396)
 - **Records:** [ADR 067](../../docs/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle.md)
   (the bundle as a release artifact), DD-682 to DD-692 (here); relies on
   [ADR 065](../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)

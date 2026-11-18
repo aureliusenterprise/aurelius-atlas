@@ -55,7 +55,9 @@ and the increment specs in `docs/architecture/conversion/increments/`.
 - `helm/` — the `atlas-webapp` chart (its own section below)
 - `docker/compose.yaml` — this project's piece of the standalone stack (ADR
   065), included by `docker/docker-compose.yaml` at the root; beside it
-  `config.json` and `resolve-nginx.sh`, the files it mounts. Not runnable on
+  `config.json`, the file it mounts. Its nginx configuration is the static
+  `docker/webapp/nginx.conf` the stack ships (SPC-04, DD-695: no render one
+  shot, no `resolve-nginx.sh`). Not runnable on
   its own — run the umbrella.
 
 ## Porting rules (every slice)

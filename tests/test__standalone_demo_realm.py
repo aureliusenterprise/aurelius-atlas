@@ -2,9 +2,10 @@
 
 The realm file and the compose file are read as written: the clients and their roles against the server's
 ``ROLE_PRIVILEGES``, the service identities, and the stack's wiring to the realm. The realm carries the Helm
-production realm's posture (DD-673): the same name and the same service identities, and no default user. The
-stack's Keycloak is the infra slice's service extended (DD-670), so the suite proves the production topology
-it inherits.
+production realm's posture (DD-673): the same name and the same service identities, and no default user. Its
+browser URIs name `localhost` as written, with no host placeholder (SPC-02, DD-694). The stack's Keycloak is
+the infra slice's service extended (DD-670), so the suite proves the production topology it inherits, booted
+with no build one-shot (SPC-05, DD-696).
 """
 
 import json
@@ -14,7 +15,7 @@ from typing import Any
 import pytest
 import yaml
 from aurelius_atlas_server.authorization import ROLE_PRIVILEGES
-from conftest import WORKSPACE, compose_load, resolved, standalone_compose
+from conftest import WORKSPACE, compose_load, standalone_compose
 
 STACK = WORKSPACE / "docker"
 INFRA_KEYCLOAK = WORKSPACE / "infra/keycloak/docker-compose.yaml"
@@ -40,10 +41,10 @@ def _client(realm: dict[str, Any], client_id: str) -> dict[str, Any]:
     return next(client for client in realm["clients"] if client["clientId"] == client_id)
 
 
-@pytest.mark.covers(rules=["DMO-01"])
+@pytest.mark.covers(rules=["DMO-01", "SPC-02"])
 def test__the_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any]) -> None:
     """The realm is the Helm realm's name; the server's client holds the server's four roles, and the public
-    client's tokens carry them (DMO-01).
+    client's tokens carry them (DMO-01). The browser URIs name the host the stack serves, written out (SPC-02).
     """  # noqa: D205 - one sentence
     assert realm["realm"] == "aurelius-atlas"
     roles = {role["name"] for role in realm["roles"]["client"][SERVER_CLIENT]}
@@ -51,15 +52,15 @@ def test__the_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any])
     server = _client(realm, SERVER_CLIENT)
     assert not server["publicClient"]
     assert PLACEHOLDER.match(server["secret"])
-    assert server["redirectUris"] == ["https://${STANDALONE_HOST}:9000/atlas2/login.jsp"]
-    assert server["attributes"]["post.logout.redirect.uris"] == "https://${STANDALONE_HOST}:9000/atlas2/"
+    assert server["redirectUris"] == ["https://localhost:9000/atlas2/login.jsp"]
+    assert server["attributes"]["post.logout.redirect.uris"] == "https://localhost:9000/atlas2/"
     public = _client(realm, "aurelius")
     assert public["publicClient"]
     assert public["standardFlowEnabled"]
-    # SPS-06: the browser URIs carry the host placeholder and no literal host.
-    assert public["redirectUris"] == ["https://${STANDALONE_HOST}:9000/*"]
-    assert public["webOrigins"] == ["https://${STANDALONE_HOST}:9000"]
-    assert "localhost" not in json.dumps([public, server])
+    # SPC-02, SPS-06 retired: the browser URIs are literal, and no host variable is substituted into them.
+    assert public["redirectUris"] == ["https://localhost:9000/*"]
+    assert public["webOrigins"] == ["https://localhost:9000"]
+    assert "STANDALONE_HOST" not in json.dumps([public, server])
     mapped = realm["clientScopeMappings"][SERVER_CLIENT]
     assert mapped == [{"client": "aurelius", "roles": sorted(roles, key=list(ROLE_PRIVILEGES).index)}]
 
@@ -91,9 +92,8 @@ def test__the_realm_holds_service_identities_and_no_person(realm: dict[str, Any]
 @pytest.mark.covers(rules=["DMO-02"])
 def test__the_realm_matches_the_helm_realms_service_identities(realm: dict[str, Any]) -> None:
     """The clients the two copies share are the same shape, and the operators organization carries groups of
-    its own ids (DD-673): one Keycloak may hold both realms, as a migration replaces the placeholders from the
-    environment either way. The validator's client joins the stack's realm alone — the Helm world carries it
-    in the dev realm (CHT-113), and the stack has only this one.
+    its own ids (DD-673): one Keycloak may hold both realms. The validator's client joins the stack's realm
+    alone — the Helm world carries it in the dev realm (CHT-113), and the stack has only this one.
     """  # noqa: D205 - one sentence
     prod = json.loads(PROD_REALM.read_text())
     shared = [
@@ -112,10 +112,11 @@ def test__the_realm_matches_the_helm_realms_service_identities(realm: dict[str, 
     assert sorted(u["username"] for u in prod["users"]) <= sorted(u["username"] for u in realm["users"])
 
 
-@pytest.mark.covers(rules=["DMO-03"])
+@pytest.mark.covers(rules=["DMO-03", "SPC-06"])
 def test__stack_signs_in_to_the_realm_alone(services: dict[str, Any], realm: dict[str, Any]) -> None:
-    """Keycloak imports `aurelius-atlas` alone with its placeholders; the server and the sample import use it,
-    and the sample import signs as the admin service identity (DMO-03, DD-666).
+    """Keycloak imports `aurelius-atlas` alone with its secret placeholders; the server and the sample import
+    use it, and the sample import signs as the admin service identity (DMO-03, DD-666). The sample import runs
+    only when the person asks for it, behind the `demo` profile (SPC-06, DD-697).
     """  # noqa: D205 - one sentence
     keycloak = services["keycloak"]
     assert "docker/keycloak:/opt/keycloak/data/import:ro" in keycloak["volumes"]
@@ -132,15 +133,14 @@ def test__stack_signs_in_to_the_realm_alone(services: dict[str, Any], realm: dic
     assert services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_REALM"] == "aurelius-atlas"
     audiences = json.loads(services["aurelius-atlas-server"]["environment"]["AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES"])
     assert {"aurelius", "aurelius-atlas-validate-entity", "aurelius-atlas-admin"} <= set(audiences)
-    sample = services["sample-import"]["environment"]
+    sample = services["sample-import"]
+    assert sample["profiles"] == ["demo"]
     token_url = "https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105
-    assert resolved(sample["TOKEN_URL"]) == token_url
-    assert sample["ATLAS_CLIENT_ID"] == "aurelius-atlas-admin"
-    assert sample["ATLAS_CLIENT_SECRET"] == "${ATLAS_ADMIN_CLIENT_SECRET:-}"  # noqa: S105 - a placeholder
-    assert (
-        resolved(services["aurelius-atlas-validate-entity"]["environment"]["AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL"])
-        == token_url
-    )
+    assert sample["environment"]["TOKEN_URL"] == token_url
+    assert sample["environment"]["ATLAS_CLIENT_ID"] == "aurelius-atlas-admin"
+    assert sample["environment"]["ATLAS_CLIENT_SECRET"] == "${ATLAS_ADMIN_CLIENT_SECRET:-}"  # noqa: S105 - a placeholder
+    token = services["aurelius-atlas-validate-entity"]["environment"]["AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL"]
+    assert token == token_url
 
 
 @pytest.mark.covers(rules=["TRM-06"])
@@ -157,12 +157,13 @@ def test__the_realms_operator_organization_keeps_its_id_across_imports(realm: di
     assert not set(ids) & prod_ids
 
 
-@pytest.mark.covers(rules=["IRT-06"])
+@pytest.mark.covers(rules=["IRT-06", "SPC-05"])
 def test__the_stacks_keycloak_keeps_the_production_topology(services: dict[str, Any]) -> None:
     """The stack's provider is the infra service extended, Postgres-backed behind the proxy
     (IRT-06, DD-670): the image and the certificate-copy Postgres boot inherited, the realm
     served at the issuer the server verifies. Its native OTLP push rides the stack's own
-    collector's legacy leg (DD-675).
+    collector's legacy leg (DD-675). Prod mode runs with no build one-shot: the home Compose
+    seeds from the image carries the first start's augmentation (SPC-05, DD-696).
     """  # noqa: D205 - one sentence
     keycloak = services["keycloak"]
     base = yaml.safe_load(INFRA_KEYCLOAK.read_text())["services"]
@@ -173,19 +174,10 @@ def test__the_stacks_keycloak_keeps_the_production_topology(services: dict[str, 
     # Prod mode as the chart runs it (CHT-16's rule, DD-676): `start`, never `start-dev`.
     assert keycloak["command"][0] == "start"
     assert not any(part.startswith("start-dev") for part in keycloak["command"])
-    # The build stage of the chart's prod boot, as a one shot: it builds the options the runtime
-    # env states, into the home the runtime mounts. Its env is only the build-time options (the
-    # listener and telemetry keys would be dead weight there), and it waits for nothing.
-    build = services["keycloak-build"]
-    # The build persists exactly the build options the start passes - parity is the point.
-    assert build["command"] == [
-        "build",
-        "--http-relative-path=/auth",
-        "--metrics-enabled=true",
-        "--tracing-enabled=true",
-        "--telemetry-metrics-enabled=true",
-        "--telemetry-logs-enabled=true",
-    ]
+    # SPC-05: no build one-shot. The start passes the flags that are build options in prod mode, so
+    # its first boot re-augments them into the seeded home and a later boot finds a current build.
+    assert "keycloak-build" not in services
+    assert "keycloak-build" not in stated
     assert [part for part in keycloak["command"] if part.endswith("=true") or part.startswith("--")] == [
         "--import-realm",
         "--metrics-enabled=true",
@@ -194,37 +186,29 @@ def test__the_stacks_keycloak_keeps_the_production_topology(services: dict[str, 
         "--telemetry-logs-enabled=true",
         "--telemetry-endpoint=https://otel-collector:4320",
     ]
-    assert build["environment"] == {
-        "KC_DB": "postgres",
-        "KC_HEALTH_ENABLED": "true",
-        "KC_FEATURES": "opentelemetry-metrics,preview",
-        "JAVA_OPTS": "-Xms256m -Xmx512m",
-    }
-    assert "depends_on" not in build
-    assert "kc-home:/opt/keycloak" in build["volumes"]
-    # The start finds that home current: it mounts over the image, and the built options are
-    # stated as env so the runtime checks pass without re-augmenting. Prod mode's TLS gate is
-    # closed by naming the relaxation off - the proxy is the TLS terminator (ADR 039's shape).
-    assert keycloak["depends_on"]["keycloak-build"] == {"condition": "service_completed_successfully"}
     assert "kc-home:/opt/keycloak" in keycloak["volumes"]
-    assert keycloak["environment"]["KC_DB"] == build["environment"]["KC_DB"]
-    assert keycloak["environment"]["KC_HEALTH_ENABLED"] == build["environment"]["KC_HEALTH_ENABLED"]
+    assert keycloak["environment"]["KC_DB"] == "postgres"
+    assert keycloak["environment"]["KC_HEALTH_ENABLED"] == "true"
     assert keycloak["environment"]["KC_HTTP_RELATIVE_PATH"] == "/auth"
-    assert keycloak["environment"]["KC_FEATURES"] == build["environment"]["KC_FEATURES"]
+    assert keycloak["environment"]["KC_FEATURES"] == "opentelemetry-metrics,preview"
     assert keycloak["environment"]["KC_HTTPS_ENABLED"] == "false"
+    # The JVM options hold the truststore and the heap cap, and no realm placeholder flag (SPC-02).
+    assert "-Djavax.net.ssl.trustStore=/certs/truststore.p12" in keycloak["environment"]["JAVA_OPTS"]
+    assert "replace-placeholders" not in keycloak["environment"]["JAVA_OPTS"]
     postgres = services["postgres-keycloak"]
     assert postgres["image"] == base["postgres-keycloak"]["image"]
     assert postgres["entrypoint"] == base["postgres-keycloak"]["entrypoint"]
     assert "entrypoint" not in stated["postgres-keycloak"]
-    # The database, not the in-memory server the first demo ran: Postgres healthy first.
-    assert keycloak["depends_on"]["postgres-keycloak"] == {"condition": "service_healthy"}
+    # The database, not the in-memory server the first demo ran: Postgres healthy first, and nothing else.
+    assert keycloak["depends_on"] == {"postgres-keycloak": {"condition": "service_healthy"}}
     assert keycloak["environment"]["KC_DB"] == "postgres"
     assert keycloak["environment"]["KC_DB_URL"].startswith("jdbc:postgresql://postgres-keycloak:5432/keycloak")
     assert "keycloak-postgres-data:/var/lib/postgresql" in postgres["volumes"]
     assert "ports" not in postgres
-    # The issuer behind the proxy, unchanged for the server's check (ADR 039's one answer). SPS-01:
-    # the value carries the host variable, and the default is this.
-    assert resolved(keycloak["environment"]["KC_HOSTNAME"]) == "https://localhost:9000/auth"
+    # The issuer behind the proxy, unchanged for the server's check (ADR 039's one answer). SPC-02:
+    # the value is the literal host the stack serves, and no host variable sits in the environment.
+    assert keycloak["environment"]["KC_HOSTNAME"] == "https://localhost:9000/auth"
+    assert "STANDALONE_HOST" not in keycloak["environment"]
     assert keycloak["environment"]["KC_HTTP_RELATIVE_PATH"] == "/auth"
     assert keycloak["environment"]["KC_PROXY_HEADERS"] == "xforwarded"
     # The legacy OTLP leg (DD-675): the issuer cannot present its own token at cold boot

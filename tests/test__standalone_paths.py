@@ -28,8 +28,9 @@ GUARDED_SERVICES = {
     "tenants",
 }
 
-# The infra services that keep a literal certificate folder (SBD-03).
-LITERAL_SERVICES = {"keycloak", "keycloak-build", "postgres-keycloak", "otel-collector"}
+# The infra services that keep a literal certificate folder (SBD-03). The build one shot of 17.2
+# is gone with the Keycloak build stage (SPC-05, DD-696).
+LITERAL_SERVICES = {"keycloak", "postgres-keycloak", "otel-collector"}
 
 
 @pytest.fixture(scope="module")
@@ -43,7 +44,7 @@ def _folder_mounts(service: dict[str, Any]) -> list[str]:
     return [v for v in service.get("volumes") or [] if v.endswith(("/certs:ro", "/sample:ro"))]
 
 
-@pytest.mark.covers(rules=["SBD-12"])
+@pytest.mark.covers(rules=["SBD-12", "SPC-01", "SPC-02"])
 def test__every_app_folder_mount_names_a_required_variable(services: dict[str, Any]) -> None:
     """No app folder mount carries a default path: a defaulted `:-` would let an install read a path of
     this repository, which is the failure SBD-12 removes (DD-687).

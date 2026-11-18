@@ -44,11 +44,6 @@ services:
         volumes:
             - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
             - jwks-data:/jwks:ro
-        # SPS-08: the validator's issuer_url reads ${env:STANDALONE_HOST} (confmap has no default
-        # syntax, so the variable must be present); compose interpolates the default for the host
-        # shell here, and extends keeps the base's ingest-token guard.
-        environment:
-            STANDALONE_HOST: ${STANDALONE_HOST:-localhost}
         ports: !reset []
         # The base's boot order (Loki started, Tempo healthy) plus the keys: the OIDC extension
         # reads /jwks/jwks.json at start and exits without it, so the fetch must have completed.
@@ -60,11 +55,13 @@ services:
             jwks-fetch:
                 condition: service_completed_successfully
 
-    # One shot: copies the stack realm's JWKS to the shared volume (the collector's file-based
-    # validator - DD-675). Keycloak serves the realm's signing keys over its plaintext listener
-    # in-network, so no certificate is needed here. Keycloak generates the realm's key on its
-    # first boot and keeps it in its database: the file is rewritten at every stack start, so a
-    # fresh store (after `down -v`) lands the new key.
+    # One shot (SPC-08, DD-698 - the reason it is not a fixable design): copies the stack realm's
+    # JWKS to the shared volume (the collector's file-based validator - DD-675). The validator's
+    # issuer is the proxy's browser address, which no container can dial in-network, and the OIDC
+    # extension has no key-URL option, so the keys must be a file. This one shot dials Keycloak's
+    # plaintext listener in-network, where no certificate is needed. Keycloak generates the realm's
+    # key on its first boot and keeps it in its database: the file is rewritten at every stack
+    # start, so a fresh store (after `down -v`) lands the new key.
     # SERVER_IMAGE is the server piece's variable: this one shot runs that image for its Python
     # and its CA trust, so one value moves it with the server (SBD-06).
     jwks-fetch:

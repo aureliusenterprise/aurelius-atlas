@@ -7,8 +7,9 @@
 # infra/elasticsearch and infra/keycloak, and the stack states only its differences. Secrets, the realm's
 # client secrets among them, come from the server's .env and the two infra .env files (DD-669):
 #   --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env --env-file infra/elasticsearch/.env
-# SAMPLE_ZIP names an Atlas export ZIP in data/atlas-sample/ to import once the server is up;
-# empty, or a name no file has, imports nothing.
+# The always-on stack imports no sample and provisions no tenant: sample-import sits behind the
+# profile demo and tenants behind tenancy (SPC-06, SPC-07). docker/bin/import-sample.sh and
+# docker/bin/provision-tenants.sh run either one on demand.
 #
 # This file names the project and joins the pieces (ADR 065, DD-677); the stack's services all live
 # in the pieces it includes, as the umbrella chart joins the component charts: the gateway (nginx,
@@ -16,8 +17,8 @@
 # apps/aurelius-atlas-server/docker/, the webapp from apps/aurelius-atlas-webapp/docker/, the
 # extractor from apps/aurelius-atlas-data2model/docker/, the lineage API from
 # apps/aurelius-atlas-lineage-model/docker/, the validator from apps/aurelius-atlas-validate-entity/docker/,
-# the embedder from apps/aurelius-atlas-embedder/docker/, the store from docker/elasticsearch/ and the
-# the identity provider from docker/keycloak/ and the telemetry (collector, Prometheus, Loki, Tempo,
+# the embedder from apps/aurelius-atlas-embedder/docker/, the store from docker/elasticsearch/, the
+# identity provider from docker/keycloak/, and the telemetry (collector, Prometheus, Loki, Tempo,
 # Grafana, DD-675) from docker/observability/. Compose merges them by service name into this one
 # project; a relative path in a fragment reads from the fragment's own folder. The fragments are not a
 # deployment target of their own — run this file.

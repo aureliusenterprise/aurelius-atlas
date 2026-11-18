@@ -13,7 +13,10 @@
 name: aurelius-atlas-standalone
 
 services:
-    # The chown one shot, extended: the same image and entrypoint, the stack's volumes.
+    # The chown one shot, extended: the same image and entrypoint, the stack's volumes. It stays
+    # because Compose has no `fsGroup` (SPC-09, DD-698 - the reason it is not a fixable design):
+    # the volume holds folders the image does not ship, Elasticsearch refuses a data directory of
+    # the wrong owner, and the chart answers the same rule with fsGroup on its pod.
     elasticsearch-volume-init:
         extends:
             file: ../../infra/elasticsearch/docker-compose.yaml

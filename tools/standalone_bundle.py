@@ -19,11 +19,12 @@ Two things the raw ``config`` output cannot ship as-is, and the tool fixes mecha
   bundle's ``.env``, so the knobs stay knobs and no value names a machine (SBD-05, SBD-12).
 
 What travels: the flat compose file, every file or folder the flat file mounts, the sample (SBD-05), the
-certificate script and its manifest (17.2), and the starter ``.env.example`` roster. What never travels: the
-repository's secrets — any ``.env``/``.env.enc``, the ``certs/`` folders, ``secrets/``, and any key or
-certificate (SBD-04). A certificate folder is mounted but not copied: ``make-certs.sh`` fills it inside the
-bundle (SBD-09). The tool writes the bundle's own ``.env`` and ``README.md``. A bind it cannot copy, or a
-shape it has not learned, fails the build rather than ship a bundle that starts broken (SBD-03).
+scripts folder a person runs by hand with its certificate manifest (17.2, SPC-11), and the starter
+``.env.example`` roster. What never travels: the repository's secrets — any ``.env``/``.env.enc``, the
+``certs/`` folders, ``secrets/``, and any key or certificate (SBD-04). A certificate folder is mounted but not
+copied: ``docker/bin/make-certs.sh`` fills it inside the bundle (SBD-09). The tool writes the bundle's own
+``.env`` and ``README.md``. A bind it cannot copy, or a shape it has not learned, fails the build rather than
+ship a bundle that starts broken (SBD-03).
 
 Run as a script (``uv run python tools/standalone_bundle.py --version v1.2.3``) or through the root target
 ``nx standalone-bundle -- --version v1.2.3``. Producing the flat file needs the ``docker compose`` CLI; that
@@ -86,13 +87,10 @@ IMAGE_VARIABLE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*_IMAGE):-ghcr\.io/aureliusent
 #: so the tool types them ``bind`` and answers them in the bundle's ``.env`` (DD-690).
 GUARDED_VARIABLE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*):\?[^}]*\}$")
 
-#: The tenants one-shot's sample default ``${TENANT_SAMPLE:-sample_data.zip}``. The bundle reads the ZIP name
-#: from it, so the sample imports itself on first start with no second list of sample names (SBD-05).
-SAMPLE_DEFAULT = re.compile(r"^\$\{TENANT_SAMPLE:-([^}]+)\}$")
-
 #: The committed files a running stack reads that no service mounts: the roster the bundle ``.env`` is built
-#: from, and the certificate script with its manifest (17.2, SBD-09).
-EXTRA_FILES = ("docker/.env.example", "docker/make-certs.sh", "docker/certs.txt")
+#: from, the scripts folder a person runs by hand (SPC-11, DD-699), and the certificate manifest (17.2,
+#: SBD-09). The whole scripts folder ships, so a bundle holds every script its own README names.
+EXTRA_FILES = ("docker/.env.example", "docker/bin", "docker/certs.txt")
 
 #: Never copied from the repository (SBD-04, DD-684): the repository's own env files, the generated certificate
 #: folders, the developer secrets tree, and any key, certificate, or truststore file.
@@ -251,22 +249,6 @@ def image_variables(document_text: str) -> dict[str, str]:
     return dict(sorted(out.items()))
 
 
-def _sample_zip(document_text: str) -> str:
-    """The sample ZIP the bundle imports on first start, read from the stack's own tenants default (SBD-05).
-
-    The tenants one-shot names ``${TENANT_SAMPLE:-sample_data.zip}``. That default is the ZIP the sample folder
-    holds, so the bundle sets ``SAMPLE_ZIP`` to the same value the repository's commands pass, with no second
-    list of sample names (SBD-07).
-    """
-    for service in _compose_document(document_text).get("services", {}).values():
-        environment = service.get("environment") or {}
-        if isinstance(environment, dict):
-            match = SAMPLE_DEFAULT.match(str(environment.get("TENANT_SAMPLE") or ""))
-            if match:
-                return match.group(1)
-    raise BundleError("no piece names a sample ZIP default, so the bundle could not set SAMPLE_ZIP (SBD-05)")
-
-
 def _bundle_env(document_text: str, answers: dict[str, str], version: str) -> str:
     """The bundle's ``.env``: the 17.2 roster, the bundle-relative folders, and the release images.
 
@@ -279,19 +261,13 @@ def _bundle_env(document_text: str, answers: dict[str, str], version: str) -> st
     folder_banner = "# --- Folders inside this bundle, set by the bundler (SBD-05, SBD-12, DD-690) ----------------"
     folder_note = "# Relative to docker/ (this file's folder). Change a value to point at your own material."
     folders = "\n".join(f"{name}={folder}" for name, folder in sorted(answers.items()))
-    sample = f"SAMPLE_ZIP={_sample_zip(document_text)}"
     images = "\n".join(
         f"{variable}=ghcr.io/aureliusenterprise/{project}:{version}"
         for variable, project in image_variables(document_text).items()
     )
     image_banner = "# --- Images: the release build this bundle was made for (DD-685, SBD-06) ----------------"
     image_note = "# The compose keeps its :local default; these values override it at the operator's start."
-    sample_banner = "# --- Sample: the ZIP the import reads from SAMPLE_DIR on first start (SBD-05) -------------------"
-    return (
-        f"{roster}\n\n{folder_banner}\n{folder_note}\n{folders}\n\n"
-        f"{sample_banner}\n{sample}\n\n"
-        f"{image_banner}\n{image_note}\n{images}\n"
-    )
+    return f"{roster}\n\n{folder_banner}\n{folder_note}\n{folders}\n\n{image_banner}\n{image_note}\n{images}\n"
 
 
 def _bundle_readme() -> str:
@@ -307,12 +283,12 @@ and pulls the release images named in `docker/.env`; it builds nothing.
 1. Make the certificates (from this folder):
 
    ```bash
-   bash docker/make-certs.sh
+   bash docker/bin/make-certs.sh
    ```
 
 2. Open `docker/.env` and fill in the values left empty: the Elasticsearch passwords, the Keycloak bootstrap
    admin and database, the realm's client secrets, the scanner service users, and the telemetry ingest token.
-   The step above already set the truststore password. The sample imports itself on first start.
+   The step above already set the truststore password.
 
 3. Start the stack (the first pull takes a few minutes):
 
@@ -331,11 +307,22 @@ docker compose -f docker/docker-compose.yaml down -v
 
 The `-v` discards the demo data; without it the stack resumes where it left off.
 
+## The sample and the tenants
+
+The always-on stack starts no import and provisions no tenant. Run either when you want it (from this
+folder, with the stack up):
+
+```bash
+bash docker/bin/import-sample.sh      # imports the sample from docker/.env's SAMPLE_DIR
+bash docker/bin/provision-tenants.sh  # provisions the tenant demo and the operator user
+```
+
 ## About these files
 
 `docker/docker-compose.yaml` is the stack resolved into one file, so a setting is changed in one place. The
 folder paths in `docker/.env` and in the compose file are relative to this bundle and run from any folder on
-any machine. `docker/make-certs.sh` writes the certificate folders the stack mounts.
+any machine. `docker/bin/` holds the scripts you run by hand: the certificate script above, the two here, and
+`docker/bin/set-host.sh` for a browser host other than `localhost` (it asks you to clear the data first).
 """
 
 
