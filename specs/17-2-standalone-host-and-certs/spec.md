@@ -1,7 +1,7 @@
 # 17.2 Standalone host and certificates
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#393](https://github.com/aureliusenterprise/aurelius-atlas/pull/393)
 - **Records:** DD-678 to DD-681 (here); relies on
   [ADR 065](../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
   (the compose fragments and the root `docker/`),
