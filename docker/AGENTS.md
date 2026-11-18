@@ -69,26 +69,31 @@ page, included by it.
 ## The release bundle
 
 `nx standalone-bundle -- --version v1.2.3` builds the release artifact (17.3,
-SBD-01..08, ADR 067, DD-688): a pruned **mirror** of the repository under
+SBD-01..08, ADR 067, DD-689/690): a folder with **one flat compose file** under
 `dist/standalone-bundle/`, tarred beside it, and never committed. The bundler is
-`tools/standalone_bundle.py`, and `tools/compose_stack.py` holds the compose
-reader it shares with `tests/conftest.py` (one resolver, DD-682).
+`tools/standalone_bundle.py`.
 
-- The bundler reads the umbrella, its `include` tree and its `extends` bases, and
-  copies every file the merged stack reads to its repository-relative path. It
-  rewrites no path, so every compose copy is byte-identical to the tracked file
-  and each relative path still resolves inside the bundle (DD-688).
+- The flat file is `docker compose config --no-interpolate` output for the
+  umbrella, so compose itself resolves the `include` tree and the `extends`
+  bases and the tool carries no compose reading code (DD-689). `--no-interpolate`
+  keeps every `${VAR}` the pieces wrote, so each setting stays open. The tool
+  copies the files and folders that flat file mounts (DD-690).
+- Three mechanical fixes ride on the output (DD-690): baked absolute bind
+  sources are rebased to bundle-relative paths, guarded folder mounts gain
+  `type: bind` (compose types them `volume` when it cannot interpolate), and the
+  guarded folders are answered in the bundle's `.env` with bundle-relative
+  values, read by pairing a second interpolated `config` run.
 - Two files are written, not copied: `docker/.env` (the `.env.example` roster
-  with empty secrets, the six image variables at the release tag, and
-  `SAMPLE_DIR`) and `README.md`.
+  with empty secrets, the folder answers, and the image variables at the
+  release tag) and `README.md`.
 - Never copied: any `.env`/`.env.enc`, `certs/`, `secrets/`, and any
-  `.pem`/`.key`/`.p12`/`.crt` (SBD-04). A bind the tool cannot copy fails the
-  build instead of shipping a broken stack (SBD-03). `make-certs.sh` fills the
-  mirrored `certs/` folders in place, which is why the infra pieces' literal
-  `./certs` mounts need no work (SBD-12).
-- Because the bundle mirrors the tree, a new piece or mount travels with no
-  change to the tool. A piece that builds an image, or that uses compose
-  `env_file`/`configs`/`secrets`, is a shape the bundler refuses by name.
+  `.pem`/`.key`/`.p12`/`.crt` (SBD-04). A bind that leaves the checkout or
+  misses its material fails the build instead of shipping a broken stack
+  (SBD-03). `make-certs.sh` fills the bundle's `certs/` folders, which is why
+  no `certs/` dir needs to travel (SBD-12).
+- A new piece or mount travels with no change to the tool, because the flat
+  file and the copy list both come from compose itself. A piece that builds an
+  image is a shape the bundler refuses by name.
 
 ## Conventions
 
@@ -107,7 +112,9 @@ reader it shares with `tests/conftest.py` (one resolver, DD-682).
   only one of them in a checkout. A running container holds its material in
   memory, so restart it after re-issuing. The script's truststore password comes
   from `TLS_TRUSTSTORE_PASSWORD` in the stack's env-files, the same value `nx
-certgen` reads.
+certgen` reads. When nothing sets it, the script makes one and records it in
+  `docker/.env`, so a bundle start follows its README order (certificates first) without a secret to fill
+  (DD-691).
 
 - **The stack is apart from the infra stores on purpose** (DD-363, DD-367,
   ADR-066): its fragments `extend` the infra Elasticsearch, Keycloak and
@@ -144,7 +151,7 @@ infra/elasticsearch/.env` (decrypted SOPS defaults, DD-669). Compose
   so each project answers the names it transitively extends from its own `.env`
   (Nx injects it into every task). A relative value reads from the declaring
   piece's own folder. The three infra pieces keep their literal `./certs` paths
-  (no default to remove; the bundle's path rewriter relocates them, SBD-03).
+  (no default to remove; the bundle's path rebase relocates them, SBD-03).
 - The compose project name `aurelius-atlas-standalone` and the container
   names it derives are in the README and the user guide (e.g. `docker restart
 aurelius-atlas-standalone-aurelius-atlas-server-1`); a rename updates them.
