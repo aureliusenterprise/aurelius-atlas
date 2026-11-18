@@ -43,7 +43,8 @@ include:
     - path: ../apps/aurelius-atlas-embedder/docker/compose.yaml
       env_file: stack.env
     # The three infra pieces keep their literal ./certs paths (no default to
-    # remove; the bundle's path rewriter relocates the literal — SBD-03).
+    # remove). The 17.3 bundle mirrors this tree, so the literal still names the
+    # folder make-certs.sh fills inside the bundle — SBD-03, DD-688).
     - path: elasticsearch/compose.yaml
     - path: keycloak/compose.yaml
     - path: observability/compose.yaml

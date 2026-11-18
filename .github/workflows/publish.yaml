@@ -6,7 +6,7 @@ on:
             - v*.*.*
 
 permissions:
-    contents: read
+    contents: write
     id-token: write
     packages: write
 
@@ -100,3 +100,26 @@ jobs:
               env:
                   VERSION: ${{ github.ref_name }}
                   IDENTITY: "^https://github\\.com/${{ github.repository_owner }}/aurelius-atlas/\\.github/workflows/publish\\.yaml@${{ github.ref }}$"
+
+            # The standalone bundle last, after the images it names are published
+            # and verified (17.3, DD-685): the archive's .env points at the images
+            # this run pushed, so a bundle built before the publish could name a
+            # tag nobody pushed. The version rides in as data, the same guard as
+            # the steps above.
+            - name: Build standalone bundle
+              run: npx nx standalone-bundle -- --version "$VERSION"
+              env:
+                  VERSION: ${{ github.ref_name }}
+
+            - name: Publish standalone bundle
+              # The archive goes on the release the tag names (17.3, SBD-01): a
+              # person outside the repository needs no registry login and no
+              # developer tooling to fetch it, which is the artifact's whole
+              # purpose (SBD-09). The release is this workflow's to make, and a
+              # re-run of a tag replaces the asset instead of failing.
+              run: |
+                  gh release view "$VERSION" >/dev/null 2>&1 || gh release create "$VERSION" --generate-notes --title "Aurelius Atlas $VERSION"
+                  gh release upload "$VERSION" dist/standalone-bundle.tar.gz --clobber
+              env:
+                  VERSION: ${{ github.ref_name }}
+                  GH_TOKEN: ${{ github.token }}

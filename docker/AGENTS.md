@@ -62,7 +62,33 @@ page, included by it.
   mount, and the browser warns once for the private CA (SPS-10). Bring your own
   certificates as the default posture: place a CA and leaves at the manifest's
   paths and never run the script. `.env.example` lists the guarded variables for
-  a stack that ships alone.
+  a stack that ships alone. `stack.env` is the committed answer for the eight
+  folder knobs (SBD-12, DD-687): the umbrella names it in each app `include`, and
+  a customer's own `.env` overrides it.
+
+## The release bundle
+
+`nx standalone-bundle -- --version v1.2.3` builds the release artifact (17.3,
+SBD-01..08, ADR 067, DD-688): a pruned **mirror** of the repository under
+`dist/standalone-bundle/`, tarred beside it, and never committed. The bundler is
+`tools/standalone_bundle.py`, and `tools/compose_stack.py` holds the compose
+reader it shares with `tests/conftest.py` (one resolver, DD-682).
+
+- The bundler reads the umbrella, its `include` tree and its `extends` bases, and
+  copies every file the merged stack reads to its repository-relative path. It
+  rewrites no path, so every compose copy is byte-identical to the tracked file
+  and each relative path still resolves inside the bundle (DD-688).
+- Two files are written, not copied: `docker/.env` (the `.env.example` roster
+  with empty secrets, the six image variables at the release tag, and
+  `SAMPLE_DIR`) and `README.md`.
+- Never copied: any `.env`/`.env.enc`, `certs/`, `secrets/`, and any
+  `.pem`/`.key`/`.p12`/`.crt` (SBD-04). A bind the tool cannot copy fails the
+  build instead of shipping a broken stack (SBD-03). `make-certs.sh` fills the
+  mirrored `certs/` folders in place, which is why the infra pieces' literal
+  `./certs` mounts need no work (SBD-12).
+- Because the bundle mirrors the tree, a new piece or mount travels with no
+  change to the tool. A piece that builds an image, or that uses compose
+  `env_file`/`configs`/`secrets`, is a shape the bundler refuses by name.
 
 ## Conventions
 
@@ -138,13 +164,16 @@ The infra-owned parts (image, healthcheck, configuration mounts) are proved
 as inherited, not copied (IRT-05, IRT-06). `docker compose -f
 docker/docker-compose.yaml ... config --quiet` is the offline check that
 every mount and env-file resolves. Rule ids of the series 9.5 specs (DMO-,
-SST-, SWA-, SKT-, EMB-11, WPT-10, TRM-11), of 17.1 (IRT-) and of 17.2 (SPS-)
-name these tests. `tests/test__standalone_host.py` pins the single host value
-across the issuer, the realm placeholders, the proxy's `extra_hosts`, the
-render one shot and its two `@STANDALONE_HOST@` templates, the collector, the
-certificate script and its manifest, and the README (SPS-01..10). The script's
-live run and a sign-in are level-2 checks a human records in the PR, not part
-of this suite.
+SST-, SWA-, SKT-, EMB-11, WPT-10, TRM-11), of 17.1 (IRT-), of 17.2 (SPS-) and
+of 17.3 (SBD-) name these tests. `tests/test__standalone_host.py` pins the
+single host value across the issuer, the realm placeholders, the proxy's
+`extra_hosts`, the render one shot and its two `@STANDALONE_HOST@` templates,
+the collector, the certificate script and its manifest, and the README
+(SPS-01..10). `tests/test__standalone_bundle.py` builds a bundle from the tree
+into a temp folder and checks it offline: closed, secret-free, resolved free of
+`:local` with its own `.env`, and its flattened service set equal to
+`standalone_compose()`'s (SBD-01..08). The script's live run and a sign-in are
+level-2 checks a human records in the PR, not part of this suite.
 
 ## Removal
 
