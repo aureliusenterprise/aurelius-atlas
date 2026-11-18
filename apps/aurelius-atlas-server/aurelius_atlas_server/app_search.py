@@ -80,15 +80,19 @@ class AppSearchWorker:
                 await self._running
             self._running = None
 
-    async def run_once(self) -> int:
-        """Run one round, after any round under way; a failure is logged and the next round tries again."""
-        async with self._round:
-            return await self._run_round()
+    async def run_once(self, *, quality: bool = True) -> int:
+        """Run one round, after any round under way; a failure is logged and the next round tries again.
 
-    async def _run_round(self) -> int:
+        A request's round leaves ``quality`` out: the data quality follows in the background rounds (ASU-08, DD-678).
+        """
+        async with self._round:
+            return await self._run_round(quality=quality)
+
+    async def _run_round(self, *, quality: bool) -> int:
         try:
             written = await self._indexer.run_once()
-            written += await self._quality.run_once()
+            if quality:
+                written += await self._quality.run_once()
             written += await self._governance.run_once()
         except Exception:
             LOGGER.exception("Deriving the App Search documents failed; trying again in %.0f s", self._poll_seconds)
@@ -117,7 +121,8 @@ class DeriveBeforeAnsweringMiddleware:
     """Holds a writing request's answer until its stores' App Search documents are derived (ASU-08, DD-678).
 
     A request whose writes reach a store set's entity store registers that set's worker (``AppSearchWorker.wrote``).
-    The answer's last body part waits for a round of each, up to ``timeout_seconds``; a round still running then
+    The answer's last body part waits for a round of each, documents and governance verdicts, the data quality
+    left to the background rounds the write also woke, up to ``timeout_seconds``; a round still running then
     goes on in the background and the answer leaves. A request that wrote nothing passes unchanged.
     """
 
@@ -147,10 +152,12 @@ class DeriveBeforeAnsweringMiddleware:
 
 
 async def derive(workers: list[AppSearchWorker], timeout_seconds: float) -> bool:
-    """Run a round of each worker, waiting at most ``timeout_seconds``; whether all ended in time (ASU-08)."""
+    """Run a round of each worker without the data quality, waiting at most ``timeout_seconds``; whether all ended in
+    time (ASU-08).
+    """  # noqa: D205 - one sentence
     if not workers:
         return True
-    rounds = [asyncio.ensure_future(worker.run_once()) for worker in workers]
+    rounds = [asyncio.ensure_future(worker.run_once(quality=False)) for worker in workers]
     _, pending = await asyncio.wait(rounds, timeout=timeout_seconds)
     if pending:
         LOGGER.info("The App Search documents of a write are still being derived after %.1f s", timeout_seconds)

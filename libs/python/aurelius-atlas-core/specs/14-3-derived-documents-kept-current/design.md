@@ -146,12 +146,14 @@ almost continuously, bounded by its page size.
 - **Date:** 2026-11-18
 - **Supersedes:** DD-521's "no request waits for a round"; DD-676 stands
 
-**Decision.** A write made while the server answers a request registers the store set's App Search worker
-for that request, besides waking it. A middleware around the routers holds the answer's last body part until
-each registered worker has run a round, at most `AURELIUS_ATLAS_SERVER_APP_SEARCH_ANSWER_SECONDS`, 5 seconds by
-default. A round still running then goes on in the background and the answer leaves. Rounds run one at a time,
-so a request's round follows the background round under way rather than racing it. A request that wrote
-nothing passes unchanged; writes outside a request, as a task's, only wake the worker (DD-676).
+**Decision.** A write made while the server answers a request registers the store set's App Search worker for
+that request, besides waking it. A middleware around the routers holds the answer's last body part until each
+registered worker has run a round of its documents and governance verdicts, at most
+`AURELIUS_ATLAS_SERVER_APP_SEARCH_ANSWER_SECONDS`, 5 seconds by default. A round still running then goes on in
+the background and the answer leaves. Rounds run one at a time, so a request's round follows the background
+round under way rather than racing it. A request that wrote nothing passes unchanged; writes outside a
+request, as a task's, only wake the worker (DD-676). The data quality stays with the background rounds: the
+request's write woke the worker, so its full round, quality included, follows the answer.
 
 **Reason.** The details page reads the breadcrumb from the entity's stored App Search document (AVS-02) and
 reloads it right after a save. Woken in the background, the worker still trailed that reload by its settle and
@@ -163,9 +165,11 @@ change affects, the children's breadcrumbs included, with the indexer's checks (
 
 - Waking the worker only (DD-676): the page reloads before the round ends.
 - The webapp waits and reloads again: every client would need it, and how long to wait is a guess.
+- The data quality in the request's round too: a save waits for every quality rule's results and totals,
+  which the page doesn't reload with.
 - Deriving inside the entity store's write: every write, the background ones included, would pay for it, and
   its failure would fail the write.
 
-**Consequences.** A save answers after its round, about a second on the demo catalogue: the documents, the
-quality and the governance round together. A large import answers after the limit and its documents follow in
-the background. A failed round doesn't fail the request; it is logged and the next round tries again.
+**Consequences.** A save answers after its documents and verdicts; the data quality results and totals follow
+a moment later in the background, as a batch. A large import answers after the limit and its documents follow
+in the background. A failed round doesn't fail the request; it is logged and the next round tries again.

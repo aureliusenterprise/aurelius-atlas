@@ -60,6 +60,17 @@ async def test__a_round_derives_the_quality_and_the_verdicts_after_the_documents
     assert log == ["documents", "quality", "governance"]
 
 
+@pytest.mark.covers(f"{W}.run_once", rules=["ASU-08"])
+async def test__a_request_s_round_leaves_the_data_quality_to_the_background() -> None:
+    """Without quality: the documents, then the verdicts; the quality indexer doesn't run (DD-678)."""
+    log: list[str] = []
+    rounds = Indexer(2, log=log), Indexer(5, name="quality", log=log), Indexer(4, name="governance", log=log)
+    worker = AppSearchWorker(*rounds, poll_seconds=60)  # type: ignore[arg-type]
+
+    assert await worker.run_once(quality=False) == 6
+    assert log == ["documents", "governance"]
+
+
 @pytest.mark.covers(f"{W}.start", rules=["ASU-06"])
 @pytest.mark.covers(f"{W}.stop", rules=["ASU-06"])
 async def test__the_worker_runs_a_round_at_start_and_then_every_poll_interval() -> None:
@@ -236,13 +247,15 @@ async def serve(app: Any, log: list[str]) -> None:  # noqa: ANN401 - an ASGI app
 
 @pytest.mark.covers(f"{M}.__call__", f"{W}.wrote", rules=["ASU-08"])
 async def test__a_writing_request_answers_once_its_documents_are_derived() -> None:
-    """The write registers the worker; the answer's last part leaves only after its round (DD-678)."""
+    """The write registers the worker; the answer's last part leaves after its documents and verdicts (DD-678)."""
     log: list[str] = []
-    worker = AppSearchWorker(SlowRounds(0.02, log), Indexer(), Indexer(), poll_seconds=3600)  # type: ignore[arg-type]
+    quality = Indexer(name="quality", log=log)
+    worker = AppSearchWorker(SlowRounds(0.02, log), quality, Indexer(name="governance", log=log), poll_seconds=3600)  # type: ignore[arg-type]
 
     await serve(DeriveBeforeAnsweringMiddleware(handler(worker, writes=True), timeout_seconds=5), log)
 
-    assert log == ["start", "body:{", "round", "body:}"]
+    assert log == ["start", "body:{", "round", "governance", "body:}"]
+    assert quality.rounds == 0
 
 
 @pytest.mark.covers(f"{M}.__call__", rules=["ASU-08"])
