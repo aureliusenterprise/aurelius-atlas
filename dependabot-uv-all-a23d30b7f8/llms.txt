@@ -116,6 +116,7 @@
 - [064\. The webapp reads rich catalogue data through one Aurelius view family](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/index.md>)
 - [065\. Compose stacks that deploy the whole system live at the root](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/index.md>)
 - [066\. Infrastructure components live at the repository root](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/066-infrastructure-components-live-at-the-repository-root/index.md>)
+- [067\. The standalone stack ships as one generated release bundle](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/design-log/index.md>)
