@@ -266,3 +266,18 @@ def test__the_account_console_is_in_the_realm_file_with_its_scopes_and_roles(rea
     assert {"client": "account-console", "roles": ["manage-account", "view-groups"]} in realm["clientScopeMappings"][
         "account"
     ]
+
+
+@pytest.mark.covers(rules=["IRT-06"])
+def test__the_roles_scope_resolves_the_audience_and_carries_the_realm_roles(realm: dict[str, Any]) -> None:
+    """Beside DD-661's client-role mapper, the roles scope resolves the audience, so a token holding the
+    ``account`` roles is one the account API takes (the webapp saves its language there, SHC-10), and carries the
+    realm roles, the operator's ``atlas-operator`` among them.
+    """  # noqa: D205 - one sentence
+    scope = next(scope for scope in realm["clientScopes"] if scope["name"] == "roles")
+    mappers = {mapper["protocolMapper"] for mapper in scope["protocolMappers"]}
+    assert {
+        "oidc-usermodel-client-role-mapper",
+        "oidc-audience-resolve-mapper",
+        "oidc-usermodel-realm-role-mapper",
+    } <= mappers

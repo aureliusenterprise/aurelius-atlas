@@ -560,6 +560,30 @@
                 {
                     "config": {
                         "access.token.claim": "true",
+                        "introspection.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "audience resolve",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-resolve-mapper"
+                },
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "claim.name": "realm_access.roles",
+                        "introspection.token.claim": "true",
+                        "jsonType.label": "String",
+                        "multivalued": "true",
+                        "user.attribute": "foo"
+                    },
+                    "consentRequired": false,
+                    "name": "realm roles",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-usermodel-realm-role-mapper"
+                },
+                {
+                    "config": {
+                        "access.token.claim": "true",
                         "claim.name": "resource_access.${client_id}.roles",
                         "id.token.claim": "true",
                         "introspection.token.claim": "true",
