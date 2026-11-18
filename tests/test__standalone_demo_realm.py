@@ -238,3 +238,17 @@ def test__the_stacks_keycloak_keeps_the_production_topology(services: dict[str, 
     # Its own healthcheck: the server lives under /auth here, so the probe path is the stack's.
     assert "/auth/health/ready" in keycloak["healthcheck"]["test"][1]
     assert "/auth/health/ready" not in base["keycloak"]["healthcheck"]["test"][1]
+
+
+@pytest.mark.covers(rules=["IRT-06"])
+def test__every_client_scope_a_client_names_is_defined_in_the_realm(realm: dict[str, Any]) -> None:
+    """A realm file that lists client scopes gets none of Keycloak's built-in ones, so each scope a client or the
+    realm's defaults name must be in the file. Without ``organization``, a tenancy sign-in failed with
+    ``invalid_scope``; without ``profile``, ``email`` and ``basic``, a token lacked the user's name and id.
+    """  # noqa: D205 - one sentence
+    defined = {scope["name"] for scope in realm["clientScopes"]}
+    named = set(realm.get("defaultDefaultClientScopes") or []) | set(realm.get("defaultOptionalClientScopes") or [])
+    for client_ in realm["clients"]:
+        named |= set(client_.get("defaultClientScopes") or []) | set(client_.get("optionalClientScopes") or [])
+    assert named <= defined, sorted(named - defined)
+    assert {"organization", "profile", "email", "basic"} <= defined
