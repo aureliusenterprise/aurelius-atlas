@@ -2313,6 +2313,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -4109,6 +4113,60 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
 
     
   </span>
@@ -6956,8 +7014,8 @@ Docker Hub credentials. If you have not run <code>docker login</code> with a Doc
 an <code>unauthorized</code> (or rate-limit) error — see the Prerequisites note at the top of this guide.</p>
 </details>
 <h2 id="dev-topology">Dev Topology<a class="headerlink" href="#dev-topology" title="Permanent link">&para;</a></h2>
-<p>The development infrastructure is a set of <strong>slices</strong>: each slice under <code>dev/</code> is its own compose
-project with its own network, named <code>aurelius-atlas-dev-&lt;slice&gt;-network</code>. An app's <code>serve</code> target
+<p>The development infrastructure is a set of <strong>slices</strong>: each slice under <code>infra/</code> is its own compose
+project with its own network, named <code>aurelius-atlas-infra-&lt;slice&gt;-network</code>. An app's <code>serve</code> target
 starts the slices it needs via <code>dependsOn</code> (ADR 005); a slice's services reach each other by
 service name on a shared network.</p>
 <p>The rule that surprises people: <strong>services are reached by service name, not <code>localhost</code></strong>. The
@@ -7014,7 +7072,7 @@ is in <a href="../tls-certificates/">TLS Certificates</a>.</p>
 </tbody>
 </table>
 <p>Each slice documents its own services, images, and run commands in its colocated README:
-<code>dev/elasticsearch</code>, <code>dev/keycloak</code>, <code>dev/observability</code>.</p>
+<code>infra/elasticsearch</code>, <code>infra/keycloak</code>, <code>infra/observability</code>.</p>
 <div class="admonition warning">
 <p class="admonition-title">Keycloak's port 8080 is development-only</p>
 <p>The plaintext 8080 listener exists so browser sign-in works in the dev stack; 8443 is the
@@ -7053,17 +7111,17 @@ reviewed change to every pin at once, approved by the maintainers team.</p>
 <tr>
 <td>Elasticsearch</td>
 <td>9.x (dev image 9.5)</td>
-<td><code>dev/elasticsearch/docker-compose.yaml</code> image tag</td>
+<td><code>infra/elasticsearch/docker-compose.yaml</code> image tag</td>
 </tr>
 <tr>
 <td>Keycloak</td>
 <td>26.x</td>
-<td><code>dev/keycloak/docker-compose.yaml</code> image tag</td>
+<td><code>infra/keycloak/docker-compose.yaml</code> image tag</td>
 </tr>
 <tr>
 <td>PostgreSQL</td>
 <td>18 (Keycloak's database only — ADR 047)</td>
-<td><code>dev/keycloak</code> compose image tags</td>
+<td><code>infra/keycloak</code> compose image tags</td>
 </tr>
 </tbody>
 </table>

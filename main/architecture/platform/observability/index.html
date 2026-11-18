@@ -2165,6 +2165,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3964,6 +3968,60 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
 
     
   </span>
@@ -6704,7 +6762,7 @@
 <p>How Aurelius Atlas raises its hand when it is broken (ADR 040): metrics, logs, traces, and alerts.
 Every part sends its signals to one collection point, the OpenTelemetry collector, which passes
 them to Prometheus, Loki and Tempo; Grafana shows them and evaluates the alert rules. The
-development arrangement runs that stack in <code>dev/observability</code>; which products, and their ports,
+development arrangement runs that stack in <code>infra/observability</code>; which products, and their ports,
 are in <a href="../../../contributor-guide/development-environment/#dev-topology">Dev Topology</a>. The
 observability chart runs the same stack on a cluster.</p>
 <table>

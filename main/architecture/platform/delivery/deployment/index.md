@@ -6,7 +6,7 @@ How a released version reaches an environment, and how it is rolled back. The sy
 
 Each service ships as its own image: the server, the webapp, the auxiliary APIs, and the store's coredump agent. Each part has a chart, and the umbrella chart installs them as one release ([ADR 057](<https://aureliusenterprise.github.io/main/architecture/adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs/index.md>)). An environment differs from another by its values, never by a changed chart.
 
-In development the same parts run as compose stacks, one per project (`dev/*/docker-compose.yaml`), started by the targets that need them ([ADR 005](<https://aureliusenterprise.github.io/main/architecture/adr/005-dev-infra-starts-with-the-app/index.md>)). The compose files and the charts are siblings: the chart suites hold the settings they share equal, such as the alert rules, the collector's configuration and the lifetimes.
+In development the same parts run as compose stacks, one per project (`infra/*/docker-compose.yaml` for the shared infrastructure), started by the targets that need them ([ADR 005](<https://aureliusenterprise.github.io/main/architecture/adr/005-dev-infra-starts-with-the-app/index.md>)). The compose files and the charts are siblings: the chart suites hold the settings they share equal, such as the alert rules, the collector's configuration and the lifetimes.
 
 ## Promoting a release
 

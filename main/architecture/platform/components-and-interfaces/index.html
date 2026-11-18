@@ -2165,6 +2165,10 @@
       
         
       
+        
+      
+        
+      
     
     
     
@@ -3964,6 +3968,60 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
 
     
   </span>
@@ -6762,7 +6820,7 @@ beside the path, not on it.</p>
 <code>dashboardv2</code>/<code>dashboardv3</code>, built from 2.4.0 source; the search store is Elasticsearch 9,
 reached through <code>aurelius-atlas-store-es</code>; the identity provider is Keycloak, on its own
 Postgres; the collector and the signal backends are an OpenTelemetry Collector with Prometheus,
-Tempo, Loki, and Grafana (<code>dev/observability</code>).</p>
+Tempo, Loki, and Grafana (<code>infra/observability</code>).</p>
 <details class="question">
 <summary>Where is the event plane?</summary>
 <p>Atlas integrations hook a Kafka stream: hook messages in, change notifications out. The
