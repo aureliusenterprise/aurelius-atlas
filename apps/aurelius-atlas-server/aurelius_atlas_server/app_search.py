@@ -151,6 +151,22 @@ class DeriveBeforeAnsweringMiddleware:
             _ANSWERING.reset(token)
 
 
+async def derive_written(timeout_seconds: float) -> bool:
+    """Run now the rounds the current request's writes call for, waiting at most ``timeout_seconds``, so the
+    request can answer what they derived; whether any ran (ASU-08, DD-679).
+
+    For an endpoint that answers derived fields itself, as the view door's breadcrumb: the middleware would run
+    the rounds only after its answer is composed. The rounds run are no longer owed at the answer's end.
+    """  # noqa: D205 - one sentence
+    answering = _ANSWERING.get()
+    if not answering:
+        return False
+    workers = sorted(answering, key=id)
+    answering.clear()
+    await derive(workers, timeout_seconds)
+    return True
+
+
 async def derive(workers: list[AppSearchWorker], timeout_seconds: float) -> bool:
     """Run a round of each worker without the data quality, waiting at most ``timeout_seconds``; whether all ended in
     time (ASU-08).

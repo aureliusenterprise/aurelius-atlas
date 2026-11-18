@@ -152,8 +152,12 @@ registered worker has run a round of its documents and governance verdicts, at m
 `AURELIUS_ATLAS_SERVER_APP_SEARCH_ANSWER_SECONDS`, 5 seconds by default. A round still running then goes on in
 the background and the answer leaves. Rounds run one at a time, so a request's round follows the background
 round under way rather than racing it. A request that wrote nothing passes unchanged; writes outside a
-request, as a task's, only wake the worker (DD-678). The data quality stays with the background rounds: the
-request's write woke the worker, so its full round, quality included, follows the answer.
+request, as a task's, only wake the worker (DD-678). The view door answers the saved entity's view itself,
+breadcrumb included, so it runs the rounds its writes called for before it reads that answer
+(`derive_written`), not after it, as the middleware would. Its rewind store, which records each step to undo a
+failed save, shares the real store's write and task listeners, so its writes register and wake the workers as
+the real store's do. The data quality stays with the background rounds: the request's write woke the worker,
+so its full round, quality included, follows the answer.
 
 **Reason.** The details page reads the breadcrumb from the entity's stored App Search document (AVS-02) and
 reloads it right after a save. Woken in the background, the worker still trailed that reload by its settle and
@@ -167,6 +171,8 @@ change affects, the children's breadcrumbs included, with the indexer's checks (
 - The webapp waits and reloads again: every client would need it, and how long to wait is a guess.
 - The data quality in the request's round too: a save waits for every quality rule's results and totals,
   which the page doesn't reload with.
+- The middleware alone: the view door composes its answer, breadcrumb included, before the middleware's
+  round, so the editor showed the old trail.
 - Deriving inside the entity store's write: every write, the background ones included, would pay for it, and
   its failure would fail the write.
 
