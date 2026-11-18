@@ -132,8 +132,8 @@ The e2e stack runs the **real** Atlas server container behind the nginx `/api/`
 proxy on the dev Elasticsearch network (DD-142), with Keycloak on the host
 stack. Every page test signs in through the `authenticated` fixture
 (`AURELIUS_ATLAS_WEBAPP_USERNAME`/`_PASSWORD` from `.env.enc`, the
-`aurelius-writer` dev user); changing `dev/keycloak/import/master.json` needs a
-full keycloak recreation (`docker compose -f dev/keycloak/docker-compose.yaml
+`aurelius-writer` dev user); changing `infra/keycloak/import/master.json` needs a
+full keycloak recreation (`docker compose -f infra/keycloak/docker-compose.yaml
 down -v && up -d`) — Keycloak imports do not overwrite an existing realm.
 
 ## Features (slice 7.12 — theme, branding and layout)

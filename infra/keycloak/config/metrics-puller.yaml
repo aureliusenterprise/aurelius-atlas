@@ -1,0 +1,93 @@
+# Slice-owned metrics puller: scrapes Keycloak's metadata Postgres AND
+# Keycloak's own Micrometer registry (the management port's /metrics —
+# DD-664) and pushes OTLP to the dev collector
+# (https://otel-collector:4317 — the stack is already on the observability
+# network for the server's own OTLP export).
+#
+# Why the SERVER is scraped (DD-664): Keycloak's own OTLP push (a) needs the
+# QUARKUS_-prefixed endpoint/headers to reach the collector at all (compose
+# sets them; it carries the traces) and (b) lands OTLP-native metric names
+# that clash with every other service's JVM/HTTP series. The scrape keeps
+# Micrometer's own names (http_server_requests_seconds_*) — the contract the
+# dashboards pin. The scrape's service.name ("keycloak") joins the
+# dashboard's exported_job pins; the DB pipeline stays "keycloak-infra".
+#
+# Env vars: the same dev defaults the keycloak service uses for KC_DB_*;
+# compose interpolates them into the container env, the collector expands
+# ${env:...} at load time. TLS: the certs/ "postgres" leaf has SANs
+# postgres-keycloak/localhost — verify-full against ca.pem works. The DB name
+# is the literal `keycloak` (same constant as KC_DB_URL in compose). The
+# scrape target arrives as KEYCLOAK_METRICS_TARGET — a host:port, never a
+# URL: Prometheus rejects a scheme inside a target and the collector exit
+# loops. Plain HTTP on the dev management listener is the receiver's
+# default scheme (ADR 039's named relaxation; prod puts TLS there, and the
+# chart's copy of this file sets scheme: https).
+
+receivers:
+    prometheus:
+        config:
+            scrape_configs:
+                - job_name: keycloak
+                  metrics_path: /metrics
+                  scrape_interval: 30s
+                  static_configs:
+                      - targets:
+                            - ${env:KEYCLOAK_METRICS_TARGET}
+    postgresql:
+        endpoint: postgres-keycloak:5432
+        # Block sequence on purpose: in a flow list ([...]) the YAML parser
+        # treats the colon inside ${env:...} as a key separator and the
+        # collector's resolver never sees the placeholder.
+        databases:
+            - keycloak
+        username: ${env:KEYCLOAK_DATABASE_USERNAME}
+        password: ${env:KEYCLOAK_DATABASE_PASSWORD}
+        tls:
+            ca_file: /certs/ca.pem
+        collection_interval: 30s
+
+processors:
+    resource:
+        attributes:
+            # Prometheus attribution: the receiving collector's prometheus
+            # exporter maps service.name to the job label. Distinct from the
+            # Keycloak server's own service.name="keycloak".
+            - action: upsert
+              key: service.name
+              value: keycloak-infra
+    batch:
+
+exporters:
+    otlp:
+        endpoint: https://otel-collector:4317
+        # The per-service leg (DD-196, CIA-06): the oidc receiver accepts
+        # only client-credentials JWTs; the oauth2client extension mints
+        # and attaches the bearer per export (the shared-token header of
+        # 7.17 is answered 401 on this leg, CIA-08).
+        auth:
+            authenticator: oauth2client
+        tls:
+            ca_file: /certs/ca.pem
+
+extensions:
+    # Per-service ingest identity (7.18, DD-196, CIA-07): mints
+    # client-credentials JWTs as the otel-keycloak realm client (aud
+    # otel-collector via the otel-ingest default scope), caches and refreshes
+    # ahead of expiry. The token URL (compose) is the issuer's TLS :8443
+    # listener with the slice CA pinned (DD-202: every producer mints there,
+    # the collector validates both listeners) — read from env so the mint
+    # target lives once, in compose.
+    oauth2client:
+        token_url: ${env:OTEL_INGEST_TOKEN_URL}
+        client_id: ${env:OTEL_INGEST_CLIENT_ID}
+        client_secret: ${env:OTEL_INGEST_CLIENT_SECRET}
+        tls:
+            ca_file: ${env:OTEL_INGEST_CA_FILE}
+
+service:
+    extensions: [oauth2client]
+    pipelines:
+        metrics:
+            receivers: [postgresql]
+            processors: [resource, batch]
+            exporters: [otlp]

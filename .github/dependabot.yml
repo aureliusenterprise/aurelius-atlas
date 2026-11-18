@@ -38,7 +38,7 @@ updates:
           - "/apps/*/e2e"
           - "/connectors/*"
           - "/connectors/*/e2e"
-          - "/dev/*"
+          - "/infra/*"
       schedule:
           interval: weekly
       groups:

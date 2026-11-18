@@ -19,13 +19,13 @@ workspace-wide rules — including the scaffold recipe for Python libs — live 
 
 - Registered in root `pyproject.toml` (workspace members, dev group with `[testing]`, `uv.sources`).
 - Rule ids (`STO-NN`, `ESD-NN`) are specified in
-  `dev/elasticsearch/specs/0-2-elasticsearch-infrastructure/spec.md`; every test names the
+  `infra/elasticsearch/specs/0-2-elasticsearch-infrastructure/spec.md`; every test names the
   functions and rules it checks with `@pytest.mark.covers` (ADR 056); `aurelius-atlas-trace check`
   reports unnamed functions or rules locally (a review aid, not a CI gate).
 - The ESD rules (the dev store's posture) have no automated tests (DD-223, DD-227): the dev stack's
   own healthchecks and review carry them; the apps' e2e suites exercise this library against the
   running store from the production side.
-- The container helper uses the same image tag as `dev/elasticsearch/docker-compose.yaml`; change both
+- The container helper uses the same image tag as `infra/elasticsearch/docker-compose.yaml`; change both
   together.
 
 ## Commands

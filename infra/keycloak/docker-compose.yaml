@@ -1,0 +1,252 @@
+name: aurelius-atlas-infra-keycloak
+
+services:
+    keycloak:
+        # Pinned to the 26.7 stream: the 26.8.0 build of dhi.io/keycloak:26-debian13
+        # (2026-10-10) ships a broken dependency set (Vert.x modules at 4.5.34 with
+        # vertx-core still at 4.5.28) and fails to start with
+        # NoClassDefFoundError: io/vertx/core/net/PqcEnforcementPolicy.
+        image: dhi.io/keycloak:26.7-debian13
+        # Memory cap (CI capacity): Quarkus defaults its heap to 25% of host
+        # RAM - 4 Gi on a CI runner node, for a dev realm. The -Xmx in
+        # JAVA_OPTS below fixes the heap; mem_limit caps the container
+        # (heap + metaspace + code cache).
+        mem_limit: 1g
+        command:
+            [
+                "start-dev",
+                "--import-realm",
+                "--http-relative-path=/",
+                "-Djgroups.dns.query=keycloak-rss",
+                "--features=opentelemetry-metrics,preview",
+                "--metrics-enabled=true",
+                "--tracing-enabled=true",
+                "--telemetry-metrics-enabled=true",
+                "--telemetry-logs-enabled=true",
+                "--telemetry-endpoint=https://otel-collector:4320",
+            ]
+        depends_on:
+            postgres-keycloak:
+                condition: service_healthy
+        environment:
+            # Dev realm users (import/master.json) carry ${DEV_USER_*_PASSWORD}
+            # placeholders resolved at import time by the same
+            # replace-placeholders mechanism as the client secrets below; the
+            # guards fail interpolation (not the import) when unset.
+            DEV_USER_WRITER_PASSWORD: ${DEV_USER_WRITER_PASSWORD:?}
+            DEV_USER_READER_PASSWORD: ${DEV_USER_READER_PASSWORD:?}
+            # The otel-* ingest clients' secret placeholder in
+            # import/master.json resolves from this container's env (the
+            # replace-placeholders flag, DD-196) — same mechanism as the dev
+            # user passwords above.
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The Atlas server's confidential client (6.1a, DD-250): its
+            # ${ATLAS_SERVER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here, as the ingest clients' secret above does.
+            ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
+            # The provisioning command's client (15.5b, TRM-11): its
+            # ${PROVISIONING_CLIENT_SECRET} placeholder in import/master.json.
+            PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
+            # The quality scanner's service client (12.2, DD-458): its
+            # ${QUALITY_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            QUALITY_SCANNER_CLIENT_SECRET: ${QUALITY_SCANNER_CLIENT_SECRET:?}
+            # The Kafka cluster scanner's service client (13.1, DD-469): its
+            # ${KAFKA_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            KAFKA_SCANNER_CLIENT_SECRET: ${KAFKA_SCANNER_CLIENT_SECRET:?}
+            # The validate-entity API's service client (12.7, DD-499): its
+            # ${VALIDATE_ENTITY_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            VALIDATE_ENTITY_CLIENT_SECRET: ${VALIDATE_ENTITY_CLIENT_SECRET:?}
+            # The relational database scanner's service client (13.3, DD-506): its
+            # ${DB_SCANNER_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            DB_SCANNER_CLIENT_SECRET: ${DB_SCANNER_CLIENT_SECRET:?}
+            # The platform admin service client (DD-666): its
+            # ${ATLAS_ADMIN_CLIENT_SECRET} placeholder in import/master.json
+            # resolves from here — the same mechanism as the secrets above.
+            ATLAS_ADMIN_CLIENT_SECRET: ${ATLAS_ADMIN_CLIENT_SECRET:?}
+            # Credentials: an empty value here yields obscure failures
+            # (missing admin user, JDBC/SSL crash loops) instead of a
+            # clear startup error, so require them at interpolation time.
+            KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD:?}
+            KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
+            KC_DB: postgres
+            KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak?sslmode=verify-full&sslrootcert=/certs/ca.pem
+            KC_DB_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
+            KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+            KC_HEALTH_ENABLED: true
+            KC_HOSTNAME: keycloak.localhost
+            # Quarkus' OTLP gRPC sender (Vert.x) ignores OTEL_EXPORTER_OTLP_CERTIFICATE,
+            # so the local development CA is provided as the JVM truststore instead.
+            # The password is the project's encrypted dev default (.env.enc).
+            JAVA_OPTS: -Xms256m -Xmx512m -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
+            # (replace-placeholders lets ${VAR} placeholders in import/*.json
+            # resolve from this container's environment; Keycloak reads them
+            # via System.getenv and leaves startup imports unsubstituted
+            # without the flag.)
+            # TLS listener for e2e/CI (https://keycloak.localhost:8443) verified
+            # against the local development CA; the plaintext listener stays for
+            # the dev browser (named relaxation, ADR 039).
+            KC_HTTPS_CERTIFICATE_FILE: /certs/keycloak.pem
+            KC_HTTPS_CERTIFICATE_KEY_FILE: /certs/keycloak-key.pem
+            # OpenTelemetry native configuration (DD-664: both features ship
+            # off by default — without these the exporter carries nothing,
+            # and the /metrics endpoint on the management port does not exist
+            # for the puller's scrape).
+            KC_METRICS_ENABLED: true
+            KC_TRACING_ENABLED: true
+            OTEL_SERVICE_NAME: keycloak
+            # The legacy leg (DD-196): Keycloak is the OIDC issuer, so it
+            # cannot present a Keycloak-minted JWT at its own cold boot
+            # (DD-193's chicken-and-egg, scoped to exactly this by DD-196).
+            # Its native OTLP (gRPC) rides the shared ingest token on the
+            # legacy leg (4320; the webapp's edge exporter is its other user).
+            OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
+            OTEL_EXPORTER_OTLP_CERTIFICATE: /certs/ca.pem
+            # The collector requires the shared ingest token (DD-193, CIA-04).
+            OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
+            # DD-664: the same Quarkus rule as the certificate above — the
+            # Vert.x OTLP sender ignores the generic ENDPOINT/HEADERS (it
+            # dials localhost:4317 un-authenticated; the collector answers
+            # gRPC 16). The QUARKUS_-prefixed pair carries the identical
+            # values; the generic pair stays for the non-Quarkus readers.
+            QUARKUS_OTEL_EXPORTER_OTLP_ENDPOINT: https://otel-collector:4320
+            QUARKUS_OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
+            OTEL_TRACES_SAMPLER: parentbased_traceidratio
+            OTEL_TRACES_SAMPLER_ARG: "0.1"
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "exec 3<>/dev/tcp/localhost/9000 && echo -e 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && cat <&3 | sed -n '/\"status\":\"UP\"/q' || exit 1",
+                ]
+            interval: 15s
+            timeout: 10s
+            retries: 20
+            start_period: 180s
+        ports:
+            - 8080:8080
+            - 8443:8443
+        volumes:
+            - ./import:/opt/keycloak/data/import:ro
+            - ./certs:/certs:ro
+        networks:
+            default:
+                # The issuer name clients must use (KC_HOSTNAME pins
+                # https://keycloak.localhost:8443). Attaching to this network
+                # (aurelius-atlas-infra-keycloak-network) resolves the name in-network,
+                # so OAuth clients (broker, producer, lambda, connect) never
+                # depend on host routing — host-gateway maps to the (often
+                # link-down) docker0 bridge here and flakes.
+                aliases:
+                    - keycloak.localhost
+            observability: {}
+
+    postgres-keycloak:
+        image: dhi.io/postgres:18-alpine3.23
+        mem_limit: 512m
+        environment:
+            POSTGRES_USER: ${KEYCLOAK_DATABASE_USERNAME}
+            POSTGRES_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD}
+            POSTGRES_DB: keycloak
+            POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+        # The image runs as a fixed non-root user that cannot read bind-mounted
+        # key material it does not own, so the certificates are copied to the
+        # container filesystem with strict permissions before startup - and
+        # Postgres insists the key is 0600, owned by the server user, so a
+        # direct bind-mount at the ssl paths is not an option (host
+        # ownership). mktemp -d, not a fixed /tmp path: the target must be
+        # born with the running user's ownership every boot; fixed paths
+        # collide on a warm daemon (runs 40225940082, 40228376483).
+        entrypoint: ["/bin/sh", "-c"]
+        command:
+            - >-
+                d=$(mktemp -d /tmp/atlas-certs.XXXXXX) && install -m 600 /certs/postgres.pem $$d/server.pem && install -m 600 /certs/postgres-key.pem $$d/server-key.pem && exec docker-entrypoint.sh -c ssl=on -c ssl_cert_file=$$d/server.pem -c ssl_key_file=$$d/server-key.pem -c hba_file=/conf/pg_hba.conf
+        stop_signal: SIGINT
+        # Explicit tmpfs for the certificate copy: the image's own /tmp is
+        # not writable by the server user on every host (Shape A's warm
+        # store digest ships /tmp 2775 root:999 - uid 70 EACCES, run
+        # 40240896184). Pinning the mode makes the boot digest-independent.
+        tmpfs:
+            - /tmp:mode=1777
+        healthcheck:
+            test:
+                [
+                    "CMD-SHELL",
+                    "PGSSLMODE=verify-full PGSSLROOTCERT=/certs/ca.pem pg_isready -h 127.0.0.1 -U ${KEYCLOAK_DATABASE_USERNAME} -d keycloak",
+                ]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        ports:
+            - 5432
+        volumes:
+            - data:/var/lib/postgresql
+            - ./certs:/certs:ro
+            - ./pg_hba.conf:/conf/pg_hba.conf:ro
+
+    metrics-puller:
+        # Slice-owned OTel collector: scrapes the Keycloak metadata Postgres
+        # (the server itself already pushes OTLP natively) and pushes OTLP to
+        # the dev collector.
+        # Targets and attribution live in config/metrics-puller.yaml.
+        image: dhi.io/opentelemetry-collector:0.164-debian13-contrib
+        mem_limit: 256m
+        command: ["--config=/etc/otelcol-contrib/config.yaml"]
+        # The oauth2client extension mints its ingest JWT from Keycloak at
+        # startup (DD-196): the collector's DD-195 restart pattern, applied
+        # to the pullers now that the issuer — not a static token — gates
+        # their export. Unbounded, per DD-226: an attempt count burns out
+        # ~6 min in, before Keycloak is reliably up (infra/elasticsearch).
+        restart: on-failure
+        environment:
+            # Same dev defaults the keycloak service uses for KC_DB_*; the
+            # collector expands ${env:...} in its config.
+            KEYCLOAK_DATABASE_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
+            KEYCLOAK_DATABASE_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
+            # Per-service ingest identity (7.18, DD-196): the puller mints
+            # client-credentials JWTs as the otel-keycloak realm client —
+            # the oauth2client extension in config/metrics-puller.yaml
+            # (mint, cache, refresh). The secret placeholder in the realm
+            # import resolves from the same value.
+            OTEL_INGEST_CLIENT_ID: otel-keycloak
+            OTEL_INGEST_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:?}
+            # The mint target is the Keycloak TLS listener, literal (DD-202):
+            # the iss a token carries is the listener that minted it, and this
+            # value is baked into the container at creation — an env default
+            # let suite start-order mix mint issuer with collector validator
+            # (the ESD-06 401 starvation). The collector validates both
+            # listeners; every producer mints here, so one world, no flip.
+            # CA: this slice's certs/ (the shared mkcert root, same material).
+            OTEL_INGEST_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            OTEL_INGEST_CA_FILE: /certs/ca.pem
+            # DD-664: the server scrape target (the prometheus receiver in
+            # config/metrics-puller.yaml). A Prometheus static_configs target
+            # is host:port, never a URL — the scheme lives in the scrape
+            # config, and the default (http) is what the plaintext dev
+            # management listener needs (ADR 039's named relaxation — prod
+            # mode puts TLS on it, the chart's scrape sets https); keycloak is
+            # the in-network name, so no host routing (the issuer-alias note
+            # on the keycloak service applies the same way).
+            KEYCLOAK_METRICS_TARGET: keycloak:9000
+        volumes:
+            - ./config/metrics-puller.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - ./certs:/certs:ro
+        depends_on:
+            postgres-keycloak:
+                condition: service_healthy
+        networks:
+            - default
+            - observability
+
+networks:
+    default:
+        name: aurelius-atlas-infra-keycloak-network
+    observability:
+        name: aurelius-atlas-infra-observability-network
+        external: true
+
+volumes:
+    data:

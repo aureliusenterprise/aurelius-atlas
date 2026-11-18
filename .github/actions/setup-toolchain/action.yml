@@ -218,8 +218,8 @@ runs:
               # does not kill the in-flight pulls when the step exits.
               {
                   grep -rhoE '^[[:space:]]*image:[[:space:]]*[^[:space:]]+' \
-                      --include=docker-compose.yaml dev apps
-                  grep -rhoE '^FROM[[:space:]]+[^[:space:]]+' apps/*/Dockerfile dev/*/Dockerfile 2>/dev/null
+                      --include=docker-compose.yaml infra apps
+                  grep -rhoE '^FROM[[:space:]]+[^[:space:]]+' apps/*/Dockerfile infra/*/Dockerfile 2>/dev/null
               } |
                   awk '{print $2}' |
                   grep '^dhi\.io/' |

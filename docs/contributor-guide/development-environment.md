@@ -118,8 +118,8 @@ entirely — see
 
 ## Dev Topology
 
-The development infrastructure is a set of **slices**: each slice under `dev/` is its own compose
-project with its own network, named `aurelius-atlas-dev-<slice>-network`. An app's `serve` target
+The development infrastructure is a set of **slices**: each slice under `infra/` is its own compose
+project with its own network, named `aurelius-atlas-infra-<slice>-network`. An app's `serve` target
 starts the slices it needs via `dependsOn` (ADR 005); a slice's services reach each other by
 service name on a shared network.
 
@@ -139,7 +139,7 @@ is in [TLS Certificates](tls-certificates.md).
 | Grafana                   | 127.0.0.1:3000                         | `observability` | Loopback only                                                                                          |
 
 Each slice documents its own services, images, and run commands in its colocated README:
-`dev/elasticsearch`, `dev/keycloak`, `dev/observability`.
+`infra/elasticsearch`, `infra/keycloak`, `infra/observability`.
 
 !!! WARNING "Keycloak's port 8080 is development-only"
 
@@ -159,9 +159,9 @@ reviewed change to every pin at once, approved by the maintainers team.
 | Python        | 3.14 only                                                | `pyproject.toml` (`requires-python`), `.devcontainer` python feature, server `Dockerfile` base image, pyright/ruff target |
 | Node.js       | 24 (LTS jod)                                             | `.devcontainer` node feature, dashboard `build.Dockerfile`                                                                |
 | Java          | 21 (dev tooling for the vendored dashboards' build only) | `.devcontainer` java feature                                                                                              |
-| Elasticsearch | 9.x (dev image 9.5)                                      | `dev/elasticsearch/docker-compose.yaml` image tag                                                                         |
-| Keycloak      | 26.x                                                     | `dev/keycloak/docker-compose.yaml` image tag                                                                              |
-| PostgreSQL    | 18 (Keycloak's database only — ADR 047)                  | `dev/keycloak` compose image tags                                                                                         |
+| Elasticsearch | 9.x (dev image 9.5)                                      | `infra/elasticsearch/docker-compose.yaml` image tag                                                                       |
+| Keycloak      | 26.x                                                     | `infra/keycloak/docker-compose.yaml` image tag                                                                            |
+| PostgreSQL    | 18 (Keycloak's database only — ADR 047)                  | `infra/keycloak` compose image tags                                                                                       |
 
 Minor and patch releases inside a window follow the dependency rule
 ([ADR 020](../architecture/adr/020-dependencies-stay-current-by-default.md)); the floor rises only

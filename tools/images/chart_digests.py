@@ -31,7 +31,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 WORKSPACE = Path(__file__).resolve().parents[2]
-VALUES_GLOBS = ("apps/*/helm/values.yaml", "dev/*/helm/values.yaml", "helm/values.yaml")
+VALUES_GLOBS = ("apps/*/helm/values.yaml", "infra/*/helm/values.yaml", "helm/values.yaml")
 
 # A chart-pinned image block is `repository:` + `tag:` at the same indent
 # (the Aurelius images spell name/tag under global.image instead, so this

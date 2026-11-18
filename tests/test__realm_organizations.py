@@ -13,9 +13,9 @@ import pytest
 import yaml
 from conftest import ES_CHART, WORKSPACE, container, helm_render, pod_spec
 
-DEV_REALM = WORKSPACE / "dev/keycloak/import/master.json"
-PROD_REALM = WORKSPACE / "dev/keycloak/helm/files/aurelius-atlas.json"
-DEMO_REALM = WORKSPACE / "apps/aurelius-atlas-server/standalone/keycloak/atlas.json"
+DEV_REALM = WORKSPACE / "infra/keycloak/import/master.json"
+PROD_REALM = WORKSPACE / "infra/keycloak/helm/files/aurelius-atlas.json"
+DEMO_REALM = WORKSPACE / "docker/keycloak/aurelius-atlas.json"
 ROLES = ["atlas-read", "atlas-write", "atlas-types", "atlas-admin"]
 MAPPER = "oidc-organization-group-membership-mapper"
 SERVICE_CLIENTS = (
@@ -81,8 +81,7 @@ def test__each_realm_has_the_operator_organization_its_groups_and_the_mapper(pat
         found = client(loaded, client_id)
         assert [m["protocolMapper"] for m in found["protocolMappers"] if m["protocolMapper"] == MAPPER] == [MAPPER]
         assert "organization" not in found.get("defaultClientScopes", [])
-        if path != DEMO_REALM:  # the demo realm's clients take Keycloak's defaults, which offer it (DD-580's run)
-            assert "organization" in found["optionalClientScopes"]
+        assert "organization" in found["optionalClientScopes"]
 
 
 @pytest.mark.covers(rules=["RLM-01"])
@@ -115,38 +114,16 @@ def test__in_the_dev_realm_people_and_service_accounts_act_in_the_operator_organ
 
 
 @pytest.mark.covers(rules=["RLM-06", "RLM-07"])
-def test__the_demo_realm_has_an_operator_and_the_two_tenants() -> None:
-    """``operator`` runs the platform and reads every organization; each tenant, demo and meyn, has its own
-    administrator, steward and scientist, members of it alone; everyone keeps the server client's roles.
+def test__the_stack_realm_seeds_no_person_as_the_production_realm_does() -> None:
+    """The stack's realm carries the production realm's posture (DD-673): ``operators`` with its four groups
+    and no member, and no person anywhere. The tenants' organizations are not seeded either: the one shot of
+    the profile tenancy provisions them, as it provisions any tenant a visitor adds.
     """  # noqa: D205 - one sentence
     loaded = realm(DEMO_REALM)
-    assert [org["alias"] for org in loaded["organizations"]] == ["operators", "demo", "meyn"]
-    assert memberships(loaded, "operators") == {"operator": ["atlas-read"]}
-    for tenant in ("demo", "meyn"):
-        assert [group["name"] for group in organization(loaded, tenant)["groups"]] == ROLES
-        assert memberships(loaded, tenant) == {
-            f"{tenant}_atlas": ROLES,
-            f"{tenant}_steward": ["atlas-read", "atlas-write"],
-            f"{tenant}_scientist": ["atlas-read"],
-            "operator": ["atlas-read"],
-        }
-    users = {user["username"]: user for user in loaded["users"]}
-    assert {name for name, user in users.items() if "atlas-operator" in user.get("realmRoles", [])} == {"operator"}
-    assert [server_roles(users[name]) for name in ("demo_atlas", "meyn_steward", "demo_scientist", "operator")] == [
-        ROLES,
-        ["atlas-read", "atlas-write"],
-        ["atlas-read"],
-        ["atlas-read"],
-    ]
-    # a tenant's users belong to it alone, so they sign in without a choice; operator reads all three
-    owners: dict[str, list[str]] = {}
-    for org in loaded["organizations"]:
-        for member in org["members"]:
-            owners.setdefault(member["username"], []).append(org["alias"])
-    assert owners == {
-        **{f"{tenant}_{name}": [tenant] for tenant in ("demo", "meyn") for name in ("atlas", "steward", "scientist")},
-        "operator": ["operators", "demo", "meyn"],
-    }
+    assert [org["alias"] for org in loaded["organizations"]] == ["operators"]
+    assert all(not org.get("members") for org in loaded["organizations"])
+    assert [group["name"] for group in organization(loaded, "operators")["groups"]] == ROLES
+    assert all(user.get("serviceAccountClientId") for user in loaded["users"])
 
 
 @pytest.mark.covers(rules=["RLM-07"])
@@ -165,9 +142,9 @@ def test__the_production_realm_still_seeds_no_person() -> None:
 @pytest.mark.covers(rules=["RLM-08"])
 def test__the_store_defines_the_operators_read_role_in_dev_and_the_chart() -> None:
     """``aurelius_atlas_operator`` reads every catalogue's indices, mounted over the image's roles file."""
-    dev = yaml.safe_load((WORKSPACE / "dev/elasticsearch/config/roles.yml").read_text())
+    dev = yaml.safe_load((WORKSPACE / "infra/elasticsearch/config/roles.yml").read_text())
     assert dev == {"aurelius_atlas_operator": OPERATOR_ROLE}
-    compose = yaml.safe_load((WORKSPACE / "dev/elasticsearch/docker-compose.yaml").read_text())
+    compose = yaml.safe_load((WORKSPACE / "infra/elasticsearch/docker-compose.yaml").read_text())
     volumes = compose["services"]["elasticsearch"]["volumes"]
     assert "./config/roles.yml:/usr/share/elasticsearch/config/roles.yml:ro" in volumes
     docs = helm_render(ES_CHART)

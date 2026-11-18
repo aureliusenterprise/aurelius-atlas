@@ -15,8 +15,10 @@
                 "pythonBase",
                 "^default",
                 "{projectRoot}/tests/**/*",
+                "{workspaceRoot}/docker/**",
+                "{workspaceRoot}/apps/*/docker/**",
                 "{workspaceRoot}/helm/**",
-                "{workspaceRoot}/dev/*/helm/**",
+                "{workspaceRoot}/infra/*/helm/**",
                 "{workspaceRoot}/tools/es-coredump-agent/**"
             ],
             "metadata": {

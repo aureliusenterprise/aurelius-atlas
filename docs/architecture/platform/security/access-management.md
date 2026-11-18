@@ -59,7 +59,7 @@ refused: the arrangement fails closed.
 
 ## Where it runs
 
-- **Development** — the dev realm (`dev/keycloak/import/master.json`) gives `aurelius-writer` all four roles
+- **Development** — the dev realm (`infra/keycloak/import/master.json`) gives `aurelius-writer` all four roles
   and `aurelius-reader` `atlas-read`. The parity suites run as the writer, and the authorization tests run
   as the reader and as users with no role.
 - **Clusters** — the production realm asset carries the four roles and their scope mapping, but no users.

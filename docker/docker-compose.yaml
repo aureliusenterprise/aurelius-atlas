@@ -1,0 +1,36 @@
+# The server with the Atlas dashboards and the Aurelius Atlas webapp, behind one nginx entry (see README.md):
+#   https://localhost:9000/         the webapp
+#   https://localhost:9000/atlas2/  the server and its dashboards
+#   https://localhost:9000/auth/    the stack's own Keycloak, with the realm aurelius-atlas
+# The store is the stack's own Elasticsearch, apart from the infra store the e2e suites write to; `down -v`
+# empties it. Both are the infra slices' services, extended (ADR 066): the definitions live in
+# infra/elasticsearch and infra/keycloak, and the stack states only its differences. Secrets, the realm's
+# client secrets among them, come from the server's .env and the two infra .env files (DD-669):
+#   --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env --env-file infra/elasticsearch/.env
+# SAMPLE_ZIP names an Atlas export ZIP in data/atlas-sample/ to import once the server is up;
+# empty, or a name no file has, imports nothing.
+#
+# This file names the project and joins the pieces (ADR 065, DD-677); the stack's services all live
+# in the pieces it includes, as the umbrella chart joins the component charts: the gateway (nginx,
+# the only published port, DD-677) from docker/gateway/, the server and its one shots from
+# apps/aurelius-atlas-server/docker/, the webapp from apps/aurelius-atlas-webapp/docker/, the
+# extractor from apps/aurelius-atlas-data2model/docker/, the lineage API from
+# apps/aurelius-atlas-lineage-model/docker/, the validator from apps/aurelius-atlas-validate-entity/docker/,
+# the embedder from apps/aurelius-atlas-embedder/docker/, the store from docker/elasticsearch/ and the
+# the identity provider from docker/keycloak/ and the telemetry (collector, Prometheus, Loki, Tempo,
+# Grafana, DD-675) from docker/observability/. Compose merges them by service name into this one
+# project; a relative path in a fragment reads from the fragment's own folder. The fragments are not a
+# deployment target of their own — run this file.
+name: aurelius-atlas-standalone
+
+include:
+    - path: gateway/compose.yaml
+    - path: ../apps/aurelius-atlas-server/docker/compose.yaml
+    - path: ../apps/aurelius-atlas-webapp/docker/compose.yaml
+    - path: ../apps/aurelius-atlas-data2model/docker/compose.yaml
+    - path: ../apps/aurelius-atlas-lineage-model/docker/compose.yaml
+    - path: ../apps/aurelius-atlas-validate-entity/docker/compose.yaml
+    - path: ../apps/aurelius-atlas-embedder/docker/compose.yaml
+    - path: elasticsearch/compose.yaml
+    - path: keycloak/compose.yaml
+    - path: observability/compose.yaml

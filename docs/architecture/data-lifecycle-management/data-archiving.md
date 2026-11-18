@@ -8,23 +8,23 @@ increment 6.4d. A store that arrives without a row here fails the lifetimes suit
 
 ## Lifetimes
 
-| Data                                                   | Lifetime                 | Removed by                    | Store                               |
-| ------------------------------------------------------ | ------------------------ | ----------------------------- | ----------------------------------- |
-| Catalogue: entities, relationships, classifications    | unbounded                | a delete, then a purge        | `dev/elasticsearch:data`            |
-| Type definitions, glossaries, saved searches, profiles | unbounded                | a delete                      | `dev/elasticsearch:data`            |
-| Entity audits, except an entity's creation             | 90 days                  | the audit aging, daily        | `dev/elasticsearch:data`            |
-| An entity's creation audit                             | with the entity          | the entity's purge            | `dev/elasticsearch:data`            |
-| Admin audits, export and import audits                 | unbounded                | —                             | `dev/elasticsearch:data`            |
-| Stored metrics (`admin/metricsstats`)                  | 14 days                  | the metrics purge, hourly     | `dev/elasticsearch:data`            |
-| The write journal, finished tasks                      | until the write finishes | the write, recovery, the task | `dev/elasticsearch:data`            |
-| Users, realms, clients                                 | unbounded                | an administrator              | `dev/keycloak:data`                 |
-| Login and admin events (production realm)              | 30 days                  | Keycloak's event expiry       | `dev/keycloak:data`                 |
-| Metrics                                                | 15 days                  | Prometheus's retention        | `dev/observability:prometheus-data` |
-| Logs                                                   | 30 days                  | Loki's compactor              | `dev/observability:loki-data`       |
-| Traces                                                 | 7 days                   | Tempo's retention jobs        | `dev/observability:tempo-data`      |
-| Alert state history                                    | 30 days                  | Grafana's annotation cleanup  | `dev/observability:grafana-data`    |
-| Grafana's users and preferences                        | unbounded, disposable    | —                             | `dev/observability:grafana-data`    |
-| Snapshots of the store (chart; none in dev)            | 7 days, the newest 24    | the snapshot retention        | `dev/elasticsearch:snapshots`       |
+| Data                                                   | Lifetime                 | Removed by                    | Store                                 |
+| ------------------------------------------------------ | ------------------------ | ----------------------------- | ------------------------------------- |
+| Catalogue: entities, relationships, classifications    | unbounded                | a delete, then a purge        | `infra/elasticsearch:data`            |
+| Type definitions, glossaries, saved searches, profiles | unbounded                | a delete                      | `infra/elasticsearch:data`            |
+| Entity audits, except an entity's creation             | 90 days                  | the audit aging, daily        | `infra/elasticsearch:data`            |
+| An entity's creation audit                             | with the entity          | the entity's purge            | `infra/elasticsearch:data`            |
+| Admin audits, export and import audits                 | unbounded                | —                             | `infra/elasticsearch:data`            |
+| Stored metrics (`admin/metricsstats`)                  | 14 days                  | the metrics purge, hourly     | `infra/elasticsearch:data`            |
+| The write journal, finished tasks                      | until the write finishes | the write, recovery, the task | `infra/elasticsearch:data`            |
+| Users, realms, clients                                 | unbounded                | an administrator              | `infra/keycloak:data`                 |
+| Login and admin events (production realm)              | 30 days                  | Keycloak's event expiry       | `infra/keycloak:data`                 |
+| Metrics                                                | 15 days                  | Prometheus's retention        | `infra/observability:prometheus-data` |
+| Logs                                                   | 30 days                  | Loki's compactor              | `infra/observability:loki-data`       |
+| Traces                                                 | 7 days                   | Tempo's retention jobs        | `infra/observability:tempo-data`      |
+| Alert state history                                    | 30 days                  | Grafana's annotation cleanup  | `infra/observability:grafana-data`    |
+| Grafana's users and preferences                        | unbounded, disposable    | —                             | `infra/observability:grafana-data`    |
+| Snapshots of the store (chart; none in dev)            | 7 days, the newest 24    | the snapshot retention        | `infra/elasticsearch:snapshots`       |
 
 The store column names the dev volume. On a cluster each is the persistent volume of the same
 component in its chart.

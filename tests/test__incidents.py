@@ -13,7 +13,7 @@ import pytest
 import yaml
 from conftest import WORKSPACE, find
 
-RULES = WORKSPACE / "dev/observability/config/grafana/alerting/rules.yaml"
+RULES = WORKSPACE / "infra/observability/config/grafana/alerting/rules.yaml"
 RESILIENCE = WORKSPACE / "docs/architecture/platform/resilience"
 RUNBOOK = RESILIENCE / "incident-management.md"
 INCIDENTS = RESILIENCE / "incidents"
@@ -73,7 +73,7 @@ def test__every_record_has_the_five_sections_and_is_listed() -> None:
 @pytest.mark.covers(rules=["INC-04"])
 def test__a_stopped_producer_s_series_drops_after_two_minutes(obs_docs: list[dict[str, Any]]) -> None:
     """The collector's Prometheus exporter, in dev and in the chart's rendered config."""
-    dev = yaml.safe_load((WORKSPACE / "dev/observability/config/otel-collector.yaml").read_text())
+    dev = yaml.safe_load((WORKSPACE / "infra/observability/config/otel-collector.yaml").read_text())
     chart = yaml.safe_load(find(obs_docs, "ConfigMap", "atlas-observability")["data"]["config.yaml"])
 
     assert dev["exporters"]["prometheus"]["metric_expiration"] == "2m"

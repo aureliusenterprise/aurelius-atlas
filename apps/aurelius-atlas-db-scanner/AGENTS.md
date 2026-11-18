@@ -81,7 +81,7 @@ KSC-07), cited not restated; any change to either is a deviation and needs a
   has no process to serve; `scan` is the run target.
 - Realm (DD-458's pattern, 13.1's sibling): the
   `aurelius-atlas-db-scanner` confidential client in
-  `dev/keycloak/import/master.json` (and the byte-identical helm copy), with
+  `infra/keycloak/import/master.json` (and the byte-identical helm copy), with
   its service-account user holding `atlas-read` and `atlas-write` on the
   `aurelius-atlas-server` client. The client carries `fullScopeAllowed: true`
   and the `profile` scope, as the other scanners' do. A realm imported before
@@ -114,10 +114,12 @@ KSC-07), cited not restated; any change to either is a deviation and needs a
   `${VAR:?}` guards fail loudly when a value is missing). The dev writer's
   `USERNAME`/`PASSWORD` mirror the dev realm's seeded user so the suite's
   seeding tokens mint; keep them equal to the realm import.
-- `tls.json` — the server's certificate SANs only: the job is a client and
-  verifies the server and the issuer with `CA_FILE`. The database needs no
-  certificate material for the suite (the Postgres speaks plain TCP on
-  loopback; a TLS database rides `CA_FILE` too if its DSN asks for it).
+- `tls.json` — an empty manifest: the job is a client and needs no leaf of
+  its own (`nx certgen` writes the CA copy its `CA_FILE` verifies the server
+  and the issuer against; the server leaf lives in the server project, which
+  the e2e base mounts). The database needs no certificate material for the
+  suite (the Postgres speaks plain TCP on loopback; a TLS database rides
+  `CA_FILE` too if its DSN asks for it).
 - `Dockerfile` — the wheel `nx build` makes, nonroot, no EXPOSE and no
   HEALTHCHECK: the batch image ships for 13.4's CronJob. `psycopg[binary]` is
   baked in because the e2e and most deployments scan Postgres; musllinux
@@ -127,9 +129,14 @@ KSC-07), cited not restated; any change to either is a deviation and needs a
   networks, port 21007 (21006 was 13.1's), and the suite's own
   `dhi.io/postgres` on 25432 (DD-507: the scan reads a database the suite
   starts, seeds, and discards — never a shared store, never a restarted one,
-  DD-223). The hardened Postgres image refuses `POSTGRES_HOST_AUTH_METHOD`
-  `trust`, so the service runs SCRAM with the suite's password — which also
-  keeps DBS-02's scrubbing honest end to end. The scanner itself has no
+  DD-223). The `atlas-server` service `extends` the server project's e2e base
+  (`../aurelius-atlas-server/e2e/compose.server.yaml`) and states only its
+  port and audience; the base's cert mount rebases to the server project's
+  own `certs/`. The hardened Postgres image refuses `POSTGRES_HOST_AUTH_METHOD`
+  `trust`, so the service runs SCRAM with the suite's password — delivered as
+  an environment-sourced compose secret through `POSTGRES_PASSWORD_FILE`
+  (postgres/postgres 0400), which also keeps DBS-02's scrubbing honest end to
+  end. The scanner itself has no
   service; the suite calls `run` in-process. Tests seed `zz<run>`-namespaced
   schemas and drop them `CASCADE` in teardown; the catalogue teardown deletes
   by guid, recorded through the door wrapper.

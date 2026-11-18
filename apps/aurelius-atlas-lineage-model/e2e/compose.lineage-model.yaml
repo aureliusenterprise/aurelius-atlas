@@ -1,0 +1,82 @@
+# The e2e lineage-model API, as a base: the chain stacks that run the real
+# lineage API beside their upstreams extend this service (the pattern of
+# ADR 065/066, as the scanner stacks extend the server's e2e base). Not a
+# deployment target of its own - run a consumer's docker-compose.yaml. The
+# project's stack piece (../docker/compose.yaml), which the standalone stack
+# includes, is the identity underneath: the image pin, the certificate mount
+# (the piece's ../certs, which extends rebases to this project's certs/ - the
+# leaf the proxy verifies, issued once by this project's `nx certgen`), the
+# log level, the TLS trio, the bearer check's CA and the gate on the
+# extraction leg arrive by inheritance. This layer states the e2e identity on
+# top of it: the host-mapped issuer (the dev Keycloak, off this stack's
+# network), the collector network, the Keycloak-on-host mapping, the OTel leg,
+# the in-network extraction leg and a published port - and it undoes the
+# piece's share of the proxy's network, which the standalone stack needs and
+# an e2e stack has no proxy for. What a consumer states are its differences:
+# which upstream answers the lineage reads (the 8.2 suite's fixture Atlas, or
+# the webapp stack's real server under its certificate name), its audiences,
+# its OTel client secret under its own .env name, and its network list.
+# The guards are the consumers': compose interpolates this file with the
+# consuming project's environment, and Nx injects each project's .env into
+# its e2e task. The audience pair and the OTel client-credentials secret are
+# deliberately NOT guarded here (a failed base guard is not rescued by a
+# consumer override, verified against compose): every consumer adds those keys
+# under the names its own .env carries, or fixes them as literals where the
+# stack does (the webapp's browser-client posture, DD-385).
+# Relative paths read from this file's folder; keep the service name
+# `aurelius-atlas-lineage-model` and the network keys `default` and
+# `observability`: the suites and the certificate names speak them.
+services:
+    aurelius-atlas-lineage-model:
+        extends:
+            file: ../docker/compose.yaml
+            service: aurelius-atlas-lineage-model
+        # The standalone piece shares the proxy's network namespace; an e2e
+        # stack has no proxy, so the key is deleted and the service joins the
+        # networks below (verified against compose).
+        network_mode: !reset null
+        extra_hosts:
+            # The issuer, published loopback-wide on this machine by the dev
+            # Keycloak stack.
+            - keycloak.localhost:host-gateway
+        environment:
+            # The e2e issuer (infra/keycloak, TLS listener): GET / verifies
+            # the caller's bearer token (LM-08). The audience pair joins here
+            # from the consumer (see the header).
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_SERVER_URL: https://keycloak.localhost:8443/
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: master
+            # The extraction leg, in-network: the data2model's certificate
+            # covers the service name (its project issues it for the e2e
+            # stack, DD-216), verified against the dev CA (LM-04). The
+            # standalone piece dials 127.0.0.1 in the proxy's namespace; the
+            # chain's containers answer by name here. The lineage reads'
+            # upstream (ATLAS_BASE_URL) is the consumer's.
+            AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL: https://aurelius-atlas-data2model:21001
+            # OTLP ingest identity (DD-196, DD-197): otel-lineage-model mints
+            # at the TLS :8443 issuer (DD-202), exports to the collector's
+            # TLS :4319. The client secret joins from the consumer.
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_TOKEN_URL: https://keycloak.localhost:8443/realms/master/protocol/openid-connect/token
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_ID: otel-lineage-model
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CA_FILE: /certs/ca.pem
+            # Export every second in test containers so the chain probe's
+            # Tempo read-back lands sooner (DD-225); both chain stacks.
+            OTEL_BSP_SCHEDULE_DELAY: "1000"
+        networks:
+            # The chain's services reach each other over the stack's default
+            # network; the collector answers as `otel-collector` on the dev
+            # telemetry network - the name in its certificate. A consumer
+            # adds its network keys to this map (the webapp stack rides the
+            # Atlas server network too).
+            default: null
+            observability: {}
+        ports:
+            - 21002
+
+networks:
+    # The dev telemetry stack (infra/observability). `extends` copies the
+    # service, not the network definitions: every consumer declares the same
+    # external network under the same key.
+    observability:
+        name: aurelius-atlas-infra-observability-network
+        external: true

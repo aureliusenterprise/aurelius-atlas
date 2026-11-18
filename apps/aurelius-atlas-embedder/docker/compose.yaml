@@ -1,0 +1,24 @@
+# The standalone stack's embedder piece, included by ../../../docker/docker-compose.yaml (ADR 065).
+# Relative paths read from this file's folder; the service name is the stack's, so keep it.
+# The embedding model (11.2, ADR 059): text in, its 384-dimension embedding out, on the CPU. Only the
+# stack's network reaches it, as https://embedder:21004 with its own certificate; it checks no tokens,
+# so it has no published port (DD-432). Nothing waits for it, and nothing calls it until the server
+# embeds entities (11.3).
+# EMBEDDER_IMAGE and EMBEDDER_CERTS_DIR name the image and the certificate folder (compose-time
+# variables, like SAMPLE_ZIP: not .env settings). Unset, they are this file's own answers — the
+# `nx docker-build` tag and this project's `nx certgen` folder (ADR 065: the stack builds, never
+# pulls) — and a relative EMBEDDER_CERTS_DIR still reads from this file's folder. An install that
+# ships published images sets EMBEDDER_IMAGE to the registry reference or a digest, and its own
+# certificate folder to EMBEDDER_CERTS_DIR; the e2e stack (../e2e/docker-compose.yaml) extends
+# this service and leaves both unset.
+name: aurelius-atlas-standalone
+
+services:
+    embedder:
+        image: ${EMBEDDER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-embedder:local}
+        environment:
+            AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE: /certs/aurelius-atlas-embedder.pem
+            AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE: /certs/aurelius-atlas-embedder-key.pem
+            AURELIUS_ATLAS_EMBEDDER_TLS_CA_FILE: /certs/ca.pem
+        volumes:
+            - ${EMBEDDER_CERTS_DIR:-../certs}:/certs:ro

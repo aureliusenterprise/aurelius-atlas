@@ -21,12 +21,13 @@
             "dependsOn": [
                 { "target": "decrypt" },
                 { "target": "certgen" },
+                { "projects": ["aurelius-atlas-server"], "target": "certgen" },
                 { "projects": ["aurelius-atlas-server"], "target": "docker-build" },
                 {
                     "projects": [
-                        "aurelius-atlas-dev-keycloak",
-                        "aurelius-atlas-dev-observability",
-                        "aurelius-atlas-dev-elasticsearch"
+                        "aurelius-atlas-infra-keycloak",
+                        "aurelius-atlas-infra-observability",
+                        "aurelius-atlas-infra-elasticsearch"
                     ],
                     "target": "up"
                 }

@@ -1,0 +1,50 @@
+# The standalone stack's store piece, included by ../../docker-compose.yaml (ADR 065, ADR 066).
+# The node is the infra slice's service, extended (DD-668): the image pin, the configuration, the
+# roles, the certificate, the java agent, the healthcheck and the ulimits arrive by inheritance
+# from ../../infra/elasticsearch/docker-compose.yaml and are not written here. What the stack
+# states are its differences: its own named volumes (a `down -v` empties the demo store and
+# nothing else, DD-367), no published port, and the server's password for the elastic user, so
+# the two cannot differ (one placeholder for both services). The heap rides the base's
+# ELASTICSEARCH_HEAP, which the stack's env-files supply from infra/elasticsearch/.env.
+# Compose interpolates the base with this project's environment before applying the overrides,
+# so the base's ${VAR:?} guards must pass even where the fragment replaces the value: the
+# stack's start names infra/elasticsearch/.env among its env-files (DD-669). The replaced
+# guard's interpolated value is never read - the override below wins.
+name: aurelius-atlas-standalone
+
+services:
+    # The chown one shot, extended: the same image and entrypoint, the stack's volumes.
+    elasticsearch-volume-init:
+        extends:
+            file: ../../infra/elasticsearch/docker-compose.yaml
+            service: volume-init
+        volumes: !override
+            - elasticsearch-data:/usr/share/elasticsearch/data
+            - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
+
+    elasticsearch:
+        extends:
+            file: ../../infra/elasticsearch/docker-compose.yaml
+            service: elasticsearch
+        # The base's depends_on names the base's one shot, which is not this project's; the
+        # stack's is the extended one above. (`!override` replaces the key; `!reset` would
+        # delete it.)
+        depends_on: !override
+            elasticsearch-volume-init:
+                condition: service_completed_successfully
+        environment:
+            # The server's password is the elastic user's here, so the two cannot differ.
+            ELASTIC_PASSWORD: ${AURELIUS_ATLAS_SERVER_ELASTICSEARCH_PASSWORD:?}
+        # No published port: the server reaches it in-network (SST-02), and the host never
+        # serves the demo catalogue.
+        ports: !reset []
+        # Appended at the base's mount points: compose keeps the last entry per target, so the
+        # stack's volumes replace the dev slice's `data` and `snapshots` while the inherited
+        # bind mounts (agent, configuration, roles, certificate) stay.
+        volumes:
+            - elasticsearch-data:/usr/share/elasticsearch/data
+            - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
+
+volumes:
+    elasticsearch-data:
+    elasticsearch-snapshots:

@@ -9,9 +9,18 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
-import yaml
 from aurelius_atlas_server.settings import ServerSettings
-from conftest import SERVER_CHART, WORKSPACE, container, env_map, env_value, find, helm_render, helm_render_fails
+from conftest import (
+    SERVER_CHART,
+    WORKSPACE,
+    container,
+    env_map,
+    env_value,
+    find,
+    helm_render,
+    helm_render_fails,
+    standalone_compose,
+)
 
 SERVER_TEST_VALUES = (SERVER_CHART / "tests/values.test.yaml",)
 JOB = "atlas-server-provision-tenants"
@@ -104,7 +113,7 @@ def test__without_tenancy_the_chart_renders_no_job_and_no_setting() -> None:
 @pytest.mark.covers(rules=["WPT-10"])
 def test__the_standalone_stack_offers_tenancy_off_by_default() -> None:
     """``ATLAS_TENANCY_ENABLED`` sets the server's setting, false unless given."""
-    compose = yaml.safe_load((WORKSPACE / "apps/aurelius-atlas-server/standalone/docker-compose.yaml").read_text())
+    compose = standalone_compose()
     environment = compose["services"]["aurelius-atlas-server"]["environment"]
     assert environment["AURELIUS_ATLAS_SERVER_TENANCY_ENABLED"] == "${ATLAS_TENANCY_ENABLED:-false}"
 
@@ -166,8 +175,7 @@ def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_de
     """The profile tenancy's one shot: the server's image and settings, tenancy on, the operator's password, the
     sample folder; it runs the stack's tenants script, which provisions demo with the sample and meyn without.
     """  # noqa: D205 - one sentence
-    standalone = WORKSPACE / "apps/aurelius-atlas-server/standalone"
-    compose = yaml.safe_load((standalone / "docker-compose.yaml").read_text())
+    compose = standalone_compose()
     tenants = compose["services"]["tenants"]
     server = compose["services"]["aurelius-atlas-server"]
     assert (tenants["profiles"], tenants["image"]) == (["tenancy"], server["image"])
@@ -180,6 +188,7 @@ def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_de
     assert environment["OPERATOR_PASSWORD"] == "${DEMO_USER_OPERATOR_PASSWORD:?}"  # noqa: S105 - a placeholder
     assert environment["PYTHONPATH"] == "/application"  # the image's packages, beside the script
     assert "./tenants.py:/standalone/tenants.py:ro" in tenants["volumes"]
-    script = (standalone / "tenants.py").read_text()
-    assert '"provision", "demo", "--existing-ok", "--sample", str(sample), "--admin", "demo_atlas"]' in script
-    assert '"provision", "meyn", "--existing-ok", "--admin", "meyn_atlas"]' in script
+    script = (WORKSPACE / "apps/aurelius-atlas-server/docker/tenants.py").read_text()
+    # The realm holds no users (DD-673), so the one shot names no administrator.
+    assert '"provision", "demo", "--existing-ok", "--sample", str(sample)]' in script
+    assert '"provision", "meyn", "--existing-ok"]' in script

@@ -18,11 +18,11 @@ from pathlib import Path
 import pytest
 from conftest import WORKSPACE
 
-# The twelve chart trees the release ships: every apps/ and dev/ chart plus
+# The twelve chart trees the release ships: every apps/ and infra/ chart plus
 # the umbrella (the layout helm.ts infers its targets from).
 CHART_DIRS = (
     *sorted((WORKSPACE / "apps").glob("*/helm")),
-    *sorted((WORKSPACE / "dev").glob("*/helm")),
+    *sorted((WORKSPACE / "infra").glob("*/helm")),
     WORKSPACE / "helm",
 )
 SHARED_HELMIGNORE = WORKSPACE / "helm/.helmignore-shared"

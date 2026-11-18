@@ -25,7 +25,7 @@ from conftest import (
 )
 
 SNAPSHOTS_DIR = "/usr/share/elasticsearch/snapshots"
-DEV_STORE = WORKSPACE / "dev/elasticsearch"
+DEV_STORE = WORKSPACE / "infra/elasticsearch"
 SERVER_TEST_VALUES = (SERVER_CHART / "tests/values.test.yaml",)
 
 
@@ -79,7 +79,7 @@ def test__the_chart_s_server_takes_snapshots(server_docs: list[dict[str, Any]]) 
 @pytest.mark.covers(rules=["SNP-03"])
 def test__an_overdue_snapshot_raises_an_alert() -> None:
     """The rule reads the server's gauge: two hours without a success fires; no data, snapshots off, is OK."""
-    rules = yaml.safe_load((WORKSPACE / "dev/observability/config/grafana/alerting/rules.yaml").read_text())
+    rules = yaml.safe_load((WORKSPACE / "infra/observability/config/grafana/alerting/rules.yaml").read_text())
     [rule] = [rule for rule in rules["groups"][0]["rules"] if rule["uid"] == "aurelius-atlas-snapshot-overdue"]
     expression, threshold = rule["data"][0]["model"]["expr"], rule["data"][1]["model"]["conditions"][0]
 

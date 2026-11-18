@@ -83,7 +83,7 @@ deviation and needs a `deviations.md` row, not a silent edit.
   process to serve; `scan` is the run target.
 - Realm (DD-469's sibling of DD-458): the
   `aurelius-atlas-kafka-scanner` confidential client in
-  `dev/keycloak/import/master.json` (and the byte-identical helm copy), with
+  `infra/keycloak/import/master.json` (and the byte-identical helm copy), with
   its service-account user holding `atlas-read` and `atlas-write` on the
   `aurelius-atlas-server` client. The server's store authorizer (AUZ-02)
   reads roles only from that client's `resource_access`. The client carries
@@ -118,7 +118,7 @@ deviation and needs a `deviations.md` row, not a silent edit.
   places. The ports are literals in the compose because the broker's
   advertised listeners spell them: change one, change the other. The
   cluster carries no named volumes; `down --volumes` at teardown discards
-  it. There is no `dev/kafka`: a dev `scan` points at a broker the operator
+  it. There is no `infra/kafka`: a dev `scan` points at a broker the operator
   runs or owns (the README spells how).
 - `.env` / `.env.enc` — dev defaults; re-run
   `nx encrypt aurelius-atlas-kafka-scanner` after changing `.env` (CI
@@ -127,14 +127,21 @@ deviation and needs a `deviations.md` row, not a silent edit.
   (`AURELIUS_ATLAS_SERVER_*`, bare `KAFKA_SCANNER_CLIENT_SECRET`
   passthrough) because Nx injects this `.env` into the task. The SASL pair
   the e2e compose's `sasl-init` writes — see the broker bullet above.
-- `tls.json` — the server's certificate SANs only: the job is a client and
-  verifies the server and the issuer with `CA_FILE`. The broker and Registry
-  are PLAINTEXT and need no certificate material (DD-469).
+- `tls.json` — an empty manifest: the job is a client and needs no leaf of
+  its own (`nx certgen` writes the CA copy its `CA_FILE` verifies the server
+  and the issuer against; the server leaf lives in the server project, which
+  the e2e base mounts). The broker and Registry are PLAINTEXT and need no
+  certificate material (DD-469).
 - `Dockerfile` — the wheel `nx build` makes, nonroot, no EXPOSE and no
   HEALTHCHECK: the batch image ships for 13.2's CronJob.
 - `e2e/docker-compose.yaml` — the server image on the dev networks, port
   21006 (21005 was 12.2's), beside the suite's broker, `sasl-init`, and
-  Registry (DD-541). The scanner itself has no service; the suite calls
+  Registry (DD-541). The `atlas-server` service `extends` the server
+  project's e2e base (`../aurelius-atlas-server/e2e/compose.server.yaml`)
+  and states only its port and audience; the base's cert mount rebases to
+  the server project's own `certs/` (this project's `tls.json` copy of the
+  server leaf is no longer mounted — its entry stays for the CA the
+  suite's client trusts). The scanner itself has no service; the suite calls
   `run_scan` in-process. Tests seed `zz<run>`-namespaced topics, subjects,
   and entities and delete them in teardown, fields before datasets (DD-223:
   the shared dev store is never restarted; the broker is discarded with the
@@ -147,9 +154,9 @@ The app is one increment's deliverable: remove
 `apps/aurelius-atlas-kafka-scanner`, including its `helm/` chart and its
 `e2e/` Kafka services (DD-541 moved them in with the app), its root
 `pyproject.toml` entries (member, dev group, uv source), the scanner client
-and service-account user in `dev/keycloak/import/master.json` (and the helm
+and service-account user in `infra/keycloak/import/master.json` (and the helm
 copy), the `KAFKA_SCANNER_CLIENT_SECRET` passthrough in
-`dev/keycloak/docker-compose.yaml`, the scanner entry in
+`infra/keycloak/docker-compose.yaml`, the scanner entry in
 `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` and in the server chart's
 `auth.audiences` default (CHT-120), the mkdocs nav entry, and the 13.1/13.2
 roadmap rows. Nothing to unwire in the umbrella or the hardened realm

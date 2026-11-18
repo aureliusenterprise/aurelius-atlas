@@ -4,8 +4,8 @@
         "aurelius-atlas-auth",
         "aurelius-atlas-data2model",
         "aurelius-atlas-data2model-client",
-        "aurelius-atlas-dev-keycloak",
-        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-infra-keycloak",
+        "aurelius-atlas-infra-observability",
         "aurelius-atlas-lineage-model-client",
         "aurelius-atlas-otel",
         "aurelius-atlas-server-client"
@@ -15,13 +15,33 @@
     "sourceRoot": "{projectRoot}/aurelius_atlas_lineage_model",
     "tags": [],
     "targets": {
+        "e2e": {
+            "cache": true,
+            "dependsOn": [
+                { "target": "decrypt" },
+                { "dependencies": true, "target": "decrypt" },
+                { "target": "certgen" },
+                { "projects": ["aurelius-atlas-data2model"], "target": "certgen" },
+                { "target": "docker-build" },
+                { "dependencies": true, "target": "up" }
+            ],
+            "executor": "@nxlv/python:run-commands",
+            "metadata": {
+                "description": "E2E: the 8.2 chain with the real data2model (DD-200)"
+            },
+            "options": {
+                "command": "uv run pytest e2e",
+                "cwd": "{projectRoot}",
+                "envFile": "apps/aurelius-atlas-lineage-model/.env"
+            }
+        },
         "serve": {
             "continuous": true,
             "dependsOn": [
                 { "target": "decrypt" },
                 { "target": "certgen" },
                 {
-                    "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
+                    "projects": ["aurelius-atlas-infra-keycloak", "aurelius-atlas-infra-observability"],
                     "target": "up"
                 }
             ],

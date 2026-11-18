@@ -70,7 +70,7 @@ type ChartOwnerVersionActionsCtor = new (
  *
  * The ecosystem side is `@nxlv/python`'s actions extended here: the owner's
  * `pyproject.toml` (uv workspace members: the root, the Python apps) is
- * versioned exactly as before DD-293. Owners without a pyproject (the dev
+ * versioned exactly as before DD-293. Owners without a pyproject (the infra
  * charts, the webapp chart) get no ecosystem manifest — the chart is their
  * version manifest, current version read from it directly.
  *
@@ -109,7 +109,7 @@ export default class ChartYamlVersionActions extends PythonVersionActions {
     }
 
     override async init(tree: Tree): Promise<void> {
-        // Chart-only owners (the dev charts, the webapp chart) have no
+        // Chart-only owners (the infra charts, the webapp chart) have no
         // pyproject.toml, so the base init resolves no manifest root and the
         // ecosystem actions become inert for them: the chart is their only
         // manifest, handled by the overrides below.
@@ -144,7 +144,7 @@ export default class ChartYamlVersionActions extends PythonVersionActions {
         manifestPath: string;
     }> {
         // The ecosystem manifest wins when the owner has one (the uv apps,
-        // the root workspace); chart-only owners (dev/*, the webapp chart)
+        // the root workspace); chart-only owners (infra/*, the webapp chart)
         // read their version straight from Chart.yaml (DD-293).
         if (tree.exists(`${this.prefix}pyproject.toml`)) {
             return super.readCurrentVersionFromSourceManifest(tree);

@@ -20,7 +20,7 @@ rules live in the root `AGENTS.md` and `libs/python/AGENTS.md`.
   (`libs/python/aurelius-atlas-auth/specs/8-0-auxiliary-api-foundation/spec.md`).
 - A service that gates writes needs its write role assigned through Keycloak:
   a realm role, or a client role on the service's own client —
-  `dev/keycloak/import/master.json` carries the dev users (see the
+  `infra/keycloak/import/master.json` carries the dev users (see the
   `aurelius-write` pattern of the `aurelius` client).
 
 ## Conventions

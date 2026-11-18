@@ -96,7 +96,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 
 - Registered in root `pyproject.toml` (workspace members, dev group, `uv.sources`); depends on
   `aurelius-atlas-model`, `aurelius-atlas-typesystem`, `aurelius-atlas-store-es` and `aurelius-atlas-dsl`.
-- `project.json` `implicitDependencies` on `aurelius-atlas-dev-elasticsearch`, so `nx e2e` starts it.
+- `project.json` `implicitDependencies` on `aurelius-atlas-infra-elasticsearch`, so `nx e2e` starts it.
 - `sonar-project.properties` and `.env.enc` (`SONAR_TOKEN`) for the CI Sonar job.
 - `docs/api-reference/libs/python/aurelius-atlas-core.md` and its `mkdocs.yaml` nav entry.
 
@@ -105,7 +105,7 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
 ```bash
 uv run pytest libs/python/aurelius-atlas-core/tests
 npx nx test aurelius-atlas-core -c ci
-npx nx e2e aurelius-atlas-core -c ci      # starts dev/elasticsearch first
+npx nx e2e aurelius-atlas-core -c ci      # starts infra/elasticsearch first
 uv run pyright libs/python/aurelius-atlas-core
 ```
 
