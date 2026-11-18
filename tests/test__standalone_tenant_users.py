@@ -34,8 +34,14 @@ class Admin:
     users: dict[str, str]
     calls: list[tuple[str, str, Any]] = field(default_factory=list)
 
-    async def call(self, method: str, path: str, *, body: object = None) -> tuple[Any, str | None]:
-        """Record the call; a POST of a user makes it, answering its id."""
+    async def call(
+        self, method: str, path: str, *, body: object = None, present: bool = False
+    ) -> tuple[Any, str | None]:
+        """Record the call; a POST of a user makes it, answering its id. A group addition must allow the 409
+        Keycloak answers for a member already in the group (``present``), so a second start passes.
+        """  # noqa: D205 - one sentence
+        if method == "PUT":
+            assert present, path
         self.calls.append((method, path, body))
         if method == "POST" and path == "/users":
             assert isinstance(body, dict)
@@ -128,13 +134,15 @@ async def test__a_user_already_there_keeps_its_password_and_a_user_without_one_i
 class RefusingAdmin(Admin):
     """An admin API whose realm refuses the steward's password, as its policy refuses a weak one."""
 
-    async def call(self, method: str, path: str, *, body: object = None) -> tuple[Any, str | None]:
+    async def call(
+        self, method: str, path: str, *, body: object = None, present: bool = False
+    ) -> tuple[Any, str | None]:
         """Refuse the steward; answer the rest."""
         if method == "POST" and isinstance(body, dict) and body["username"] == "demo_steward":
             self.calls.append((method, path, body))
             msg = "the realm refused POST /users: 400 invalidPasswordMinSpecialCharsMessage"
             raise RealmError(msg)
-        return await super().call(method, path, body=body)
+        return await super().call(method, path, body=body, present=present)
 
 
 @pytest.mark.covers(rules=["TRM-02"])

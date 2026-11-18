@@ -100,7 +100,9 @@ async def tenant_users(realm: RealmTenants, alias: str, environment: Mapping[str
         if user not in members:
             await realm.add_member(org, user)
         for group in groups:
-            await realm.admin.call("PUT", f"/organizations/{org.id}/groups/{org.groups[group]}/members/{user}")
+            await realm.admin.call(
+                "PUT", f"/organizations/{org.id}/groups/{org.groups[group]}/members/{user}", present=True
+            )
         made.append(username)
     return made
 

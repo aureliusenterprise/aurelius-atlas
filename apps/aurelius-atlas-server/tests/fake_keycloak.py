@@ -152,6 +152,8 @@ class FakeKeycloak:
             if user_id not in org.members:
                 return httpx.Response(400, json={"errorMessage": "User is not member of the organization"})
             if method == "PUT":
+                if group in org.members[user_id]:  # Keycloak 26.7 refuses a second addition
+                    return httpx.Response(409, json={"errorMessage": "User is already a member of the group"})
                 org.members[user_id].add(group)
             else:
                 org.members[user_id].discard(group)
