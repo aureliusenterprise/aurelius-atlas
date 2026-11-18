@@ -64,7 +64,8 @@ def test__the_account_console_extends_keycloak_s_own_with_the_webapp_s_logo() ->
     assert properties["parent"] == "keycloak.v3"
     assert properties["styles"].split() == ["css/aurelius.css"]
     assert properties["darkMode"] == "false"
-    assert properties["logoUrl"] == "https://localhost:9000/"
+    # The logo link stays host-free (17.2, SPS-01): the browser resolves "/" against the same origin.
+    assert properties["logoUrl"] == "/"
     for key in ("logo", "favIcon"):
         assert (ACCOUNT / "resources" / properties[key].lstrip("/")).is_file(), key
 

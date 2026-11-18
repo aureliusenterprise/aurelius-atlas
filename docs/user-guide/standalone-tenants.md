@@ -4,13 +4,14 @@ This page adds a tenant, a customer or department with its own catalogue and its
 [Standalone Server](./standalone-server.md) with tenancy on. The stack's Keycloak imports
 `keycloak/aurelius-atlas.json` at every start, so a tenant's organization that should last is added to the
 stack's files, not only in Keycloak's console. A tenant's three users are made by the one shot `tenants`
-when it provisions the tenant (DD-680), each with a password of its own; further people are made in
+when it provisions the tenant (DD-700), each with a password of its own; further people are made in
 Keycloak's console. The example tenant is `acme`; replace it with yours throughout.
 
 !!! NOTE "Before you start"
 
     - The stack runs with tenancy, as the [Tenants](./standalone-server.md#tenants) section starts it:
-      `ATLAS_TENANCY_ENABLED=true` and `--profile tenancy`.
+      `ATLAS_TENANCY_ENABLED=true`. The script `docker/bin/provision-tenants.sh` runs the provisioning
+      one shot when you ask for it (SPC-07).
     - All commands run from the repository root. The stack's files are in `docker/`.
 
 ## What a tenant consists of
@@ -18,12 +19,13 @@ Keycloak's console. The example tenant is `acme`; replace it with yours througho
 A tenant is a Keycloak organization with its own indices in the store (ADR 063). Adding one touches four
 places:
 
-| Where                                            | What you add                                             |
-| ------------------------------------------------ | -------------------------------------------------------- |
-| `docker/keycloak/aurelius-atlas.json`            | the organization and its four role groups                |
-| `apps/aurelius-atlas-server/docker/tenants.py`   | the provisioning of the tenant's indices, at every start |
-| `infra/keycloak/.env.enc`                        | the passwords of the tenant's three users                |
-| `apps/aurelius-atlas-server/docker/compose.yaml` | those passwords passed to the one shot `tenants`         |
+| Where                                            | What you add                                                      |
+| ------------------------------------------------ | ----------------------------------------------------------------- |
+| `docker/keycloak/aurelius-atlas.json`            | the organization and its four role groups                         |
+| `apps/aurelius-atlas-server/docker/tenants.py`   | the provisioning of the tenant's indices, when the script runs it |
+| `infra/keycloak/.env.enc`                        | the passwords of the tenant's three users                         |
+| `apps/aurelius-atlas-server/docker/compose.yaml` | those passwords passed to the one shot `tenants`                  |
+| Keycloak's admin console                         | further members, created and added there                          |
 
 The tenant's members belong to it alone, so they sign in to it without choosing a tenant. The realm's
 `operators` organization reads every tenant, and the provisioning command adds each of its members to the
@@ -65,10 +67,11 @@ Add the organization to `organizations`, with no members yet:
 }
 ```
 
-## Provision the tenant at every start
+## Provision the tenant
 
-The one shot `tenants` provisions each tenant it lists when the stack starts, and leaves a tenant already there
-as it is. Add `acme` to the list in `apps/aurelius-atlas-server/docker/tenants.py`. The command makes the
+The one shot `tenants` provisions each tenant it lists, and leaves a tenant already there
+as it is. The script runs it on demand. Add `acme` to the list in
+`apps/aurelius-atlas-server/docker/tenants.py`. The command makes the
 realm's side too, as the client `aurelius-atlas-provisioning`: the organization already imported by the realm
 file stays as it is, and its indices and record are made here. `--sample <path>` imports an Apache Atlas
 export ZIP into the tenant, once:
@@ -78,7 +81,7 @@ for alias, extra in (("demo", ["--sample", str(sample)]), ("meyn", []), ("acme",
 ```
 
 After provisioning each tenant, the one shot makes its users `acme_atlas`, `acme_steward` and
-`acme_scientist`, puts them in acme's role groups, and makes `acme_atlas` acme's administrator (DD-680).
+`acme_scientist`, puts them in acme's role groups, and makes `acme_atlas` acme's administrator (DD-700).
 
 ## Give the tenant's users their passwords
 
@@ -113,7 +116,8 @@ keycloak`): it imports the realm again, with acme's organization. Then `tenants`
 
 ```bash
 ATLAS_TENANCY_ENABLED=true docker compose -f docker/docker-compose.yaml \
-    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env --profile tenancy up -d
+    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env up -d
+docker/bin/provision-tenants.sh
 docker compose -f docker/docker-compose.yaml logs tenants
 ```
 

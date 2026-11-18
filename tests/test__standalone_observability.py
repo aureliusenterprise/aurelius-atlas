@@ -1,10 +1,10 @@
-"""The standalone stack's telemetry (IRT-11, 17.1, DD-675).
+"""The standalone stack's telemetry (IRT-11, 17.1, DD-675; SPC-02, SPC-08, DD-698).
 
 The collector, Prometheus, Loki, Tempo and Grafana join the umbrella as the stack's own piece,
 extending the infra observability slice (ADR 066). The piece's one fork is the collector's
 configuration: the OIDC validator reads the stack realm's keys from a file, because the stack's
-issuer is the proxy's browser address. The suite reads the compose as written, the realm as
-imported, and the resolver script as shipped.
+issuer is the proxy's browser address. The suite reads the compose as written and the realm as
+imported.
 """
 
 import json
@@ -69,11 +69,12 @@ def test__the_stack_collector_extends_the_slice_and_keeps_the_publish_off(
     )
 
 
-@pytest.mark.covers(rules=["IRT-11"])
+@pytest.mark.covers(rules=["IRT-11", "SPC-02", "SPC-08"])
 def test__the_stack_collector_validates_the_stacks_issuer_from_a_file() -> None:
     """The slice's validator dials the dev Keycloak's published listeners; the stack's reads one
     issuer - the proxy's browser address, undialable from inside - from the fetched JWKS file
-    (IRT-11, DD-675).
+    (IRT-11, DD-675). The issuer names the one host the stack serves, written in (SPC-02), and the
+    one shot that writes the key file stays because discovery cannot run here (SPC-08, DD-698).
     """  # noqa: D205 - one sentence
     providers = yaml.safe_load(STACK_CONFIG.read_text())["extensions"]["oidc"]["providers"]
     assert providers == [
@@ -83,6 +84,9 @@ def test__the_stack_collector_validates_the_stacks_issuer_from_a_file() -> None:
             "public_keys_file": "/jwks/jwks.json",
         }
     ]
+    # No host value reaches the container any more (SPC-02).
+    collector = standalone_compose()["services"]["otel-collector"]
+    assert "STANDALONE_HOST" not in (collector.get("environment") or {})
     slice_providers = yaml.safe_load(SLICE_CONFIG.read_text())["extensions"]["oidc"]["providers"]
     assert not any("public_keys_file" in provider for provider in slice_providers)
 
@@ -107,8 +111,11 @@ def test__every_producer_signs_for_the_stacks_collector(services: dict[str, Any]
         assert env[f"{prefix}_OTEL_CLIENT_SECRET"] == "${OTEL_INGEST_CLIENT_SECRET:-}", name
     keycloak = services["keycloak"]
     assert keycloak["environment"]["OTEL_EXPORTER_OTLP_ENDPOINT"] == "https://otel-collector:4320"
-    webapp = services["webapp-config"]["environment"]
-    assert webapp["AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT"] == "https://otel-collector:4320"
+    # The webapp's edge leg rides its static nginx config now, and names the collector without a
+    # bearer: the browser's push reaches the collector through the proxy (SPC-04, DD-695).
+    static = (STACK / "webapp/nginx.conf").read_text()
+    assert "endpoint https://otel-collector:4320;" in static
+    assert "Bearer" not in static
     realm = json.loads((STACK / "keycloak/aurelius-atlas.json").read_text())
     clients = {client["clientId"]: client for client in realm["clients"]}
     for client_id in ("otel-atlas-server", "otel-data2model", "otel-lineage-model", "otel-validate-entity"):

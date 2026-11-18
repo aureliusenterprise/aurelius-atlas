@@ -3,37 +3,28 @@
 # The webapp's own nginx serves only the webapp, in a container of its own: the proxy in front
 # (../docker-compose.yaml) routes to it by name and sends /api/ to the server itself. It signs in
 # to the realm aurelius-atlas through the public client aurelius.
+# Its nginx configuration is a static asset the stack ships at ../../../docker/webapp/nginx.conf
+# (SPC-04, DD-695): the upstreams and certificate paths this stack uses are written into it, so no
+# service renders anything at boot. The chart's init container (DD-262) renders the image's own
+# template for the runtime that has no proxy in front of this port.
+# WEBAPP_IMAGE names the image the webapp runs (compose-time variable, not a .env setting). Unset,
+# it is the `nx docker-build` tag (ADR 065: the stack builds, never pulls). An install that ships
+# published images sets WEBAPP_IMAGE to the registry reference or a digest.
 name: aurelius-atlas-standalone
 
-x-webapp-image: &webapp-image ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
+x-webapp-image: &webapp-image ${WEBAPP_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local}
 
 services:
-    # One shot: fills the webapp image's nginx template for this stack into a volume, as the chart's init
-    # container does (DD-262); a placeholder left fails it. The edge's OTLP leg rides the stack's
-    # collector's legacy gRPC port with the shared ingest bearer (DD-675, the chart's shape).
-    webapp-config:
-        image: *webapp-image
-        user: "0"
-        entrypoint: ["/bin/sh", "/standalone/resolve-nginx.sh"]
-        restart: "no"
-        environment:
-            AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT: https://otel-collector:4320
-            AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN: ${OTEL_COLLECTOR_INGEST_TOKEN:-none}
-        volumes:
-            - ./resolve-nginx.sh:/standalone/resolve-nginx.sh:ro
-            - webapp-nginx-conf:/out
-
     aurelius-atlas-webapp:
         image: *webapp-image
         depends_on:
-            webapp-config:
-                condition: service_completed_successfully
             aurelius-atlas-server:
                 condition: service_started
         volumes:
-            - webapp-nginx-conf:/etc/nginx/conf.d:ro
+            # The stack's own webapp configuration, mounted as the image's conf.d file (SPC-04).
+            - ../../../docker/webapp/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+            # The browser's config, as the deployment's ConfigMap serves it. It names localhost,
+            # which is the one host the stack serves (SPC-02, DD-694), and the proxy's catch-all
+            # location serves this file to the browser.
             - ./config.json:/usr/share/nginx/html/config.json:ro
-            - ../certs:/certs:ro
-
-volumes:
-    webapp-nginx-conf:
+            - ${WEBAPP_CERTS_DIR:?name the webapp certificate folder}:/certs:ro

@@ -116,7 +116,7 @@ def test__in_the_dev_realm_people_and_service_accounts_act_in_the_operator_organ
 @pytest.mark.covers(rules=["RLM-06", "RLM-07"])
 def test__the_stack_realm_seeds_the_operator_and_no_tenant() -> None:
     """The stack's realm has ``operators`` with its four groups and the platform operator as its one member, who
-    reads it (DD-680). The tenants' organizations and people are not seeded: the one shot of the profile tenancy
+    reads it (DD-700). The tenants' organizations and people are not seeded: the one shot of the profile tenancy
     provisions them, as it provisions any tenant a visitor adds.
     """  # noqa: D205 - one sentence
     loaded = realm(DEMO_REALM)

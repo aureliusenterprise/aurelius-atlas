@@ -1,4 +1,4 @@
-"""The standalone stack's tenant users: made by the tenants one shot when their tenant is provisioned (DD-680).
+"""The standalone stack's tenant users: made by the tenants one shot when their tenant is provisioned (DD-700).
 
 The script is loaded from its file, as the stack mounts it; Keycloak's admin API is stood in for by a realm that
 records the calls.
@@ -102,7 +102,7 @@ def group_puts(admin: Admin, user: str) -> list[str]:
 @pytest.mark.covers(rules=["TRM-02", "TRM-06"])
 async def test__a_tenant_s_three_users_are_made_members_in_their_role_groups() -> None:
     """Each user is made with its own password, joins the tenant alone, in its groups: atlas all four, the
-    steward read and write, the scientist read (DD-680).
+    steward read and write, the scientist read (DD-700).
     """  # noqa: D205 - one sentence
     realm = realm_with()
 

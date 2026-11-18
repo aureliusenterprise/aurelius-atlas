@@ -2,7 +2,7 @@
 
 It provisions the tenant ``demo`` with the sample ``TENANT_SAMPLE`` from ``SAMPLE_DIR`` and the tenant ``meyn``
 without one, through the server's own command, which keeps their organizations in the realm aurelius-atlas too
-(TRM-02). Each tenant gets its own users, made here and not in the realm file (DD-680): ``<tenant>_atlas`` with
+(TRM-02). Each tenant gets its own users, made here and not in the realm file (DD-700): ``<tenant>_atlas`` with
 every role, its administrator (TRM-06), ``<tenant>_steward`` reading and writing, and ``<tenant>_scientist``
 reading, each a member of its tenant alone, with the password ``<TENANT>_USER_<ROLE>_PASSWORD``. A user already
 there keeps its password; a tenant without those passwords gets no users. Then it gives the platform an
@@ -38,7 +38,7 @@ TENANT_USERS = (
 
 def provision() -> None:
     """Provision demo with the sample and meyn without one, their organizations and users included (TRM-02,
-    DD-680); an active tenant is left as it is but its realm and its missing users.
+    DD-700); an active tenant is left as it is but its realm and its missing users.
     """  # noqa: D205 - one sentence
     sample = Path(os.environ.get("SAMPLE_DIR", "/sample")) / os.environ.get("TENANT_SAMPLE", "sample_data.zip")
     for alias, extra in (("demo", ["--sample", str(sample)]), ("meyn", [])):
@@ -63,7 +63,7 @@ async def with_realm(alias: str) -> bool:
 
 
 async def tenant_users(realm: RealmTenants, alias: str, environment: Mapping[str, str]) -> list[str]:
-    """Make the tenant's users that are missing, each a member of the tenant in its role groups (DD-680).
+    """Make the tenant's users that are missing, each a member of the tenant in its role groups (DD-700).
 
     A user already in the realm keeps its password and is put in the tenant's groups again; a user without its
     password variable is skipped. Returns the usernames that are the tenant's members now.

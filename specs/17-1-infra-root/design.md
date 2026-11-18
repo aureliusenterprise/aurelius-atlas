@@ -463,7 +463,7 @@ test reads `docker/gateway/nginx.conf`, and a new IRT-12 test pins the umbrella'
 and the gateway's loopback publish. The README's layout bullets name the piece, and the
 AGENTS.md layout says ten fragments.
 
-### DD-680. The stack's realm seeds the operator; each tenant's users come with their tenant
+### DD-700. The stack's realm seeds the operator; each tenant's users come with their tenant
 
 - **Status:** Proposed
 - **Increment:** 17.1 (a change, 2026-11-18)

@@ -55,13 +55,17 @@ services:
             jwks-fetch:
                 condition: service_completed_successfully
 
-    # One shot: copies the stack realm's JWKS to the shared volume (the collector's file-based
-    # validator - DD-675). Keycloak serves the realm's signing keys over its plaintext listener
-    # in-network, so no certificate is needed here. Keycloak generates the realm's key on its
-    # first boot and keeps it in its database: the file is rewritten at every stack start, so a
-    # fresh store (after `down -v`) lands the new key.
+    # One shot (SPC-08, DD-698 - the reason it is not a fixable design): copies the stack realm's
+    # JWKS to the shared volume (the collector's file-based validator - DD-675). The validator's
+    # issuer is the proxy's browser address, which no container can dial in-network, and the OIDC
+    # extension has no key-URL option, so the keys must be a file. This one shot dials Keycloak's
+    # plaintext listener in-network, where no certificate is needed. Keycloak generates the realm's
+    # key on its first boot and keeps it in its database: the file is rewritten at every stack
+    # start, so a fresh store (after `down -v`) lands the new key.
+    # SERVER_IMAGE is the server piece's variable: this one shot runs that image for its Python
+    # and its CA trust, so one value moves it with the server (SBD-06).
     jwks-fetch:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         entrypoint: [python, /observability/fetch_jwks.py]
         restart: "no"
         # The fresh named volume is root-owned and the server image runs unprivileged, so the

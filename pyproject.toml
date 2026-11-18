@@ -241,6 +241,17 @@ root = "apps/aurelius-atlas-db-scanner"
 extraPaths = ["apps/aurelius-atlas-quality-scanner/e2e", "apps/aurelius-atlas-quality-scanner/tests"]
 root = "apps/aurelius-atlas-quality-scanner"
 
+# The root chart-contract suite and the tools/ scripts share the compose helper in
+# tools/compose_cli.py: conftest puts tools/ on sys.path and imports it, and the tools
+# scripts import each other by module name (both run as plain scripts). The path keeps
+# those imports resolvable for pyright (DD-682).
+[[tool.pyright.executionEnvironments]]
+extraPaths = ["tools"]
+root = "tests"
+
+[[tool.pyright.executionEnvironments]]
+root = "tools"
+
 [tool.pytest.ini_options]
 addopts = "--strict-markers"
 asyncio_default_fixture_loop_scope = "module"
@@ -292,10 +303,19 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 "tests/conftest.py" = ["INP001", "S101", "S603", "S607"]
 # The packaging guard shells out to `helm package` fixed-argument (CHT-05).
 "tests/test__chart_packaging.py" = ["S603", "S607"]
+# The bundle suite drives the bundler's internals (its flatten fixes and self-check are
+# the product under test) and shells out to `docker compose config` and `git status`
+# fixed-argument, the same shape as the chart harness (17.3, DD-689).
+"tests/test__standalone_bundle.py" = ["S603", "S607", "SLF001"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 # The digest guard is a CLI script: print is its output contract and the
 # docker imagetools call is fixed-argument (CHT-96).
 "tools/images/*.py" = ["INP001", "S603", "S607", "T201"]
+# The tools scripts run as plain scripts (no package) and report a broken tree by
+# exiting with the rule it breaks, so the message is the product (DD-682). The bundle
+# target is a CLI: print is its output contract, like tools/images/*.py, and it shells
+# out to the `docker compose` CLI fixed-argument (DD-689).
+"tools/*.py" = ["INP001", "S101", "S603", "S607", "TRY003", "EM101", "EM102", "T201"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
