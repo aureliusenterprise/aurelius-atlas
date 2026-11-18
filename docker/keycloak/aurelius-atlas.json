@@ -15,6 +15,10 @@
     "clientScopeMappings": {
         "account": [
             {
+                "client": "account-console",
+                "roles": ["manage-account", "view-groups"]
+            },
+            {
                 "client": "aurelius",
                 "roles": ["manage-account", "view-profile"]
             }
@@ -611,6 +615,47 @@
     ],
     "clients": [
         {
+            "alwaysDisplayInConsole": false,
+            "attributes": {
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "+",
+                "realm_client": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "/realms/aurelius-atlas/account/",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "account-console",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": false,
+            "fullScopeAllowed": false,
+            "implicitFlowEnabled": false,
+            "name": "${client_account-console}",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {},
+                    "consentRequired": false,
+                    "name": "audience resolve",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-audience-resolve-mapper"
+                }
+            ],
+            "publicClient": true,
+            "redirectUris": ["/realms/aurelius-atlas/account/*"],
+            "rootUrl": "${authBaseUrl}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
+        },
+        {
             "attributes": {
                 "display.on.consent.screen": "false",
                 "pkce.code.challenge.method": "S256",
@@ -644,6 +689,52 @@
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "webOrigins": ["https://localhost:9000"]
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-admin",
+            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
+            "description": "The platform's own admin service identity (DD-666): a client-credentials token carrying the four server-client roles drives import, export, purge and audits without a human sign-in. The stack's sample import signs in through it.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "fullScopeAllowed": true,
+            "name": "aurelius-atlas-admin",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": [],
+            "secret": "${ATLAS_ADMIN_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
+        },
+        {
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "aurelius-atlas-provisioning",
+            "defaultClientScopes": ["basic", "roles"],
+            "description": "The provisioning command's client (15.5b, TRM-11, DD-600): keeps the tenants' organizations, operators and administrators in step.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "implicitFlowEnabled": false,
+            "name": "Aurelius Atlas provisioning",
+            "optionalClientScopes": [],
+            "protocol": "openid-connect",
+            "publicClient": false,
+            "secret": "${PROVISIONING_CLIENT_SECRET}",
+            "serviceAccountsEnabled": true,
+            "standardFlowEnabled": false
         },
         {
             "attributes": {
@@ -680,52 +771,6 @@
             "serviceAccountsEnabled": false,
             "standardFlowEnabled": true,
             "webOrigins": []
-        },
-        {
-            "clientAuthenticatorType": "client-secret",
-            "clientId": "aurelius-atlas-provisioning",
-            "defaultClientScopes": ["basic", "roles"],
-            "description": "The provisioning command's client (15.5b, TRM-11, DD-600): keeps the tenants' organizations, operators and administrators in step.",
-            "directAccessGrantsEnabled": false,
-            "enabled": true,
-            "implicitFlowEnabled": false,
-            "name": "Aurelius Atlas provisioning",
-            "optionalClientScopes": [],
-            "protocol": "openid-connect",
-            "publicClient": false,
-            "secret": "${PROVISIONING_CLIENT_SECRET}",
-            "serviceAccountsEnabled": true,
-            "standardFlowEnabled": false
-        },
-        {
-            "clientAuthenticatorType": "client-secret",
-            "clientId": "aurelius-atlas-admin",
-            "defaultClientScopes": ["basic", "profile", "roles", "organization"],
-            "description": "The platform's own admin service identity (DD-666): a client-credentials token carrying the four server-client roles drives import, export, purge and audits without a human sign-in. The stack's sample import signs in through it.",
-            "directAccessGrantsEnabled": false,
-            "enabled": true,
-            "fullScopeAllowed": true,
-            "name": "aurelius-atlas-admin",
-            "optionalClientScopes": [],
-            "protocol": "openid-connect",
-            "protocolMappers": [
-                {
-                    "config": {
-                        "access.token.claim": "true",
-                        "id.token.claim": "true",
-                        "userinfo.token.claim": "true"
-                    },
-                    "consentRequired": false,
-                    "name": "organization groups",
-                    "protocol": "openid-connect",
-                    "protocolMapper": "oidc-organization-group-membership-mapper"
-                }
-            ],
-            "publicClient": false,
-            "redirectUris": [],
-            "secret": "${ATLAS_ADMIN_CLIENT_SECRET}",
-            "serviceAccountsEnabled": true,
-            "standardFlowEnabled": false
         },
         {
             "clientAuthenticatorType": "client-secret",

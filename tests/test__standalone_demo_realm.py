@@ -252,3 +252,17 @@ def test__every_client_scope_a_client_names_is_defined_in_the_realm(realm: dict[
         named |= set(client_.get("defaultClientScopes") or []) | set(client_.get("optionalClientScopes") or [])
     assert named <= defined, sorted(named - defined)
     assert {"organization", "profile", "email", "basic"} <= defined
+
+
+@pytest.mark.covers(rules=["IRT-06"])
+def test__the_account_console_is_in_the_realm_file_with_its_scopes_and_roles(realm: dict[str, Any]) -> None:
+    """Keycloak makes its built-in clients before it imports a file's client scopes, so a built-in
+    ``account-console`` gets none and its tokens carry no roles: the account page answers 403. The file names the
+    client with its default scopes and its mapping to the ``account`` roles, as the dev realm does.
+    """  # noqa: D205 - one sentence
+    console = _client(realm, "account-console")
+    assert {"roles", "basic", "profile", "email"} <= set(console["defaultClientScopes"])
+    assert console["redirectUris"] == ["/realms/aurelius-atlas/account/*"]
+    assert {"client": "account-console", "roles": ["manage-account", "view-groups"]} in realm["clientScopeMappings"][
+        "account"
+    ]
