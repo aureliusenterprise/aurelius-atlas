@@ -3,6 +3,11 @@
 # The server and its one shots run in the proxy's network: nginx reaches the server on 127.0.0.1:21000,
 # and the server's localhost:9000 is the proxy. The proxy, keycloak and elasticsearch are the stack's,
 # in ../docker-compose.yaml and the other fragments.
+# SERVER_IMAGE names the image the server and both one shots run (compose-time variable, like
+# SAMPLE_ZIP: not a .env setting). Unset, it is the `nx docker-build` tag (ADR 065: the stack builds,
+# never pulls). An install that ships published images sets SERVER_IMAGE to the registry reference
+# or to a digest. The observability piece's jwks-fetch one shot names the same variable, because it
+# runs this image.
 name: aurelius-atlas-standalone
 
 x-certs: &certs ../certs:/certs:ro
@@ -10,7 +15,7 @@ x-sample-volume: &sample-volume ${SAMPLE_DIR:-../../../data/atlas-sample}:/sampl
 
 services:
     aurelius-atlas-server:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         # In the proxy's network: nginx reaches it on 127.0.0.1:21000, and its localhost:9000 is the proxy.
         network_mode: service:proxy
         depends_on:
@@ -64,7 +69,7 @@ services:
     # One shot: waits for the server, signs in as the admin service identity (DD-666, no human user) and posts
     # SAMPLE_ZIP to admin/import, all through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
     sample-import:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         entrypoint: [python, /standalone/import_sample.py]
         network_mode: service:proxy
         depends_on:
@@ -89,7 +94,7 @@ services:
     # without one, their organizations included, and gives the realm's operator a store user of its own. A tenant
     # already provisioned is left as it is, so it runs at every start.
     tenants:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         profiles: [tenancy]
         entrypoint: [python, /standalone/tenants.py]
         network_mode: service:proxy

@@ -18,10 +18,11 @@ is never edited except its status line, and a changed decision is a new entry th
 `standalone-bundle` target runs it. The script reads the umbrella compose file, follows its `include` paths
 and the `extends` chains, and copies each file it finds into an output folder. It then walks every service in
 the result and copies the host paths it names: each bind-mount source, each `env_file`, each config source.
-It rewrites those paths into the bundle (DD-683), applies the release image tag (DD-685), and writes the
-bundle's own `README.md` start section and `.env` starting point. A second copy of the compose files never
-enters the repository, so `git status` stays clean after the target runs and no release step can drift from
-the tree it released (SBD-01, SBD-07, SBD-10).
+It rewrites those paths into the bundle (DD-683), and writes the bundle's own `README.md` start section and
+its `.env`, which carries the settings roster and the release image variables (DD-684, DD-685). The compose
+copies stay byte-identical to the repository's. A second copy of the compose files never enters the
+repository, so `git status` stays clean after the target runs and no release step can drift from the tree it
+released (SBD-01, SBD-07, SBD-10).
 
 The bundler runs from the working tree with no Docker daemon, which is what lets the root pytest suite build
 a bundle and check it (SBD-08). It refuses a path it cannot copy, instead of emitting a bundle that starts
@@ -100,9 +101,11 @@ release step's job.
 **Decision.** The bundler copies the sample folder `data/atlas-sample/` (about 1 MB) into the bundle and
 leaves the server piece's `SAMPLE_DIR` default pointing at it, so the sample import and the tenants one shot
 find a file to import with no setting (SBD-05). The bundler copies no `.env` file, no `secrets/` folder, no
-`certs/` folder, and no `*.enc` file. It ships `docker/.env.example` as the bundle's `.env.example`, plus
-`make-certs.sh` and its manifest `certs.txt` (increment 17.2). The operator runs the script, or places their
-own material at the same paths (SBD-04, SBD-09).
+`certs/` folder, and no `*.enc` file. It writes the bundle's own `.env` from the roster of
+`docker/.env.example`: every secret name the stack guards, with an empty value, plus the six image variables
+with their release values (DD-685). It ships `make-certs.sh` and its manifest `certs.txt` beside it
+(increment 17.2). The operator runs the script, or places their own material at the same paths, and fills the
+empty secrets (SBD-04, SBD-09).
 
 **Reason.** The sample is the difference between an empty catalogue and a demo someone can click, and it is
 small enough to ship in any artifact. The secrets are not: `apps/aurelius-atlas-server/.env` and the two
@@ -132,28 +135,70 @@ operator who wants their own export.
 - **Date:** 2026-11-19
 - **Supersedes:** nothing. It extends the `--version` argument the docker targets already take.
 
-**Decision.** The bundler takes a required `--version`. It rewrites every Aurelius image reference in the
-copies into `ghcr.io/aureliusenterprise/<project>:<version>`, both the two literal `:local` references
-(server, webapp) and the four `${NAME_IMAGE:-ghcr.io/...:local}` defaults (data2model, embedder,
-lineage-model, validate-entity). The release workflow passes the tag it published for, the same value
-`docker-publish -- --version` receives. A build without `--version` fails, so no bundle carries `:local`
-(SBD-06). Third-party images (`dhi.io/*`) keep their committed tags and are unchanged.
+**Decision.** The bundler takes a required `--version`. It leaves the compose copies alone and writes the six
+image variables into the bundle's `.env`, each set to `ghcr.io/aureliusenterprise/<project>:<version>`
+(`SERVER_IMAGE`, `WEBAPP_IMAGE`, `EMBEDDER_IMAGE`, `DATA2MODEL_IMAGE`, `LINEAGE_MODEL_IMAGE`,
+`VALIDATE_ENTITY_IMAGE`). Compose interpolates them at the operator's start, so the bundle's services name the
+release build while the copied compose keeps its `:local` default (SBD-06, SBD-11). The release workflow
+passes the tag it published for, the same value `docker-publish -- --version` receives. A build without
+`--version` fails, so no bundle resolves to `:local`. Third-party images (`dhi.io/*`) carry no variable and are
+unchanged.
 
-**Reason.** The repository's stack uses `:local` because `nx serve` and the e2e stacks build images locally
-and never push them. A bundle has no such images: the operator pulls them, so the bundle must name what the
-release pushed. Reusing `--version` keeps one version source (the tag) across images, charts, and the bundle,
-and one command-line shape a maintainer already knows (ADR 019). Failing without it turns a forgotten flag
-into a build error instead of a bundle whose containers will not pull.
+**Reason.** A value the bundler sets beats a value it rewrites. Setting the six variables in one file keeps
+the copied compose byte-identical to the repository's, so the SBD-08 check can compare the two compose trees
+as text and the operator's edits survive a rebuild. Rewriting image text in place would make the copy differ
+from the source for no gain, and it would break the moment someone adds a seventh image. Reusing `--version`
+keeps one version source (the tag) across images, charts, and the bundle, and one command-line shape a
+maintainer already knows (ADR 019). Failing without it turns a forgotten flag into a build error instead of a
+bundle whose containers will not pull.
 
 **Alternatives.**
 
-- Leave `:local` in and tell the operator to export the image variables. Rejected: nine variables per
-  install, and the failure mode is a confusing pull error for an image that does not exist.
+- Rewrite the image strings inside the copied compose files. Rejected: the copy then differs from the
+  repository's file, the closure check must learn the rewrite, and an operator's edit to an image line is lost
+  on a rebuild. The variables already exist (DD-686), so the rewrite has nothing to fix.
+- Ship `:local` and tell the operator to export the six variables themselves. Rejected: the failure mode is a
+  confusing pull error for an image that does not exist, and the release already knows the tag.
 - Read the version from `pyproject.toml`. Rejected: the file holds the version before the release tag bumps
   it, and a bundle must carry the identity of the build that produced it (ADR 019).
 - Pin image digests in the bundle. Rejected for this increment: the hardening increment owns digest pinning
   (see 10.10 for the chart's path), and it needs registry access at bundle time.
 
 **Consequences.** The release workflow gains two steps: build the bundle with the tag, and publish the
-archive as the release's asset. The bundle's README prints the tag it carries, so an operator can tell which
-build they hold. A `:local` image left in a new compose piece fails the SBD-08 check.
+archive as the release's asset. The bundle's `.env` names the six images, so an operator can tell which build
+they hold. A new Aurelius image without a variable fails the SBD-11 pin, and a bundle built without a version
+fails the SBD-08 check.
+
+### DD-686. Every piece names its image through its own variable
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-18
+- **Supersedes:** nothing. It completes the rule `docker/AGENTS.md` states and the embedder and the three aux
+  pieces already follow.
+
+**Decision.** Each piece of the stack names the image it runs as `${NAME_IMAGE:-ghcr.io/aureliusenterprise/
+name:local}`. The server piece and its two one shots, and the observability piece's JWKS one shot, now name
+`SERVER_IMAGE`; the webapp piece and its config one shot name `WEBAPP_IMAGE` through the anchor they share.
+A one shot that runs another project's image names that project's variable, so one value moves them together
+(SBD-11).
+
+**Reason.** The bundle must point the stack at a release build (SBD-06), and a value compose interpolates is
+settable while a plain-text image is not. The embedder and the three aux pieces already took their image this
+way, so the server and the webapp were the drift. `docker/AGENTS.md` states the rule for every piece. The knob
+costs nothing in the repository: unset, the variable resolves to the same `:local` tag `nx docker-build`
+produces, so `nx serve`, the e2e stacks, and the documented README commands see no change (SBD-10).
+
+**Alternatives.**
+
+- Let the bundler rewrite the plain-text images and leave the pieces alone. Rejected: the repository would
+  carry two ways to name an image, the copied compose would differ from the source, and the written rule in
+  `docker/AGENTS.md` would stay false for two of the six images.
+- Prefix the variables like the app settings (`AURELIUS_ATLAS_SERVER_IMAGE`). Rejected: Nx injects each
+  project's `.env` into every task, which is why app settings carry a prefix, but these names are read by
+  compose from the stack's own env-files, not by pydantic, and the five existing knobs are already unprefixed
+  in the README and the aux pieces.
+
+**Consequences.** Six variables name the stack's images, and the SBD-11 pin names them, so a new piece that
+bakes a literal fails. The JWKS one shot moves with the server on purpose. A checkout needs no change: the
+defaults are the tags it built.

@@ -3,9 +3,13 @@
 # The webapp's own nginx serves only the webapp, in a container of its own: the proxy in front
 # (../docker-compose.yaml) routes to it by name and sends /api/ to the server itself. It signs in
 # to the realm aurelius-atlas through the public client aurelius.
+# WEBAPP_IMAGE names the image the webapp and its config one shot run (compose-time variable, like
+# SAMPLE_ZIP: not a .env setting). Unset, it is the `nx docker-build` tag (ADR 065: the stack builds,
+# never pulls). An install that ships published images sets WEBAPP_IMAGE to the registry reference or
+# a digest.
 name: aurelius-atlas-standalone
 
-x-webapp-image: &webapp-image ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local
+x-webapp-image: &webapp-image ${WEBAPP_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local}
 
 services:
     # One shot: fills the webapp image's nginx template for this stack into a volume, as the chart's init
