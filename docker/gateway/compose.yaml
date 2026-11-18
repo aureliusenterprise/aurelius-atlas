@@ -4,14 +4,11 @@
 # Keycloak at /auth/, the collector's browser leg at /otel/ (nginx.conf). Every other piece either
 # shares its network (`network_mode: service:proxy` — the server, the one shots, the three aux
 # apps) or reaches it by name. The issuer the realm and every verifier agree on —
-# https://<STANDALONE_HOST>:9000/auth, https://localhost:9000/auth by default (ADR 039's one
-# answer, SPS-01) — is this container's address, and the proxy's `extra_hosts` entry resolves that
-# host name to the loopback address inside the shared network namespace, so the apps' dials at the
-# browser's address arrive here whatever the host is (DD-678). The edge leaf is the only
-# certificate that names the host (SPS-02, DD-679) and `nginx.conf`'s server_name follows it —
-# the hardened image has no envsubst, so the gateway-config one shot renders the config from the
-# variable before the proxy boots (SPS-06's mechanism, applied to nginx). Run the umbrella, never
-# this piece.
+# https://localhost:9000/auth (ADR 039's one answer, SPC-02) — is this container's address, and the
+# apps share its network namespace, so their dials at the browser's address arrive here (DD-694).
+# The edge leaf is the only certificate that names the host (SPS-02, DD-679) and `nginx.conf`'s
+# server_name carries it written in: the file is a static asset the proxy mounts directly, so no
+# service renders anything at boot (SPC-01, DD-694). Run the umbrella, never this piece.
 name: aurelius-atlas-standalone
 
 services:
@@ -20,52 +17,12 @@ services:
         ports:
             # Loopback only (10.11's hardening): the stack serves this machine, not the network.
             - 127.0.0.1:9000:9000
-        # SPS-04 (DD-678): the browser's host name resolves to the loopback address for everything
-        # in this container's network namespace (the server, the one shots, the aux apps), so
-        # https://<STANDALONE_HOST>:9000 reaches this proxy from inside the stack — and, with the
-        # host name in the leaf's names (make-certs.sh), its TLS verification passes on the pinned
-        # CA. Measured: a netns-sharing sibling sees this container's /etc/hosts entry.
-        extra_hosts:
-            - "${STANDALONE_HOST:-localhost}:127.0.0.1"
         volumes:
             - ${GATEWAY_CERTS_DIR:?name the gateway certificate folder}:/certs:ro
-            # Rendered by the gateway-config one shot from ./nginx.conf (SPS-06's mechanism):
-            # hardened nginx images carry no envsubst, so server_name is templated at boot.
-            - gateway-conf:/etc/nginx/conf.d:ro
-            # The rendered config.json (below), served at the origin root (nginx.conf).
-            - gateway-static:/srv:ro
+            # The edge configuration as it sits in the repository (SPC-01, DD-694): `server_name`
+            # carries the host, so the proxy reads the very file a person edits. The hardened image
+            # has no envsubst, which is why the file is static rather than a template.
+            - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
         depends_on:
             keycloak:
                 condition: service_started
-            gateway-config:
-                condition: service_completed_successfully
-
-    # One shot (SPS-06's mechanism, DD-679): renders nginx.conf's @STANDALONE_HOST@ placeholder to
-    # the conf volume, and the webapp's config.json — the browser's runtime config, whose
-    # keycloak.url keycloak-js resolves with `new URL(...)` so it must name the browser host
-    # (SPS-01) — to the static volume. The host name reaches the image only through the container
-    # env — compose interpolates STANDALONE_HOST from the host, like every other stack value. Root:
-    # the named volumes start root-owned; `restart: "no"`, so a stack start with a new host
-    # re-renders.
-    gateway-config:
-        image: dhi.io/nginx:1.30-alpine3.24
-        entrypoint: ["/bin/sh", "-c"]
-        command:
-            - >-
-                sed "s/@STANDALONE_HOST@/$${STANDALONE_HOST}/g"
-                /template/nginx.conf > /conf/default.conf &&
-                sed "s/@STANDALONE_HOST@/$${STANDALONE_HOST}/g"
-                /template/config.json > /srv/config.json
-        user: "0:0"
-        restart: "no"
-        environment:
-            STANDALONE_HOST: ${STANDALONE_HOST:-localhost}
-        volumes:
-            - ./nginx.conf:/template/nginx.conf:ro
-            - ../../apps/aurelius-atlas-webapp/docker/config.json:/template/config.json:ro
-            - gateway-conf:/conf
-            - gateway-static:/srv
-
-volumes:
-    gateway-conf:
-    gateway-static:

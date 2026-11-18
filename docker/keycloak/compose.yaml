@@ -5,8 +5,9 @@
 # ../../infra/keycloak/docker-compose.yaml, whose relative paths rebase to that folder — the same
 # certificates and pg_hba the dev slice runs. The stack keeps the production topology: a
 # Postgres-backed Keycloak, not the in-memory one the first demo carried, booted in production
-# mode like the chart (`start`, never `start-dev`, DD-676) — which is why `keycloak-build` exists
-# here as the chart's `kc-build` init stage exists there. What the stack states
+# mode like the chart (`start`, never `start-dev`, DD-676) but with no build stage: Compose seeds
+# the `kc-home` volume from the image and the seeded home is writable by the image's user, so the
+# first start re-augments once and later starts write nothing (SPC-05, DD-696). What the stack states
 # are its differences: the listener behind its own proxy (the issuer https://localhost:9000/auth,
 # which is the issuer the server verifies), the realm `aurelius-atlas` imported from ./keycloak —
 # the Helm realm's posture, service identities and no default users — the shared theme, the
@@ -33,48 +34,6 @@ services:
             # Appended at the base's mount point, so the demo's identity store is its own.
             - keycloak-postgres-data:/var/lib/postgresql
 
-    # The build stage of the chart's prod boot, as a one shot (DD-676, the chart's kc-build init
-    # container): production mode persists its build options (the database, health, the relative
-    # path, the features) into the home, and the image's /opt/keycloak is read-only for the image's
-    # uid. The named volume is seeded by Docker with the image's tree (ownership included) on first
-    # mount, so this stage needs no copy — it builds in place and leaves a current home for the
-    # start. The three options are the ones the runtime warns are unpersisted (kc.db,
-    # kc.health-enabled, kc.http-relative-path) plus the features, as env; the build is a JVM, so
-    # the slice's memory cap carries over by inheritance.
-    keycloak-build:
-        extends:
-            file: ../../infra/keycloak/docker-compose.yaml
-            service: keycloak
-        # The options are exactly the build options the start passes (the four telemetry enables
-        # are build options in prod mode, measured: the runtime names them in its drift check)
-        # plus the env-persisted three - parity with the start keeps its boot free of
-        # re-augmentation, as the chart's build persists its start's --http-relative-path.
-        command:
-            !override [
-                "build",
-                "--http-relative-path=/auth",
-                "--metrics-enabled=true",
-                "--tracing-enabled=true",
-                "--telemetry-metrics-enabled=true",
-                "--telemetry-logs-enabled=true",
-            ]
-        environment: !override
-            KC_DB: postgres
-            KC_HEALTH_ENABLED: "true"
-            KC_FEATURES: opentelemetry-metrics,preview
-            # The build is a JVM: the cap keeps its heap inside the inherited 1g memory cap, as the
-            # chart's kcBuild limit does.
-            JAVA_OPTS: -Xms256m -Xmx512m
-        ports: !reset []
-        healthcheck: !reset null
-        # The build opens no database, so it does not wait for the inherited Postgres, and it joins
-        # no network beyond the stack's (the base's observability network is not in this project).
-        depends_on: !reset []
-        networks: !reset []
-        volumes:
-            # The seeded home: Docker fills the fresh volume from the image, the build rewrites it.
-            - kc-home:/opt/keycloak
-
     # The stack's Keycloak: the slice's image and caps, with the listener shape the proxy needs
     # written here, because extends cannot delete one key of an inherited map and the base's
     # carries the telemetry leg, the truststore and the HTTPS listener (DD-670).
@@ -87,8 +46,9 @@ services:
         # with the telemetry features the base enables (DD-675: the stack runs its own collector, so
         # the native OTLP push rides the legacy leg here too - Keycloak is the issuer and cannot
         # present its own JWT at cold boot, DD-196). The flags it passes are build options in prod
-        # mode, so the build one shot persisted their exact values - the boot finds parity and
-        # re-augments nothing. (`!override` replaces the key; `!reset` deletes it.)
+        # mode, so the first start re-augments them into the seeded home once and a later start finds
+        # a current build and writes nothing (SPC-05, DD-696). (`!override` replaces the key; `!reset`
+        # deletes it.)
         command:
             !override [
                 "start",
@@ -99,13 +59,11 @@ services:
                 "--telemetry-logs-enabled=true",
                 "--telemetry-endpoint=https://otel-collector:4320",
             ]
-        # The Postgres, and the built home: start finds a current build, so its boot writes nothing
-        # into the image and no re-augmentation runs (DD-676).
+        # The Postgres only: the home it mounts holds a current build from the first start, so no
+        # build one shot gates it (SPC-05, DD-696).
         depends_on: !override
             postgres-keycloak:
                 condition: service_healthy
-            keycloak-build:
-                condition: service_completed_successfully
         # The base's environment carries the telemetry leg, the truststore and the HTTPS
         # listener keys, and extends cannot delete one key of an inherited map — so the map is
         # replaced wholesale with the stack's (DD-670).
@@ -118,11 +76,11 @@ services:
             KC_HTTP_ENABLED: "true"
             KC_HTTP_PORT: "8080"
             KC_HTTP_RELATIVE_PATH: /auth
-            # The build-time options, at their built values (DD-676): the runtime checks each against
-            # the persisted build and re-augments on a difference, so these state what the build one
-            # shot baked in - they never change it.
+            # The build options, stated here because prod mode re-augments when the runtime's answer
+            # differs from the persisted build (SPC-05, DD-696): the first start bakes these into the
+            # seeded home, and a change here makes the next start re-augment.
             KC_FEATURES: opentelemetry-metrics,preview
-            KC_HOSTNAME: https://${STANDALONE_HOST:-localhost}:9000/auth
+            KC_HOSTNAME: https://localhost:9000/auth
             KC_PROXY_HEADERS: xforwarded
             KC_HEALTH_ENABLED: "true"
             KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
@@ -144,12 +102,6 @@ services:
             # The identity database, as the slice runs it (DD-670): the inherited certificate
             # mount is the trust; the credentials come from infra/keycloak/.env.
             KC_DB: postgres
-            # The browser host (SPS-01, SPS-06): the realm asset's ${STANDALONE_HOST} placeholders —
-            # the two clients' redirect URIs, web origins and post-logout URIs — are filled at
-            # import by -Dkeycloak.migration.replace-placeholders=true (JAVA_OPTS), which reads
-            # this container's environment. It must land here even when the host var is unset on
-            # the host shell, hence the default.
-            STANDALONE_HOST: ${STANDALONE_HOST:-localhost}
             KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak?sslmode=verify-full&sslrootcert=/certs/ca.pem
             KC_DB_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
             KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}
@@ -165,7 +117,7 @@ services:
             QUARKUS_OTEL_EXPORTER_OTLP_HEADERS: "Authorization=Bearer ${OTEL_COLLECTOR_INGEST_TOKEN:?}"
             OTEL_TRACES_SAMPLER: parentbased_traceidratio
             OTEL_TRACES_SAMPLER_ARG: "0.1"
-            JAVA_OPTS: -Xms256m -Xmx512m -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?} -Dkeycloak.migration.replace-placeholders=true
+            JAVA_OPTS: -Xms256m -Xmx512m -Djavax.net.ssl.trustStore=/certs/truststore.p12 -Djavax.net.ssl.trustStorePassword=${TLS_TRUSTSTORE_PASSWORD:?}
         # The slice's healthcheck probes the root-relative listener; here the server lives under
         # /auth (KC_HTTP_RELATIVE_PATH), so the probe path is the stack's.
         healthcheck:
@@ -189,9 +141,10 @@ services:
         # stack's realm import replaces the slice's ./import, and the base's cert mount,
         # rebased to infra/keycloak/certs, is the trust KC_DB_URL verifies Postgres with.
         volumes:
-            # The build stage's output, over the image's home (DD-676). The mounts below nest inside it:
-            # Docker mounts the longer paths after the volume, so the import and the theme land in the
-            # built home as they did in the image's.
+            # The home Docker seeds from the image, over the image's own (SPC-05, DD-696): the seeded
+            # tree belongs to the image's uid and is writable, which the image's root is not, so the
+            # first start's re-augmentation lands here. The mounts below nest inside it: Docker mounts
+            # the longer paths after the volume, so the import and the theme land as they did in the image's.
             - kc-home:/opt/keycloak
             # The realm folder this fragment lives in: aurelius-atlas.json beside it, imported at boot.
             - .:/opt/keycloak/data/import:ro
@@ -200,6 +153,6 @@ services:
 
 volumes:
     keycloak-postgres-data:
-    # The built Keycloak home, produced by keycloak-build (DD-676). Cleared by `down -v`, which is
-    # when it rebuilds - as the chart's emptyDir is, once per pod.
+    # The Keycloak home the first start augments (DD-696). Cleared by `down -v`, which is when it
+    # re-augments - as the chart's emptyDir is, once per pod.
     kc-home:

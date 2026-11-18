@@ -1,4 +1,4 @@
-"""The standalone release bundle (17.3, SBD-01..08, DD-682..690).
+"""The standalone release bundle (17.3, SBD-01..08, DD-682..690; 17.4, SPC-11, DD-699).
 
 The bundle is ONE compose file: the repository stack resolved by ``docker compose config --no-interpolate``,
 with every host path rebased into the bundle and every certificate and sample folder left as the guarded
@@ -15,6 +15,7 @@ bundle's own file declares, which keeps this suite free of a second roster (SBD-
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -352,6 +353,27 @@ def test__the_person_can_point_the_sample_at_their_own_folder(bundle: Path) -> N
     """  # noqa: D205 - one sentence
     lines = [line for line in (bundle / "docker/.env").read_text().splitlines() if line.startswith("SAMPLE_DIR=")]
     assert len(lines) == 1
+
+
+# --- SPC-11: the scripts folder travels -----------------------------------------------------------------------
+
+
+@pytest.mark.covers(rules=["SPC-11"])
+def test__the_bundle_holds_the_scripts_folder_whole(bundle: Path) -> None:
+    """The bundle ships every file of ``docker/bin/``, executable as in the checkout, so a bundle holds the
+    scripts its own README names (SPC-11, DD-699). The README's three commands are the bundle's own scripts.
+    """  # noqa: D205 - one sentence
+    shipped = sorted(p.name for p in (bundle / "docker/bin").iterdir() if p.is_file())
+    repo = sorted(p.name for p in (WORKSPACE / "docker/bin").iterdir() if p.is_file())
+    assert shipped == repo == ["import-sample.sh", "make-certs.sh", "provision-tenants.sh", "set-host.sh"]
+    for name in shipped:
+        assert os.access(bundle / "docker/bin" / name, os.X_OK), name
+    readme = (bundle / "README.md").read_text()
+    for name in shipped:
+        assert f"docker/bin/{name}" in readme, name
+    # The README starts with the certificate script at the shipped path, not the retired one (SPC-11).
+    assert "bash docker/bin/make-certs.sh" in readme
+    assert not (bundle / "docker/make-certs.sh").exists()
 
 
 # --- SBD-06: the images name the release, never :local --------------------------------------------------------

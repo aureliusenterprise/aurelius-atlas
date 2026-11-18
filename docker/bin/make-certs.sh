@@ -1,11 +1,15 @@
 #!/usr/bin/env bash
-# Create the TLS material the standalone stack mounts (SPS-09, DD-681).
+# Create the TLS material the standalone stack mounts (SPS-09, DD-681). Every script a person runs
+# by hand sits in this folder, and finds the stack's root two folders above its own file (SPC-11,
+# DD-699).
 #
-# Usage: docker/make-certs.sh [host]
+# Usage: docker/bin/make-certs.sh [host]
 #
-#   host  the browser host of the stack — the value STANDALONE_HOST will carry (default: localhost).
-#         The edge leaf names it beside localhost and 127.0.0.1 (SPS-02); the other leaves never
-#         name it (SPS-03) and re-running with a new host re-issues only the edge leaf.
+#   host  the browser host of the stack (default: localhost, the one host the stack serves by
+#         default, SPC-02). The edge leaf names it beside localhost and 127.0.0.1 (SPS-02); the
+#         other leaves never name it (SPS-03) and re-running with a new host re-issues only the
+#         edge leaf. A host other than localhost goes together with docker/bin/set-host.sh, which
+#         writes the host into the stack's files (SPC-03).
 #
 # What it makes, in each certificates directory named by certs.txt: <service>.pem and
 # <service>-key.pem (leaf and key, serverAuth and clientAuth, as tools/tls/certgen.sh issues them),
@@ -30,9 +34,9 @@
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-root="$(cd "$here/.." && pwd)"
+root="$(cd "$here/../.." && pwd)"
 host="${1:-localhost}"
-ca_dir="$here/certs"
+ca_dir="$here/../certs"
 
 command -v openssl >/dev/null || { echo "error: openssl not found" >&2; exit 1; }
 
@@ -42,7 +46,7 @@ read_password() {
         printf '%s' "$TLS_TRUSTSTORE_PASSWORD"
         return
     fi
-    for env_file in "$root/infra/keycloak/.env" "$here/.env"; do
+    for env_file in "$root/infra/keycloak/.env" "$here/../.env"; do
         [[ -f "$env_file" ]] || continue
         # `|| true` on the grep: under `set -euo pipefail` a no-match (exit 1) inside a command
         # substitution aborts the script through pipefail before the next file can be tried.
@@ -65,7 +69,7 @@ read_password() {
     # makes it on first run and records it in docker/.env, which compose interpolates on the stack's start, so
     # the store and the JVM always agree.
     password="aurelius-atlas-$(openssl rand -hex 16)"
-    local docker_env="$here/.env"
+    local docker_env="$here/../.env"
     touch "$docker_env"
     if grep -q '^TLS_TRUSTSTORE_PASSWORD=' "$docker_env"; then
         sed -i.bak "s|^TLS_TRUSTSTORE_PASSWORD=.*|TLS_TRUSTSTORE_PASSWORD=$password|" "$docker_env" && rm -f "$docker_env.bak"
@@ -161,7 +165,7 @@ while read -r dir service sans_rest; do
     fi
     issue_leaf "$root/$dir/$service.pem" "$root/$dir/$service-key.pem" "$service" "${sans[@]}"
     echo "issued $dir/$service.pem ($service: ${sans[*]})"
-done <"$here/certs.txt"
+done <"$here/../certs.txt"
 
 # The JVM truststore the stack's Keycloak reads (docker/keycloak/compose.yaml's JAVA_OPTS): the CA
 # alone in PKCS12 — the shape keytool's -importcert leaves, made with openssl alone.
@@ -174,8 +178,9 @@ echo "wrote infra/keycloak/certs/truststore.p12"
 
 cat <<EOF
 
-TLS material is in place. To run on your own host: run this script with it, then start the stack
-with STANDALONE_HOST=$host, and point the browser machine's hosts entry or DNS at the machine.
+TLS material is in place. To run on your own host: run docker/bin/set-host.sh with it, which calls
+this script for the new name and writes it into the stack's files, then point the browser machine's
+hosts entry or DNS at the machine (SPC-03).
 The truststore was written with the stack's TLS_TRUSTSTORE_PASSWORD. Change it in the stack's
 env-files and re-run this script, or the stack's Keycloak fails to open the truststore.
 EOF
