@@ -277,6 +277,12 @@
         <loc>https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/</loc>
       </url>
       <url>
+        <loc>https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/</loc>
+      </url>
+      <url>
+        <loc>https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/066-infrastructure-components-live-at-the-repository-root/</loc>
+      </url>
+      <url>
         <loc>https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/template/</loc>
       </url>
       <url>

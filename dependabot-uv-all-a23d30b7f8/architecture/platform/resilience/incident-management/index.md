@@ -6,7 +6,7 @@ What to do when an alert fires, who decides, and what is written down afterwards
 
 Every alert rule ([Alerting](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/platform/observability/alerting/index.md>)) links its section below as its runbook URL. Grafana shows the link on the rule and sends it with each notification. A section says what the alert means, what to check first, what may be done to mitigate without asking, and when to escalate.
 
-The commands are for a cluster release named `atlas` in the namespace `atlas`. In dev the same parts run as compose services: `docker compose -f dev/<stack>/docker-compose.yaml ps` and `logs` stand in for `kubectl`.
+The commands are for a cluster release named `atlas` in the namespace `atlas`. In dev the same parts run as compose services: `docker compose -f infra/<name>/docker-compose.yaml ps` and `logs` stand in for `kubectl`.
 
 ## The alerts
 

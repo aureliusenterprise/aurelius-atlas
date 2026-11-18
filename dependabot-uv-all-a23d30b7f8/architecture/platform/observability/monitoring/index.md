@@ -15,7 +15,7 @@ The HTTP metrics follow the stable semantic conventions (`OTEL_SEMCONV_STABILITY
 
 ## Dashboards
 
-The dashboards are plain JSON in `dev/observability/config/grafana/dashboards/`, byte-copied into the chart. They sit in Grafana's "Aurelius" folder:
+The dashboards are plain JSON in `infra/observability/config/grafana/dashboards/`, byte-copied into the chart. They sit in Grafana's "Aurelius" folder:
 
 | Dashboard | What it shows |
 | --- | --- |

@@ -114,6 +114,8 @@
 - [062\. The pull-request gate proves the critical and high scenarios](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/062-the-pull-request-gate-proves-the-critical-and-high-scenarios/index.md>)
 - [063\. Each tenant is an organization with its own store](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/063-each-tenant-is-an-organization-with-its-own-store/index.md>)
 - [064\. The webapp reads rich catalogue data through one Aurelius view family](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/index.md>)
+- [065\. Compose stacks that deploy the whole system live at the root](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/index.md>)
+- [066\. Infrastructure components live at the repository root](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/066-infrastructure-components-live-at-the-repository-root/index.md>)
 - [Architecture Decisions](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/index.md>)
 - [ADR Template](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/adr/template/index.md>)
 - [Design Log](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/architecture/conversion/design-log/index.md>)
