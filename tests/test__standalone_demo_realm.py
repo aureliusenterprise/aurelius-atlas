@@ -258,10 +258,17 @@ def test__every_client_scope_a_client_names_is_defined_in_the_realm(realm: dict[
 def test__the_account_console_is_in_the_realm_file_with_its_scopes_and_roles(realm: dict[str, Any]) -> None:
     """Keycloak makes its built-in clients before it imports a file's client scopes, so a built-in
     ``account-console`` gets none and its tokens carry no roles: the account page answers 403. The file names the
-    client with its default scopes and its mapping to the ``account`` roles, as the dev realm does.
+    account clients with their default scopes, roles and mappings, as the dev realm does.
     """  # noqa: D205 - one sentence
     console = _client(realm, "account-console")
     assert {"roles", "basic", "profile", "email"} <= set(console["defaultClientScopes"])
+    # With the account client in the file too, Keycloak makes neither itself: no duplicate at import. The file then
+    # carries what it would have made: the account roles and the default role granting the account page its two.
+    assert _client(realm, "account")["redirectUris"] == ["/realms/aurelius-atlas/account/*"]
+    assert {"view-profile", "manage-account"} <= {role["name"] for role in realm["roles"]["client"]["account"]}
+    assert realm["defaultRole"]["name"] == "default-roles-aurelius-atlas"
+    default = next(role for role in realm["roles"]["realm"] if role["name"] == "default-roles-aurelius-atlas")
+    assert sorted(default["composites"]["client"]["account"]) == ["manage-account", "view-profile"]
     assert console["redirectUris"] == ["/realms/aurelius-atlas/account/*"]
     assert {"client": "account-console", "roles": ["manage-account", "view-groups"]} in realm["clientScopeMappings"][
         "account"

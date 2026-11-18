@@ -641,6 +641,37 @@
         {
             "alwaysDisplayInConsole": false,
             "attributes": {
+                "post.logout.redirect.uris": "+",
+                "realm_client": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "/realms/aurelius-atlas/account/",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "account",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": false,
+            "fullScopeAllowed": false,
+            "implicitFlowEnabled": false,
+            "name": "${client_account}",
+            "nodeReRegistrationTimeout": 0,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "publicClient": true,
+            "redirectUris": ["/realms/aurelius-atlas/account/*"],
+            "rootUrl": "${authBaseUrl}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": []
+        },
+        {
+            "alwaysDisplayInConsole": false,
+            "attributes": {
                 "pkce.code.challenge.method": "S256",
                 "post.logout.redirect.uris": "+",
                 "realm_client": "false"
@@ -907,6 +938,12 @@
     ],
     "defaultLocale": "en",
     "defaultOptionalClientScopes": ["offline_access", "address", "phone", "microprofile-jwt", "organization"],
+    "defaultRole": {
+        "clientRole": false,
+        "composite": true,
+        "description": "${role_default-roles}",
+        "name": "default-roles-aurelius-atlas"
+    },
     "displayName": "Aurelius Atlas",
     "enabled": true,
     "internationalizationEnabled": true,
@@ -951,6 +988,74 @@
     "registrationAllowed": false,
     "roles": {
         "client": {
+            "account": [
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_delete-account}",
+                    "name": "delete-account"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": true,
+                    "composites": {
+                        "client": {
+                            "account": ["manage-account-links"]
+                        }
+                    },
+                    "description": "${role_manage-account}",
+                    "name": "manage-account"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": true,
+                    "composites": {
+                        "client": {
+                            "account": ["view-consent"]
+                        }
+                    },
+                    "description": "${role_manage-consent}",
+                    "name": "manage-consent"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-applications}",
+                    "name": "view-applications"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_manage-account-links}",
+                    "name": "manage-account-links"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-groups}",
+                    "name": "view-groups"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-consent}",
+                    "name": "view-consent"
+                },
+                {
+                    "attributes": {},
+                    "clientRole": true,
+                    "composite": false,
+                    "description": "${role_view-profile}",
+                    "name": "view-profile"
+                }
+            ],
             "aurelius-atlas-server": [
                 {
                     "description": "Read the types, the entities and their classifications",
@@ -977,6 +1082,33 @@
                 "composite": false,
                 "description": "Runs the platform: holds at most atlas-read outside the operator organization (TEN-06, ADR 063)",
                 "name": "atlas-operator"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": true,
+                "composites": {
+                    "client": {
+                        "account": ["manage-account", "view-profile"]
+                    },
+                    "realm": ["offline_access", "uma_authorization"]
+                },
+                "description": "${role_default-roles}",
+                "name": "default-roles-aurelius-atlas"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "${role_offline-access}",
+                "name": "offline_access"
+            },
+            {
+                "attributes": {},
+                "clientRole": false,
+                "composite": false,
+                "description": "${role_uma_authorization}",
+                "name": "uma_authorization"
             }
         ]
     },
