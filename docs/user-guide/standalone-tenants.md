@@ -87,7 +87,7 @@ into `infra/keycloak/.env.enc`, which is the file the repository keeps:
 
 ```bash
 for role in ATLAS STEWARD SCIENTIST; do
-    echo "ACME_USER_${role}_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(18))')" \
+    echo "ACME_USER_${role}_PASSWORD=$(python3 -c 'import secrets; print(secrets.token_urlsafe(15))')-7Kq" \
         >> infra/keycloak/.env
 done
 npx nx encrypt aurelius-atlas-infra-keycloak
@@ -102,7 +102,9 @@ ACME_USER_STEWARD_PASSWORD: ${ACME_USER_STEWARD_PASSWORD:-}
 ACME_USER_SCIENTIST_PASSWORD: ${ACME_USER_SCIENTIST_PASSWORD:-}
 ```
 
-A role without a password gets no user; the tenant itself is provisioned all the same.
+The realm's password policy asks for 12 characters with an upper- and a lower-case letter, a digit and a
+special character; the suffix above makes sure of the last three. A role without a password, or with one the
+policy refuses, gets no user and the log says why; the tenant itself is provisioned all the same.
 
 ## Start the stack and check
 

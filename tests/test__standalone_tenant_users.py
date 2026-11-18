@@ -125,6 +125,29 @@ async def test__a_user_already_there_keeps_its_password_and_a_user_without_one_i
     assert group_puts(realm.admin, "id-old") == ["g-read", "g-write", "g-types", "g-admin"]
 
 
+class RefusingAdmin(Admin):
+    """An admin API whose realm refuses the steward's password, as its policy refuses a weak one."""
+
+    async def call(self, method: str, path: str, *, body: object = None) -> tuple[Any, str | None]:
+        """Refuse the steward; answer the rest."""
+        if method == "POST" and isinstance(body, dict) and body["username"] == "demo_steward":
+            self.calls.append((method, path, body))
+            msg = "the realm refused POST /users: 400 invalidPasswordMinSpecialCharsMessage"
+            raise RealmError(msg)
+        return await super().call(method, path, body=body)
+
+
+@pytest.mark.covers(rules=["TRM-02"])
+async def test__a_user_the_realm_refuses_is_left_out_and_the_rest_are_made() -> None:
+    """A password the realm's policy rejects costs that user alone: the others, and the next tenant, follow."""
+    realm = Realm(RefusingAdmin({}), RealmOrganization(id="o-demo", alias="demo", groups=GROUPS))
+
+    made = await tenants_script().tenant_users(realm, "demo", PASSWORDS)
+
+    assert made == ["demo_atlas", "demo_scientist"]
+    assert realm.member_ids == {"id-demo_atlas", "id-demo_scientist"}
+
+
 @pytest.mark.covers(rules=["TRM-02"])
 async def test__a_tenant_without_its_organization_is_a_fault() -> None:
     """Users are made after the provisioning made the organization; without it, the one shot stops."""

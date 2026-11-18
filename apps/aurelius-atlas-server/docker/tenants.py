@@ -83,10 +83,9 @@ async def tenant_users(realm: RealmTenants, alias: str, environment: Mapping[str
         try:
             user = await realm.user_id(username)
         except RealmError:
-            _, user = await realm.admin.call(
-                "POST",
-                "/users",
-                body={
+            user = await _made(
+                realm,
+                {
                     "username": username,
                     "email": f"{alias}.{role}@example.com",
                     "emailVerified": True,
@@ -97,14 +96,25 @@ async def tenant_users(realm: RealmTenants, alias: str, environment: Mapping[str
                 },
             )
             if user is None:
-                user = await realm.user_id(username)
-            print(f"{username}: made")
+                continue
         if user not in members:
             await realm.add_member(org, user)
         for group in groups:
             await realm.admin.call("PUT", f"/organizations/{org.id}/groups/{org.groups[group]}/members/{user}")
         made.append(username)
     return made
+
+
+async def _made(realm: RealmTenants, body: dict[str, object]) -> str | None:
+    """Make the user, its id; a refusal, as of a password the realm's policy rejects, is logged and makes none."""
+    username = str(body["username"])
+    try:
+        _, user = await realm.admin.call("POST", "/users", body=body)
+    except RealmError as refused:
+        print(f"{username}: not made: {refused}")
+        return None
+    print(f"{username}: made")
+    return user if user is not None else await realm.user_id(username)
 
 
 def store_operator() -> None:
