@@ -2,8 +2,8 @@
 # (infra/observability/config/otel-collector.yaml) with the OIDC validator
 # changed - it reads the stack realm's keys from a file instead of discovering
 # them from the dev Keycloak's published listeners, because this stack's tokens
-# carry the stack's own issuer, https://<STANDALONE_HOST>:9000/auth/realms/aurelius-atlas
-# (SPS-01, SPS-08), which no container can dial (the URL is the proxy's browser
+# carry the stack's own issuer, https://localhost:9000/auth/realms/aurelius-atlas
+# (SPC-02, SPC-08), which no container can dial (the URL is the proxy's browser
 # address). The jwks-fetch one shot (docker/observability/compose.yaml) keeps
 # /jwks/jwks.json current. The three credential-typed legs, the identity
 # processors, the exporters and the pipelines are the slice's text (DD-675).
@@ -173,20 +173,17 @@ extensions:
     #
     # One issuer, read from a file (DD-675): every token this stack carries —
     # the browser's and every app's — is minted by the stack's own Keycloak at
-    # its browser issuer, https://<STANDALONE_HOST>:9000/auth/realms/aurelius-atlas
+    # its browser issuer, https://localhost:9000/auth/realms/aurelius-atlas
     # (KC_HOSTNAME pins it, so the iss claim is that URL on every listener).
-    # SPS-08: only this issuer_url derives from the host — the stack's compose
-    # sets STANDALONE_HOST (default localhost) in the container's environment,
-    # and confmap's env provider fills it at start. Discovery cannot run here:
-    # the issuer's URL is the proxy's address, which no container can dial
-    # in-network, and the JWKS extension dials it at start. So
-    # public_keys_file replaces discovery — the jwks-fetch one shot
-    # (docker/observability/compose.yaml) writes the realm's published keys to
-    # the shared /jwks volume after Keycloak is healthy, and the extension
-    # watches the file for changes.
+    # SPC-08: discovery cannot run here — the issuer's URL is the proxy's
+    # address, which no container can dial in-network, and the JWKS extension
+    # dials it at start. So public_keys_file replaces discovery — the
+    # jwks-fetch one shot (docker/observability/compose.yaml) writes the
+    # realm's published keys to the shared /jwks volume after Keycloak is
+    # healthy, and the extension watches the file for changes.
     oidc:
         providers:
-            - issuer_url: https://${env:STANDALONE_HOST}:9000/auth/realms/aurelius-atlas
+            - issuer_url: https://localhost:9000/auth/realms/aurelius-atlas
               audience: otel-collector
               public_keys_file: /jwks/jwks.json
 
