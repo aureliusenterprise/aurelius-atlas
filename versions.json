@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "feat-standalone-simplification",
+    "title": "feat-standalone-simplification",
+    "aliases": []
+  },
+  {
     "version": "feat-standalone-bundle",
     "title": "feat-standalone-bundle",
     "aliases": []
