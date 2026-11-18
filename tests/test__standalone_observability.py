@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 import yaml
-from conftest import WORKSPACE, compose_load, standalone_compose
+from conftest import WORKSPACE, compose_load, resolved, standalone_compose
 
 STACK = WORKSPACE / "docker"
 SLICE_COMPOSE = WORKSPACE / "infra/observability/docker-compose.yaml"
@@ -73,16 +73,19 @@ def test__the_stack_collector_extends_the_slice_and_keeps_the_publish_off(
 def test__the_stack_collector_validates_the_stacks_issuer_from_a_file() -> None:
     """The slice's validator dials the dev Keycloak's published listeners; the stack's reads one
     issuer - the proxy's browser address, undialable from inside - from the fetched JWKS file
-    (IRT-11, DD-675).
+    (IRT-11, DD-675). The issuer carries the browser host (17.2, SPS-08); the compose piece feeds
+    STANDALONE_HOST to the container, so confmap's ${env:} finds it.
     """  # noqa: D205 - one sentence
     providers = yaml.safe_load(STACK_CONFIG.read_text())["extensions"]["oidc"]["providers"]
     assert providers == [
         {
-            "issuer_url": "https://localhost:9000/auth/realms/aurelius-atlas",
+            "issuer_url": "https://${env:STANDALONE_HOST}:9000/auth/realms/aurelius-atlas",
             "audience": "otel-collector",
             "public_keys_file": "/jwks/jwks.json",
         }
     ]
+    collector = standalone_compose()["services"]["otel-collector"]
+    assert collector["environment"]["STANDALONE_HOST"] == "${STANDALONE_HOST:-localhost}"
     slice_providers = yaml.safe_load(SLICE_CONFIG.read_text())["extensions"]["oidc"]["providers"]
     assert not any("public_keys_file" in provider for provider in slice_providers)
 
@@ -102,7 +105,7 @@ def test__every_producer_signs_for_the_stacks_collector(services: dict[str, Any]
     ):
         env = services[name]["environment"]
         prefix = name.upper().replace("-", "_")
-        assert env[f"{prefix}_OTEL_TOKEN_URL"] == SERVER_TOKEN_URL, name
+        assert resolved(env[f"{prefix}_OTEL_TOKEN_URL"]) == SERVER_TOKEN_URL, name
         assert env[f"{prefix}_OTEL_ENDPOINT"] == "https://otel-collector:4319", name
         assert env[f"{prefix}_OTEL_CLIENT_SECRET"] == "${OTEL_INGEST_CLIENT_SECRET:-}", name
     keycloak = services["keycloak"]

@@ -122,7 +122,7 @@ services:
             # the persisted build and re-augments on a difference, so these state what the build one
             # shot baked in - they never change it.
             KC_FEATURES: opentelemetry-metrics,preview
-            KC_HOSTNAME: https://localhost:9000/auth
+            KC_HOSTNAME: https://${STANDALONE_HOST:-localhost}:9000/auth
             KC_PROXY_HEADERS: xforwarded
             KC_HEALTH_ENABLED: "true"
             KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME:?}
@@ -144,6 +144,12 @@ services:
             # The identity database, as the slice runs it (DD-670): the inherited certificate
             # mount is the trust; the credentials come from infra/keycloak/.env.
             KC_DB: postgres
+            # The browser host (SPS-01, SPS-06): the realm asset's ${STANDALONE_HOST} placeholders —
+            # the two clients' redirect URIs, web origins and post-logout URIs — are filled at
+            # import by -Dkeycloak.migration.replace-placeholders=true (JAVA_OPTS), which reads
+            # this container's environment. It must land here even when the host var is unset on
+            # the host shell, hence the default.
+            STANDALONE_HOST: ${STANDALONE_HOST:-localhost}
             KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/keycloak?sslmode=verify-full&sslrootcert=/certs/ca.pem
             KC_DB_USERNAME: ${KEYCLOAK_DATABASE_USERNAME:?}
             KC_DB_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD:?}

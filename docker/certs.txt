@@ -1,0 +1,19 @@
+# The standalone stack's certificate manifest, read by make-certs.sh (SPS-09, DD-681).
+# One line per leaf: <certs dir> <service> <SAN>... — the script issues <service>.pem and
+# <service>-key.pem into that directory, beside a copy of the CA it signs with. The directory
+# names match the compose pieces' certificate mounts (the stack trusts the CA by mount only,
+# SPS-10); the SAN sets match each project's tls.json (the dev `nx certgen` material), with one
+# addition: the edge leaf (the server's, which the proxy serves) also names $HOST, the browser
+# host (SPS-02, DD-679). No other line names $HOST — an internal leaf keeps its service name and
+# the loopback names it dials under today (SPS-03). A customer who brings their own CA and leaves
+# (DD-681) places them at these same paths and does not run the script.
+apps/aurelius-atlas-server/certs aurelius-atlas-server aurelius-atlas-server $HOST localhost 127.0.0.1
+apps/aurelius-atlas-webapp/certs aurelius-atlas-webapp aurelius-atlas-webapp localhost 127.0.0.1
+apps/aurelius-atlas-embedder/certs aurelius-atlas-embedder aurelius-atlas-embedder embedder localhost 127.0.0.1
+apps/aurelius-atlas-data2model/certs aurelius-atlas-data2model aurelius-atlas-data2model localhost 127.0.0.1
+apps/aurelius-atlas-lineage-model/certs aurelius-atlas-lineage-model aurelius-atlas-lineage-model localhost 127.0.0.1
+apps/aurelius-atlas-validate-entity/certs aurelius-atlas-validate-entity aurelius-atlas-validate-entity localhost 127.0.0.1
+infra/elasticsearch/certs elasticsearch elasticsearch localhost 127.0.0.1
+infra/keycloak/certs keycloak keycloak keycloak.localhost localhost 127.0.0.1
+infra/keycloak/certs postgres postgres postgres-keycloak localhost 127.0.0.1
+infra/observability/certs otel-collector otel-collector localhost 127.0.0.1

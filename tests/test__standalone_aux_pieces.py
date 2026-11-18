@@ -9,7 +9,7 @@ them (DD-671).
 from typing import Any
 
 import pytest
-from conftest import WORKSPACE, compose_load, standalone_compose
+from conftest import WORKSPACE, compose_load, resolved, standalone_compose
 
 STACK = WORKSPACE / "docker"
 AUX = ("aurelius-atlas-data2model", "aurelius-atlas-lineage-model", "aurelius-atlas-validate-entity")
@@ -52,7 +52,7 @@ def test__each_aux_piece_states_the_standalone_posture() -> None:
         assert piece["services"][name]["network_mode"] == "service:proxy", name
         env = _piece_env(name)
         key = name.upper().replace("-", "_")
-        assert env[f"{key}_AUTH_SERVER_URL"] == "https://localhost:9000/auth/", name
+        assert resolved(env[f"{key}_AUTH_SERVER_URL"]) == "https://localhost:9000/auth/", name
         assert env[f"{key}_AUTH_REALM"] == "aurelius-atlas", name
     assert _piece_env("aurelius-atlas-data2model")["AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE"] == "aurelius"
     lineage = _piece_env("aurelius-atlas-lineage-model")

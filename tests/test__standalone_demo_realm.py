@@ -14,7 +14,7 @@ from typing import Any
 import pytest
 import yaml
 from aurelius_atlas_server.authorization import ROLE_PRIVILEGES
-from conftest import WORKSPACE, compose_load, standalone_compose
+from conftest import WORKSPACE, compose_load, resolved, standalone_compose
 
 STACK = WORKSPACE / "docker"
 INFRA_KEYCLOAK = WORKSPACE / "infra/keycloak/docker-compose.yaml"
@@ -51,11 +51,15 @@ def test__the_realm_holds_the_server_client_and_its_roles(realm: dict[str, Any])
     server = _client(realm, SERVER_CLIENT)
     assert not server["publicClient"]
     assert PLACEHOLDER.match(server["secret"])
-    assert server["redirectUris"] == ["https://localhost:9000/atlas2/login.jsp"]
-    assert server["attributes"]["post.logout.redirect.uris"] == "https://localhost:9000/atlas2/"
+    assert server["redirectUris"] == ["https://${STANDALONE_HOST}:9000/atlas2/login.jsp"]
+    assert server["attributes"]["post.logout.redirect.uris"] == "https://${STANDALONE_HOST}:9000/atlas2/"
     public = _client(realm, "aurelius")
     assert public["publicClient"]
     assert public["standardFlowEnabled"]
+    # SPS-06: the browser URIs carry the host placeholder and no literal host.
+    assert public["redirectUris"] == ["https://${STANDALONE_HOST}:9000/*"]
+    assert public["webOrigins"] == ["https://${STANDALONE_HOST}:9000"]
+    assert "localhost" not in json.dumps([public, server])
     mapped = realm["clientScopeMappings"][SERVER_CLIENT]
     assert mapped == [{"client": "aurelius", "roles": sorted(roles, key=list(ROLE_PRIVILEGES).index)}]
 
@@ -130,11 +134,11 @@ def test__stack_signs_in_to_the_realm_alone(services: dict[str, Any], realm: dic
     assert {"aurelius", "aurelius-atlas-validate-entity", "aurelius-atlas-admin"} <= set(audiences)
     sample = services["sample-import"]["environment"]
     token_url = "https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token"  # noqa: S105
-    assert sample["TOKEN_URL"] == token_url
+    assert resolved(sample["TOKEN_URL"]) == token_url
     assert sample["ATLAS_CLIENT_ID"] == "aurelius-atlas-admin"
     assert sample["ATLAS_CLIENT_SECRET"] == "${ATLAS_ADMIN_CLIENT_SECRET:-}"  # noqa: S105 - a placeholder
     assert (
-        services["aurelius-atlas-validate-entity"]["environment"]["AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL"]
+        resolved(services["aurelius-atlas-validate-entity"]["environment"]["AURELIUS_ATLAS_VALIDATE_ENTITY_TOKEN_URL"])
         == token_url
     )
 
@@ -218,8 +222,9 @@ def test__the_stacks_keycloak_keeps_the_production_topology(services: dict[str, 
     assert keycloak["environment"]["KC_DB_URL"].startswith("jdbc:postgresql://postgres-keycloak:5432/keycloak")
     assert "keycloak-postgres-data:/var/lib/postgresql" in postgres["volumes"]
     assert "ports" not in postgres
-    # The issuer behind the proxy, unchanged for the server's check (ADR 039's one answer).
-    assert keycloak["environment"]["KC_HOSTNAME"] == "https://localhost:9000/auth"
+    # The issuer behind the proxy, unchanged for the server's check (ADR 039's one answer). SPS-01:
+    # the value carries the host variable, and the default is this.
+    assert resolved(keycloak["environment"]["KC_HOSTNAME"]) == "https://localhost:9000/auth"
     assert keycloak["environment"]["KC_HTTP_RELATIVE_PATH"] == "/auth"
     assert keycloak["environment"]["KC_PROXY_HEADERS"] == "xforwarded"
     # The legacy OTLP leg (DD-675): the issuer cannot present its own token at cold boot

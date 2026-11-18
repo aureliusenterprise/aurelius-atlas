@@ -31,15 +31,22 @@ def test__the_umbrella_includes_the_gateway_and_holds_no_service() -> None:
 
 @pytest.mark.covers(rules=["IRT-12"])
 def test__the_gateway_piece_owns_the_stacks_only_published_port(services: dict[str, Any]) -> None:
-    """The proxy publishes loopback 9000 and mounts its own nginx.conf and the server's
-    certificates from its own folder (IRT-12, DD-677).
+    """The proxy publishes loopback 9000 and mounts its rendered nginx config and the server's
+    certificates; the one shot renders the config and the browser's config.json from the pieces
+    beside it (IRT-12, DD-677; 17.2's gateway-config).
     """  # noqa: D205 - one sentence
     gateway = compose_load(STACK / "gateway/compose.yaml")["services"]["proxy"]
     proxy = services["proxy"]
     assert proxy["image"] == "dhi.io/nginx:1.30-alpine3.24"
     assert proxy["ports"] == ["127.0.0.1:9000:9000"]
-    assert "./nginx.conf:/etc/nginx/conf.d/default.conf:ro" in gateway["volumes"]
+    # The rendered config volume replaced the direct nginx.conf bind (17.2, SPS-02); the one shot
+    # reads the config and the webapp's config.json from beside it.
+    assert "gateway-conf:/etc/nginx/conf.d:ro" in gateway["volumes"]
     assert "../../apps/aurelius-atlas-server/certs:/certs:ro" in gateway["volumes"]
+    render = services["gateway-config"]
+    assert "./nginx.conf:/template/nginx.conf:ro" in render["volumes"]
+    assert "../../apps/aurelius-atlas-webapp/docker/config.json:/template/config.json:ro" in render["volumes"]
+    assert proxy["depends_on"]["gateway-config"] == {"condition": "service_completed_successfully"}
     # The proxy is the app surface's only host publish; the four observability backends keep
     # their inherited loopback views (DD-675), and the collector's publish is reset.
     published = {name for name, service in services.items() if service.get("ports")}

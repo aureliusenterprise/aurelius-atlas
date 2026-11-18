@@ -32,6 +32,11 @@ services:
                 condition: service_started
         volumes:
             - webapp-nginx-conf:/etc/nginx/conf.d:ro
+            # The browser's config, as the deployment's ConfigMap serves it. The stack's proxy
+            # answers /config.json from its own rendered copy (docker/gateway/compose.yaml), which
+            # carries the browser host (SPS-01); this bind mount is what the image would serve —
+            # it names localhost, and the webapp has no published port, so only the proxy's copy
+            # reaches a browser.
             - ./config.json:/usr/share/nginx/html/config.json:ro
             - ../certs:/certs:ro
 

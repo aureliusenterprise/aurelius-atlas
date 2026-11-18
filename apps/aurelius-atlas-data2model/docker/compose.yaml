@@ -29,7 +29,7 @@ services:
             # The stack's issuer, behind the proxy: /extract verifies the caller's bearer token (DTM-10).
             # The audience is the browser's public client by design (AUX-04): the lineage app forwards
             # the webapp user's own token, a literal, not a knob.
-            AURELIUS_ATLAS_DATA2MODEL_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_SERVER_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/
             AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: aurelius-atlas
             AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
             AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
@@ -38,7 +38,7 @@ services:
             # reached as otel-collector on the stack's network. The secret is the realm's
             # shared ingest secret (infra/keycloak/.env), joined unguarded (DD-669): unset,
             # the app exports no OTLP.
-            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://${STANDALONE_HOST:-localhost}:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:-}
             AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319
             AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /certs/ca.pem
