@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "fix-editor-seed-non-text",
+    "title": "fix-editor-seed-non-text",
+    "aliases": []
+  },
+  {
     "version": "feat-infra-root",
     "title": "feat-infra-root",
     "aliases": []
