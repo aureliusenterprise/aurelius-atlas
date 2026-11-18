@@ -634,10 +634,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provision-the-tenant-at-every-start" class="md-nav__link">
+  <a href="#provision-the-tenant" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Provision the tenant at every start
+        Provision the tenant
       </span>
     </span>
   </a>
@@ -2170,6 +2170,8 @@
       
         
           
+        
+      
         
       
         
@@ -4156,6 +4158,33 @@
     
   
   066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6741,10 +6770,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#provision-the-tenant-at-every-start" class="md-nav__link">
+  <a href="#provision-the-tenant" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Provision the tenant at every start
+        Provision the tenant
       </span>
     </span>
   </a>
@@ -6888,7 +6917,8 @@ always made in Keycloak's console. The example tenant is <code>acme</code>; repl
 <p class="admonition-title">Before you start</p>
 <ul>
 <li>The stack runs with tenancy, as the <a href=".././standalone-server/#tenants">Tenants</a> section starts it:
-  <code>ATLAS_TENANCY_ENABLED=true</code> and <code>--profile tenancy</code>.</li>
+  <code>ATLAS_TENANCY_ENABLED=true</code>. The script <code>docker/bin/provision-tenants.sh</code> runs the provisioning
+  one shot when you ask for it (SPC-07).</li>
 <li>All commands run from the repository root. The stack's files are in <code>docker/</code>.</li>
 </ul>
 </div>
@@ -6909,7 +6939,7 @@ places:</p>
 </tr>
 <tr>
 <td><code>apps/aurelius-atlas-server/docker/tenants.py</code></td>
-<td>the provisioning of the tenant's indices, at every start</td>
+<td>the provisioning of the tenant's indices, when the script runs it</td>
 </tr>
 <tr>
 <td>Keycloak's admin console</td>
@@ -6948,9 +6978,10 @@ organization and four for its groups:</p>
 <span class="w">    </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"acme"</span>
 <span class="p">}</span>
 </code></pre></div>
-<h2 id="provision-the-tenant-at-every-start">Provision the tenant at every start<a class="headerlink" href="#provision-the-tenant-at-every-start" title="Permanent link">&para;</a></h2>
-<p>The one shot <code>tenants</code> provisions each tenant it lists when the stack starts, and leaves a tenant already there
-as it is. Add <code>acme</code> to the list in <code>apps/aurelius-atlas-server/docker/tenants.py</code>. The command makes the
+<h2 id="provision-the-tenant">Provision the tenant<a class="headerlink" href="#provision-the-tenant" title="Permanent link">&para;</a></h2>
+<p>The one shot <code>tenants</code> provisions each tenant it lists, and leaves a tenant already there
+as it is. The script runs it on demand. Add <code>acme</code> to the list in
+<code>apps/aurelius-atlas-server/docker/tenants.py</code>. The command makes the
 realm's side too, as the client <code>aurelius-atlas-provisioning</code>: the organization already imported by the realm
 file stays as it is, and its indices and record are made here. <code>--sample &lt;path&gt;</code> imports an Apache Atlas
 export ZIP into the tenant, once:</p>
@@ -6967,7 +6998,8 @@ export ZIP into the tenant, once:</p>
 <p>Start the stack as before. The realm file changed, so recreate Keycloak (<code>docker compose up -d --force-recreate
 keycloak</code>): it imports the realm again, with acme's organization. Then <code>tenants</code> provisions the tenant:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">ATLAS_TENANCY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span>--profile<span class="w"> </span>tenancy<span class="w"> </span>up<span class="w"> </span>-d
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span>up<span class="w"> </span>-d
+docker/bin/provision-tenants.sh
 docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span>logs<span class="w"> </span>tenants
 </code></pre></div>
 <p>The log ends with the list of tenants; <code>acme</code> is <code>active</code>. Now make a person and give it acme: in the console
