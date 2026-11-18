@@ -104,11 +104,9 @@ def _compose_config(root: Path, *, extra_env: Path | None = None) -> subprocess.
     if extra_env is not None:
         command += ["--env-file", str(extra_env)]
     command.append("config")
-    # The bundler's own minimal environment, so a *_IMAGE a developer exports cannot bend a resolved check
-    # (SBD-01): the answer must come from the files the bundle ships, as it does on the operator's machine.
-    return subprocess.run(
-        command, capture_output=True, text=True, check=False, cwd=root, env=bundler._minimal_compose_env()
-    )
+    # The shared minimal environment (compose_cli, DD-692), so a *_IMAGE a developer exports cannot bend a
+    # resolved check (SBD-01): the answer must come from the files the bundle ships, as on the operator's machine.
+    return subprocess.run(command, capture_output=True, text=True, check=False, cwd=root, env=bundler.minimal_env())
 
 
 # --- SBD-01: the bundle is generated, never committed -------------------------------------------------------

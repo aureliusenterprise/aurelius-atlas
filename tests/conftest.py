@@ -42,29 +42,96 @@ SCANNER_CHARTS = {
 OBS_CHART = WORKSPACE / "infra/observability/helm"
 UMBRELLA_CHART = WORKSPACE / "helm"
 
-# The standalone compose stack (9.5, ADR 065): the umbrella at the root with the fragments it
-# includes merged in, and each fragment's service merged over the infra service it extends, as
-# compose does (ADR 066). DD-682 moved that resolver into tools/compose_stack.py, where the suite
-# and the standalone bundler share one implementation: the loader knows the clauses the stack
-# actually uses (services and volumes merged by name, `extends` deep-merged with `!reset` and
-# `!override` honoured, a volume entry replaced at its mount target), and spells every bind source
-# relative to the tree's root, which is the path the container reads.
+# The standalone compose stack (9.5, ADR 065): the suite reads it the way a start reads it, by
+# asking `docker compose config` (DD-693, DD-689). Compose itself resolves the `include` tree, the
+# `extends` chains, and the `!reset`/`!override` tags, so no Python re-implements compose here.
+# `compose_load` is the shared `compose_cli.load_piece`: one piece as written, its tags kept as
+# `Tagged` markers, so a suite can assert on a fragment without resolving the stack.
 #
-# The resolver is a re-export, listed in ``__all__`` below: every standalone suite does
-# `from conftest import compose_load, ...`, and both Ruff and Pyright treat a plain import as a
-# private name a later module may not take.
+# `standalone_compose` below is the suite's own view of the whole stack: it asks compose and then
+# normalises compose's canonical answer back to the short syntax the suites assert on — a volume
+# entry as the one string `source:target[:ro]`, an environment as a map, a published port as
+# `host:published:target`, and a bind source relative to the workspace, which is the path the
+# container reads. That shape is a suite preference, so the normalisation lives here and not in the
+# tool; the tool answers the document exactly as compose writes it.
 sys.path.insert(0, str(WORKSPACE / "tools"))
 
-from compose_stack import (  # noqa: E402
-    compose_files,
-    compose_load,
-    merge_stack,
-    standalone_compose,
-)
-
-__all__ = ["compose_files", "compose_load", "merge_stack", "standalone_compose"]
+from compose_cli import compose_config  # noqa: E402
+from compose_cli import load_piece as compose_load  # noqa: E402
 
 STACK = WORKSPACE / "docker"
+
+
+def _volume_entry(entry: dict[str, Any]) -> str:
+    """One canonical volume entry as the short string the stack wrote it in."""
+    source = str(entry["source"])
+    # Compose anchors a bind source to the declaring piece's folder and spells it absolute; the
+    # suites want it workspace-relative, which is the path the repository tree holds.
+    if source.startswith(f"{WORKSPACE}/"):
+        source = str(Path(source).relative_to(WORKSPACE))
+    elif source == str(WORKSPACE):
+        source = "."
+    short = f"{source}:{entry['target']}"
+    return f"{short}:ro" if entry.get("read_only") else short
+
+
+def _normalize_service(service: dict[str, Any]) -> dict[str, Any]:
+    """A canonical service back to the shape the stack's pieces spell (DD-693).
+
+    Compose answers a canonical document (maps for volumes and ports, a list for the environment);
+    the suites assert on the short syntax the pieces wrote, because that is the text a person edits.
+    """
+    service = dict(service)
+    if isinstance(service.get("volumes"), list):
+        service["volumes"] = [_volume_entry(v) if isinstance(v, dict) else str(v) for v in service["volumes"]]
+    if isinstance(service.get("environment"), list):
+        environment: dict[str, str] = {}
+        for item in service["environment"]:
+            key, _, value = str(item).partition("=")
+            environment[key] = value
+        service["environment"] = environment
+    if isinstance(service.get("ports"), list):
+        service["ports"] = [
+            ":".join(filter(None, [str(p.get("host_ip", "")), str(p.get("published", "")), str(p["target"])]))
+            if isinstance(p, dict)
+            else str(p)
+            for p in service["ports"]
+        ]
+    if isinstance(service.get("depends_on"), dict):
+        service["depends_on"] = {
+            name: ({k: v for k, v in spec.items() if k != "required"} if isinstance(spec, dict) else spec)
+            for name, spec in service["depends_on"].items()
+        }
+    return service
+
+
+def standalone_compose() -> dict[str, Any]:
+    """The repository stack as ``docker compose config --no-interpolate`` resolves it (DD-693).
+
+    Compose merges the includes and resolves the extends and tags; the helper above brings the
+    answer back to the pieces' short syntax. A guarded mount keeps its ``${VAR:?...}`` source, and
+    compose types it ``volume`` there — a known quirk of ``--no-interpolate`` (DD-690) that the
+    bundle's rewriter answers, and the suites assert around.
+
+    Compose's own fill-ins go: the implicit ``default`` network, top-level and per service, is not
+    a declaration any piece wrote, and the suites ask what the stack declares.
+    """
+    document = yaml.safe_load(compose_config(interpolate=False))
+    assert isinstance(document, dict)
+    document = dict(document)
+    if document.get("networks") == {"default": {"name": f"{document.get('name', '')}_default"}}:
+        document.pop("networks")
+    services = {}
+    for name, declared in (document.get("services") or {}).items():
+        service = _normalize_service(declared)
+        if service.get("networks") == {"default": None}:
+            service.pop("networks")
+        services[name] = service
+    document["services"] = services
+    return document
+
+
+__all__ = ["compose_load", "standalone_compose"]
 
 # The stack's one host value (17.2, SPS-01): compose interpolates ${STANDALONE_HOST:-localhost}
 # from the host shell's environment, and an unset value takes the default. A suite asserting a

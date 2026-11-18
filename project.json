@@ -13,7 +13,7 @@
                 "{workspaceRoot}/infra/keycloak/import/**",
                 "{workspaceRoot}/infra/keycloak/themes/**",
                 "{workspaceRoot}/infra/observability/config/**",
-                "{workspaceRoot}/tools/compose_stack.py",
+                "{workspaceRoot}/tools/compose_cli.py",
                 "{workspaceRoot}/tools/standalone_bundle.py",
                 "{workspaceRoot}/tools/es-coredump-agent/**",
                 "{workspaceRoot}/data/atlas-sample/**"
