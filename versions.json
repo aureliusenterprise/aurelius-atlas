@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "feat-standalone-operator-and-tenant-users",
+    "title": "feat-standalone-operator-and-tenant-users",
+    "aliases": []
+  },
+  {
     "version": "feat-infra-root",
     "title": "feat-infra-root",
     "aliases": []
