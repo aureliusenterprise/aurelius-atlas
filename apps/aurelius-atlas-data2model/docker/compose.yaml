@@ -1,0 +1,46 @@
+# The standalone stack's extractor piece, included by ../../../docker/docker-compose.yaml (ADR 065).
+# Relative paths read from this file's folder; the service name is the stack's, so keep it.
+# The 8.1 extractor (8.1, AUX-04): relational sources in, Atlas relationships and classifications out.
+# In the stack it serves the lineage API in-network and the webapp's forwarded browser tokens, so like
+# the server it shares the proxy's network: its issuer is https://localhost:9000/auth, the address the
+# browser uses, which is the issuer its bearer check compares. It checks no service tokens beyond those
+# (its audience is the browser's public client) and publishes no port. Its own e2e stack
+# (../e2e/docker-compose.yaml) extends this service and states the
+# e2e differences: the host-mapped issuer, its OTel client secret, the collector network and a published port.
+# DATA2MODEL_IMAGE and DATA2MODEL_CERTS_DIR name the image and the certificate folder (compose-time
+# variables, like SAMPLE_ZIP: not .env settings). Unset, they are this file's own answers — the
+# `nx docker-build` tag and this project's `nx certgen` folder (ADR 065: the stack builds, never
+# pulls) — and a relative path still reads from this file's folder. An install that ships published
+# images sets DATA2MODEL_IMAGE to the registry reference or a digest, and its own certificate folder
+# to DATA2MODEL_CERTS_DIR; the e2e stack extends this service and leaves both unset.
+name: aurelius-atlas-standalone
+
+services:
+    aurelius-atlas-data2model:
+        image: ${DATA2MODEL_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-data2model:local}
+        # In the proxy's network: the issuer it verifies is the browser's address, localhost:9000.
+        network_mode: service:proxy
+        environment:
+            AURELIUS_ATLAS_DATA2MODEL_LOG_LEVEL: info
+            # HTTPS with this project's certificate (`nx certgen`); the healthcheck verifies it.
+            AURELIUS_ATLAS_DATA2MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-data2model.pem
+            AURELIUS_ATLAS_DATA2MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-data2model-key.pem
+            AURELIUS_ATLAS_DATA2MODEL_TLS_CA_FILE: /certs/ca.pem
+            # The stack's issuer, behind the proxy: /extract verifies the caller's bearer token (DTM-10).
+            # The audience is the browser's public client by design (AUX-04): the lineage app forwards
+            # the webapp user's own token, a literal, not a knob.
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_REALM: aurelius-atlas
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_AUDIENCE: aurelius
+            AURELIUS_ATLAS_DATA2MODEL_AUTH_CA_FILE: /certs/ca.pem
+            # OTLP ingest (DD-197, DD-675): the app mints as otel-data2model through the
+            # stack's issuer and exports on the per-service leg of the stack's collector,
+            # reached as otel-collector on the stack's network. The secret is the realm's
+            # shared ingest secret (infra/keycloak/.env), joined unguarded (DD-669): unset,
+            # the app exports no OTLP.
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:-}
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_DATA2MODEL_OTEL_CA_FILE: /certs/ca.pem
+        volumes:
+            - ${DATA2MODEL_CERTS_DIR:-../certs}:/certs:ro

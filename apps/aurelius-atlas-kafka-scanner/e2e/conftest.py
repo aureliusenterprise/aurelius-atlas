@@ -66,7 +66,7 @@ SCANNER_MINT_HINT = (
     "`aurelius-atlas-kafka-scanner` client entered import/master.json: a running realm is "
     "not overwritten by a re-import. A token without `atlas-write` means the service "
     "account's role grant did not import. Both are fixed the same way: `docker compose -f "
-    "dev/keycloak/docker-compose.yaml down -v && docker compose -f dev/keycloak/"
+    "infra/keycloak/docker-compose.yaml down -v && docker compose -f infra/keycloak/"
     "docker-compose.yaml up -d` (the dev stack's data is disposable), or delete the master "
     "realm in the admin console and start the stack again."
 )
@@ -117,7 +117,7 @@ def _environment() -> None:
 @pytest.fixture(scope="session")
 def observability() -> DockerCompose:
     """The dev telemetry stack, started and left running (the server's OTLP leg rides it)."""
-    context = WORKSPACE_ROOT / "dev" / "observability"
+    context = WORKSPACE_ROOT / "infra" / "observability"
     compose = DockerCompose(context=context)
     compose.start()
     return compose
@@ -132,7 +132,7 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
     suites, this fixture leaves the stack running for reuse (DD-223).
     """
     _ = observability  # The stack external-attaches the observability network.
-    context = WORKSPACE_ROOT / "dev" / "keycloak"
+    context = WORKSPACE_ROOT / "infra" / "keycloak"
     compose = DockerCompose(context=context)
     compose.start()
     return compose
@@ -142,7 +142,7 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
 def elasticsearch(observability: DockerCompose) -> DockerCompose:
     """The dev Elasticsearch stack, started and left running; the server's store."""
     _ = observability  # The stack external-attaches the observability network.
-    context = WORKSPACE_ROOT / "dev" / "elasticsearch"
+    context = WORKSPACE_ROOT / "infra" / "elasticsearch"
     compose = DockerCompose(context=context)
     compose.start()
     return compose

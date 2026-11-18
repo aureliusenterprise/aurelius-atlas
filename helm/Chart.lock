@@ -15,13 +15,13 @@ dependencies:
   repository: file://../apps/aurelius-atlas-validate-entity/helm
   version: 0.1.0-rc.9
 - name: atlas-elasticsearch
-  repository: file://../dev/elasticsearch/helm
+  repository: file://../infra/elasticsearch/helm
   version: 0.1.0-rc.9
 - name: atlas-keycloak
-  repository: file://../dev/keycloak/helm
+  repository: file://../infra/keycloak/helm
   version: 0.1.0-rc.9
 - name: atlas-observability
-  repository: file://../dev/observability/helm
+  repository: file://../infra/observability/helm
   version: 0.1.0-rc.9
-digest: sha256:414381ac788b34e50bd0e73feeeae44487b9bc8c8821b423919e941d43021157
-generated: "2026-11-16T22:25:51.067122127Z"
+digest: sha256:7e3bf8ca1c50184f218fbb4539e68ef868966c5923b1f786f1432d06ca21b971
+generated: "2026-11-17T11:10:22.289380117Z"

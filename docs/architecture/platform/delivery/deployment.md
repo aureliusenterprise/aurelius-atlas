@@ -14,8 +14,9 @@ agent. Each part has a chart, and the umbrella chart installs them as one releas
 057](../../adr/057-the-system-ships-as-helm-charts-that-a-deployment-installs.md)). An environment differs
 from another by its values, never by a changed chart.
 
-In development the same parts run as compose stacks, one per project (`dev/*/docker-compose.yaml`), started by
-the targets that need them ([ADR 005](../../adr/005-dev-infra-starts-with-the-app.md)). The compose files and
+In development the same parts run as compose stacks, one per project (`infra/*/docker-compose.yaml` for the
+shared infrastructure), started by the targets that need them
+([ADR 005](../../adr/005-dev-infra-starts-with-the-app.md)). The compose files and
 the charts are siblings: the chart suites hold the settings they share equal, such as the alert rules, the
 collector's configuration and the lifetimes.
 

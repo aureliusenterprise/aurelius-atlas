@@ -19,7 +19,7 @@ Elasticsearch 9, reached through the store library; its knobs and mechanics are 
 The store library owns the client: the link is TLS-only with certificate verification and
 credentials — an unencrypted endpoint is rejected at settings validation, before the service
 opens. A deployment runs and monitors the cluster; the development arrangement runs one
-(`dev/elasticsearch`).
+(`infra/elasticsearch`).
 
 Type definitions move as **one unit of storage**: the store replaces all definitions whole under a
 concurrency guard, so a change to several definitions lands atomically, with one version number

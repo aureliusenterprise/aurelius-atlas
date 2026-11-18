@@ -1,0 +1,59 @@
+# The standalone stack's lineage piece, included by ../../../docker/docker-compose.yaml (ADR 065).
+# Relative paths read from this file's folder; the service name is the stack's, so keep it.
+# The 8.2 lineage API (8.2, AUX-04): a GUID in, the flattened lineage graph out, read from the stack's
+# server and extracted by its extractor. In the stack the webapp's nginx reaches it under
+# /lineage-model/ with the browser's forwarded token, so like the server it shares the proxy's
+# network: its issuer is https://localhost:9000/auth, the address the browser uses, which is the
+# issuer its bearer check compares. Its audience pair is the chart's posture (DD-385): the app's own
+# client plus the browser's, the forwarded token's. It publishes no port. Its own e2e stack
+# (../e2e/docker-compose.yaml) extends this service and
+# states the e2e differences: the host-mapped issuer, the OTel leg, the collector network and a
+# published port.
+# LINEAGE_MODEL_IMAGE and LINEAGE_MODEL_CERTS_DIR name the image and the certificate folder
+# (compose-time variables, like SAMPLE_ZIP: not .env settings). Unset, they are this file's own
+# answers — the `nx docker-build` tag and this project's `nx certgen` folder (ADR 065: the stack
+# builds, never pulls) — and a relative path still reads from this file's folder. An install that
+# ships published images sets LINEAGE_MODEL_IMAGE to the registry reference or a digest, and its own
+# certificate folder to LINEAGE_MODEL_CERTS_DIR; the e2e stack extends this service and leaves both
+# unset.
+name: aurelius-atlas-standalone
+
+services:
+    aurelius-atlas-lineage-model:
+        image: ${LINEAGE_MODEL_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-lineage-model:local}
+        # In the proxy's network: the issuer it verifies is the browser's address, localhost:9000, and
+        # the webapp's nginx reaches it on 127.0.0.1:21002 with proxy_ssl_name the service name.
+        network_mode: service:proxy
+        depends_on:
+            aurelius-atlas-data2model:
+                condition: service_healthy
+        environment:
+            AURELIUS_ATLAS_LINEAGE_MODEL_LOG_LEVEL: info
+            # HTTPS with this project's certificate (`nx certgen`); the healthcheck verifies it.
+            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CERT_FILE: /certs/aurelius-atlas-lineage-model.pem
+            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_KEY_FILE: /certs/aurelius-atlas-lineage-model-key.pem
+            AURELIUS_ATLAS_LINEAGE_MODEL_TLS_CA_FILE: /certs/ca.pem
+            # The stack's issuer, behind the proxy: GET / verifies the caller's bearer token (LM-08).
+            # The audience pair is the chart's posture (DD-385): the app's own client, and the
+            # browser's public client whose token the webapp's proxy forwards (AUX-04).
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_SERVER_URL: https://localhost:9000/auth/
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_REALM: aurelius-atlas
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_AUDIENCE: aurelius-atlas-lineage-model
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_EXTRA_AUDIENCES: '["aurelius"]'
+            AURELIUS_ATLAS_LINEAGE_MODEL_AUTH_CA_FILE: /certs/ca.pem
+            # The chain's two legs, in the proxy's network: the extractor shares it, so the app reaches it
+            # on 127.0.0.1 — its certificate names localhost — and the server answers on 127.0.0.1:21000
+            # under its own certificate's localhost name (LM-04's TLS, verified against the CA).
+            AURELIUS_ATLAS_LINEAGE_MODEL_ATLAS_BASE_URL: https://localhost:21000
+            AURELIUS_ATLAS_LINEAGE_MODEL_DATA2MODEL_URL: https://localhost:21001
+            # OTLP ingest (DD-197, DD-675): the app mints as otel-lineage-model through the
+            # stack's issuer and exports on the per-service leg of the stack's collector,
+            # reached as otel-collector on the stack's network. The secret is the realm's
+            # shared ingest secret (infra/keycloak/.env), joined unguarded (DD-669): unset,
+            # the app exports no OTLP.
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_TOKEN_URL: https://localhost:9000/auth/realms/aurelius-atlas/protocol/openid-connect/token
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CLIENT_SECRET: ${OTEL_INGEST_CLIENT_SECRET:-}
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_ENDPOINT: https://otel-collector:4319
+            AURELIUS_ATLAS_LINEAGE_MODEL_OTEL_CA_FILE: /certs/ca.pem
+        volumes:
+            - ${LINEAGE_MODEL_CERTS_DIR:-../certs}:/certs:ro

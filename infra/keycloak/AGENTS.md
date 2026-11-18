@@ -1,0 +1,244 @@
+# aurelius-atlas-infra-keycloak
+
+Local development identity provider. This file covers wiring specific to this
+project; workspace-wide rules live in the root `AGENTS.md`.
+
+## Layout
+
+- `docker-compose.yaml` — Keycloak plus its private Postgres and a
+  `metrics-puller` sidecar
+- `config/metrics-puller.yaml` — OTel Collector config for the puller
+  (scrapes `postgres-keycloak`, pushes OTLP to infra/observability)
+- `import/master.json` — realm, clients, and test users, imported on startup
+- `.env` / `.env.enc` — SOPS-encrypted dev settings
+- `helm/` — the `atlas-keycloak` chart (its own section below)
+- `import/master.json` — the dev realm; the **single authored source** the
+  chart's `files/master.json` byte-copies (a chart-contract test fails on drift — re-run the copy after editing)
+- `helm/files/aurelius-atlas.json` — the cluster realm asset (10.7): minimally
+  authored, hardened, no users (its own section below — not a master export).
+  10.8 adds the `grafana` relying-party client here and **only** here — the
+  dev asset stays without it (DV-113, CHT-79's named parity exception).
+  10.12 adds the `aurelius-atlas-server` confidential client (CHT-110): the
+  dev asset has had it since 6.1a/DD-250, so it lands in **both** assets and
+  its `${ATLAS_SERVER_CLIENT_SECRET}` env is not realm-gated (unlike
+  grafana's); the umbrella's `<release>-server-client` feeds it (CHT-109).
+  6.2c gives it the four `atlas-*` roles and their scope mapping into
+  `aurelius`, equal to the dev asset's (DD-300); no one holds them until an
+  operator grants them, so a fresh cluster refuses every Atlas request.
+
+## Wiring Checklist
+
+- `project.json` `implicitDependencies` on `aurelius-atlas-infra-observability`; the
+  `up` target chains `decrypt` → `docker-build` → dependency `up`. The
+  server's native OTLP rides the collector's **legacy leg**
+  (`https://otel-collector:4320`, shared token — the issuer cannot present a
+  Keycloak JWT at its own cold boot, DD-196; JVM truststore
+  `/certs/truststore.p12` via `JAVA_OPTS`; Quarkus' gRPC sender ignores
+  `OTEL_EXPORTER_OTLP_CERTIFICATE`).
+- The Keycloak **metadata Postgres** is covered by the slice's
+  **`metrics-puller`** service: the Collector's `postgresql` receiver scrapes
+  `postgres-keycloak` and pushes OTLP over the observability network the
+  stack already joins — the server itself exports natively, the database
+  speaks no OTLP, so the puller complements rather than duplicates.
+  Prometheus series carry `exported_job="keycloak-infra"`.
+- Dual listeners (ADR 039): `http://keycloak.localhost:8080` (dev browser) and
+  `https://keycloak.localhost:8443` (E2E/CI, certs from `nx certgen`). Every
+  automated mint — E2E suites, all slice pullers, the apps' OTLP ingest — uses
+  `:8443` (DD-202), so the listener a token's `iss` carries is uniform across
+  producers; the collector validates both listeners. The
+  issuer each client uses must match the auth settings the APIs validate and the
+  webapp's `/config.json` advertises — change them together
+  (`dev/config.json`, `e2e/config/config.json`, and the e2e compose all use
+  8443; `:8080` stays browser-only, as its tokens carry an `iss` the APIs
+  reject).
+- The default network carries the `keycloak.localhost` **alias** so
+  in-network OAuth clients (Kafka broker, e2e stacks) resolve it without
+  `extra_hosts: host-gateway` — that mapping points at `docker0`, which is
+  link-down inside the dev container and fails intermittently. Clients join
+  the external `aurelius-atlas-infra-keycloak-network` instead.
+- The `postgres-keycloak` database is TLS-only (`sslmode=verify-full` against
+  the CA; server cert via the install-copy startup pattern).
+- Realms/clients/test users live in `import/master.json`; edit there rather
+  than mutating the running container (changes are lost on recreate otherwise).
+    - `import/master.json` declares the dev identities: `aurelius-writer` and
+      `aurelius-reader`, so the authorization model is declarative — the Atlas
+      server's roles (`atlas-read`, `-write`, `-types`, `-admin` on the
+      `aurelius-atlas-server` client, DD-300) go to the writer all and the reader
+      `atlas-read`, and are scope-mapped into the `aurelius` client's tokens —
+      no init sidecar. Passwords are `${DEV_USER_*_PASSWORD}` placeholders
+      resolved from the container env (`.env.enc`, `${VAR:?}` guards) by the same
+      `replace-placeholders` flag as the client secrets; the apps' `.env` files
+      point at `aurelius-writer`. The bootstrap `admin` account
+      (`KC_BOOTSTRAP_ADMIN_*`) stays reserved for the admin console. Both dev
+      users also carry `realmRoles: ["default-roles-master"]` explicitly —
+      Keycloak's import does not auto-grant the realm default role, and the
+      Account Console (7.11 SHC-05) needs the `manage-account`/`view-profile`
+      roles composited under it. Gotcha (same as secrets): after changing a
+      user/role, the boot re-import will not apply it to a running stack — it
+      skips an existing realm wholesale ("Import skipped"), and placeholder
+      values never re-resolve for existing users. `kcadm delete realms/master`
+      refuses ("Can't remove master realm"), so recreate: `docker compose ... \
+down -v && up -d` (fresh DB), or `kcadm delete users/<id>` for the
+      changed users and restart Keycloak — the boot import then recreates just
+      the missing users with fresh placeholder resolution.
+- The `aurelius` client (webapp SPA, public) has explicit loopback redirect
+  URIs and web origins: `http(s)://localhost|127.0.0.1:4300|4301` (webapp
+  `nx serve`, en-US/nl-NL) and `https://localhost:18444` (webapp e2e's fixed
+  host ports). Keep them in sync when ports change. The client's `defaultClientScopes` include the
+  realm's `otel-ingest` scope (DD-193): its audience mapper stamps
+  `aud: otel-collector` on user tokens, which is what the OTel collector's
+  browser-leg OIDC receiver requires (`azp` stays `aurelius`, so the APIs'
+  azp-or-aud token validation is unaffected). Two Keycloak gotchas learned
+  the hard way:
+  redirect URIs support port wildcards (`http://localhost:*` works), but
+  CORS **web origins do not** — `originEquals` compares the port suffix
+  literally, so a wildcard or `+` derived from a wildcarded redirect fails
+  with "Invalid origin" on every token exchange. List origins exactly.
+    - Re-imports do NOT overwrite an existing realm/client: delete it
+      (`DELETE /admin/realms/master/clients/<id>` is too blunt — recreate the
+      stack or PUT via the admin API) before a changed import takes effect.
+      Import strategy is `IGNORE_EXISTING` (`KC-SERVICES0030`): adding the
+      `otel-ingest` scope to the `aurelius` client (DD-193) applied only on
+      `docker compose down -v && up -d` (fresh DB); tokens minted before that
+      carry no `aud`, which the collector's OIDC receiver rejects — the first
+      suspect when telemetry 401s on a long-lived dev Keycloak.
+- The `otel-*` **ingest clients** (DD-196, per-service telemetry identity):
+  `otel-atlas-server`, `otel-elasticsearch`, `otel-keycloak`, `otel-postgres` —
+  confidential, service accounts only (every flow off), `defaultClientScopes:
+["basic", "otel-ingest", "roles"]` so their tokens carry `aud: otel-collector`
+  exactly like the browser leg's user tokens, `secret:
+"${OTEL_INGEST_CLIENT_SECRET}"` resolved by the same `replace-placeholders`
+  flag as the dev-user passwords. One shared dev client secret (the clients
+  differ by id; per-producer secrets are a deployment concern — and since
+  10.9/DD-277 the cluster shape **is** per-client: the prod realm asset
+  spells one `${OTEL_<ID>_CLIENT_SECRET}` placeholder each; `master.json`
+  deliberately keeps the shared one, CHT-91). The collector's
+  per-service leg (4317/4319) accepts their client-credentials JWTs and stamps
+  `azp` as `otel.ingest.client`. **Rotation**: bump
+  `OTEL_INGEST_CLIENT_SECRET` in every consumer `.env` (the three slice pullers,
+  the Atlas server — list at DD-196) **and** recreate the Keycloak stack (the
+  import applies only on a fresh DB — `docker compose down -v && up -d`, the
+  `IGNORE_EXISTING` rule above applies to client secrets too), then restart the
+  producers. Adding/renaming an `otel-*` client has the same rule: a running
+  stack will not pick up the import.
+- The webapp's `serve` target depends on this project's `up` target.
+- Realm imports can carry `${VAR}` placeholders resolved from the container
+  environment; substitution needs the
+  `-Dkeycloak.migration.replace-placeholders=true` JVM flag in `JAVA_OPTS`
+  (without it the literal `${...}` string is imported). Used by the dev user
+  passwords in `import/master.json` (see above); the Kafka and OpenMetadata
+  realms that also used this were removed with those stacks (ADR 050).
+
+## Commands
+
+```bash
+nx up aurelius-atlas-infra-keycloak      # decrypt + build + observability, waits for healthy
+```
+
+## Conventions
+
+- First start takes a couple of minutes to become healthy — that's normal, not
+  a hang.
+- Keep `import/master.json` idempotent (fixed UUIDs where needed) so re-imports
+  don't churn.
+- The prod realm's event lifetimes (`eventsExpiration`, the
+  `adminEventsExpiration` attribute, RET-06) are stated on the Data Archiving
+  page; change both together. An existing realm keeps its own (import skips it).
+- Tenancy (15.5a, ADR 063): every realm turns organizations on and carries the
+  realm role `atlas-operator` and the organization `operators` with its four
+  groups `atlas-read`/`-write`/`-types`/`-admin` at fixed ids, distinct per
+  realm (RLM-01). A member's organization groups are listed under the member,
+  by group id; a group can't list its members on import. The server's and
+  the webapp's clients carry the Organization Group Membership mapper with
+  `organization` optional; a service client has it as a default scope, and
+  its service account is a member of `operators` in the groups of its client
+  roles (RLM-04, DD-581). A user with server client roles gets the matching
+  `operators` groups too; a test fails until they agree. Tenants'
+  organizations come from provisioning (15.5b), never from these files.
+- The provisioning command's client `aurelius-atlas-provisioning` (15.5b,
+  TRM-11, DD-600) is in every realm, the same in dev and the chart: a
+  confidential service account whose account holds nine roles of the realm's
+  management client (`master-realm` in master, `realm-management` elsewhere),
+  with fine-grained admin permissions on. Its secret is
+  `PROVISIONING_CLIENT_SECRET` in `.env.enc`; the chart's is
+  `<release>-provisioning-client`.
+- The platform admin client `aurelius-atlas-admin` (DD-666) is in every
+  realm, the same in dev and the chart: a confidential service account
+  holding the four roles of the server's client, so a client-credentials
+  token drives import/export/purge/audits with no human sign-in and no
+  Keycloak change. In the dev realm its account is a member of `operators`
+  in the four matching groups (RLM-04), which tenants-on needs. Its secret
+  is `ATLAS_ADMIN_CLIENT_SECRET` in `.env.enc`; the chart's is
+  `<release>-admin-client`. The scanner clients (12.2/12.7/13.1/13.3)
+  carry read/write only; never widen one past what its job does.
+
+## Helm chart
+
+`helm/` — the `atlas-keycloak` chart (CHT-02): Keycloak 26.7 with the bundled
+Postgres (`postgres.*` values; `flavor=external` points at an existing
+database). Landed in 10.2 (CHT-16/17): the prod-mode StatefulSet
+(`kc.sh start --import-realm` — never `start-dev`) running as the image's uid
+(65532, which owns `/opt/keycloak/lib/quarkus` where the start re-augments —
+a foreign uid cannot write it, DD-257), the realm ConfigMap (10.7's two-asset
+model, DD-273: `global.realm` — or the chart's `realm.name` override — selects
+`files/<realm>.json`; the default `aurelius-atlas` is the hardened cluster
+realm (CHT-75/76: sslRequired all, brute force, no self-service, password
+policy, ROPC off + PKCE S256 on the `aurelius` client, the seven `otel-*`
+accounts — each with its own `${OTEL_<ID>_CLIENT_SECRET}` placeholder since
+10.9 (CHT-87, DD-277): the id uppercased, `-` → `_`, suffixed
+`_CLIENT_SECRET` — no seeded users; 10.8's `grafana` OIDC client —
+prod-only, its
+redirects carry `__GRAFANA_HOST__` plus the deliberate
+`http://localhost:3000/login/generic_oauth` port-forward entry, DD-276 —
+lives here too), and `realm.name: master` loads `master.json`
+byte-for-byte as the dev escape hatch (its byte-copy of `import/master.json`
+stays DD-256-guarded; a realm with no asset fails the render, CHT-78). The
+asset's `__ATLAS_HOST__`/`__DASHBOARD_HOST__`/`__GRAFANA_HOST__` tokens are
+Helm-replaced from
+`global.hosts`/`global.domain` at render (CHT-77/82 — hosts are topology,
+unlike
+the `${DEV_USER_*}` / `${OTEL_*_CLIENT_SECRET}` / `${GRAFANA_CLIENT_SECRET}`
+credential placeholders,
+which stay verbatim for Keycloak's own
+`-Dkeycloak.migration.replace-placeholders=true` resolver); the `DEV_USER_*`
+env and the umbrella's users Secret render for `master` only (CHT-80), while
+`GRAFANA_CLIENT_SECRET` (from `<release>-grafana-oauth`) renders for every
+realm but `master` — the client is the prod asset's only (CHT-83). The
+import's otel placeholder envs are realm-shaped too (CHT-89): the StatefulSet
+carries one env per client id (`OTEL_ATLAS_SERVER_CLIENT_SECRET`, …, from
+`atlas-keycloak.otelClients`) on the prod realm, the single shared
+`OTEL_INGEST_CLIENT_SECRET` env on `master` — always equal to the asset's
+placeholder set; the umbrella's `<release>-otel-clients` Secret keys follow
+the same shape (CHT-88)), the
+RSS headless Service JGroups
+discovers through, HTTPS management-port probes (prod mode puts TLS there
+too — DD-260), and the bundled Postgres section
+(the compose's cert-copy boot: mktemp + `install -m 600`, `ssl=on` flags, the
+pg_hba ConfigMap, the `/tmp` tmpfs). The JVM trusts the cluster CA through the
+mounted issuer `ca.crt` — the dev truststore workaround is never rendered.
+Remember the
+issuer pin (runbook): Keycloak fixes its realm issuer at first boot, so the
+chart's `global.domain`/issuer URL is immutable for a volume. 10.6 adds the
+ingress allows (CHT-62/63): 8443 from the credential-holding pods (server,
+the aux APIs, the collector, both pullers; Grafana joins in 10.8 for its
+login's token exchange and JWKS fetch, CHT-86) plus jgroups 7800 self, and the
+bundled Postgres' 5432 from Keycloak and its puller only. The management
+port 9000 stays rule-free at the defaults (kubelet-exempt, CHT-71); with
+telemetry on, the puller's scrape joins the rule and the Service (DD-664).
+Keycloak ships metrics and tracing off by default and its Quarkus OTLP
+sender ignores the generic `OTEL_*` endpoint/header vars, so the chart sets
+`KC_METRICS_ENABLED`/`KC_TRACING_ENABLED` plus the `QUARKUS_`-prefixed
+endpoint/headers (DD-664). The puller's second pipeline scrapes the server
+(`/metrics`, `service.name=keycloak`); its postgres pipeline stays
+`keycloak-infra`. Conventions:
+`helm/AGENTS.md`.
+
+```bash
+npx nx run aurelius-atlas-infra-keycloak:helm-template
+```
+
+## Removal
+
+Part of the spine. Removing it means replacing auth in the Atlas server and the
+auxiliary APIs and dropping the Keycloak config/interceptor wiring from the
+webapp.

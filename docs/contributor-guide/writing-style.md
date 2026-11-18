@@ -111,7 +111,7 @@ Merge requires two signatures; the release is the unit a deployment promotes
   mechanics) → that component's [API Reference](../api-reference/index.md) page, which doubles
   as its design documentation; cross-cutting how-tos (testing commands, certificates,
   releasing, setup) → a Contributor Guide page; development topology →
-  [Dev Topology](development-environment.md#dev-topology) and the `dev/` slice READMEs. Every
+  [Dev Topology](development-environment.md#dev-topology) and the `infra/` slice READMEs. Every
   extraction leaves a pointer sentence behind in the architecture page.
 - **Production first** on architecture pages: the production arrangement is the subject; the
   development arrangement appears only as a labelled short section stating rules, pointing to

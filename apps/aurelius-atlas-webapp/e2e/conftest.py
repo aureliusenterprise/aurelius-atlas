@@ -27,7 +27,7 @@ CA_FILE = Path(__file__).parents[1] / "certs" / "ca.pem"
 WEBAPP_HOST_PORT = 18444
 ATLAS_SERVER_HOST_PORT = 18445
 
-# The dev collector (dev/observability, started by the observability fixture).
+# The dev collector (infra/observability, started by the observability fixture).
 # Its publishes are loopback-pinned (CIA-03), so the direct-ingest tests below
 # reach it on 127.0.0.1; the certificate carries the "otel-collector" SAN, so
 # that is the TLS server hostname. The shared ingest token (DD-193) is Nx's
@@ -113,7 +113,7 @@ def observability() -> DockerCompose:
     the tests. This allows the services to be reused across multiple test sessions, but may require manual cleanup if
     the services are no longer needed.
     """
-    context = Path(__file__).parents[3].absolute() / "dev" / "observability"
+    context = Path(__file__).parents[3].absolute() / "infra" / "observability"
     compose = DockerCompose(context=context)
 
     compose.start()
@@ -136,7 +136,7 @@ def keycloak(observability: DockerCompose) -> DockerCompose:
     """
     _ = observability  # Ensure that the observability services are started before starting Keycloak
 
-    context = Path(__file__).parents[3].absolute() / "dev" / "keycloak"
+    context = Path(__file__).parents[3].absolute() / "infra" / "keycloak"
     compose = DockerCompose(context=context)
 
     # Readiness is compose's own: start() runs ``up --wait`` and the keycloak
@@ -167,7 +167,7 @@ def elasticsearch(observability: DockerCompose) -> DockerCompose:
     """
     _ = observability  # The stack external-attaches the observability network (metrics-puller): it must exist.
 
-    context = Path(__file__).parents[3].absolute() / "dev" / "elasticsearch"
+    context = Path(__file__).parents[3].absolute() / "infra" / "elasticsearch"
     compose = DockerCompose(context=context)
 
     compose.start()

@@ -2,8 +2,8 @@
 
 Every store the stacks keep on disk has a stated lifetime, written where a person
 asking "why do you still have this?" reads it: the Data Archiving page. Each
-lifetime the system enforces is configured once and stated the same in dev and
-in the chart: the metrics' in Prometheus's flag, the logs' in Loki's compactor,
+lifetime the system enforces is configured once and stated the same in the
+infra slice and in the chart: the metrics' in Prometheus's flag, the logs' in Loki's compactor,
 the traces' in Tempo's override, the alert history's in Grafana's env, the
 identity events' in the production realm, the entity audits' in the server's
 aging settings. A new volume without a row on the page fails the suite (R6).
@@ -20,7 +20,7 @@ import yaml
 from conftest import KC_CHART, OBS_CHART, WORKSPACE, container, env_map, env_value, find
 
 LIFETIMES_PAGE = WORKSPACE / "docs/architecture/data-lifecycle-management/data-archiving.md"
-OBSERVABILITY = WORKSPACE / "dev/observability"
+OBSERVABILITY = WORKSPACE / "infra/observability"
 THIRTY_DAYS_IN_SECONDS = 30 * 24 * 3600
 
 
@@ -41,16 +41,16 @@ def _chart_values() -> dict[str, Any]:
 
 
 @pytest.mark.covers(rules=["RET-01"])
-def test__every_dev_volume_has_a_stated_lifetime() -> None:
-    """Each named volume of a dev stack is a row of the lifetimes page, as ``dev/<stack>:<volume>``."""
+def test__every_infra_volume_has_a_stated_lifetime() -> None:
+    """Each named volume of an infra slice is a row of the lifetimes page, as ``infra/<name>:<volume>``."""
     page = LIFETIMES_PAGE.read_text()
     volumes = [
         f"{compose.parent.relative_to(WORKSPACE)}:{volume}"
-        for compose in sorted(WORKSPACE.glob("dev/*/docker-compose.yaml"))
+        for compose in sorted(WORKSPACE.glob("infra/*/docker-compose.yaml"))
         for volume in (yaml.safe_load(compose.read_text()).get("volumes") or {})
     ]
 
-    assert volumes, "no dev volumes found"
+    assert volumes, "no infra volumes found"
     assert [volume for volume in volumes if f"`{volume}`" not in page] == []
 
 

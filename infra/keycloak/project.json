@@ -1,0 +1,17 @@
+{
+    "$schema": "../../node_modules/nx/schemas/project-schema.json",
+    "implicitDependencies": ["aurelius-atlas-infra-observability"],
+    "name": "aurelius-atlas-infra-keycloak",
+    "projectType": "application",
+    "release": {
+        "version": {
+            "versionActions": "tools/plugins/chart-yaml-version-actions.ts"
+        }
+    },
+    "tags": [],
+    "targets": {
+        "up": {
+            "dependsOn": ["decrypt", "certgen", "docker-build", "^docker-build", "^up"]
+        }
+    }
+}

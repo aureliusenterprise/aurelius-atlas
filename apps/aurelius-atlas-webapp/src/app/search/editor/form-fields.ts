@@ -456,13 +456,13 @@ export function toFormValues(entity: AtlasEntity, fields: readonly EditorField[]
                 values[field.name] = typeof raw === "number" ? toDateTimeLocal(raw) : "";
                 break;
             case "multi":
-                values[field.name] = Array.isArray(raw) ? raw.map((value) => String(value ?? "")) : [];
+                values[field.name] = Array.isArray(raw) ? raw.map(textOf) : [];
                 break;
             case "boolean":
                 values[field.name] = raw === true;
                 break;
             default:
-                values[field.name] = raw ?? "";
+                values[field.name] = textOf(raw);
         }
     }
 

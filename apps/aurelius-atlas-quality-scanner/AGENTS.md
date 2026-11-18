@@ -51,7 +51,7 @@ this app moves data, it never recomputes a score.
   override lesson: an explicit target loses the inferred `configurations`). No `serve`: the
   job has no process to serve; `scan` is the run target.
 - Realm (DD-458): the `aurelius-atlas-quality-scanner` confidential client in
-  `dev/keycloak/import/master.json`, with its service-account user holding `atlas-read` and
+  `infra/keycloak/import/master.json`, with its service-account user holding `atlas-read` and
   `atlas-write` on the `aurelius-atlas-server` client. The server's store authorizer (AUZ-02)
   reads roles only from that client's `resource_access`, so a role-less service account gets
   scrubbed searches and refused writes. The client carries `fullScopeAllowed: true`: Keycloak
@@ -67,8 +67,10 @@ this app moves data, it never recomputes a score.
 - `.env` / `.env.enc` — dev defaults; re-run `nx encrypt aurelius-atlas-quality-scanner`
   after changing `.env` (CI regenerates the plaintext from the `.env.enc`). The e2e vars the
   server image reads carry the server's own prefix (Nx injects this `.env` into the task).
-- `tls.json` — the server's certificate SANs only: the job is a client and verifies the
-  server and the issuer with `CA_FILE`.
+- `tls.json` — an empty manifest: the job is a client and needs no leaf of its own
+  (`nx certgen` only writes the CA copy its `CA_FILE` verifies the server and the
+  issuer against; the server leaf lives in the server project, which the e2e base
+  mounts).
 - `Dockerfile` — the wheel `nx build` makes, nonroot, no EXPOSE and no HEALTHCHECK: the
   batch image ships for 12.3's CronJob.
 - `helm/` — the standalone `atlas-quality-scanner` chart (12.3, CHT-114..117, CHT-125): one
@@ -82,7 +84,11 @@ this app moves data, it never recomputes a score.
   export on with the job's own client credential by default (CHT-125, DD-511). The scan
   knobs (`scan.sources`, `scan.maxRows`, `scan.searchLimit`) render only when set.
   `tests/values.test.yaml` answers the guards.
-- `e2e/docker-compose.yaml` — one service: the server image on the dev networks. The scanner
+- `e2e/docker-compose.yaml` — one service, extended from the server project's e2e base
+  (`apps/aurelius-atlas-server/e2e/compose.server.yaml`): the image, networks, certificate and
+  shared settings arrive by inheritance, and this file states only the port and the scanner's
+  audience. The server's certificate is the server project's own — this project's `tls.json`
+  copy of it is no longer mounted. The scanner
   itself has no service; the suite calls `run_scan` in-process (a batch CLI has nothing to
   compose). Tests seed `zz<run>`-namespaced entities and hard-delete them (DD-223: the shared
   dev store is never restarted), and every scan passes the `dataset_filter` (DQS-09): the
@@ -94,7 +100,7 @@ this app moves data, it never recomputes a score.
 
 The app is one increment's deliverable: remove `apps/aurelius-atlas-quality-scanner`,
 including its `helm/` chart, its root `pyproject.toml` entries (member, dev group, uv
-source), the scanner client and service-account user in `dev/keycloak/import/master.json`
+source), the scanner client and service-account user in `infra/keycloak/import/master.json`
 (and the helm copy), the scanner entry in `AURELIUS_ATLAS_SERVER_AUTH_AUDIENCES` and in
 the server chart's `auth.audiences` default (CHT-120), the mkdocs nav entry, and the
 12.2/12.3 roadmap rows. Nothing to unwire in the umbrella or the hardened realm asset:

@@ -1,17 +1,19 @@
 name: aurelius-atlas-embedder-e2e
 
+# The image under test is the standalone stack's service, extended (ADR 065, the pattern of
+# ADR 066): the image pin, the TLS settings and the certificate mount arrive by inheritance
+# from ../docker/compose.yaml — whose `../certs` rebases to that file's folder, which is this
+# project's certs/ (`nx certgen`), the same mount the copy carried. What the e2e stack states
+# are its differences: the log level, and a published port so the suite reaches it through
+# testcontainers (the stack publishes none, DD-432). The healthcheck rides the image
+# (Dockerfile), so `up --wait` still waits for the model to load (EMB-07).
 services:
     aurelius-atlas-embedder:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-embedder:local
+        extends:
+            file: ../docker/compose.yaml
+            service: embedder
         environment:
             AURELIUS_ATLAS_EMBEDDER_LOG_LEVEL: info
-            # HTTPS with this project's certificate (`nx certgen`); the
-            # healthcheck verifies it and reports healthy once the model has
-            # loaded (EMB-07), which `up --wait` waits for.
-            AURELIUS_ATLAS_EMBEDDER_TLS_CERT_FILE: /certs/aurelius-atlas-embedder.pem
-            AURELIUS_ATLAS_EMBEDDER_TLS_KEY_FILE: /certs/aurelius-atlas-embedder-key.pem
-            AURELIUS_ATLAS_EMBEDDER_TLS_CA_FILE: /certs/ca.pem
         ports:
+            # Ephemeral host port: the suite asks testcontainers which one it got.
             - 21004
-        volumes:
-            - ../certs:/certs:ro

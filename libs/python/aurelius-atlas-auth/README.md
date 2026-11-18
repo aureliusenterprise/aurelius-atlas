@@ -22,7 +22,7 @@ to this lib; workspace-wide rules live in the root `AGENTS.md` and
 - The rules it keeps (AUX-01..AUX-05) are specified by the 8.0 spec
   (`libs/python/aurelius-atlas-auth/specs/8-0-auxiliary-api-foundation/spec.md`).
 - A service that verifies user tokens needs an `aux-write`-style client role
-  on its Keycloak client (dev realm: `dev/keycloak/import/master.json`),
+  on its Keycloak client (dev realm: `infra/keycloak/import/master.json`),
   mirroring the webapp client's `aurelius-write` pattern.
 
 ## Conventions

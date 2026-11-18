@@ -1,6 +1,6 @@
 {
     "$schema": "../../../node_modules/nx/schemas/project-schema.json",
-    "implicitDependencies": ["aurelius-atlas-dev-elasticsearch"],
+    "implicitDependencies": ["aurelius-atlas-infra-elasticsearch"],
     "name": "aurelius-atlas-store-es",
     "projectType": "library",
     "sourceRoot": "{projectRoot}/aurelius_atlas_store_es",
@@ -9,10 +9,10 @@
         "test": {
             "dependsOn": [
                 { "target": "decrypt" },
-                { "projects": ["aurelius-atlas-dev-elasticsearch"], "target": "decrypt" }
+                { "projects": ["aurelius-atlas-infra-elasticsearch"], "target": "decrypt" }
             ],
             "metadata": {
-                "description": "Unit tests; the ESD-03 config test sweeps dev/elasticsearch/.env, so that project decrypts first"
+                "description": "Unit tests; the ESD-03 config test sweeps infra/elasticsearch/.env, so that project decrypts first"
             }
         }
     }

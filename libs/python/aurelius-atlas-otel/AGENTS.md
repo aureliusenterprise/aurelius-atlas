@@ -36,7 +36,7 @@ uv run pytest libs/python/aurelius-atlas-otel/tests
 ## Conventions
 
 - A service on the per-service leg needs a `otel-<service>` confidential
-  client in `dev/keycloak/import/master.json` (copy the `otel-atlas-server`
+  client in `infra/keycloak/import/master.json` (copy the `otel-atlas-server`
   block; `defaultClientScopes` must carry `otel-ingest`). Applying an import
   change to a running stack needs `docker compose down -v && up -d`
   (the boot import is IGNORE_EXISTING).

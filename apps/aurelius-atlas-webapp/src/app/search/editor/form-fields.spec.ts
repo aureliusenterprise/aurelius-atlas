@@ -235,10 +235,23 @@ describe("toFormValues (EDT-02)", () => {
 
     it("defaults missing values to '' and booleans to false", () => {
         const defs = new Map<string, AtlasEntityDef>([
-            ["E", entityDef("E", [attr({ name: "flag", typeName: "boolean" })])],
+            [
+                "E",
+                entityDef("E", [
+                    attr({ name: "flag", typeName: "boolean" }),
+                    attr({ name: "name" }),
+                    attr({ name: "aliases", typeName: "array<string>", cardinality: "SET" }),
+                ]),
+            ],
         ]);
+        const fields = buildFields(defs.get("E")!, defs, new Map());
 
-        expect(toFormValues({ attributes: {} }, buildFields(defs.get("E")!, defs, new Map()))["flag"]).toBe(false);
+        expect(toFormValues({ attributes: {} }, fields)["flag"]).toBe(false);
+        expect(toFormValues({ attributes: { name: { nested: true }, aliases: [{ nested: true }] } }, fields)).toEqual({
+            flag: false,
+            name: "",
+            aliases: [""],
+        });
     });
 });
 

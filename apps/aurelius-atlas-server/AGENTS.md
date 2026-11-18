@@ -103,6 +103,10 @@ provision|trust|list|remove`, reading the server's settings: a tenant's indices,
 - `scenarios/` — parity scenarios, one directory per Atlas resource; run by `tests/` and `e2e/`
 - `tests/` — unit tests on a fake Elasticsearch client; `e2e/` — the image over HTTPS on the dev store
 - `helm/` — the `atlas-server` chart (its own section below)
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR
+  065), included by `docker/docker-compose.yaml` at the root; beside it the
+  scripts it mounts, `import_sample.py` and `tenants.py`. Not runnable on its
+  own — run the umbrella.
 
 ## Porting an Atlas resource
 
@@ -126,21 +130,27 @@ provision|trust|list|remove`, reading the server's settings: a tenant's indices,
   `OTEL_EXPORTER_*` env (static headers cannot carry the dev realm's 60s token).
   With no `otel_token_url`/`otel_client_secret` the server logs telemetry only
   (no OTLP), so the un-instrumented dev path stays zero-config.
-- `.env.enc` — dev settings; the Elasticsearch password mirrors `dev/elasticsearch/.env`. Re-run
+- `.env.enc` — dev settings; the Elasticsearch password mirrors `infra/elasticsearch/.env`. Re-run
   `nx encrypt aurelius-atlas-server` after changing `.env`.
 - `tls.json` — the server's certificate (`nx certgen`), used by `serve` and `e2e`.
 - `Dockerfile` — installs the wheel `nx build` makes, with the workspace libraries bundled in, and copies
   the built dashboards (`aurelius-atlas-dashboard/dist`).
-- `e2e/docker-compose.yaml` — the image on the dev store's network, reached as `elasticsearch:9200`.
-  Its OTLP export uses the shim settings; the mint rides the TLS `:8443`
-  issuer, pinned to `/certs/ca.pem` (DD-202: every producer mints there, the
-  collector validates both listeners), so the server needs `extra_hosts:
-keycloak.localhost:host-gateway` and the `otel-atlas-server` client imported
+- `e2e/compose.server.yaml` — the e2e server as a **base**: the scanner and aux-API e2e stacks
+  `extend` its service (image, the two shared-infra networks, the certificate mount, the Keycloak
+  host mapping, the eighteen shared settings); it is not a deployment target — the guards it
+  carries interpolate with each consumer's environment. Not a suite's own file: change it with
+  every consumer's suite in view.
+- `e2e/docker-compose.yaml` — this suite's own service, `extend`ing the base above: the
+  store is reached as `elasticsearch:9200` by inheritance, and the file states only the
+  suite's deltas — tasks off (DD-081), the plain `aurelius` audience (DD-250), and the
+  fixed `:21001` host port the realm's sign-in redirect returns to. The base carries
+  `extra_hosts: keycloak.localhost:host-gateway` and the `otel-atlas-server` client
+  imported
   (a long-lived dev Keycloak needs a recreate for a new client — see
-  dev/keycloak/AGENTS.md).
+  infra/keycloak/AGENTS.md).
 - Authentication (6.1a, DD-250): `AURELIUS_ATLAS_SERVER_AUTH_*` name the dev Keycloak's master realm and the
-  server's confidential client `aurelius-atlas-server` (`dev/keycloak/import/master.json`); its secret is
-  `ATLAS_SERVER_CLIENT_SECRET` in `dev/keycloak/.env.enc`, mirrored as
+  server's confidential client `aurelius-atlas-server` (`infra/keycloak/import/master.json`); its secret is
+  `ATLAS_SERVER_CLIENT_SECRET` in `infra/keycloak/.env.enc`, mirrored as
   `AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET` here and in the webapp's `.env.enc`. The e2e suite mints the
   writer's tokens with `DEV_USER_WRITER_PASSWORD` and publishes the server on `127.0.0.1:21001`, the client's
   registered e2e return. Unit tests use the fake provider in `tests/fake_issuer.py`.

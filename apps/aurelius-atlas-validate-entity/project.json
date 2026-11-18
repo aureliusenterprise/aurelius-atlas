@@ -2,8 +2,8 @@
     "$schema": "../../node_modules/nx/schemas/project-schema.json",
     "implicitDependencies": [
         "aurelius-atlas-auth",
-        "aurelius-atlas-dev-keycloak",
-        "aurelius-atlas-dev-observability",
+        "aurelius-atlas-infra-keycloak",
+        "aurelius-atlas-infra-observability",
         "aurelius-atlas-otel",
         "aurelius-atlas-validate-entity-client"
     ],
@@ -22,13 +22,14 @@
             "dependsOn": [
                 { "target": "decrypt" },
                 { "target": "certgen" },
+                { "projects": ["aurelius-atlas-server"], "target": "certgen" },
                 { "target": "docker-build" },
                 { "projects": ["aurelius-atlas-server"], "target": "docker-build" },
                 {
                     "projects": [
-                        "aurelius-atlas-dev-keycloak",
-                        "aurelius-atlas-dev-observability",
-                        "aurelius-atlas-dev-elasticsearch"
+                        "aurelius-atlas-infra-keycloak",
+                        "aurelius-atlas-infra-observability",
+                        "aurelius-atlas-infra-elasticsearch"
                     ],
                     "target": "up"
                 }
@@ -50,7 +51,7 @@
                 { "target": "decrypt" },
                 { "target": "certgen" },
                 {
-                    "projects": ["aurelius-atlas-dev-keycloak", "aurelius-atlas-dev-observability"],
+                    "projects": ["aurelius-atlas-infra-keycloak", "aurelius-atlas-infra-observability"],
                     "target": "up"
                 }
             ],

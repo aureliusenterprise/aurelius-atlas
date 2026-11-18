@@ -20,7 +20,7 @@ the path itself, so a series per entity never appears.
 
 ## Dashboards
 
-The dashboards are plain JSON in `dev/observability/config/grafana/dashboards/`, byte-copied into
+The dashboards are plain JSON in `infra/observability/config/grafana/dashboards/`, byte-copied into
 the chart. They sit in Grafana's "Aurelius" folder:
 
 | Dashboard             | What it shows                                                                     |

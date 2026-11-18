@@ -3,7 +3,7 @@
 The umbrella Helm chart of Aurelius Atlas (ADR 057). Each deployable component
 owns a chart — the container image, ports, probes, settings, and identity of
 that component — and the chart lives **next to the project it deploys**
-(`apps/<app>/helm/`, `dev/<name>/helm/`, DD-290). This directory holds the
+(`apps/<app>/helm/`, `infra/<name>/helm/`, DD-290, ADR-066). This directory holds the
 `aurelius-atlas` umbrella — the one chart without an owning project — which
 composes them into one installable system: the edge (Gateway API), the trust
 model (cert-manager issuers), the generated Secrets, and the `global.*`
@@ -25,9 +25,9 @@ the install sequence in the
 | `atlas-data2model`      | `apps/aurelius-atlas-data2model/helm`      | Natural-language → model API                          |
 | `atlas-lineage-model`   | `apps/aurelius-atlas-lineage-model/helm`   | Lineage graph API                                     |
 | `atlas-validate-entity` | `apps/aurelius-atlas-validate-entity/helm` | Entity validation API                                 |
-| `atlas-elasticsearch`   | `dev/elasticsearch/helm`                   | Elasticsearch 9 (the system's one store)              |
-| `atlas-keycloak`        | `dev/keycloak/helm`                        | Keycloak (the one issuer) + bundled Postgres          |
-| `atlas-observability`   | `dev/observability/helm`                   | OTel collector, Prometheus, Loki, Tempo, Grafana      |
+| `atlas-elasticsearch`   | `infra/elasticsearch/helm`                 | Elasticsearch 9 (the system's one store)              |
+| `atlas-keycloak`        | `infra/keycloak/helm`                      | Keycloak (the one issuer) + bundled Postgres          |
+| `atlas-observability`   | `infra/observability/helm`                 | OTel collector, Prometheus, Loki, Tempo, Grafana      |
 
 Quick start (prerequisites and the full sequence in the runbook; commands run
 from the repository root):

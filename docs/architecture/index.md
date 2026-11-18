@@ -41,4 +41,4 @@ These pages state the system's properties by **role** — the search store, the 
 the collector — so the description survives a change of product. The knobs, ports, and commands
 of each part live in its own documentation: the [API Reference](../api-reference/index.md) pages
 (design documentation per component), the [Contributor Guide](../contributor-guide/index.md)
-(cross-cutting how-tos), and each `dev/` slice's README (development topology).
+(cross-cutting how-tos), and each `infra/` slice's README (development topology).

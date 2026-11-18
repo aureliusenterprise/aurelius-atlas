@@ -20,6 +20,11 @@ app; workspace-wide rules, including the conversion workflow, live in the root `
   pinned `MODEL_ID` and `MODEL_REVISION`.
 - `tests/` — unit tests on a fake session and tokenizer (`fakes.py`); no model, no ONNX Runtime.
 - `e2e/` — the image with its real model over TLS, including the meaning check and the pinned files (EMB-10).
+  Its compose `extends` the stack fragment below: the image, the TLS settings and the certificate mount
+  arrive by inheritance, and the e2e piece states only its differences (the log level, a published port).
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR 065), included by
+  `docker/docker-compose.yaml` at the root. Not runnable on its own — run the umbrella. The e2e compose
+  reads it as a base: a changed setting here is the suite's setting too.
 
 ## Rules the app keeps
 
@@ -37,7 +42,7 @@ The EMB rules live in `apps/aurelius-atlas-embedder/specs/11-2-embedder/spec.md`
   `e2e/test__aurelius_atlas_embedder_e2e.py`, and `MODEL_ID`/`MODEL_REVISION` in `settings.py`. The
   healthcheck is the readiness probe.
 - `tls.json` — the certificate (`nx certgen`); its SANs cover the standalone stack's service name `embedder`.
-- The standalone stack (`apps/aurelius-atlas-server/standalone/docker-compose.yaml`) runs it as `embedder`,
+- The standalone stack (`docker/docker-compose.yaml`) runs it as `embedder`,
   with no published port (DD-432, EMB-11; `tests/test__standalone_embedder.py`).
 - No Helm chart, no OTLP export and no token check yet: they come together, with the chart (DD-432).
 - No `sonar-project.properties` yet: a Sonar key and token for the project come first.

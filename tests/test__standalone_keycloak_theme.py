@@ -1,6 +1,6 @@
 """The standalone stack's sign-in and account theme (SKT-01..05, 9.5e, DD-663).
 
-The compose file, the demo realm and the theme are read as written; the theme's brand assets against the
+The compose file, the stack's realm and the theme are read as written; the theme's brand assets against the
 webapp's own.
 """
 
@@ -10,12 +10,11 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
-from conftest import WORKSPACE
+from conftest import WORKSPACE, standalone_compose
 
-STANDALONE = WORKSPACE / "apps/aurelius-atlas-server/standalone"
-THEME = STANDALONE / "keycloak-themes/aurelius/login"
-ACCOUNT = STANDALONE / "keycloak-themes/aurelius/account"
+STACK = WORKSPACE / "docker"
+THEME = WORKSPACE / "infra/keycloak/themes/aurelius/login"
+ACCOUNT = WORKSPACE / "infra/keycloak/themes/aurelius/account"
 WEBAPP = WORKSPACE / "apps/aurelius-atlas-webapp/public"
 
 
@@ -27,9 +26,9 @@ def _properties(part: Path = THEME) -> dict[str, str]:
 @pytest.mark.covers(rules=["SKT-01"])
 def test__the_demo_realm_signs_in_on_the_mounted_theme() -> None:
     """Keycloak mounts the theme read-only, apart from the import; the demo realm names it its login theme (SKT-01)."""
-    keycloak: dict[str, Any] = yaml.safe_load((STANDALONE / "docker-compose.yaml").read_text())["services"]["keycloak"]
-    assert "./keycloak-themes/aurelius:/opt/keycloak/themes/aurelius:ro" in keycloak["volumes"]
-    realm = json.loads((STANDALONE / "keycloak/atlas.json").read_text())
+    keycloak: dict[str, Any] = standalone_compose()["services"]["keycloak"]
+    assert "infra/keycloak/themes/aurelius:/opt/keycloak/themes/aurelius:ro" in keycloak["volumes"]
+    realm = json.loads((STACK / "keycloak/aurelius-atlas.json").read_text())
     assert realm["loginTheme"] == "aurelius"
     assert realm["accountTheme"] == "aurelius"
 

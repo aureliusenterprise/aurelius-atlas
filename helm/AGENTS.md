@@ -3,7 +3,7 @@
 The umbrella chart of the system (ADR 057), at the **workspace root**: the
 umbrella deploys the whole system, so it sits next to the whole repo
 (DD-292). Component charts live **next to the project they deploy** —
-`apps/<app>/helm/`, `dev/<name>/helm/` (DD-290). Every chart in the tree is
+`apps/<app>/helm/`, `infra/<name>/helm/` (DD-290, ADR-066). Every chart in the tree is
 a `helm/` directory; `charts/` is gone. Workspace-wide rules, including the
 conversion workflow, live in the root `AGENTS.md`. Increment 10.1 is the
 foundation (charts, plugin, CI); 10.2 landed the stateful charts
@@ -22,8 +22,8 @@ observability workloads; 10.4 secrets + publish; 10.5 cluster validation;
 - Component charts (the map; each project's `AGENTS.md` covers its own):
   `atlas-server` + `atlas-webapp` in `apps/aurelius-atlas-{server,webapp}/helm`,
   the three aux APIs in `apps/aurelius-atlas-{data2model,lineage-model,validate-entity}/helm`,
-  `atlas-elasticsearch` in `dev/elasticsearch/helm`, `atlas-keycloak` in
-  `dev/keycloak/helm`, `atlas-observability` in `dev/observability/helm`.
+  `atlas-elasticsearch` in `infra/elasticsearch/helm`, `atlas-keycloak` in
+  `infra/keycloak/helm`, `atlas-observability` in `infra/observability/helm`.
 - Every chart ships `tests/values.test.yaml` (its CHT-06 render inputs) and a
   `Chart.yaml` whose `version:`/`appVersion:` are release-managed (DD-288,
   `tools/plugins/chart-yaml-version-actions.ts`). A chart is **not a project**

@@ -1,0 +1,107 @@
+# The standalone stack's telemetry piece, included by ../../docker-compose.yaml (ADR 065, ADR 066).
+# The collector, Prometheus, Loki, Tempo and Grafana are the infra observability slice's services,
+# extended (DD-675): the image pins, the memory caps, the commands, the healthchecks, the loopback
+# publishes and the configuration mounts arrive by inheritance from
+# ../../infra/observability/docker-compose.yaml, whose relative paths rebase to that folder - the
+# same Prometheus/Loki/Tempo/Grafana configuration the dev slice runs, read-only (ADR 066's rule:
+# the stack reads the slice's configuration and never writes its stores). What the stack states are
+# its differences: the collector's own config (below), the stack's issuer it validates, and the
+# volumes as the stack's own, so `down -v` clears the demo's telemetry with the rest of the demo.
+#
+# Why the collector's configuration is forked (config/otel-collector.yaml): the slice's OIDC
+# validator dials the dev Keycloak's published listeners to discover its keys, and the stack's
+# tokens - the browser's and every app's - are minted by the stack's own Keycloak at
+# https://localhost:9000/auth. The stack's copy validates that one issuer and reads its keys from
+# a file the jwks-fetch one shot writes at boot (no discovery dial: the issuer's URL is the proxy's
+# browser address, which no container can dial in-network).
+#
+# Every leg arrives in-network as `otel-collector` on this project's default network: the apps in
+# the proxy's network reach it there, Keycloak pushes its native OTLP to the legacy leg, and
+# Prometheus scrapes the collector's exporter in the same network. The host publishes of Prometheus
+# (:9090), Loki (:3100), Tempo (:3200) and Grafana (:3000) are inherited as they are: one
+# observability stack per machine - stop the dev slice's first (compose -f
+# ../../infra/observability/docker-compose.yaml --env-file ../../infra/observability/.env down)
+# before starting the stack with telemetry.
+#
+# The ingest secrets are the identity provider's env-file's, like the realm's client secrets
+# (DD-669): OTEL_COLLECTOR_INGEST_TOKEN (the base's collector guard, and the bearer Keycloak and
+# the webapp's edge carry on the legacy leg) and OTEL_INGEST_CLIENT_SECRET (the one secret all
+# four otel-* ingest clients in the realm share).
+name: aurelius-atlas-standalone
+
+services:
+    # The collector, extended: image, caps, command, legacy-token env (${VAR:?} guard through the
+    # stack's env-files), restart pattern and the certificates' mount (rebased to
+    # infra/observability/certs: the leaf's SANs name otel-collector, the shared mkcert root is the
+    # CA every producer pins) inherited. Its config is the stack's, and the host publishes are
+    # dropped: no producer on the host pushes here, every one rides the project's network.
+    otel-collector:
+        extends:
+            file: ../../infra/observability/docker-compose.yaml
+            service: otel-collector
+        # The config target is the same path, so this entry replaces the slice's mount at it; the
+        # certificates' mount stays inherited.
+        volumes:
+            - ./config/otel-collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+            - jwks-data:/jwks:ro
+        ports: !reset []
+        # The base's boot order (Loki started, Tempo healthy) plus the keys: the OIDC extension
+        # reads /jwks/jwks.json at start and exits without it, so the fetch must have completed.
+        depends_on: !override
+            loki:
+                condition: service_started
+            tempo:
+                condition: service_healthy
+            jwks-fetch:
+                condition: service_completed_successfully
+
+    # One shot: copies the stack realm's JWKS to the shared volume (the collector's file-based
+    # validator - DD-675). Keycloak serves the realm's signing keys over its plaintext listener
+    # in-network, so no certificate is needed here. Keycloak generates the realm's key on its
+    # first boot and keeps it in its database: the file is rewritten at every stack start, so a
+    # fresh store (after `down -v`) lands the new key.
+    jwks-fetch:
+        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        entrypoint: [python, /observability/fetch_jwks.py]
+        restart: "no"
+        # The fresh named volume is root-owned and the server image runs unprivileged, so the
+        # writer of the file runs as root; the file it leaves is world-readable, which is all the
+        # collector needs behind its read-only mount.
+        user: "0:0"
+        depends_on:
+            keycloak:
+                condition: service_healthy
+        environment:
+            JWKS_URL: http://keycloak:8080/auth/realms/aurelius-atlas/protocol/openid-connect/certs
+            JWKS_FILE: /jwks/jwks.json
+        volumes:
+            - ./fetch_jwks.py:/observability/fetch_jwks.py:ro
+            - jwks-data:/jwks
+
+    # The three backends and the dashboard, extended as they are: no differences of the stack's,
+    # so only their existence is stated. Their configuration mounts rebase to the slice's config/
+    # (read-only); their data volumes are the stack's own names, declared below and cleared by
+    # `down -v`.
+    prometheus:
+        extends:
+            file: ../../infra/observability/docker-compose.yaml
+            service: prometheus
+    loki:
+        extends:
+            file: ../../infra/observability/docker-compose.yaml
+            service: loki
+    tempo:
+        extends:
+            file: ../../infra/observability/docker-compose.yaml
+            service: tempo
+    grafana:
+        extends:
+            file: ../../infra/observability/docker-compose.yaml
+            service: grafana
+
+volumes:
+    jwks-data:
+    grafana-data:
+    loki-data:
+    prometheus-data:
+    tempo-data:

@@ -69,7 +69,7 @@ nothing to install by hand beyond Docker and VS Code.
 
 The repository carries the Atlas projects: the server (`apps/aurelius-atlas-server`), the webapp
 (`apps/aurelius-atlas-webapp`), the vendored Atlas dashboards, the Elasticsearch store, the
-`dev/` infrastructure stacks (Elasticsearch, Keycloak, observability), and the deployment charts.
+`infra/` infrastructure stacks (Elasticsearch, Keycloak, observability), and the deployment charts.
 The template's example stack left once these replaced it (ADR 050). The
 [Development Environment](docs/contributor-guide/development-environment.md) guide walks through the
 directory layout, and `npx nx graph` visualizes how the projects fit together.

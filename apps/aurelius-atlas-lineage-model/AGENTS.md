@@ -90,12 +90,23 @@ and the `LINEAGE_RULES` ids (LM-04) are the webapp lineage screen's parser's inp
   cover the compose service names, so the in-network TLS calls verify (e2e).
 - `Dockerfile` — installs the wheel `nx build` makes (workspace libs bundled), nonroot,
   liveness healthcheck.
-- `e2e/docker-compose.yaml` — the 8.2 chain (DD-200): this app + the **real** data2model
-  image (certs mounted from its project) + a fixture Atlas (`python -m http.server` over
-  `e2e/fixtures/`, where `api/atlas/v2/lineage/<guid>` is the canned graph, named for
-  the fixed UUID guid the scenario fixtures carry (DV-78, DD-308)); the collector on
-  the observability network, Keycloak through
-  `keycloak.localhost:host-gateway`.
+- `e2e/docker-compose.yaml` — the 8.2 chain (DD-200): this app, the **real** data2model,
+  and a fixture Atlas (`python -m http.server` over `e2e/fixtures/`, where
+  `api/atlas/v2/lineage/<guid>` is the canned graph, named for the fixed UUID guid the
+  scenario fixtures carry (DV-78, DD-308)); the collector on the observability network,
+  Keycloak through `keycloak.localhost:host-gateway`. This app's service `extends` the
+  piece `../docker/compose.yaml` (DD-674), resets `network_mode` back onto its own
+  network, and states only the e2e differences (the host-mapped issuer, the in-network
+  data2model and Atlas fixture addresses, the OTel leg, the published port). The
+  data2model service `extends` the owner's e2e base
+  (`../aurelius-atlas-data2model/e2e/compose.data2model.yaml`) and states its
+  default-network ride, its export cadence, and the OTel secret under this project's
+  `.env` name; the base's cert mount rebases to the owner's `certs/` (this project's
+  `tls.json` copy of the data2model leaf is no longer mounted).
+- `docker/compose.yaml` — this project's piece of the standalone stack (ADR 065,
+  DD-674), included by `docker/docker-compose.yaml` at the root: the app in the proxy's
+  network, its issuer `https://localhost:9000/auth/`, the realm `aurelius-atlas`, the
+  audience pair of the chart (DD-385). Not runnable on its own — run the umbrella.
 
 ## Helm chart
 
@@ -123,5 +134,5 @@ values-toggle rows (`helm/AGENTS.md`).
 
 The app is one ADR 055 surface: remove `apps/aurelius-atlas-lineage-model`, its root
 `pyproject.toml` entries (member, dev group, uv source), the `otel-lineage-model` client
-in `dev/keycloak/import/master.json`, and the 8.2 roadmap/spec rows. `aurelius-atlas-auth`
+in `infra/keycloak/import/master.json`, and the 8.2 roadmap/spec rows. `aurelius-atlas-auth`
 and `aurelius-atlas-otel` stay — 8.3 uses them; `aurelius-atlas-data2model` stays (8.1).

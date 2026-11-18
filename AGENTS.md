@@ -87,15 +87,15 @@ what to unwire when they do.
 The **spine** (keep this): `aurelius-atlas-server`, `aurelius-atlas-webapp`,
 `libs/python/aurelius-atlas-store-es`,
 `libs/python/aurelius-atlas-trace`, `libs/python/aurelius-atlas-parity`, `libs/angular/*`,
-`dev/elasticsearch`, `dev/keycloak`, `dev/observability`, `helm/`
-(ADR 057), plus the workflow (CI, pre-commit, SBOM, docs, release).
+`infra/elasticsearch`, `infra/keycloak`, `infra/observability`, `helm/`
+(ADR 057), `docker/` (ADR 065), plus the workflow (CI, pre-commit, SBOM, docs, release).
 
 **Optional slices**: none at the moment. The template's Kafka streaming and AWS Lambda
 slices and its Java tooling were removed when the template was adopted (ADR 050).
 The template's example stack (`aurelius-atlas-fastapi-example`, `aurelius-atlas-frontend-example`,
 `libs/python/aurelius-atlas-example`, `libs/python/aurelius-atlas-sdk`, `dev/postgres`,
 `schemas/avro/`) left once the Atlas server, webapp, and Elasticsearch store replaced
-it (ADR 050); `dev/keycloak` took over `pg_hba.conf`.
+it (ADR 050); `infra/keycloak` took over `pg_hba.conf`.
 
 When removing a slice, update all of: root `pyproject.toml` (uv members, dev groups, uv.sources),
 `implicitDependencies`/`dependsOn` in `project.json` files, `.env` keys,
@@ -140,7 +140,7 @@ npx nx serve <project>
 uv run zensical serve
 
 # Docker (per-project compose, e.g.)
-docker compose -f dev/keycloak/docker-compose.yaml up -d
+docker compose -f infra/keycloak/docker-compose.yaml up -d
 ```
 
 ## Project Instructions
@@ -186,7 +186,7 @@ do not add central lists of projects or libraries to this file.
 - **Backend**: pytest-based E2E tests using `testcontainers` for
   spinning up Elasticsearch, Keycloak, etc. Run with
   `nx run <project>:e2e`.
-- **E2E suites must not restart the shared `dev/*` services** (DD-223). Taking a
+- **E2E suites must not restart the shared `infra/*` services** (DD-223). Taking a
   shared store down/up (or cycling its containers) mid-suite races every other
   suite riding it in CI's parallel `nx affected -t test e2e` — lost-connection
   failures are on record. A rule that can only be exercised by a restart (e.g.

@@ -145,7 +145,7 @@ AURELIUS_DIGEST_PATHS = {
     "apps/aurelius-atlas-data2model/helm/values.yaml": "image",
     "apps/aurelius-atlas-lineage-model/helm/values.yaml": "image",
     "apps/aurelius-atlas-validate-entity/helm/values.yaml": "image",
-    "dev/elasticsearch/helm/values.yaml": "agent.image",
+    "infra/elasticsearch/helm/values.yaml": "agent.image",
 }
 
 

@@ -94,6 +94,15 @@
                     "target": "certgen"
                 },
                 {
+                    "projects": [
+                        "aurelius-atlas-server",
+                        "aurelius-atlas-data2model",
+                        "aurelius-atlas-lineage-model",
+                        "aurelius-atlas-validate-entity"
+                    ],
+                    "target": "certgen"
+                },
+                {
                     "target": "docker-build"
                 },
                 {
@@ -110,9 +119,9 @@
                 },
                 {
                     "projects": [
-                        "aurelius-atlas-dev-keycloak",
-                        "aurelius-atlas-dev-observability",
-                        "aurelius-atlas-dev-elasticsearch"
+                        "aurelius-atlas-infra-keycloak",
+                        "aurelius-atlas-infra-observability",
+                        "aurelius-atlas-infra-elasticsearch"
                     ],
                     "target": "up"
                 }
@@ -167,7 +176,7 @@
                     "waitFor": "ready"
                 },
                 {
-                    "projects": ["aurelius-atlas-dev-keycloak"],
+                    "projects": ["aurelius-atlas-infra-keycloak"],
                     "target": "up"
                 },
                 {
