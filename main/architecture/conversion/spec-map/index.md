@@ -105,3 +105,4 @@ This table is the reference for a move: it fixes the home before files are touch
 | 10.14 | Grafana at the edge, TLS-internal observability | `helm/` + `infra/observability` + `infra/keycloak` | CHT |
 | 10.15 | Browser host names, Grafana role gate | `helm/` + `infra/observability` + `infra/keycloak` | CHT |
 | 17.1 | Infrastructure components at the root | `specs/17-1-infra-root/` + `infra/` | IRT |
+| 17.2 | Standalone host and certificates | `specs/17-2-standalone-host-and-certs/` + `docker/` | SPS |

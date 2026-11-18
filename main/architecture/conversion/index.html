@@ -8244,6 +8244,13 @@ checks a PR must pass:</p>
 <td>none: no Atlas behaviour moves (ADR 066)</td>
 <td>in progress</td>
 </tr>
+<tr>
+<td>17.2</td>
+<td>Standalone host and certificates</td>
+<td>The standalone stack serves one host value (default <code>localhost</code>) and bring-your-own certificates: the browser host names only the edge leaf, the in-network apps reach it through the proxy's network and its <code>extra_hosts</code>, the realm host comes from the import, and a shipped <code>openssl</code> script issues the leaves (SPS-01..10, DD-678..681)</td>
+<td>none: no Atlas behaviour moves (ADR 065, ADR 066)</td>
+<td>planned</td>
+</tr>
 </tbody>
 </table>
 <h2 id="after-phase-0">After phase 0<a class="headerlink" href="#after-phase-0" title="Permanent link">&para;</a></h2>
