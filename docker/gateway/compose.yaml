@@ -3,9 +3,12 @@
 # (loopback :9000), and the whole surface hangs behind it: the webapp at /, the server at /atlas2/,
 # Keycloak at /auth/, the collector's browser leg at /otel/ (nginx.conf). Every other piece either
 # shares its network (`network_mode: service:proxy` — the server, the one shots, the three aux
-# apps, so their `localhost:9000` is this proxy) or reaches it by name. The issuer the realm and
-# every verifier agree on — https://localhost:9000/auth (ADR 039's one answer) — is this
-# container's address. Run the umbrella, never this piece.
+# apps) or reaches it by name. The issuer the realm and every verifier agree on —
+# https://localhost:9000/auth (ADR 039's one answer, SPC-02) — is this container's address, and the
+# apps share its network namespace, so their dials at the browser's address arrive here (DD-694).
+# The edge leaf is the only certificate that names the host (SPS-02, DD-679) and `nginx.conf`'s
+# server_name carries it written in: the file is a static asset the proxy mounts directly, so no
+# service renders anything at boot (SPC-01, DD-694). Run the umbrella, never this piece.
 name: aurelius-atlas-standalone
 
 services:
@@ -15,7 +18,11 @@ services:
             # Loopback only (10.11's hardening): the stack serves this machine, not the network.
             - 127.0.0.1:9000:9000
         volumes:
-            - ../../apps/aurelius-atlas-server/certs:/certs:ro
+            - ${GATEWAY_CERTS_DIR:?name the gateway certificate folder}:/certs:ro
+            # The edge configuration as it sits in the repository (SPC-01, DD-694): `server_name`
+            # carries the host, so the proxy reads the very file a person edits. The hardened image
+            # has no envsubst, which is why the file is static rather than a template.
             - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
         depends_on:
-            - keycloak
+            keycloak:
+                condition: service_started

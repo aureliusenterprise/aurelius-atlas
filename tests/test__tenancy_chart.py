@@ -187,7 +187,7 @@ def test__the_standalone_stacks_tenants_service_provisions_its_two_tenants_on_de
     }
     assert environment["OPERATOR_PASSWORD"] == "${DEMO_USER_OPERATOR_PASSWORD:?}"  # noqa: S105 - a placeholder
     assert environment["PYTHONPATH"] == "/application"  # the image's packages, beside the script
-    assert "./tenants.py:/standalone/tenants.py:ro" in tenants["volumes"]
+    assert "apps/aurelius-atlas-server/docker/tenants.py:/standalone/tenants.py:ro" in tenants["volumes"]
     script = (WORKSPACE / "apps/aurelius-atlas-server/docker/tenants.py").read_text()
     # The realm holds no users (DD-673), so the one shot names no administrator.
     assert '"provision", "demo", "--existing-ok", "--sample", str(sample)]' in script

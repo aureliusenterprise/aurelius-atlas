@@ -1,9 +1,9 @@
 # 17.1 Infrastructure components live at the repository root
 
 - **Status:** in progress
-- **Pull request:** to follow
+- **Pull request:** [#387](https://github.com/aureliusenterprise/aurelius-atlas/pull/387)
 - **Records:** ADR 066 (Proposed, here); DD-667 to DD-677 (here); relies on
-  [ADR 065](../../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
+  [ADR 065](../../docs/architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md)
   (the compose fragments and the root `docker/`), ADR 057 (charts as the delivery), ADR 051
 
 The `dev/` folder holds the Elasticsearch, Keycloak and observability slices. Each of them already
@@ -40,7 +40,7 @@ Not delivered, with the increment that will:
 
 | Not delivered                                                | Lands with  |
 | ------------------------------------------------------------ | ----------- |
-| Publishing a compose stack as a delivery artifact            | not planned |
+| Publishing a compose stack as a delivery artifact            | 17.2, 17.3  |
 | Retiring `dev/`'s metrics pullers or the dev networks' shape | not planned |
 
 The folder `infra/arc/` (the cloud-shape tooling) already lives at `infra/` and stays as it is. This

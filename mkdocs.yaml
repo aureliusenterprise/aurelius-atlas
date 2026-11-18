@@ -186,6 +186,7 @@ nav:
                 - 064. The webapp reads rich catalogue data through one Aurelius view family: architecture/adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family.md
                 - 065. Compose stacks that deploy the whole system live at the root: architecture/adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root.md
                 - 066. Infrastructure components live at the repository root: architecture/adr/066-infrastructure-components-live-at-the-repository-root.md
+                - 067. The standalone stack ships as one generated release bundle: architecture/adr/067-the-standalone-stack-ships-as-one-generated-release-bundle.md
           - Conversion:
                 - architecture/conversion/index.md
                 - Design Log: architecture/conversion/design-log.md

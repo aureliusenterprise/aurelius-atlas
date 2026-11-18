@@ -2,6 +2,31 @@
     "$schema": "./node_modules/nx/schemas/project-schema.json",
     "name": "aurelius-atlas",
     "targets": {
+        "standalone-bundle": {
+            "cache": true,
+            "executor": "@nxlv/python:run-commands",
+            "inputs": [
+                "{workspaceRoot}/docker/**",
+                "{workspaceRoot}/apps/*/docker/**",
+                "{workspaceRoot}/infra/*/docker-compose.yaml",
+                "{workspaceRoot}/infra/*/config/**",
+                "{workspaceRoot}/infra/keycloak/import/**",
+                "{workspaceRoot}/infra/keycloak/themes/**",
+                "{workspaceRoot}/infra/observability/config/**",
+                "{workspaceRoot}/tools/compose_cli.py",
+                "{workspaceRoot}/tools/standalone_bundle.py",
+                "{workspaceRoot}/tools/es-coredump-agent/**",
+                "{workspaceRoot}/data/atlas-sample/**"
+            ],
+            "metadata": {
+                "description": "Build the standalone bundle (17.3, DD-682): a mirror of the stack's compose pieces and the assets they mount, for the release artifact"
+            },
+            "options": {
+                "command": "uv run python tools/standalone_bundle.py --version {args.version}",
+                "cwd": "."
+            },
+            "outputs": ["{workspaceRoot}/dist/standalone-bundle.tar.gz"]
+        },
         "test": {
             "cache": true,
             "configurations": {

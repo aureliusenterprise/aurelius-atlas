@@ -3,14 +3,19 @@
 # The server and its one shots run in the proxy's network: nginx reaches the server on 127.0.0.1:21000,
 # and the server's localhost:9000 is the proxy. The proxy, keycloak and elasticsearch are the stack's,
 # in ../docker-compose.yaml and the other fragments.
+# SERVER_IMAGE names the image the server and both one shots run (compose-time variable, like
+# SAMPLE_ZIP: not a .env setting). Unset, it is the `nx docker-build` tag (ADR 065: the stack builds,
+# never pulls). An install that ships published images sets SERVER_IMAGE to the registry reference
+# or to a digest. The observability piece's jwks-fetch one shot names the same variable, because it
+# runs this image.
 name: aurelius-atlas-standalone
 
-x-certs: &certs ../certs:/certs:ro
-x-sample-volume: &sample-volume ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
+x-certs: &certs ${SERVER_CERTS_DIR:?name the server certificate folder}:/certs:ro
+x-sample-volume: &sample-volume ${SAMPLE_DIR:?name the sample folder}:/sample:ro
 
 services:
     aurelius-atlas-server:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         # In the proxy's network: nginx reaches it on 127.0.0.1:21000, and its localhost:9000 is the proxy.
         network_mode: service:proxy
         depends_on:
@@ -32,6 +37,9 @@ services:
             AURELIUS_ATLAS_SERVER_TASKS_ENABLED: ${ATLAS_TASKS_ENABLED:-true}
             # Tenancy (15.4, ADR 063): off by default; on, each tenant is provisioned by the command (README.md).
             AURELIUS_ATLAS_SERVER_TENANCY_ENABLED: ${ATLAS_TENANCY_ENABLED:-false}
+            # The stack's one host, localhost (SPC-02, DD-694): this container shares the proxy's
+            # network namespace, so the issuer URL and the browser's address are one and the same
+            # string, and the proxy answers it here.
             AURELIUS_ATLAS_SERVER_AUTH_SERVER_URL: https://localhost:9000/auth/
             AURELIUS_ATLAS_SERVER_AUTH_REALM: aurelius-atlas
             AURELIUS_ATLAS_SERVER_AUTH_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
@@ -58,10 +66,12 @@ services:
         volumes:
             - *certs
 
-    # One shot: waits for the server, signs in as the admin service identity (DD-666, no human user) and posts
-    # SAMPLE_ZIP to admin/import, all through the proxy; without SAMPLE_ZIP, or without its file, it exits at once.
+    # One shot of the profile demo (SPC-06, DD-697; docker/bin/import-sample.sh): waits for the server, signs
+    # in as the admin service identity (DD-666, no human user) and posts SAMPLE_ZIP to admin/import, all through
+    # the proxy; without SAMPLE_ZIP, or without its file, it exits at once. The always-on stack starts no import.
     sample-import:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
+        profiles: [demo]
         entrypoint: [python, /standalone/import_sample.py]
         network_mode: service:proxy
         depends_on:
@@ -82,11 +92,11 @@ services:
             - ./import_sample.py:/standalone/import_sample.py:ro
             - *sample-volume
 
-    # One shot of the profile tenancy (README.md, Tenants): provisions the tenant demo with the sample and meyn
-    # without one, their organizations included, and gives the realm's operator a store user of its own. A tenant
-    # already provisioned is left as it is, so it runs at every start.
+    # One shot of the profile tenancy (SPC-07, DD-697; docker/bin/provision-tenants.sh): provisions the tenant
+    # demo with the sample and meyn without one, their organizations included, and gives the realm's operator a
+    # store user of its own. A tenant already provisioned is left as it is, so a repeat run changes nothing.
     tenants:
-        image: ghcr.io/aureliusenterprise/aurelius-atlas-server:local
+        image: ${SERVER_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-server:local}
         profiles: [tenancy]
         entrypoint: [python, /standalone/tenants.py]
         network_mode: service:proxy

@@ -1,8 +1,9 @@
-"""The standalone stack's webapp (SWA-01..04, 9.5d).
+"""The standalone stack's webapp (SWA-01..04, 9.5d; SPC-02, SPC-04, DD-695).
 
-The stack's compose, the proxy's nginx config, the template resolver, the webapp's runtime config and the
-stack's realm are read as written, the compose with the webapp's fragment merged in as compose merges it
-(ADR 065), the resolver against the placeholders of the webapp's own nginx template.
+The stack's compose, the proxy's nginx config, the stack's own static webapp nginx config, the webapp's
+runtime config and the stack's realm are read as written, the compose with the webapp's fragment merged in
+as compose merges it (ADR 065), the static config against the placeholders of the webapp's own nginx
+template.
 """
 
 import json
@@ -15,6 +16,7 @@ from conftest import WORKSPACE, standalone_compose
 STACK = WORKSPACE / "docker"
 FRAGMENT = WORKSPACE / "apps/aurelius-atlas-webapp/docker"
 TEMPLATE = WORKSPACE / "apps/aurelius-atlas-webapp/nginx.conf.template"
+STACK_NGINX = STACK / "webapp/nginx.conf"
 PLACEHOLDER = re.compile(r"\$\{(AURELIUS_ATLAS_WEBAPP_[A-Z_]+)\}")
 
 
@@ -24,48 +26,60 @@ def services() -> dict[str, Any]:
     return standalone_compose()["services"]
 
 
-@pytest.mark.covers(rules=["SWA-01"])
-def test__the_webapp_runs_apart_from_the_proxy_on_its_resolved_config(services: dict[str, Any]) -> None:
-    """A container of its own on the stack network, reading the filled template, config.json, certs (SWA-01)."""
-    config, webapp = services["webapp-config"], services["aurelius-atlas-webapp"]
-    assert config["image"] == webapp["image"] == "ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local"
-    assert "webapp-nginx-conf:/out" in config["volumes"]
+@pytest.mark.covers(rules=["SWA-01", "SPC-04"])
+def test__the_webapp_runs_apart_from_the_proxy_on_a_static_config(services: dict[str, Any]) -> None:
+    """A container of its own on the stack network, reading the stack's static nginx config, config.json
+    and certs, with no service rendering anything (SWA-01; SPC-04, DD-695).
+    """  # noqa: D205 - one sentence
+    webapp = services["aurelius-atlas-webapp"]
+    # The image is an install's knob over the nx docker-build default (the stack builds, never pulls).
+    assert webapp["image"] == "${WEBAPP_IMAGE:-ghcr.io/aureliusenterprise/aurelius-atlas-webapp:local}"
+    assert "webapp-config" not in services
     assert "network_mode" not in webapp
     assert services["aurelius-atlas-server"]["network_mode"] == "service:proxy"
-    assert webapp["depends_on"]["webapp-config"] == {"condition": "service_completed_successfully"}
+    assert webapp["depends_on"] == {"aurelius-atlas-server": {"condition": "service_started"}}
+    # The stack ships the file the webapp's nginx reads (SPC-04): a bind, not a rendered volume.
     assert set(webapp["volumes"]) == {
-        "webapp-nginx-conf:/etc/nginx/conf.d:ro",
-        "./config.json:/usr/share/nginx/html/config.json:ro",
-        "../certs:/certs:ro",
+        "docker/webapp/nginx.conf:/etc/nginx/conf.d/default.conf:ro",
+        "apps/aurelius-atlas-webapp/docker/config.json:/usr/share/nginx/html/config.json:ro",
+        "${WEBAPP_CERTS_DIR:?name the webapp certificate folder}:/certs:ro",
     }
 
 
-@pytest.mark.covers(rules=["SWA-02"])
-def test__the_resolver_fills_every_placeholder_of_the_template() -> None:
-    """Each placeholder of the webapp's template is replaced; its own API upstream is the server (SWA-02)."""
-    script = (FRAGMENT / "resolve-nginx.sh").read_text()
-    # Two quoting shapes: the literal fills (single-quoted) and the env-fed fills (double-quoted,
-    # DD-675: the edge's OTLP leg takes the collector address and the ingest bearer from the piece).
-    replaced = dict(
-        re.findall(
-            r"""-e ["']s\|\\?\$\{(AURELIUS_ATLAS_WEBAPP_[A-Z_]+)\}\|([^|]*)\|g["']""",
-            script,
-        )
-    )
-    assert set(replaced) == set(PLACEHOLDER.findall(TEMPLATE.read_text()))
-    # The env-fed fills carry their literal default (DD-675): the collector's legacy gRPC port,
-    # and the ingest bearer the stack's env-files supply.
-    assert "https://otel-collector:4320" in replaced["AURELIUS_ATLAS_WEBAPP_OTLP_ENDPOINT"]
-    assert replaced["AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN"] == "${AURELIUS_ATLAS_WEBAPP_OTEL_INGEST_TOKEN:-none}"  # noqa: S105 - the resolver's default, not a secret
-    assert replaced["AURELIUS_ATLAS_WEBAPP_API_UPSTREAM"] == "https://proxy:21000"
-    assert replaced["AURELIUS_ATLAS_WEBAPP_API_UPSTREAM_NAME"] == "aurelius-atlas-server"
-    # The aux APIs share the proxy's network too, so their addresses are the proxy's ports and their
-    # certificate names are the service names (the webapp reaches them through the proxy's namespace).
-    assert replaced["AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM"] == "https://proxy:21002"
-    assert replaced["AURELIUS_ATLAS_WEBAPP_LINEAGE_MODEL_UPSTREAM_NAME"] == "aurelius-atlas-lineage-model"
-    assert replaced["AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM"] == "https://proxy:21003"
-    assert replaced["AURELIUS_ATLAS_WEBAPP_VALIDATE_ENTITY_UPSTREAM_NAME"] == "aurelius-atlas-validate-entity"
-    assert replaced["AURELIUS_ATLAS_WEBAPP_TLS_CERT_FILE"] == "/certs/aurelius-atlas-webapp.pem"
+@pytest.mark.covers(rules=["SWA-02", "SPC-04"])
+def test__the_stacks_static_config_names_every_upstream_and_holds_no_placeholder() -> None:
+    """The stack's file answers every placeholder of the webapp's template with this stack's value and
+    keeps no ingest token, because the proxy carries the browser's OTLP push (SWA-02; SPC-04, DD-695).
+    """  # noqa: D205 - one sentence
+    static = STACK_NGINX.read_text()
+    # The template's placeholder set drives the check: a placeholder the image gains must be
+    # answered here too, or the webapp fails at config parse (DD-262's rule for any deployment).
+    assert PLACEHOLDER.findall(TEMPLATE.read_text()), "the template holds no placeholder to answer"
+    assert not PLACEHOLDER.search(static), "a template placeholder left in the static file"
+    # The upstreams the chart's init container renders for the same shape (DD-262), written in here.
+    assert "set $api_upstream https://proxy:21000;" in static
+    assert "proxy_ssl_name aurelius-atlas-server;" in static
+    assert "set $otel_upstream https://otel-collector:4318;" in static
+    assert "proxy_ssl_name otel-collector;" in static
+    assert "set $lineage_model_upstream https://proxy:21002;" in static
+    assert "proxy_ssl_name aurelius-atlas-lineage-model;" in static
+    assert "set $validate_entity_upstream https://proxy:21003;" in static
+    assert "proxy_ssl_name aurelius-atlas-validate-entity;" in static
+    assert "resolver 127.0.0.11 valid=10s ipv6=off;" in static
+    # The listener's own material, which the piece's cert mount supplies.
+    assert "ssl_certificate /certs/aurelius-atlas-webapp.pem;" in static
+    assert "ssl_certificate_key /certs/aurelius-atlas-webapp-key.pem;" in static
+    assert static.count("proxy_ssl_trusted_certificate /certs/ca.pem;") == 4
+    # No ingest token (DD-695): the browser's OTLP push rides the proxy, so the edge leg here is a
+    # spare path and its exporter block states no bearer header.
+    assert "header authorization" not in static
+    assert "endpoint https://otel-collector:4320;" in static
+    # The three clauses the resolver filled with nothing are gone rather than empty. The check
+    # reads directives only: the file's own comments name what it leaves out.
+    directives = "\n".join(line for line in static.splitlines() if not line.lstrip().startswith("#"))
+    for gone in ("set_real_ip_from", "AURELIUS_ATLAS_WEBAPP_", "strict-transport-security"):
+        assert gone not in directives, gone
+    assert (FRAGMENT / "resolve-nginx.sh").exists() is False
 
 
 @pytest.mark.covers(rules=["SWA-03"])
@@ -89,10 +103,12 @@ def test__the_proxy_routes_the_api_to_the_server_and_the_rest_to_the_webapp() ->
     assert "proxy_ssl_name otel-collector;" in otel
 
 
-@pytest.mark.covers(rules=["SWA-04"])
+@pytest.mark.covers(rules=["SWA-04", "SPC-02"])
 def test__the_webapp_signs_in_to_the_stacks_realm() -> None:
     """config.json names the realm aurelius-atlas under /auth and the public client, which returns to the
-    stack (SWA-04).
+    stack (SWA-04). It carries the one host the stack serves, written in - the same answer the proxy's
+    server_name and the realm's URIs hold, and the proxy's catch-all serves this file to the browser
+    (SPC-02, DD-694).
     """  # noqa: D205 - one sentence
     config = json.loads((FRAGMENT / "config.json").read_text())
     assert config["keycloak"] == {
