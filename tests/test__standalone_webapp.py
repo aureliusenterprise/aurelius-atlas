@@ -39,7 +39,7 @@ def test__the_webapp_runs_apart_from_the_proxy_on_its_resolved_config(services: 
     assert set(webapp["volumes"]) == {
         "webapp-nginx-conf:/etc/nginx/conf.d:ro",
         "./config.json:/usr/share/nginx/html/config.json:ro",
-        "../certs:/certs:ro",
+        "${WEBAPP_CERTS_DIR:?name the webapp certificate folder}:/certs:ro",
     }
 
 

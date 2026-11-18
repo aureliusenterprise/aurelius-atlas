@@ -39,6 +39,11 @@ and `npx nx certgen aurelius-atlas-webapp` make them. The stack also ships `dock
 which makes the same material with `openssl` alone and needs none of the repository's tooling (see
 Your host and your certificates below).
 
+The seven app pieces name the folder they mount through a required variable, so a stack that names no folder
+fails the start with that folder's name and never reads a path of this repository (SBD-12, DD-687). In a
+checkout `docker/stack.env` answers the eight names, and the commands below need no extra argument. An install
+that ships the stack without the repository names them in its own `.env`, as `docker/.env.example` explains.
+
 ```bash
 docker compose -f docker/docker-compose.yaml \
     --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env \
@@ -87,13 +92,13 @@ The server creates the m4i types of the samples at start-up (ADR 058), so an imp
 with the import's status and its counts by type; a failed import exits non-zero. An import updates the
 entities it finds by GUID, so running it again is safe. Other settings:
 
-| Variable                | Default              | What it sets                                                         |
-| ----------------------- | -------------------- | -------------------------------------------------------------------- |
-| `SAMPLE_ZIP`            | empty: ignored       | The ZIP's file name in the sample folder                             |
-| `SAMPLE_DIR`            | `data/atlas-sample/` | The sample folder; a relative path is read from this directory       |
-| `SAMPLE_IMPORT_REQUEST` | `{}`                 | Atlas's `AtlasImportRequest` as JSON, such as its `options`          |
-| `ATLAS_TASKS_ENABLED`   | `true`: as Atlas     | Whether the task worker propagates classifications after the request |
-| `ATLAS_TENANCY_ENABLED` | `false`: as Atlas    | Whether the server serves several tenants (see Tenants below)        |
+| Variable                | Default            | What it sets                                                         |
+| ----------------------- | ------------------ | -------------------------------------------------------------------- |
+| `SAMPLE_ZIP`            | empty: ignored     | The ZIP's file name in the sample folder                             |
+| `SAMPLE_DIR`            | `docker/stack.env` | The required sample folder to mount (a checkout answers it)          |
+| `SAMPLE_IMPORT_REQUEST` | `{}`               | Atlas's `AtlasImportRequest` as JSON, such as its `options`          |
+| `ATLAS_TASKS_ENABLED`   | `true`: as Atlas   | Whether the task worker propagates classifications after the request |
+| `ATLAS_TENANCY_ENABLED` | `false`: as Atlas  | Whether the server serves several tenants (see Tenants below)        |
 
 An import's propagation runs once it ends (DD-361), so an entity shows what is propagated to it a little
 later.
@@ -204,9 +209,11 @@ The stack's Keycloak also opens a PKCS12 truststore, `infra/keycloak/certs/trust
 match. Bring your own certificates and you write that file yourself, with the same password, or the
 identity provider fails to start.
 
-`docker/.env.example` lists every setting the stack needs. In this checkout the three project `.env` files
-carry working defaults, so you normally need neither file; an install that ships the stack alone copies it
-to `docker/.env` and fills it.
+`docker/.env.example` lists every setting the stack needs. It states the eight folder names as comments rather
+than empty keys. Compose prefers an empty value in `.env`, and an empty folder fails the start. In a checkout,
+the three project `.env` files carry the secret defaults and `docker/stack.env` carries the folder paths, so
+you normally change nothing. An install that ships the stack alone copies the example to `docker/.env` and
+fills the secrets and the eight folders.
 
 ### Changing the host on a stack that holds data
 

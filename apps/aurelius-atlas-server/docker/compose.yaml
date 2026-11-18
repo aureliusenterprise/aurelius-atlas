@@ -10,8 +10,8 @@
 # runs this image.
 name: aurelius-atlas-standalone
 
-x-certs: &certs ../certs:/certs:ro
-x-sample-volume: &sample-volume ${SAMPLE_DIR:-../../../data/atlas-sample}:/sample:ro
+x-certs: &certs ${SERVER_CERTS_DIR:?name the server certificate folder}:/certs:ro
+x-sample-volume: &sample-volume ${SAMPLE_DIR:?name the sample folder}:/sample:ro
 
 services:
     aurelius-atlas-server:

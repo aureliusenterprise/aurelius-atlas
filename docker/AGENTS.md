@@ -108,6 +108,17 @@ infra/elasticsearch/.env` (decrypted SOPS defaults, DD-669). Compose
   webapp, embedder and the three aux projects produce; each piece names its
   image through a compose-time variable (`<PROJECT>_IMAGE`) with the `:local`
   tag as its default. The stack never pulls from a registry.
+- **Folders are required, never defaulted** (SBD-12, DD-687). Each app piece
+  names the certificate or sample folder it mounts through a required variable
+  (`${NAME_CERTS_DIR:?...}`, `${SAMPLE_DIR:?...}`) with no path default, so a
+  customer install cannot inherit a repository path. The umbrella names
+  `docker/stack.env` in each app `include` as `env_file`. That committed file
+  holds the repository's eight answers (paths, no secret), which keeps the
+  README and CI commands unchanged. An e2e stack extends the pieces directly,
+  so each project answers the names it transitively extends from its own `.env`
+  (Nx injects it into every task). A relative value reads from the declaring
+  piece's own folder. The three infra pieces keep their literal `./certs` paths
+  (no default to remove; the bundle's path rewriter relocates them, SBD-03).
 - The compose project name `aurelius-atlas-standalone` and the container
   names it derives are in the README and the user guide (e.g. `docker restart
 aurelius-atlas-standalone-aurelius-atlas-server-1`); a rename updates them.
