@@ -8283,9 +8283,16 @@ checks a PR must pass:</p>
 <tr>
 <td>17.3</td>
 <td>The standalone bundle</td>
-<td>The release publishes the standalone stack as one generated bundle: one flat compose file produced by <code>docker compose config --no-interpolate</code> with its paths rebased into the bundle, the sample, no secrets, images named through the pieces' variables and set to the release version, and every certificate and sample folder required through a variable (SBD-01..12, DD-682..692, ADR 067)</td>
+<td>The release publishes the standalone stack as one generated bundle: one flat compose file produced by <code>docker compose config --no-interpolate</code> with its paths rebased into the bundle, the sample, no secrets, images named through the pieces' variables and set to the release version, and every certificate and sample folder required through a variable (SBD-01..12, DD-682..693, ADR 067)</td>
 <td>none: no Atlas behaviour moves (ADR 065, ADR 067)</td>
 <td>planned</td>
+</tr>
+<tr>
+<td>17.4</td>
+<td>The standalone stack simplified</td>
+<td>The standalone stack sheds its render one-shots: the proxy's and the webapp's nginx configurations become static assets, the browser host is <code>localhost</code> with an optional external script, Keycloak starts in production mode with no build one-shot, and the demo one-shots move behind profiles with scripts of their own in <code>docker/bin/</code> (SPC-01..11, DD-694..699)</td>
+<td>none: no Atlas behaviour moves (ADR 065, ADR 067)</td>
+<td>in progress</td>
 </tr>
 </tbody>
 </table>

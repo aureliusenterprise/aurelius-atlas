@@ -6,7 +6,7 @@ This page adds a tenant, a customer or department with its own catalogue and its
 >
 > **Before you start**
 >
-> - The stack runs with tenancy, as the [Tenants](<https://aureliusenterprise.github.io/main/user-guide/standalone-server/#tenants>) section starts it: `ATLAS_TENANCY_ENABLED=true` and `--profile tenancy`.
+> - The stack runs with tenancy, as the [Tenants](<https://aureliusenterprise.github.io/main/user-guide/standalone-server/#tenants>) section starts it: `ATLAS_TENANCY_ENABLED=true`. The script `docker/bin/provision-tenants.sh` runs the provisioning one shot when you ask for it (SPC-07).
 > - All commands run from the repository root. The stack's files are in `docker/`.
 
 ## What a tenant consists of
@@ -16,7 +16,7 @@ A tenant is a Keycloak organization with its own indices in the store (ADR 063).
 | Where | What you add |
 | --- | --- |
 | `docker/keycloak/aurelius-atlas.json` | the organization and its four role groups |
-| `apps/aurelius-atlas-server/docker/tenants.py` | the provisioning of the tenant's indices, at every start |
+| `apps/aurelius-atlas-server/docker/tenants.py` | the provisioning of the tenant's indices, when the script runs it |
 | Keycloak's admin console | the tenant's members, created and added there |
 
 The tenant's members belong to it alone, so they sign in to it without choosing a tenant. The realm's `operators` organization reads every tenant, and the provisioning command adds each of its members to the new one.
@@ -55,9 +55,9 @@ Add the organization to `organizations`, with no members yet:
 }
 ```
 
-## Provision the tenant at every start
+## Provision the tenant
 
-The one shot `tenants` provisions each tenant it lists when the stack starts, and leaves a tenant already there as it is. Add `acme` to the list in `apps/aurelius-atlas-server/docker/tenants.py`. The command makes the realm's side too, as the client `aurelius-atlas-provisioning`: the organization already imported by the realm file stays as it is, and its indices and record are made here. `--sample <path>` imports an Apache Atlas export ZIP into the tenant, once:
+The one shot `tenants` provisions each tenant it lists, and leaves a tenant already there as it is. The script runs it on demand. Add `acme` to the list in `apps/aurelius-atlas-server/docker/tenants.py`. The command makes the realm's side too, as the client `aurelius-atlas-provisioning`: the organization already imported by the realm file stays as it is, and its indices and record are made here. `--sample <path>` imports an Apache Atlas export ZIP into the tenant, once:
 
 ```
 for argv in (
@@ -76,7 +76,8 @@ Start the stack as before. The realm file changed, so recreate Keycloak (`docker
 
 ```
 ATLAS_TENANCY_ENABLED=true docker compose -f docker/docker-compose.yaml \
-    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env --profile tenancy up -d
+    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env up -d
+docker/bin/provision-tenants.sh
 docker compose -f docker/docker-compose.yaml logs tenants
 ```
 

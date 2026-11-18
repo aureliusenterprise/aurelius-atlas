@@ -619,10 +619,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#changing-the-host-on-a-stack-that-holds-data" class="md-nav__link">
+  <a href="#your-own-host" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Changing the host on a stack that holds data
+        Your own host
       </span>
     </span>
   </a>
@@ -6788,10 +6788,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#changing-the-host-on-a-stack-that-holds-data" class="md-nav__link">
+  <a href="#your-own-host" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
-        Changing the host on a stack that holds data
+        Your own host
       </span>
     </span>
   </a>
@@ -6969,7 +6969,7 @@ named at every command below. The store and the identity provider use the infra 
 configuration and certificates, <code>infra/elasticsearch/certs/</code> and <code>infra/keycloak/certs/</code>, and the
 webapp its own, <code>apps/aurelius-atlas-webapp/certs/</code>. On a new clone,
 <code>npx nx certgen aurelius-atlas-infra-elasticsearch</code>, <code>npx nx certgen aurelius-atlas-infra-keycloak</code>
-and <code>npx nx certgen aurelius-atlas-webapp</code> make them. The stack also ships <code>docker/make-certs.sh</code>,
+and <code>npx nx certgen aurelius-atlas-webapp</code> make them. The stack also ships <code>docker/bin/make-certs.sh</code>,
 which makes the same material with <code>openssl</code> alone and needs none of the repository's tooling (see
 Your host and your certificates below).</p>
 <p>The seven app pieces name the folder they mount through a required variable, so a stack that names no folder
@@ -6981,9 +6981,10 @@ that ships the stack without the repository names them in its own <code>.env</co
 <span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>up<span class="w"> </span>-d
 </code></pre></div>
 <p>The webapp answers at <a href="https://localhost:9000/">https://localhost:9000/</a> and the dashboards at <a href="https://localhost:9000/atlas2/">https://localhost:9000/atlas2/</a>
-once Keycloak is ready. A cold start takes about two minutes now: the stack's Keycloak builds its
-runtime once and boots against its Postgres, in production mode as the deployment's does (DD-670,
-DD-676); the next start skips the build, until <code>down -v</code>. The realm holds no user (DD-673), so the sign-in is
+once Keycloak is ready. A cold start takes about two minutes now: the stack's Keycloak boots against
+its Postgres in production mode as the deployment's does (DD-670, DD-676), and its first boot augments
+its runtime once into the home volume Compose seeds (SPC-05, DD-696). The next start skips it, until
+<code>down -v</code>. The realm holds no user (DD-673), so the sign-in is
 bring-your-own-user. Open Keycloak's admin console at <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a> as
 <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>, in the realm <code>master</code>, select the realm <code>aurelius-atlas</code>, and add a
 person under Users with a password. Then give the person a role: open the user's Role mapping tab and
@@ -7001,17 +7002,17 @@ services need their own certificates too: <code>npx nx certgen aurelius-atlas-em
 <code>npx nx certgen aurelius-atlas-data2model</code>, <code>npx nx certgen aurelius-atlas-lineage-model</code> and
 <code>npx nx certgen aurelius-atlas-validate-entity</code>.</p>
 <h2 id="a-sample-dataset">A sample dataset<a class="headerlink" href="#a-sample-dataset" title="Permanent link">&para;</a></h2>
-<p><code>SAMPLE_ZIP</code> names an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root. Once the server
-is ready, the <code>sample-import</code> service signs in as the client <code>aurelius-atlas-admin</code> by the client-credentials
-grant (DD-673: the realm holds no user, so the import uses a service identity, whose service account holds
-the server's four roles), and posts the ZIP to <code>admin/import</code>, through the proxy. Without <code>SAMPLE_ZIP</code>, or
-when no file has that name, the option is ignored: the service logs why and exits, and the server runs as
-without it.</p>
-<div class="highlight"><pre><span></span><code><span class="nv">SAMPLE_ZIP</span><span class="o">=</span>sample_data.zip<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>up<span class="w"> </span>-d
-docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span>logs<span class="w"> </span>-f<span class="w"> </span>sample-import
+<p>The always-on stack imports nothing. The service <code>sample-import</code> sits behind the compose profile <code>demo</code>, and
+the script <code>docker/bin/import-sample.sh</code> runs it once in a stack that is already up (SPC-06, DD-697). It names
+an Apache Atlas export ZIP in <code>data/atlas-sample/</code> at the repository root, <code>sample_data.zip</code> by default.</p>
+<div class="highlight"><pre><span></span><code>docker/bin/import-sample.sh<span class="w"> </span>sample_data.zip
 </code></pre></div>
+<p>The script names no secret: it passes the same three env-files every start command names (DD-669). Once the
+server is ready, the one shot signs in as the client <code>aurelius-atlas-admin</code> by the client-credentials grant
+(DD-673: the realm holds no user, so the import uses a service identity, whose service account holds the
+server's four roles), and posts the ZIP to <code>admin/import</code>, through the proxy. When no file has the name it
+names, the one shot logs why and exits, and the server runs as without it. To run it yourself, name the
+profile and <code>SAMPLE_ZIP</code> on <code>docker compose run</code>.</p>
 <p>The server creates the m4i types of the samples at start-up (ADR 058), so an import creates none. The log ends
 with the import's status and its counts by type; a failed import exits non-zero. An import updates the
 entities it finds by GUID, so running it again is safe. Other settings:</p>
@@ -7056,13 +7057,17 @@ later.</p>
 <h2 id="tenants">Tenants<a class="headerlink" href="#tenants" title="Permanent link">&para;</a></h2>
 <p><code>ATLAS_TENANCY_ENABLED=true</code> serves several tenants from the one stack (ADR 063): a request acts in the one
 Keycloak organization its token names, and each tenant has its own indices and background work. Off by default,
-the server answers as Apache Atlas does. The profile <code>tenancy</code> adds the one shot <code>tenants</code>, which provisions the
-realm's two tenants at every start, leaving one already there as it is:</p>
+the server answers as Apache Atlas does. The always-on stack provisions no tenant: the one shot <code>tenants</code> sits
+behind the compose profile <code>tenancy</code>, and the script <code>docker/bin/provision-tenants.sh</code> runs it once in a stack
+that already serves tenancy (SPC-07, DD-697). Turn tenancy on first, then provision:</p>
 <div class="highlight"><pre><span></span><code><span class="nv">ATLAS_TENANCY_ENABLED</span><span class="o">=</span><span class="nb">true</span><span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>--profile<span class="w"> </span>tenancy<span class="w"> </span>up<span class="w"> </span>-d
-docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span>logs<span class="w"> </span>tenants
+<span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>up<span class="w"> </span>-d
+docker/bin/provision-tenants.sh
 </code></pre></div>
+<p>The one shot provisions the realm's two tenants, leaving one already there as it is, so a repeat run changes
+nothing. The script names no secret and opens the profile for its own run. To provision by hand, turn tenancy
+on and run <code>docker compose</code> with <code>--profile tenancy</code> or <code>run --rm tenants</code>.</p>
 <table>
 <thead>
 <tr>
@@ -7131,20 +7136,11 @@ administrator list or add them. The stack's Keycloak keeps no data of its own be
 volume: each new container imports <code>keycloak/aurelius-atlas.json</code> again, so a change made in its
 console lasts across restarts but not across <code>down -v</code>.</p>
 <h2 id="your-host-and-your-certificates">Your host and your certificates<a class="headerlink" href="#your-host-and-your-certificates" title="Permanent link">&para;</a></h2>
-<p>The stack serves <code>https://localhost:9000</code>. To serve a name of your own, set one value,
-<code>STANDALONE_HOST</code>, on the start command:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">STANDALONE_HOST</span><span class="o">=</span>atlas.example<span class="w"> </span>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>up<span class="w"> </span>-d
-</code></pre></div>
-<p>The name sets the address Keycloak signs its tokens with, the return addresses the realm allows, the
-certificate the browser checks, and the address the applications dial inside the stack. You add the name
-on the browser machine yourself — a hosts-file entry or a DNS record. Inside the stack you set nothing
-per service: the proxy answers the name for the applications, so each dials exactly the browser's URL.
-The stack publishes the port on this machine only, whatever the name is; reaching it from the local
-network is out of scope.</p>
-<p>Give the name its certificates before the first start, with the script that ships here:</p>
-<div class="highlight"><pre><span></span><code>docker/make-certs.sh<span class="w"> </span>atlas.example
+<p>The stack serves <code>https://localhost:9000</code>, and the host sits written into three files: the proxy's
+<code>gateway/nginx.conf</code>, the webapp's <code>config.json</code>, and the realm file <code>keycloak/aurelius-atlas.json</code>
+(SPC-02, DD-694). No service renders them at start, and no piece reads a host variable.</p>
+<p>Make the certificates before the first start with the script that ships here:</p>
+<div class="highlight"><pre><span></span><code>docker/bin/make-certs.sh
 </code></pre></div>
 <p>The script creates a certificate authority and issues every certificate the stack mounts, with <code>openssl</code>
 alone. It installs nothing into a trust store (17.2's rule SPS-09): the stack trusts the CA by mount, and
@@ -7152,8 +7148,8 @@ the browser warns once for the host because the CA is private. That warning is e
 <code>docker/certs/ca.pem</code> in the browser, or accept it.</p>
 <p>You can bring your own certificates instead, and then the script stays unused: place your CA and leaves at
 the paths <code>docker/certs.txt</code> names. Your edge certificate names the host, <code>localhost</code> and <code>127.0.0.1</code>;
-every other certificate names its own service. Changing the host re-issues the edge certificate alone —
-the certificates between services never name the browser's host, because those calls go by service name.
+every other certificate names its own service. The certificates between services never name the browser's
+host, because those calls go by service name.
 The stack's Keycloak also opens a PKCS12 truststore, <code>infra/keycloak/certs/truststore.p12</code>, with
 <code>TLS_TRUSTSTORE_PASSWORD</code>. The script writes that file with the value your env-files carry, so the two
 match. Bring your own certificates and you write that file yourself, with the same password, or the
@@ -7163,33 +7159,24 @@ than empty keys. Compose prefers an empty value in <code>.env</code>, and an emp
 the three project <code>.env</code> files carry the secret defaults and <code>docker/stack.env</code> carries the folder paths, so
 you normally change nothing. An install that ships the stack alone copies the example to <code>docker/.env</code> and
 fills the secrets and the eight folders.</p>
-<h3 id="changing-the-host-on-a-stack-that-holds-data">Changing the host on a stack that holds data<a class="headerlink" href="#changing-the-host-on-a-stack-that-holds-data" title="Permanent link">&para;</a></h3>
-<p>Keycloak imports its realm when its database is empty and skips a realm that already exists. A restart with
-a new <code>STANDALONE_HOST</code> therefore moves the issuer, the proxy and the applications, but not the return
-addresses stored in the realm, and sign-in fails. Two paths fix it:</p>
-<p>Empty the store. <code>down -v</code> and start again with the new host. Keycloak imports the realm for the new host
-and the store begins empty, as the Stop section says. The catalogue is gone.</p>
-<p>Keep the data. Move the realm's two browser clients to the new host through Keycloak's admin API, after
-starting the stack on the new host. The bootstrap administrator in the <code>master</code> realm signs the calls:</p>
-<div class="highlight"><pre><span></span><code><span class="nv">NEW</span><span class="o">=</span>atlas.example
-<span class="nv">KC</span><span class="o">=</span><span class="s2">"https://</span><span class="nv">$NEW</span><span class="s2">:9000/auth"</span>
-<span class="nv">TOKEN</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-ks<span class="w"> </span>-d<span class="w"> </span><span class="nv">grant_type</span><span class="o">=</span>password<span class="w"> </span>-d<span class="w"> </span><span class="nv">client_id</span><span class="o">=</span>admin-cli<span class="w"> </span><span class="se">\</span>
-<span class="w">    </span>-d<span class="w"> </span><span class="nv">username</span><span class="o">=</span><span class="s2">"</span><span class="nv">$KC_BOOTSTRAP_ADMIN_USERNAME</span><span class="s2">"</span><span class="w"> </span>-d<span class="w"> </span><span class="nv">password</span><span class="o">=</span><span class="s2">"</span><span class="nv">$KC_BOOTSTRAP_ADMIN_PASSWORD</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">    </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/realms/master/protocol/openid-connect/token"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.access_token<span class="k">)</span>
-<span class="nv">FIX</span><span class="o">=</span><span class="s1">'(.redirectUris |= map(gsub("//[^:]+:9000"; "//" + $NEW + ":9000")))</span>
-<span class="s1">    | (.webOrigins |= map(gsub("//[^:]+:9000"; "//" + $NEW + ":9000")))</span>
-<span class="s1">    | (.attributes["post.logout.redirect.uris"] |= gsub("//[^:]+:9000"; "//" + $NEW + ":9000"))'</span>
-<span class="k">for</span><span class="w"> </span>id<span class="w"> </span><span class="k">in</span><span class="w"> </span>aurelius<span class="w"> </span>aurelius-atlas-server<span class="p">;</span><span class="w"> </span><span class="k">do</span>
-<span class="w">    </span><span class="nv">client</span><span class="o">=</span><span class="k">$(</span>curl<span class="w"> </span>-ks<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/admin/realms/aurelius-atlas/clients?clientId=</span><span class="nv">$id</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">'.[0]'</span><span class="k">)</span>
-<span class="w">    </span><span class="nv">uuid</span><span class="o">=</span><span class="k">$(</span><span class="nb">printf</span><span class="w"> </span><span class="s1">'%s'</span><span class="w"> </span><span class="s2">"</span><span class="nv">$client</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>-r<span class="w"> </span>.id<span class="k">)</span>
-<span class="w">    </span>curl<span class="w"> </span>-ks<span class="w"> </span>-X<span class="w"> </span>PUT<span class="w"> </span>-H<span class="w"> </span><span class="s2">"Authorization: Bearer </span><span class="nv">$TOKEN</span><span class="s2">"</span><span class="w"> </span>-H<span class="w"> </span><span class="s1">'Content-Type: application/json'</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span>-d<span class="w"> </span><span class="s2">"</span><span class="k">$(</span><span class="nb">printf</span><span class="w"> </span><span class="s1">'%s'</span><span class="w"> </span><span class="s2">"</span><span class="nv">$client</span><span class="s2">"</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>--arg<span class="w"> </span>NEW<span class="w"> </span><span class="s2">"</span><span class="nv">$NEW</span><span class="s2">"</span><span class="w"> </span><span class="s2">"</span><span class="nv">$FIX</span><span class="s2">"</span><span class="k">)</span><span class="s2">"</span><span class="w"> </span><span class="se">\</span>
-<span class="w">        </span><span class="s2">"</span><span class="nv">$KC</span><span class="s2">/admin/realms/aurelius-atlas/clients/</span><span class="nv">$uuid</span><span class="s2">"</span>
-<span class="k">done</span>
+<h3 id="your-own-host">Your own host<a class="headerlink" href="#your-own-host" title="Permanent link">&para;</a></h3>
+<p>To serve a name of your own, run the script that ships for it, before the start:</p>
+<div class="highlight"><pre><span></span><code>docker/bin/set-host.sh<span class="w"> </span>atlas.example
 </code></pre></div>
-<p>Sign in afterwards to prove the move. The catalogue, the users and the sample survive both paths only in
-the second one — the first deletes them.</p>
+<p>The script writes the host into the three files above and re-issues the edge certificate for it (SPC-03,
+DD-694). It changes nothing else: every internal hop stays a service name or a loopback name. Then add the
+name on the browser machine yourself, as a hosts-file entry or a DNS record. The stack publishes the port on
+this machine only; reaching it from the local network is out of scope. The same thing by hand: edit the
+three files and run <code>docker/bin/make-certs.sh</code> with the host.</p>
+<p>A host change is not a restart. Keycloak imports its realm when its database is empty and skips a realm that
+already exists, so a store that holds the realm keeps the old return addresses, and sign-in fails. Clear the
+demo and start again (the path that kept the data retired with the host machinery, DD-694):</p>
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>compose<span class="w"> </span>-f<span class="w"> </span>docker/docker-compose.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--env-file<span class="w"> </span>apps/aurelius-atlas-server/.env<span class="w"> </span>--env-file<span class="w"> </span>infra/keycloak/.env<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>down<span class="w"> </span>-v
+</code></pre></div>
+<p>The next start imports the realm for the new host, and the store begins empty: the catalogue is gone, as the
+Stop section says. Trust <code>docker/certs/ca.pem</code> to quiet the browser warning (SPS-10).</p>
 <h2 id="how-it-fits-together">How it fits together<a class="headerlink" href="#how-it-fits-together" title="Permanent link">&para;</a></h2>
 <p>The stack is one compose project: <code>docker/docker-compose.yaml</code> names it and <code>include</code>s every
 piece (ADR 065, DD-677) — the gateway from <code>docker/gateway/</code>, the server and its one shots from
@@ -7205,16 +7192,17 @@ umbrella; the fragments are not a target of their own.</p>
 <li><code>docker/gateway/compose.yaml</code>: the <code>proxy</code>, the stack's only published port (loopback 9000, TLS
   with the server's certificate) and its TLS terminator — the piece DD-677 gives the gateway its own
   folder, beside the store, identity and telemetry pieces. <code>docker/gateway/nginx.conf</code> holds its
-  routing (the next bullet); the <code>gateway-config</code> one shot renders that file, and the webapp's
-  <code>config.json</code>, for the browser host before the proxy starts (the hardened nginx image has no
-  envsubst, SPS-01).</li>
+  routing (the next bullet) as a static asset the proxy mounts: <code>server_name</code> carries the host written
+  in, so no service renders anything at start (SPC-01, DD-694 — the hardened nginx image has no
+  envsubst, which is why the file is static rather than a template).</li>
 <li><code>docker/elasticsearch/compose.yaml</code>: <code>infra/elasticsearch</code>'s node, extended — its image,
   configuration, roles, certificate, java agent and healthcheck inherited; the stack's volumes
   <code>elasticsearch-data</code> and <code>elasticsearch-snapshots</code>; no published port (DD-668). The server reaches
   it as <code>https://elasticsearch:9200</code> with its own password, which is the <code>elastic</code> user's here.</li>
 <li><code>docker/keycloak/compose.yaml</code>: <code>infra/keycloak</code>'s Keycloak and its Postgres, extended (DD-670) —
-  Postgres-backed and prod-mode booted as the charts run it (the <code>keycloak-build</code> one shot builds,
-  the start mounts its home — DD-676), the shared theme mounted, the realm <code>aurelius-atlas</code> imported
+  Postgres-backed and prod-mode booted as the charts run it, with no build one shot: Compose seeds the
+  home volume from the image and the first start augments it once (SPC-05, DD-696), the shared theme
+  mounted, the realm <code>aurelius-atlas</code> imported
   from <code>docker/keycloak/</code>, and the stack's own database volume <code>keycloak-postgres-data</code>; no published
   port. The proxy reaches it on its plaintext listener, and its own traces and metrics push to the
   stack's collector (DD-675).</li>
@@ -7223,11 +7211,10 @@ umbrella; the fragments are not a target of their own.</p>
   sign-in's return lead back under it, 9.5), <code>/auth/</code> to Keycloak unchanged (which serves under
   <code>/auth</code> itself), <code>/api/</code> to the server with its prefix, and <code>/</code> and every
   other path to the webapp, whose own nginx, in a container of its own, only serves the webapp's files.
-  <code>webapp-config</code> fills that nginx's template into the volume <code>webapp-nginx-conf</code> before it starts
-  (<code>apps/aurelius-atlas-webapp/docker/resolve-nginx.sh</code>, as the chart's init container does). The webapp
-  fragment's <code>config.json</code> points the webapp at the realm <code>aurelius-atlas</code>; the proxy answers
-  <code>/config.json</code> itself, from the host-rendered copy, because the file names the issuer the browser
-  signs in to (SPS-01). Its nginx forwards
+  That nginx reads a static configuration the stack ships at <code>docker/webapp/nginx.conf</code>, which names the
+  same upstreams the chart's init container renders and carries no ingest token (SPC-04, DD-695). The webapp
+  fragment's <code>config.json</code> points the webapp at the realm <code>aurelius-atlas</code>, and the webapp serves that file
+  through the proxy's catch-all (SPC-02). Its nginx forwards
   <code>/lineage-model/</code> and <code>/validate-entity/</code> to the aux services through the proxy's ports, and
   <code>/otel/</code> to the collector's browser leg, so the webapp's traces leave the browser through the
   proxy's own port (DD-675).</li>
@@ -7259,18 +7246,19 @@ umbrella; the fragments are not a target of their own.</p>
 <span class="w">    </span>--env-file<span class="w"> </span>infra/elasticsearch/.env<span class="w"> </span>down
 </code></pre></div>
 <p>The data stays in the stack's volumes for the next start. <code>down -v</code> deletes them, so the next start begins
-with an empty store: the server creates Atlas's and the m4i types again, and <code>SAMPLE_ZIP</code> imports the sample.
-The Statistics chart fills from the hourly snapshots, so a new store's chart is empty until the first full
-hour.</p>
+with an empty store: the server creates Atlas's and the m4i types again, and the sample waits for
+<code>docker/bin/import-sample.sh</code>. The Statistics chart fills from the hourly snapshots, so a new store's chart
+is empty until the first full hour.</p>
 <h2 id="ship-the-bundle">Ship the bundle<a class="headerlink" href="#ship-the-bundle" title="Permanent link">&para;</a></h2>
 <p>This page runs the stack from a repository checkout. A person without the repository gets a <strong>bundle</strong> instead:
-one archive with one flat compose file, the files it mounts, the sample, and the certificate script (ADR 067,
-increment 17.3). The release publishes it on the release's download page, and it needs only Docker,
-<code>docker compose</code>, <code>bash</code>, and <code>openssl</code>.</p>
+one archive with one flat compose file, the files it mounts, the sample, and the scripts folder
+<code>docker/bin/</code> (ADR 067, increments 17.3 and 17.4). The release publishes it on the release's download page,
+and it needs only Docker, <code>docker compose</code>, <code>bash</code>, and <code>openssl</code>.</p>
 <p>From a checkout, <code>npx nx standalone-bundle -- --version v1.2.3</code> builds the same archive under <code>dist/</code>. The tool
 is <code>tools/standalone_bundle.py</code>. The bundle is never a committed file (SBD-01). Unpack it, read its <code>README.md</code>,
-and the three steps in that file start the stack: <code>bash docker/make-certs.sh</code>, fill the empty secrets in
-<code>docker/.env</code>, and <code>docker compose -f docker/docker-compose.yaml up -d</code>.</p>
+and the three steps in that file start the stack: <code>bash docker/bin/make-certs.sh</code>, fill the empty secrets in
+<code>docker/.env</code>, and <code>docker compose -f docker/docker-compose.yaml up -d</code>. The bundle ships the other scripts
+too, so the sample and the tenants stay one command away (SPC-11, DD-699).</p>
 <p>The bundle's one compose file is this stack resolved by <code>docker compose config</code>, so its services and its rules
 are the ones on this page, and every <code>${VAR}</code> setting still applies. Its folder paths are relative to the
 bundle, and the folder answers sit in its <code>docker/.env</code> (DD-690). It carries no secret, no certificate, and no
