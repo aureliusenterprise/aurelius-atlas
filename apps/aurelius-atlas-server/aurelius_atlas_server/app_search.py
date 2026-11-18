@@ -5,8 +5,8 @@ every poll interval, as the embedding worker does (DD-521). Each round goes on w
 the documents just written (DD-529, ASQ-07), and ends with the ``GovernanceIndexer``'s (DD-535). A failed round, as
 when the store cannot be reached, is logged and the next one tries again; the start doesn't wait for it.
 
-A write wakes the worker (ASU-07, DD-676). A request that writes also waits for a round before its answer goes out,
-up to a time limit, so the page that reloads after a save reads the derived breadcrumb (ASU-08, DD-678).
+A write wakes the worker (ASU-07, DD-678). A request that writes also waits for a round before its answer goes out,
+up to a time limit, so the page that reloads after a save reads the derived breadcrumb (ASU-08, DD-679).
 """
 
 import asyncio
@@ -31,7 +31,7 @@ class AppSearchWorker:
 
     One round runs at start, one ``settle_seconds`` after a write wakes it, and one at the latest every
     ``poll_seconds`` (ASU-07). A write during a round wakes the next one at once, so a stream of changes is
-    derived batch after batch; the settle lets a burst of writes land in one round (DD-676).
+    derived batch after batch; the settle lets a burst of writes land in one round (DD-678).
     """
 
     def __init__(
@@ -83,7 +83,7 @@ class AppSearchWorker:
     async def run_once(self, *, quality: bool = True) -> int:
         """Run one round, after any round under way; a failure is logged and the next round tries again.
 
-        A request's round leaves ``quality`` out: the data quality follows in the background rounds (ASU-08, DD-678).
+        A request's round leaves ``quality`` out: the data quality follows in the background rounds (ASU-08, DD-679).
         """
         async with self._round:
             return await self._run_round(quality=quality)
@@ -118,7 +118,7 @@ ASGIApp = Callable[[Scope, Receive, Send], Awaitable[None]]
 
 
 class DeriveBeforeAnsweringMiddleware:
-    """Holds a writing request's answer until its stores' App Search documents are derived (ASU-08, DD-678).
+    """Holds a writing request's answer until its stores' App Search documents are derived (ASU-08, DD-679).
 
     A request whose writes reach a store set's entity store registers that set's worker (``AppSearchWorker.wrote``).
     The answer's last body part waits for a round of each, documents and governance verdicts, the data quality

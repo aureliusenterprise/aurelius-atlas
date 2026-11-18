@@ -160,11 +160,11 @@ class ServerSettings(StoreAccessSettings):
 
     app_search_answer_seconds: float = Field(default=5.0, ge=0)
     """How long a writing request waits for its App Search documents before it answers; 0 doesn't wait (ASU-08,
-    DD-678)."""
+    DD-679)."""
 
     app_search_settle_seconds: float = Field(default=0.5, ge=0)
     """How long the App Search indexer waits after a write wakes it, so a burst of writes lands in one round
-    (ASU-07, DD-676)."""
+    (ASU-07, DD-678)."""
 
     hybrid_vector_weight: float = Field(default=10.0, ge=0)
     """What a hybrid search multiplies an entity's vector score by before adding its text score (SBM-03, DD-442)."""

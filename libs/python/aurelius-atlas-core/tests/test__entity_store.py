@@ -190,7 +190,7 @@ async def test__a_unique_lookup_falls_back_to_sub_types(store: EntityStore) -> N
 
 @pytest.mark.covers(f"{S}.write", rules=["ASU-07"])
 async def test__every_committed_write_wakes_the_write_listeners_and_a_refused_one_none(store: EntityStore) -> None:
-    """Each write that commits calls every write listener once; one refused as stale calls none (DD-676)."""
+    """Each write that commits calls every write listener once; one refused as stale calls none (DD-678)."""
     woken: list[str] = []
     store.write_listeners.extend([lambda: woken.append("a"), lambda: woken.append("b")])
     table = new(store, qualifiedName="t")

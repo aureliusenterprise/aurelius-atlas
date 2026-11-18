@@ -140,7 +140,7 @@ class EntityStore:
         self.task_listeners: list[Callable[[], None]] = []
         """Called after a write that recorded tasks, to wake a worker (DD-080)."""
         self.write_listeners: list[Callable[[], None]] = []
-        """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-676)."""
+        """Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678)."""
 
     async def prepare(self) -> None:
         """Create the indices that are missing (ENS-01)."""

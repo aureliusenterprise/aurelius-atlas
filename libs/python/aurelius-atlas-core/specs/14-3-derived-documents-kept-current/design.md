@@ -109,7 +109,7 @@ lose work, never documents.
 **Consequences.** An installation that does not use the original webapp's search pays for the rounds. The
 setting turns them off.
 
-### DD-676. A write wakes the App Search indexer; the poll stays as the floor
+### DD-678. A write wakes the App Search indexer; the poll stays as the floor
 
 - **Status:** Proposed
 - **Increment:** 14.3 (a change, 2026-11-17)
@@ -139,12 +139,12 @@ gathers a burst of single writes into one round instead of one round each.
 it at its next poll. A recovered write (ENS-07) also waits for the poll. On a busy catalogue the worker runs
 almost continuously, bounded by its page size.
 
-### DD-678. A writing request answers once its App Search documents are derived
+### DD-679. A writing request answers once its App Search documents are derived
 
 - **Status:** Proposed
 - **Increment:** 14.3 (a change, 2026-11-18)
 - **Date:** 2026-11-18
-- **Supersedes:** DD-521's "no request waits for a round"; DD-676 stands
+- **Supersedes:** DD-521's "no request waits for a round"; DD-678 stands
 
 **Decision.** A write made while the server answers a request registers the store set's App Search worker for
 that request, besides waking it. A middleware around the routers holds the answer's last body part until each
@@ -152,7 +152,7 @@ registered worker has run a round of its documents and governance verdicts, at m
 `AURELIUS_ATLAS_SERVER_APP_SEARCH_ANSWER_SECONDS`, 5 seconds by default. A round still running then goes on in
 the background and the answer leaves. Rounds run one at a time, so a request's round follows the background
 round under way rather than racing it. A request that wrote nothing passes unchanged; writes outside a
-request, as a task's, only wake the worker (DD-676). The data quality stays with the background rounds: the
+request, as a task's, only wake the worker (DD-678). The data quality stays with the background rounds: the
 request's write woke the worker, so its full round, quality included, follows the answer.
 
 **Reason.** The details page reads the breadcrumb from the entity's stored App Search document (AVS-02) and
@@ -163,7 +163,7 @@ change affects, the children's breadcrumbs included, with the indexer's checks (
 
 **Alternatives.**
 
-- Waking the worker only (DD-676): the page reloads before the round ends.
+- Waking the worker only (DD-678): the page reloads before the round ends.
 - The webapp waits and reloads again: every client would need it, and how long to wait is a guess.
 - The data quality in the request's round too: a save waits for every quality rule's results and totals,
   which the page doesn't reload with.

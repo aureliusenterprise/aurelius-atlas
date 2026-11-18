@@ -62,7 +62,7 @@ async def test__a_round_derives_the_quality_and_the_verdicts_after_the_documents
 
 @pytest.mark.covers(f"{W}.run_once", rules=["ASU-08"])
 async def test__a_request_s_round_leaves_the_data_quality_to_the_background() -> None:
-    """Without quality: the documents, then the verdicts; the quality indexer doesn't run (DD-678)."""
+    """Without quality: the documents, then the verdicts; the quality indexer doesn't run (DD-679)."""
     log: list[str] = []
     rounds = Indexer(2, log=log), Indexer(5, name="quality", log=log), Indexer(4, name="governance", log=log)
     worker = AppSearchWorker(*rounds, poll_seconds=60)  # type: ignore[arg-type]
@@ -176,7 +176,7 @@ async def test__the_server_derives_a_written_entity_s_document_in_the_background
 async def test__the_server_s_entity_store_wakes_its_app_search_worker(
     settings: ServerSettings, fake_es: FakeClient
 ) -> None:
-    """The running worker's wake is one of the entity store's write listeners (DD-676)."""
+    """The running worker's wake is one of the entity store's write listeners (DD-678)."""
     del fake_es  # the store the app connects to
     app = create_app(settings.model_copy(update={"app_search_enabled": True, "app_search_poll_seconds": 3600}))
 
@@ -247,7 +247,7 @@ async def serve(app: Any, log: list[str]) -> None:  # noqa: ANN401 - an ASGI app
 
 @pytest.mark.covers(f"{M}.__call__", f"{W}.wrote", rules=["ASU-08"])
 async def test__a_writing_request_answers_once_its_documents_are_derived() -> None:
-    """The write registers the worker; the answer's last part leaves after its documents and verdicts (DD-678)."""
+    """The write registers the worker; the answer's last part leaves after its documents and verdicts (DD-679)."""
     log: list[str] = []
     quality = Indexer(name="quality", log=log)
     worker = AppSearchWorker(SlowRounds(0.02, log), quality, Indexer(name="governance", log=log), poll_seconds=3600)  # type: ignore[arg-type]
