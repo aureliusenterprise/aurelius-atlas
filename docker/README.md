@@ -329,7 +329,7 @@ hour.
 ## Ship the bundle
 
 This page runs the stack from a repository checkout. A person without the repository gets a **bundle** instead:
-one archive with the compose pieces, the files they mount, the sample, and the certificate script (ADR 067,
+one archive with one flat compose file, the files it mounts, the sample, and the certificate script (ADR 067,
 increment 17.3). The release publishes it on the release's download page, and it needs only Docker,
 `docker compose`, `bash`, and `openssl`.
 
@@ -338,6 +338,8 @@ is `tools/standalone_bundle.py`. The bundle is never a committed file (SBD-01). 
 and the three steps in that file start the stack: `bash docker/make-certs.sh`, fill the empty secrets in
 `docker/.env`, and `docker compose -f docker/docker-compose.yaml up -d`.
 
-The bundle mirrors this tree, so its pieces, its paths, and its rules are the ones on this page. It carries no
-secret, no certificate, and no private key (SBD-04), and it names the release images instead of the `:local`
-tags (SBD-06). A `docker/` change reaches a bundle only when the release rebuilds it.
+The bundle's one compose file is this stack resolved by `docker compose config`, so its services and its rules
+are the ones on this page, and every `${VAR}` setting still applies. Its folder paths are relative to the
+bundle, and the folder answers sit in its `docker/.env` (DD-690). It carries no secret, no certificate, and no
+private key (SBD-04), and it names the release images instead of the `:local` tags (SBD-06). A `docker/` change
+reaches a bundle only when the release rebuilds it.

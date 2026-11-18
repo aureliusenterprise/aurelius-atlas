@@ -15,14 +15,12 @@ is never edited except its status line, and a changed decision is a new entry th
   increment 17.1 left open for 17.2 and 17.3.
 
 **Decision.** One script, `tools/standalone_bundle.py`, builds the bundle, and the root project's
-`standalone-bundle` target runs it. The script reads the umbrella compose file, follows its `include` paths
-and the `extends` chains, and copies each file it finds into an output folder. It then walks every service in
-the result and copies the host paths it names: each bind-mount source, each `env_file`, each config source.
-It rewrites those paths into the bundle (DD-683), and writes the bundle's own `README.md` start section and
-its `.env`, which carries the settings roster and the release image variables (DD-684, DD-685). The compose
-copies stay byte-identical to the repository's. A second copy of the compose files never enters the
-repository, so `git status` stays clean after the target runs and no release step can drift from the tree it
-released (SBD-01, SBD-07, SBD-10).
+`standalone-bundle` target runs it. The script asks `docker compose config` to resolve the umbrella into one
+flat compose file (DD-689), then copies every file or folder that flat file mounts (DD-690). It writes the
+bundle's own `README.md` start section and its `.env`, which carries the settings roster, the bundle-relative
+folders, and the release image variables (DD-684, DD-685). The resolved file replaces the repository's compose
+tree inside the bundle, and no copy of that tree enters the repository, so `git status` stays clean after the
+target runs and no release step can drift from the tree it released (SBD-01, SBD-07, SBD-10).
 
 The bundler runs from the working tree with no Docker daemon, which is what lets the root pytest suite build
 a bundle and check it (SBD-08). It refuses a path it cannot copy, instead of emitting a bundle that starts
@@ -42,21 +40,22 @@ compose file beside a `project.json`, and the umbrella starts no service of its 
 
 **Alternatives.**
 
-- Commit a bundle folder and refresh it in a release step. Rejected: a second copy of ten compose files,
+- Commit a bundle folder and refresh it in a release step. Rejected: a second copy of the compose tree,
   which nothing tests for equality, is a drift hazard on every stack change.
-- Flatten the stack into one compose file with `docker compose config` and ship that. Rejected: see DD-683.
+- Flatten the stack into one compose file with `docker compose config` and ship that. Chosen in DD-689, with
+  `--no-interpolate`; DD-683 first rejected it because plain `config` freezes environment values.
 - Publish a Helm chart for the standalone stack and ask the operator to install it with values. Rejected:
   the stack's whole selling point is one machine and one command, and the Helm path already exists for the
   real deployment (ADR 057).
 
-**Consequences.** The bundler is production code with a test per rule id, and it needs the conftest
-resolver's flatten logic moved into a place both use. The root `test` target's input list grows to name the
-bundler and its assets. A new compose piece with an unusual mount shape needs the bundler to learn it, and
-the SBD-08 check fails loudly when it does not (SBD-03).
+**Consequences.** The bundler is production code with a test per rule id. It builds the flat file through the
+`docker compose` CLI and needs no compose reading code of its own (DD-689). The root `test` target's input
+list grows to name the bundler and its assets. A new compose piece with an unusual mount shape needs the
+bundler to learn it, and the SBD-08 check fails loudly when it does not (SBD-03).
 
 ### DD-683. The bundle copies the compose tree and rewrites out-of-tree paths, rather than flattening
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-689
 - **Increment:** 17.3
 - **Date:** 2026-11-19
 - **Supersedes:** nothing. It states how ADR 065's fragment layout survives packaging.
@@ -226,8 +225,8 @@ the folder of the piece that declares it.
 `SAMPLE_DIR` defaulted to `../../../data/atlas-sample`, and the webapp and the aux pieces each mounted
 `../certs`, which is a folder of the repository tree. A person who copies one piece to their own machine
 inherits a path that does not exist there, and the failure is a service that cannot read its own certificate.
-The guard fails one step earlier and names the setting (SBD-12). The bundler cannot cover this: it rewrites
-a literal path (DD-683),
+The guard fails one step earlier and names the setting (SBD-12). The bundler cannot cover this: it rebases a
+literal path (DD-690),
 but SBD-04 says the bundle ships no secret and fills no value a person did not set, so it must not rewrite a
 customer's `.env`. The gateway showed the second shape: it mounted the server's leaf through the repository
 path `../../apps/aurelius-atlas-server/certs`, which no install outside the tree can answer. `stack.env` keeps
@@ -246,8 +245,8 @@ for it (ADR 065), so the README and CI commands keep the three secret files they
   settings carry a prefix. Compose reads these names from the stack's own env-files, and DD-686 settled the
   same unprefixed shape for the image variables.
 - Require the three infra pieces as well. Rejected: no infra piece has a default to remove. The store, the
-  identity provider, and the collector read the slices' own `./certs` paths, and the bundle's path rewriter
-  relocates the literal (SBD-03).
+  identity provider, and the collector read the slices' own `./certs` paths, and the bundle's path rebase
+  relocates the literal (SBD-03, DD-690).
 
 **Consequences.** Eight names join the settings a customer fills, and `docker/.env.example` explains them as
 comments rather than empty keys. Compose prefers an empty value of an outer `--env-file` over `stack.env`, and
@@ -260,7 +259,7 @@ adds a mount of a folder without a guard, or a default path, or a required name 
 
 ### DD-688. The bundle is a pruned mirror of the repository, with no path rewrite
 
-- **Status:** Proposed
+- **Status:** Superseded by DD-689
 - **Increment:** 17.3
 - **Date:** 2026-11-19
 - **Supersedes:** the path-rewriting mechanism of DD-683 (its "no flattening" choice stands) and the
@@ -301,3 +300,156 @@ repository's shape, so its README names the two generated files and the certific
 layout. A new piece travels with no change to the tool, because the copy list comes from the compose files and
 not from a folder list (SBD-07). `make-certs.sh` still computes `root` from its own location, so it fills the
 mirror's certificate folders with no edit (SBD-09).
+
+### DD-689. The bundle ships one flat compose file that `docker compose` itself resolves
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-18
+- **Supersedes:** DD-683 and DD-688 (the copy-the-tree mechanism). The rest of DD-682, and DD-684, DD-685,
+  DD-686, and DD-687 stand.
+
+**Decision.** The bundler runs `docker compose config --no-interpolate` on the umbrella and ships that output
+as the bundle's only compose file, at `docker/docker-compose.yaml` inside the bundle. Compose resolves the
+`include` tree, the `extends` chains, and the shared anchors, so the tool carries no compose semantics of its
+own (SBD-07). The `--no-interpolate` flag keeps every `${VAR}` the pieces wrote, so each setting stays open
+(SBD-02). The tool then copies what the flat file mounts (DD-690).
+
+**Reason.** The pruned mirror (DD-688) shipped ten compose files, and the operator's edits spread across them.
+The user asked for the simplest pipeline with the least custom logic to maintain. The mirror's logic was the
+custom part: a compose reader that walks `include` lists, merges `extends`, honours `!reset` and `!override`,
+and knows which clauses compose merges. `docker compose config` already is that reader, maintained upstream,
+and one call replaces the whole walk. The earlier objection to flattening (DD-683) was that `config` freezes
+environment values. That objection falls away with `--no-interpolate`: the flag keeps every `${VAR}` a
+variable, so the release tag, the host, and the eight folder knobs stay settings. The second objection, lost
+comments, stays true. We accept it: the flat file is a generated view, and the repository keeps the commented
+pieces and their owner records. User documentation replaces the lost provenance notes (SBD-09).
+
+**Alternatives.**
+
+- Keep the pruned mirror of DD-688. Rejected: it keeps the workspace's largest piece of hand-written compose
+  logic, the resolver in `tools/compose_stack.py` plus the bundler's own tree walk, for a shape the operator
+  edits in ten places instead of one.
+- Ship the ordinary `docker compose config` output, with interpolation. Rejected: it bakes the developer's
+  environment into the artifact, so the release tag and the host freeze and a customer's `.env` has nothing
+  left to set (the reason DD-683 first gave).
+- Ship the flat file plus the repository's pieces for reference. Rejected: a second, dead copy of the compose
+  tree is the drift hazard DD-682 rejected, and the operator must work out which file `up` reads.
+
+**Consequences.** The bundler loses its compose reading code and gains one subprocess call plus mechanical
+fixes (DD-690). `tools/compose_stack.py` stays for the repository's own suites, but the bundler reads only the
+umbrella's path from it. The bundle's file set shrinks to one compose file, the mounted assets, the sample,
+the roster, and the certificate script. The SBD-02 check compares service, image, and volume names instead of
+byte-identical files, because a flat definition is never byte-identical to a fragment. An operator who edits
+the flat file loses the edit on a rebuild, and the bundle README says so (SBD-09).
+
+### DD-690. The bundler fixes the flat file's three mechanical flaws
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-18
+- **Supersedes:** nothing. It supplies the fixes DD-689's flattening needs, and it replaces the copy rules of
+  DD-688.
+
+**Decision.** The tool applies three mechanical fixes to the flat document before it ships (SBD-03).
+
+1. **Paths.** Compose anchors each relative bind source to the folder of the file that wrote it, so the flat
+   file bakes absolute paths into the build machine. The tool rewrites each to a path relative to the bundle's
+   `docker/` folder and copies the file or folder to the mirrored place inside the bundle.
+2. **Bind types.** With `--no-interpolate`, compose cannot tell a guarded folder (`${VAR:?...}`) from a named
+   volume and types those mounts `volume`. An operator who fills `.env` then meets "refers to undefined
+   volume". The tool types them `bind` and keeps the guard, and the bundle's `.env` answers each with a
+   bundle-relative folder (SBD-12).
+3. **Folders.** Each guarded folder comes from the committed `docker/stack.env`, which holds the repository's
+   own answer for every folder knob. The tool finds the piece that names each guard, resolves that value from
+   the piece's own folder, and rebases it into the bundle. This reads the folders from the stack itself, so it
+   keeps no second list of certificate or sample paths (SBD-07), and it needs no second `config` run.
+
+A service that builds an image, a bind that leaves the checkout, and a bind whose material the tree lacks each
+fail the build by name.
+
+**Reason.** The three flaws are compose output quirks, not Atlas rules, and each has a one-rule fix that
+needs no judgement. Baking the folders instead (no guard, absolute-free bundle paths written straight into the
+compose file) would fail SBD-12: a person who sets no folder would read a path the tool chose. Keeping the
+guard keeps the knob the repository's own pieces already expose. The pairing run reads folders from the stack
+itself, which is the same source the repository's commands use, so a piece that moves its certificate folder
+reaches the bundle with no tool change.
+
+**Alternatives.**
+
+- Bake bundle-relative paths into the compose file and drop the guards. Rejected: it breaks SBD-12, and the
+  operator repoints a folder by editing a generated file instead of one `.env` value.
+- Teach the flat file to keep `include:` of a single generated pieces file. Rejected: that re-creates the
+  multi-file tree DD-689 removed, with a generated middle file nobody owns.
+- Keep the guarded mounts typed `volume` and declare each as a named volume. Rejected: the mount is a bind,
+  and a named volume would hold a container-side copy the operator's `make-certs.sh` run cannot fill (SBD-09).
+
+**Consequences.** The bundler's tested surface is `_rebase`, the bind typing, and the closure check, all of
+which the suite exercises. The closure check reads the shipped flat file and the bundle's `.env`, so it proves
+the same resolution a start performs (SBD-08). The `stack.env` file stays repository-only: the bundle answers
+the guards with its own `.env` values, so no bundle value names a repository folder.
+
+### DD-691. The certificate script makes the truststore password when nothing names it
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-19
+- **Supersedes:** nothing. It widens the password lookup of 17.2's `make-certs.sh` (DD-681) for an install that
+  ships the stack alone.
+
+**Decision.** `docker/make-certs.sh` keeps its lookup order: the shell value, then `infra/keycloak/.env`, then
+`docker/.env`. When none of them holds a value, the script reads the checkout marker
+`infra/keycloak/.env.enc`. A checkout that has not decrypted its env still fails by name. A made-up password
+there would disagree with the encrypted one. A standalone install has no such marker, so the script creates a
+password, writes it into `docker/.env`, and signs the truststore with it (SBD-09).
+
+**Reason.** The level 2 run of SBD-09 followed the bundle's own README: make the certificates, then fill the
+empty secrets. The script broke the first step. The bundle ships `TLS_TRUSTSTORE_PASSWORD` empty, because SBD-04
+leaves every secret empty, and the script exited when it found no value. The password is not a person's secret:
+no one types it, no one sends it anywhere, and the script already creates the CA key with `openssl rand` in the
+same run. Compose reads `docker/.env` on the stack's start, so a value the script writes there reaches the
+identity provider on the same start, and the store and the JVM cannot disagree.
+
+**Alternatives.**
+
+- Ask the person to fill `TLS_TRUSTSTORE_PASSWORD` before they run the script. Rejected: the README's order is
+  the one a person follows, so the documented two-command start would fail at the first command.
+- Move the certificate step after the fill step in the README. Rejected: it keeps a trap for anyone who runs the
+  script first, and it makes the fill list longer for a password nobody chooses.
+- Write the password to a separate file the identity provider reads. Rejected: compose interpolates the truststore
+  password from `docker/.env`, so a second file gives two answers to compare.
+
+**Consequences.** The bundle's README no longer names the truststore password among the values a person fills.
+The script changes one file the person owns, and only that one key in it. A re-run finds the value in
+`docker/.env` and re-uses it, so the truststore stays openable across re-runs and a changed host.
+
+### DD-692. Every `docker compose` run of the bundler gets a clean environment
+
+- **Status:** Proposed
+- **Increment:** 17.3
+- **Date:** 2026-11-19
+- **Supersedes:** nothing. It tightens the resolution runs of DD-689.
+
+**Decision.** The tool runs every `docker compose` call with a minimal environment: the variables the Docker CLI
+needs to reach the daemon, and nothing else. The build run also passes `--env-file /dev/null`, so the
+developer's own `docker/.env` stays out of the flat file (SBD-01).
+
+**Reason.** Compose lets a shell variable beat an `--env-file`. The level 2 run proved the damage on a
+developer's machine: an exported `SERVER_IMAGE` resolved the whole stack to that tag, so the bundle's own
+release-tag check failed on a correct bundle. The same leak reaches the build. A bundler must produce the same
+artifact from the tracked tree on any machine, and a variable the operator exported for another task is not part
+of that tree.
+
+**Alternatives.**
+
+- Unset the known variable names before each call. Rejected: the leak is not limited to the image tags. Any
+  compose interpolation reads the environment, including `COMPOSE_PROFILES`, which adds services to the flat
+  file.
+- Ask the developer to run the target in a clean shell. Rejected: it is a rule no one can enforce, and CI runs
+  the same code.
+- Keep the inherited environment and check the resolved output instead. Rejected: the check cannot tell a
+  borrowed tag from a wrong compose file, which is how the failure first appeared.
+
+**Consequences.** The suite resolves a bundle through the same helper, so a test and the shipped check see the
+same answers. A developer's exported settings no longer change the artifact, and `docker compose` keeps its
+daemon access.

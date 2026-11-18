@@ -1,158 +1,253 @@
-"""Build the standalone bundle (17.3, DD-682..688).
+"""Build the standalone release bundle (17.3, DD-682..690).
 
-The bundle is a pruned **mirror** of the repository (DD-688): the same folder names and file contents, with
-only the pieces the stack reads and the assets they mount. No text rewrite except the bundle's own ``.env``,
-which the spec requires (SBD-04, SBD-05, SBD-06). Because the shape is the repository's, every compose copy
-is byte-identical to the tracked one and every path it names still points inside the bundle: each piece's
-``../`` include, the infra bases' ``./certs``, the umbrella's ``stack.env`` (which answers the eight folder
-knobs, so a relative value still resolves from the piece that reads it), the folders ``make-certs.sh``
-creates, and the sample. Nothing rewrites a path; the mirror is already closed, which refines DD-683's
-"shorter paths" wording to "keep the tree" (DD-688).
+The bundle ships ONE compose file: the resolved view of the repository's standalone stack, produced by
+``docker compose config --no-interpolate`` on the umbrella (DD-689). Compose itself resolves the ``include``
+tree, the ``extends`` chains, and the shared anchors, so the tool carries no compose semantics of its own:
+it merges no fragments, follows no includes, and applies no override rules (SBD-07). The flat file keeps every
+``${VAR}`` the pieces wrote, so every setting stays a setting the operator can change in one place.
 
-What travels: the ten compose pieces and the three infra base files they extend, the files the stack bind-
-mounts (configs, scripts, the importer, the coredump agent, the themes, the realm import), the sample
-(SBD-05), the certificate script and its manifest (SBD-12), the committed ``stack.env``, and the starter
-``.env.example`` roster the bundle's ``.env`` is built from (SBD-04). What never travels: the repository's
-secrets — any ``.env`` or ``.env.enc``, the ``certs/`` folders, ``secrets/``, and any key or certificate
-(SBD-04). The copy list is derived from the stack's own compose files through tools/compose_stack.py: the
-tool keeps no second list of services, mounts, or images (SBD-07), and a bind source it cannot copy fails the
-build instead of emitting a bundle that starts broken (SBD-03).
+Two things the raw ``config`` output cannot ship as-is, and the tool fixes mechanically (DD-690):
+
+- Compose anchors every host path to the folder of the file that wrote it, so baked bind sources come back as
+  absolute paths into THIS checkout. The tool rewrites each to a path relative to the bundle's ``docker/``
+  folder (where the flat file and the operator's ``.env`` live) and copies the file or folder to the mirrored
+  place inside the bundle (SBD-03).
+- With ``--no-interpolate`` compose cannot tell a guarded host folder (``${VAR:?...}``) from a named volume,
+  so it types those mounts ``volume``; an operator who fills ``.env`` then meets "refers to undefined volume".
+  The tool types them ``bind``. The folder each guard names comes from the committed ``stack.env`` (DD-687)
+  read from the piece that wrote the guard, rebased to a bundle-relative value the tool writes into the
+  bundle's ``.env``, so the knobs stay knobs and no value names a machine (SBD-05, SBD-12).
+
+What travels: the flat compose file, every file or folder the flat file mounts, the sample (SBD-05), the
+certificate script and its manifest (17.2), and the starter ``.env.example`` roster. What never travels: the
+repository's secrets — any ``.env``/``.env.enc``, the ``certs/`` folders, ``secrets/``, and any key or
+certificate (SBD-04). A certificate folder is mounted but not copied: ``make-certs.sh`` fills it inside the
+bundle (SBD-09). The tool writes the bundle's own ``.env`` and ``README.md``. A bind it cannot copy, or a
+shape it has not learned, fails the build rather than ship a bundle that starts broken (SBD-03).
 
 Run as a script (``uv run python tools/standalone_bundle.py --version v1.2.3``) or through the root target
-``nx standalone-bundle -- --version v1.2.3``. The release workflow (DD-685) passes the tag it published for,
-so the six image variables name the images the same run pushed; the copied compose keeps its ``:local``
-default and names none of the ``dhi.io`` images (DD-686).
+``nx standalone-bundle -- --version v1.2.3``. Producing the flat file needs the ``docker compose`` CLI; that
+run is daemon-free (DD-689). The release workflow passes the tag it published for, so the image variables
+name the images the same run pushed (DD-685).
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import shutil
+import subprocess
 import sys
 import tarfile
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from compose_stack import UMBRELLA, WORKSPACE, compose_files, compose_load, merge_stack
+from compose_stack import UMBRELLA, WORKSPACE, compose_files
 
-#: The compose spelling of a release image (DD-686): ``${NAME_IMAGE:-ghcr.io/<org>/<project>:local}``. The
-#: pieces name their images this way and no Aurelius image appears in plain text (SBD-11), so the set of
-#: variables the bundle must answer is read from the stack rather than kept here (SBD-06, SBD-07).
+#: The folder inside the bundle that holds the flat compose file and the operator's ``.env``. Compose reads a
+#: relative bind source from the folder of the compose file, so this is the anchor every path rebases to.
+BUNDLE_COMPOSE_DIR = "docker"
+
+#: The compose spelling of a release image: ``${NAME_IMAGE:-ghcr.io/<org>/<project>:local}``. The set of
+#: variables the bundle answers is read from the flat file, never kept here (SBD-06, SBD-07).
 IMAGE_VARIABLE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*_IMAGE):-ghcr\.io/aureliusenterprise/([a-z0-9][a-z0-9-]*):local\}$")
 
-#: The committed files a running stack reads that no service names directly: the stack-wide folder answers
-#: (the umbrella's include ``env_file``), the roster the bundle ``.env`` is built from, and the certificate
-#: script with its manifest. Listed because compose binds only what a service mounts.
-EXTRA_FILES = ("docker/stack.env", "docker/.env.example", "docker/make-certs.sh", "docker/certs.txt")
+#: A required folder guard ``${VAR:?message}``. Compose types these ``volume`` in ``--no-interpolate`` mode,
+#: so the tool types them ``bind`` and answers them in the bundle's ``.env`` (DD-690).
+GUARDED_VARIABLE = re.compile(r"^\$\{([A-Z][A-Z0-9_]*):\?[^}]*\}$")
 
-#: The folder the sample import and the tenants one shot read, which the person must not have to set
-#: (SBD-05). The bundle's ``.env`` names it; the value comes from the committed ``stack.env`` (DD-687), so the
-#: mirror ships one answer for a folder and the tool keeps no second copy of the path (SBD-07).
-SAMPLE_VARIABLE = "SAMPLE_DIR"
+#: The tenants one-shot's sample default ``${TENANT_SAMPLE:-sample_data.zip}``. The bundle reads the ZIP name
+#: from it, so the sample imports itself on first start with no second list of sample names (SBD-05).
+SAMPLE_DEFAULT = re.compile(r"^\$\{TENANT_SAMPLE:-([^}]+)\}$")
 
-#: Never copied from the repository (SBD-04, DD-684): the repository's own env files, the generated
-#: certificate folders, the developer secrets tree, and any key, certificate, or truststore file.
+#: The committed files a running stack reads that no service mounts: the roster the bundle ``.env`` is built
+#: from, and the certificate script with its manifest (17.2, SBD-09).
+EXTRA_FILES = ("docker/.env.example", "docker/make-certs.sh", "docker/certs.txt")
+
+#: Never copied from the repository (SBD-04, DD-684): the repository's own env files, the generated certificate
+#: folders, the developer secrets tree, and any key, certificate, or truststore file.
 NEVER_COPIED = re.compile(r"(^|/)(\.env|\.env\.enc|secrets)(/|$)|(^|/)certs(/|$)|\.(pem|key|p12|crt)$")
 
-#: What must not appear *inside* a built bundle (SBD-04). Narrower than NEVER_COPIED: the bundle is allowed
-#: its own ``.env`` (the empty roster it ships), so only certificates, keys, truststores, and ``.env.enc`` are
-#: forbidden in the tree.
+#: What must not appear *inside* a built bundle (SBD-04). Narrower than NEVER_COPIED: the bundle ships its own
+#: ``.env`` (the empty roster), so only certificates, keys, truststores, and ``.env.enc`` are forbidden.
 NEVER_BUNDLED = re.compile(r"(^|/)certs(/|$)|\.(pem|key|p12|crt)$|\.env\.enc$")
 
-#: A setting the person must fill; the bundle's ``.env`` names it and leaves it empty (SBD-04). The image
-#: variables also end in a secret-looking suffix by chance, so they are checked first and excluded.
+#: A setting the operator must fill; the bundle's ``.env`` names it and leaves it empty (SBD-04). The image
+#: variables end in a secret-looking suffix by chance, so they are checked first and excluded.
 SECRET_SUFFIX = ("PASSWORD", "SECRET", "TOKEN", "KEY")
+
+#: A throwaway project name for the daemon-free ``config`` runs, so a check never touches the stack's project.
+SCRATCH_PROJECT = "aurelius-atlas-bundle-build"
+
+#: The only environment variables a ``docker compose`` run of this tool may see. Compose lets a shell variable
+#: beat an ``--env-file``, so a developer who exports ``SERVER_IMAGE`` or ``COMPOSE_PROFILES`` for another task
+#: would otherwise change what the bundler builds or checks (SBD-01). The allowlist holds what the Docker CLI
+#: itself needs to reach the daemon — nothing the stack reads.
+COMPOSE_ENV_ALLOWLIST = (
+    "PATH",
+    "HOME",
+    "USER",
+    "LANG",
+    "TMPDIR",
+    "XDG_RUNTIME_DIR",
+    "NODE_EXTRA_CA_CERTS",
+    "SSL_CERT_FILE",
+    "SSL_CERT_DIR",
+    "DOCKER_HOST",
+    "DOCKER_CONFIG",
+    "DOCKER_CONTEXT",
+    "DOCKER_TLS_VERIFY",
+    "DOCKER_CERT_PATH",
+)
+
+
+def _minimal_compose_env() -> dict[str, str]:
+    """A clean environment for ``docker compose``: daemon access only, so no shell variable edits the stack."""
+    return {name: value for name in COMPOSE_ENV_ALLOWLIST if (value := os.environ.get(name)) is not None}
 
 
 class BundleError(SystemExit):
     """The bundle cannot be built as specced; the message names the rule the tree would break."""
 
 
-def _declared_files(umbrella: Path = UMBRELLA) -> list[Path]:
-    """The compose files whose own services enter the stack: the umbrella plus everything it includes.
+def _compose_document(text: str) -> dict:
+    """Parse a resolved compose document into plain Python (the CLI's output is plain YAML)."""
+    loaded = yaml.safe_load(text)
+    if not isinstance(loaded, dict) or "services" not in loaded:
+        raise BundleError("the resolved compose document has no services (DD-689)")
+    return loaded
 
-    An ``extends`` base file is not declared: its services reach the stack only through a piece that extends
-    one of them, so the bundler records an extended base service's mounts from the piece (SBD-07). A base
-    service no piece extends (an infra slice's metrics puller) is not part of the stack and copies no asset.
+
+def _run_compose_config(*, interpolate: bool) -> str:
+    """Run ``docker compose config`` on the repository umbrella and return the document text.
+
+    The CLI resolves ``config`` without a daemon (DD-689). ``--env-file /dev/null`` keeps the build off the
+    developer's own ``docker/.env``, and the minimal environment keeps their exported shell variables off it
+    too, so the flat file depends on the tracked tree alone (SBD-01). ``interpolate=False`` keeps every
+    ``${VAR}`` the pieces wrote. No ``-p``: the document keeps the project name the umbrella declares, because
+    a bundler's scratch name must not travel in the shipped file.
     """
-    found: list[Path] = []
-
-    def walk(path: Path) -> None:
-        if path in found:
-            return
-        found.append(path)
-        for entry in compose_load(path).get("include") or ():
-            walk((path.parent / entry["path"]).resolve())
-
-    walk(umbrella.resolve())
-    return found
+    command = ["docker", "compose", "-f", str(UMBRELLA), "--env-file", os.devnull, "config"]
+    if not interpolate:
+        command.append("--no-interpolate")
+    done = subprocess.run(
+        command, capture_output=True, text=True, check=False, env=_minimal_compose_env(), cwd=WORKSPACE
+    )
+    if done.returncode != 0:
+        raise BundleError(f"`docker compose config` failed: {done.stderr.strip()} (DD-689)")
+    return done.stdout
 
 
-def _direct_dirs(umbrella: Path = UMBRELLA) -> dict[str, Path]:
-    """Each directly declared service's name to the folder of the piece that declares it.
+def _guarded_folder_names(flat: dict) -> set[str]:
+    """The ``${VAR:?...}`` guards the flat file mounts as host paths (the cert and sample folder knobs).
 
-    A service defined without ``extends`` keeps its relative mounts as written, and compose reads a relative
-    path from the folder of the file that wrote it, so a mount such as ``./one.conf`` resolves from its own
-    piece. An ``extends`` service needs no entry: merge_stack returns its mounts already spelled root-relative
-    (the base's rebased to the base's folder, the piece's to the piece's), so they resolve from the tree root.
+    A secret guard names a value in ``environment``, never a mount source, so every guard in a volume source
+    is a folder the tool answers (SBD-12).
     """
-    out: dict[str, Path] = {}
-    for file in _declared_files(umbrella):
-        for name, service in (compose_load(file).get("services") or {}).items():
-            if not service.get("extends"):
-                out[name] = file.parent
-    return out
+    return {
+        match.group(1)
+        for service in flat.get("services", {}).values()
+        for entry in service.get("volumes") or ()
+        if isinstance(entry, dict) and (match := GUARDED_VARIABLE.match(str(entry.get("source"))))
+    }
 
 
-def _bind_head(item: object) -> str:
-    """The host path a short-syntax volume entry names (the part before the first colon), or "" for none."""
-    return item.split(":")[0] if isinstance(item, str) and ":" in item else ""
+def _stack_env_answers() -> dict[str, str]:
+    """The committed ``docker/stack.env`` answers (DD-687): folder knob -> the relative folder its piece reads."""
+    answers: dict[str, str] = {}
+    for line in (WORKSPACE / "docker/stack.env").read_text().splitlines():
+        if line.lstrip().startswith("#") or "=" not in line:
+            continue
+        name, _, value = line.partition("=")
+        answers[name.strip()] = value.strip()
+    return answers
 
 
-def _literal_binds(root: Path, umbrella: Path) -> list[tuple[str, Path]]:
-    """(service, resolved host path) for every literal bind the merged stack mounts under `root`.
+def _folder_answers(flat: dict) -> dict[str, str]:
+    """Folder knob -> a bundle-relative folder, read from the committed ``stack.env`` (DD-687, SBD-05, SBD-12).
 
-    The set comes from merge_stack, so an ``extends`` piece's mount override is honoured the way compose
-    applies it (the identity provider's own realm folder replaces the slice's, DD-676). A ``${VAR}`` mount names
-    a folder the person or ``make-certs.sh`` fills, and a bare name (``data``) is a named volume the stack
-    creates at start, so neither is a file to copy; a service that builds an image or reads a compose
-    ``env_file``/``config``/``secret`` is a shape this bundler has not learned, so it fails rather than ship a
-    bundle missing that input (SBD-03, SBD-06).
+    ``stack.env`` is the repository's own answer for every folder knob, with each value relative to the compose
+    piece that reads it. The tool finds the piece that names each guard, resolves that value from the piece's
+    own folder, and rebases it to the bundle's ``docker/`` folder. This keeps every folder derived from the
+    stack — no second list of cert or sample paths, and no second ``config`` run (SBD-07).
     """
-    merged = merge_stack(root, umbrella)
-    direct = _direct_dirs(umbrella)
-    found: list[tuple[str, Path]] = []
-    for name, service in merged["services"].items():
+    stack = _stack_env_answers()
+    pieces = [(path, path.read_text()) for path in compose_files(UMBRELLA)]
+    answers: dict[str, str] = {}
+    for guard in sorted(_guarded_folder_names(flat)):
+        if guard not in stack:
+            raise BundleError(f"the stack guards {guard} but docker/stack.env holds no answer for it (SBD-12)")
+        folders = [path.parent for path, text in pieces if f"${{{guard}:" in text]
+        if not folders:
+            raise BundleError(f"no compose piece names {guard}, so its folder cannot be anchored (SBD-12)")
+        answers[guard] = _rebase(str((folders[0] / stack[guard]).resolve()))[0]
+    return answers
+
+
+def _rebase(raw: str) -> tuple[str, Path]:
+    """Turn one host path from the resolved document into a bundle-relative path and the repository file.
+
+    Returns (path relative to the bundle's ``docker/`` folder, repository source). A path outside the checkout
+    has no home in the bundle, which fails the build instead of emitting an open bundle (SBD-03).
+    """
+    absolute = Path(raw)
+    if not absolute.is_absolute():
+        absolute = (WORKSPACE / BUNDLE_COMPOSE_DIR / raw).resolve()
+    try:
+        repo_relative = absolute.relative_to(WORKSPACE)
+    except ValueError as error:
+        raise BundleError(f"{raw} lies outside {WORKSPACE}, so the bundle cannot hold it (SBD-03)") from error
+    return os.path.relpath(repo_relative, BUNDLE_COMPOSE_DIR), absolute
+
+
+def _flatten_services(flat: dict) -> list[Path]:
+    """Rewrite every host mount in the flat document in place and return the sources to copy.
+
+    A named volume is left for the stack to create at start. Every baked host path becomes bundle-relative and
+    enters the copy list. A guarded folder keeps its ``${VAR:?...}`` knob and gains ``type: bind`` so the
+    operator's filled ``.env`` does not meet "undefined volume" (DD-690); its material does not travel through
+    the copy list, because a certificate folder is filled by ``make-certs.sh`` (SBD-09) and the sample travels
+    as the explicit ``data/atlas-sample`` copy (SBD-05). Any other shape the tool has not learned fails the
+    build (SBD-03).
+    """
+    copies: list[Path] = []
+    for name, service in flat.get("services", {}).items():
         if service.get("build"):
             raise BundleError(f"service {name} builds an image, which a published-image bundle cannot carry (SBD-06)")
-        for key in ("env_file", "configs", "secrets"):
-            if service.get(key):
-                raise BundleError(f"service {name} uses {key}, which the bundler must learn to copy (SBD-03)")
-        for item in service.get("volumes") or ():
-            head = _bind_head(item)
-            if head.startswith(("./", "../")) or head == ".":
-                resolved = (direct[name] / head).resolve()  # a direct service's own relative mount
-            elif "/" in head:
-                resolved = (root / head).resolve()  # an extends service's mount, rebased root-relative
-            else:
+        for entry in service.get("volumes") or ():
+            if not isinstance(entry, dict) or not isinstance(entry.get("source"), str):
+                raise BundleError(f"service {name} has a volume entry with no string source (DD-689)")
+            source = entry["source"]
+            guard = GUARDED_VARIABLE.match(source)
+            if entry.get("type") == "volume" and not guard and "${" not in source:
                 continue  # a named volume the stack creates at start
-            if resolved.name == "certs":
-                continue  # certificate material make-certs.sh issues at that mirrored path (SBD-04, SBD-12)
-            found.append((name, resolved))
-    return found
+            if guard:
+                entry["type"] = "bind"
+                entry.setdefault("bind", {})
+                continue  # the bundle's .env answers the knob; its material is filled or copied elsewhere
+            bundle_relative, repo_source = _rebase(source)
+            entry["source"] = bundle_relative
+            repo_path = repo_source.relative_to(WORKSPACE).as_posix()
+            if repo_path == "certs" or repo_path.endswith("/certs"):
+                continue  # make-certs.sh fills the folder in place (SBD-04, SBD-09)
+            if NEVER_COPIED.search(repo_path):
+                raise BundleError(f"service {name} mounts {repo_path}, which the bundle never ships (SBD-04)")
+            copies.append(repo_source)
+    return copies
 
 
-def image_variables(root: Path = WORKSPACE, umbrella: Path = UMBRELLA) -> dict[str, str]:
-    """The image variables the stack names, variable -> its project (SBD-06, SBD-07).
+def image_variables(document_text: str) -> dict[str, str]:
+    """The image variables the flat file names, variable -> its project (SBD-06, SBD-07).
 
-    Read from the merged compose, so the bundle answers exactly the variables the pieces ask for and the
-    repository keeps no second list of image names (SBD-07). A stack that named an Aurelius image in plain
-    text would be missing from here, and SBD-11 guards that shape in ``tests/test__standalone_images.py``.
+    Read from the resolved document, so the bundle answers exactly the variables the stack asks for and the
+    repository keeps no second list of image names.
     """
     out: dict[str, str] = {}
-    for service in merge_stack(root, umbrella)["services"].values():
+    for service in _compose_document(document_text).get("services", {}).values():
         match = IMAGE_VARIABLE.match(service.get("image") or "")
         if match:
             out[match.group(1)] = match.group(2)
@@ -161,79 +256,46 @@ def image_variables(root: Path = WORKSPACE, umbrella: Path = UMBRELLA) -> dict[s
     return dict(sorted(out.items()))
 
 
-def _sample_sources(root: Path = WORKSPACE) -> list[Path]:
-    """The sample's files, the folder the import and tenancy one shots read (SBD-05)."""
-    sample = root / "data/atlas-sample"
-    if not sample.is_dir():
-        raise BundleError(f"the bundle needs {sample.relative_to(root)} (SBD-05), which the tree does not have")
-    return [file for file in sorted(sample.rglob("*")) if file.is_file()]
+def _sample_zip(document_text: str) -> str:
+    """The sample ZIP the bundle imports on first start, read from the stack's own tenants default (SBD-05).
 
-
-def _copy_plan(root: Path = WORKSPACE, umbrella: Path = UMBRELLA) -> dict[Path, Path]:
-    """Map every source the stack reads to its bundle-relative path, derived from the stack (SBD-07).
-
-    A source the tree cannot hand over, or one that is a secret, fails the build: a path that walks above the
-    root has no home in the bundle, and a missing or forbidden one would start a broken stack (SBD-03, SBD-04).
+    The tenants one-shot names ``${TENANT_SAMPLE:-sample_data.zip}``. That default is the ZIP the sample folder
+    holds, so the bundle sets ``SAMPLE_ZIP`` to the same value the repository's commands pass, with no second
+    list of sample names (SBD-07).
     """
-    copies: dict[Path, Path] = {}
-
-    def add(source: Path, where: str) -> None:
-        try:
-            relative = source.relative_to(root)
-        except ValueError as error:
-            raise BundleError(
-                f"{where}: {source} lies outside {root}, so the bundle cannot hold it (SBD-03)"
-            ) from error
-        if NEVER_COPIED.search(str(relative)):
-            raise BundleError(f"{where}: the stack names {relative}, which the bundle never ships (SBD-04)")
-        if not source.exists():
-            raise BundleError(f"{where}: the stack names {relative}, which the tree lacks (SBD-03)")
-        copies[source] = relative
-
-    for name, source in _literal_binds(root, umbrella):
-        add(source, f"service {name}")
-    for file in compose_files(umbrella):
-        add(file, "compose file")
-    for relative in EXTRA_FILES:
-        add(root / relative, "bundle file")
-    for file in _sample_sources(root):
-        add(file, "sample")
-    return copies
+    for service in _compose_document(document_text).get("services", {}).values():
+        environment = service.get("environment") or {}
+        if isinstance(environment, dict):
+            match = SAMPLE_DEFAULT.match(str(environment.get("TENANT_SAMPLE") or ""))
+            if match:
+                return match.group(1)
+    raise BundleError("no piece names a sample ZIP default, so the bundle could not set SAMPLE_ZIP (SBD-05)")
 
 
-def _stack_answer(name: str) -> str:
-    """The committed ``stack.env`` answer for one folder knob (DD-687).
+def _bundle_env(document_text: str, answers: dict[str, str], version: str) -> str:
+    """The bundle's ``.env``: the 17.2 roster, the bundle-relative folders, and the release images.
 
-    The mirror ships ``stack.env`` and the bundle's ``.env`` overrides it, so a value this tool writes must be
-    the same answer, read from the file rather than repeated here (SBD-07).
-    """
-    for line in (WORKSPACE / "docker/stack.env").read_text().splitlines():
-        key, _, value = line.partition("=")
-        if key.strip() == name:
-            return value.strip()
-    raise BundleError(f"docker/stack.env holds no {name}, which the bundle must answer (SBD-05)")
-
-
-def _bundle_env(version: str) -> str:
-    """The bundle's ``.env``: the 17.2 roster with empty secrets, the sample, and the release images.
-
-    The certificate knobs stay commented exactly as ``docker/.env.example`` writes them: ``make-certs.sh``
-    issues the leaves at the mirrored paths the committed ``stack.env`` names, and an empty value here would
-    beat that file (SBD-12). The sample is the one folder the person must not set (SBD-05), so the file names
-    it with the stack's own answer. The image variables are the only other values (SBD-06); every secret is
-    named and left empty for the person to fill (SBD-04).
+    The folder section answers every guarded folder with the stack's own answer rebased into the bundle, so
+    the operator sets no folder to start (SBD-05, SBD-12) and can still repoint one value (DD-687). Every
+    secret is named by the roster and left empty for the operator to fill (SBD-04); the image variables carry
+    the release tag (SBD-06).
     """
     roster = (WORKSPACE / "docker/.env.example").read_text().rstrip()
+    folder_banner = "# --- Folders inside this bundle, set by the bundler (SBD-05, SBD-12, DD-690) ----------------"
+    folder_note = "# Relative to docker/ (this file's folder). Change a value to point at your own material."
+    folders = "\n".join(f"{name}={folder}" for name, folder in sorted(answers.items()))
+    sample = f"SAMPLE_ZIP={_sample_zip(document_text)}"
     images = "\n".join(
-        f"{variable}=ghcr.io/aureliusenterprise/{project}:{version}" for variable, project in image_variables().items()
+        f"{variable}=ghcr.io/aureliusenterprise/{project}:{version}"
+        for variable, project in image_variables(document_text).items()
     )
-    banner = "# --- Images: the release build this bundle was made for (DD-685, SBD-06) ----------------"
-    note = "# The compose copies keep their :local default; these values override it at the operator's start."
-    sample_banner = "# --- The sample, shipped inside this bundle (SBD-05, DD-684) -----------------------------------"
-    sample_note = "# The folder the sample import and the tenants one shot read. Points inside the bundle."
+    image_banner = "# --- Images: the release build this bundle was made for (DD-685, SBD-06) ----------------"
+    image_note = "# The compose keeps its :local default; these values override it at the operator's start."
+    sample_banner = "# --- Sample: the ZIP the import reads from SAMPLE_DIR on first start (SBD-05) -------------------"
     return (
-        f"{roster}\n\n{sample_banner}\n{sample_note}\n{SAMPLE_VARIABLE}={_stack_answer(SAMPLE_VARIABLE)}\n\n"
-        f"{banner}\n{note}\n{images}\n"
+        f"{roster}\n\n{folder_banner}\n{folder_note}\n{folders}\n\n"
+        f"{sample_banner}\n{sample}\n\n"
+        f"{image_banner}\n{image_note}\n{images}\n"
     )
 
 
@@ -242,8 +304,8 @@ def _bundle_readme() -> str:
 
 One Docker Compose stack: the Aurelius Atlas webapp and the Atlas server behind one nginx entry, on the
 stack's own Elasticsearch, with Keycloak as the identity provider and the telemetry stack behind the same
-port. It needs only Docker Engine, `docker compose`, `bash`, and `openssl` (SBD-09) and pulls the release
-images named in `.env`; it builds nothing.
+port. It needs Docker Engine, a recent `docker compose` (v2.20 or newer), `bash`, and `openssl` (SBD-09),
+and pulls the release images named in `docker/.env`; it builds nothing.
 
 ## Start
 
@@ -254,8 +316,8 @@ images named in `.env`; it builds nothing.
    ```
 
 2. Open `docker/.env` and fill in the values left empty: the Elasticsearch passwords, the Keycloak bootstrap
-   admin and database, the realm's client secrets, the scanner service users, the telemetry ingest token, and
-   the truststore password. The sample imports itself on first start.
+   admin and database, the realm's client secrets, the scanner service users, and the telemetry ingest token.
+   The step above already set the truststore password. The sample imports itself on first start.
 
 3. Start the stack (the first pull takes a few minutes):
 
@@ -264,8 +326,7 @@ images named in `.env`; it builds nothing.
    ```
 
 4. Open https://localhost:9000/ and sign in. Trust `docker/certs/ca.pem` to quiet the browser warning; add a
-   person to the realm first (the realm holds no user). Read `docker/README.md` for the paths, the demo users,
-   and running on a named host.
+   person to the realm first (the realm holds no user).
 
 ## Stop
 
@@ -274,6 +335,12 @@ docker compose -f docker/docker-compose.yaml down -v
 ```
 
 The `-v` discards the demo data; without it the stack resumes where it left off.
+
+## About these files
+
+`docker/docker-compose.yaml` is the stack resolved into one file, so a setting is changed in one place. The
+folder paths in `docker/.env` and in the compose file are relative to this bundle and run from any folder on
+any machine. `docker/make-certs.sh` writes the certificate folders the stack mounts.
 """
 
 
@@ -283,22 +350,49 @@ def build_bundle(output: Path, version: str) -> Path:
     The folder `output` is rebuilt from scratch, so a run never carries a stale file over (SBD-01). It lives
     under the git-ignored `dist/`, which keeps `git status` clean after the target runs (SBD-01).
     """
+    flat_text = _run_compose_config(interpolate=False)
+    flat = _compose_document(flat_text)
+    answers = _folder_answers(flat)
+    assets = _flatten_services(flat)
+
     if output.exists():
         shutil.rmtree(output)
     output.mkdir(parents=True)
-    for source, relative in _copy_plan().items():
-        target = output / relative
-        if source.is_dir():
-            # A folder bind (the realm import, the themes, the dashboards): copy the tree, dropping any
-            # secret a repository folder might hold so the mirror ships none (SBD-04).
-            shutil.copytree(source, target, dirs_exist_ok=True, ignore=_ignore_secrets)
-        else:
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
-    (output / "docker/.env").write_text(_bundle_env(version))
+    sample = WORKSPACE / "data/atlas-sample"
+    if not sample.is_dir():
+        raise BundleError(f"the bundle needs {sample} (SBD-05), which the tree does not have")
+    for source in _deduped([*(WORKSPACE / relative for relative in EXTRA_FILES), *assets, *sorted(sample.rglob("*"))]):
+        _copy_asset(output, source)
+    (output / BUNDLE_COMPOSE_DIR / "docker-compose.yaml").write_text(yaml.safe_dump(flat, sort_keys=False, width=120))
+    (output / BUNDLE_COMPOSE_DIR / ".env").write_text(_bundle_env(flat_text, answers, version))
     (output / "README.md").write_text(_bundle_readme())
     _self_check(output, version)
     return _tar(output, output)
+
+
+def _deduped(sources: list[Path]) -> list[Path]:
+    """The sources once each, deepest last, so a folder is not copied under itself (a folder bind and a file bind)."""
+    out: list[Path] = []
+    seen: set[Path] = set()
+    for source in sorted(sources, key=lambda path: len(path.parts)):
+        if source in seen or any(source != parent and parent in seen for parent in source.parents):
+            continue
+        seen.add(source)
+        out.append(source)
+    return out
+
+
+def _copy_asset(output: Path, source: Path) -> None:
+    """Copy one repository file or folder to its mirrored bundle path, dropping any secret inside it (SBD-04)."""
+    relative = source.relative_to(WORKSPACE)
+    if NEVER_COPIED.search(str(relative)):
+        raise BundleError(f"the bundle names {relative}, which it never ships (SBD-04)")
+    target = output / relative
+    if source.is_dir():
+        shutil.copytree(source, target, dirs_exist_ok=True, ignore=_ignore_secrets)
+    else:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
 
 
 def _ignore_secrets(_directory: str, names: list[str]) -> list[str]:
@@ -307,14 +401,16 @@ def _ignore_secrets(_directory: str, names: list[str]) -> list[str]:
 
 
 def _self_check(output: Path, version: str) -> None:
-    """Assert the built bundle is secret-free, closed, and names the release images (SBD-03, SBD-04, SBD-06).
+    """Assert the bundle is secret-free, holds no host path, and resolves to release images (SBD-03..SBD-08).
 
-    The resolved ``compose config`` checks (no ``:local`` after interpolation, service-set equality) need
-    the person's secrets filled, so they run in the suite (SBD-08); the bundler checks what it can decide.
+    The resolved ``compose config`` check fills a throwaway roster (every empty secret gets a value, exactly
+    as the operator's start will) and runs the same daemon-free resolution a start performs. It catches the
+    DD-690 volume/bind mistake, a leaked ``:local``, and a path that escaped the bundle (SBD-08).
     """
     _check_no_secret_files(output)
-    _check_bundle_env(output, version)
+    _check_no_host_paths(output)
     _check_closed(output)
+    _resolves_release(output, version)
 
 
 def _check_no_secret_files(output: Path) -> None:
@@ -325,28 +421,83 @@ def _check_no_secret_files(output: Path) -> None:
             raise BundleError(f"the bundle carries {relative}, which no bundle holds (SBD-04)")
 
 
-def _check_bundle_env(output: Path, version: str) -> None:
-    """The bundle's ``.env`` leaves every secret empty and sets every image to the release tag (SBD-04, SBD-06)."""
-    env = (output / "docker/.env").read_text()
-    for line in env.splitlines():
-        if line.lstrip().startswith("#") or "=" not in line:
-            continue
-        name, _, value = line.partition("=")
-        name = name.strip()
-        if name.endswith(SECRET_SUFFIX) and not name.endswith("_IMAGE") and value.strip():
-            raise BundleError(f"the bundle's .env fills {name}, which the person must set (SBD-04)")
-    for variable, project in image_variables().items():
-        if f"{variable}=ghcr.io/aureliusenterprise/{project}:{version}" not in env:
-            raise BundleError(f"the bundle's .env does not set {variable} to the release tag (SBD-06)")
+def _check_no_host_paths(output: Path) -> None:
+    """No shipped text names a path of the build machine: the flat file and .env hold relative paths (SBD-03)."""
+    needle = str(WORKSPACE)
+    candidates = [*output.rglob("*.yaml"), *output.rglob("*.yml"), *output.glob("**/.env"), output / "README.md"]
+    offenders = [str(path.relative_to(output)) for path in candidates if needle in path.read_text(errors="ignore")]
+    if offenders:
+        raise BundleError(f"the bundle names the build folder in {offenders} (SBD-03)")
 
 
 def _check_closed(output: Path) -> None:
-    """Re-read the built tree and refuse any literal bind that leaves it or names a file it lacks (SBD-03)."""
-    for name, source in _literal_binds(output, output / "docker/docker-compose.yaml"):
-        if not source.is_relative_to(output):
-            raise BundleError(f"bundle service {name} mounts {source}, which leaves the bundle (SBD-03)")
-        if not source.exists():
-            raise BundleError(f"bundle service {name} mounts {source}, which the bundle does not hold (SBD-03)")
+    """Every host bind the flat file names exists inside the bundle, so a start finds its material (SBD-03).
+
+    A guarded folder resolves through the bundle's own ``.env`` (DD-690). A certificate folder is exempt: the
+    operator's ``make-certs.sh`` run creates it (SBD-09). Every other source must already sit in the tree.
+    """
+    flat = _compose_document((output / BUNDLE_COMPOSE_DIR / "docker-compose.yaml").read_text())
+    answers = _env_lines(output / BUNDLE_COMPOSE_DIR / ".env")
+    compose_dir = output / BUNDLE_COMPOSE_DIR
+    for name, service in flat.get("services", {}).items():
+        for entry in service.get("volumes") or ():
+            if not isinstance(entry, dict) or entry.get("type") != "bind":
+                continue
+            source = entry.get("source")
+            if not isinstance(source, str):
+                continue
+            guard = GUARDED_VARIABLE.match(source)
+            raw = answers[guard.group(1)] if guard else source
+            path = (compose_dir / raw).resolve()
+            if not path.is_relative_to(output):
+                raise BundleError(f"bundle service {name} mounts {raw}, which leaves the bundle (SBD-03)")
+            if not path.exists() and path.name != "certs":
+                raise BundleError(f"bundle service {name} mounts {raw}, which the bundle does not hold (SBD-03)")
+
+
+def _resolves_release(output: Path, version: str) -> None:
+    """Resolve the bundle with a filled roster: exit 0, no warning, no ``:local``, images at the release tag.
+
+    The run gets a minimal environment on purpose (SBD-01): ``docker compose`` lets a shell variable override
+    ``--env-file``, so a developer who happens to export ``SERVER_IMAGE`` for another task would otherwise
+    resolve this check to their own tag instead of the bundle's. With the environment blanked, the only answers
+    are the files the bundle ships, which is exactly what an operator's machine holds.
+    """
+    env = _env_lines(output / BUNDLE_COMPOSE_DIR / ".env")
+    roster = output.parent / "resolve-roster.env"
+    roster.write_text("\n".join(f"{name}={value or 'placeholder'}" for name, value in env.items()) + "\n")
+    command = [
+        "docker",
+        "compose",
+        "-p",
+        SCRATCH_PROJECT,
+        "-f",
+        "docker/docker-compose.yaml",
+        "--env-file",
+        str(roster),
+        "config",
+    ]
+    done = subprocess.run(command, capture_output=True, text=True, check=False, cwd=output, env=_minimal_compose_env())
+    roster.unlink()
+    if done.returncode != 0 or done.stderr.strip():
+        raise BundleError(f"the bundle does not resolve cleanly: rc={done.returncode} {done.stderr.strip()} (SBD-08)")
+    if ":local" in done.stdout:
+        raise BundleError("the resolved bundle names a :local image (SBD-06)")
+    flat_text = (output / BUNDLE_COMPOSE_DIR / "docker-compose.yaml").read_text()
+    for project in image_variables(flat_text).values():
+        if f"{project}:{version}" not in done.stdout:
+            raise BundleError(f"the resolved bundle does not tag {project} with the release (SBD-06)")
+
+
+def _env_lines(path: Path) -> dict[str, str]:
+    """The assignments of one env file as a map, with comments and blanks dropped."""
+    out: dict[str, str] = {}
+    for line in path.read_text().splitlines():
+        if line.lstrip().startswith("#") or "=" not in line:
+            continue
+        name, _, value = line.partition("=")
+        out[name.strip()] = value.strip()
+    return out
 
 
 def _tar(base: Path, out: Path) -> Path:

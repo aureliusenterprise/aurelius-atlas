@@ -24,6 +24,9 @@
 # value, so the two never disagree: the shell value wins, else the first env-file that defines it.
 # A dev checkout defines it in infra/keycloak/.env; an install that ships the stack alone defines it
 # in docker/.env, which compose reads on its own. tools/tls/certgen.sh reads the file the same way.
+# When nothing defines it, the script makes one and records it in docker/.env (DD-691), so a person
+# who follows the bundle README (certificates first, then fill the secrets) starts with one password
+# and never types this one.
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -50,10 +53,26 @@ read_password() {
             return
         fi
     done
-    echo "error: TLS_TRUSTSTORE_PASSWORD found in neither the environment nor" \
-        "infra/keycloak/.env nor docker/.env — in a checkout, run 'nx decrypt" \
-        "aurelius-atlas-infra-keycloak' first" >&2
-    exit 1
+    # A checkout that has not decrypted its env still holds infra/keycloak/.env.enc: name the decrypt command,
+    # because inventing a password there would disagree with the encrypted one on the stack's start.
+    if [[ -f "$root/infra/keycloak/.env.enc" ]]; then
+        echo "error: TLS_TRUSTSTORE_PASSWORD found in neither the environment nor" \
+            "infra/keycloak/.env — in a checkout, run 'nx decrypt aurelius-atlas-infra-keycloak' first" >&2
+        exit 1
+    fi
+    # A standalone install names the password nowhere, because the bundle ships the roster empty (SBD-04). The
+    # truststore password is internal stack material the operator never types — like the CA key, the script
+    # makes it on first run and records it in docker/.env, which compose interpolates on the stack's start, so
+    # the store and the JVM always agree.
+    password="aurelius-atlas-$(openssl rand -hex 16)"
+    local docker_env="$here/.env"
+    touch "$docker_env"
+    if grep -q '^TLS_TRUSTSTORE_PASSWORD=' "$docker_env"; then
+        sed -i.bak "s|^TLS_TRUSTSTORE_PASSWORD=.*|TLS_TRUSTSTORE_PASSWORD=$password|" "$docker_env" && rm -f "$docker_env.bak"
+    else
+        printf 'TLS_TRUSTSTORE_PASSWORD=%s\n' "$password" >>"$docker_env"
+    fi
+    printf '%s' "$password"
 }
 
 password="$(read_password)"
