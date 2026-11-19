@@ -1217,6 +1217,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.app_search_answer_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;app_search_answer_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.app_search_batch_size" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -1243,6 +1254,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;app_search_poll_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.app_search_settle_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;app_search_settle_seconds
       </span>
     </span>
   </a>
@@ -1980,6 +2002,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;root_path
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.sample_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;sample_dir
       </span>
     </span>
   </a>
@@ -8443,6 +8476,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.app_search_answer_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;app_search_answer_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_server.settings.ServerSettings.app_search_batch_size" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -8469,6 +8513,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;app_search_poll_seconds
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.app_search_settle_seconds" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;app_search_settle_seconds
       </span>
     </span>
   </a>
@@ -9206,6 +9261,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;root_path
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_server.settings.ServerSettings.sample_dir" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;sample_dir
       </span>
     </span>
   </a>
@@ -10512,6 +10578,18 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"App Search Poll Seconds"</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
 <span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"app_search_answer_seconds"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mf">5.0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"App Search Answer Seconds"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"app_search_settle_seconds"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"App Search Settle Seconds"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"number"</span>
+<span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">"hybrid_vector_weight"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="mf">10.0</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"minimum"</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
@@ -10869,6 +10947,19 @@ Elasticsearch settings; it does not start without its store.</p>
 <span class="w">      </span><span class="p">],</span>
 <span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Tenancy Admin Client Secret"</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"sample_dir"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"anyOf"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"format"</span><span class="p">:</span><span class="w"> </span><span class="s2">"path"</span><span class="p">,</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">        </span><span class="p">},</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"null"</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">"default"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Sample Dir"</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">},</span>
 <span class="w">  </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
@@ -11166,6 +11257,24 @@ Elasticsearch settings; it does not start without its store.</p>
   
       pydantic-field
    (aurelius_atlas_server.settings.ServerSettings.app_search_poll_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.app_search_poll_seconds">app_search_poll_seconds</a></code>
+                (<code><span title="float">float</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            app_search_answer_seconds
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.app_search_answer_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.app_search_answer_seconds">app_search_answer_seconds</a></code>
+                (<code><span title="float">float</span></code>)
+            </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            app_search_settle_seconds
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.app_search_settle_seconds)" href="./#aurelius_atlas_server.settings.ServerSettings.app_search_settle_seconds">app_search_settle_seconds</a></code>
                 (<code><span title="float">float</span></code>)
             </li>
             <li>
@@ -11645,6 +11754,15 @@ Elasticsearch settings; it does not start without its store.</p>
    (aurelius_atlas_server.settings.ServerSettings.tenancy_admin_client_secret)" href="./#aurelius_atlas_server.settings.ServerSettings.tenancy_admin_client_secret">tenancy_admin_client_secret</a></code>
                 (<code><span title="pydantic.SecretStr">SecretStr</span> | None</code>)
             </li>
+            <li>
+              <code><a class="autorefs autorefs-internal" title="            sample_dir
+
+
+  
+      pydantic-field
+   (aurelius_atlas_server.settings.ServerSettings.sample_dir)" href="./#aurelius_atlas_server.settings.ServerSettings.sample_dir">sample_dir</a></code>
+                (<code><span title="pathlib.Path">Path</span> | None</code>)
+            </li>
         </ul>
 
 
@@ -11657,6 +11775,31 @@ Elasticsearch settings; it does not start without its store.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.app_search_answer_seconds" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">app_search_answer_seconds</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.app_search_answer_seconds" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">app_search_answer_seconds</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">5.0</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>How long a writing request waits for its App Search documents before it answers; 0 doesn't wait (ASU-08,
+DD-679).</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -11725,7 +11868,33 @@ LAS-10, DD-521).</p>
 
     <div class="doc doc-contents ">
 
-        <p>How often the App Search indexer looks for missing and stale documents (ASU-02, ASU-06).</p>
+        <p>How often, at the latest, the App Search indexer looks for missing and stale documents (ASU-02, ASU-06):
+a write wakes it sooner (ASU-07).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.app_search_settle_seconds" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">app_search_settle_seconds</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.app_search_settle_seconds" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">app_search_settle_seconds</span><span class="p">:</span> <span class="n"><span title="float">float</span></span> <span class="o">=</span> <span class="mf">0.5</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>How long the App Search indexer waits after a write wakes it, so a burst of writes lands in one round
+(ASU-07, DD-678).</p>
 
     </div>
 
@@ -13362,6 +13531,31 @@ read: the 60s dev token cannot ride a static header (DD-196).</p>
 
         <p>The path a proxy serves the server under, such as <code>/atlas2</code>, passed to uvicorn: the server's redirects
 and its sign-in's return lead there; empty serves it at the root (PFX-01, DD-363).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="aurelius_atlas_server.settings.ServerSettings.sample_dir" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">sample_dir</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-pydantic-field"><code>pydantic-field</code></small>
+  </span>
+
+<a href="#aurelius_atlas_server.settings.ServerSettings.sample_dir" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">sample_dir</span><span class="p">:</span> <span class="n"><span title="pathlib.Path">Path</span></span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The folder of the samples <code>provisioning add --sample &lt;name&gt;</code> imports, <code>&lt;name&gt;.zip</code> each; none offers no
+sample (TAD-02, TAD-10).</p>
 
     </div>
 

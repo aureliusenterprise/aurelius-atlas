@@ -2198,6 +2198,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_store.EntityStore.write_listeners" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;write_listeners
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_store.EntityStore.classification_type_counts" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -12401,6 +12412,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.entity_store.EntityStore.write_listeners" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;write_listeners
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.entity_store.EntityStore.classification_type_counts" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -19662,6 +19684,19 @@ Elasticsearch with reserved unique values, conditional writes and a journal (DD-
             <p>Called after a write that recorded tasks, to wake a worker (DD-080).</p>
           </div>
         </li>
+        <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            write_listeners
+
+
+  
+      instance-attribute
+   (aurelius_atlas_core.entity_store.EntityStore.write_listeners)" href="./#aurelius_atlas_core.entity_store.EntityStore.write_listeners">write_listeners</a></code></b>
+              (<code><span title="list">list</span>[<span title="collections.abc.Callable">Callable</span>[[], None]]</code>)
+          –
+          <div class="doc-md-description">
+            <p>Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).</p>
+          </div>
+        </li>
     </ul>
 
 
@@ -19716,6 +19751,30 @@ Elasticsearch with reserved unique values, conditional writes and a journal (DD-
     <div class="doc doc-contents ">
 
         <p>Called after a write that recorded tasks, to wake a worker (DD-080).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="aurelius_atlas_core.entity_store.EntityStore.write_listeners" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">write_listeners</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.entity_store.EntityStore.write_listeners" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">write_listeners</span><span class="p">:</span> <span class="n"><span title="list">list</span></span><span class="p">[</span><span class="n"><span title="collections.abc.Callable">Callable</span></span><span class="p">[[],</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).</p>
 
     </div>
 
@@ -23154,6 +23213,19 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
     <div class="doc doc-contents ">
 
         <p>One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).</p>
+
+
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="RuntimeError">RuntimeError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>Elasticsearch refused an action of the request, so an entity keeps a verdict it no
+longer holds or misses one it gained (ASG-06, DD-705).</p>
+          </div>
+        </li>
+    </ul>
 
 
     </div>
