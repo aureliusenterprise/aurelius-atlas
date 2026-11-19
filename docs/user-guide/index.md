@@ -23,6 +23,8 @@ system reproduces; every intended difference is listed in
 To run the server on your machine and import a sample dataset, see
 [Standalone Server](./standalone-server.md).
 To add a tenant to it, see [Add a Tenant to the Standalone Server](./standalone-tenants.md).
+To install the whole system on a Kubernetes cluster, see
+[Deploy to Kubernetes](./deployment.md).
 
 If you are setting up your machine for the first time, see the
 [Development Environment](../contributor-guide/development-environment.md) guide instead.

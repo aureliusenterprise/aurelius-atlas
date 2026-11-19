@@ -72,6 +72,7 @@ nav:
           - user-guide/index.md
           - Standalone Server: user-guide/standalone-server.md
           - Add a Tenant to the Standalone Server: user-guide/standalone-tenants.md
+          - Deploy to Kubernetes: user-guide/deployment.md
     - Contributor Guide:
           - contributor-guide/index.md
           - Development Environment: contributor-guide/development-environment.md
