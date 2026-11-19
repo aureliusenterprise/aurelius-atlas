@@ -38,6 +38,18 @@ async def projection_rows(
         for index, aggregator in enumerate(select.aggregators)
         if aggregator is not Aggregator.NONE
     }
+    by_index = [
+        index for index in range(len(select.labels)) if index not in aggregates and index not in select.primitive
+    ]
+    headers = (
+        dict(
+            zip(
+                [stored.guid for stored in found], await retriever.headers(found, [], classifications=True), strict=True
+            )
+        )
+        if by_index
+        else {}
+    )
     rows: list[list[Any]] = []
     seen: set[bytes] = set()
     for stored in found:
@@ -48,9 +60,7 @@ async def projection_rows(
             elif index in select.primitive:
                 row.append(vertex_property(stored, select.attributes[index]))
             else:
-                header = await retriever.header_with_attributes(stored, [])
-                header.classifications = await retriever.classifications(stored.guid)
-                row.append(header)
+                row.append(headers[stored.guid])
         key = codec.dumps([item.to_json() if isinstance(item, AtlasModel) else item for item in row])
         if key not in seen:
             seen.add(key)

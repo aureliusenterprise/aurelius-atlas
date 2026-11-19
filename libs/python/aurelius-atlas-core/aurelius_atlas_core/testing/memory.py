@@ -118,6 +118,10 @@ class MemoryEntityDocuments:
         self.prepared = False
         self.fail: dict[str, str] = {}
         self.crash_after_write = False
+        self.entity_reads = 0
+        """How many reads of entities the store has made (DD-709)."""
+        self.linked_reads = 0
+        """How many reads of linked documents the store has made (DD-709)."""
         self._seq_no = -1
 
     def _next_version(self) -> DocumentVersion:
@@ -130,6 +134,7 @@ class MemoryEntityDocuments:
 
     async def get(self, guids: Sequence[str]) -> dict[str, VersionedEntity]:
         """The stored entities with these GUIDs."""
+        self.entity_reads += 1
         return {
             guid: VersionedEntity(StoredEntity.model_validate(codec.loads(codec.dumps(source))), version)
             for guid in guids
@@ -198,6 +203,7 @@ class MemoryEntityDocuments:
 
     async def get_linked(self, kind: LinkedKind, guids: Sequence[str]) -> dict[str, tuple[Linked, DocumentVersion]]:
         """The stored documents of the kind with these GUIDs."""
+        self.linked_reads += 1
         return {
             guid: (LINKED_MODELS[kind].model_validate(codec.loads(codec.dumps(source))), version)
             for guid in guids
