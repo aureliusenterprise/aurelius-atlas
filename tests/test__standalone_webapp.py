@@ -132,4 +132,4 @@ def test__the_realm_speaks_english_and_dutch_and_lets_the_webapp_save_the_langua
     assert realm["internationalizationEnabled"]
     assert (realm["supportedLocales"], realm["defaultLocale"]) == (["en", "nl"], "en")
     mappings = realm["clientScopeMappings"]["account"]
-    assert mappings == [{"client": "aurelius", "roles": ["manage-account", "view-profile"]}]
+    assert {"client": "aurelius", "roles": ["manage-account", "view-profile"]} in mappings  # beside account-console's

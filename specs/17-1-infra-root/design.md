@@ -462,3 +462,41 @@ pieces' include order and the `service:proxy` sharers are unchanged.
 test reads `docker/gateway/nginx.conf`, and a new IRT-12 test pins the umbrella's empty services
 and the gateway's loopback publish. The README's layout bullets name the piece, and the
 AGENTS.md layout says ten fragments.
+
+### DD-700. The stack's realm seeds the operator; each tenant's users come with their tenant
+
+- **Status:** Proposed
+- **Increment:** 17.1 (a change, 2026-11-18)
+- **Date:** 2026-11-18
+- **Supersedes:** DD-673's "no person" for the operator, and its "the tenants one shot names no
+  administrator"; the rest of DD-673 stands
+
+**Decision.** The stack's realm file holds one person, the platform operator `operator`: the realm role
+`atlas-operator` and the realm's default roles, a member of `operators` in its read group, with the password
+`${DEMO_USER_OPERATOR_PASSWORD}` filled at import. No tenant's user is in the realm file. The profile
+tenancy's one shot makes each tenant's users when it provisions the tenant, through the provisioning
+client's admin API: `<tenant>_atlas` in all four role groups and the tenant's administrator,
+`<tenant>_steward` in read and write, and `<tenant>_scientist` in read, each a member of its tenant alone,
+with the password `<TENANT>_USER_<ROLE>_PASSWORD` from `infra/keycloak/.env`. A user already there keeps
+its password; a role without a password gets no user. The six passwords of demo and meyn return to
+`infra/keycloak/.env.enc`.
+
+**Reason.** The operator is part of the platform, not of a tenant: every deployment of the stack has one,
+it joins each tenant that trusts the operators, and the store's own `operator` user already shares its
+password. Without it, trying tenancy started with no one who could read a tenant. A tenant's people, on
+the other hand, belong to that tenant: they are made when the tenant is, so a stack without a tenant
+carries none, a new tenant brings its own, and no tenant's password sits in the realm file.
+
+**Alternatives.**
+
+- No person at all (DD-673): every visitor builds the operator and each tenant's people by hand before
+  tenancy can be tried.
+- The tenant users in the realm file again: every stack carries the people of tenants it may never
+  provision, and a new tenant edits the realm.
+- The operator made by the one shot too: it would exist only with the profile tenancy, while the operator
+  role and `operators` are in the realm from the start.
+
+**Consequences.** The realm differs from the Helm realm by one person, which the drift guard allows: the
+Helm realm's users stay a subset of the stack's. The provisioning client needs `manage-users`, which it
+already holds. A Keycloak with its realm already imported keeps it (the import skips an existing realm),
+so an existing stack gains the operator after `down -v` or by hand.

@@ -17,8 +17,10 @@ server verifies, served behind the proxy at `/auth` (DD-363). At every start it 
 `aurelius-atlas` from `keycloak/aurelius-atlas.json` (DD-673). The realm has the same posture as the
 deployment's realm of the same name: the service identities the system needs, with each client
 secret a placeholder filled from `infra/keycloak/.env`, and the `operators` organization with its
-four role groups. It holds no user. To sign in from a browser, you add a person yourself, in
-Keycloak's admin console (see Start).
+four role groups. Its one person is the platform operator `operator`, who reads `operators` and holds
+the operator role, with the password `DEMO_USER_OPERATOR_PASSWORD` (DD-700). A tenant's users are not
+in the realm file: the one shot `tenants` makes them when it provisions their tenant (see Tenants).
+For any other person, you add one yourself, in Keycloak's admin console (see Start).
 
 The realm's sign-in pages wear the Aurelius look (DD-414): the theme `aurelius` in `infra/keycloak/themes/`, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
@@ -54,7 +56,7 @@ The webapp answers at <https://localhost:9000/> and the dashboards at <https://l
 once Keycloak is ready. A cold start takes about two minutes now: the stack's Keycloak boots against
 its Postgres in production mode as the deployment's does (DD-670, DD-676), and its first boot augments
 its runtime once into the home volume Compose seeds (SPC-05, DD-696). The next start skips it, until
-`down -v`. The realm holds no user (DD-673), so the sign-in is
+`down -v`. Without tenancy, the realm's only person is the operator (DD-700), so the sign-in is
 bring-your-own-user. Open Keycloak's admin console at <https://localhost:9000/auth/admin/> as
 `KC_BOOTSTRAP_ADMIN_USERNAME`, in the realm `master`, select the realm `aurelius-atlas`, and add a
 person under Users with a password. Then give the person a role: open the user's Role mapping tab and
@@ -130,7 +132,12 @@ on and run `docker compose` with `--profile tenancy` or `run --rm tenants`.
 | `meyn`       | the organization and its four `/atlas-*` groups | empty                                 |
 | `operators`  | already in the realm file, with its four groups | the stack's catalogue without tenancy |
 
-The realm holds no user (DD-673), so a tenant starts with no members. Add a person to a tenant in
+The one shot makes each tenant's users when it provisions the tenant, not the realm file (DD-700):
+`<tenant>_atlas` with every role and the tenant's administrator, `<tenant>_steward` who reads and writes,
+and `<tenant>_scientist` who reads, each a member of its tenant alone. Their passwords are
+`<TENANT>_USER_<ROLE>_PASSWORD` in `infra/keycloak/.env`, such as `DEMO_USER_ATLAS_PASSWORD`; a user already
+there keeps its password, and a tenant without those passwords gets no users. The operator joins every
+tenant that trusts the operators, with read access. To add a further person to a tenant, use
 Keycloak's admin console: under Organizations, open the tenant and add the person as a member, then
 give the member the tenant's role groups under Groups. A person who belongs to one tenant signs in
 to it without a choice. A tenant's administrator, set by `admin <tenant> add <username>` below,
@@ -144,8 +151,8 @@ adds and removes members, in the console at `https://localhost:9000/auth/admin/`
 `operators` is the platform's organization: a person who is its member holds the operator role, so the
 server holds that person at read access outside the tenants (ADR 063). The one shot also gives the
 platform a user of its own in the store, named `operator`, an admin of every index (ADR 063's direct
-store access). Its password is `DEMO_USER_OPERATOR_PASSWORD` in `infra/keycloak/.env`; it is a store
-user, not a realm user. The store has no published port, so it is reached from the stack's network.
+store access). Its password is `DEMO_USER_OPERATOR_PASSWORD` in `infra/keycloak/.env`, the same as the
+realm's `operator`'s. The store has no published port, so it is reached from the stack's network.
 `TENANT_SAMPLE` names the export ZIP in `SAMPLE_DIR` that demo starts with, `sample_data.zip` by
 default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into demo, not into the stack's
 own catalogue.

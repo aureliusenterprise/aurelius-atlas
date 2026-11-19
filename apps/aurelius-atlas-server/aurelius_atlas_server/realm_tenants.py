@@ -105,12 +105,16 @@ class KeycloakAdmin:
         await self._http.aclose()
 
     async def call(
-        self, method: str, path: str, *, body: object = None, missing: bool = False
+        self, method: str, path: str, *, body: object = None, missing: bool = False, present: bool = False
     ) -> tuple[Any, str | None]:
         """The answer's JSON and its ``Location`` id, for a call under the realm's admin path.
 
+        ``present`` takes a 409 for done: Keycloak 26.7 refuses to add what is there already, as a member of a
+        group it has.
+
         Raises:
-            RealmError: For an answer other than 2xx, a 404 excepted when ``missing`` allows it.
+            RealmError: For an answer other than 2xx, a 404 excepted when ``missing`` allows it and a 409 when
+                ``present`` does.
         """
         url = f"{self._server}/admin/realms/{self._realm}{path}"
         headers = {"Authorization": f"Bearer {await self._access_token()}"}
@@ -123,6 +127,8 @@ class KeycloakAdmin:
             msg = f"the realm could not be reached for {method} {path}: {error}"
             raise RealmError(msg) from error
         if missing and response.status_code == httpx.codes.NOT_FOUND:
+            return None, None
+        if present and response.status_code == httpx.codes.CONFLICT:
             return None, None
         if not response.is_success:
             msg = f"the realm refused {method} {path}: {response.status_code} {response.text[:200]}"
@@ -212,7 +218,9 @@ class RealmTenants:
 
     async def add_to_read_group(self, org: RealmOrganization, user: str) -> None:
         """Put a member in the organization's read group; there already is no fault (TRM-03)."""
-        await self.admin.call("PUT", f"/organizations/{org.id}/groups/{org.groups[READ_ROLE]}/members/{user}")
+        await self.admin.call(
+            "PUT", f"/organizations/{org.id}/groups/{org.groups[READ_ROLE]}/members/{user}", present=True
+        )
 
     async def remove_member(self, org: RealmOrganization, user: str) -> None:
         """Remove the user from the organization, with their groups there; gone already is no fault (TRM-04)."""

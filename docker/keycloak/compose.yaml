@@ -91,6 +91,8 @@ services:
             ATLAS_SERVER_CLIENT_SECRET: ${ATLAS_SERVER_CLIENT_SECRET:?}
             # The provisioning command's client (15.5b, TRM-11), in infra/keycloak/.env.
             PROVISIONING_CLIENT_SECRET: ${PROVISIONING_CLIENT_SECRET:?}
+            # The platform operator's password, the realm's one person (DD-700).
+            DEMO_USER_OPERATOR_PASSWORD: ${DEMO_USER_OPERATOR_PASSWORD:?}
             # The admin service identity (DD-666) and the validate-entity app (12.7, DD-499), the
             # sample import and the rules leg signing through them; both in infra/keycloak/.env.
             ATLAS_ADMIN_CLIENT_SECRET: ${ATLAS_ADMIN_CLIENT_SECRET:?}
