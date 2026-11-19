@@ -200,6 +200,16 @@ jobs:
                   path: /var/cache/ci/pre-commit
                   key: ${{ steps.restore-pre-commit-cache.outputs.cache-primary-key }}
 
+            # Docs gate: the writing-style guide's third gate, `zensical
+            # build --strict`. The other two (prettier, markdownlint) are
+            # pre-commit hooks run above; the strict build is not, and the
+            # publish workflows build non-strictly, so a broken site or a
+            # warning (a broken link, a file off the nav) would only surface
+            # at publish. Cheap and offline (a whole-site build, ~11s), so it
+            # runs on every validate rather than only on docs changes.
+            - name: Build documentation strictly
+              run: uv run zensical build --strict
+
             # Charts gate (CHT-06): helm bakes into the runner image (the
             # devcontainer's kubectl-helm-minikube feature), so lint+template
             # need no cluster, registry, or key - a cheap gate that runs

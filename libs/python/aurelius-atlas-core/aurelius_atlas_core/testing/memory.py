@@ -19,7 +19,7 @@ from aurelius_atlas_core.app_search_document import (
     named_guids,
     with_current_app_search,
 )
-from aurelius_atlas_core.entity_audit_repository import TAG_ACTIONS
+from aurelius_atlas_core.entity_audit_repository import DEFAULT_LIMIT, TAG_ACTIONS, sort_events
 from aurelius_atlas_core.entity_documents import (
     LINKED_MODELS,
     JournalEntry,
@@ -505,6 +505,26 @@ class InMemoryEntityAuditRepository:
             and (start_key is None or (event.event_key or "") <= start_key)
         ]
         return found if count == -1 else found[:count]
+
+    async def list_sorted(  # noqa: PLR0913 - listEventsV2's parameters
+        self,
+        entity_id: str,
+        action: EntityAuditActionV2 | None,
+        sort_by: str | None,
+        *,
+        descending: bool,
+        offset: int,
+        limit: int,
+    ) -> list[EntityAuditEventV2]:
+        """The entity's events in the asked order, ``limit`` from ``offset``; the counts as the protocol says.
+
+        Ties keep the newest-key-first order, as the index's event key tail gives them (DD-710).
+        """
+        events = sort_events(await self.list_events(entity_id, action, None, -1), sort_by, descending=descending)
+        start = min(len(events), max(offset, 0))
+        limit = DEFAULT_LIMIT if limit < 0 else limit
+        end = len(events) if limit == 0 else min(len(events), start + limit)
+        return events[start:end]
 
     async def delete_events(self, entity_id: str, event_keys: Sequence[str]) -> None:
         """Drop the entity's events of these keys."""
