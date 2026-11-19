@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "fix-trace-checker-blind-report",
+    "title": "fix-trace-checker-blind-report",
+    "aliases": []
+  },
+  {
     "version": "fix-search-window-and-verdict-writes",
     "title": "fix-search-window-and-verdict-writes",
     "aliases": []
