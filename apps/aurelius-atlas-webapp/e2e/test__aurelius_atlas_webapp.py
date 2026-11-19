@@ -1953,11 +1953,11 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
     """The hero `+` opens the picker; a chosen type and a name create an entity (EDT-04, EDT-12).
 
     Create mode (DD-325's payload idiom, server-side): the picker lists the
-    shipped types (EDT-04), DataSet is chosen — the type rides the drawer's
-    URL segment (DD-330) — the form is empty, a switch to Process and back
-    re-seeds it (EDT-04), Save sends the negative temp guid, and the landing
-    URL carries the server's guid from ``guidAssignments`` — the new entity's
-    details, titled by the entered name.
+    metamodel types (EDT-04 as scoped by MMS-07), Dataset is chosen — the type
+    rides the drawer's URL segment (DD-330) — the form is empty, a switch to
+    Collection and back re-seeds it (EDT-04), Save sends the negative temp
+    guid, and the landing URL carries the server's guid from ``guidAssignments``
+    — the new entity's details, titled by the entered name.
     """
     run = secrets.token_hex(4)
     name = f"zz{run}created"
@@ -1970,19 +1970,19 @@ def test__the_editor_creates_an_entity(authenticated: Page, root_url: str, user_
     drawer = authenticated.locator(".aurelius-drawer")
     expect(drawer).to_contain_text("Create new entity")
 
-    authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="Dataset")
 
     # The type is part of the path (DD-330), and the form for the chosen
     # type arrived with it: an empty required name, no entity yet.
-    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/DataSet\)$"))
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/m4i_dataset\)$"))
     expect(authenticated.locator("#editor-name")).to_have_value("")
 
     # Switching (EDT-04): a half-typed draft is dropped, the picker stays
-    # selected at the new type, and switching back re-seeds the DataSet form.
+    # selected at the new type, and switching back re-seeds the Dataset form.
     authenticated.locator("#editor-name").fill("half-typed")
-    authenticated.locator(".aurelius-editor-picker select").select_option(label="Process")
-    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/Process\)$"))
-    authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="Collection")
+    expect(authenticated).to_have_url(re.compile(r"/en-US/search/browse\(drawer:create/m4i_collection\)$"))
+    authenticated.locator(".aurelius-editor-picker select").select_option(label="Dataset")
     expect(authenticated.locator("#editor-name")).to_have_value("")
 
     authenticated.locator("#editor-name").fill(name)
@@ -2309,7 +2309,10 @@ def test__the_editor_keeps_the_draft_when_the_name_is_taken(
     run = secrets.token_hex(4)
     held_name = f"zz{run}held"
     draft_name = f"zz{run}draft"
-    guids = _seed_entities(authenticated, root_url, user_token, "DataSet", [held_name])
+    # Seed on the type the editor creates (m4i_dataset): a create's unique
+    # value is checked against its own type and its sub types (ENS-06), so a
+    # held name on a base supertype would not collide (DD-719).
+    guids = _seed_entities(authenticated, root_url, user_token, "m4i_dataset", [held_name])
 
     def _hand_the_held_name(route: Route) -> None:
         body = json.loads(route.request.post_data or "{}")
@@ -2320,7 +2323,7 @@ def test__the_editor_keeps_the_draft_when_the_name_is_taken(
     try:
         authenticated.goto(urljoin(root_url, "/en-US/search/browse"))
         authenticated.locator("button.aurelius-create-entity").click()
-        authenticated.locator(".aurelius-editor-picker select").select_option(label="DataSet")
+        authenticated.locator(".aurelius-editor-picker select").select_option(label="Dataset")
         authenticated.locator("#editor-name").fill(draft_name)
         drawer = authenticated.locator(".aurelius-drawer")
         drawer.locator("button.aurelius-editor-save").click()
@@ -2328,7 +2331,7 @@ def test__the_editor_keeps_the_draft_when_the_name_is_taken(
         # The create is refused (AVW-06): the drawer stays open on the create
         # route with the draft intact, and no conflict line shows (VDE-08).
         expect(drawer.locator(".aurelius-editor-conflict")).to_have_count(0)
-        expect(authenticated).to_have_url(re.compile(r"drawer:create/DataSet"))
+        expect(authenticated).to_have_url(re.compile(r"drawer:create/m4i_dataset"))
         expect(authenticated.locator("#editor-name")).to_have_value(draft_name)
         expect(authenticated.locator(".aurelius-badge-dot")).to_have_count(1)  # the bell marks the alert unread
 

@@ -141,3 +141,39 @@ classification is an m4i or base type — so the domain definitions are payload 
   the rule needs: an import that finds a known type ignores the definition, and a relationship attribute
   whose target type is absent is not resolved by an import of entities (the importer validates attributes
   against the entity's own type, which the metamodel holds). Smaller diff, same behaviour (ponytail).
+
+### DD-719. The editor's create picker lists the icon map's types
+
+- **Status:** Proposed
+- **Increment:** 18.1
+- **Date:** 2026-11-19
+- **Relates to:** EDT-04 and VDE-02 (the picker rule, amended in place in `7-7a` and `16-5c`), MMS-05 (the
+  icon map is the metamodel's name list), ADR 068, DV-180, DD-378 (the icon map as the only place that names
+  a type icon).
+
+**Decision.** `EditorState.pickerTypes` keeps an entity typedef header only when `TYPE_ICONS` names it
+(MMS-07). The icon map of MMS-05 is the filter, so the picker answers the twelve metamodel types. The
+glossary and `__`-prefixed exclusions of EDT-04 stay in force (the icon map holds neither), and the order and
+labels do not change (DD-379, DD-497). Edit mode is untouched, so it still renders the stored type as static
+text even when a legacy entity carries a type outside the metamodel.
+
+**Reason.** The shipped registry holds 33 entity definitions, and 21 of them are scaffolding an author does
+not create: the Apache Atlas base supertypes (`Asset`, `DataSet`, `Process`, `ProcessExecution`,
+`Infrastructure`, `Path`, `AtlasServer`, `ddl`, `Referenceable`) that the m4i types inherit from, plus
+`m4i_referenceable`, `m4i_archimate_project` and `m4i_dq_score`. The sample corpus, which is what a new user
+sees, creates entities of exactly the twelve types the icon map names. Listing the rest asks a governance
+user to choose between a base type and the subtype that carries the fields, and offers a score type the
+quality engine writes on its own.
+
+**Alternatives.**
+
+- **Leave the picker as Apache Atlas has it.** It keeps full parity with the legacy type select (DV-180 goes
+  away), but it keeps the choice the user reported as wrong. A picker is an authoring surface, and the
+  product's own authoring list is the icon map.
+- **Filter on the `m4i_` prefix.** It drops the base supertypes, but it keeps the three m4i types an author
+  also cannot create (`m4i_referenceable`, `m4i_archimate_project`, `m4i_dq_score`). The icon map is already
+  the narrower and tested list (MMS-05), so it answers the same question without a new name list.
+- **Derive the list from the loaded registry** (every type with a registered subtype chain, or every type not
+  named in `superTypes`). A connector that ships its own models directory (ADR 068's follow-up) would land in
+  the picker again, and the webapp would need a registry query the picker does not make today. The icon map
+  names the types the webapp can draw an icon for, which is the screen's real boundary.

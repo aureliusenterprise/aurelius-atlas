@@ -20,6 +20,7 @@ import {
 
 import { AlertsService } from "../../alerts/alerts.service";
 import { nameDisplay } from "../meta/type-display";
+import { TYPE_ICONS } from "../meta/type-icons";
 
 import { EntitySaved } from "./entity-saved";
 import { entityFromView, tagsAfterConflict } from "./view-as-entity";
@@ -154,19 +155,23 @@ export class EditorState {
     });
 
     /**
-     * The create-mode picker list (EDT-04, VDE-02): every entity typedef header
-     * except the glossary types and the `__`-prefixed internals, labelled by
-     * alias else the dictionary display name, sorted. The legacy row label is
-     * `translate.instant(entityDef.name)` (`type-select.component.ts:116`);
-     * headers carry no `displayName`, so the label is the `nameDisplay` of the
-     * name (DD-379 kept). The order is the labels' (DD-497): a picker a person
-     * reads is a word list, so the rows sort by the text they show.
+     * The create-mode picker list (EDT-04 as scoped by MMS-07, VDE-02): only
+     * the metamodel types — the entity typedef headers the icon map names — so
+     * the base-model supertypes an author never creates directly (`Asset`,
+     * `DataSet`, `Process`, `Referenceable`, …) and the scaffold types without
+     * an icon (`m4i_referenceable`, `m4i_dq_score`, `m4i_archimate_project`) stay
+     * out, as do the glossary types and the `__`-prefixed internals (EDT-04 kept;
+     * the icon map is the metamodel boundary — ADR 068, MMS-05, DV-180).
+     * Labelled by alias else the dictionary display name, sorted. Headers carry
+     * no `displayName`, so the label is the `nameDisplay` of the name (DD-379
+     * kept); the order is the labels' (DD-497): a picker a person reads is a
+     * word list, so the rows sort by the text they show.
      */
     readonly pickerTypes = computed<readonly PickerType[]>(() => {
         const rows: PickerType[] = [];
         for (const header of this.entityHeaders()) {
             const name = header.name ?? "";
-            if (name === "" || name.startsWith("__") || name.startsWith("AtlasGlossary")) {
+            if (name === "" || !Object.hasOwn(TYPE_ICONS, name)) {
                 continue;
             }
             rows.push({ name, label: nameDisplay(name) });
