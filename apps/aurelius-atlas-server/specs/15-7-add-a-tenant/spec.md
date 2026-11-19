@@ -18,7 +18,7 @@ the store and the realm, which the stack keeps across restarts until `down -v`.
     - making a tenant's people in the realm: a user, their membership and groups, a temporary password
       (`realm_tenants.py`);
     - the stack's one shot `tenants` seeding demo and meyn through the same code (`docker/tenants.py`);
-    - the script `docker/tenant` running the command against the standalone stack.
+    - the script `docker/bin/tenant.sh` running the command against the standalone stack.
 - `docs/user-guide/standalone-tenants.md` rewritten around the command.
 
 Not delivered, with the increment that will:
@@ -55,7 +55,7 @@ of a tenant's people and their groups:
 | TAD-09 | `user <tenant> remove <username>` takes the user out of the tenant: its membership, its groups there and its administration of the tenant (TRM-07). The user stays in the realm, with any other tenant's membership                                                                                                                                                                                                                                |
 | TAD-10 | `samples` lists the samples in the sample folder, one name per line                                                                                                                                                                                                                                                                                                                                                                                |
 | TAD-11 | When a step fails, the command says which, makes nothing more and exits non-zero. Each step leaves what it made, so running the same command again finishes the rest (TAD-01, TAD-06)                                                                                                                                                                                                                                                              |
-| TAD-12 | `docker/tenant <arguments>` runs the command with those arguments in the standalone stack's one shot `tenants`: the server's image, its settings, tenancy on, the stack's env files and the sample folder (DD-702). It answers the command's output and exit code, and needs the stack running. It edits no file                                                                                                                                   |
+| TAD-12 | `docker/bin/tenant.sh <arguments>` runs the command with those arguments in the standalone stack's one shot `tenants`: the server's image, its settings, tenancy on, the stack's env files and the sample folder (DD-702). It answers the command's output and exit code, and needs the stack running. It edits no file                                                                                                                            |
 | TAD-13 | The stack's one shot `tenants` seeds demo with the sample `sample_data` and meyn without one, each with all three users, through the code of TAD-01 to TAD-06. Their passwords come from `<TENANT>_USER_<ROLE>_PASSWORD` and are permanent (DD-700); a role without one gets no user                                                                                                                                                               |
 
 ## Java origin
@@ -75,11 +75,11 @@ None against Apache Atlas.
 - `tests/test__standalone_tenant_script.py` (workspace): TAD-12, the script's compose invocation read as
   written.
 - By hand, on the standalone stack:
-    - `docker/tenant samples` lists `only_gov_quality`, `sample_data` and `small`;
-    - `docker/tenant add acme` makes acme and `acme_atlas` with a temporary password, and nothing else;
-    - `docker/tenant add globex --sample small --users all` makes globex with the small sample and three
+    - `docker/bin/tenant.sh samples` lists `only_gov_quality`, `sample_data` and `small`;
+    - `docker/bin/tenant.sh add acme` makes acme and `acme_atlas` with a temporary password, and nothing else;
+    - `docker/bin/tenant.sh add globex --sample small --users all` makes globex with the small sample and three
       users;
     - signing in as `acme_atlas` asks for a new password, then opens acme's catalogue, empty;
-    - running `docker/tenant add acme` again changes nothing and prints no password;
-    - `docker/tenant user acme add jane --role steward` adds jane to acme, and
-      `docker/tenant user acme remove jane` takes her out again.
+    - running `docker/bin/tenant.sh add acme` again changes nothing and prints no password;
+    - `docker/bin/tenant.sh user acme add jane --role steward` adds jane to acme, and
+      `docker/bin/tenant.sh user acme remove jane` takes her out again.

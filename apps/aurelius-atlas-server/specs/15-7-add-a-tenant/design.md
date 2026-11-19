@@ -40,9 +40,11 @@ stack is signed in to again and again with the same ones.
 - **Increment:** 15.7
 - **Date:** 2026-11-19
 
-**Decision.** `docker/tenant` is a shell script that runs `docker compose run --rm --no-deps` of the stack's one
-shot `tenants`, with the stack's three env files and the profile `tenancy`, its entrypoint replaced by the
-command and the script's arguments passed through. It answers the command's output and exit code.
+**Decision.** `docker/bin/tenant.sh` is a shell script that runs `docker compose run --rm --no-deps` of the
+stack's one shot `tenants`, with the stack's three env files and the profile `tenancy`, its entrypoint
+replaced by the command and the script's arguments passed through. It answers the command's output and exit
+code. It sits beside `docker/bin/`'s other scripts, `import-sample.sh` and `provision-tenants.sh`, and the
+release bundle ships it with them (SPC-11).
 
 **Reason.** The one shot `tenants` is the stack's place where the server's image runs with tenancy on, the
 provisioning client's secret and the sample folder mounted. Running the command there gives it everything
