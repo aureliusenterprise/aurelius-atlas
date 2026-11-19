@@ -254,6 +254,18 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "title": "App Search Poll Seconds",
 >       "type": "number"
 >     },
+>     "app_search_answer_seconds": {
+>       "default": 5.0,
+>       "minimum": 0,
+>       "title": "App Search Answer Seconds",
+>       "type": "number"
+>     },
+>     "app_search_settle_seconds": {
+>       "default": 0.5,
+>       "minimum": 0,
+>       "title": "App Search Settle Seconds",
+>       "type": "number"
+>     },
 >     "hybrid_vector_weight": {
 >       "default": 10.0,
 >       "minimum": 0,
@@ -660,6 +672,8 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `app_search_enabled` (`bool`)
 > - `app_search_batch_size` (`int`)
 > - `app_search_poll_seconds` (`float`)
+> - `app_search_answer_seconds` (`float`)
+> - `app_search_settle_seconds` (`float`)
 > - `hybrid_vector_weight` (`float`)
 > - `import_folder` (`Path | None`)
 > - `cluster_name` (`str`)
@@ -714,6 +728,14 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_admin_client_id` (`str`)
 > - `tenancy_admin_client_secret` (`SecretStr | None`)
 >
+> ### app\_search\_answer\_seconds
+>
+> ```
+> app_search_answer_seconds: float = 5.0
+> ```
+>
+> How long a writing request waits for its App Search documents before it answers; 0 doesn't wait (ASU-08, DD-679).
+>
 > ### app\_search\_batch\_size
 >
 > ```
@@ -736,7 +758,15 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > app_search_poll_seconds: float = 10.0
 > ```
 >
-> How often the App Search indexer looks for missing and stale documents (ASU-02, ASU-06).
+> How often, at the latest, the App Search indexer looks for missing and stale documents (ASU-02, ASU-06): a write wakes it sooner (ASU-07).
+>
+> ### app\_search\_settle\_seconds
+>
+> ```
+> app_search_settle_seconds: float = 0.5
+> ```
+>
+> How long the App Search indexer waits after a write wakes it, so a burst of writes lands in one round (ASU-07, DD-678).
 >
 > ### audit\_aging\_enabled
 >

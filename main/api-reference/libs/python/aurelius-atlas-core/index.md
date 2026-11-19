@@ -764,6 +764,9 @@ Attributes:
 - **`task_listeners`** (`list[Callable[[], None]]`) –
 
   Called after a write that recorded tasks, to wake a worker (DD-080).
+- **`write_listeners`** (`list[Callable[[], None]]`) –
+
+  Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
 
 #### registry
 
@@ -778,6 +781,14 @@ task_listeners: list[Callable[[], None]] = []
 ```
 
 Called after a write that recorded tasks, to wake a worker (DD-080).
+
+#### write\_listeners
+
+```
+write_listeners: list[Callable[[], None]] = []
+```
+
+Called after every committed write, to wake the workers that derive from entities (ASU-07, DD-678).
 
 #### classification\_type\_counts
 
