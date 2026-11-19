@@ -25,6 +25,11 @@
     "aliases": []
   },
   {
+    "version": "fix-e2e-stability",
+    "title": "fix-e2e-stability",
+    "aliases": []
+  },
+  {
     "version": "fix-audit-sort-in-elasticsearch",
     "title": "fix-audit-sort-in-elasticsearch",
     "aliases": []
