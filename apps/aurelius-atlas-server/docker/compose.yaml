@@ -121,6 +121,8 @@ services:
             MEYN_USER_SCIENTIST_PASSWORD: ${MEYN_USER_SCIENTIST_PASSWORD:-}
             SAMPLE_DIR: /sample
             TENANT_SAMPLE: ${TENANT_SAMPLE:-sample_data.zip}
+            # The samples the tenant command offers (TAD-02, TAD-10): the same folder, read by the server's settings.
+            AURELIUS_ATLAS_SERVER_SAMPLE_DIR: /sample
         volumes:
             - *certs
             - ./tenants.py:/standalone/tenants.py:ro

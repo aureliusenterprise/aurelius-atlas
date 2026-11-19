@@ -307,6 +307,7 @@ runtime-evaluated-decorators = ["pydantic.validate_call", "attrs.define"]
 # the product under test) and shells out to `docker compose config` and `git status`
 # fixed-argument, the same shape as the chart harness (17.3, DD-689).
 "tests/test__standalone_bundle.py" = ["S603", "S607", "SLF001"]
+"tests/test__standalone_host.py" = ["S603", "S607"]
 "tools/griffe/*.py" = ["INP001", "ANN401", "SLF001"]
 # The digest guard is a CLI script: print is its output contract and the
 # docker imagetools call is fixed-argument (CHT-96).

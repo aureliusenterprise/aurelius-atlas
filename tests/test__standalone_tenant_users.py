@@ -70,6 +70,23 @@ class Realm:
         """Make the user a member."""
         self.member_ids.add(user)
 
+    async def find_user(self, username: str) -> str | None:
+        """The user's id, or None."""
+        return self.admin.users.get(username)
+
+    async def create_user(self, representation: dict[str, Any]) -> str:
+        """Make the user through the admin API; its id."""
+        _, user = await self.admin.call("POST", "/users", body=representation)
+        assert user is not None
+        return user
+
+    async def add_to_groups(self, org: RealmOrganization, user: str, groups: Any) -> None:  # noqa: ANN401
+        """Put the member in the groups, each a PUT that allows a 409."""
+        for group in groups:
+            await self.admin.call(
+                "PUT", f"/organizations/{org.id}/groups/{org.groups[group]}/members/{user}", present=True
+            )
+
     async def user_id(self, username: str) -> str:
         """The user's id, or the realm's refusal."""
         if username not in self.admin.users:
@@ -99,7 +116,7 @@ def group_puts(admin: Admin, user: str) -> list[str]:
     ]
 
 
-@pytest.mark.covers(rules=["TRM-02", "TRM-06"])
+@pytest.mark.covers(rules=["TRM-02", "TRM-06", "TAD-13"])
 async def test__a_tenant_s_three_users_are_made_members_in_their_role_groups() -> None:
     """Each user is made with its own password, joins the tenant alone, in its groups: atlas all four, the
     steward read and write, the scientist read (DD-700).
@@ -118,7 +135,7 @@ async def test__a_tenant_s_three_users_are_made_members_in_their_role_groups() -
     assert group_puts(realm.admin, "id-demo_scientist") == ["g-read"]
 
 
-@pytest.mark.covers(rules=["TRM-02"])
+@pytest.mark.covers(rules=["TRM-02", "TAD-13"])
 async def test__a_user_already_there_keeps_its_password_and_a_user_without_one_is_not_made() -> None:
     """The next start makes nothing again; a tenant without a role's password gets no user for it."""
     realm = realm_with({"demo_atlas": "id-old"})
@@ -145,7 +162,7 @@ class RefusingAdmin(Admin):
         return await super().call(method, path, body=body, present=present)
 
 
-@pytest.mark.covers(rules=["TRM-02"])
+@pytest.mark.covers(rules=["TRM-02", "TAD-13"])
 async def test__a_user_the_realm_refuses_is_left_out_and_the_rest_are_made() -> None:
     """A password the realm's policy rejects costs that user alone: the others, and the next tenant, follow."""
     realm = Realm(RefusingAdmin({}), RealmOrganization(id="o-demo", alias="demo", groups=GROUPS))
@@ -156,7 +173,7 @@ async def test__a_user_the_realm_refuses_is_left_out_and_the_rest_are_made() -> 
     assert realm.member_ids == {"id-demo_atlas", "id-demo_scientist"}
 
 
-@pytest.mark.covers(rules=["TRM-02"])
+@pytest.mark.covers(rules=["TRM-02", "TAD-13"])
 async def test__a_tenant_without_its_organization_is_a_fault() -> None:
     """Users are made after the provisioning made the organization; without it, the one shot stops."""
     realm = Realm(Admin({}), None)
