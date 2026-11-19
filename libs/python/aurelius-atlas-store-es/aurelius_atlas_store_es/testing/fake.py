@@ -275,6 +275,9 @@ class FakeClient:
         self.aliases: dict[str, str] = {}
         self.create_error: Exception | None = None
         """When set, each index create raises it instead of answering (a failed create other than the race)."""
+        self.bulk_conflict: bool = False
+        """When set, every ``bulk`` action fails as a conflict instead of writing, so the request answers
+        ``errors`` (DD-705)."""
         self.race_lost: str | None = None
         """The index whose next create loses to another server's identical one (DD-508); see ``FakeIndices.create``."""
         self.documents: dict[str, dict[str, tuple[dict[str, Any], int]]] = {}
@@ -380,6 +383,8 @@ class FakeClient:
             self._record_write_refresh(action["_index"], refresh=refresh)
             versions = {"if_seq_no": action.get("if_seq_no"), "if_primary_term": action.get("if_primary_term")}
             try:
+                if self.bulk_conflict:
+                    raise _conflict()
                 if kind == "delete":
                     result = await self.delete(index=action["_index"], id=action["_id"], **versions)
                 else:

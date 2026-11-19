@@ -66,3 +66,36 @@ the rules of SRC-05 state; Atlas's order without a sort is the index's and has n
 **Alternatives.** Elasticsearch's query language in the core: the in-memory documents could not answer it.
 
 **Consequences.** `approximateCount` is exact.
+
+### DD-704. A page past the store's search window is a bad request
+
+- **Status:** Proposed
+- **Increment:** 4.1 (a fix, 2026-11-19)
+- **Date:** 2026-11-19
+
+**Decision.** `verify_page` refuses a page whose `offset` and `size` together pass
+`MAX_RESULT_WINDOW` (10,000). `EntitySearchProcessor.query` calls it for a basic
+search and for a marker page, and `DslQueryExecutor.execute` calls it before each
+search it pages. `AppSearchEngine` keeps its own clamp and reads the one constant.
+
+**Reason.** Elasticsearch answers no document past its `max_result_window`, so no
+page past 10,000 can ever be answered. The store raised `ApiError` and the server
+turned it into an internal error, which told a caller nothing about its own
+request (DV-176, DV-110's reason). A search by meaning already answers
+`BAD_REQUEST` past `MAX_NEAREST`, and a view search past its window, so this
+message joins two rules of the same shape.
+
+**Alternatives.** Raise the window: the setting is expensive per shard and it only
+moves the wall. Answer an empty page: a caller cannot tell a past-the-end page
+from one with no matches. Page with `search_after` under the hood: the store has
+no sort key that is unique and stable for every search, and a deep page would
+then read 10,000 documents per request.
+
+**Consequences.** `offset + limit` above 10,000 fails with `BAD_REQUEST`
+`offset + limit may not exceed 10000`, for a marker page too: a decoded marker
+feeds the offset the guard reads. The DSL's own `limit` and `offset` take part,
+so a query of `limit 100 offset 9950` fails on its own text. A caller that needs
+every entity of a large result reads it with a DSL query without `limit` or with
+a `select`, which pages the store from 0. `AppSearchEngine` clamps instead,
+because App Search answers the page it can and its callers read a list, not a
+search result.
