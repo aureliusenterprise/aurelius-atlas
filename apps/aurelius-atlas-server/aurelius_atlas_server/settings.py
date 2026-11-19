@@ -172,6 +172,11 @@ class ServerSettings(StoreAccessSettings):
     import_folder: Path | None = None
     """The one folder ``admin/importfile`` reads export ZIPs from; none refuses every file (IMS-06, DV-125)."""
 
+    upload_max_bytes: int = Field(default=256 * 1024 * 1024, gt=0)
+    """The most bytes an upload's file may hold before ``PAYLOAD_TOO_LARGE`` refuses it: the import ZIP and the
+    bulk import CSV or Excel alike (SRV-12, DD-708). The webapp's nginx edge lets a request of up to 1 GiB
+    through, so an operator who raises this past 256 MiB raises ``client_max_body_size`` there too."""
+
     cluster_name: str = "default"
     """The cluster an export says it comes from: ``atlas.metadata.namespace``, else ``atlas.cluster.name`` (EXP-06)."""
 

@@ -482,6 +482,9 @@ class AtlasErrorCode(Enum):
     )
     ENTITY_NAME_TAKEN = (409, "ENTITY_NAME_TAKEN", "The qualified name {0} is held by entity {1}")
     VIEW_FORBIDDEN_WRITE = (403, "AURELIUS-403-00-005", "{0} is not authorized to write the catalogue")
+    # Aurelius's own, for an upload past the server's limit: Java Atlas met these in its servlet container,
+    # not in Atlas code, so it has no code for one (SRV-12, DD-708).
+    PAYLOAD_TOO_LARGE = (413, "AURELIUS-413-00-001", "The uploaded {0} is larger than {1} bytes")
     FAILED_TO_OBTAIN_IMPORT_EXPORT_LOCK = (
         409,
         "ATLAS-500-00-006",
