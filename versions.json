@@ -15,11 +15,6 @@
     "aliases": []
   },
   {
-    "version": "spec-15-8-tenants-on-kubernetes",
-    "title": "spec-15-8-tenants-on-kubernetes",
-    "aliases": []
-  },
-  {
     "version": "main",
     "title": "main",
     "aliases": []
