@@ -1,7 +1,7 @@
 # 7.33 The editor's field labels are all localized
 
 - **Status:** in review
-- **Pull request:** — (this increment's PR)
+- **Pull request:** [#410](https://github.com/aureliusenterprise/aurelius-atlas/pull/410)
 - **Records:** DD-722, DD-723, DD-724 (here); DD-356 (the star, kept); amends
   EDT-03 (7-7a) and EDT-13 (7-7c, incl. its DD-379 bracket clause) in place;
   relies on SHL-08 (the dictionary bridge), DD-341, and DV-181 (the dictionary typos)

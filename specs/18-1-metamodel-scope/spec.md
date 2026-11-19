@@ -1,7 +1,7 @@
 # 18.1 Bootstrap only the metamodel the system serves
 
 - **Status:** in review
-- **Pull request:** — (this increment's PR)
+- **Pull request:** [#410](https://github.com/aureliusenterprise/aurelius-atlas/pull/410)
 - **Records:** ADR 068, DD-715 to DD-721 (here), DV-178, DV-179; DV-167 amended; AVS-01 amended in place;
   relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
