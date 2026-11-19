@@ -111,11 +111,18 @@ LDG-06, DD-384). */}}
 
 {{/*
 The Secret carrying the trust root (key: ca.crt) this nginx pins as a TLS
-client (CHT-25, DD-259): explicit value wins, else the chain's CA named by the
-issuer — the same default as the umbrella's helper.
+client (CHT-25, DD-259, DD-707). A name is explicit first: `global.trust.caSecretName`
+or `tls.secretName` bring your own trust root. With neither, the default is
+this chart's own leaf Secret — cert-manager writes `ca.crt` into the Secret its
+Certificate produces, so it always exists beside the leaf pair (the server
+chart's pattern, DD-286). The old default derived `<issuerRef.name>-ca`, the
+umbrella's separate trust-root Secret, which the umbrella renders only with a
+chart-built issuer or a supplied `caBundle`. Pointing a standalone or
+public-CA install at a name nothing creates left the pod stuck in
+ContainerCreating.
 */}}
 {{- define "atlas-webapp.caSecretName" -}}
-{{- default (printf "%s-ca" .Values.global.trust.issuerRef.name) (default .Values.tls.secretName .Values.global.trust.caSecretName) -}}
+{{- default (include "atlas-webapp.tlsSecretName" .) (default .Values.tls.secretName .Values.global.trust.caSecretName) -}}
 {{- end -}}
 
 {{/*
