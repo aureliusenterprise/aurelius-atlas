@@ -1,7 +1,7 @@
 # 7.34 Version and copyright: what `/config.json` no longer carries
 
 - **Status:** in review
-- **Pull request:** — (this increment's PR)
+- **Pull request:** [#411](https://github.com/aureliusenterprise/aurelius-atlas/pull/411)
 - **Records:** DD-725 (the version is the server's answer, `VER-01`), DD-726 (the
   copyright year is the browser's calendar year, `VER-04`), DV-182 (the footer's
   two values leave the config); supersedes SPL-12's no-fetch clause (7.14, whose
