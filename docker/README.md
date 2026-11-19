@@ -299,6 +299,13 @@ umbrella; the fragments are not a target of their own.
   The dev observability slice publishes the same ports, so stop it
   (`docker compose -f infra/observability/docker-compose.yaml --env-file infra/observability/.env down`)
   before starting the stack, and bring it back (`npx nx up aurelius-atlas-infra-observability`) after.
+  With tenancy on, Grafana's folder "Demo tenant" holds two dashboards on the demo tenant's indices:
+  _catalogue_, its entities by type, state, data domain, owner and steward as created over time, and
+  _activity_, its audit events by action and user. Their data sources read the store as
+  `grafana_demo_reader`, which reads the demo tenant's indices and nothing else; the one shot `tenants`
+  makes it with `GRAFANA_ES_READER_PASSWORD` of `infra/elasticsearch/.env`. Grafana filters on a time
+  field, so the governance-quality results, the relationships and the classifications, which have
+  none, are not charted yet.
 - `embedder`: the embedding model of search by meaning (ADR 059), `https://embedder:21004` on the stack's network
   with its own certificate. It checks no tokens, so it has no published port (DD-432), and nothing waits for it.
   The server embeds every entity through it in the background (11.3): new and changed ones within its poll

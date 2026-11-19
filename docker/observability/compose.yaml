@@ -98,10 +98,21 @@ services:
         extends:
             file: ../../infra/observability/docker-compose.yaml
             service: tempo
+    # Grafana is the slice's, with the demo tenant's data sources and dashboards beside the slice's own: the
+    # store's CA to check the store's certificate, and the read-only user's password the data sources sign in with.
     grafana:
         extends:
             file: ../../infra/observability/docker-compose.yaml
             service: grafana
+        environment:
+            - GRAFANA_ES_READER_PASSWORD=${GRAFANA_ES_READER_PASSWORD:-}
+        volumes:
+            - ./config/grafana/demo-tenant-datasources.yaml:/etc/grafana/provisioning/datasources/demo-tenant.yaml:ro
+            - ./config/grafana/demo-tenant-dashboards.yaml:/etc/grafana/provisioning/dashboards/demo-tenant.yaml:ro
+            - ./config/grafana/demo-tenant:/var/lib/grafana/demo-tenant-dashboards:ro
+            # The store's certificate folder, whole: a bundle ships certificate folders, filled by
+            # docker/bin/make-certs.sh.
+            - ../../infra/elasticsearch/certs:/etc/grafana/elasticsearch-certs:ro
 
 volumes:
     jwks-data:

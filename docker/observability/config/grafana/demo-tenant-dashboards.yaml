@@ -1,0 +1,11 @@
+# The standalone Grafana's dashboards on the demo tenant, in a folder of their own.
+apiVersion: 1
+
+providers:
+    - name: demo-tenant
+      folder: Demo tenant
+      type: file
+      disableDeletion: true
+      allowUiUpdates: false
+      options:
+          path: /var/lib/grafana/demo-tenant-dashboards

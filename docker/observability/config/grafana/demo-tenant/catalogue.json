@@ -1,0 +1,650 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "The demo tenant's catalogue: its entities by type, state, domain, owner and steward, as created over time. Atlas's internal types, whose names start with __, are left out.",
+    "editable": false,
+    "panels": [
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "createTime",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Active entities",
+            "type": "stat"
+        },
+        {
+            "description": "Active entities the governance rules apply to.",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 6,
+                "y": 0
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "createTime",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__* AND governed:true",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Governed entities",
+            "type": "stat"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 12,
+                "y": 0
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "createTime",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:DELETED AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Deleted entities",
+            "type": "stat"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 6,
+                "x": 18,
+                "y": 0
+            },
+            "id": 4,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "createTime",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__* AND _exists_:appSearch.deriveddatadomain",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities with a data domain",
+            "type": "stat"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 4
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "typeName",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities by type",
+            "type": "barchart"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 4
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "state",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "10"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities by state",
+            "type": "barchart"
+        },
+        {
+            "description": "Entities whose derived document names a data domain.",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 12,
+                "x": 0,
+                "y": 14
+            },
+            "id": 7,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "appSearch.deriveddatadomain",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities by data domain",
+            "type": "barchart"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 12,
+                "x": 12,
+                "y": 14
+            },
+            "id": 8,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "appSearch.deriveddataowner",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities by data owner",
+            "type": "barchart"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "barAlignment": 0,
+                        "drawStyle": "bars",
+                        "fillOpacity": 80,
+                        "lineWidth": 1,
+                        "stacking": {
+                            "mode": "normal"
+                        }
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 24,
+                "x": 0,
+                "y": 23
+            },
+            "id": 9,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "typeName",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "10"
+                            },
+                            "type": "terms"
+                        },
+                        {
+                            "field": "createTime",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "0"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities created over time, by type",
+            "type": "timeseries"
+        },
+        {
+            "description": "Active entities whose derived document names a data steward.",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 12,
+                "x": 0,
+                "y": 32
+            },
+            "id": 10,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "appSearch.deriveddatasteward",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities by data steward",
+            "type": "barchart"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 9,
+                "w": 12,
+                "x": 12,
+                "y": 32
+            },
+            "id": 11,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "createdBy",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "demo-tenant-entities"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "state:ACTIVE AND NOT typeName:__*",
+                    "refId": "A",
+                    "timeField": "createTime"
+                }
+            ],
+            "title": "Entities by creator",
+            "type": "barchart"
+        }
+    ],
+    "refresh": "",
+    "schemaVersion": 39,
+    "tags": ["aurelius-atlas", "demo-tenant"],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-10y",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Demo tenant - catalogue",
+    "uid": "demo-tenant-catalogue",
+    "version": 1
+}
