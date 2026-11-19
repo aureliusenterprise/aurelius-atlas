@@ -154,8 +154,9 @@ classification is an m4i or base type — so the domain definitions are payload 
 **Decision.** `EditorState.pickerTypes` keeps an entity typedef header only when `TYPE_ICONS` names it
 (MMS-07). The icon map of MMS-05 is the filter, so the picker answers the twelve metamodel types. The
 glossary and `__`-prefixed exclusions of EDT-04 stay in force (the icon map holds neither), and the order and
-labels do not change (DD-379, DD-497). Edit mode is untouched, so it still renders the stored type as static
-text even when a legacy entity carries a type outside the metamodel.
+labels do not change (DD-379, DD-497). Edit mode keeps its static type (DD-330), so a legacy entity of a type
+outside the metamodel still opens and still shows that type; DD-721 turns that text into the shared
+type-name badge.
 
 **Reason.** The shipped registry holds 33 entity definitions, and 21 of them are scaffolding an author does
 not create: the Apache Atlas base supertypes (`Asset`, `DataSet`, `Process`, `ProcessExecution`,
@@ -218,3 +219,45 @@ cleaned for the same reason 18.1 already cleans their domain types.
   from the relationship definitions and overwrites them on load (THY-11), and MDD-02 reads the definitions
   with the stored fields stripped, so the stale copies are inert. Pruning them rewrites fixture text the rule
   does not need, the same call DD-718 makes for the same reason.
+
+### DD-721. The card shape carries the type alias
+
+- **Status:** Proposed
+- **Increment:** 18.1
+- **Date:** 2026-11-19
+- **Relates to:** MMS-09 (here), AVS-01 (the card's fields, amended in place in `16-1`), AVS-07 (one
+  definition every consumer mirrors), DET-26 and DD-371 (the details header badge reads the alias), UIC-12
+  and DD-190 (the shared type-name badge), VCF-01 (the one rich card of both screens), EDT-04 and DD-330
+  (the editor's static type), DD-378 (the icon map keyed on the raw type), DV-167 (amended: its card-badge
+  clause).
+
+**Decision.** The card grows one field, `typeAlias`: the entity's `typeAlias` attribute as a non-empty
+string, or none (MMS-09, AVS-01 as amended). `view_of` fills it the way it fills `name` — through the type's
+attribute defs, so the alias rides the read door, the write door and the search door alike (AVS-08: the
+search door already validates the whole stored entity, so no indexer field and no re-derive round is needed).
+Three badges read it: the details header and the editor's static type keep reading the entity's own
+attributes, and the shared rich card reads the card's field. Every badge passes the raw `typeName` to the
+icon map, so the base type always chooses the icon and an alias never changes one (DD-378).
+
+**Reason.** `typeAlias` is an attribute of `m4i_referenceable`, so every author-able m4i type carries it,
+and its own definition says what it is for: the type name to display in the UI instead of the base type
+name. The legacy dashboard read it on every badge of its `models4insight-type-name` component. The Aurelius
+details header already does (DET-26). The two places that did not are the card family — it was pinned out by
+DV-167, because the card shape of 16.1 had no field for it — and the editor's static type, which renders
+plain text. Both are the same badge with the same input, and a catalogue whose author typed an alias showed
+it on one screen and not on the next.
+
+**Alternatives.**
+
+- **Leave the card alias-less (DV-167 standing).** It keeps the card shape closed, and it keeps the user's
+  report: an entity that names itself "Contract Repository" shows "Data Entity" in the results and in the
+  related-attributes cards. The alias needs no new engine work — it is already stored and already read — so
+  the field costs one line of derivation.
+- **Put the alias in `displayText`.** It reuses a field, but `displayText` is the entity's name (AVS-03),
+  and the card's title reads it. Overloading it renames entities in every surface that shows a card.
+- **Let the webapp read the alias from the view's attributes on cards.** The results page reads cards only
+  (AVS-01's whole point, one door round), so a results row would need an entity read per row — the same
+  per-card read 16.5f refused for the roles (DV-167's reason).
+- **Run the alias through `nameDisplay`.** The alias is author text, not a typedef name. The legacy stored
+  it already translated, and the component treats it as a display string (UIC-15); the dictionary has no key
+  for it and would pass it through anyway.

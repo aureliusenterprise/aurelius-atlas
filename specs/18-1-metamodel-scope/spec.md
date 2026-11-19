@@ -1,8 +1,9 @@
 # 18.1 Bootstrap only the metamodel the system serves
 
-- **Status:** in progress
-- **Pull request:** –
-- **Records:** ADR 068, DD-715 to DD-720 (here), DV-178, DV-179; relies on
+- **Status:** in review
+- **Pull request:** — (this increment's PR)
+- **Records:** ADR 068, DD-715 to DD-721 (here), DV-178, DV-179; DV-167 amended; AVS-01 amended in place;
+  relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship), increment 1.5 (MDL, the loader), increment 6.3c2 (REP, the audits writer), and
   increment 8.2 (LM-03, the lineage process family).
@@ -41,6 +42,9 @@ It delivers:
   base supertypes or the scaffold m4i types (MMS-07, DV-180).
 - The sample bundles cleaned of the domain types they exported. The typedef file of each bundle in
   `data/atlas-sample/` loses the domain definitions, so the demo import cannot create them (MMS-02, DD-718).
+- The type alias on every badge. The card shape carries the entity's `typeAlias` (AVS-01 amended, DD-721),
+  and the results and section cards and the editor's static type show it the way the details header does.
+  The icon keeps resolving off the raw type name, so an alias never changes one (MMS-09).
 
 It does not deliver, with the increment that will:
 
@@ -57,16 +61,17 @@ their patches) plus everything in `m4i_models` (ADR 058). The "domain models" ar
 the five deleted directories. The "icon map" is `apps/aurelius-atlas-webapp/src/app/search/meta/type-icons.ts`
 (DD-378). The "process family" is `PROCESS_TYPES` in the lineage model (LM-03).
 
-| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                        |
-| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| MMS-01 | The shipped bootstrap contains only the files of `models/0000-Area0` and `m4i_models`. No file under the core package defines a domain type.                                                                                                                                                                                                                                |
-| MMS-02 | A new catalogue loads the metamodel and no domain type: its registry holds `hive_table` under no name, and holds `Referenceable`, `AtlasGlossary`, and `m4i_dataset`. Types an existing store already holds are not removed by the bootstrap.                                                                                                                               |
-| MMS-03 | Pointing `AURELIUS_ATLAS_SERVER_MODELS_DIR` at a directory with copies of the deleted files loads them exactly as increment 1.5 does (MDL-01 to MDL-15 unchanged).                                                                                                                                                                                                          |
-| MMS-04 | A replication audit keys its server details on the entity's own GUID for every type (DV-179). The Hive database grouping is gone.                                                                                                                                                                                                                                           |
-| MMS-05 | The icon map and the process family name no connector or kubernetes type: an icon entry or a process name is one of the metamodel's. An unknown type name still renders the default icon (DD-378) and, in lineage, an entity row.                                                                                                                                           |
-| MMS-06 | Importing a bundle of `data/atlas-sample/` into a new catalogue creates no type at all, and the catalogue holds no domain type after it (DD-718, IMS-03).                                                                                                                                                                                                                   |
-| MMS-07 | The editor's create picker lists the entity types the icon map names and nothing else (DV-180). The base supertypes an author does not create (`Asset`, `DataSet`, `Process`, `Referenceable`, and the rest) and the scaffold m4i types without an icon stay out of the picker. Edit mode keeps its static type text, so a legacy entity outside the metamodel still opens. |
-| MMS-08 | The m4i data dictionary carries no ArchiMate type: its registry holds no `m4i_archimate_project`, and no m4i type offers the `archimateReference` attribute or the `m4i_referenceable_archimate_reference_assignment` relationship (DD-720). The other 13 entity, 19 relationship, and 5 classification m4i types and their sample bundles are unchanged.                   |
+| Id     | Rule                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| MMS-01 | The shipped bootstrap contains only the files of `models/0000-Area0` and `m4i_models`. No file under the core package defines a domain type.                                                                                                                                                                                                                                                   |
+| MMS-02 | A new catalogue loads the metamodel and no domain type: its registry holds `hive_table` under no name, and holds `Referenceable`, `AtlasGlossary`, and `m4i_dataset`. Types an existing store already holds are not removed by the bootstrap.                                                                                                                                                  |
+| MMS-03 | Pointing `AURELIUS_ATLAS_SERVER_MODELS_DIR` at a directory with copies of the deleted files loads them exactly as increment 1.5 does (MDL-01 to MDL-15 unchanged).                                                                                                                                                                                                                             |
+| MMS-04 | A replication audit keys its server details on the entity's own GUID for every type (DV-179). The Hive database grouping is gone.                                                                                                                                                                                                                                                              |
+| MMS-05 | The icon map and the process family name no connector or kubernetes type: an icon entry or a process name is one of the metamodel's. An unknown type name still renders the default icon (DD-378) and, in lineage, an entity row.                                                                                                                                                              |
+| MMS-06 | Importing a bundle of `data/atlas-sample/` into a new catalogue creates no type at all, and the catalogue holds no domain type after it (DD-718, IMS-03).                                                                                                                                                                                                                                      |
+| MMS-07 | The editor's create picker lists the entity types the icon map names and nothing else (DV-180). The base supertypes an author does not create (`Asset`, `DataSet`, `Process`, `Referenceable`, and the rest) and the scaffold m4i types without an icon stay out of the picker. Edit mode keeps its static type text, so a legacy entity outside the metamodel still opens.                    |
+| MMS-08 | The m4i data dictionary carries no ArchiMate type: its registry holds no `m4i_archimate_project`, and no m4i type offers the `archimateReference` attribute or the `m4i_referenceable_archimate_reference_assignment` relationship (DD-720). The other 13 entity, 19 relationship, and 5 classification m4i types and their sample bundles are unchanged.                                      |
+| MMS-09 | A card holds `typeAlias`: the entity's `typeAlias` attribute as a non-empty string, or none, answered by both doors (AVS-01 as amended, DD-721, DV-167 amended). The rich card badge, the editor's static type and the details header show the alias in place of the type name, the badge's icon stays resolved from the raw type name, and an entity with no alias shows the type name alone. |
 
 ## Java origin
 
@@ -97,7 +102,13 @@ the five deleted directories. The "icon map" is `apps/aurelius-atlas-webapp/src/
   `apps/aurelius-atlas-lineage-model/tests/test__lineage.py` and `test__aurelius_atlas_lineage_model_app.py`
   (MMS-05), `apps/aurelius-atlas-webapp/src/app/search/meta/type-icons.spec.ts` (MMS-05, Vitest),
   `apps/aurelius-atlas-webapp/src/app/search/editor/editor-state.spec.ts` and
-  `entity-editor.component.spec.ts` (MMS-07, Vitest).
+  `entity-editor.component.spec.ts` (MMS-07, Vitest),
+  `libs/python/aurelius-atlas-model/tests/test__views.py` and
+  `libs/python/aurelius-atlas-core/tests/test__view_derivation.py` (MMS-09: the card's field set and its
+  derivation), `apps/aurelius-atlas-server/tests/test__view_family.py` and
+  `apps/aurelius-atlas-server/e2e/test__view_family_e2e.py` (MMS-09: both doors answer the alias, and agree
+  on it), `apps/aurelius-atlas-webapp/src/app/search/shared/catalogue-card.component.spec.ts` and
+  `entity-editor.component.spec.ts` (MMS-09: the alias badge, Vitest).
 - E2E: `nx e2e aurelius-atlas-core` (the typedef store bootstraps the metamodel on a real store) and
   `nx e2e aurelius-atlas-server`. `apps/aurelius-atlas-webapp/e2e/test__aurelius_atlas_webapp.py` creates
   through the picker on `m4i_dataset` and `m4i_collection` (MMS-07).

@@ -93,13 +93,25 @@
         </div>
     }
     @if (formVisible()) {
-        <!-- Editing renders the type as static text (EDT-04, DD-330): the
-             type never changes there, so no control — unlike create, where
-             the picker above is how the type is chosen and switched. -->
-        @if (staticType()) {
+        <!-- Editing renders the type as a static badge (EDT-04, DD-330):
+             the type never changes there, so no control — unlike create,
+             where the picker above is how the type is chosen and switched.
+             The badge is the shared type-name part, the details header's
+             shape: the entity's alias when it carries one, the display
+             name of the base type beside it, the icon of the raw type
+             (MMS-09, DD-721). -->
+        @if (staticTypeShown()) {
             <div class="field aurelius-editor-static-type">
                 <p class="label">{{ pickerLabel }}</p>
-                <p class="is-size-7 aurelius-editor-type">{{ staticType() }}</p>
+                <p class="aurelius-editor-type">
+                    <aurelius-atlas-ui-type-name
+                        [typeName]="staticTypeName()"
+                        [typeAlias]="staticTypeAlias()"
+                        [showBaseTypeName]="true"
+                        [icon]="staticTypeIcon()?.icon"
+                        [iconClass]="staticTypeIcon()?.classIcon"
+                    />
+                </p>
             </div>
         }
         <!-- The field set (EDT-03): one control per editable attribute, in the

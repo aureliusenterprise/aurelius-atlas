@@ -2182,7 +2182,9 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
 
         drawer = authenticated.locator(".aurelius-drawer")
         block = drawer.locator('.aurelius-editor-relationship[data-field="volume"]')
-        expect(block.locator("p.label")).to_contain_text("volume (ozone_volume)")
+        # No catalogue key: the raw name (EDT-33), and no target-type bracket (EDT-34, DD-724).
+        expect(block.locator("p.label")).to_contain_text("volume")
+        expect(block.locator("p.label")).not_to_contain_text("ozone_volume")
         expect(block.locator("p.label .has-text-danger")).to_have_text("*")  # the EDT-13 marker
 
         authenticated.locator("#editor-name").fill(bucket_name)

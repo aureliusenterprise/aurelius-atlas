@@ -8,8 +8,6 @@ import {
     AtlasRelationshipAttributeDef,
 } from "aurelius-atlas-data-access";
 
-import { nameDisplay } from "../meta/type-display";
-
 /** The input one editor field renders. */
 export type EditorFieldKind = "text" | "markdown" | "number" | "boolean" | "date" | "enum" | "multi";
 
@@ -28,11 +26,12 @@ export type EditorField = {
 };
 
 /**
- * The localized strings for the attributes the catalogue names (EDT-11:
- * `search.components.editor.attribute.name`, `.definition`). The component
- * builds these with `$localize` and passes them in — the helper stays pure.
+ * The localized strings for the attributes the catalogue names (EDT-11, and
+ * every attribute the shipped metamodel renders since 7-33: `name`,
+ * `definition`, and one key per attribute — EDT-33). The component builds
+ * these with `$localize` and passes them in — the helper stays pure.
  */
-export type EditorLabels = Partial<Record<"name" | "definition" | "description", string>>;
+export type EditorLabels = Readonly<Record<string, string>>;
 
 /** The two attribute keys the details box shows as the description (DET-10/DD-320). */
 const DESCRIPTION_KEYS = ["definition", "description"] as const;
@@ -222,7 +221,9 @@ export function buildFields(
 export type RelationshipField = {
     /** The `relationshipAttributes` key this picker owns. */
     readonly name: string;
-    /** The label text: the attribute's `displayName` else its name (EDT-13). */
+    /** The label text: the catalogue string, else the attribute's `displayName`, else
+     * its name (EDT-34, 7.33). The target type is not repeated here — the chips lead
+     * with it (DD-341, DD-724). */
     readonly label: string;
     /** The entity type the picker searches for (the def's, unwrapped). */
     readonly targetType: string;
@@ -256,11 +257,13 @@ function unwrapArrayType(typeName: string): string {
  * carry once keeps the first definition's `relationshipTypeName`.
  * @param entityDef the entity's own definition
  * @param defsByName every entity definition by name (for the supertype links)
+ * @param labels the localized strings, shared with the plain fields (EDT-34)
  * @returns the picker fields, in name order (the plain fields keep the top)
  */
 export function buildRelationshipFields(
     entityDef: AtlasEntityDef,
     defsByName: ReadonlyMap<string, AtlasEntityDef>,
+    labels: EditorLabels = {},
 ): RelationshipField[] {
     const merged = new Map<string, AtlasRelationshipAttributeDef>();
 
@@ -276,7 +279,9 @@ export function buildRelationshipFields(
     for (const def of merged.values()) {
         const typeName = def.typeName ?? "";
         if (typeName !== "") {
-            fields.push(relationshipFieldOf(def, def.name as string, unwrapArrayType(typeName)));
+            fields.push(
+                relationshipFieldOf(def, def.name as string, unwrapArrayType(typeName), labels[def.name as string]),
+            );
         }
     }
 
@@ -284,13 +289,19 @@ export function buildRelationshipFields(
 }
 
 /** The picker field one merged relationship definition becomes (EDT-13).
- * The label's parenthesised target is the dictionary display name of the
- * type (DD-379) — the legacy label was a translated catalogue string;
+ * The label is the catalogue string where one exists, else the `displayName`,
+ * else the name — the legacy's translated string alone, with no target-type
+ * bracket (EDT-34, 7.33, DD-724): the chips already lead with the type (DD-341).
  * `targetType` keeps the raw name the search and save ride. */
-function relationshipFieldOf(def: AtlasRelationshipAttributeDef, name: string, target: string): RelationshipField {
+function relationshipFieldOf(
+    def: AtlasRelationshipAttributeDef,
+    name: string,
+    target: string,
+    label?: string,
+): RelationshipField {
     return {
         name,
-        label: `${def.displayName ?? def.name} (${nameDisplay(target)})`,
+        label: label ?? def.displayName ?? name,
         targetType: target,
         single: (def.cardinality ?? "SINGLE") === "SINGLE",
         required: def.isOptional === false,

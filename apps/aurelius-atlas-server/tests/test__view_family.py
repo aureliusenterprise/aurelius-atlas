@@ -90,7 +90,7 @@ async def test__the_search_door_needs_the_read_role(
     }
 
 
-@pytest.mark.covers(f"{S}.search", rules=["AVR-08"])
+@pytest.mark.covers(f"{S}.search", rules=["AVR-08", "MMS-09"])
 async def test__the_search_door_answers_cards_facets_and_a_total(seeded: httpx.AsyncClient) -> None:
     """Both entities of an empty query, one of a word; the answer's shape and a facet over the types (AVR-08)."""
     answer = (await seeded.post(SEARCH, json={"query": "orders"})).json()
@@ -99,6 +99,7 @@ async def test__the_search_door_answers_cards_facets_and_a_total(seeded: httpx.A
     assert card["guid"] == TABLE
     assert card["name"] == card["displayText"] == "orders"
     assert card["typeName"] == "s_table"
+    assert "typeAlias" not in card  # no attribute: the key is left out, as every null field (AVS-01, MMS-09)
     assert card["labels"] == ["reporting"]
     assert card["status"] == "ACTIVE"
     assert card["breadcrumb"] == []
@@ -203,7 +204,7 @@ async def test__the_read_door_answers_the_ends_of_its_entity_own_relationships(
     assert after["sections"] == []  # a deleted edge answers nothing (DD-604)
 
 
-@pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10"])
+@pytest.mark.covers(f"{S}.search", f"{R}.read", rules=["AVR-08", "AVR-10", "MMS-09"])
 async def test__both_doors_answer_the_same_card_fields(seeded: httpx.AsyncClient) -> None:
     """The card from the search door and the view from the read door hold the same shared fields (AVR-08, AVR-10)."""
     answer = (await seeded.post(SEARCH, json={"query": "orders"})).json()

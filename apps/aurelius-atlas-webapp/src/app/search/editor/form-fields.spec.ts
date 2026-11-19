@@ -363,10 +363,10 @@ describe("buildRelationshipFields (EDT-13, DD-338)", () => {
         expect(fields["model"].single).toBe(true);
     });
 
-    it("labels the field name plus the target type in brackets", () => {
+    it("labels the attribute name alone, with no target-type bracket (EDT-34, DD-724)", () => {
         const fields = Object.fromEntries(buildRelationshipFields(DATASET, defs).map((f) => [f.name, f]));
 
-        expect(fields["inputToProcesses"].label).toBe("inputToProcesses (Process)");
+        expect(fields["inputToProcesses"].label).toBe("inputToProcesses");
     });
 
     it("marks a non-optional definition required (EDT-17)", () => {

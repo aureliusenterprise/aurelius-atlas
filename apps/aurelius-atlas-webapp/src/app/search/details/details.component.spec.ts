@@ -1159,9 +1159,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(headerIcon).toBeTruthy();
         expect(headerIcon!.classList.contains("business")).toBe(true);
         expect(headerIcon!.querySelector("fa-icon svg")).toBeTruthy();
-        // The card badges (DV-167, DD-616): the shared rich card shows the
-        // type's display name — the card shape carries no `typeAlias`, so
-        // an alias never reaches a card badge anymore.
+        // The card badges (DD-616, MMS-09): the shared rich card badges
+        // the card's own `typeAlias` when it carries one — these fixtures
+        // carry none, so each badge shows the type's display name.
         const badges = [
             ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
         ].map((badge) => normalize(badge.textContent));

@@ -58,6 +58,7 @@ def view_of(stored: StoredEntity, entity_type: EntityType, *, ends: RelationEnds
         "name": _text(stored.attributes, entity_type, "name"),
         "qualified_name": _text(stored.attributes, entity_type, "qualifiedName"),
         "display_text": _display_text(stored, entity_type),
+        "type_alias": _text(stored.attributes, entity_type, "typeAlias") or None,
         "definition": _card_definition(stored, entity_type),
         "status": stored.state,
         "create_time": stored.create_time,

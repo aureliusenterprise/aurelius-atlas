@@ -34,6 +34,7 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
         "name",
         "qualifiedName",
         "displayText",
+        "typeAlias",
         "definition",
         "status",
         "createTime",
@@ -91,7 +92,14 @@ def test__the_card_of_a_view_keeps_the_shared_fields_and_drops_the_own_ones() ->
 def test__a_card_writes_camel_case_names_and_no_null_keys() -> None:
     """Absent fields are left out; times write epoch millis; a list field stays even when empty (AVS-05)."""
     written = EntityCard.model_validate(
-        {"guid": "g", "typeName": "t", "displayText": "d", "createTime": 1700000000000, "status": "DELETED"}
+        {
+            "guid": "g",
+            "typeName": "t",
+            "displayText": "d",
+            "typeAlias": "Data Set",
+            "createTime": 1700000000000,
+            "status": "DELETED",
+        }
     ).to_json()
 
     assert written == {
@@ -99,6 +107,7 @@ def test__a_card_writes_camel_case_names_and_no_null_keys() -> None:
         "typeName": "t",
         "superTypeNames": [],
         "displayText": "d",
+        "typeAlias": "Data Set",
         "status": EntityStatus.DELETED,
         "createTime": 1700000000000,
         "classificationNames": [],
@@ -108,6 +117,8 @@ def test__a_card_writes_camel_case_names_and_no_null_keys() -> None:
         "quality": [],
         "stale": False,
     }
+    # No alias: the key is absent, as every unset field is (AVS-01, MMS-09).
+    assert "typeAlias" not in EntityCard(guid="g", type_name="t").to_json()
 
 
 @pytest.mark.covers("aurelius_atlas_model.base.AtlasModel.to_json", rules=["AVS-03"])

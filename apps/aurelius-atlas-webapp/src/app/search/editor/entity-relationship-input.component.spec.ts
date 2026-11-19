@@ -24,14 +24,14 @@ const SEARCH_URL = "/api/atlas/v2/search/attribute";
 
 const FIELD: RelationshipField = {
     name: "inputToProcesses",
-    label: "inputToProcesses (Process)",
+    label: "inputToProcesses",
     targetType: "Process",
     single: false,
     required: false,
     relationshipTypeName: "dataset_process_inputs",
 };
 
-const SINGLE_FIELD: RelationshipField = { ...FIELD, name: "model", label: "model (Process)", single: true };
+const SINGLE_FIELD: RelationshipField = { ...FIELD, name: "model", label: "model", single: true };
 
 /** A search answer: two processes and one row without a guid to attach. */
 const ANSWER: AtlasSearchResult = {

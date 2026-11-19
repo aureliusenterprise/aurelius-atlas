@@ -484,7 +484,9 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         const blocks = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
         expect(blocks.map((block) => block.dataset["field"])).toEqual(["inputToProcesses", "model"]);
-        expect(normalize(blocks[0].querySelector("p.label")?.textContent)).toBe("inputToProcesses (Process)");
+        // The label is the catalogue string alone (EDT-34, 7-33, DD-724): no
+        // target-type bracket — the chips lead with the type (DD-341).
+        expect(normalize(blocks[0].querySelector("p.label")?.textContent)).toBe("Input to Processes");
         // The mandatory flag marks the label (EDT-13); the optional one does not.
         expect(blocks[1].querySelector("p.label .has-text-danger")).toBeNull();
 
@@ -542,12 +544,24 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         vi.useRealTimers();
     });
 
-    it("edit mode renders the entity's type as static text, not a picker (EDT-04, DD-330)", () => {
+    it("edit mode renders the entity's type as a static badge, not a picker (EDT-04, DD-330)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
 
         expect(compiled.querySelector(".aurelius-editor-picker")).toBeNull();
         expect(normalize(compiled.querySelector(".aurelius-editor-type")?.textContent)).toBe("DataSet");
+    });
+
+    it("the static badge shows the entity's alias with the base type (EDT-04, MMS-09, DD-721)", () => {
+        const { fixture, compiled, httpMock } = setup();
+        arrive(fixture, httpMock, {
+            ...ANSWER,
+            attributes: { ...ANSWER.attributes, typeAlias: "Variant Set" },
+        });
+
+        // The alias wins as the name, the base type rides the suffix, and
+        // the icon resolves off the raw type — the details header's shape.
+        expect(normalize(compiled.querySelector(".aurelius-editor-type")?.textContent)).toBe("Variant Set (DataSet)");
     });
 
     it("create mode: the picker lists only the metamodel types (EDT-04, VDE-02, MMS-07)", () => {
@@ -1012,8 +1026,10 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(httpMock.match((request) => request.method === "POST" || request.method === "PUT")).toHaveLength(0);
         const block = compiled.querySelector<HTMLElement>('[data-field="model"]')!;
         // FORM-REQ-001: the red asterisk is silent on its own, so the block label
-        // carries the word too.
-        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model (Process) *(required)");
+        // carries the word too. "model" has no catalogue key (it is a sample
+        // relationship, not a dictionary attribute) so it stays the raw name
+        // (DD-723), and carries no target-type bracket (EDT-34, DD-724).
+        expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model *(required)");
         expect(normalize(block.querySelector(".aurelius-editor-error")?.textContent)).toBe("Name is required.");
         expect(block.querySelector(".aurelius-relationship-box")?.classList.contains("is-danger")).toBe(true);
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
@@ -1072,7 +1088,34 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // An optional field gets neither.
         const ownerBlock = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
         expect(compiled.querySelector<HTMLInputElement>("#editor-owner")?.required).toBe(false);
-        expect(normalize(ownerBlock.querySelector("label.label")?.textContent)).toBe("owner");
+        // An attribute the raw name of would be human-readable only by case
+        // gets its catalogue string (EDT-33, 7-33).
+        expect(normalize(ownerBlock.querySelector("label.label")?.textContent)).toBe("Owner");
+    });
+
+    it("the catalogue label beats the definition's displayName (EDT-03, EDT-33)", () => {
+        // The precedence EDT-03 states: catalogue string, then displayName,
+        // then the name. The dictionary's raw or typo'd displayNames must not
+        // win over the translated string (7-33, DD-722, DV-181).
+        const { fixture, compiled, httpMock } = setup();
+        const defs: AtlasTypesDef = {
+            ...TYPEDEFS,
+            entityDefs: TYPEDEFS.entityDefs!.map((def) =>
+                def.name === "Asset"
+                    ? {
+                          ...def,
+                          attributeDefs: def.attributeDefs!.map((attribute) =>
+                              attribute.name === "owner" ? { ...attribute, displayName: "owner" } : attribute,
+                          ),
+                      }
+                    : def,
+            ),
+        };
+        arrive(fixture, httpMock, ANSWER, chainFor(defs, "DataSet"));
+
+        const block = compiled.querySelector<HTMLElement>('[data-field="owner"]')!;
+
+        expect(normalize(block.querySelector("label.label")?.textContent)).toBe("Owner");
     });
 
     it("a required multi group names its rows and says required (FORM-REQ-001)", () => {
