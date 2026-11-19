@@ -1,123 +1,100 @@
 # Add a Tenant to the Standalone Server
 
-This page adds a tenant, a customer or department with its own catalogue and its own people, to a running [Standalone Server](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-server/index.md>) with tenancy on. The stack's Keycloak imports `keycloak/aurelius-atlas.json` at every start, so a tenant's organization that should last is added to the stack's files, not only in Keycloak's console. The realm holds no users (DD-673), so a tenant's people are always made in Keycloak's console. The example tenant is `acme`; replace it with yours throughout.
+This page adds a tenant, a customer or department with its own catalogue and its own people, to a running [Standalone Server](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-server/index.md>) with tenancy on. One command does it: `docker/bin/tenant.sh` makes the tenant, its people and, if you name one, its sample catalogue. You edit no file. The tenant and its people live in the store and in Keycloak, which the stack keeps across restarts until `down -v` (15.7). The example tenant is `acme`; replace it with yours throughout.
 
 > [!NOTE]
 >
 > **Before you start**
 >
-> - The stack runs with tenancy, as the [Tenants](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-server/index.md#tenants>) section starts it: `ATLAS_TENANCY_ENABLED=true` and `--profile tenancy`.
-> - All commands run from the repository root. The stack's files are in `docker/`.
-
-## What a tenant consists of
-
-A tenant is a Keycloak organization with its own indices in the store (ADR 063). Adding one touches three places:
-
-| Where | What you add |
-| --- | --- |
-| `docker/keycloak/aurelius-atlas.json` | the organization and its four role groups |
-| `apps/aurelius-atlas-server/docker/tenants.py` | the provisioning of the tenant's indices, at every start |
-| Keycloak's admin console | the tenant's members, created and added there |
-
-The tenant's members belong to it alone, so they sign in to it without choosing a tenant. The realm's `operators` organization reads every tenant, and the provisioning command adds each of its members to the new one.
+> - The stack runs with tenancy, as the [Tenants](<https://aureliusenterprise.github.io/aurelius-atlas/dependabot-uv-all-a23d30b7f8/user-guide/standalone-server/index.md#tenants>) section starts it: `ATLAS_TENANCY_ENABLED=true`.
+> - All commands run from the repository root, or from the root of a release bundle.
 
 ## Choose the alias
 
-The alias names the tenant everywhere: the organization and its indices.
+The alias names the tenant everywhere: its Keycloak organization, its indices and its standard users.
 
 - Lowercase letters, digits and `-`, starting with a letter or digit, at most 63 characters.
 - Not `operators`, which is the platform's own organization.
 
-## Add the organization to the realm
+The command refuses an alias that breaks either rule, before it does anything.
 
-Add the tenant to `docker/keycloak/aurelius-atlas.json`. Every organization and group has a fixed id, so the tenant's record still names them after Keycloak imports the realm again. Generate five ids, one for the organization and four for its groups:
-
-```
-python3 -c 'import uuid; [print(uuid.uuid4()) for _ in range(5)]'
-```
-
-Add the organization to `organizations`, with no members yet:
+## Add the tenant
 
 ```
-{
-    "alias": "acme",
-    "description": "The tenant acme",
-    "enabled": true,
-    "groups": [
-        { "id": "<read group id>", "name": "atlas-read" },
-        { "id": "<write group id>", "name": "atlas-write" },
-        { "id": "<types group id>", "name": "atlas-types" },
-        { "id": "<admin group id>", "name": "atlas-admin" }
-    ],
-    "id": "<organization id>",
-    "members": [],
-    "name": "acme"
-}
+bash docker/bin/tenant.sh add acme
 ```
 
-## Provision the tenant at every start
-
-The one shot `tenants` provisions each tenant it lists when the stack starts, and leaves a tenant already there as it is. Add `acme` to the list in `apps/aurelius-atlas-server/docker/tenants.py`. The command makes the realm's side too, as the client `aurelius-atlas-provisioning`: the organization already imported by the realm file stays as it is, and its indices and record are made here. `--sample <path>` imports an Apache Atlas export ZIP into the tenant, once:
+This makes the tenant `acme`: its indices and models, its organization with the four role groups, and the operators as read members. It makes the user `acme_atlas`, with every role in acme and acme's administrator. The command ends with a summary:
 
 ```
-for argv in (
-    ["provision", "demo", "--existing-ok", "--sample", str(sample)],
-    ["provision", "meyn", "--existing-ok"],
-    ["provision", "acme", "--existing-ok"],  # the new tenant
-    ["list"],
-):
-    if main(argv) != 0:
-        sys.exit(1)
+Tenant acme: no sample
+  acme_atlas (atlas): made, temporary password 7f?Kq2…
 ```
 
-## Start the stack and check
+Each password is temporary and printed once: the person sets their own at the first sign-in. Pass it on and keep no copy.
 
-Start the stack as before. The realm file changed, so recreate Keycloak (`docker compose up -d --force-recreate keycloak`): it imports the realm again, with acme's organization. Then `tenants` provisions the tenant:
+Two options choose what the tenant starts with:
+
+| Option | What it adds |
+| --- | --- |
+| `--users all` | `acme_steward`, who reads and writes, and `acme_scientist`, who reads |
+| `--sample <name>` | that sample's catalogue, imported into the new tenant |
 
 ```
-ATLAS_TENANCY_ENABLED=true docker compose -f docker/docker-compose.yaml \
-    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env --profile tenancy up -d
-docker compose -f docker/docker-compose.yaml logs tenants
+bash docker/bin/tenant.sh samples                               # the samples you can name
+bash docker/bin/tenant.sh add acme --users all --sample small   # three users and the small sample
 ```
 
-The log ends with the list of tenants; `acme` is `active`. Now make a person and give it acme: in the console at `https://localhost:9000/auth/admin/` (realm `aurelius-atlas`), create a user under Users with a password, then add it under Organizations, `acme`, Members, with acme's role groups. Sign in to `https://localhost:9000/` as that person: the webapp opens acme's catalogue, empty, without asking for a tenant.
+`samples` lists the export ZIPs in the stack's sample folder, `SAMPLE_DIR`, by name without `.zip`, such as `sample_data`, `small` and `only_gov_quality`. A name it doesn't list is refused before anything is done.
+
+Running `add` again is safe. A tenant that exists is left as it is and gets no sample; the command makes only the users it is missing, and a user that exists keeps their password, so none is printed for them.
+
+## Add more people
+
+Add a person to a tenant with their role:
+
+```
+bash docker/bin/tenant.sh user acme add jane --role steward --email jane@acme.example
+```
+
+| Role | What the person may do in the tenant |
+| --- | --- |
+| `atlas` | everything, the four role groups |
+| `steward` | read and write the catalogue |
+| `scientist` | read the catalogue, the default |
+
+A new person gets a temporary password in the summary, as above; the email is `<username>@example.com` unless you give one. A person the realm has already, such as a member of another tenant, joins this tenant too and keeps their password. The role `atlas` grants the groups, not the tenant's administration: to make someone a tenant administrator, run `bash docker/bin/tenant.sh admin acme add jane`.
+
+To take a person out of a tenant, with their groups and administration there:
+
+```
+bash docker/bin/tenant.sh user acme remove jane
+```
+
+The person stays in Keycloak, with any other tenant they belong to.
+
+## Check the tenant
+
+```
+bash docker/bin/tenant.sh list
+```
+
+`acme` is listed `active`. Sign in to `https://localhost:9000/` as `acme_atlas` with the printed password: Keycloak asks for a new one, then the webapp opens acme's catalogue without asking for a tenant.
 
 > [!NOTE]
 >
 > **A sign-in refused right after the start**
 >
-> A new Keycloak signs with new keys. The server reads them again within a minute of seeing a token it can't verify, so a sign-in in that minute can fail; try again. A server image from before that fix (\#378) keeps the old keys for an hour: restart it with `docker restart aurelius-atlas-standalone-aurelius-atlas-server-1`.
-
-## Check the tests
-
-The repository's tests pin the realm file. The id-uniqueness test follows a new tenant without changes, as long as the new organization and its groups carry their own ids. Others list the tenants by name and need `acme` added:
-
-```
-uv run pytest tests/test__standalone_demo_realm.py tests/test__realm_organizations.py tests/test__tenancy_chart.py
-```
-
-## Try a tenant without changing files
-
-To try a tenant briefly, provision it with the server's command and add its people in Keycloak's admin console. Keycloak forgets them when its container is recreated; the tenant's indices stay.
-
-```
-ATLAS_TENANCY_ENABLED=true docker compose -f docker/docker-compose.yaml \
-    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env \
-    run --rm --no-deps --entrypoint python aurelius-atlas-server \
-    -m aurelius_atlas_server.provisioning provision acme
-```
-
-The command makes the organization and its four groups and adds the members of `operators` to it. Add people at `https://localhost:9000/auth/admin/`, signed in as `KC_BOOTSTRAP_ADMIN_USERNAME` of `infra/keycloak/.env`: realm `aurelius-atlas`, Users to create them, then Organizations, `acme`, Members to add them and give them groups.
+> A new Keycloak signs with new keys. The server reads them again within a minute of seeing a token it can't verify, so a sign-in in that minute can fail; try again.
 
 ## Remove a tenant
 
-`remove` deletes the tenant's indices, about a minute after the server stops serving it, then its organization and its record:
-
 ```
-ATLAS_TENANCY_ENABLED=true docker compose -f docker/docker-compose.yaml \
-    --env-file apps/aurelius-atlas-server/.env --env-file infra/keycloak/.env \
-    run --rm --no-deps --entrypoint python aurelius-atlas-server \
-    -m aurelius_atlas_server.provisioning remove acme
+bash docker/bin/tenant.sh remove acme
 ```
 
-Then take `acme` out of the places above, or the next start provisions it again, empty.
+`remove` deletes the tenant's indices, about a minute after the server stops serving it, then its organization and its record. Its people stay in Keycloak, members of no tenant; delete them in Keycloak's admin console at `https://localhost:9000/auth/admin/` if they should go too.
+
+## The seeded tenants demo and meyn
+
+`bash docker/bin/provision-tenants.sh` seeds the tenants demo, with the sample `sample_data`, and meyn, each with its three users. Unlike the tenants the command adds, their users have fixed passwords, `<TENANT>_USER_<ROLE>_PASSWORD` in `infra/keycloak/.env`, because a demo is signed in to again and again (DD-700). To make another tenant part of that seed, add it to the list in `apps/aurelius-atlas-server/docker/tenants.py`, its passwords to `infra/keycloak/.env.enc`, and those to the one shot `tenants` in `apps/aurelius-atlas-server/docker/compose.yaml`. For any other tenant, use the command.

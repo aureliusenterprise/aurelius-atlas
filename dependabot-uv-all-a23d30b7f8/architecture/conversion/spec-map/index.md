@@ -107,3 +107,4 @@ This table is the reference for a move: it fixes the home before files are touch
 | 17.1 | Infrastructure components at the root | `specs/17-1-infra-root/` + `infra/` | IRT |
 | 17.2 | Standalone host and certificates | `specs/17-2-standalone-host-and-certs/` + `docker/` | SPS |
 | 17.3 | The standalone bundle | `specs/17-3-standalone-bundle/` + `docker/` + `tools/` | SBD |
+| 17.4 | The standalone stack simplified | `specs/17-4-standalone-simplification/` + `docker/` | SPC |

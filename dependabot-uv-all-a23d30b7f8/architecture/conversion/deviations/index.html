@@ -7462,6 +7462,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>4.5</td>
 </tr>
 <tr>
+<td>DV-176</td>
+<td>Search</td>
+<td>Pages its index query with the request's <code>offset</code> and <code>limit</code>, and answers whatever the index returns.</td>
+<td>A page whose <code>offset</code> and <code>limit</code> pass 10,000 fails with <code>BAD_REQUEST offset + limit may not exceed 10000</code> (SRC-07, DSE-01).</td>
+<td>Elasticsearch answers no document past its <code>max_result_window</code>, so such a page cannot be answered at all. The request carries the fault, so the server answers 400; an empty page cannot be told from one with no matches (DD-704).</td>
+<td>4.1</td>
+</tr>
+<tr>
 <td>DV-112</td>
 <td>Identity</td>
 <td>One realm serves every shape of the deployment</td>
