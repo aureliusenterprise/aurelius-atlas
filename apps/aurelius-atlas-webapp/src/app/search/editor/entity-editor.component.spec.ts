@@ -409,6 +409,17 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel")).toBeTruthy();
     });
 
+    it("opens in the wide drawer (UIC-43, DD-712)", () => {
+        const { fixture } = setup();
+
+        // The editor is the product's data-entry surface, so it asks the
+        // drawer for the wide panel — a form with roomy rows gets more of a
+        // large screen (7.31). The settings and alerts drawers keep narrow.
+        expect(fixture.nativeElement.querySelector("dialog.aurelius-drawer-panel").classList.contains("is-wide")).toBe(
+            true,
+        );
+    });
+
     it("renders the edit form from the for-type chain (EDT-03, VDE-02)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock);
@@ -511,15 +522,22 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         arrive(fixture, httpMock, RA_ANSWER, raChain());
 
         const input = compiled.querySelector<HTMLInputElement>(
-            '[data-field="inputToProcesses"] .aurelius-relationship-input',
+            '[data-field="inputToProcesses"] .aurelius-token-input',
         )!;
         input.dispatchEvent(new Event("focusin", { bubbles: true }));
         input.value = "load";
         input.dispatchEvent(new Event("input"));
         vi.advanceTimersByTime(250);
+        // The picker asks the view family's door (EDT-14 amended, DD-711).
         httpMock
-            .expectOne((request) => request.url === "/api/atlas/v2/search/attribute")
-            .flush({ entities: [{ guid: "p2", typeName: "Process", displayText: "load_orders" }] });
+            .expectOne((request) => request.url === "/api/aurelius/v1/search")
+            .flush({
+                cards: [
+                    { guid: "p2", typeName: "Process", displayText: "load_orders", status: "ACTIVE", stale: false },
+                ],
+                facets: {},
+                total: 1,
+            });
         fixture.detectChanges();
 
         compiled
@@ -1031,7 +1049,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         // (DD-723), and carries no target-type bracket (EDT-34, DD-724).
         expect(normalize(block.querySelector("p.label")?.textContent)).toBe("model *(required)");
         expect(normalize(block.querySelector(".aurelius-editor-error")?.textContent)).toBe("Name is required.");
-        expect(block.querySelector(".aurelius-relationship-box")?.classList.contains("is-danger")).toBe(true);
+        expect(block.querySelector(".aurelius-token-box")?.classList.contains("is-danger")).toBe(true);
         expect(normalize(compiled.querySelector(".aurelius-editor-notification")?.textContent)).toBe(
             "This entity can't be saved because one or more required fields are missing.",
         );
@@ -1167,9 +1185,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
 
         // The picker's combobox names the line under it — the same convention
         // the parent-paired label already uses (EDT-17).
-        const pickerInput = compiled.querySelector<HTMLInputElement>(
-            '[data-field="model"] .aurelius-relationship-input',
-        )!;
+        const pickerInput = compiled.querySelector<HTMLInputElement>('[data-field="model"] .aurelius-token-input')!;
         expect(pickerInput.getAttribute("aria-invalid")).toBe("true");
         expect(pickerInput.getAttribute("aria-describedby")).toBe("editor-relationship-model-error");
         expect(normalize(compiled.querySelector("#editor-relationship-model-error")?.textContent)).toBe(
@@ -1992,7 +2008,7 @@ describe("EntityEditor quality mode (EDT-25, EDT-28, EDT-29, VDE-11)", () => {
         // noise ends the derived chain carries stay out (EDT-25).
         const pickers = [...compiled.querySelectorAll<HTMLElement>(".aurelius-editor-relationship")];
         expect(pickers.map((picker) => picker.getAttribute("data-field"))).toEqual(["fields"]);
-        expect(pickers[0]?.querySelector(".aurelius-relationship-chip")?.textContent).toContain("total");
+        expect(pickers[0]?.querySelector(".aurelius-token-chip")?.textContent).toContain("total");
     });
 
     it("opens a legacy rule in the generic form, unchecked (EDT-29)", () => {

@@ -103,4 +103,28 @@ describe("Breadcrumbs", () => {
         const anchor: HTMLAnchorElement = fixture.nativeElement.querySelector("li a");
         expect(anchor.getAttribute("href")).toBe("#");
     });
+
+    it("prints every crumb plain with links off and emits nothing (UIC-11, DD-714)", () => {
+        fixture.componentRef.setInput("items", items);
+        fixture.componentRef.setInput("links", false);
+        fixture.detectChanges();
+
+        // The trail sits inside a control that owns the activation (a picker
+        // row), so it must hold no nested link and no active/current crumb.
+        expect(fixture.nativeElement.querySelectorAll("li a")).toHaveLength(0);
+        const crumbs = [...fixture.nativeElement.querySelectorAll("li")];
+        expect(crumbs).toHaveLength(2);
+        for (const crumb of crumbs) {
+            expect(crumb.classList.contains("is-active")).toBe(false);
+            expect(crumb.querySelector("span.truncate")?.getAttribute("aria-current")).toBeNull();
+        }
+        expect(crumbs[0].textContent).toContain("Domain");
+        expect(crumbs[1].textContent).toContain("Entity");
+
+        // Even a crumb named activeGuid stays plain: nothing navigates.
+        fixture.componentRef.setInput("activeGuid", "g1");
+        fixture.detectChanges();
+        expect(fixture.nativeElement.querySelectorAll("li a")).toHaveLength(0);
+        expect(fixture.nativeElement.querySelector("li").classList.contains("is-active")).toBe(false);
+    });
 });

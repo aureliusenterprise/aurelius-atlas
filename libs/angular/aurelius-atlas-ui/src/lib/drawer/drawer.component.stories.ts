@@ -126,6 +126,42 @@ export const OnDark: Story = {
     render: host,
 };
 
+const wideTemplate = `
+<aurelius-atlas-ui-drawer #drawer [active]="active" title="Edit entity" ariaLabel="Close" size="wide">
+    <div class="content">
+        <p class="title is-6">Qualified name</p>
+        <input class="input" value="cluster1.table1.column1" />
+        <p class="title is-6 mt-4">Columns</p>
+        <input class="input" placeholder="Type a name to pick a column" />
+    </div>
+</aurelius-atlas-ui-drawer>
+`;
+
+/**
+ * The wide panel (UIC-43, DD-712): the editor asks for it so a form with
+ * roomy rows gets more of a large screen. The play() pins the panel's
+ * width — the wide width on a wide viewport, capped at the screen
+ * otherwise — and that it stays anchored to the right edge.
+ */
+export const Wide: Story = {
+    args: { active: true },
+    play: async ({ canvas }) => {
+        const dialog = canvas.getByRole("dialog", { name: "Edit entity" });
+        // The slide-in transform moves the rect, so the pin waits for the
+        // panel to settle (as Primary's does).
+        await waitFor(() =>
+            expect(Math.round(dialog.getBoundingClientRect().right)).toBe(document.documentElement.clientWidth),
+        );
+        await expect(Math.round(dialog.getBoundingClientRect().width)).toBe(
+            Math.min(704, document.documentElement.clientWidth),
+        );
+    },
+    render: () => ({
+        template: wideTemplate,
+        props: { active: true as boolean },
+    }),
+};
+
 const actionsTemplate = `
 <aurelius-atlas-ui-drawer #drawer [active]="active" title="Alerts" ariaLabel="Close">
     <button type="button" drawer-actions class="button is-small is-text">Clear all</button>

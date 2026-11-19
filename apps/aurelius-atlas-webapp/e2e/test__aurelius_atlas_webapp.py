@@ -2072,12 +2072,12 @@ def test__the_editor_links_a_relationship(authenticated: Page, root_url: str, us
 
         # Type the process's name; the picker's debounced prefix-search finds
         # the row, and the click attaches it as a chip (EDT-14).
-        box = block.locator(".aurelius-relationship-input")
+        box = block.locator(".aurelius-token-input")
         box.fill(process_name)
         row = block.locator('[role="option"]').filter(has_text=process_name)
         expect(row).to_be_visible(timeout=10_000)
         row.click()
-        expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+        expect(block.locator(".aurelius-token-chip")).to_have_count(1)
 
         drawer.locator("button.aurelius-editor-save").click()
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{ds_guid}$"))
@@ -2100,7 +2100,7 @@ def test__the_editor_links_a_relationship(authenticated: Page, root_url: str, us
         # The reopened picker holds the chip: the saved relationshipAttributes
         # survived the round trip (EDT-16 -> EDT-15).
         _open_editor_from_details(authenticated, root_url, ds_guid)
-        chip = drawer.locator('[data-field="inputToProcesses"] .aurelius-relationship-chip')
+        chip = drawer.locator('[data-field="inputToProcesses"] .aurelius-token-chip')
         expect(chip).to_have_count(1)
         expect(chip).to_contain_text(process_name)
 
@@ -2175,10 +2175,10 @@ def test__the_editor_unlinks_a_relationship(authenticated: Page, root_url: str, 
         _open_editor_from_details(authenticated, root_url, ds_guid)
         drawer = authenticated.locator(".aurelius-drawer")
         block = drawer.locator('.aurelius-editor-relationship[data-field="inputToProcesses"]')
-        expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+        expect(block.locator(".aurelius-token-chip")).to_have_count(1)
 
         block.locator(".aurelius-classification-chip-delete").first.click()
-        expect(block.locator(".aurelius-relationship-chip")).to_have_count(0)
+        expect(block.locator(".aurelius-token-chip")).to_have_count(0)
 
         drawer.locator("button.aurelius-editor-save").click()
         expect(authenticated).to_have_url(re.compile(rf"/en-US/search/details/{ds_guid}$"))
@@ -2201,7 +2201,7 @@ def test__the_editor_unlinks_a_relationship(authenticated: Page, root_url: str, 
 
         # Reopened: the DELETED tombstone earns no chip (EDT-15).
         _open_editor_from_details(authenticated, root_url, ds_guid)
-        expect(drawer.locator('[data-field="inputToProcesses"] .aurelius-relationship-chip')).to_have_count(0)
+        expect(drawer.locator('[data-field="inputToProcesses"] .aurelius-token-chip')).to_have_count(0)
     finally:
         _delete_entity(authenticated, root_url, user_token, proc_guid)
         _delete_entity(authenticated, root_url, user_token, ds_guid)
@@ -2274,12 +2274,12 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         expect(authenticated).to_have_url(re.compile(rf"drawer:create/{holder_type}"))
 
         # The pick (EDT-14): the leaf arrives through the picker's search.
-        box = block.locator(".aurelius-relationship-input")
+        box = block.locator(".aurelius-token-input")
         box.fill(volume_name)
         row = block.locator('[role="option"]').filter(has_text=volume_name)
         expect(row).to_be_visible(timeout=10_000)
         row.click()
-        expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+        expect(block.locator(".aurelius-token-chip")).to_have_count(1)
 
         drawer.locator("button.aurelius-editor-save").click()
         expect(authenticated).to_have_url(re.compile(r"/en-US/search/details/[0-9a-f-]{36}$"), timeout=30_000)
@@ -2302,7 +2302,7 @@ def test__the_editor_requires_a_mandatory_relationship(authenticated: Page, root
         )
 
         _open_editor_from_details(authenticated, root_url, bucket_guid)
-        expect(drawer.locator('[data-field="volume"] .aurelius-relationship-chip')).to_contain_text(volume_name)
+        expect(drawer.locator('[data-field="volume"] .aurelius-token-chip')).to_contain_text(volume_name)
     finally:
         if created is not None:
             _delete_entity(authenticated, root_url, user_token, created)
