@@ -89,9 +89,11 @@ async def test__events_that_are_not_kept_fail_the_put(fake: FakeClient) -> None:
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.prepare",
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.put_events",
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.list_events",
+    "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.list_sorted",
     "aurelius_atlas_core.entity_audit_repository.EntityAuditRepository.entities_with_tag_changes",
     "aurelius_atlas_core.testing.memory.InMemoryEntityAuditRepository.prepare",
     "aurelius_atlas_core.testing.memory.InMemoryEntityAuditRepository.put_events",
+    "aurelius_atlas_core.testing.memory.InMemoryEntityAuditRepository.list_sorted",
     rules=["AUD-08"],
 )
 async def test__both_implementations_are_audit_repositories(fake: FakeClient) -> None:
@@ -115,6 +117,122 @@ async def test__the_audit_index_expands_its_replicas_to_the_cluster() -> None:
         "t-entity-audits-000001": {"index.auto_expand_replicas": "0-1"},
         "o-entity-audits-000001": {"index.auto_expand_replicas": "0-1"},
     }
+
+
+def audit_event(
+    entity_id: str,
+    timestamp: int,
+    action: EntityAuditActionV2,
+    user: str | None = "u",
+    key: str | None = None,
+) -> EntityAuditEventV2:
+    """An event with a user and a key of its own, for the sorted listings (AUD-07)."""
+    return EntityAuditEventV2(
+        entity_id=entity_id,
+        timestamp=timestamp,
+        user=user,
+        action=action,
+        details="d",
+        event_key=key or f"{entity_id}:{timestamp}:0:{timestamp}",
+    )
+
+
+# The events: mixed case and a missing user, equal timestamps at different keys, one of another entity.
+MIXED: list[EntityAuditEventV2] = [
+    audit_event("a", 1, EntityAuditActionV2.ENTITY_UPDATE, "user1", key="a:1:0:9"),
+    audit_event("a", 2, EntityAuditActionV2.ENTITY_CREATE, "User3", key="a:2:0:9"),
+    audit_event("a", 3, EntityAuditActionV2.ENTITY_DELETE, "user2", key="a:3:0:9"),
+    audit_event("a", 1, EntityAuditActionV2.ENTITY_CREATE, "user1", key="a:1:0:8"),
+    audit_event("a", 2, EntityAuditActionV2.ENTITY_UPDATE, None, key="a:2:0:8"),
+    audit_event("b", 4, EntityAuditActionV2.ENTITY_CREATE, "user1", key="b:4:0:9"),
+]
+
+
+@pytest.mark.covers(
+    f"{E}.list_sorted", "aurelius_atlas_core.testing.memory.InMemoryEntityAuditRepository.list_sorted", rules=["AUD-07"]
+)
+async def test__the_index_answers_the_sorted_listing_the_memory_one_gives(fake: FakeClient) -> None:
+    """Every column, both directions, every offset and limit: the same windows from both repositories (AUD-07, DD-710).
+
+    The fold of the user and the action is stored with the event, so the index sorts case-insensitively; equal
+    timestamps break by event key descending newest key first, both directions, as Java's stable sort of the
+    newest-key-first scan does.
+    """
+    repository = ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t")
+    memory = InMemoryEntityAuditRepository()
+    await repository.prepare()
+    await repository.put_events(MIXED)
+    await memory.put_events(MIXED)
+
+    for sort_by in ["user", "action", "timestamp", None, "nope"]:
+        for descending in [False, True]:
+            for offset, limit in [(0, 100), (1, 2), (0, 0), (0, -1), (5, 3)]:
+                indexed = await repository.list_sorted(
+                    "a", None, sort_by, descending=descending, offset=offset, limit=limit
+                )
+                remembered = await memory.list_sorted(
+                    "a", None, sort_by, descending=descending, offset=offset, limit=limit
+                )
+                assert [e.event_key for e in indexed] == [e.event_key for e in remembered], (
+                    sort_by,
+                    descending,
+                    offset,
+                    limit,
+                )
+
+
+@pytest.mark.covers(f"{E}.list_sorted", rules=["AUD-07"])
+async def test__the_sorted_listing_holds_to_an_action_and_breaks_ties_by_event_key(
+    fake: FakeClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only the asked action; a page deep, so the key tail and ``search_after`` decide (AUD-07)."""
+    monkeypatch.setattr(entity_audit_repository, "AUDIT_PAGE", 1)
+    repository = ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t")
+    await repository.prepare()
+    create, update = EntityAuditActionV2.ENTITY_CREATE, EntityAuditActionV2.ENTITY_UPDATE
+    await repository.put_events(
+        [
+            audit_event("a", 1, create, "same", key="a:1:0:9"),
+            audit_event("a", 1, update, "same", key="a:1:0:8"),
+            audit_event("a", 1, create, "same", key="a:1:0:7"),
+        ]
+    )
+
+    by_timestamp = await repository.list_sorted("a", create, None, descending=False, offset=0, limit=0)
+    newest_first = await repository.list_sorted("a", None, None, descending=True, offset=1, limit=1)
+
+    assert [e.event_key for e in by_timestamp] == ["a:1:0:9", "a:1:0:7"]
+    assert [e.event_key for e in newest_first] == ["a:1:0:8"]
+
+
+@pytest.mark.covers(f"{E}.put_events", f"{E}.prepare", rules=["AUD-07", "DD-710"])
+async def test__an_event_is_stored_with_its_folded_keys_and_an_old_one_gains_them(fake: FakeClient) -> None:
+    """The fold is written with the event; a store made before it gains the fields and the fold at the next start."""
+    repository = ElasticsearchEntityAuditRepository(cast("AsyncElasticsearch", fake), prefix="t")
+    await repository.prepare()
+    await repository.put_events([audit_event("a", 1, EntityAuditActionV2.ENTITY_DELETE, "MixedCase", key="a:1:0:9")])
+    held = next(iter(fake.documents["t-entity-audits-000001"].values()))[0]
+
+    create = {k: v for k, v in held.items() if k in {"user", "userKey", "action", "actionKey"}}
+    old = {"entityId": "a", "auditId": "old", "timestamp": 2, "user": "MIXEDcase", "action": "ENTITY_CREATE"}
+    await fake.index(index="t-entity-audits", id="old", document=old)
+    await repository.prepare()
+    backfilled = fake.documents["t-entity-audits-000001"]["old"][0]
+
+    assert create == {
+        "user": "MixedCase",
+        "userKey": "mixedcase",
+        "action": "ENTITY_DELETE",
+        "actionKey": "entity_delete",
+    }
+    assert {k: backfilled[k] for k in ("user", "userKey", "action", "actionKey")} == {
+        "user": "MIXEDcase",
+        "userKey": "mixedcase",
+        "action": "ENTITY_CREATE",
+        "actionKey": "entity_create",
+    }
+    assert backfilled["entityId"] == "a"
+    assert fake.mapping_updates[-1] == "t-entity-audits"
 
 
 @pytest.fixture

@@ -1,8 +1,8 @@
 """``EntityAuditRepository``: the audit events of entities, kept and listed (AUD-05, AUD-07, AUD-08, DD-082).
 
 Atlas's ``EntityAuditRepository`` and its ``HBaseBasedAuditRepository``: events are written in batches and read
-newest first by their HBase row key, the event key (DD-083); the sorted and paged listing sorts them in memory, as
-``listEventsV2`` with a sort column does.
+newest first by their HBase row key, the event key (DD-083); the sorted and paged listing asks the store for that
+order, as ``listEventsV2`` with a sort column does (AUD-07, DD-710).
 """
 
 from collections.abc import Sequence
@@ -32,6 +32,9 @@ SORT_COLUMN_TIMESTAMP = "timestamp"
 
 _KEYWORD = {"type": "keyword"}
 
+SORT_KEY_FIELDS: dict[str, Any] = {"userKey": _KEYWORD, "actionKey": _KEYWORD}
+"""The folded keywords a sorted listing sorts on: Elasticsearch cannot ignore case in a field sort (DD-710)."""
+
 AUDIT_MAPPING: dict[str, Any] = {
     "dynamic": False,
     "properties": {
@@ -41,9 +44,10 @@ AUDIT_MAPPING: dict[str, Any] = {
         "user": _KEYWORD,
         "action": _KEYWORD,
         "eventKey": _KEYWORD,
+        **SORT_KEY_FIELDS,
     },
 }
-"""Events by entity, action and key; the details stored, not indexed (DD-082, DD-083)."""
+"""Events by entity, action and key; the details stored, not indexed (DD-082, DD-083, DD-710)."""
 
 
 @runtime_checkable
@@ -64,6 +68,23 @@ class EntityAuditRepository(Protocol):
         """``listEventsV2``: the entity's events, newest key first, from ``start_key`` on, that key included (AUD-08).
 
         Only those of ``action`` when given; at most ``count``, all for -1, none for any other negative count.
+        """
+        ...
+
+    async def list_sorted(  # noqa: PLR0913 - listEventsV2's parameters
+        self,
+        entity_id: str,
+        action: EntityAuditActionV2 | None,
+        sort_by: str | None,
+        *,
+        descending: bool,
+        offset: int,
+        limit: int,
+    ) -> list[EntityAuditEventV2]:
+        """``listEventsV2`` with a sort column: the entity's events in that order, ``limit`` from ``offset`` (AUD-07).
+
+        Order of ``user`` or ``action`` ignoring case, then timestamp, else of timestamp; the whole order reversed
+        when ``descending``. A negative offset reads as 0, a negative limit as 100, a limit of 0 as all.
         """
         ...
 
@@ -102,6 +123,39 @@ class ElasticsearchEntityAuditRepository:
             if made:
                 return
         await self._client.indices.put_settings(index=self.alias, settings=INDEX_SETTINGS)
+        await self._fold_sort_keys()
+
+    async def _fold_sort_keys(self) -> None:
+        """Give the folded sort keys to every event stored before they existed (DD-710).
+
+        An alias created here already holds them; an existing one predates them, so its mapping gains the two
+        fields and its events are rewritten whole with the fold of their user and action. A server starting on a
+        prepared store finds none and does nothing but the mapping, which Elasticsearch accepts as it is.
+        """
+        await self._client.indices.put_mapping(index=self.alias, properties=SORT_KEY_FIELDS)
+        while True:
+            response = await self._client.search(
+                index=self.alias,
+                size=AUDIT_PAGE,
+                query={"bool": {"must_not": [{"exists": {"field": "userKey"}}]}},
+            )
+            hits = response["hits"]["hits"]
+            if not hits:
+                return
+            lines: list[bytes] = []
+            for hit in hits:
+                source = hit["_source"]
+                folded = {
+                    **source,
+                    "userKey": _case_insensitive(source.get("user")),
+                    "actionKey": _case_insensitive(source.get("action")),
+                }
+                lines += [
+                    codec.dumps({"index": {"_index": self.alias, "_id": hit["_id"]}}),
+                    codec.dumps(folded),
+                ]
+            # The rewrite refreshes, so the next search finds only the events left unfolded.
+            await self._client.bulk(operations=b"\n".join(lines) + b"\n", refresh=WRITE_REFRESH)  # pyright: ignore[reportArgumentType]
 
     async def put_events(self, events: Sequence[EntityAuditEventV2]) -> None:
         """Index each event as a new document, in one bulk request.
@@ -157,6 +211,47 @@ class ElasticsearchEntityAuditRepository:
             after = hits[-1]["sort"]
         return found
 
+    async def list_sorted(  # noqa: PLR0913 - listEventsV2's parameters
+        self,
+        entity_id: str,
+        action: EntityAuditActionV2 | None,
+        sort_by: str | None,
+        *,
+        descending: bool,
+        offset: int,
+        limit: int,
+    ) -> list[EntityAuditEventV2]:
+        """Ask the index for the asked order and answer ``limit`` of it from ``offset`` (AUD-07, DD-710).
+
+        The sort keys hold the folded user and action, so the index sort is Java's case-insensitive one; the tail
+        breaks ties by event key descending, the newest-key-first order Java keeps ties in, both directions. The
+        window is paged with ``search_after`` and sliced here, as the route's ``offset`` needs no second sort.
+        """
+        offset = max(offset, 0)
+        if limit < 0:
+            limit = DEFAULT_LIMIT
+        clauses: list[dict[str, Any]] = [{"term": {"entityId": entity_id}}]
+        if action is not None:
+            clauses.append({"term": {"action": action.value}})
+        keys = _sort_keys((sort_by or SORT_COLUMN_TIMESTAMP).lower(), descending=descending)
+        found: list[EntityAuditEventV2] = []
+        after: list[Any] | None = None
+        while limit == 0 or len(found) < offset + limit:
+            size = AUDIT_PAGE if limit == 0 else min(AUDIT_PAGE, offset + limit - len(found))
+            response = await self._client.search(
+                index=self.alias,
+                size=size,
+                query={"bool": {"filter": clauses}},
+                sort=keys,
+                search_after=after,
+            )
+            hits = response["hits"]["hits"]
+            found += [EntityAuditEventV2.model_validate(hit["_source"]) for hit in hits]
+            if len(hits) < size:
+                break
+            after = hits[-1]["sort"]
+        return found[offset:]
+
     async def delete_events(self, entity_id: str, event_keys: Sequence[str]) -> None:
         """Delete the entity's events of these keys by query, refreshed so the next listing misses them (AGE-04)."""
         if not event_keys:
@@ -202,8 +297,40 @@ TAG_ACTIONS = (
 
 
 def _document(event: EntityAuditEventV2, audit_id: str) -> dict[str, Any]:
-    """The event as stored: its fields but the entity definition and type, and its document id (AUD-01)."""
-    return {**event.to_json(), "entity": None, "type": None, "auditId": audit_id}
+    """The event as stored: its fields but the entity definition and type, its document id, and the folded keys.
+
+    Elasticsearch ignores no case in a field sort, so ``userKey`` and ``actionKey`` hold ``_case_insensitive`` of
+    the user and the action, folded once on the write rather than on every sort (DD-710).
+    """
+    return {
+        **event.to_json(),
+        "entity": None,
+        "type": None,
+        "auditId": audit_id,
+        "userKey": _case_insensitive(event.user),
+        "actionKey": _case_insensitive(event.action),
+    }
+
+
+def _sort_keys(column: str, *, descending: bool) -> list[dict[str, Any]]:
+    """The Elasticsearch sort keys of a sort column (AUD-07, DD-710).
+
+    ``user`` and ``action`` sort on their folded key then the timestamp; a key stored before the fold sorts as the
+    empty fold, where Java's ``CASE_INSENSITIVE_ORDER`` puts a null, in both directions. The tail of event key and
+    audit id, both descending, keeps ties in the newest-key-first order Java's scan gives them, which a reversed
+    comparison holds in both directions.
+    """
+    order = "desc" if descending else "asc"
+    if column == SORT_COLUMN_USER:
+        head: list[dict[str, Any]] = [
+            {"userKey": {"order": order, "missing": ""}},
+            {"timestamp": {"order": order}},
+        ]
+    elif column == SORT_COLUMN_ACTION:
+        head = [{"actionKey": {"order": order, "missing": ""}}, {"timestamp": {"order": order}}]
+    else:
+        head = [{"timestamp": {"order": order}}]
+    return [*head, {"eventKey": "desc"}, {"auditId": "desc"}]
 
 
 async def list_events_sorted(  # noqa: PLR0913 - listEventsV2's parameters
@@ -216,15 +343,12 @@ async def list_events_sorted(  # noqa: PLR0913 - listEventsV2's parameters
     offset: int,
     limit: int,
 ) -> list[EntityAuditEventV2]:
-    """``listEventsV2`` with a sort column: every event of the entity sorted, then ``limit`` from ``offset`` (AUD-07).
+    """``listEventsV2`` with a sort column: every event of the entity in that order, then ``limit`` from ``offset``.
 
-    A negative offset reads as 0, a negative limit as 100, a limit of 0 as all.
+    The repository answers the order; the Elasticsearch one sorts in the index rather than reading the entity
+    whole (AUD-07, DD-710). A negative offset reads as 0, a negative limit as 100, a limit of 0 as all.
     """
-    events = sort_events(await repository.list_events(entity_id, action, None, -1), sort_by, descending=descending)
-    start = min(len(events), max(offset, 0))
-    limit = DEFAULT_LIMIT if limit < 0 else limit
-    end = len(events) if limit == 0 else min(len(events), start + limit)
-    return events[start:end]
+    return await repository.list_sorted(entity_id, action, sort_by, descending=descending, offset=offset, limit=limit)
 
 
 def sort_events(
