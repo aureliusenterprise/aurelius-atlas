@@ -744,29 +744,53 @@ async def test__add_super_types_adds_to_entities(store: TypedefStore) -> None:
     assert on_classification.params == ("ADD_SUPER_TYPES", "AtlasClassificationDef")
 
 
-@pytest.mark.covers(rules=["MDL-01", "MDL-02", "MDL-05", "MDL-06", "MDL-07", "MDL-09", "MDL-11", "MDL-12", "MDL-13"])
-async def test__the_vendored_models_load_as_in_atlas(store: TypedefStore, document: MemoryTypedefDocument) -> None:
-    """All of ``addons/models`` 2.4.0: every file loads, no patch file stops, and each patch ends as in Atlas.
+@pytest.mark.covers("aurelius_atlas_core.model_loader.load_plan", rules=["MDL-01", "MMS-01"])
+def test__the_shipped_bootstrap_holds_the_area0_files_only() -> None:
+    """The metamodel's bootstrap: the base model, the glossary model, and their patches, and nothing else (DD-715)."""
+    files = load_plan(BUILTIN_MODELS_DIR)
 
-    Two outcomes are Atlas's own: ``019-kafka_producer_lineage_add_options.json`` patches a type no model defines,
-    so it fails, again at every start; and ``TYPEDEF_PATCH_1000_018_001`` is the id of two patches, so
-    ``018-kafka_topic_add_rf_attribute.json`` is found done after ``018-fs_path_add_supertypes.json`` and
-    ``kafka_topic`` never gets ``replicationFactor``.
+    assert [path.name for path, is_patch in files if not is_patch] == [
+        "0010-base_model.json",
+        "0011-glossary_model.json",
+    ]
+    assert [path.name for path, is_patch in files if is_patch] == [
+        "001-base_model_replication_attributes.json",
+        "002-base_model_add_service_type.json",
+        "003-base_model_add_searchWeight.json",
+        "004-glossary_model_add_additionalAttributes.json",
+        "005-base_model_add_display_attributes.json",
+        "006-base_model_add_atlas_operation_attributes.json",
+    ]
+    assert {path.parent.name for path, is_patch in files if is_patch} == {"patches"}
+    assert {path.parent.name for path, is_patch in files if not is_patch} == {"0000-Area0"}
+
+
+@pytest.mark.covers(
+    rules=["MDL-01", "MDL-02", "MDL-05", "MDL-06", "MDL-07", "MDL-09", "MDL-11", "MDL-12", "MDL-13", "MMS-01", "MMS-02"]
+)
+async def test__the_bootstrap_models_load_and_each_patch_ends_as_in_atlas(
+    store: TypedefStore, document: MemoryTypedefDocument
+) -> None:
+    """The Area0 models 2.4.0: every file loads, no patch file stops, and each patch ends as Atlas leaves it.
+
+    Three patches are ``SKIPPED`` as they always were: they ask for ``applyToVersion`` 1.0 of the three
+    glossary types, which the model file carries at 1.1 (MDL-07). Every other patch applies. A second
+    load of the same files changes nothing: each patch reads as done and no write lands.
     """
     result = await ModelLoader(store).load(BUILTIN_MODELS_DIR)
     writes = document.writes
     again = await ModelLoader(store).load(BUILTIN_MODELS_DIR)
 
     assert result.failed_files == result.stopped_patch_files == []
-    assert {pid for pid, status in result.patches.items() if status is PatchStatus.FAILED} == {
-        "TYPEDEF_PATCH_1000_019_001"
+    assert {pid for pid, status in result.patches.items() if status is PatchStatus.SKIPPED} == {
+        "TYPEDEF_PATCH_0000_017",
+        "TYPEDEF_PATCH_0000_018",
+        "TYPEDEF_PATCH_0000_019",
     }
-    assert result.patches["TYPEDEF_PATCH_1000_018_001"] is None
-    assert {pid: status for pid, status in again.patches.items() if status is not None} == {
-        "TYPEDEF_PATCH_1000_019_001": PatchStatus.FAILED
-    }
-    assert document.writes == writes + 1
-    assert len(store.registry.typedef_names(TypeCategory.ENTITY)) > 100
+    assert {pid for pid, status in result.patches.items() if status is PatchStatus.FAILED} == set()
+    assert {pid: status for pid, status in again.patches.items() if status is not None} == {}
+    assert document.writes == writes
+    assert len(store.registry.typedef_names(TypeCategory.ENTITY)) == 18
 
     referenceable = stored(store, "Referenceable", AtlasEntityDef)
     # 0000-Area0: 001 adds the replication attributes, 002 the service type, 003 the search weight.
@@ -775,11 +799,23 @@ async def test__the_vendored_models_load_as_in_atlas(store: TypedefStore, docume
     assert referenceable.attribute_defs[0].search_weight == 10
     # 0000-Area0/006 adds the operation types to atlas_operation.
     assert stored(store, "atlas_operation", AtlasEnumDef).has_element("IMPORT_DELETE_REPL")
-    # 1000-Hadoop/010 moves hbase_table's legacy namespace attribute to the relationship.
-    hbase_namespace = stored(store, "hbase_table_namespace", AtlasRelationshipDef)
-    assert hbase_namespace.relationship_label == "__hbase_table.namespace"
-    assert not stored(store, "hbase_table", AtlasEntityDef).has_attribute("namespace")
-    assert not stored(store, "kafka_topic", AtlasEntityDef).has_attribute("replicationFactor")
+    # A domain type is registered under no name, the base and glossary types under theirs (MMS-02).
+    assert store.registry.entity_type("hive_table") is None
+    assert store.registry.entity_type("Referenceable") is not None
+    assert store.registry.entity_type("AtlasGlossary") is not None
+
+
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["MMS-03"])
+async def test__a_restored_models_directory_bootstraps_its_own_files(store: TypedefStore, tmp_path: Path) -> None:
+    """The override door: a directory holding a copy of a deleted model file loads it exactly as 1.5 does."""
+    restored = tmp_path / "1000-Hadoop"
+    restored.mkdir(parents=True)
+    write_json(restored / "1000-model_hive_types.json", model(entity("hive_table", version="1.0")))
+
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == []
+    assert store.registry.entity_type("hive_table") is not None
 
 
 @pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["MDL-15"])

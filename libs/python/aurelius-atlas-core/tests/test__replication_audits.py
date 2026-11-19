@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 from aurelius_atlas_core.atlas_server_service import AtlasServerService
-from aurelius_atlas_core.audits_writer import AuditsWriter, hive_db_qualified_name, repl_key_guid, server_name_of
+from aurelius_atlas_core.audits_writer import AuditsWriter, repl_key_guid, server_name_of
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -37,7 +37,7 @@ TYPES = {"entityDefs": [{"name": "rep_table", "superTypes": ["DataSet"]}]}
 
 
 async def catalogue() -> tuple[EntityStore, TypedefStore]:
-    """An entity store of the built-in models (Hive's among them), their patches, and a table type."""
+    """An entity store of the shipped metamodel and a table type."""
     types = TypedefStore(TypeRegistry(), MemoryTypedefDocument())
     await types.load()
     await ModelLoader(types).load(BUILTIN_MODELS_DIR)
@@ -194,28 +194,8 @@ async def test__an_oversized_import_entry_loses_its_entity_list() -> None:
     assert unsaved.guid == "-1"
 
 
-@pytest.mark.covers(f"{C}.audits_writer.repl_key_guid", f"{C}.audits_writer.hive_db_qualified_name", rules=["REP-04"])
-async def test__a_hive_table_replicates_under_its_database() -> None:
-    """``ReplKeyGuidFinder``: a ``hive_table`` keys the details by its ``hive_db``; others by themselves."""
-    store, _ = await catalogue()
-    entities = [
-        {
-            "typeName": "hive_db",
-            "guid": "-1",
-            "attributes": {"qualifiedName": "sales@cl1", "name": "sales", "clusterName": "cl1"},
-        },
-        {"typeName": "hive_table", "guid": "-2", "attributes": {"qualifiedName": "sales.orders@cl1", "name": "o"}},
-        {"typeName": "hive_table", "guid": "-3", "attributes": {"qualifiedName": "other.t@cl1", "name": "t"}},
-    ]
-    created = await EntityWriter(store).create_or_update(
-        AtlasEntitiesWithExtInfo.model_validate({"entities": entities})
-    )
-    guids = created.guid_assignments or {}
-
-    assert await repl_key_guid(store, guids["-2"]) == guids["-1"]
-    assert await repl_key_guid(store, guids["-3"]) == guids["-3"]  # no such database
-    assert await repl_key_guid(store, guids["-1"]) == guids["-1"]
-    assert await repl_key_guid(store, "missing") == "missing"
-    assert hive_db_qualified_name("db.t.c@cl") == "db@cl"
-    assert hive_db_qualified_name("db") == "db@"
-    assert hive_db_qualified_name(None) == "null@null"
+@pytest.mark.covers(f"{C}.audits_writer.repl_key_guid", rules=["REP-04", "MMS-04"])
+def test__every_type_replicates_under_its_own_guid() -> None:
+    """``ReplKeyGuidFinder`` keys the details on the entity's own GUID (DD-716): the Hive grouping is gone."""
+    assert repl_key_guid("g-1") == "g-1"
+    assert repl_key_guid("missing") == "missing"

@@ -21,8 +21,9 @@ from aurelius_atlas_core.stored_entity import (
 from aurelius_atlas_core.view_search import ViewSearchEngine, door_fields, query_fields
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 from aurelius_atlas_model.instance import EntityStatus
+from aurelius_atlas_model.typedef import AtlasEntityDef
 from aurelius_atlas_store_es.testing.fake import FakeClient
-from aurelius_atlas_typesystem.registry import TypeRegistry
+from aurelius_atlas_typesystem.registry import TransientTypeRegistry, TypeRegistry
 from test__app_search_engine import indexed_sample, legacy_counts
 from test__app_search_quality import m4i_types
 
@@ -373,12 +374,15 @@ async def test__owner_counts_the_owners_and_service_type_sums_the_types_by_servi
     cards, most first, ties by name, a service type counted none left out; ``size`` caps each (VSR-01,
     DD-093, DD-599).
     """
+    # The shipped metamodel is one service, so the roll-up's second service rides a
+    # type the test registers on its own copy of the registry.
+    two_services = TransientTypeRegistry.copy_of(m4i)
+    two_services.add_type(AtlasEntityDef(name="aws_bucket", super_types=["DataSet"], service_type="aws"))
     door = await opened(
-        hold(m4i, "a-1", "Asset", owner="alice"),
-        hold(m4i, "g-1", "DataSet", owner="bob"),
-        hold(m4i, "w-1", "aws_s3_bucket"),
-        hold(m4i, "h-1", "hive_table"),
-        m4i=m4i,
+        hold(two_services, "a-1", "Asset", owner="alice"),
+        hold(two_services, "g-1", "DataSet", owner="bob"),
+        hold(two_services, "w-1", "aws_bucket"),
+        m4i=two_services,
     )
 
     assert (await door.search({"facets": ["owner"]}))["facets"]["owner"] == [
@@ -389,7 +393,6 @@ async def test__owner_counts_the_owners_and_service_type_sums_the_types_by_servi
     assert roll_up["facets"]["serviceType"] == [
         {"value": "atlas_core", "count": 2},
         {"value": "aws", "count": 1},
-        {"value": "hive", "count": 1},
     ]
     short = await door.search({"facets": {"typeName": {"size": 1}, "serviceType": {"size": 2}}})
     assert len(short["facets"]["typeName"]) == 1

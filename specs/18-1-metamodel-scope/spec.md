@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** ADR 068, DD-715 to DD-719 (here), DV-178, DV-179; relies on
+- **Records:** ADR 068, DD-715 to DD-718 (here), DV-178, DV-179; relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship), increment 1.5 (MDL, the loader), increment 6.3c2 (REP, the audits writer), and
   increment 8.2 (LM-03, the lineage process family).
@@ -33,6 +33,8 @@ It delivers:
   keys on its own GUID (MMS-04, DV-179).
 - The connector names gone from the screens. The webapp's icon map keeps only the types of the metamodel, and
   the lineage model's process family keeps the one process type of the metamodel (MMS-05).
+- The sample bundles cleaned of the domain types they exported. The typedef file of each bundle in
+  `data/atlas-sample/` loses the domain definitions, so the demo import cannot create them (MMS-02, DD-718).
 
 It does not deliver, with the increment that will:
 
@@ -56,6 +58,7 @@ the five deleted directories. The "icon map" is `apps/aurelius-atlas-webapp/src/
 | MMS-03 | Pointing `AURELIUS_ATLAS_SERVER_MODELS_DIR` at a directory with copies of the deleted files loads them exactly as increment 1.5 does (MDL-01 to MDL-15 unchanged).                                                                            |
 | MMS-04 | A replication audit keys its server details on the entity's own GUID for every type (DV-179). The Hive database grouping is gone.                                                                                                             |
 | MMS-05 | The icon map and the process family name no connector or kubernetes type: an icon entry or a process name is one of the metamodel's. An unknown type name still renders the default icon (DD-378) and, in lineage, an entity row.             |
+| MMS-06 | Importing a bundle of `data/atlas-sample/` into a new catalogue creates no type at all, and the catalogue holds no domain type after it (DD-718, IMS-03).                                                                                     |
 
 ## Java origin
 

@@ -17,8 +17,8 @@ is never edited except its status line, and a changed decision is a new entry th
 
 **Decision.** The package data under `aurelius_atlas_core/models/` keeps only `0000-Area0/`: the base model,
 the glossary model, and the six Area0 patches. The directories `1000-Hadoop/`, `2000-RDBMS/`, `3000-Cloud/`,
-`4000-MachineLearning/`, and `5000-Couchbase/` (196 files: 19 model files, 31 patches, and their folders) are
-deleted from the repository (MMS-01). The `diff -r` check in the core README narrows to `0000-Area0/`. The
+`4000-MachineLearning/`, and `5000-Couchbase/` (51 files: 20 model files and 31 patches) are deleted from
+the repository (MMS-01). The `diff -r` check in the core README narrows to `0000-Area0/`. The
 `BUILTIN_MODELS_DIR` constant, `load_plan`, and `ModelLoader` do not change, because they read whatever
 directory they are given; a catalogue started with `AURELIUS_ATLAS_SERVER_MODELS_DIR` set to a copy of Atlas's
 `addons/models` bootstraps exactly the old set (MMS-03).
@@ -38,7 +38,8 @@ the increment.
 - **Ship the five directories and hide them with a default-off setting.** The operator gets one more flag and
   the image keeps the dead weight; the models-directory setting already gives this door.
 - **Move the five directories to a data package outside the wheel.** It meets MMS-01 for the image but keeps
-  390 KB of vendored definitions in the repository with no consumer and no test, which is the drift ADR 009
+  a quarter-megabyte of vendored definitions in the repository with no consumer and no test, which is the drift
+  ADR 009
   refuses.
 - **Delete the files and the loader's directory reading together, and hard-code the Area0 files.** It fails
   MMS-03 and rewrites ported Java behaviour (MDL-01) for no gain.
@@ -103,3 +104,40 @@ as an entity.
 - **Derive `PROCESS_TYPES` from the loaded registry (any type that extends `Process`).** It changes tested
   LM-03 behaviour (the legacy list is the rule, DV-78's posture) and adds registry coupling to a stateless
   mapper. The metamodel has one process type, so the list is one name.
+
+### DD-718. The sample bundles ship a typedef file of the metamodel only
+
+- **Status:** Proposed
+- **Increment:** 18.1
+- **Date:** 2026-11-19
+- **Relates to:** MDD-02, MDD-04 (increment 1.5b, the sample exports), IMS-03 (increment 6.3, the import
+  creates no type it already holds).
+
+**Decision.** The `atlas-typesdef.json` entry of each bundle in `data/atlas-sample/` (`small.zip`,
+`sample_data.zip`, `only_gov_quality.zip`) holds only the definitions whose type the shipped bootstrap
+already registers (MMS-01, MMS-02). The 43 domain definitions the legacy install exported with them — the
+`hive_*`, `kafka_topic`, `avro_*`, `aws_s3_*`, `spark_ml_*` types and their structs, enums, and glossary-free
+relationships — are removed from each bundle, together with nothing else: every entity entry, the export order,
+and the export info stay byte-identical. The definitions that stay (60 or 61 per bundle) are kept as the export
+wrote them, stored fields (`guid`, `subTypes`) included, because the import of a known type is a no-op (IMS-03)
+and 1.5b's MDD-02 test reads the m4i definitions straight out of these files.
+
+**Reason.** The demo import (`SAMPLE_ZIP=sample_data.zip` on the standalone stack, 9.5c) is the one path
+that could still put domain types into a new catalogue: an import creates the types its typedef file names,
+which would undo MMS-02 in exactly the flow a new user tries first, and the 1.5b acceptance test
+`test__a_sample_export_imports_without_creating_a_type` fails on it once the bootstrap stops registering
+them. No entity in the three bundles carries a domain type — each `typeName`, relationship target, and
+classification is an m4i or base type — so the domain definitions are payload the bundles never use.
+
+**Alternatives.**
+
+- **Delete the `atlas-typesdef.json` entry.** The importer treats a bundle without one as defining no type
+  (`ZipSource.types_def` answers the empty definition), which also works. It throws away the file 1.5b's
+  MDD-02 test reads the sample definitions from, and an export of this corpus from a metamodel catalogue
+  looks like this file, not like nothing.
+- **Keep the domain definitions and let the demo import create them.** It violates MMS-02 at the front door
+  and makes the 6.3/1.5b tests model a catalogue that cannot exist.
+- **Prune the stored fields and dangling relationship attributes too.** It rewrites more fixture text than
+  the rule needs: an import that finds a known type ignores the definition, and a relationship attribute
+  whose target type is absent is not resolved by an import of entities (the importer validates attributes
+  against the entity's own type, which the metamodel holds). Smaller diff, same behaviour (ponytail).

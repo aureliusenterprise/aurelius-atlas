@@ -66,8 +66,9 @@ be removable ([ADR 002](./002-modules-are-removable-slices.md)) applies to whole
 
 ## Tradeoffs
 
-- **Positive:** a new catalogue lists only types someone uses. Bootstrap gets smaller (about 196 JSON files
-  and their patches leave the image), and per-tenant store provisioning loads a fraction of the definitions.
+- **Positive:** a new catalogue lists only types someone uses. Bootstrap gets smaller (the 51 model and patch
+  files of the five domain directories leave the image), and per-tenant store provisioning loads a fraction
+  of the definitions.
   The webapp and lineage code stop carrying verbatim legacy names.
 - **Negative:** a customer who restores a domain model through the models directory also opts back into the
   legacy replication audit keying that DV-179 drops for the shipped set (they key on GUID either way; the

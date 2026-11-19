@@ -139,13 +139,22 @@ async def test__the_gov_quality_patch_lands_on_the_governance_type() -> None:
         assert kept in types_by_attribute, kept  # a stored value is never dropped (ADR 046)
 
 
-@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["MDD-04"])
+@pytest.mark.covers(
+    "aurelius_atlas_core.model_loader.ModelLoader.load",
+    "aurelius_atlas_core.zip_source.ZipSource.types_def",
+    rules=["MDD-04", "IMS-03", "MMS-06"],
+)
 async def test__a_sample_export_imports_without_creating_a_type() -> None:
-    """``small.zip`` and ``sample_data.zip`` find every type they carry: the import counts none created (IMS-03)."""
+    """``small.zip`` and ``sample_data.zip`` find every type they carry and bring no new type (IMS-03, MMS-06).
+
+    The ``atlas-typesdef.json`` of a sample names types outside the metamodel, so the import would
+    create them (DD-718). The bootstrap holds no domain type before the import, and holds none after it.
+    """
     types = await loaded(BUILTIN_MODELS_DIR, M4I_MODELS_DIR)
     store = EntityStore(types.registry, MemoryEntityDocuments())
 
     for name in ("small.zip", "sample_data.zip"):
+        assert types.registry.typedef_by_name("hive_table") is None, name
         content = (SAMPLES / name).read_bytes()
         result = await ImportService(store, types, EntityWriter(store, user="importer")).run(
             content, AtlasImportRequest(), "importer", "h", "ip"
@@ -154,3 +163,4 @@ async def test__a_sample_export_imports_without_creating_a_type() -> None:
 
         assert result.operation_status.value == "SUCCESS", name
         assert created == {}, name
+        assert types.registry.typedef_by_name("hive_table") is None, name

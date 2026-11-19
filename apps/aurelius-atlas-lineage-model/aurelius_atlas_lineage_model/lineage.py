@@ -31,19 +31,11 @@ __all__ = [
     "flatten_relations",
 ]
 
-PROCESS_TYPES: frozenset[str] = frozenset(
-    {
-        "m4i_generic_process",
-        "m4i_api_operation_process",
-        "m4i_connector_process",
-        "m4i_ingress_controller_process",
-        "m4i_ingress_object_process",
-        "m4i_kubernetes_service_process",
-        "m4i_microservice_process",
-    }
-)
-"""The legacy ``process_types`` list, ported verbatim (LM-03): a lineage endpoint
-whose type name is in this family is a process, every other type an entity."""
+PROCESS_TYPES: frozenset[str] = frozenset({"m4i_generic_process"})
+"""The lineage process family (LM-03, MMS-05): a lineage endpoint whose type name is
+in this family is a process, every other type an entity. The legacy listed six
+connector and kubernetes processes beside it; the metamodel bootstraps none of them
+(ADR 068, DD-717), so a lineage body that names one answers an entity row."""
 
 
 def _endpoint_slots(prefix: str, header: EntityHeaderLite | None) -> dict[str, Any]:
