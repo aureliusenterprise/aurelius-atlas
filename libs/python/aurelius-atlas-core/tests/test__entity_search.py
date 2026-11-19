@@ -317,6 +317,27 @@ async def test__entities_are_sorted_paged_and_restricted_to_active_ones(store: E
 
 
 @pytest.mark.covers(
+    f"{S}",
+    "aurelius_atlas_core.entity_search_processor.EntitySearchProcessor.query",
+    "aurelius_atlas_core.search_query.verify_page",
+    rules=["SRC-07"],
+)
+async def test__a_page_past_the_search_window_fails(store: EntityStore) -> None:
+    """``offset + limit`` over 10,000 is a bad request; the last page that fits is answered (DV-176)."""
+    with pytest.raises(AtlasError) as raised:
+        await search(store, typeName="w_item", limit=100, offset=9_950)
+    with pytest.raises(AtlasError) as deep:
+        await search(store, typeName="w_item", limit=10_000, offset=1)
+
+    assert (raised.value.code, raised.value.message) == (
+        AtlasErrorCode.BAD_REQUEST,
+        "offset + limit may not exceed 10000",
+    )
+    assert deep.value.code is AtlasErrorCode.BAD_REQUEST
+    assert await search(store, typeName="w_item", limit=100, offset=9_900) is not None
+
+
+@pytest.mark.covers(
     "aurelius_atlas_core.search_context.encode_marker",
     "aurelius_atlas_core.search_context.decode_marker",
     "aurelius_atlas_core.entity_search_processor.EntitySearchProcessor.execute",

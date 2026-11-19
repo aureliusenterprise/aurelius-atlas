@@ -375,6 +375,20 @@ async def test__the_memory_documents_list_and_replace_as_elasticsearch_s() -> No
     assert set(documents.verdicts) == {"j--s"}
 
 
+@pytest.mark.covers(f"{D}.replace_verdicts", rules=["ASG-06"])
+async def test__a_verdict_write_elasticsearch_refuses_fails_the_round() -> None:
+    """A bulk request whose actions are refused raises, so the round retries with nothing half written (DD-705)."""
+    catalogue = await Catalogue.judged(*catalogue_entities())
+    before = dict(catalogue.compliant())
+    catalogue.client.bulk_conflict = True
+
+    with pytest.raises(RuntimeError) as raised:
+        await catalogue.documents.replace_verdicts({catalogue.guids["d"]: []})
+
+    assert str(raised.value) == f"The verdicts could not all be written to {VERDICTS}"
+    assert catalogue.compliant() == before
+
+
 def indexed_entity(guid: str, **document: object) -> StoredEntity:
     """A data domain with its own document and ``document``'s marks."""
     entity = StoredEntity(guid=guid, type_name="m4i_data_domain", attributes={"qualifiedName": guid})

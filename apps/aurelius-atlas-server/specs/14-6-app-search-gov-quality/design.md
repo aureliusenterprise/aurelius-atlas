@@ -176,3 +176,32 @@ catches the other direction (DD-039's digit-preserving codec path is unchanged).
 **Consequences.** A verdict's fields all have defaults, so a minimal replacement document (`id` and
 `entity_guid`) stays legal, as the replacement tests build it. The drift test covers the five mapped
 indices; the reservations' and journal's mappings stay checked by their write and read tests.
+
+### DD-705. A refused verdict write fails the round
+
+- **Status:** Proposed
+- **Increment:** 14.6 (a fix, 2026-11-19)
+- **Date:** 2026-11-19
+
+**Decision.** `replace_verdicts` reads the answer of its bulk request. When
+Elasticsearch refused one of its actions, it raises `RuntimeError` naming the
+verdicts' index. The worker catches it, logs it, and tries the round again on its
+next poll.
+
+**Reason.** The write both indexes the verdicts a round judged and deletes the ones
+the entities no longer hold. Elasticsearch answers such a request partly applied:
+the documents it accepted stay written, and the rest is not. The store ignored the
+answer, so an entity can keep a verdict it no longer holds, or miss one it gained,
+while its document still says it was judged (ASG-06). The audit events' repository
+already fails the same way for the same reason.
+
+**Alternatives.** Answer only when every action took effect: Elasticsearch has no
+transaction over a bulk request, so the request stays partly applied either way.
+Re-read the index after each write: every round would read every verdict it wrote
+to learn what it had just written.
+
+**Consequences.** A round whose write is refused writes nothing marked as judged,
+so the next round judges those entities again. The App Search worker's log names
+the failure. The fake Elasticsearch client gained `bulk_conflict`, which answers a
+conflict for every action of a bulk request, so the store's own tests build the
+refusal.

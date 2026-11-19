@@ -34,7 +34,7 @@ from aurelius_atlas_core.app_search_document import (
 )
 from aurelius_atlas_core.entity_documents import ENTITY_DOCUMENTS, GOV_QUALITY, ElasticsearchEntityDocuments
 from aurelius_atlas_core.entity_embedding import VECTOR_FIELD
-from aurelius_atlas_core.search_query import ACTIVE, VectorQuery
+from aurelius_atlas_core.search_query import ACTIVE, MAX_RESULT_WINDOW, VectorQuery
 from aurelius_atlas_core.stored_entity import StoredAppSearch, StoredQualityResult
 
 ENGINE = "atlas-dev"
@@ -49,8 +49,6 @@ GOV_QUALITY_ENGINE = "atlas-dev-gov-quality"
 MAX_PAGE = 100
 MAX_PAGE_SIZE = 1000
 MAX_FACET_SIZE = 250
-RESULT_WINDOW = 10_000
-"""The results a search reaches at most, Elasticsearch's ``max_result_window``: none beyond the 10,000th."""
 
 MIN_SNIPPET = 20
 MAX_SNIPPET = 1000
@@ -631,8 +629,8 @@ def query_body(search: Search) -> dict[str, Any]:
         "knn": knn,
         "sort": sort_clauses(search.sort, fields, search.engine.id_field),
         "aggs": aggs,
-        "from_": min(start, RESULT_WINDOW),
-        "size": max(0, min(search.size, RESULT_WINDOW - start)),
+        "from_": min(start, MAX_RESULT_WINDOW),
+        "size": max(0, min(search.size, MAX_RESULT_WINDOW - start)),
         "index": search.engine.index,
     }
 
