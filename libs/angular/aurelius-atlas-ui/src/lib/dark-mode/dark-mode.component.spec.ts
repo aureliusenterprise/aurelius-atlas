@@ -39,7 +39,7 @@ describe("DarkMode", () => {
         expect(component).toBeTruthy();
     });
 
-    it("names the current theme in the button's accessible name (SPL-03)", () => {
+    it("names the current theme in the button's accessible name (SPL-17)", () => {
         expect(button().getAttribute("aria-label")).toBe("Switch theme (current: auto)");
         expect(button().title).toBe("Switch theme (current: auto)");
 

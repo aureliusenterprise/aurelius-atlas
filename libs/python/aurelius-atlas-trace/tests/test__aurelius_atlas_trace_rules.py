@@ -125,3 +125,17 @@ def test__increment_parse_reads_major_and_minor() -> None:
     assert str(Increment.parse("2.3")) == "2.3"
     with pytest.raises(ValueError, match="not enough values"):
         Increment.parse("1")
+
+
+@pytest.mark.covers("aurelius_atlas_trace.rules.read_rules", rules=["TRC-08"])
+def test__read_rules_skips_an_acceptance_table(tmp_path: Path) -> None:
+    """An Acceptance table names rules against their tests; its rows are not definitions (DD-702)."""
+    write_spec(
+        tmp_path,
+        "0-2-sample.md",
+        "| Id | Rule |\n| --- | --- |\n| ABC-01 | One |\n\n"
+        "## Acceptance\n\n| Ids | Proven by |\n| --- | --- |\n| ABC-01 | `tests/test__one.py` |\n"
+        "| ABC-02 | `tests/test__two.py` |\n",
+    )
+
+    assert sorted(read_rules([tmp_path], Increment(0, 2))) == ["ABC-01"]

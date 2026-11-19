@@ -48,6 +48,26 @@ def test__end_to_end():
 
 RULES = "| ABC-01 | Named by a unit test |\n| ABC-02 | Named by an e2e test |\n| ABC-03 | Named by nothing |\n"
 
+ALL_CODE_NAMED = """
+import pytest
+
+from {package} import named, unnamed
+
+
+@pytest.mark.covers("{package}.named", "{package}.unnamed", rules=["ABC-01"])
+def test__named():
+    assert named() == 1
+"""
+
+ROOT_TESTS = """
+import pytest
+
+
+@pytest.mark.covers(rules=["ABC-02", "ABC-03"])
+def test__a_stack_rule():
+    assert True
+"""
+
 
 @pytest.mark.covers(
     "aurelius_atlas_trace.check.run_check",
@@ -97,6 +117,43 @@ def test__collect_project_without_tests_has_no_tests(tmp_path: Path) -> None:
     project = Project(root=tmp_path, packages=("anything",), test_dirs=())
 
     assert collect_project(project).tests == ()
+
+
+@pytest.mark.covers("aurelius_atlas_trace.check.collect_project", rules=["TRC-10"])
+def test__collect_project_collects_a_conftest_per_test_directory(
+    make_workspace: Callable[..., SampleWorkspace],
+) -> None:
+    """Each test directory keeps its own ``conftest.py``: pytest imports it as the bare module
+    ``conftest``, so collecting ``tests`` and ``e2e`` together makes one answer the other's import (DD-701).
+    """  # noqa: D205 - one sentence
+    workspace = make_workspace(
+        code=CODE,
+        tests='import pytest\n\nfrom conftest import BASE_URL\n\n\n@pytest.mark.covers(rules=["ABC-01"])\ndef '
+        'test__named():\n    assert BASE_URL == "unit"\n',
+        conftest='BASE_URL = "unit"\n',
+        e2e=E2E,
+        e2e_conftest='SHARED = "end to end"\n',
+    )
+    (project,) = load_config(workspace.root).projects
+
+    nodeids = {test.nodeid for test in collect_project(project).tests}
+
+    assert nodeids == {"tests/test__sample.py::test__named", "e2e/test__sample_e2e.py::test__end_to_end"}
+
+
+@pytest.mark.covers("aurelius_atlas_trace.config.load_config", "aurelius_atlas_trace.check.run_check", rules=["TRC-07"])
+def test__a_rule_named_only_by_a_root_test_is_not_a_gap(
+    make_workspace: Callable[..., SampleWorkspace],
+) -> None:
+    """The workspace root's ``tests`` prove the workspace-level rules: they are collected like a
+    project's, and they name no function because the root owns no package (DD-703).
+    """  # noqa: D205 - one sentence
+    workspace = make_workspace(code=CODE, tests=ALL_CODE_NAMED, root_tests=ROOT_TESTS, rules=RULES)
+
+    findings = run_check(load_config(workspace.root))
+
+    assert not findings.unchecked_rules
+    assert not findings.uncovered_functions
 
 
 @pytest.mark.covers("aurelius_atlas_trace.check.inventory", rules=["TRC-06"])

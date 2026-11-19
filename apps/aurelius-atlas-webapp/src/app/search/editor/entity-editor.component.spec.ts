@@ -1184,7 +1184,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(normalize(compiled.querySelector("#editor-name-error")?.textContent)).toBe("Name is required.");
 
         // The picker's combobox names the line under it — the same convention
-        // the parent-paired label already uses (EDT-17).
+        // the parent-paired label already uses (EDT-35).
         const pickerInput = compiled.querySelector<HTMLInputElement>('[data-field="model"] .aurelius-token-input')!;
         expect(pickerInput.getAttribute("aria-invalid")).toBe("true");
         expect(pickerInput.getAttribute("aria-describedby")).toBe("editor-relationship-model-error");

@@ -65,6 +65,16 @@ def _project(root: Path) -> Project:
     )
 
 
+def _root_project(workspace: Path) -> Project | None:
+    """The workspace root as a test-only project, when it holds a test directory.
+
+    The root's ``tests`` prove the rules of the workspace-level increments (the Helm charts,
+    the compose stacks); the root declares no package, so it adds tests and no functions.
+    """
+    test_dirs = tuple(workspace / name for name in TEST_DIRECTORIES if (workspace / name).is_dir())
+    return None if not test_dirs else Project(root=workspace, packages=(), test_dirs=test_dirs)
+
+
 def _roots(workspace: Path, members: list[str], excluded: set[str]) -> list[Path]:
     globbed = {root for member in members if member not in excluded for root in workspace.glob(member)}
     return sorted(root for root in globbed if (root / PYPROJECT).is_file())
@@ -106,11 +116,15 @@ def load_config(workspace: Path) -> TraceConfig:
     if deviations is not None and not deviations.is_file():
         raise ConfigError(NO_DEVIATIONS_ERROR.format(path=path, table=CONFIG_TABLE, file=deviations))
 
+    root_project = _root_project(workspace)
+    projects = [_project(root) for root in _roots(workspace, members, excluded)]
+    if root_project is not None:
+        projects.append(root_project)
     return TraceConfig(
         workspace=workspace,
         spec_dirs=spec_dirs,
         enforce_from=enforce_from,
-        projects=tuple(_project(root) for root in _roots(workspace, members, excluded)),
+        projects=tuple(projects),
         excluded_subpackages=tuple(table.get("exclude-subpackages", ("testing",))),
         members=tuple(_roots(workspace, members, set())),
         deviations=deviations,
