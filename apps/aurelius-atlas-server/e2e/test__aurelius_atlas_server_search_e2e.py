@@ -19,7 +19,11 @@ from aurelius_atlas_server_client import AtlasClient, AtlasClientError
     rules=["CL-13", "SRC-02", "SRC-11"],
 )
 async def test__the_basic_searches_answer_over_tls(api: AtlasClient) -> None:
-    """``POST /search/basic`` with a type, ``GET /search/basic`` with a query (SRC-02, SRC-11)."""
+    """``POST /search/basic`` with a type, ``GET /search/basic`` with a query (SRC-02, SRC-11).
+
+    The count assertions rule out the model's -1 default: both routes ran the search and answered their count,
+    whatever the dev store holds (an empty store answers 0, a route that never searched answers -1).
+    """
     by_type = await api.search.search_with_parameters(
         SearchParameters(type_name="Asset", limit=5, exclude_deleted_entities=True)
     )
@@ -28,6 +32,7 @@ async def test__the_basic_searches_answer_over_tls(api: AtlasClient) -> None:
 
     by_query = await api.search.search_using_basic(query="*", type_name="Asset", limit=5)
     assert by_query.query_type == "BASIC"
+    assert by_query.approximate_count >= 0
 
 
 @pytest.mark.critical
