@@ -155,11 +155,6 @@
     "aliases": []
   },
   {
-    "version": "ci-strict-docs-gate",
-    "title": "ci-strict-docs-gate",
-    "aliases": []
-  },
-  {
     "version": "chore-remove-template-example-stack",
     "title": "chore-remove-template-example-stack",
     "aliases": []
