@@ -99,3 +99,38 @@ every entity of a large result reads it with a DSL query without `limit` or with
 a `select`, which pages the store from 0. `AppSearchEngine` clamps instead,
 because App Search answers the page it can and its callers read a list, not a
 search result.
+
+### DD-709. A search page reads its headers over one shared reading
+
+- **Status:** Proposed
+- **Increment:** 4.1 (a fix, 2026-11-19)
+- **Date:** 2026-11-19
+
+**Decision.** `EntityRetriever.headers` reads a whole page's headers over one
+`_Reading`. The reading preloads every entity's listed relationships and
+classification instances in one read of each kind, and the entities those
+references and term assignments name in one read. The four paths that answer
+headers for a page call it: the DSL executor's `processVertices` (DSE-13), a
+basic search (SRC-09), a free-text search (FTX-05), and a projection's header
+columns (DSP-02). A basic search reads the entities a header refers to the same
+way, through `header_by_guids`.
+
+**Reason.** Each header took its own `_Reading`, so a page of N entities read
+the relationships and classifications of each entity once each, a number of
+reads that grew with the page (an N+1). One `_Reading` already caches each
+entity's relationships (DD-061) and classifications (DD-070) for one response.
+A page shares one such reading, so a relationship, classification or referred
+entity named by more than one of them is read once. Apache Atlas reads a page's
+vertices in one traversal and maps each header from that one read.
+
+**Alternatives.** A cache above the reading, for a whole request: a wider scope
+than the per-response one DD-061 and DD-070 chose, holding reads a later
+response must not reuse. A join in the store: Elasticsearch's multi-get already
+reads them in one request, so it was the count of reads, not their shape, that
+cost.
+
+**Consequences.** The headers are the same JSON one way or the other, which a
+test checks by reading a page both ways. The caches span one response, so no
+header sees data a single read does not. A search that reads whole entities (a
+glossary list, the type counts) still builds them one at a time, as
+`entity_with_ext_info` and `entities_with_ext_info` answer them.

@@ -193,9 +193,7 @@ class DslQueryExecutor:
 
     async def _add_headers(self, result: AtlasSearchResult, found: Iterable[StoredEntity]) -> None:
         """``processVertices``: each entity's header with its classifications (DSE-13)."""
-        for stored in found:
-            header = await self._retriever.header_with_attributes(stored, [])
-            header.classifications = await self._retriever.classifications(stored.guid)
+        for header in await self._retriever.headers(list(found), [], classifications=True):
             result.add_entity(header)
 
 

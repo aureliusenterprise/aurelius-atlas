@@ -128,25 +128,42 @@ class EntityRetriever:
             header.classifications = await reading.classifications(stored)
         return header
 
+    async def headers(
+        self, storeds: Sequence[StoredEntity], attributes: Iterable[str], *, classifications: bool = False
+    ) -> list[AtlasEntityHeader]:
+        """``processVertices``: the headers of ``storeds``, over one reading (DSE-13, SRC-09).
+
+        Each header is as ``header_with_attributes`` answers it, and carries its classifications when
+        ``classifications`` asks, as a ``classifications`` call after it answered. The page shares one reading, so
+        a relationship, classification instance or referred entity named by several of them is read once rather
+        than once each.
+        """
+        names = list(dict.fromkeys(attributes))
+        reading = self._reading(AtlasEntityExtInfo())
+        await reading.preload(storeds)
+        return [
+            await reading.header_with_attributes(stored, names, classifications=classifications) for stored in storeds
+        ]
+
+    async def header_by_guids(self, guids: Sequence[str]) -> dict[str, AtlasEntityHeader]:
+        """Each GUID's header over one reading, the ones that exist; GUIDs with no entity are left out (EWR-13, DD-709).
+
+        As ``header`` without its classification field, and without failing on a GUID that has no entity. For a
+        caller that read those GUIDs out of headers it already has.
+        """
+        unique = list(dict.fromkeys(guids))
+        found = await self._store.get_many(unique)
+        storeds = [found[guid].entity for guid in unique if guid in found]
+        headers = await self.headers(storeds, [], classifications=False)
+        return {stored.guid: header for stored, header in zip(storeds, headers, strict=True)}
+
     async def header_with_attributes(self, stored: StoredEntity, attributes: Iterable[str]) -> AtlasEntityHeader:
         """``toAtlasEntityHeader(vertex, attributes)``: the header, and the attributes named that have a value (SRC-09).
 
         A name the type has no attribute of is read without its type prefix, also as a relationship attribute.
         """
         reading = self._reading(AtlasEntityExtInfo())
-        header = await reading.header(stored)
-        entity_type = self._store.registry.entity_type(stored.type_name)
-        for given in attributes:
-            name, attribute = given, None if entity_type is None else entity_type.attribute(given)
-            if attribute is None and entity_type is not None:
-                name = given.rsplit(".", 1)[-1]
-                if header.has_attribute(name):
-                    continue
-                attribute = entity_type.attribute(name) or entity_type.relationship_attribute(name)
-            value = None if attribute is None else await reading._vertex_attribute(stored, attribute)  # noqa: SLF001
-            if value is not None:
-                header.set_attribute(name, value)
-        return header
+        return await reading.header_with_attributes(stored, list(attributes), classifications=False)
 
     async def classifications(self, guid: str) -> list[AtlasClassification]:
         """``getAllClassifications``: the classifications of the entity with ``guid``, in order (CLS-02, CLS-03).
@@ -281,6 +298,77 @@ class _Reading:
             if value is not None:
                 entity.set_attribute(name, value)
         return entity
+
+    async def preload(self, storeds: Sequence[StoredEntity]) -> None:
+        """Read everything a header of these entities needs, in one request per kind (DD-709).
+
+        The relationships and classification instances they list, the entities their references name, and the
+        terms assigned to them. ``header``, ``classifications``, ``_relationships_of`` and ``meanings`` then
+        answer from these caches; a value reaching beyond them (a struct's references, a relationship end read
+        for a header attribute) falls back to ``_load``, which is a no-op for what is cached. The entities
+        themselves are the ones given, as ``header`` already reads them from the search hit rather than the store.
+        """
+        for stored in storeds:
+            self._stored.setdefault(stored.guid, stored)
+        entities = [found for stored in storeds if (found := self._stored.get(stored.guid)) is not None]
+        await self._preload_edges(entities)
+        await self._preload_classifications(entities)
+        await self._load(
+            [
+                guid
+                for stored in entities
+                if (entity_type := self._store.registry.entity_type(stored.type_name)) is not None
+                for guid in stored.reference_guids(entity_type)
+            ]
+            + [
+                relationship.end1_guid
+                for stored in entities
+                for relationship in self._edges.get(stored.guid, ())
+                if relationship.type_name == TERM_ASSIGNMENT and relationship.end2_guid == stored.guid
+            ]
+        )
+
+    async def _preload_edges(self, storeds: Sequence[StoredEntity]) -> None:
+        """Fill every entity's edge cache from one read of the relationships they all list."""
+        listed = [guid for stored in storeds for guid in stored.relationship_guids or []]
+        found = await self._store.get_relationships(sorted(set(listed))) if listed else {}
+        for stored in storeds:
+            kept = stored.relationship_guids or []
+            self._edges[stored.guid] = [found[guid].relationship for guid in kept if guid in found]
+
+    async def _preload_classifications(self, storeds: Sequence[StoredEntity]) -> None:
+        """Fill every entity's classification cache from one read of the instances they all list."""
+        listed = [guid for stored in storeds for guid in stored.classification_guids or []]
+        found = await self._store.get_classifications(sorted(set(listed))) if listed else {}
+        for stored in storeds:
+            self._classified[stored.guid] = [
+                await self._classification(found[guid].classification)
+                for guid in stored.classification_guids or []
+                if guid in found
+            ]
+
+    async def header_with_attributes(
+        self, stored: StoredEntity, attributes: Sequence[str], *, classifications: bool
+    ) -> AtlasEntityHeader:
+        """``toAtlasEntityHeader(vertex, attributes)`` over this reading: the header, and the named attributes (SRC-09).
+
+        ``classifications`` fills the header's classification field, as a ``classifications`` call after it answered.
+        """
+        header = await self.header(stored)
+        entity_type = self._store.registry.entity_type(stored.type_name)
+        for given in attributes:
+            name, attribute = given, None if entity_type is None else entity_type.attribute(given)
+            if attribute is None and entity_type is not None:
+                name = given.rsplit(".", 1)[-1]
+                if header.has_attribute(name):
+                    continue
+                attribute = entity_type.attribute(name) or entity_type.relationship_attribute(name)
+            value = None if attribute is None else await self._vertex_attribute(stored, attribute)
+            if value is not None:
+                header.set_attribute(name, value)
+        if classifications:
+            header.classifications = await self.classifications(stored)
+        return header
 
     async def header(self, stored: StoredEntity) -> AtlasEntityHeader:
         """``mapVertexToAtlasEntityHeader``: header attributes, ``""`` for none, and the display text (ERD-07)."""

@@ -17,6 +17,7 @@ from aurelius_atlas_core.discovery_service import EntityDiscoveryService
 from aurelius_atlas_core.dsl_query_composer import DslQueryComposer
 from aurelius_atlas_core.dsl_query_executor import translatable
 from aurelius_atlas_core.entity_classifications import EntityClassifications
+from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
 from aurelius_atlas_core.testing.memory import MemoryEntityDocuments
@@ -28,9 +29,12 @@ from aurelius_atlas_model.typedef import AtlasTypesDef
 from aurelius_atlas_typesystem.registry import TypeRegistry
 
 D = "aurelius_atlas_core.discovery_service.EntityDiscoveryService"
+R = "aurelius_atlas_core.entity_retriever.EntityRetriever"
 C = "aurelius_atlas_core.dsl_query_composer.DslQueryComposer.compose"
 X = "aurelius_atlas_core.dsl_query_executor"
 GUIDS: dict[str, str] = {}
+DOCUMENTS: list[MemoryEntityDocuments] = []
+"""The fixture's documents, for the read-counting test to read its counters from."""
 
 
 def _attribute(name: str, type_name: str = "string", **more: Any) -> dict[str, Any]:  # noqa: ANN401 - Atlas JSON
@@ -114,7 +118,9 @@ async def store() -> EntityStore:
     registry = TypeRegistry()
     with registry.update() as transient:
         transient.add_types(AtlasTypesDef.model_validate(TYPES))
-    found = EntityStore(registry, MemoryEntityDocuments())
+    DOCUMENTS.clear()
+    DOCUMENTS.append(MemoryEntityDocuments())
+    found = EntityStore(registry, DOCUMENTS[-1])
     entities = [
         _entity("DB", "Sales", owner="John ETL", createTime="2014-12-11T00:00:00.000Z"),
         _entity("DB", "Reporting", owner="Jane BI"),
@@ -218,6 +224,42 @@ async def test__nothing_found_answers_no_entities(store: EntityStore) -> None:
     """``processVertices`` adds no entity: the answer has no ``entities``."""
     found = await dsl(store, "Table where name = 'nothing'")
     assert "entities" not in found
+
+
+@pytest.mark.covers(f"{R}.headers", f"{X}.DslQueryExecutor._add_headers", rules=["DSE-13"])
+async def test__a_page_of_headers_reads_the_documents_it_shares_once(store: EntityStore) -> None:
+    """Every header of a page answers from one reading, not one per entity (DD-709).
+
+    Reading the classified tables one at a time costs one read of their relationships and classifications each;
+    reading them together costs that read once. The headers are the same JSON either way.
+    """
+    retriever = EntityRetriever(store)
+    by_guid = {
+        stored.guid: stored for stored in (await store.search(sq.SearchQuery(type_names=frozenset({"Table"})))).entities
+    }
+    classified = [by_guid[GUIDS[name]] for name in ("sales_fact", "time_dim", "customer_dim")]
+
+    documents = DOCUMENTS[-1]
+    documents.entity_reads = documents.linked_reads = 0
+    one_at_a_time = []
+    for stored in classified:
+        header = await retriever.header_with_attributes(stored, [])
+        header.classifications = await retriever.classifications(stored.guid)
+        one_at_a_time.append(header)
+    each = documents.linked_reads
+
+    documents.entity_reads = documents.linked_reads = 0
+    together = await retriever.headers(classified, [], classifications=True)
+    page = documents.linked_reads
+    assert [header.to_json() for header in together] == [header.to_json() for header in one_at_a_time]
+    assert each > page, (each, page)
+
+    documents.entity_reads = documents.linked_reads = 0
+    await retriever.headers(classified[:1], [], classifications=True)
+    one = documents.linked_reads
+    documents.entity_reads = documents.linked_reads = 0
+    await retriever.headers(classified, [], classifications=True)
+    assert documents.linked_reads == one, "the page's reads must not grow with its size"
 
 
 @pytest.mark.covers(f"{X}.translatable", rules=["DSE-03"])

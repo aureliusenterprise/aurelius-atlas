@@ -18,7 +18,7 @@ from aurelius_atlas_model.discovery import (
     SearchParameters,
 )
 from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
-from aurelius_atlas_model.instance import AtlasEntityHeader, AtlasObjectId
+from aurelius_atlas_model.instance import AtlasObjectId
 from aurelius_atlas_model.profile import AtlasUserSavedSearch, SavedSearchType
 from aurelius_atlas_model.typedef import TypeCategory
 from aurelius_atlas_typesystem.array_type import ArrayType
@@ -183,9 +183,9 @@ class EntityDiscoveryService:
         if exclude_deleted_entities:
             total = (await self._store.search(SearchQuery(type_names=None, size=0, text=text))).total
         retriever = EntityRetriever(self._store)
+        headers = await retriever.headers(hits.entities, [], classifications=False)
         found = [
-            AtlasFullTextResult(entity=await retriever.header_with_attributes(stored, []), score=score)
-            for stored, score in zip(hits.entities, hits.scores, strict=True)
+            AtlasFullTextResult(entity=header, score=score) for header, score in zip(headers, hits.scores, strict=True)
         ]
         result = AtlasSearchResult(
             query_type=AtlasQueryType.FULL_TEXT, query_text=query, full_text_result=found, approximate_count=total
@@ -289,18 +289,12 @@ class EntityDiscoveryService:
         first = context.first_type
         references = [name for name in names if first is not None and _refers(first, name)]
         retriever = EntityRetriever(self._store)
-        referred: dict[str, AtlasEntityHeader] = {}
-        for stored in found:
-            header = await retriever.header_with_attributes(stored, names)
-            if parameters.include_classification_attributes:
-                header.classifications = await retriever.classifications(stored.guid)
+        headers = await retriever.headers(found, names, classifications=parameters.include_classification_attributes)
+        for header in headers:
             result.add_entity(header)
-            for name in references:
-                for guid in _guids(header.get_attribute(name)):
-                    if guid not in referred:
-                        referred[guid] = await retriever.header(guid, classifications=False)
-        if referred:
-            result.referred_entities = referred
+        wanted = [guid for header in headers for name in references for guid in _guids(header.get_attribute(name))]
+        if wanted:
+            result.referred_entities = await retriever.header_by_guids(wanted)
 
 
 def _refers(entity_type: EntityType, name: str) -> bool:
