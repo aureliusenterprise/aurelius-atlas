@@ -6954,8 +6954,10 @@ server verifies, served behind the proxy at <code>/auth</code> (DD-363). At ever
 <code>aurelius-atlas</code> from <code>keycloak/aurelius-atlas.json</code> (DD-673). The realm has the same posture as the
 deployment's realm of the same name: the service identities the system needs, with each client
 secret a placeholder filled from <code>infra/keycloak/.env</code>, and the <code>operators</code> organization with its
-four role groups. It holds no user. To sign in from a browser, you add a person yourself, in
-Keycloak's admin console (see Start).</p>
+four role groups. Its one person is the platform operator <code>operator</code>, who reads <code>operators</code> and holds
+the operator role, with the password <code>DEMO_USER_OPERATOR_PASSWORD</code> (DD-700). A tenant's users are not
+in the realm file: the one shot <code>tenants</code> makes them when it provisions their tenant (see Tenants).
+For any other person, you add one yourself, in Keycloak's admin console (see Start).</p>
 <p>The realm's sign-in pages wear the Aurelius look (DD-414): the theme <code>aurelius</code> in <code>infra/keycloak/themes/</code>, a
 stylesheet over Keycloak's own login theme that brings back the legacy m4i page: the Aurelius Atlas logo over
 one white box on a light band, with a teal sign-in button. The account console, which the webapp's Account
@@ -6984,7 +6986,7 @@ that ships the stack without the repository names them in its own <code>.env</co
 once Keycloak is ready. A cold start takes about two minutes now: the stack's Keycloak boots against
 its Postgres in production mode as the deployment's does (DD-670, DD-676), and its first boot augments
 its runtime once into the home volume Compose seeds (SPC-05, DD-696). The next start skips it, until
-<code>down -v</code>. The realm holds no user (DD-673), so the sign-in is
+<code>down -v</code>. Without tenancy, the realm's only person is the operator (DD-700), so the sign-in is
 bring-your-own-user. Open Keycloak's admin console at <a href="https://localhost:9000/auth/admin/">https://localhost:9000/auth/admin/</a> as
 <code>KC_BOOTSTRAP_ADMIN_USERNAME</code>, in the realm <code>master</code>, select the realm <code>aurelius-atlas</code>, and add a
 person under Users with a password. Then give the person a role: open the user's Role mapping tab and
@@ -7094,7 +7096,12 @@ on and run <code>docker compose</code> with <code>--profile tenancy</code> or <c
 </tr>
 </tbody>
 </table>
-<p>The realm holds no user (DD-673), so a tenant starts with no members. Add a person to a tenant in
+<p>The one shot makes each tenant's users when it provisions the tenant, not the realm file (DD-700):
+<code>&lt;tenant&gt;_atlas</code> with every role and the tenant's administrator, <code>&lt;tenant&gt;_steward</code> who reads and writes,
+and <code>&lt;tenant&gt;_scientist</code> who reads, each a member of its tenant alone. Their passwords are
+<code>&lt;TENANT&gt;_USER_&lt;ROLE&gt;_PASSWORD</code> in <code>infra/keycloak/.env</code>, such as <code>DEMO_USER_ATLAS_PASSWORD</code>; a user already
+there keeps its password, and a tenant without those passwords gets no users. The operator joins every
+tenant that trusts the operators, with read access. To add a further person to a tenant, use
 Keycloak's admin console: under Organizations, open the tenant and add the person as a member, then
 give the member the tenant's role groups under Groups. A person who belongs to one tenant signs in
 to it without a choice. A tenant's administrator, set by <code>admin &lt;tenant&gt; add &lt;username&gt;</code> below,
@@ -7107,8 +7114,8 @@ adds and removes members, in the console at <code>https://localhost:9000/auth/ad
 <p><code>operators</code> is the platform's organization: a person who is its member holds the operator role, so the
 server holds that person at read access outside the tenants (ADR 063). The one shot also gives the
 platform a user of its own in the store, named <code>operator</code>, an admin of every index (ADR 063's direct
-store access). Its password is <code>DEMO_USER_OPERATOR_PASSWORD</code> in <code>infra/keycloak/.env</code>; it is a store
-user, not a realm user. The store has no published port, so it is reached from the stack's network.
+store access). Its password is <code>DEMO_USER_OPERATOR_PASSWORD</code> in <code>infra/keycloak/.env</code>, the same as the
+realm's <code>operator</code>'s. The store has no published port, so it is reached from the stack's network.
 <code>TENANT_SAMPLE</code> names the export ZIP in <code>SAMPLE_DIR</code> that demo starts with, <code>sample_data.zip</code> by
 default. With tenancy on, <code>SAMPLE_ZIP</code> is left unset: the sample goes into demo, not into the stack's
 own catalogue.</p>
