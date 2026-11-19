@@ -29,7 +29,7 @@
         "@swc/helpers": "0.5.24",
         "@types/d3-selection": "^3.0.12",
         "@types/d3-zoom": "^3.0.9",
-        "@types/node": "^25.9.1",
+        "@types/node": "^26.6.6",
         "@typescript-eslint/utils": "8.72.1",
         "@vitest/coverage-v8": "5.1.0",
         "@vitest/ui": "5.1.0",
