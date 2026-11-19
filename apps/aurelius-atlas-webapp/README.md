@@ -89,9 +89,11 @@ and is inert until then, DD-141).
 - Language switch is a full-page navigation into the locale tree the image
   serves (DD-128): `localeHref` strips the active locale prefix and prepends
   the chosen one
-- Footer from the runtime config (SHC-06): copyright year, app name, version —
-  `appName`/`appCopyright`/`appVersion` join `AppConfig`, the Aurelius
-  `shell` env block's role moving to `/config.json` (SHL-10)
+- Footer (SHC-06): the app name from `/config.json` (`appName` in `AppConfig`,
+  the Aurelius `shell` env block's role moving to `/config.json`, SHL-10), the
+  copyright year from the browser's calendar, and the version from
+  `admin/version` (VER-01/VER-04 — 7.34 moved the two build-time values out of
+  the config)
 - The `libs/shell` dictionaries (en, nl) join the XLIFF bridge
   (`@@shell.header.*`, `@@shell.footer.*`, SHC-07) — fixtures, generator, and
   completeness spec all extended

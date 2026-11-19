@@ -225,9 +225,13 @@ def test__realip_block_follows_the_values() -> None:
     assert realip == expected
 
 
-@pytest.mark.covers(rules=["CHT-26"])
+@pytest.mark.covers(rules=["CHT-26", "VER-01", "VER-04"])
 def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) -> None:
-    """ApiBaseUrl / keycloak.url / otelExporterUrl, mounted at the SPA's path."""
+    """ApiBaseUrl / keycloak.url / otelExporterUrl, mounted at the SPA's path.
+
+    Neither a version nor a copyright year rides it (7.34, DD-725/DD-726): the
+    SPA reads the version from the server and prints the current year.
+    """
     configmap = find(webapp_docs, "ConfigMap", "atlas-webapp-config")
     config = yaml.safe_load(configmap["data"]["config.json"])
     assert config["apiBaseUrl"] == "/api"
@@ -237,6 +241,8 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     assert config["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324
     assert config["lineageModelBaseUrl"] == "/lineage-model"  # 7.22a, LDG-07
     assert config["validateEntityBaseUrl"] == "/validate-entity"  # 7.24, EDT-22
+    assert "appVersion" not in config  # VER-01, DD-725
+    assert "appCopyright" not in config  # VER-04, DD-726
     mounts = {
         m["mountPath"]: m for m in container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")["volumeMounts"]
     }

@@ -1,3 +1,4 @@
+import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { provideRouter, Routes } from "@angular/router";
 import Keycloak from "keycloak-js";
@@ -6,15 +7,21 @@ import { AlertsService } from "./alerts/alerts.service";
 import { AppConfig } from "./config";
 import { APP_CONFIG } from "./tokens";
 import { App } from "./app.component";
+import { VersionService } from "./shell/version.service";
 
 const config: AppConfig = {
     keycloak: { clientId: "aurelius", realm: "atlas", url: "https://keycloak.example/" },
     apiBaseUrl: "/api",
     otelExporterUrl: "/otel/v1/traces",
     appName: "Aurelius Atlas Data Governance",
-    appCopyright: 2022,
-    appVersion: "7.11.0#abc1234",
 };
+
+/**
+ * The footer's version seam (VER-01): the root spec's job is the chrome
+ * layout, so the version read never leaves this stub — the service's own
+ * fetch is its spec's.
+ */
+const versionStub = { provide: VersionService, useValue: { version: signal("7.34.0#abc1234") } };
 
 describe("App", () => {
     beforeEach(async () => {
@@ -26,6 +33,7 @@ describe("App", () => {
                 // The header's session identity reads the Keycloak token; the
                 // root spec keeps the chrome's plumbing out of scope.
                 { provide: Keycloak, useValue: { tokenParsed: {} } },
+                versionStub,
             ],
         }).compileComponents();
     });

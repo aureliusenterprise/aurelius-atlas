@@ -48,8 +48,6 @@ const configPayload = {
     apiBaseUrl: "/api",
     otelExporterUrl: "/otel/v1/traces",
     appName: "Aurelius Atlas Data Governance",
-    appCopyright: 2022,
-    appVersion: "0.0.0",
 };
 
 /**
