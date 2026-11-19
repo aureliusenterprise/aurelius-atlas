@@ -20,6 +20,11 @@
     "aliases": []
   },
   {
+    "version": "fix-search-window-and-verdict-writes",
+    "title": "fix-search-window-and-verdict-writes",
+    "aliases": []
+  },
+  {
     "version": "feat-15-7-add-a-tenant",
     "title": "feat-15-7-add-a-tenant",
     "aliases": []
