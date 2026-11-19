@@ -20,7 +20,9 @@ from aurelius_atlas_core.testing.entity_samples import (
     RELATIONSHIP_TYPES,
     SAMPLE_TYPES,
 )
+from aurelius_atlas_server.routes import view_entity
 from fake_issuer import FakeIssuer
+from fastapi import FastAPI
 
 R = "aurelius_atlas_server.routes.view_entity"
 D = "aurelius_atlas_core.view_mutation.ViewMutationDoor.apply"
@@ -267,6 +269,64 @@ async def test__a_stale_save_answers_the_conflict_beside_the_stored_view(typed: 
     fresh = await view_of(typed, guid)
     saved = await save(typed, dict(fresh, attributes={**fresh["attributes"], "title": "Third"}))
     assert saved.status_code == 200
+    assert saved.json()["attributes"]["title"] == "Third"
+
+
+@pytest.mark.covers("aurelius_atlas_core.view_mutation.RewindStore.write", rules=["ASU-07", "ASU-08"])
+async def test__a_save_through_the_door_is_heard_by_the_real_store_s_listeners(
+    typed: httpx.AsyncClient, app: FastAPI
+) -> None:
+    """The door writes through its rewind store; the workers hooked to the real store hear it all the same.
+
+    Without it, a save through the editor never woke the App Search worker nor ran its round before the answer,
+    and the breadcrumb trailed by the poll (DD-679).
+    """
+    guid = await create(typed, "s_database", qualifiedName="db@heard", title="First")
+    heard: list[str] = []
+    app.state.entity_store.write_listeners.append(lambda: heard.append("write"))
+
+    fresh = await view_of(typed, guid)
+    saved = await save(typed, dict(fresh, attributes={**fresh["attributes"], "title": "Second"}))
+
+    assert saved.status_code == 200, saved.text
+    assert heard
+
+
+@pytest.mark.covers(f"{R}.write", "aurelius_atlas_server.app_search.derive_written", rules=["ASU-08"])
+async def test__the_save_answers_the_entity_as_its_rounds_left_it(
+    typed: httpx.AsyncClient, app: FastAPI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The door's answer is read after the rounds its write called for, so it carries what they derived (DD-679).
+
+    The rounds are stood in for by a change to the stored entity, as a round changes its App Search document:
+    the answer shows it. Without a round owed, the answer is the door's own view.
+    """
+    guid = await create(typed, "s_database", qualifiedName="db@derive", title="First")
+    store = app.state.entity_store
+
+    async def derived(timeout_seconds: float) -> bool:
+        assert timeout_seconds == app.state.settings.app_search_answer_seconds
+        found = await store.get(guid)
+        assert found is not None
+        changed = found.entity.model_copy(
+            update={"attributes": {**found.entity.attributes, "s_database.title": "Derived"}}
+        )
+        results = await store._documents.write([(changed, found.version)])  # noqa: SLF001 - as a round writes
+        assert all(result.written for result in results)
+        return True
+
+    monkeypatch.setattr(view_entity, "derive_written", derived)
+    fresh = await view_of(typed, guid)
+    saved = await save(typed, dict(fresh, attributes={**fresh["attributes"], "title": "Second"}))
+    assert saved.status_code == 200, saved.text
+    assert saved.json()["attributes"]["title"] == "Derived"
+
+    async def none_owed(timeout_seconds: float) -> bool:  # noqa: ARG001
+        return False
+
+    monkeypatch.setattr(view_entity, "derive_written", none_owed)
+    fresh = await view_of(typed, guid)
+    saved = await save(typed, dict(fresh, attributes={**fresh["attributes"], "title": "Third"}))
     assert saved.json()["attributes"]["title"] == "Third"
 
 

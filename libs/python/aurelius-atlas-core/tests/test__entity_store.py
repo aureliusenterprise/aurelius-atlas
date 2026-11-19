@@ -188,6 +188,23 @@ async def test__a_unique_lookup_falls_back_to_sub_types(store: EntityStore) -> N
     assert await store.find_by_unique_attributes(table_type, {"code": "x"}) is None
 
 
+@pytest.mark.covers(f"{S}.write", rules=["ASU-07"])
+async def test__every_committed_write_wakes_the_write_listeners_and_a_refused_one_none(store: EntityStore) -> None:
+    """Each write that commits calls every write listener once; one refused as stale calls none (DD-678)."""
+    woken: list[str] = []
+    store.write_listeners.extend([lambda: woken.append("a"), lambda: woken.append("b")])
+    table = new(store, qualifiedName="t")
+    await store.write([EntityChange(table)])
+    found = await store.get(table.guid)
+    assert found is not None
+    await store.write([EntityChange(found.entity.touched(now=2, user=None), found.version)])
+    assert woken == ["a", "b", "a", "b"]
+
+    with pytest.raises(EntityVersionConflictError):
+        await store.write([EntityChange(found.entity, found.version)])
+    assert woken == ["a", "b", "a", "b"]
+
+
 @pytest.mark.covers(f"{S}.write", rules=["ENS-07", "ENS-08"])
 async def test__a_stale_read_fails_before_anything_is_written(store: EntityStore) -> None:
     """A version that is no longer current, or an entity that is gone, is a version conflict."""
