@@ -33,7 +33,7 @@ from aurelius_atlas_core.classification_search_processor import ClassificationSe
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.search_context import MARKER_END, SearchContext
 from aurelius_atlas_core.search_fields import BOOLEAN, KEYWORD, LABEL_DELIMITER, LONG, field_name
-from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, VectorQuery
+from aurelius_atlas_core.search_query import Criterion, Filter, Group, SearchQuery, Test, VectorQuery, verify_page
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.term_search_processor import term_criterion
 
@@ -100,8 +100,9 @@ class EntitySearchProcessor:
         """The search as a query of the entity documents, with its classifications' criterion (DD-089, DD-090).
 
         Raises:
-            AtlasError: ``BAD_REQUEST`` for a filter value that is not of its attribute's type (DV-46);
-                ``UNKNOWN_GLOSSARY_TERM`` for a ``termName`` no active term has (GTA-06).
+            AtlasError: ``BAD_REQUEST`` for a filter value that is not of its attribute's type (DV-46) or a page
+                past the search window (SRC-07, DV-176); ``UNKNOWN_GLOSSARY_TERM`` for a ``termName`` no active
+                term has (GTA-06).
         """
         parameters = self._context.parameters
         entities: Sequence[StructType] = self._context.entity_types
@@ -111,6 +112,8 @@ class EntitySearchProcessor:
         sort_attribute = None if first is None or not parameters.sort_by else first.attribute(parameters.sort_by)
         sort_field = None if sort_attribute is None else field_name(sort_attribute)
         marker = self._context.marker
+        offset = parameters.offset if marker is None else marker
+        verify_page(offset, parameters.limit)
         term = None if not parameters.term_name else await term_criterion(store, parameters.term_name)
         return SearchQuery(
             type_names=self._context.type_names,
@@ -118,7 +121,7 @@ class EntitySearchProcessor:
             filter=_all_of(term, filters.filter(parameters.entity_filters, entities), classifications),
             sort_field=sort_field,
             descending=parameters.sort_order is SortOrder.DESCENDING,
-            offset=parameters.offset if marker is None else marker,
+            offset=offset,
             size=parameters.limit,
             text=self._context.text,
             facets=self._facets,

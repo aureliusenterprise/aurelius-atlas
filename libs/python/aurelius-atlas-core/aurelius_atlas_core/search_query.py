@@ -14,6 +14,7 @@ from enum import StrEnum
 from typing import Any
 
 from aurelius_atlas_model.discovery import Condition
+from aurelius_atlas_model.errors import AtlasError, AtlasErrorCode
 
 from aurelius_atlas_core.free_text import TextQuery, words
 from aurelius_atlas_core.search_fields import KEYWORD, LONG
@@ -86,6 +87,20 @@ type Filter = Criterion | Group
 
 MAX_NEAREST = 1_000
 """The most entities a search by meaning answers, ``offset + limit`` (DD-441)."""
+
+MAX_RESULT_WINDOW = 10_000
+"""Elasticsearch's default ``max_result_window``: the results a paged search reaches, so no page whose
+``offset + size`` passes it can be answered (SRC-07, DSE-01, DV-176, DD-704)."""
+
+
+def verify_page(offset: int, size: int) -> None:
+    """Refuse a page whose end passes the search window (DD-704).
+
+    Raises:
+        AtlasError: ``BAD_REQUEST`` when ``offset + size`` is over ``MAX_RESULT_WINDOW``.
+    """
+    if offset + size > MAX_RESULT_WINDOW:
+        raise AtlasError(AtlasErrorCode.BAD_REQUEST, f"offset + limit may not exceed {MAX_RESULT_WINDOW}")
 
 
 @dataclass(frozen=True)

@@ -26,7 +26,16 @@ from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.graph_helper import other_end
 from aurelius_atlas_core.search_fields import CLASSIFICATION_GUIDS, classification_fields
-from aurelius_atlas_core.search_query import GUID_FIELD, Criterion, Filter, Group, SearchQuery, Test, matches
+from aurelius_atlas_core.search_query import (
+    GUID_FIELD,
+    Criterion,
+    Filter,
+    Group,
+    SearchQuery,
+    Test,
+    matches,
+    verify_page,
+)
 from aurelius_atlas_core.select_clause_projections import get_sublist_for_group_by, projection_rows
 from aurelius_atlas_core.stored_entity import StoredEntity
 from aurelius_atlas_core.term_search_processor import has_term_guids
@@ -74,11 +83,16 @@ class DslQueryExecutor:
             return await self._grouped(plan, search, result)
         select = plan.select
         if select is not None and not select.is_select_noop:
-            found = await self._all(search) if select.has_aggregators else (await self._store.search(search)).entities
+            if select.has_aggregators:
+                found = await self._all(search)
+            else:
+                verify_page(search.offset, search.size)
+                found = (await self._store.search(search)).entities
             if not found:
                 return result
             rows = await projection_rows(found, select, self._retriever)
             return AtlasSearchResult(attributes=AttributeSearchResult(name=select.labels, values=rows))
+        verify_page(search.offset, search.size)
         await self._add_headers(result, (await self._store.search(search)).entities)
         return result
 

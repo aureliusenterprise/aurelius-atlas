@@ -1099,7 +1099,12 @@ class ElasticsearchEntityDocuments:
         ]
 
     async def replace_verdicts(self, verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None:
-        """One bulk request: each verdict indexed, each other one of these entities deleted (DD-534)."""
+        """One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
+
+        Raises:
+            RuntimeError: Elasticsearch refused an action of the request, so an entity keeps a verdict it no
+                longer holds or misses one it gained (ASG-06, DD-705).
+        """
         if not verdicts:
             return
         wanted = {verdict.id: verdict for found in verdicts.values() for verdict in found}
@@ -1117,7 +1122,13 @@ class ElasticsearchEntityDocuments:
         ]
         if lines:
             body = b"\n".join(lines) + b"\n"
-            await self._client.bulk(operations=body, refresh=WRITE_REFRESH)  # pyright: ignore[reportArgumentType]
+            response = await self._client.bulk(
+                operations=body,  # pyright: ignore[reportArgumentType] - the NDJSON bytes, as the entity write sends them
+                refresh=WRITE_REFRESH,
+            )
+            if response.get("errors"):
+                message = f"The verdicts could not all be written to {self._verdicts}"
+                raise RuntimeError(message)
 
     async def _verdict_ids(self, entity_guids: list[str]) -> list[str]:
         """Page through the ids of these entities' verdicts."""

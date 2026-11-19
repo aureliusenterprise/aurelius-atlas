@@ -243,6 +243,21 @@ async def test__paging_by_request_or_by_query(store: EntityStore) -> None:
     assert await names(store, "Table where name = 'offset'") == []
 
 
+@pytest.mark.covers(f"{D}.search_using_dsl_query", f"{X}.DslQueryExecutor.execute", rules=["DSE-01", "DSE-03"])
+async def test__a_page_past_the_search_window_fails(store: EntityStore) -> None:
+    """A deep request page, or a deep page in the query itself, is a bad request (SRC-07, DV-176)."""
+    with pytest.raises(AtlasError) as requested:
+        await dsl(store, "Table", limit=100, offset=9_950)
+    with pytest.raises(AtlasError) as written:
+        await dsl(store, "Table limit 100 offset 9950")
+
+    for raised in (requested, written):
+        assert (raised.value.code, raised.value.message) == (
+            AtlasErrorCode.BAD_REQUEST,
+            "offset + limit may not exceed 10000",
+        )
+
+
 @pytest.mark.covers(f"{X}.DslQueryExecutor.execute", rules=["DSE-03"])
 async def test__a_query_that_does_not_parse_names_the_text_parsed(store: EntityStore) -> None:
     """The appended limit and offset are part of the query the error names."""
