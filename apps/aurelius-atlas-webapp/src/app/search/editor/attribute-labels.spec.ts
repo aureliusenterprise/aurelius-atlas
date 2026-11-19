@@ -63,6 +63,14 @@ describe("editor attribute labels (EDT-33, 7-33)", () => {
         expect(labels["nonCompliantMessage"]).toBe("Non-compliant Message");
     });
 
+    it("gives the two people attributes labels that sort together (EDT-33, DD-727)", () => {
+        // The pair that made EDT-03's raw-name order visibly wrong: by name
+        // `steward` lands after `source`, but both labels read "Business Data
+        // …", so a reader expects them side by side — and DD-727 sorts there.
+        expect(labels["businessOwner"]).toBe("Business Data Owner");
+        expect(labels["steward"]).toBe("Business Data Steward");
+    });
+
     it("labels every relationship-attribute name the metamodel renders (EDT-34)", () => {
         // The picker labels share the same map (EDT-34): the names with no
         // displayName anywhere in the shipped metamodel.

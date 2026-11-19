@@ -15,7 +15,7 @@ is a `$localize` string under the Aurelius dictionary key
 `search.components.editor.attribute.<attribute name>`, so both locales carry it and
 `i18n-completeness.spec.ts` proves it. `labelOf` keeps EDT-03's precedence, and the map simply
 joins the first rung: catalogue string, then `displayName`, then the name. The relationship
-pickers read the same map (EDT-34), keeping DD-379's bracket. The English source text follows
+pickers read the same map (EDT-34, and DD-724 drops its bracket). The English source text follows
 the typedef `displayName` wherever that reads as words, fixes the two "Complaint" typos, and
 otherwise humanizes the camelCase name with its acronyms intact (`hasPII` → "Has PII",
 `clientId` → "Client ID").
@@ -99,3 +99,45 @@ its own readable word and the bracket is surplus.
 - **Move the type into the label and drop the chip lead.** The chip's lead is the entity's own
   type, read from the chosen entity (DD-341); the label is built from the field definition.
   They are different values and both are wanted.
+
+## DD-727. The editor orders its fields by the label the reader sees
+
+- **Status:** Proposed
+- **Increment:** 7.33
+- **Date:** 2026-11-19
+- **Relates to:** EDT-03 (7-7a, amended in place: the plain field order), EDT-13 (7-7c, amended
+  in place: the picker order), DD-722 (the labels that expose the mismatch), DD-497 and DD-493
+  (the same rule for the editor's two pickers).
+
+**Decision.** Both field builders order by `label`, with `localeCompare`, and fall back to the
+attribute `name` only to break a tie between two identical labels. `name` still leads the form
+and the description key still follows it — EDT-03's first two ranks are unchanged, and the
+relationship pickers still render after the plain fields. EDT-03 and EDT-13 amended in place.
+
+**Reason.** The 7.33 label map made the old raw-name order visibly wrong: `businessOwner` and
+`steward` are labelled "Business Data Owner" and "Business Data Steward", which a reader
+expects side by side, yet `steward` sorts after `source` by name and lands five fields away.
+The same argument 7.27 accepted twice for the editor's pickers — a list a person reads is a
+word list, so the word shown is the word that orders (DD-493 for the rule-kind picker, DD-497
+for the entity-type picker, which superseded the legacy's raw-type-name sort for exactly this
+reason). Sorting the field form the same way makes one screen behave like one screen.
+
+**Alternatives.**
+
+- **Keep the raw-name order.** Honest to EDT-03's original wording, and it leaves two fields
+  named "Business …" separated by four unrelated ones, in every locale. The raw name is a
+  machine identifier; DD-323 chose the one def-driven form over the origin app's ten
+  hand-written ones, so there is no legacy field order this preserves — the hand-written forms
+  each listed their own fields in their own order.
+- **Order by `attributesOrderBy`.** Apache Atlas's typedef carries an ordering hint that this
+  editor has never read. It is one English-only value per type, absent from most shipped defs,
+  and it would ignore the locale the reader is in — the label answers both for free.
+- **Drop the name tie-break.** Two attributes can share a label (two fallbacks that collide, or
+  a catalogue key reused), and a stable-but-input-dependent order would make the form shuffle
+  between renders of defs fetched in a different order.
+
+**Consequences.** The order is locale-dependent now, as the labels always were: in Dutch, the
+fields move with the Dutch words. That is the intent, and the e2e suite selects fields by
+`data-field` (the raw name), never by position, so no test reaches for an index. The form-fields
+spec pins it with a people-attribute fixture whose label order and name order disagree — once
+for the plain fields and once for the pickers — so a revert to the name sort fails.

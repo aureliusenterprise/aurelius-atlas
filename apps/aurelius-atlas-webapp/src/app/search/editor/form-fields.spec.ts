@@ -145,7 +145,7 @@ describe("buildFields (EDT-03)", () => {
         ]);
     });
 
-    it("orders name, then the description key, then the rest by name", () => {
+    it("orders name, then the description key, then the rest by label (EDT-03, DD-727)", () => {
         const defs = new Map<string, AtlasEntityDef>([
             [
                 "E",
@@ -158,12 +158,41 @@ describe("buildFields (EDT-03)", () => {
             ],
         ]);
 
+        // No catalogue key, so each label falls back to the name and the
+        // reader sees name order — the fallback keeps today's behaviour.
         expect(buildFields(defs.get("E")!, defs, new Map()).map((f) => f.name)).toEqual([
             "name",
             "definition",
             "alpha",
             "zeta",
         ]);
+    });
+
+    it("orders the rest by the label a reader sees, not the raw name (EDT-03, DD-727)", () => {
+        // The shipped metamodel's people attributes: `steward` sorts after
+        // `source` by name, but its catalogue word "Business Data Steward"
+        // belongs beside "Business Data Owner" — the label is what the reader
+        // scans, so it is what sorts (7.33's labels made the mismatch visible).
+        const defs = new Map<string, AtlasEntityDef>([
+            [
+                "E",
+                entityDef("E", [
+                    attr({ name: "steward", isOptional: true }),
+                    attr({ name: "source", isOptional: true }),
+                    attr({ name: "businessOwner", isOptional: true }),
+                    attr({ name: "name" }),
+                ]),
+            ],
+        ]);
+        const labels = {
+            steward: "Business Data Steward",
+            source: "Source",
+            businessOwner: "Business Data Owner",
+        };
+
+        const fields = buildFields(defs.get("E")!, defs, new Map(), labels);
+
+        expect(fields.map((f) => f.name)).toEqual(["name", "businessOwner", "steward", "source"]);
     });
 
     it("labels an enum from its elementDefs, by ordinal", () => {
@@ -204,10 +233,9 @@ describe("buildFields (EDT-03)", () => {
 
         const fields = buildFields(defs.get("E")!, defs, new Map(), { name: "Name*" });
 
-        // The fields ride EDT-03's order (name, then by attribute name:
-        // "plain" before "shown"), each with its own label source. The
-        // catalogue's baked-in star is dropped — the template paints the
-        // red one (DD-356).
+        // The fields ride EDT-03's order (name, then by label: "plain" before
+        // "Shown attr"), each with its own label source. The catalogue's
+        // baked-in star is dropped — the template paints the red one (DD-356).
         expect(fields.map((f) => f.label)).toEqual(["Name", "plain", "Shown attr"]);
     });
 });
@@ -361,6 +389,27 @@ describe("buildRelationshipFields (EDT-13, DD-338)", () => {
         expect(fields["inputToProcesses"].single).toBe(false);
         expect(fields["model"].targetType).toBe("spark_ml_model");
         expect(fields["model"].single).toBe(true);
+    });
+
+    it("orders the pickers by label, the name only as tie-break (EDT-13, DD-727)", () => {
+        // The people pair from the shipped store: raw names put `steward`
+        // after `source`, the labels keep the two people pickers together.
+        const people = raDef("People", [
+            ra({ name: "steward", typeName: "Person" }),
+            ra({ name: "source", typeName: "Person" }),
+            ra({ name: "businessOwner", typeName: "Person" }),
+        ]);
+        const labels = {
+            steward: "Business Data Steward",
+            source: "Source",
+            businessOwner: "Business Data Owner",
+        };
+
+        expect(buildRelationshipFields(people, new Map([["People", people]]), labels).map((f) => f.name)).toEqual([
+            "businessOwner",
+            "steward",
+            "source",
+        ]);
     });
 
     it("labels the attribute name alone, with no target-type bracket (EDT-34, DD-724)", () => {

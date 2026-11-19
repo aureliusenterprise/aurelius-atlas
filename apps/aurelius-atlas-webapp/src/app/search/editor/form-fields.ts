@@ -158,7 +158,8 @@ function labelOf(def: AtlasAttributeDef, labels: EditorLabels): string {
 
 /**
  * The editor's form fields for an entity definition, ordered `name`, the
- * description key, then the rest by name (EDT-03).
+ * description key, then the rest by the label the reader sees (EDT-03).
+ * The name only breaks a tie between two identical labels (DD-727).
  * @param entityDef the entity's own definition
  * @param defsByName every entity definition by name (the supertype walk)
  * @param enumsByName every enum definition by name (the enum values + the
@@ -209,7 +210,12 @@ export function buildFields(
         return DESCRIPTION_KEYS.includes(field.name as (typeof DESCRIPTION_KEYS)[number]) ? 1 : 2;
     };
 
-    return fields.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+    // By label, so a translated field sits where its word sorts — "Business
+    // Data Owner" and "Business Data Steward" stay together even though the
+    // attributes are `businessOwner` and `steward` (EDT-03 as amended, DD-727).
+    // The name breaks a tie, which keeps the order deterministic when two
+    // fields share a label or both fall back to an unmapped name.
+    return fields.sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
 /**
@@ -258,7 +264,7 @@ function unwrapArrayType(typeName: string): string {
  * @param entityDef the entity's own definition
  * @param defsByName every entity definition by name (for the supertype links)
  * @param labels the localized strings, shared with the plain fields (EDT-34)
- * @returns the picker fields, in name order (the plain fields keep the top)
+ * @returns the picker fields, in label order (the plain fields keep the top)
  */
 export function buildRelationshipFields(
     entityDef: AtlasEntityDef,
@@ -285,7 +291,9 @@ export function buildRelationshipFields(
         }
     }
 
-    return fields.sort((a, b) => a.name.localeCompare(b.name));
+    // Same rule as the plain fields: the label the reader sorts on, the name
+    // only as the tie-break (EDT-13 as amended, DD-727).
+    return fields.sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
 /** The picker field one merged relationship definition becomes (EDT-13).
