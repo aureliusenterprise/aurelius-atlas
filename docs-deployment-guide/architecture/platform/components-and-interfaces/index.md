@@ -14,7 +14,7 @@ graph LR
 
 The catalogue serves browsers and the store serves the catalogue; identity and observation sit beside the path, not on it.
 
-**Current implementations.** The catalogue service is a FastAPI app (`aurelius-atlas-server`), serving on Atlas's own port; the dashboards are the vendored Atlas `dashboardv2`/`dashboardv3`, built from 2.4.0 source; the search store is Elasticsearch 9, reached through `aurelius-atlas-store-es`; the identity provider is Keycloak, on its own Postgres; the collector and the signal backends are an OpenTelemetry Collector with Prometheus, Tempo, Loki, and Grafana (`dev/observability`).
+**Current implementations.** The catalogue service is a FastAPI app (`aurelius-atlas-server`), serving on Atlas's own port; the dashboards are the vendored Atlas `dashboardv2`/`dashboardv3`, built from 2.4.0 source; the search store is Elasticsearch 9, reached through `aurelius-atlas-store-es`; the identity provider is Keycloak, on its own Postgres; the collector and the signal backends are an OpenTelemetry Collector with Prometheus, Tempo, Loki, and Grafana (`infra/observability`).
 
 > [!NOTE]
 >

@@ -2196,6 +2196,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3995,6 +4001,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6798,7 +6885,7 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>0.2</td>
 <td>Elasticsearch infrastructure</td>
-<td><code>dev/elasticsearch</code> + <code>libs/python/aurelius-atlas-store-es</code></td>
+<td><code>infra/elasticsearch</code> + <code>libs/python/aurelius-atlas-store-es</code></td>
 <td>ESD, STO</td>
 </tr>
 <tr>
@@ -7158,13 +7245,13 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>7.17</td>
 <td>Collector ingest auth</td>
-<td><code>libs/python/aurelius-atlas-otel</code> + <code>dev/observability</code></td>
+<td><code>libs/python/aurelius-atlas-otel</code> + <code>infra/observability</code></td>
 <td>CIA</td>
 </tr>
 <tr>
 <td>7.18</td>
 <td>Collector ingest identity</td>
-<td><code>libs/python/aurelius-atlas-otel</code> + <code>dev/keycloak</code> + <code>dev/observability</code></td>
+<td><code>libs/python/aurelius-atlas-otel</code> + <code>infra/keycloak</code> + <code>infra/observability</code></td>
 <td>CIA</td>
 </tr>
 <tr>
@@ -7314,19 +7401,19 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>10.7</td>
 <td>Production identity realm</td>
-<td><code>helm/</code> + <code>dev/keycloak</code></td>
+<td><code>helm/</code> + <code>infra/keycloak</code></td>
 <td>CHT</td>
 </tr>
 <tr>
 <td>10.8</td>
 <td>Grafana login via the production realm</td>
-<td><code>helm/</code> + <code>dev/observability</code></td>
+<td><code>helm/</code> + <code>infra/observability</code></td>
 <td>CHT</td>
 </tr>
 <tr>
 <td>10.9</td>
 <td>Per-producer ingest credentials</td>
-<td><code>helm/</code> + <code>dev/keycloak</code></td>
+<td><code>helm/</code> + <code>infra/keycloak</code></td>
 <td>CHT</td>
 </tr>
 <tr>
@@ -7356,14 +7443,38 @@ rule belongs to the project whose code it constrains.</p>
 <tr>
 <td>10.14</td>
 <td>Grafana at the edge, TLS-internal observability</td>
-<td><code>helm/</code> + <code>dev/observability</code> + <code>dev/keycloak</code></td>
+<td><code>helm/</code> + <code>infra/observability</code> + <code>infra/keycloak</code></td>
 <td>CHT</td>
 </tr>
 <tr>
 <td>10.15</td>
 <td>Browser host names, Grafana role gate</td>
-<td><code>helm/</code> + <code>dev/observability</code> + <code>dev/keycloak</code></td>
+<td><code>helm/</code> + <code>infra/observability</code> + <code>infra/keycloak</code></td>
 <td>CHT</td>
+</tr>
+<tr>
+<td>17.1</td>
+<td>Infrastructure components at the root</td>
+<td><code>specs/17-1-infra-root/</code> + <code>infra/</code></td>
+<td>IRT</td>
+</tr>
+<tr>
+<td>17.2</td>
+<td>Standalone host and certificates</td>
+<td><code>specs/17-2-standalone-host-and-certs/</code> + <code>docker/</code></td>
+<td>SPS</td>
+</tr>
+<tr>
+<td>17.3</td>
+<td>The standalone bundle</td>
+<td><code>specs/17-3-standalone-bundle/</code> + <code>docker/</code> + <code>tools/</code></td>
+<td>SBD</td>
+</tr>
+<tr>
+<td>17.4</td>
+<td>The standalone stack simplified</td>
+<td><code>specs/17-4-standalone-simplification/</code> + <code>docker/</code></td>
+<td>SPC</td>
 </tr>
 </tbody>
 </table>

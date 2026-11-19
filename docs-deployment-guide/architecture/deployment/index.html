@@ -2196,6 +2196,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3995,6 +4001,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6891,7 +6978,7 @@ edge, on one OIDC issuer:</p>
 </tbody>
 </table>
 <p>Each component chart lives next to the project it deploys
-(<code>apps/&lt;app&gt;/helm/</code>, <code>dev/&lt;name&gt;/helm/</code>, DD-290); the umbrella <code>aurelius-atlas</code>
+(<code>apps/&lt;app&gt;/helm/</code>, <code>infra/&lt;name&gt;/helm/</code>, DD-290, ADR-066); the umbrella <code>aurelius-atlas</code>
 is the one chart without an owning project and sits at the workspace root,
 <code>helm/</code> (DD-292). Helpers are chart-local — the naming convention is the
 dedupe, no library charts.</p>

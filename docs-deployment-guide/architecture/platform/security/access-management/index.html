@@ -2196,6 +2196,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3995,6 +4001,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6947,7 +7034,7 @@ keeps its roles until it expires, at most the realm's access-token lifespan (15 
 refused: the arrangement fails closed.</p>
 <h2 id="where-it-runs">Where it runs<a class="headerlink" href="#where-it-runs" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Development</strong> — the dev realm (<code>dev/keycloak/import/master.json</code>) gives <code>aurelius-writer</code> all four roles
+<li><strong>Development</strong> — the dev realm (<code>infra/keycloak/import/master.json</code>) gives <code>aurelius-writer</code> all four roles
   and <code>aurelius-reader</code> <code>atlas-read</code>. The parity suites run as the writer, and the authorization tests run
   as the reader and as users with no role.</li>
 <li><strong>Clusters</strong> — the production realm asset carries the four roles and their scope mapping, but no users.

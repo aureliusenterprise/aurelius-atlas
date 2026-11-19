@@ -30,14 +30,14 @@ The template carries the `aurelius` / `aureliusenterprise` identity in places th
 
 ### 2\. Project names and directories
 
-Every project under `apps/`, `libs/`, `connectors/`, `dev/`, `docker/`, and `reports/` carries the `aurelius-` prefix in its directory name, its `project.json` `name`, and its package manifest (`package.json` / `pyproject.toml` / Gradle project). Renaming a project means updating **all** of:
+Every project under `apps/`, `libs/`, `connectors/`, `infra/`, `docker/`, and `reports/` carries the `aurelius-` prefix in its directory name, its `project.json` `name`, and its package manifest (`package.json` / `pyproject.toml` / Gradle project). Renaming a project means updating **all** of:
 
 - The directory itself and every path reference to it.
 - `project.json` (`name`, `implicitDependencies`, `dependsOn`) — and every *other* project that references it.
 - Root wiring: `pyproject.toml` (uv members, dev groups, `[tool.uv.sources]`), `settings.gradle.kts` (Java modules), `package.json` (`file:` dependencies), `tsconfig.base.json` (`paths`).
 - `mkdocs.yaml` nav entries and `docs/api-reference/` page paths.
 - ESLint config `prefix` values in per-project `eslint.config.mjs` files.
-- Compose project/network names in `dev/**/docker-compose.yaml` and `apps/*/e2e/docker-compose.yaml`.
+- Compose project/network names in `infra/**/docker-compose.yaml` and `apps/*/e2e/docker-compose.yaml`.
 
 > [!TIP]
 >
@@ -77,7 +77,7 @@ Each analyzed app has `sonar.organization=aureliusenterprise` and `sonar.project
 
 ### 8\. Keycloak realm and clients
 
-The development realm import (`dev/keycloak/import/master.json`) defines a client with id `aurelius`. Rename it there and in both consumers: `apps/aurelius-atlas-webapp/dev/config.json` and `apps/aurelius-atlas-webapp/e2e/config/config.json` (`clientId`).
+The development realm import (`infra/keycloak/import/master.json`) defines a client with id `aurelius`. Rename it there and in both consumers: `apps/aurelius-atlas-webapp/dev/config.json` and `apps/aurelius-atlas-webapp/e2e/config/config.json` (`clientId`).
 
 ### 9\. Documentation references
 

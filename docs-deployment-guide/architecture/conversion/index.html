@@ -17,7 +17,7 @@
         
       
       
-        <link rel="prev" href="../adr/064-the-webapp-reads-rich-catalogue-data-through-one-aurelius-view-family/">
+        <link rel="prev" href="../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/">
       
       
         <link rel="next" href="./design-log/">
@@ -2196,6 +2196,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3995,6 +4001,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -8169,6 +8256,13 @@ checks a PR must pass:</p>
 <td>in progress</td>
 </tr>
 <tr>
+<td>15.7</td>
+<td>Adding a tenant by command</td>
+<td><code>add &lt;tenant&gt;</code> provisions a tenant with its people, <code>--sample</code> and <code>--users atlas\|all</code> choosing what it starts with, each person with a temporary password printed once; <code>user</code> adds and removes one person; <code>docker/bin/tenant.sh</code> runs it against the standalone stack, no file edited (ADR 063)</td>
+<td>none</td>
+<td>planned</td>
+</tr>
+<tr>
 <td>16.1</td>
 <td>The view shape: the card and the view</td>
 <td>The one shape family of ADR 064 in the shared model library: the card of a result and the view of one entity, derived from the entity document's own fields and its derived App Search document (AVS-01..09, DD-580..583)</td>
@@ -8209,6 +8303,34 @@ checks a PR must pass:</p>
 <td>The <code>/api/as/v1</code> engines go when the original webapp's last installation does: the wire's routes, request models and parity fixtures deleted, the derived documents and the facet machinery kept; operators' notice in the release notes (ASR, supersedes ADR 060's wire clauses at that date)</td>
 <td>Aurelius <code>m4i-search-api</code> proxy routes (the same exit, one release later)</td>
 <td>planned</td>
+</tr>
+<tr>
+<td>17.1</td>
+<td>Infrastructure components at the root</td>
+<td>The Elasticsearch, Keycloak and observability slices move from <code>dev/</code> to <code>infra/</code> with their project, compose and network names; the standalone stack extends their services instead of owning copies (IRT, DD-667..672, ADR 066)</td>
+<td>none: no Atlas behaviour moves (ADR 066)</td>
+<td>in progress</td>
+</tr>
+<tr>
+<td>17.2</td>
+<td>Standalone host and certificates</td>
+<td>The standalone stack serves one host value (default <code>localhost</code>) and bring-your-own certificates: the browser host names only the edge leaf, the in-network apps reach it through the proxy's network and its <code>extra_hosts</code>, the realm host comes from the import, and a shipped <code>openssl</code> script issues the leaves (SPS-01..10, DD-678..681)</td>
+<td>none: no Atlas behaviour moves (ADR 065, ADR 066)</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>17.3</td>
+<td>The standalone bundle</td>
+<td>The release publishes the standalone stack as one generated bundle: one flat compose file produced by <code>docker compose config --no-interpolate</code> with its paths rebased into the bundle, the sample, no secrets, images named through the pieces' variables and set to the release version, and every certificate and sample folder required through a variable (SBD-01..12, DD-682..693, ADR 067)</td>
+<td>none: no Atlas behaviour moves (ADR 065, ADR 067)</td>
+<td>planned</td>
+</tr>
+<tr>
+<td>17.4</td>
+<td>The standalone stack simplified</td>
+<td>The standalone stack sheds its render one-shots: the proxy's and the webapp's nginx configurations become static assets, the browser host is <code>localhost</code> with an optional external script, Keycloak starts in production mode with no build one-shot, and the demo one-shots move behind profiles with scripts of their own in <code>docker/bin/</code> (SPC-01..11, DD-694..699)</td>
+<td>none: no Atlas behaviour moves (ADR 065, ADR 067)</td>
+<td>in progress</td>
 </tr>
 </tbody>
 </table>

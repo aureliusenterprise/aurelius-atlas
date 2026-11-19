@@ -2196,6 +2196,12 @@
       
         
       
+        
+      
+        
+      
+        
+      
     
     
     
@@ -3995,6 +4001,87 @@
     
   
   064. The webapp reads rich catalogue data through one Aurelius view family
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/065-compose-stacks-that-deploy-the-whole-system-live-at-the-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  065. Compose stacks that deploy the whole system live at the root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/066-infrastructure-components-live-at-the-repository-root/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  066. Infrastructure components live at the repository root
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+                
+              
+                
+                  
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../adr/067-the-standalone-stack-ships-as-one-generated-release-bundle/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+  067. The standalone stack ships as one generated release bundle
 
     
   </span>
@@ -6926,7 +7013,7 @@ material per component — live in the components' design documentation
 store serves TLS only and is health-checked over it; the server's e2e runs the built image over
 HTTPS against that store; the template examples' relational-store containers start with
 TLS-only client authentication and connect with full verification. The per-command proofs are in
-the slice READMEs under <code>dev/</code> and each project's <code>e2e/</code>.</p>
+the slice READMEs under <code>infra/</code> and each project's <code>e2e/</code>.</p>
 <h2 id="at-rest">At rest<a class="headerlink" href="#at-rest" title="Permanent link">&para;</a></h2>
 <p>Encryption at rest is owned by the stores and is not configured in this
 repository; deployments choose store-level encryption (disk or volume

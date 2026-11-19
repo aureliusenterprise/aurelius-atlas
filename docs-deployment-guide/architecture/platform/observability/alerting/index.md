@@ -1,6 +1,6 @@
 # Alerting
 
-The conditions worth announcing, where they are sent, and how to see one fire (ADR 040). The rules are Grafana-managed: `dev/observability/config/grafana/alerting/rules.yaml`, byte-copied into the observability chart. Every rule is labelled `team: maintainers`, the owner of the response ([Operations Ownership](<https://aureliusenterprise.github.io/docs-deployment-guide/contributor-guide/operations-ownership/index.md>)).
+The conditions worth announcing, where they are sent, and how to see one fire (ADR 040). The rules are Grafana-managed: `infra/observability/config/grafana/alerting/rules.yaml`, byte-copied into the observability chart. Every rule is labelled `team: maintainers`, the owner of the response ([Operations Ownership](<https://aureliusenterprise.github.io/docs-deployment-guide/contributor-guide/operations-ownership/index.md>)).
 
 ## The conditions
 
@@ -35,7 +35,7 @@ The chart then provisions the contact point `maintainers`, and a notification po
 In dev, with no server running, "Server silent" turns pending at its first evaluation and firing a minute later:
 
 ```
-npx nx up aurelius-atlas-dev-observability
+npx nx up aurelius-atlas-infra-observability
 ```
 
 Open Grafana on [http://localhost:3000](<http://localhost:3000>), Alerting \> Alert rules, folder Aurelius. Start the server (`npx nx serve aurelius-atlas-server`) and the rule returns to normal within a minute.
