@@ -112,6 +112,10 @@ class RewindStore(EntityStore):
     def __init__(self, real: EntityStore) -> None:
         super().__init__(real.registry, real._documents, clock=real._clock, new_id=real._new_id)  # noqa: SLF001
         self._real = real
+        # The real store's listeners hear the door's writes too: the App Search worker (ASU-07, ASU-08) and the task
+        # worker (DD-080) are hooked to the real store alone.
+        self.write_listeners = real.write_listeners
+        self.task_listeners = real.task_listeners
         self._entities: dict[str, StoredEntity | None] = {}
         self._linked: dict[LinkedKind, dict[str, Any]] = {kind: {} for kind in LinkedKind}
 

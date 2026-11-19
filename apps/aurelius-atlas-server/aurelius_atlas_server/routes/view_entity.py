@@ -14,6 +14,7 @@ from aurelius_atlas_model.errors import validate_guid
 from aurelius_atlas_model.views import EntityView
 from fastapi import APIRouter, Request
 
+from aurelius_atlas_server.app_search import derive_written
 from aurelius_atlas_server.authentication import acting_user
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, is_access_allowed
 from aurelius_atlas_server.bodies import Body
@@ -34,14 +35,22 @@ async def read(guid: str, request: Request, store: Store) -> AtlasJSONResponse:
     if not is_access_allowed(request, AtlasPrivilege.ENTITY_READ):
         raise AtlasError(AtlasErrorCode.VIEW_FORBIDDEN, authorizer(request).user)
     validate_guid("guid", guid)
+    view = await _live_view(store, guid)
+    if view is None:
+        raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+    return AtlasJSONResponse(view.to_json())
+
+
+async def _live_view(store: Store, guid: str) -> EntityView | None:
+    """The entity's live view as stored now, none without the entity (AVR-10)."""
     found = await store.get(guid)
     if found is None:
-        raise AtlasError(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid)
+        return None
     entity_type = store.registry.entity_type(found.entity.type_name)
     if entity_type is None:  # pragma: no cover - the store only holds entities of known types
         raise AtlasError(AtlasErrorCode.INTERNAL_ERROR, f"the type {found.entity.type_name} of entity {guid}")
     ends = await read_ends(store, found.entity, entity_type)  # VDR-02, DD-604: one batched read of the entity's ends
-    return AtlasJSONResponse(view_of(found.entity, entity_type, ends=ends).to_json())
+    return view_of(found.entity, entity_type, ends=ends)
 
 
 @VIEW_ENTITY.post("/entity", responses=VIEW_RESULT, **VIEW_BODY)
@@ -67,6 +76,9 @@ async def write(request: Request, body: Body, store: Store) -> AtlasJSONResponse
         view = await door.apply({} if body is None else body)
     except ViewVersionConflictError as conflict:
         return _conflict(conflict)
+    # The breadcrumb and the other derived fields of the answer, derived from this write first (ASU-08, DD-679).
+    if await derive_written(request.app.state.settings.app_search_answer_seconds) and view.guid is not None:
+        view = await _live_view(store, view.guid) or view
     return AtlasJSONResponse(view.to_json())
 
 
