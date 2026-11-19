@@ -7119,7 +7119,8 @@ realm's <code>operator</code>'s. The store has no published port, so it is reach
 <code>TENANT_SAMPLE</code> names the export ZIP in <code>SAMPLE_DIR</code> that demo starts with, <code>sample_data.zip</code> by
 default. With tenancy on, <code>SAMPLE_ZIP</code> is left unset: the sample goes into demo, not into the stack's
 own catalogue.</p>
-<p>To add a tenant of your own that lasts, follow the user guide's page <code>docs/user-guide/standalone-tenants.md</code>.</p>
+<p>To add a tenant of your own, with its people and a sample if you name one, run <code>docker/bin/tenant.sh add &lt;tenant&gt;</code>;
+the user guide's page <code>docs/user-guide/standalone-tenants.md</code> explains its options. You edit no file.</p>
 <p>At sign-in, a person in several organizations, such as an operator who also reads a tenant, chooses
 which to act in. The webapp shows
 the tenant in its account menu, and "Switch tenant" there asks for the choice again; the dashboards switch by
