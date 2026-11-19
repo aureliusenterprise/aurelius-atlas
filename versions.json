@@ -35,11 +35,6 @@
     "aliases": []
   },
   {
-    "version": "fix-search-window-and-verdict-writes",
-    "title": "fix-search-window-and-verdict-writes",
-    "aliases": []
-  },
-  {
     "version": "fix-import-payload-limit",
     "title": "fix-import-payload-limit",
     "aliases": []
