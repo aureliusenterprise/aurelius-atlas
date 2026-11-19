@@ -23215,6 +23215,19 @@ one that is not moves to a new generation behind its alias first (VEC-03, DD-434
         <p>One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).</p>
 
 
+<p><span class="doc-section-title">Raises:</span></p>
+    <ul>
+        <li class="doc-section-item field-body">
+              <code><span title="RuntimeError">RuntimeError</span></code>
+            –
+          <div class="doc-md-description">
+            <p>Elasticsearch refused an action of the request, so an entity keeps a verdict it no
+longer holds or misses one it gained (ASG-06, DD-705).</p>
+          </div>
+        </li>
+    </ul>
+
+
     </div>
 
 </div>

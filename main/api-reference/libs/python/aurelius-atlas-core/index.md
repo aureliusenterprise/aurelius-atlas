@@ -1773,6 +1773,12 @@ replace_verdicts(verdicts: Mapping[str, Sequence[StoredVerdict]]) -> None
 
 One bulk request: each verdict indexed, each other one of these entities deleted (DD-534).
 
+Raises:
+
+- `RuntimeError` –
+
+  Elasticsearch refused an action of the request, so an entity keeps a verdict it no longer holds or misses one it gained (ASG-06, DD-705).
+
 #### reservations
 
 ```
