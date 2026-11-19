@@ -1,5 +1,6 @@
 """``python -m aurelius_atlas_server.provisioning``: provision, trust, list or remove tenants, keep the operators in
-step, and name a tenant's administrators (TPR-01 to TPR-06, TRM-01 to TRM-10).
+step, name a tenant's administrators, and add a tenant with its people (TPR-01 to TPR-06, TRM-01 to TRM-10,
+TAD-01 to TAD-11).
 
 The command reads the server's settings from the same environment, so it runs from the server's image: by hand,
 or as a Job of the chart (15.4). A tenant is provisioned with the server's own start sequence and its sample
@@ -22,9 +23,10 @@ from aurelius_atlas_core.request_context import current_user
 from aurelius_atlas_model.impexp import AtlasImportResult, OperationStatus
 from aurelius_atlas_store_es import ElasticsearchStore
 
-from aurelius_atlas_server.realm_tenants import KeycloakAdmin, RealmError, RealmTenants
+from aurelius_atlas_server.realm_tenants import KeycloakAdmin, RealmError, RealmOrganization, RealmTenants
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenancy import ALIAS
+from aurelius_atlas_server.tenant_people import Person, Role, ensure_person, standard_email, standard_username
 from aurelius_atlas_server.tenant_stores import open_stores, store_aliases, tenant_prefix
 from aurelius_atlas_server.tenants import StoredTenant, TenantsIndex, TenantState
 
@@ -73,6 +75,19 @@ def parser() -> argparse.ArgumentParser:
     administering.add_argument("alias")
     administering.add_argument("change", choices=["add", "remove"])
     administering.add_argument("username")
+    adding = choices.add_parser("add", help="add a tenant with its people, and a sample if named (TAD-01)")
+    adding.add_argument("alias", help="the tenant's Keycloak organization alias")
+    adding.add_argument("--sample", metavar="NAME", help="a sample of the sample folder, without .zip")
+    adding.add_argument(
+        "--users", choices=["atlas", "all"], default="atlas", help="atlas: <tenant>_atlas alone; all: the three"
+    )
+    people = choices.add_parser("user", help="add a person to a tenant, or take them out (TAD-07, TAD-09)")
+    people.add_argument("alias")
+    people.add_argument("change", choices=["add", "remove"])
+    people.add_argument("username")
+    people.add_argument("--role", choices=[role.value for role in Role], default=Role.SCIENTIST.value)
+    people.add_argument("--email", help="the person's email; <username>@example.com unless given")
+    choices.add_parser("samples", help="the samples of the sample folder (TAD-10)")
     return commands
 
 
@@ -126,6 +141,14 @@ async def _dispatch(args: argparse.Namespace, provisioner: Provisioner) -> None:
         await provisioner.operators()
     elif args.command == "admin":
         await provisioner.admin(args.alias, args.username, add=args.change == "add")
+    elif args.command == "add":
+        await provisioner.add(args.alias, sample=args.sample, everyone=args.users == "all")
+    elif args.command == "user" and args.change == "add":
+        await provisioner.user_add(args.alias, args.username, Role(args.role), email=args.email)
+    elif args.command == "user":
+        await provisioner.user_remove(args.alias, args.username)
+    elif args.command == "samples":
+        provisioner.samples()
     else:
         await provisioner.remove(args.alias)
 
@@ -273,6 +296,129 @@ class Provisioner:
         if record.state is TenantState.ACTIVE:
             await self._in_step(record)
         self._out(f"{username} {'administers' if add else 'no longer administers'} {alias}")
+
+    async def add(self, alias: str, *, sample: str | None, everyone: bool) -> None:
+        """Provision the tenant as ``provision --existing-ok`` does, the sample named imported into a new one, make
+        its standard users and ``<tenant>_atlas`` its administrator, then write the summary (TAD-01 to TAD-06,
+        TAD-08).
+
+        Raises:
+            ProvisioningError: Before anything is done, for an alias ``provision`` refuses, a sample the sample
+                folder doesn't have or no realm; else for the step that failed (TAD-11).
+        """  # noqa: D205 - one sentence
+        _check_alias(alias, self._settings)
+        realm = self._people_realm()
+        content = None if sample is None else await asyncio.to_thread(self._sample, sample)
+        existing = await self._tenants.get(alias)
+        new = existing is None or existing.state is not TenantState.ACTIVE
+        await self.provision(alias, sample=content if new else None, trusts_operators=True, existing_ok=True)
+        org = await self._organization(realm, alias)
+        roles = list(Role) if everyone else [Role.ATLAS]
+        people = [
+            await ensure_person(realm, org, standard_username(alias, role), role, email=standard_email(alias, role))
+            for role in roles
+        ]
+        await self.admin(alias, standard_username(alias, Role.ATLAS), add=True)
+        if sample is None:
+            loaded = "no sample"
+        elif new:
+            loaded = f"sample {sample}"
+        else:
+            loaded = f"no sample: {alias} was provisioned already, so {sample} is not loaded"
+        self._summary(alias, loaded, people)
+
+    async def user_add(self, alias: str, username: str, role: Role, *, email: str | None) -> None:
+        """Add one person to an ``active`` tenant: found or made, a member in the groups of their role (TAD-07).
+
+        Raises:
+            ProvisioningError: Without the realm, or for a tenant that isn't ``active``.
+        """
+        realm = self._people_realm()
+        record = await self._recorded(alias)
+        if record.state is not TenantState.ACTIVE:
+            msg = f"tenant {alias} is {record.state.value}"
+            raise ProvisioningError(msg)
+        org = await self._organization(realm, alias)
+        person = await ensure_person(realm, org, username, role, email=email or f"{username}@example.com")
+        self._summary(alias, None, [person])
+
+    async def user_remove(self, alias: str, username: str) -> None:
+        """Take a person out of the tenant: their membership, groups and administration there (TAD-09).
+
+        Raises:
+            ProvisioningError: Without the realm, for a tenant with no record, or a user the realm doesn't have.
+        """
+        realm = self._people_realm()
+        record = await self._recorded(alias)
+        user = await realm.user_id(username)
+        if user in record.administrators:
+            await self.admin(alias, username, add=False)
+        await realm.remove_member(await self._organization(realm, alias), user)
+        self._out(f"{username} is no longer a member of {alias}")
+
+    def samples(self) -> None:
+        """Write the samples of the sample folder, one name per line (TAD-10)."""
+        for name in self._sample_names():
+            self._out(name)
+
+    def _people_realm(self) -> RealmTenants:
+        """The realm, which keeps a tenant's people.
+
+        Raises:
+            ProvisioningError: Without the provisioning client's secret.
+        """
+        if self._realm is None:
+            msg = "a tenant's people are kept in the realm: tenancy_admin_client_secret is not set"
+            raise ProvisioningError(msg)
+        return self._realm
+
+    @staticmethod
+    async def _organization(realm: RealmTenants, alias: str) -> RealmOrganization:
+        """The tenant's organization.
+
+        Raises:
+            ProvisioningError: When the realm has none, as before the tenant is provisioned.
+        """
+        org = await realm.organization(alias)
+        if org is None:
+            msg = f"the realm has no organization {alias}"
+            raise ProvisioningError(msg)
+        return org
+
+    def _sample_names(self) -> list[str]:
+        """The samples of the sample folder, by name, sorted."""
+        folder = self._settings.sample_dir
+        if folder is None or not folder.is_dir():
+            return []
+        return sorted(path.stem for path in folder.glob("*.zip") if path.is_file())
+
+    def _sample(self, name: str) -> tuple[str, bytes]:
+        """The sample's file name and content.
+
+        Raises:
+            ProvisioningError: For a name no sample has, listing the samples there (TAD-02).
+        """
+        names = self._sample_names()
+        if name not in names:
+            offered = ", ".join(names) if names else "none"
+            msg = f"no sample {name}: the sample folder holds {offered}"
+            raise ProvisioningError(msg)
+        assert self._settings.sample_dir is not None  # noqa: S101 - a name was found in it
+        return _read_sample(self._settings.sample_dir / f"{name}.zip")
+
+    def _summary(self, alias: str, loaded: str | None, people: Sequence[Person]) -> None:
+        """Write the tenant, the sample or why none, and each person: made with their password, or existing
+        (TAD-08). A password is written here and nowhere else (TAD-05).
+        """  # noqa: D205 - one sentence
+        self._out(f"Tenant {alias}" + ("" if loaded is None else f": {loaded}"))
+        for person in people:
+            if person.made and person.password is not None:
+                state = f"made, temporary password {person.password}"
+            elif person.made:
+                state = "made"
+            else:
+                state = "existed, password unchanged"
+            self._out(f"  {person.username} ({person.role.value}): {state}")
 
     async def list(self) -> None:
         """Write each recorded tenant: alias, state, trust and sample (TPR-06)."""

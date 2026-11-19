@@ -158,6 +158,12 @@ class FakeKeycloak:
             else:
                 org.members[user_id].discard(group)
             return httpx.Response(204)
+        if path == "/users" and method == "POST":  # as Keycloak 26.7: 409 for a taken username
+            if any(u["username"] == body["username"] for u in self.users.values()):
+                return httpx.Response(409, json={"errorMessage": "User exists with same username"})
+            user_id = self.new_id("user")
+            self.users[user_id] = {"id": user_id, "roles": set(), **body}
+            return httpx.Response(201, headers={"Location": f"{SERVER}/admin/realms/{REALM}/users/{user_id}"})
         if path == "/users":
             found = [u for u in self.users.values() if u["username"] == query.get("username")]
             return httpx.Response(200, json=[{"id": u["id"], "username": u["username"]} for u in found])

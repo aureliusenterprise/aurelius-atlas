@@ -232,12 +232,33 @@ class RealmTenants:
         Raises:
             RealmError: When the realm has no such user.
         """
-        query = f"username={quote(username)}&exact=true&briefRepresentation=true"
-        found, _ = await self.admin.call("GET", f"/users?{query}")
-        if not found:
+        found = await self.find_user(username)
+        if found is None:
             msg = f"the realm has no user {username}"
             raise RealmError(msg)
-        return found[0]["id"]
+        return found
+
+    async def find_user(self, username: str) -> str | None:
+        """The id of the realm's user of that username, or None (TAD-06)."""
+        query = f"username={quote(username)}&exact=true&briefRepresentation=true"
+        found, _ = await self.admin.call("GET", f"/users?{query}")
+        return found[0]["id"] if found else None
+
+    async def create_user(self, representation: dict[str, Any]) -> str:
+        """Make a user of the representation; its id (TAD-04, TAD-05).
+
+        Raises:
+            RealmError: When the realm refuses it, as for a taken username or a password its policy refuses.
+        """
+        _, made = await self.admin.call("POST", "/users", body=representation)
+        return made if made is not None else await self.user_id(str(representation["username"]))
+
+    async def add_to_groups(self, org: RealmOrganization, user: str, groups: Iterable[str]) -> None:
+        """Put a member in the organization's named groups; a group they are in already is no fault (TAD-04)."""
+        for group in groups:
+            await self.admin.call(
+                "PUT", f"/organizations/{org.id}/groups/{org.groups[group]}/members/{user}", present=True
+            )
 
     async def grant(self, org: RealmOrganization, administrators: Iterable[str], members: Iterable[str]) -> None:
         """Grant the administrators the tenant's organization, its groups and its ``members``; with none, grant

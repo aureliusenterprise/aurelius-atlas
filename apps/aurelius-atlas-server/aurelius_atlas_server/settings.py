@@ -341,6 +341,10 @@ class ServerSettings(StoreAccessSettings):
     tenancy_admin_client_secret: SecretStr | None = None
     """Its secret; unset, the command leaves the realm as it is (TRM-01, DD-603)."""
 
+    sample_dir: Path | None = None
+    """The folder of the samples ``provisioning add --sample <name>`` imports, ``<name>.zip`` each; none offers no
+    sample (TAD-02, TAD-10)."""
+
     def tenancy(self) -> Tenancy | None:
         """How tenancy reads a token while ``tenancy_enabled``, else None: no request has a tenant (TEN-01). The
         provisioned tenants come from the tenants index (TPR-07), so none are listed here.
