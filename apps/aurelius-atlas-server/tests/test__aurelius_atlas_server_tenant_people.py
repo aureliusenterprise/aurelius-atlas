@@ -323,8 +323,9 @@ async def test__people_need_the_realm(settings: ServerSettings, fake_es: FakeCli
     """Without the provisioning client's secret, ``add`` and ``user`` refuse before anything is done."""
     _ = fake_es
     for argv in (["add", "acme"], ["user", "acme", "add", "jane"]):
+        args = parser().parse_args(argv)
         with pytest.raises(ProvisioningError, match="people are kept in the realm"):
-            await run(parser().parse_args(argv), settings, lambda _line: None, user="op")
+            await run(args, settings, lambda _line: None, user="op")
 
 
 @pytest.mark.covers(f"{T}.standard_username", f"{T}.standard_email", rules=["TAD-04"])

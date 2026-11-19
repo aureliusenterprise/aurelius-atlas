@@ -90,11 +90,13 @@ def temporary_password() -> str:
         secrets.choice(SPECIALS),
     ]
     characters = required + [secrets.choice(alphabet) for _ in range(PASSWORD_LENGTH - len(required))]
-    secrets.SystemRandom().shuffle(characters)
+    for index in range(len(characters) - 1, 0, -1):  # Fisher-Yates, drawn from the secrets module alone
+        other = secrets.randbelow(index + 1)
+        characters[index], characters[other] = characters[other], characters[index]
     return "".join(characters)
 
 
-async def ensure_person(  # noqa: PLR0913 - where, who, and how their password is set
+async def ensure_person(  # noqa: PLR0913 - the realm and the person's details
     realm: RealmTenants,
     org: RealmOrganization,
     username: str,
