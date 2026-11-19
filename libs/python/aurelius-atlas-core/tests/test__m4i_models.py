@@ -62,7 +62,7 @@ async def loaded(*models_dirs: Path) -> TypedefStore:
 
 @pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["MDD-02"])
 def test__the_model_holds_the_sample_exports_m4i_types() -> None:
-    """The 14 entity, 20 relationship and 5 classification types of the samples: as ``small.zip`` and
+    """The 13 entity, 19 relationship and 5 classification types of the samples: as ``small.zip`` and
     ``sample_data.zip`` define them, and with the same attributes as the older ``only_gov_quality.zip``.
     """  # noqa: D205 - one sentence
     model = m4i_of(json.loads(MODEL.read_text(encoding="utf-8")))

@@ -177,3 +177,44 @@ quality engine writes on its own.
   named in `superTypes`). A connector that ships its own models directory (ADR 068's follow-up) would land in
   the picker again, and the webapp would need a registry query the picker does not make today. The icon map
   names the types the webapp can draw an icon for, which is the screen's real boundary.
+
+### DD-720. The ArchiMate scaffold leaves the m4i data dictionary
+
+- **Status:** Proposed
+- **Increment:** 18.1
+- **Date:** 2026-11-19
+- **Relates to:** MMS-01, MMS-02, MMS-06, MMS-08 (here), MDD-02 (increment 1.5b, the model equals the sample
+  exports), DD-718 (the sample bundles ship a metamodel-only typedef file), ADR 068 (a catalogue bootstraps
+  only the metamodel it serves), ADR 058 (the m4i types ship).
+
+**Decision.** The m4i data dictionary carries no ArchiMate type. The `m4i_archimate_project` entity
+definition, its `archimateReference` attribute on `m4i_referenceable` (`array<m4i_archimate_project>`), and
+the `m4i_referenceable_archimate_reference_assignment` relationship definition leave
+`m4i_models/0010-m4i_data_dictionary_model.json`, and the same three definitions leave the
+`atlas-typesdef.json` of each bundle in `data/atlas-sample/` (MMS-06, DD-718). The dictionary and the bundles
+stay otherwise as they were: 13 entity, 19 relationship, and 5 classification definitions, byte-identical
+elsewhere (MDD-02).
+
+**Reason.** This is the same dead weight ADR 068 removes elsewhere, and the same one that made the picker
+wrong (DD-719). `m4i_archimate_project` is a scaffold no Aurelius product writes — the sample corpus holds
+no entity of it, and the archimate3 lineage models are built on the fly, not stored — yet because
+`m4i_referenceable` is the supertype of `m4i_dataset`, `m4i_collection`, `m4i_field` and the rest, every
+author-able type inherits the `archimateReference` attribute and its relationship. The webapp editor renders
+a type's relationship attributes, so the create form for any m4i type offered an "ArchiMate Reference" picker
+pointing at a type the catalogue cannot hold entities of. The sample bundles carry the same three definitions
+in their typedef file, so the demo import (DD-718) would recreate them and undo the removal — the bundles are
+cleaned for the same reason 18.1 already cleans their domain types.
+
+**Alternatives.**
+
+- **Hide it in the webapp.** Filter the attribute out of the editor like `property-filter.ts` hides the
+  details-table key. It leaves the dead type in every catalogue and every tenant store, in the type listings
+  and the search facets, which is what ADR 068 exists to stop; and the picker fix (DD-719) only hid the type,
+  not the inherited attribute. The removal is at the source.
+- **Keep the relationship, drop only the type.** It leaves `m4i_referenceable` with a `archimateReference`
+  attribute and a relationship definition whose end names a type that no longer loads — a metamodel that does
+  not resolve against itself. The whole construct leaves, or none of it.
+- **Leave the stored `relationshipAttributeDefs` in the sample typedef files.** The registry derives those
+  from the relationship definitions and overwrites them on load (THY-11), and MDD-02 reads the definitions
+  with the stored fields stripped, so the stale copies are inert. Pruning them rewrites fixture text the rule
+  does not need, the same call DD-718 makes for the same reason.

@@ -52,63 +52,6 @@
             "attributeDefs": [
                 {
                     "cardinality": "SINGLE",
-                    "description": "The name of the archimate project",
-                    "displayName": "Name",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "name",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SINGLE",
-                    "description": "The branch in the archimate project",
-                    "displayName": "Branch",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "branch",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "string",
-                    "valuesMaxCount": 1,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
-                    "description": "A list of references to the archimate project",
-                    "displayName": "Archimate References",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
-                    "name": "ArchiMateReference",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_referenceable>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                }
-            ],
-            "description": "Representation for a generic Archimate Project",
-            "name": "m4i_archimate_project",
-            "options": {},
-            "superTypes": ["Referenceable"],
-            "typeVersion": "1.0"
-        },
-        {
-            "attributeDefs": [
-                {
-                    "cardinality": "SINGLE",
                     "description": "The unique functional name of the  collection",
                     "displayName": "Name",
                     "includeInNotification": true,
@@ -1224,20 +1167,6 @@
                     "isIndexable": true,
                     "isOptional": true,
                     "isUnique": false,
-                    "name": "archimateReference",
-                    "options": {},
-                    "searchWeight": 1,
-                    "typeName": "array<m4i_archimate_project>",
-                    "valuesMaxCount": 2147483647,
-                    "valuesMinCount": 0
-                },
-                {
-                    "cardinality": "SET",
-                    "includeInNotification": true,
-                    "indexType": "DEFAULT",
-                    "isIndexable": true,
-                    "isOptional": true,
-                    "isUnique": false,
                     "name": "source",
                     "options": {},
                     "searchWeight": 1,
@@ -1828,29 +1757,6 @@
                 "type": "m4i_generic_process"
             },
             "name": "m4i_process_owner_assignment",
-            "options": {},
-            "propagateTags": "NONE",
-            "relationshipCategory": "ASSOCIATION",
-            "typeVersion": "1.0"
-        },
-        {
-            "attributeDefs": [],
-            "description": "This relationship demonstrates the connection between the referenced objects on Atlas to those in Archimate",
-            "endDef1": {
-                "cardinality": "SET",
-                "isContainer": false,
-                "isLegacyAttribute": false,
-                "name": "ArchiMateReference",
-                "type": "m4i_referenceable"
-            },
-            "endDef2": {
-                "cardinality": "SET",
-                "isContainer": false,
-                "isLegacyAttribute": false,
-                "name": "ArchiMateReference",
-                "type": "m4i_archimate_project"
-            },
-            "name": "m4i_referenceable_archimate_reference_assignment",
             "options": {},
             "propagateTags": "NONE",
             "relationshipCategory": "ASSOCIATION",

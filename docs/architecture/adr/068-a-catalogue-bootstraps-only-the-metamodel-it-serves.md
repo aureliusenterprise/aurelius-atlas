@@ -11,7 +11,10 @@ model, the glossary model, and the m4i data dictionary. The vendored copies of t
 models (Hadoop, Hive, Kafka, Spark, RDBMS, cloud, machine-learning, and Couchbase types) leave the shipped
 bootstrap, and the Aurelius connector and kubernetes type names (the `m4i_kafka_*`, `m4i_elastic_*`,
 `m4i_confluent_*` and `m4i_kubernetes_*` family) leave every part of the system that still assumes them: the
-webapp's icon map and the lineage model's process family. The editor's type picker offers exactly the
+webapp's icon map and the lineage model's process family. The ArchiMate scaffold in the m4i data dictionary —
+the `m4i_archimate_project` type, its reference attribute, and the relationship that tied them (18.1's
+MMS-08) — leaves with them, since it is the same kind of dead weight and no product writes it. The editor's
+type picker offers exactly the
 metamodel types the icon map names (18.1's MMS-07), which also drops the Apache Atlas base supertypes —
 `Asset`, `DataSet`, `Process` and the rest — because no product writes an entity of one directly.
 

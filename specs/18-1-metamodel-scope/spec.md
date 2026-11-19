@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** ADR 068, DD-715 to DD-718 (here), DV-178, DV-179; relies on
+- **Records:** ADR 068, DD-715 to DD-720 (here), DV-178, DV-179; relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship), increment 1.5 (MDL, the loader), increment 6.3c2 (REP, the audits writer), and
   increment 8.2 (LM-03, the lineage process family).
@@ -24,7 +24,11 @@ lists.
 It delivers:
 
 - A bootstrap of the metamodel only. The shipped models directory holds `0000-Area0` (base model, glossary
-  model, and their patches) and nothing else, and the m4i directory stays as it is (MMS-01, MMS-02).
+  model, and their patches) and nothing else, and the m4i directory holds the m4i types minus the ArchiMate
+  scaffold (MMS-01, MMS-02, MMS-08).
+- The ArchiMate reference gone. The `m4i_archimate_project` type, its `archimateReference` attribute on
+  `m4i_referenceable`, and the `m4i_referenceable_archimate_reference_assignment` relationship leave the m4i
+  data dictionary, and the sample bundles with them; no Aurelius product writes them (MMS-08, DD-720).
 - The domain models out of the image. The five directories `1000-Hadoop`, `2000-RDBMS`, `3000-Cloud`,
   `4000-MachineLearning`, and `5000-Couchbase` and their 31 patch files are deleted (MMS-01).
 - The override door kept. `AURELIUS_ATLAS_SERVER_MODELS_DIR` still points the loader at any directory, so an
@@ -62,6 +66,7 @@ the five deleted directories. The "icon map" is `apps/aurelius-atlas-webapp/src/
 | MMS-05 | The icon map and the process family name no connector or kubernetes type: an icon entry or a process name is one of the metamodel's. An unknown type name still renders the default icon (DD-378) and, in lineage, an entity row.                                                                                                                                           |
 | MMS-06 | Importing a bundle of `data/atlas-sample/` into a new catalogue creates no type at all, and the catalogue holds no domain type after it (DD-718, IMS-03).                                                                                                                                                                                                                   |
 | MMS-07 | The editor's create picker lists the entity types the icon map names and nothing else (DV-180). The base supertypes an author does not create (`Asset`, `DataSet`, `Process`, `Referenceable`, and the rest) and the scaffold m4i types without an icon stay out of the picker. Edit mode keeps its static type text, so a legacy entity outside the metamodel still opens. |
+| MMS-08 | The m4i data dictionary carries no ArchiMate type: its registry holds no `m4i_archimate_project`, and no m4i type offers the `archimateReference` attribute or the `m4i_referenceable_archimate_reference_assignment` relationship (DD-720). The other 13 entity, 19 relationship, and 5 classification m4i types and their sample bundles are unchanged.                   |
 
 ## Java origin
 
@@ -86,7 +91,8 @@ the five deleted directories. The "icon map" is `apps/aurelius-atlas-webapp/src/
 ## Acceptance
 
 - Unit: `libs/python/aurelius-atlas-core/tests/test__model_loader.py` (MMS-01, MMS-02, MMS-03 with a restored
-  directory fixture), `tests/test__replication_audits.py` (MMS-04),
+  directory fixture), `tests/test__m4i_models.py` (MMS-08: the dictionary and the sample bundles agree, and
+  name no ArchiMate type), `tests/test__replication_audits.py` (MMS-04),
   `apps/aurelius-atlas-server/tests/test__aurelius_atlas_server_typedefs.py` (MMS-02),
   `apps/aurelius-atlas-lineage-model/tests/test__lineage.py` and `test__aurelius_atlas_lineage_model_app.py`
   (MMS-05), `apps/aurelius-atlas-webapp/src/app/search/meta/type-icons.spec.ts` (MMS-05, Vitest),

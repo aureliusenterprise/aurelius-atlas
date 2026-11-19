@@ -159,7 +159,7 @@ export class EditorState {
      * the metamodel types — the entity typedef headers the icon map names — so
      * the base-model supertypes an author never creates directly (`Asset`,
      * `DataSet`, `Process`, `Referenceable`, …) and the scaffold types without
-     * an icon (`m4i_referenceable`, `m4i_dq_score`, `m4i_archimate_project`) stay
+     * an icon (`m4i_referenceable`, `m4i_dq_score`) stay
      * out, as do the glossary types and the `__`-prefixed internals (EDT-04 kept;
      * the icon map is the metamodel boundary — ADR 068, MMS-05, DV-180).
      * Labelled by alias else the dictionary display name, sorted. Headers carry
