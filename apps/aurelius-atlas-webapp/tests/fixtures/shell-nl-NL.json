@@ -48,6 +48,7 @@
             "close": "Sluiten",
             "feed": "Meldingen",
             "empty": "Geen meldingen",
+            "expired": "Uw sessie is verlopen. We melden u opnieuw aan.",
             "dismiss": "Verbergen",
             "clear": "Alles wissen",
             "times": "×",

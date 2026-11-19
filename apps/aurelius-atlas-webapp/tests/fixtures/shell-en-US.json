@@ -48,6 +48,7 @@
             "close": "Close",
             "feed": "Alerts",
             "empty": "No alerts",
+            "expired": "Your session has expired. Signing you in again.",
             "dismiss": "Dismiss",
             "clear": "Clear all",
             "times": "×",
