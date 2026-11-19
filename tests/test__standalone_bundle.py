@@ -365,7 +365,17 @@ def test__the_bundle_holds_the_scripts_folder_whole(bundle: Path) -> None:
     """  # noqa: D205 - one sentence
     shipped = sorted(p.name for p in (bundle / "docker/bin").iterdir() if p.is_file())
     repo = sorted(p.name for p in (WORKSPACE / "docker/bin").iterdir() if p.is_file())
-    assert shipped == repo == ["import-sample.sh", "make-certs.sh", "provision-tenants.sh", "set-host.sh"]
+    assert (
+        shipped
+        == repo
+        == [
+            "import-sample.sh",
+            "make-certs.sh",
+            "provision-tenants.sh",
+            "set-host.sh",
+            "tenant.sh",
+        ]
+    )
     for name in shipped:
         assert os.access(bundle / "docker/bin" / name, os.X_OK), name
     readme = (bundle / "README.md").read_text()

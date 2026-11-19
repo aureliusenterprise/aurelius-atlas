@@ -157,7 +157,8 @@ realm's `operator`'s. The store has no published port, so it is reached from the
 default. With tenancy on, `SAMPLE_ZIP` is left unset: the sample goes into demo, not into the stack's
 own catalogue.
 
-To add a tenant of your own that lasts, follow the user guide's page `docs/user-guide/standalone-tenants.md`.
+To add a tenant of your own, with its people and a sample if you name one, run `docker/bin/tenant.sh add <tenant>`;
+the user guide's page `docs/user-guide/standalone-tenants.md` explains its options. You edit no file.
 
 At sign-in, a person in several organizations, such as an operator who also reads a tenant, chooses
 which to act in. The webapp shows

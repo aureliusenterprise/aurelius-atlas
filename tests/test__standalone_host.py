@@ -14,6 +14,7 @@ and the certificate script and its manifest as shipped - no Docker daemon, no is
 import json
 import os
 import re
+import subprocess
 from typing import Any
 
 import pytest
@@ -30,9 +31,9 @@ SCRIPT = BIN / "make-certs.sh"
 MANIFEST = STACK / "certs.txt"
 README = STACK / "README.md"
 
-# The four scripts a person runs by hand (SPC-11): the certificate script and the three of SPC-03,
-# SPC-06 and SPC-07.
-SCRIPTS = ("make-certs.sh", "set-host.sh", "import-sample.sh", "provision-tenants.sh")
+# The five scripts a person runs by hand (SPC-11): the certificate script, the three of SPC-03, SPC-06 and
+# SPC-07, and the tenant command's (TAD-12).
+SCRIPTS = ("make-certs.sh", "set-host.sh", "import-sample.sh", "provision-tenants.sh", "tenant.sh")
 
 # The three files that name the browser host (SPC-03), and no more.
 HOST_BEARING = (
@@ -269,6 +270,30 @@ def test__the_sample_script_runs_the_demo_one_shot_through_compose() -> None:
     assert not re.search(r"(SECRET|PASSWORD|TOKEN)=\S", _commands(script))
     services = standalone_compose()["services"]
     assert services["sample-import"]["profiles"] == ["demo"]
+
+
+@pytest.mark.covers(rules=["TAD-12"])
+def test__the_tenant_script_runs_the_command_in_the_tenancy_one_shot() -> None:
+    """docker/bin/tenant.sh is executable and asks Compose to run the server's provisioning command in the
+    `tenants` one shot, its entrypoint replaced and the script's arguments passed through, the profile
+    `tenancy` open and tenancy on (TAD-12, DD-702). It names no secret, edits no file, and with no argument
+    prints its usage and exits 2.
+    """  # noqa: D205 - one sentence
+    script = (BIN / "tenant.sh").read_text()
+    assert os.access(BIN / "tenant.sh", os.X_OK)
+    assert 'root="$(cd "$here/../.." && pwd)"' in script
+    assert "COMPOSE_PROFILES=tenancy ATLAS_TENANCY_ENABLED=true" in script
+    assert 'run --rm --no-deps --entrypoint python tenants -m aurelius_atlas_server.provisioning "$@"' in script
+    for env_file in ("apps/aurelius-atlas-server/.env", "infra/keycloak/.env", "infra/elasticsearch/.env"):
+        assert f"--env-file {env_file}" in script
+    commands = _commands(script)
+    assert "PASSWORD" not in commands
+    assert "SECRET" not in commands
+    for writer in (" > ", ">>", "sed -i", "tee "):
+        assert writer not in commands, writer
+    usage = subprocess.run(["bash", str(BIN / "tenant.sh")], capture_output=True, text=True, check=False)
+    assert usage.returncode == 2
+    assert "add <tenant> [--sample <name>] [--users atlas|all]" in usage.stdout
 
 
 @pytest.mark.covers(rules=["SPC-07", "SPC-11"])

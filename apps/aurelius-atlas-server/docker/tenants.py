@@ -2,12 +2,13 @@
 
 It provisions the tenant ``demo`` with the sample ``TENANT_SAMPLE`` from ``SAMPLE_DIR`` and the tenant ``meyn``
 without one, through the server's own command, which keeps their organizations in the realm aurelius-atlas too
-(TRM-02). Each tenant gets its own users, made here and not in the realm file (DD-700): ``<tenant>_atlas`` with
-every role, its administrator (TRM-06), ``<tenant>_steward`` reading and writing, and ``<tenant>_scientist``
-reading, each a member of its tenant alone, with the password ``<TENANT>_USER_<ROLE>_PASSWORD``. A user already
-there keeps its password; a tenant without those passwords gets no users. Then it gives the platform an
-``operator`` user of its own in the store, with the role ``aurelius_atlas_store_admin``: every privilege on every
-index, for running the platform (ADR 063's direct store access). It runs in the server image.
+(TRM-02). Each tenant gets its own users, made through the server's own code and not in the realm file (DD-700,
+TAD-13): ``<tenant>_atlas`` with every role, its administrator (TRM-06), ``<tenant>_steward`` reading and writing,
+and ``<tenant>_scientist`` reading, each a member of its tenant alone, with the password
+``<TENANT>_USER_<ROLE>_PASSWORD``. A user already there keeps its password; a tenant without those passwords gets
+no users. Then it gives the platform an ``operator`` user of its own in the store, with the role
+``aurelius_atlas_store_admin``: every privilege on every index, for running the platform (ADR 063's direct store
+access). It runs in the server image.
 """
 
 # ruff: noqa: INP001, T201 - a script mounted into a container; its output is its log
@@ -22,18 +23,11 @@ from pathlib import Path
 from aurelius_atlas_server.provisioning import main, realm_of
 from aurelius_atlas_server.realm_tenants import RealmError, RealmTenants
 from aurelius_atlas_server.settings import ServerSettings
+from aurelius_atlas_server.tenant_people import Role, ensure_person, standard_email, standard_username
 from elasticsearch import Elasticsearch
 
 STORE_ADMIN_ROLE = "aurelius_atlas_store_admin"
 """The operator's role in the store: the cluster managed and every index, every tenant's among them."""
-
-
-TENANT_USERS = (
-    ("atlas", "Atlas", "Administrator", ("atlas-read", "atlas-write", "atlas-types", "atlas-admin")),
-    ("steward", "Data", "Steward", ("atlas-read", "atlas-write")),
-    ("scientist", "Data", "Scientist", ("atlas-read",)),
-)
-"""Each tenant's users: the name after ``<tenant>_``, the first and last name, and the tenant's role groups."""
 
 
 def provision() -> None:
@@ -63,60 +57,34 @@ async def with_realm(alias: str) -> bool:
 
 
 async def tenant_users(realm: RealmTenants, alias: str, environment: Mapping[str, str]) -> list[str]:
-    """Make the tenant's users that are missing, each a member of the tenant in its role groups (DD-700).
+    """Make the tenant's three users through the server's own code, with their permanent passwords from
+    ``<TENANT>_USER_<ROLE>_PASSWORD`` (TAD-13, DD-700); the usernames that are the tenant's members now.
 
-    A user already in the realm keeps its password and is put in the tenant's groups again; a user without its
-    password variable is skipped. Returns the usernames that are the tenant's members now.
-    """
+    A user already in the realm keeps its password and is put in the tenant's groups again (TAD-06); a role
+    without its password variable gets no user, and one the realm refuses, as for a password its policy rejects,
+    is logged and left out, the others made all the same.
+    """  # noqa: D205 - one sentence
     org = await realm.organization(alias)
     if org is None:
         msg = f"the tenant {alias} has no organization"
         raise RealmError(msg)
-    members = await realm.members(org)
     made: list[str] = []
-    for role, first, last, groups in TENANT_USERS:
-        username = f"{alias}_{role}"
-        password = environment.get(f"{alias.upper().replace('-', '_')}_USER_{role.upper()}_PASSWORD", "")
+    for role in Role:
+        username = standard_username(alias, role)
+        password = environment.get(f"{alias.upper().replace('-', '_')}_USER_{role.value.upper()}_PASSWORD", "")
         if not password:
             print(f"{username}: no password set, not made")
             continue
         try:
-            user = await realm.user_id(username)
-        except RealmError:
-            user = await _made(
-                realm,
-                {
-                    "username": username,
-                    "email": f"{alias}.{role}@example.com",
-                    "emailVerified": True,
-                    "enabled": True,
-                    "firstName": first,
-                    "lastName": last,
-                    "credentials": [{"type": "password", "value": password, "temporary": False}],
-                },
+            person = await ensure_person(
+                realm, org, username, role, email=standard_email(alias, role), password=password
             )
-            if user is None:
-                continue
-        if user not in members:
-            await realm.add_member(org, user)
-        for group in groups:
-            await realm.admin.call(
-                "PUT", f"/organizations/{org.id}/groups/{org.groups[group]}/members/{user}", present=True
-            )
+        except RealmError as refused:
+            print(f"{username}: not made: {refused}")
+            continue
+        print(f"{username}: {'made' if person.made else 'there already'}")
         made.append(username)
     return made
-
-
-async def _made(realm: RealmTenants, body: dict[str, object]) -> str | None:
-    """Make the user, its id; a refusal, as of a password the realm's policy rejects, is logged and makes none."""
-    username = str(body["username"])
-    try:
-        _, user = await realm.admin.call("POST", "/users", body=body)
-    except RealmError as refused:
-        print(f"{username}: not made: {refused}")
-        return None
-    print(f"{username}: made")
-    return user if user is not None else await realm.user_id(username)
 
 
 def store_operator() -> None:

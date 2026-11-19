@@ -317,11 +317,19 @@ bash docker/bin/import-sample.sh      # imports the sample from docker/.env's SA
 bash docker/bin/provision-tenants.sh  # provisions the tenant demo and the operator user
 ```
 
+To add a tenant of your own, with its people and a sample if you name one, run `docker/bin/tenant.sh`. Each
+person it makes gets a temporary password, printed once, which they change at the first sign-in:
+
+```bash
+bash docker/bin/tenant.sh samples                                # the samples you can name
+bash docker/bin/tenant.sh add acme --sample small --users all    # acme, its three users, the small sample
+```
+
 ## About these files
 
 `docker/docker-compose.yaml` is the stack resolved into one file, so a setting is changed in one place. The
 folder paths in `docker/.env` and in the compose file are relative to this bundle and run from any folder on
-any machine. `docker/bin/` holds the scripts you run by hand: the certificate script above, the two here, and
+any machine. `docker/bin/` holds the scripts you run by hand: the certificate script above, the three here, and
 `docker/bin/set-host.sh` for a browser host other than `localhost` (it asks you to clear the data first).
 """
 
