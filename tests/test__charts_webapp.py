@@ -84,6 +84,23 @@ def test__bring_your_own_leaf_renders_no_certificate() -> None:
     assert volumes["leaf"]["secret"]["secretName"] == "my-leaf"
 
 
+@pytest.mark.covers(rules=["CHT-25"])
+def test__trust_root_defaults_to_the_charts_own_certificate(webapp_docs: list[dict[str, Any]]) -> None:
+    """The nginx trust root defaults to this chart's own Certificate Secret (DD-707).
+
+    Its `ca.crt` cert-manager always writes, so the mount never dangles. A named
+    trust root still wins.
+    """
+    volumes = {v["name"]: v for v in pod_spec(find(webapp_docs, "Deployment", "atlas-webapp"))["volumes"]}
+    assert volumes["ca"]["secret"]["secretName"] == volumes["leaf"]["secret"]["secretName"] == "atlas-webapp-tls"
+
+    # A named trust root wins over the own-certificate default, in both keys.
+    for set_key, expected in (("tls.secretName", "my-ca"), ("global.trust.caSecretName", "other-ca")):
+        docs = helm_render(WEBAPP_CHART, value_files=TEST_VALUES, sets=(f"{set_key}={expected}",))
+        vols = {v["name"]: v for v in pod_spec(find(docs, "Deployment", "atlas-webapp"))["volumes"]}
+        assert vols["ca"]["secret"]["secretName"] == expected
+
+
 @pytest.mark.covers(rules=["CHT-23"])
 def test__nginx_uid_with_writable_emptydirs(webapp_docs: list[dict[str, Any]]) -> None:
     """Read-only rootfs; the nginx pid/temp/log paths ride emptyDirs + fsGroup."""

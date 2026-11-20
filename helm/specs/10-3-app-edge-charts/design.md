@@ -286,3 +286,42 @@ an `extraEnv` file for the two URLs) are the acceptance test's negative space.
 The trial itself passed otherwise: install/upgrade reached `deployed`, all
 three rollouts went Ready on the HTTPS `/liveness` probes, and the derived
 `AUTH_SERVER_URL` matched the overlay domain. Next free DD: 252.
+
+### DD-707. The webapp's trust root defaults to its own Certificate Secret
+
+- **Status:** Proposed
+- **Increment:** 10.3 (a fix, 2026-11-19)
+- **Date:** 2026-11-19
+
+**Decision.** `atlas-webapp.caSecretName` defaults to this chart's own leaf
+Secret (DD-270), not the umbrella's `<issuerRef.name>-ca`. A named trust root
+(`global.trust.caSecretName` or `tls.secretName`) still wins, so a separate
+chain is a value away. The nginx config is unchanged: it still pins
+`proxy_ssl_verify on` and reads `ca.crt` from the mounted Secret.
+
+**Reason.** The webapp's nginx verifies the server, collector, and aux-API
+upstreams over TLS (DD-270), so the CA file is required and always mounted.
+Its name defaulted to the umbrella's separate trust-root Secret, which the
+umbrella renders only when it builds the CA itself (`createIssuer`) or a
+`caBundle` is supplied (CHT-131's gate). A standalone install, or a public-CA
+posture that supplies no on-cluster CA, left the Deployment pointing at a
+Secret nothing created, and the pod never left `ContainerCreating`. The
+server chart (DD-286, DD-294) already reads `ca.crt` from its own Certificate
+Secret for the same trust, because cert-manager writes the signing CA beside
+`tls.crt`/`tls.key` in the Secret its Certificate produces. That Secret
+always exists, and the webapp already mounts it for its own listener. The
+private-CA posture this chart targets issues both the webapp leaf and the
+umbrella trust root from one CA, so the default's bytes are unchanged.
+
+**Alternatives.** Gate the CA mount on a name being set (the db-scanner
+pattern, CHT-117): wrong for the webapp, whose upstreams always use TLS, so
+nginx would start without the file the config pins and fail. `required` fail
+when no trust root is named (a hard gate): breaks the default install that
+works today. Always render a webapp-owned CA Secret: duplicates the umbrella
+trust root and its rotation.
+
+**Consequences.** A standalone or public-CA install no longer deadlocks. The
+Deployment always references a Secret the release creates. A separate trust
+root stays one value away, unchanged. The chart now reads `ca.crt` from the
+Secret it already renders, the same source the server chart uses, so the two
+in-cluster TLS clients agree on where the chain lives.
