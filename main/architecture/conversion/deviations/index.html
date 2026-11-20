@@ -8004,6 +8004,14 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The metamodel carries both ends of the system edge (<code>m4i_system_parent_assignment</code>) and the webapp shows <code>childSystem</code> as the subsystems a system owns, so the one-sided warning is wrong on a system the subsystem edge places - the same contention class as DV-171 and DV-172, on the user's product call (DD-637's audit had tested only the parent end). The three 14.6 gates re-baseline with the damage named per document (the user's decision, DD-639). Every other oracle verdict still answers as it was.</td>
 <td>12.7e</td>
 </tr>
+<tr>
+<td>DV-182</td>
+<td>Interface</td>
+<td>(Aurelius origin, no Atlas behaviour.) The webapp footer printed a copyright year and a version baked into <code>/config.json</code>.</td>
+<td>The footer prints the browser's current year and the version the server answers at <code>admin/version</code> (ADM-01); the two keys left <code>config.json</code> (7.34, DD-725/DD-726).</td>
+<td>The release stamps one version everywhere (DD-288), so the config copy could only go stale; a fixed year reads as neglect.</td>
+<td>7.34</td>
+</tr>
 </tbody>
 </table>
 
