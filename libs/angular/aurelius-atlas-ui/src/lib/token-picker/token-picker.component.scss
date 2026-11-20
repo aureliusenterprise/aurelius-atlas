@@ -30,6 +30,21 @@
     border-color: var(--bulma-danger);
 }
 
+/* A box that cannot take a pick (UIC-44): the disabled look the editor's own
+   classification box carries — the muted fill and border, the weak ink — and
+   the focus ring drops with it. The chip delete stays live (the caller
+   disables the control, not the value), so only the field paints disabled. */
+.aurelius-token-box.is-disabled {
+    background-color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-scheme-main-bis-l));
+    border-color: var(--bulma-border-weak);
+    color: hsl(var(--bulma-scheme-h), var(--bulma-scheme-s), var(--bulma-text-weak-l));
+}
+
+.aurelius-token-box.is-disabled:focus-within {
+    border-color: var(--bulma-border-weak);
+    box-shadow: none;
+}
+
 /* The text input inside the box: the box owns the border and padding, so
    the input is borderless, transparent and flush (DD-335). */
 .aurelius-token-box .aurelius-token-input {

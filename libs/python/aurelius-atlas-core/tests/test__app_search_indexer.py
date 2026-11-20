@@ -163,10 +163,10 @@ def test__the_own_fields_are_the_legacy_ones_but_dd_485_s() -> None:
     """Name, qualified name, definition, email and source type; the differences of the spec's table only."""
     derived = indexed().derived()
 
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639: the sample corpus's five pair rules carry new
-    # names, so their documents name what the frozen ``atlas-dev`` oracle never held —
-    # the one existing difference beside the five renamed rule records.
-    assert list(differing("name").values()) == ["m4i_gov_data_quality"] * 6
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-750: the sample corpus's six pair
+    # rules carry new names, so their documents name what the frozen ``atlas-dev`` oracle never held —
+    # the one existing difference beside the six renamed rule records.
+    assert list(differing("name").values()) == ["m4i_gov_data_quality"] * 7
     assert sorted(differing("referenceablequalifiedname").values()) == [
         *["m4i_generic_process"] * 19,
         "m4i_gov_data_quality",

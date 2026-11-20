@@ -75,6 +75,13 @@ export class TokenPicker {
     /** Paint the box `is-danger` and mark the input invalid (the caller's rule). */
     readonly invalid = input(false);
 
+    /** Whether the box can no longer take a pick (UIC-44): the input is
+     * disabled, the panel stays shut, and the box takes the input's muted
+     * disabled look. The chips keep their delete, so a disabled box can
+     * still hand its value back — the caller disables the control, it does
+     * not freeze it. */
+    readonly disabled = input(false);
+
     /** The text in the input, caller-held so it survives a re-render. */
     readonly text = input("");
 
@@ -135,13 +142,22 @@ export class TokenPicker {
     /** Whether the single box is full: its input hides (the change is delete, then pick). */
     protected readonly singleFull = computed(() => this.single() && this.selected().length >= 1);
 
-    /** Whether the panel shows (DD-335): focused, open, and rows to show. */
-    protected readonly panelShown = computed(() => this.focused() && this.panelOpen() && this.rows().length > 0);
-
-    /** The placeholder the input shows, by cardinality and fullness. */
-    protected readonly shownPlaceholder = computed(() =>
-        this.single() && !this.singleFull() ? this.singlePlaceholder() : this.placeholder(),
+    /** Whether the panel shows (DD-335): focused, open, and rows to show. A
+     * disabled box never offers a panel — nothing may be picked. */
+    protected readonly panelShown = computed(
+        () => this.focused() && this.panelOpen() && this.rows().length > 0 && !this.disabled(),
     );
+
+    /** The placeholder the input shows, by cardinality and fullness. A
+     * disabled box shows none: a muted "Select a relationship..." on a
+     * control that cannot take a pick invites the interaction it forbids. */
+    protected readonly shownPlaceholder = computed(() => {
+        if (this.disabled()) {
+            return "";
+        }
+
+        return this.single() && !this.singleFull() ? this.singlePlaceholder() : this.placeholder();
+    });
 
     constructor() {
         // The highlight returns to the first row whenever the rows change: a
@@ -155,13 +171,15 @@ export class TokenPicker {
 
     /** The box gained focus (DD-335): the panel opens for the box. Moves within
      * the box (chip → its delete button) do not re-open anything, and do not
-     * emit `entered` either — one list per entry. */
+     * emit `entered` either — one list per entry. A disabled box still tracks
+     * focus (its chips remain reachable, so the delete button is not cut off
+     * the keyboard), but `panelShown()` keeps the panel shut. */
     protected onBoxFocusIn(): void {
         const entering = !this.focused();
         this.focused.set(true);
         this.panelOpen.set(true);
         this.activeRow.set(0);
-        if (entering) {
+        if (entering && !this.disabled()) {
             this.entered.emit();
         }
     }

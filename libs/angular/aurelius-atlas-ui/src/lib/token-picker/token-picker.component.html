@@ -12,6 +12,7 @@
     class="dropdown is-up aurelius-token-box"
     [class.is-active]="panelShown()"
     [class.is-danger]="invalid()"
+    [class.is-disabled]="disabled()"
     (focusin)="onBoxFocusIn()"
     (focusout)="onBoxFocusOut($event)"
 >
@@ -43,8 +44,10 @@
             [attr.aria-autocomplete]="'list'"
             [attr.aria-controls]="panelShown() ? listboxId() : null"
             [attr.aria-activedescendant]="activeRowId()"
+            [attr.aria-disabled]="disabled() ? 'true' : null"
             role="combobox"
             autocomplete="off"
+            [disabled]="disabled()"
             (input)="onTypedEvent($event)"
             (keyup.enter)="onEnter()"
             (keydown.escape)="onEscape($event)"

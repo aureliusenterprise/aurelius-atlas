@@ -2,7 +2,7 @@
 
 - **Status:** in progress
 - **Pull request:** –
-- **Records:** DD-744 to DD-748 (here), DV-183 (deviations). Relies on
+- **Records:** DD-744 to DD-750 (here), DV-183 and DV-184 (deviations). Relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship and version with the server), increment 1.5 (MDL, the loader), and
   [increment 18.2](../18-2-hierarchy-cardinality/spec.md) (HCA-01 to HCA-10, the single parent).
@@ -27,14 +27,18 @@ In scope:
 3. The bundled m4i model puts the two ends of each choice into one group, and the four relationship
    definitions that carry them go to type version `1.2`.
 4. Server-side validation rejects an entity that fills two members of one group, on create and on update.
+5. The editor disables a parent picker whose sibling in the same group already holds a pick, so the author
+   cannot enter the pair the server rejects.
+6. The sample corpus words its parent rules for one parent of each kind, and not for "at least one" of a
+   single kind.
 
 Out of scope:
 
-- A grouped parent picker in the webapp editor. The server rejects the pair and the editor shows the
-  error text it already shows for a rejected save.
 - A "must choose one" variant. Filling neither member stays legal, the same as an empty optional attribute.
 - Mutual exclusion between anything other than hierarchical children. The constraint type is generic, but
   only 18.2's child ends use it.
+- A hint sentence in the editor that names the choice. The webapp ships no string outside its vendored
+  legacy catalogue, so the disabled control and the delete affordance on the chip carry the rule (DD-749).
 
 ## Semantics
 
@@ -55,6 +59,8 @@ a group changes nothing, so it stays valid. Each rule is enforced by a test that
 | PME-07 | A create that fills both members of a group fails with `INSTANCE_CRUD_INVALID_PARAMS`.                                                                                                                                                                                                          |
 | PME-08 | An update fails when it adds a second parent while the entity already holds the other one. An update that moves the entity from one parent to the other succeeds.                                                                                                                               |
 | PME-09 | Filling neither member, or exactly one, succeeds. An entity saved with one parent reads back with exactly one parent of that type.                                                                                                                                                              |
+| PME-10 | The editor reads the group off the relationship attribute definitions (PME-05). When one member of a group holds a pick, every other member of that group is disabled, and a disabled picker starts no search and never holds the save. Clearing the pick enables them again.                   |
+| PME-11 | The corpus governance rules over a single-cardinality parent state one parent of each kind in their name, description and both messages. A SET attribute keeps the "at least one" wording. The rule expressions do not change.                                                                  |
 
 ## Java origin
 
@@ -67,6 +73,9 @@ validation all come from this increment. See [DV-183](../../docs/architecture/co
 - **DV-183 (Interface):** The type system and the metamodel API accept a constraint on a relationship end
   definition, and the instance API enforces the group. Atlas has no equivalent, so any client that sends
   one to Atlas gets an unknown field, and Atlas stores both parents.
+- **DV-184 (App Search):** The sample corpus states the data-entity parent rule as "at least one data
+  domain or data entity". Aurelius rewrites its name, description and both messages to one data domain or
+  parent entity, and the frozen `atlas-dev` oracle keeps the old sentences. See the damage in DV-184.
 
 ## Acceptance
 
@@ -82,7 +91,15 @@ validation all come from this increment. See [DV-183](../../docs/architecture/co
   `libs/python/aurelius-atlas-core/tests/test__type_reads.py` (PME-05: the type read answers the constraint
   on the end def and on the entity's relationship attribute definitions).
 - Data: the `atlas-typesdef.json` of each bundle in `data/atlas-sample/` changes with the model, which
-  `test__m4i_models.py` compares (PME-04).
+  `test__m4i_models.py` compares (PME-04). The rule records of `sample_data.zip` and
+  `only_gov_quality.zip` carry the new sentences, which `test__m4i_models.py` reads back (PME-11).
 - E2E: `nx e2e aurelius-atlas-server` (the registry bootstraps the constraints on a real store, PME-05).
-- Parity: unchanged. The scenario fixtures under `apps/*/scenarios` name no m4i parent attribute and no
-  end-def constraint (checked at spec time), so no scenario re-baseline.
+- Webapp: `apps/aurelius-atlas-webapp/src/app/search/editor/entity-editor.component.spec.ts` (PME-10: a
+  filled parent disables its sibling, clearing frees it, and a blocked mandatory picker never holds the
+  save), `form-fields.spec.ts` (the group is read off the definitions, and a lone group enforces nothing),
+  and `libs/angular/aurelius-atlas-ui/src/lib/token-picker/token-picker.component.spec.ts` plus its
+  `Disabled` story (the disabled box, its look, and the missing panel).
+- Parity: the scenario fixtures under `apps/*/scenarios` name no m4i parent attribute and no end-def
+  constraint (checked at spec time), so no scenario re-baseline. The frozen `atlas-dev` oracle keeps the
+  old rule sentences, which `test__legacy_app_search_fixtures.py` and `test__app_search_indexer.py` count
+  as text-only differences on the edited rules (PME-11, DV-184).

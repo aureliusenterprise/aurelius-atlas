@@ -273,6 +273,56 @@ describe("TokenPicker (UIC-44, DD-713)", () => {
         expect(full.compiled.querySelectorAll("aurelius-atlas-ui-classification-chip")).toHaveLength(1);
     });
 
+    it("a disabled box takes the disabled look and offers no panel (UIC-44)", () => {
+        const { fixture, compiled } = setup();
+        fixture.componentRef.setInput("disabled", true);
+        fixture.detectChanges();
+
+        expect(compiled.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(true);
+        // The input is a real disabled control, so no keyboard or pointer can
+        // reach a pick.
+        expect(compiled.querySelector<HTMLInputElement>(".aurelius-token-input")?.disabled).toBe(true);
+
+        // Focus cannot open the suggest panel: there is nothing to suggest.
+        // Bulma's own pattern keeps the rows in the DOM and hides the menu,
+        // so the shut state is the class and the aria flag, not the rows.
+        focusInput(compiled);
+        fixture.detectChanges();
+        expect(compiled.querySelector(".aurelius-token-box")?.classList.contains("is-active")).toBe(false);
+        expect(compiled.querySelector<HTMLInputElement>(".aurelius-token-input")?.getAttribute("aria-expanded")).toBe(
+            "false",
+        );
+    });
+
+    it("a disabled box drops its placeholder and keeps the chip deletable (UIC-44, UIC-24)", () => {
+        const { fixture, compiled } = setup(ROWS, [CHIPS[0]]);
+        fixture.componentRef.setInput("single", true);
+        fixture.componentRef.setInput("disabled", true);
+        fixture.componentRef.setInput("singlePlaceholder", "Select a relationship...");
+        fixture.detectChanges();
+
+        // The full single box's input is gone, so the box paints disabled and
+        // the one chip left can still be handed back — disabling the control
+        // does not freeze the value.
+        expect(compiled.querySelector(".aurelius-token-box")?.classList.contains("is-disabled")).toBe(true);
+        const removed: TokenChip[] = [];
+        fixture.debugElement.componentInstance.removed.subscribe((chip: TokenChip) => removed.push(chip));
+        compiled.querySelectorAll<HTMLButtonElement>("aurelius-atlas-ui-classification-chip button")[0].click();
+        expect(removed.map((chip) => chip.key)).toEqual(["a"]);
+    });
+
+    it("a disabled empty box shows no placeholder (UIC-44)", () => {
+        const { fixture, compiled } = setup();
+        fixture.componentRef.setInput("single", true);
+        fixture.componentRef.setInput("singlePlaceholder", "Select a relationship...");
+        fixture.componentRef.setInput("disabled", true);
+        fixture.detectChanges();
+
+        // A muted "Select a relationship..." on a control that cannot take a
+        // pick invites the interaction it forbids.
+        expect(compiled.querySelector<HTMLInputElement>(".aurelius-token-input")?.placeholder).toBe("");
+    });
+
     it("paints the danger state and names the error line (FORM-ERR-002)", () => {
         const { fixture, compiled } = setup();
         fixture.componentRef.setInput("invalid", true);

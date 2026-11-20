@@ -167,3 +167,70 @@ file green.
   data domain, 2 hold a parent entity, and 1 holds neither. Of 264 fields, 248 hold a dataset and 16 hold a
   parent field. A store that did hold such an entity keeps it readable, and only a later save to that pair
   fails.
+
+### DD-749. The editor disables the sibling picker of a parent group
+
+- **Status:** Proposed
+- **Increment:** 18.3
+- **Date:** 2026-11-20
+- **Relates to:** DD-745 (the registry copies the group onto the child attribute), DD-713 (`TokenPicker`,
+  UIC-44), PME-05, PME-10, EDT-17.
+
+**Decision.** The editor reads each parent group off the entity's relationship attribute definitions
+(PME-05), and disables every picker in a group that holds no pick while a sibling holds one (PME-10). A
+disabled picker keeps its chip deletable, starts no search, drops its placeholder, and never blocks the
+save, so a mandatory sibling cannot hold the author. The webapp ships no new sentence for the rule, so the
+disabled box and the delete affordance on the chip carry it. `TokenPicker` gains a `disabled` input for
+the look and the closed panel (UIC-44 amended).
+
+**Reason.** PME-07 refuses the pair at the server, but the author learns that only after a save. Disabling
+the sibling states the rule at the control, which is what the user asked for: "it should be impossible to
+select both a parent entity and a parent domain". The alternative affordance was a hint sentence under the
+pickers. The webapp's i18n completeness gate (SHL-08) allows no string outside the vendored legacy
+catalogue, and inventing one is against the porting rule, so the hint is out of scope. Reversal stays one
+click: delete the chip, and both pickers answer again. The picker cannot be cleared from the keyboard
+while the sibling is disabled, so the chip's delete button is the escape and stays live on purpose.
+
+**Alternatives.**
+
+- **Show a hint sentence under both pickers.** It needs a new UI string, which the completeness spec
+  rejects, and it leaves the author able to make the mistake.
+- **Hide the sibling picker.** The author then cannot see the other choice, and cannot tell whether the
+  field is missing from the type or already answered.
+- **Validate on save and point at both fields.** This keeps the mistake possible, and PME-07 already does
+  it as the last line of defence for every client.
+- **Enable the sibling and clear the first pick on select.** A silent write deletes a parent the author did
+  not name, which DD-747 already rejects for the server.
+
+### DD-750. The corpus words its parent rules for one parent of each kind
+
+- **Status:** Proposed
+- **Increment:** 18.3
+- **Date:** 2026-11-20
+- **Relates to:** DD-637 (12.7c made this rule a pair), DD-635, PME-11, HCA-02, DV-184.
+
+**Decision.** The sample corpus states the data-entity parent rule as one data domain or parent entity, in
+its name, its description and both messages (PME-11). The rule's qualified name, its expression, its
+dimension and its verdicts do not change. The `--source` companion record of `sample_data.zip` carries the
+same three sentences, so a rule page names one thing. A rule over a SET attribute keeps the "at least one"
+wording, because there the count still means something.
+
+**Reason.** 18.2 made `dataDomain` and `parentEntity` both `SINGLE`, so "at least one data domain or data
+entity" describes a set the type no longer holds, and the details page banner prints that sentence today.
+A user read it and asked for the plain form. The messages are corpus data, not code: no production string
+changes, and `aurelius_atlas_quality.governance` keeps printing whatever the rule stores (GQ-06). Only
+the two rule records of `sample_data.zip` and one of `only_gov_quality.zip` change. The `--source` record
+of `only_gov_quality.zip` is a different rule that reuses the GUID, so it keeps its own sentence. An audit
+of all 95 governance rules of the corpus found no other rule whose wording contradicts a cardinality: the
+other hierarchy rules measure SET attributes, and the rest already read singular.
+
+**Alternatives.**
+
+- **Leave the corpus alone and rewrite the banner text in the webapp.** The banner prints what the rule
+  stores, and rewriting it in code would split the rule's own sentence from the rule page that shows the
+  stored text (EDT-24).
+- **Edit the frozen oracle fixtures too.** They are recordings of the legacy product (ADR 060). Editing a
+  recording destroys the evidence, so the gates count the difference instead, as DV-171, DV-172 and DV-174
+  do for the five earlier rule edits.
+- **Retire the rule and ship a new one.** A new GUID strands every stored verdict and every saved report
+  that names the old rule, for no gain over an edit to the sentences.

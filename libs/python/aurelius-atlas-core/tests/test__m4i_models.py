@@ -266,3 +266,52 @@ def test__every_bundle_holds_at_most_one_value_per_hierarchy_child() -> None:
                     assert (entity.get("attributes") or {}).get(attribute) is None, (sample.name, entry, attribute)
                     value = (entity.get("relationshipAttributes") or {}).get(attribute)
                     assert not isinstance(value, list), (sample.name, entry, attribute)
+
+
+# The rule of the sample corpus that measures a SINGLE parent, and the sentences it must hold (PME-11).
+PARENT_RULE_SENTENCES = {
+    "name": "Data entity belongs to a data domain or parent entity",
+    "ruleDescription": "A data entity should belong to a data domain or parent entity",
+    "compliantMessage": "This data entity has a data domain or parent entity",
+    "nonCompliantMessage": "This data entity should have a data domain or parent entity",
+}
+
+
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-11"])
+def test__every_bundle_words_its_single_parent_rule_for_one_parent_of_each_kind() -> None:
+    """Each bundle's data-entity parent rule states one data domain or parent entity (PME-11, DD-750).
+
+    18.2 made both parent ends `SINGLE`, so the rule no longer counts a set and must not read "at least
+    one". The rule is read from each bundle, because the banner prints what the corpus stores (GQ-06).
+    The `--source` companion of `sample_data.zip` states the same three sentences, so a rule page names
+    one thing. `small.zip` ships no governance rule, so only the two rules bundles carry it.
+    """
+    holding = 0
+    for sample in sorted(SAMPLES.glob("*.zip")):
+        with zipfile.ZipFile(sample) as archive:
+            rules: dict[str, dict[str, Any]] = {}
+            for entry in archive.namelist():
+                if not entry.endswith(".json") or entry.startswith("atlas-"):
+                    continue
+                entity = json.loads(archive.read(entry)).get("entity")
+                if not entity or entity["typeName"] != "m4i_gov_data_quality":
+                    continue
+                attributes = entity["attributes"]
+                qualified_name = str(attributes.get("qualifiedName") or "")
+                if qualified_name.startswith("m4i_data_entity--dataDomain"):
+                    rules[qualified_name] = attributes
+
+            if "m4i_data_entity--dataDomain" not in rules:
+                continue
+            holding += 1
+            rule = rules["m4i_data_entity--dataDomain"]
+            assert rule["expression"] == "length('dataDomain', 1) | length('parentEntity', 1)", sample.name
+            for attribute, sentence in PARENT_RULE_SENTENCES.items():
+                assert rule[attribute] == sentence, (sample.name, attribute)
+
+            if sample.name == "sample_data.zip":
+                companion = rules["m4i_data_entity--dataDomain--source"]
+                for attribute in ("ruleDescription", "compliantMessage", "nonCompliantMessage"):
+                    assert companion[attribute] == PARENT_RULE_SENTENCES[attribute], attribute
+
+    assert holding == 2  # both rules bundles carry it
