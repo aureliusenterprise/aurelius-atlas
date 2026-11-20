@@ -51,6 +51,15 @@ export class Drawer {
     readonly title = input<string>();
 
     /**
+     * How wide the panel is (UIC-43). `narrow` is the reading width the
+     * settings and alerts drawers have always had; `wide` gives a form
+     * with roomy rows — the entity editor — more of a large screen.
+     * Only the width changes, so the anatomy and dismissal stay one
+     * component.
+     */
+    readonly size = input<"narrow" | "wide">("narrow");
+
+    /**
      * Accessible name of the close control, localised by the caller (the
      * {@link Modal}'s `ariaLabel` pattern — a translated static attribute
      * would be overwritten by the binding).

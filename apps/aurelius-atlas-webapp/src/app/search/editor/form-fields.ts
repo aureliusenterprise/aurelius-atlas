@@ -2,7 +2,6 @@ import {
     AtlasAttributeDef,
     AtlasEntity,
     AtlasEntityDef,
-    AtlasEntityHeader,
     AtlasEnumDef,
     AtlasRelatedEntity,
     AtlasRelationshipAttributeDef,
@@ -317,13 +316,20 @@ function relationshipFieldOf(
     };
 }
 
-/** The entry a found entity or a seed row becomes, or null without a guid. */
-function pickFrom(source: {
+/**
+ * What a search answer's row must carry to become a pick: the Atlas header
+ * (EDT-14's old door) and the view family's card (EDT-33, DD-711) both fit
+ * it structurally, so no conversion rides between the picker and the value.
+ */
+export type RelationshipPickSource = {
     guid?: string | null;
     typeName?: string | null;
     displayText?: string | null;
     qualifiedName?: string | null;
-}): RelationshipPick | null {
+};
+
+/** The entry a found entity or a seed row becomes, or null without a guid. */
+function pickFrom(source: RelationshipPickSource): RelationshipPick | null {
     if (typeof source.guid !== "string" || source.guid === "") {
         return null;
     }
@@ -343,10 +349,10 @@ function pickFrom(source: {
 /**
  * The pick entry a search answer contributes (EDT-14's pick path — the
  * component keeps no copy of the wire shape).
- * @param entity the search result's entity header
+ * @param entity the search result's row — an Atlas header or a view card
  * @returns the chip's value, or null when it carries no guid to attach
  */
-export function relationshipEntry(entity: AtlasEntityHeader): RelationshipPick | null {
+export function relationshipEntry(entity: RelationshipPickSource): RelationshipPick | null {
     return pickFrom(entity);
 }
 

@@ -1,0 +1,105 @@
+<!--
+  The chip-and-suggest box (UIC-44, DD-713): the classification box's anatomy
+  (DD-335/DD-336) — the chosen chips ride inside the bordered box, the text
+  input sits borderless beside them, and the rows open as a full-width panel
+  over the fields above the box (Bulma's own is-up pattern with its offset,
+  DD-343). The caller answers `typed` with rows and owns the search.
+
+  The ids the combobox wiring names are minted from `idBase`, so two pickers
+  on one page never share one.
+-->
+<div
+    class="dropdown is-up aurelius-token-box"
+    [class.is-active]="panelShown()"
+    [class.is-danger]="invalid()"
+    (focusin)="onBoxFocusIn()"
+    (focusout)="onBoxFocusOut($event)"
+>
+    @for (chip of selected(); track chip.key) {
+        <aurelius-atlas-ui-classification-chip
+            class="aurelius-token-chip"
+            [label]="chip.label"
+            [leadLabel]="chip.leadLabel"
+            [leadColor]="'is-info'"
+            [deletable]="true"
+            [deleteLabel]="deleteLabel()"
+            (remove)="onChipRemove(chip)"
+        ></aurelius-atlas-ui-classification-chip>
+    }
+    @if (!singleFull()) {
+        <!-- FORM-ERR-002: the error line under the box carries the id the
+             input names while `invalid` shows — the same parent-paired idiom
+             as the label. -->
+        <input
+            type="text"
+            [id]="inputId()"
+            class="aurelius-token-input"
+            [value]="text()"
+            [attr.placeholder]="shownPlaceholder()"
+            [attr.aria-labelledby]="labelId()"
+            [attr.aria-invalid]="invalid() ? 'true' : null"
+            [attr.aria-describedby]="invalid() ? errorId() : null"
+            [attr.aria-expanded]="panelShown()"
+            [attr.aria-autocomplete]="'list'"
+            [attr.aria-controls]="panelShown() ? listboxId() : null"
+            [attr.aria-activedescendant]="activeRowId()"
+            role="combobox"
+            autocomplete="off"
+            (input)="onTypedEvent($event)"
+            (keyup.enter)="onEnter()"
+            (keydown.escape)="onEscape($event)"
+            (keydown)="onRowKeys($event)"
+        />
+    }
+    <!-- The ARIA 1.2 combobox's popup (DD-336): a Bulma dropdown panel, not a
+         native select — the input keeps the typed text and the rows are Bulma
+         dropdown items. The rows are divs, not buttons: a row's trail prints
+         the Breadcrumbs component with its links off (DD-714), and an option
+         must hold no nested control. The listbox/option roles are the
+         pattern's own semantics (S6819's native <select> cannot carry them),
+         so each site carries a reason marker — but a <div> cannot: Prettier
+         always splits a comment off a block tag (it keeps the glue for the
+         <button> options in entity-editor), so a marker here would land
+         off-line and stop working. Every flagged line in this popup stays
+         flagged until the server's S6819 allowedRoles parameter lists
+         listbox/option. -->
+    <div class="dropdown-menu" [id]="listboxId()" role="listbox" [attr.aria-label]="label()">
+        <div class="dropdown-content">
+            @for (row of rows(); track row.key; let i = $index) {
+                <div
+                    class="dropdown-item aurelius-token-row"
+                    role="option"
+                    [id]="listboxId() + '-option-' + i"
+                    [attr.aria-selected]="isActive(i)"
+                    [class.is-active]="isActive(i)"
+                    (mousedown)="onRowMousedown($event, row)"
+                >
+                    <!-- The row reads like a card's title line and trail
+                         (EDT-33): the name, then its badge, then the trail
+                         under them. The trail is the Breadcrumbs component
+                         with its links off (UIC-11 amended, DD-714): the row
+                         picks one entity, so the option carries no nested
+                         activation — which is also why it is a div and not a
+                         button. The option's accessible name is these in this
+                         order. -->
+                    <span class="aurelius-token-row-name" [title]="row.name">{{ row.name }}</span>
+                    @if (row.type !== undefined) {
+                        <aurelius-atlas-ui-type-name
+                            class="aurelius-token-row-type"
+                            [typeName]="row.type"
+                            [icon]="row.icon"
+                            [iconClass]="row.iconClass"
+                        />
+                    }
+                    @if (row.trail?.length) {
+                        <aurelius-atlas-ui-breadcrumbs
+                            class="aurelius-token-row-trail"
+                            [items]="row.trail"
+                            [links]="false"
+                        />
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

@@ -3,6 +3,7 @@ import type {
     AtlasEntityDef,
     AtlasEnumDef,
     AtlasRelationshipAttributeDef,
+    EntityCard,
 } from "aurelius-atlas-data-access";
 
 import {
@@ -635,6 +636,27 @@ describe("relationshipEntry (EDT-14's pick path)", () => {
             guid: "g",
             typeName: "Process",
             displayText: "load",
+        });
+    });
+
+    it("maps a view-family card to a pick (EDT-33)", () => {
+        // The picker's rows come from the view door now (DD-711); a card fits
+        // the structural source and its qualified name rides the value. Only
+        // the pick's fields leave — the card's trail and status do not.
+        const found: EntityCard = {
+            guid: "g",
+            typeName: "Process",
+            displayText: "load",
+            qualifiedName: "domain--load",
+            status: "ACTIVE",
+            stale: false,
+            breadcrumb: [{ guid: "d", name: "Domain" }],
+        };
+        expect(relationshipEntry(found)).toEqual({
+            guid: "g",
+            typeName: "Process",
+            displayText: "load",
+            qualifiedName: "domain--load",
         });
     });
 

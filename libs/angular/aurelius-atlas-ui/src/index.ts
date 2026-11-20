@@ -39,4 +39,5 @@ export * from "./lib/section-stats/section-stats.component";
 export * from "./lib/select/select.component";
 export * from "./lib/sortable-table/sortable-table.component";
 export * from "./lib/sortable-table/table-column";
+export * from "./lib/token-picker/token-picker.component";
 export * from "./lib/type-name/type-name.component";

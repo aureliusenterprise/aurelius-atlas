@@ -68,11 +68,11 @@ def _pick_field(authenticated: Page, field_name: str) -> None:
     chip — the picker's own e2e idiom.
     """
     block = authenticated.locator(".aurelius-editor-relationship[data-field='fields']")
-    block.locator(".aurelius-relationship-input").fill(field_name)
+    block.locator(".aurelius-token-input").fill(field_name)
     row = block.locator('[role="option"]').filter(has_text=field_name)
     expect(row).to_be_visible(timeout=10_000)
     row.click()
-    expect(block.locator(".aurelius-relationship-chip")).to_have_count(1)
+    expect(block.locator(".aurelius-token-chip")).to_have_count(1)
 
 
 def _drive_threshold_pair(authenticated: Page, rest: str) -> None:

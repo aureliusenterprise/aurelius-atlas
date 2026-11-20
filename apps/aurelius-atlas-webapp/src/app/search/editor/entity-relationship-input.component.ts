@@ -1,36 +1,55 @@
-import { ChangeDetectionStrategy, Component, computed, effect, inject, input, output, signal } from "@angular/core";
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from "@angular/core";
 import { Subscription } from "rxjs";
-import { SearchService, type AtlasEntityHeader } from "aurelius-atlas-data-access";
-import { ClassificationChip } from "aurelius-atlas-ui";
+import { ViewSearchService, type EntityCard } from "aurelius-atlas-data-access";
+import { TokenPicker, type TokenChip, type TokenRow } from "aurelius-atlas-ui";
 
 import { nameDisplay } from "../meta/type-display";
+import { typeIcon } from "../meta/type-icons";
+import { trailOf } from "../shared/trail";
 import { type RelationshipField, type RelationshipPick, relationshipEntry } from "./form-fields";
 
-/** A suggestion row: the found entity, the label, and whether it is pickable. */
-type SuggestionRow = { entity: AtlasEntityHeader; label: string; disabled: boolean };
-
 /**
- * One relationship-attribute picker (EDT-14, DD-339): the classification box's
- * anatomy (DD-335/DD-336) around a live `searchUsingAttribute` round trip —
- * the stock dashboard's own contract for these pickers (`typeName`, `attrName`
- * "name", `attrValuePrefix`, `limit` 10, a 250 ms debounce). An empty focused
- * box browses up to five candidates of the target type instead (DD-343), so
- * the picker suggests before anything is typed. The chosen entities ride
- * inside the box as chips (the chip lead is the entity's own `typeName` in the
- * term chip's `is-info`, DD-341); a `SINGLE` picker hides the input while it
- * holds one chip (the change is a delete, then a pick).
+ * One relationship-attribute picker (EDT-14 as amended in 7.31, DD-711): the
+ * dumb `TokenPicker` box (UIC-44, DD-713) around a view-family search round
+ * trip — `POST /api/aurelius/v1/search` narrowed to the target type and its
+ * sub types, typed text sent so it matches the beginning of a name and
+ * verified prefix-wise client-side, at the stock dashboard's 10 typed /
+ * 5 browse limits with its 250 ms debounce. An empty focused box browses up to
+ * five candidates of the target type instead (DD-343), so the picker suggests
+ * before anything is typed. Each row reads like a search card (EDT-33): the
+ * name, its type badge, and the stored trail — names repeat, type and trail
+ * do not.
  *
- * The component lives in the webapp, not the ui library, because its whole
- * job is data-access wiring (DD-341 — the ui library is the dumb-component
- * contract of 7.2 and never injects an HTTP client). The editor holds the
- * value: `selected` seeds and replaces the chips, `changed` carries the full
- * new list on every pick or removal.
+ * This component is the data wiring and nothing else (DD-341 — the ui library
+ * never injects an HTTP client): it answers the box's `typed` with rows and
+ * turns the box's `picked` back into the saved entry. The box, its chips, its
+ * combobox keyboard and its accessible name belong to the picker (UIC-44). The
+ * editor holds the value: `selected` seeds and replaces the chips, `changed`
+ * carries the full new list on every pick or removal.
  */
 @Component({
-    imports: [ClassificationChip],
+    imports: [TokenPicker],
     selector: "aurelius-atlas-webapp-entity-relationship-input",
-    templateUrl: "./entity-relationship-input.component.html",
-    styleUrl: "./entity-relationship-input.component.scss",
+    template: `
+        <aurelius-atlas-ui-token-picker
+            [selected]="chips()"
+            [rows]="rows()"
+            [text]="text()"
+            [single]="field().single"
+            [invalid]="invalid()"
+            [label]="label()"
+            [placeholder]="placeholder"
+            [singlePlaceholder]="singlePlaceholder"
+            [deleteLabel]="deleteLabel()"
+            [labelId]="labelId()"
+            [errorId]="errorId()"
+            [idBase]="idBase()"
+            (typed)="onTyped($event)"
+            (entered)="onEntered()"
+            (picked)="onPicked($event)"
+            (removed)="onRemoved($event)"
+        />
+    `,
     changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class EntityRelationshipInput {
@@ -55,22 +74,13 @@ export class EntityRelationshipInput {
     /** The full new value on every pick or removal (EDT-14). */
     readonly changed = output<readonly RelationshipPick[]>();
 
-    private readonly search = inject(SearchService);
+    private readonly search = inject(ViewSearchService);
 
-    /** The typed text — the input is a plain control; the picker holds no form. */
-    private readonly text = signal("");
+    /** The typed text — the box shows it, this component holds it (UIC-44). */
+    protected readonly text = signal("");
 
-    /** Whether the box holds focus — the panel opens for the box (DD-335). */
-    private readonly focused = signal(false);
-
-    /** Whether the panel is open for the current typing run (DD-335). */
-    private readonly panelOpen = signal(true);
-
-    /** The keyboard-active option (DD-336): first row until Down/Up move it. */
-    private readonly activeRow = signal(0);
-
-    /** The found entities awaiting the exclusions (the raw search answer). */
-    private readonly found = signal<readonly AtlasEntityHeader[]>([]);
+    /** The found cards awaiting the exclusions (the raw search answer). */
+    private readonly found = signal<readonly EntityCard[]>([]);
 
     /** The in-flight search (a new keystroke drops it — last typed text wins). */
     private pending: Subscription | null = null;
@@ -78,24 +88,16 @@ export class EntityRelationshipInput {
     /** The debounce timer (250 ms, the stock select2's delay — DD-339). */
     private timer: ReturnType<typeof setTimeout> | null = null;
 
-    /** A pickable suggestion carries a guid (the entry the save writes). */
-    private static pickable(entity: AtlasEntityHeader): boolean {
-        return typeof entity.guid === "string" && entity.guid !== "";
-    }
-
     /** The chips' display labels — the value keeps the raw fields (EDT-15).
      * The lead word is the dictionary display name of the pick's type
      * (DD-379), raw for a name the dictionary never saw. */
-    protected readonly chips = computed(() =>
+    protected readonly chips = computed<TokenChip[]>(() =>
         this.selected().map((pick) => ({
             key: pick.guid,
             label: pick.displayText ?? pick.qualifiedName ?? pick.guid,
-            lead: nameDisplay(pick.typeName ?? ""),
+            leadLabel: nameDisplay(pick.typeName ?? ""),
         })),
     );
-
-    /** Whether the picker is full: a SINGLE field with one chip hides the input (EDT-14). */
-    protected readonly singleFull = computed(() => this.field().single && this.selected().length >= 1);
 
     /** The chosen guids plus the edited entity — the panel drops all of them (EDT-14). */
     private readonly excluded = computed(() => {
@@ -107,69 +109,72 @@ export class EntityRelationshipInput {
         return ids;
     });
 
-    /** The panel rows (EDT-14): the found entities minus the excluded, and a
-     * found entity without a guid — nothing to attach — sits disabled. */
-    protected readonly suggestions = computed<SuggestionRow[]>(() => {
+    /** The panel rows (EDT-14, EDT-33): the found cards minus the excluded.
+     * The door matches whole analysed tokens, so typed text also gets the
+     * name-prefix check here — the rule the old attribute door applied
+     * server-side (DD-711). The card always carries a guid, so every row is
+     * pickable; the trail drops the entity's own crumb (VDR-06 appends it,
+     * and the row *is* the entity) and rides on as the crumbs the card's own
+     * trail carries, so the row prints them with the Breadcrumbs component
+     * like every other trail in the product (DD-714). */
+    protected readonly rows = computed<TokenRow[]>(() => {
         const excluded = this.excluded();
+        const typed = this.text().trim().toLowerCase();
 
         return this.found()
-            .filter((entity) => !(typeof entity.guid === "string" && excluded.has(entity.guid)))
-            .map((entity) => ({
-                entity,
-                label: entity.displayText ?? entity.guid ?? "",
-                disabled: !EntityRelationshipInput.pickable(entity),
-            }));
+            .filter((card) => !excluded.has(card.guid))
+            .filter((card) => typed === "" || (card.displayText || card.guid).toLowerCase().startsWith(typed))
+            .map((card) => {
+                const icon = typeIcon(card.typeName);
+                const trail = trailOf(card, typeIcon).slice(0, -1);
+                return {
+                    key: card.guid,
+                    name: card.displayText || card.guid,
+                    type: nameDisplay(card.typeName),
+                    ...(icon !== undefined ? { icon: icon.icon, iconClass: icon.classIcon } : {}),
+                    ...(trail.length > 0 ? { trail } : {}),
+                };
+            });
     });
 
-    /** Whether the panel shows (EDT-14, DD-335): focused, open, and rows to show. */
-    protected readonly panelShown = computed(
-        () => this.focused() && this.panelOpen() && !this.singleFull() && this.suggestions().length > 0,
-    );
+    /** The ids the combobox wiring (DD-336) names — unique per field. The
+     * editor's label and error lines carry the same prefix (EDT-17), so the
+     * picker mints its listbox and input under it. */
+    protected readonly idBase = computed(() => `editor-relationship-${this.field().name}`);
 
-    /** The active row's id, for the combobox's aria-activedescendant (DD-336). */
-    protected readonly activeRowId = computed(() =>
-        this.panelShown() ? `${this.listboxId()}-option-${this.activeRow()}` : null,
-    );
+    protected readonly labelId = computed(() => `${this.idBase()}-label`);
 
-    /** The ids the combobox wiring (DD-336) names — unique per field. */
-    protected readonly labelId = computed(() => `editor-relationship-${this.field().name}-label`);
-
-    protected readonly listboxId = computed(() => `editor-relationship-${this.field().name}-listbox`);
-
-    protected readonly inputId = computed(() => `editor-relationship-${this.field().name}-input`);
-
-    constructor() {
-        // The active row re-clamps as the answer changes (DD-336's rule).
-        effect(() => {
-            const count = this.suggestions().length;
-            if (count > 0 && this.activeRow() >= count) {
-                this.activeRow.set(0);
-            }
-        });
-    }
+    protected readonly errorId = computed(() => `${this.idBase()}-error`);
 
     /** The placeholder by cardinality (EDT-17's catalogue keys). */
     protected readonly placeholder = $localize`:@@search.components.editor.components.relationshipsInput.addPlaceholder:Add a relationship...`;
 
     protected readonly singlePlaceholder = $localize`:@@search.components.editor.components.relationshipsInput.selectPlaceholder:Select a relationship...`;
 
-    /** The input's `input` event → the typed text (EDT-14). */
-    protected onTypedEvent(event: Event): void {
-        this.onTyped((event.target as HTMLInputElement).value);
-    }
-
     /** Typing (EDT-14): non-empty text searches with the typed prefix; empty
      * or whitespace-only text is the browse (DD-343). */
-    private onTyped(value: string): void {
+    protected onTyped(value: string): void {
         this.text.set(value);
         this.searchFor(value.trim());
     }
 
-    /** One debounced round trip (EDT-14, DD-343): 250 ms, the stock select2's
-     * delay; an empty prefix browses the target type (limit 5), typed text
-     * searches it (limit 10, the stock contract). A pending timer or request
-     * is dropped — the latest intent wins. */
-    private searchFor(prefix: string): void {
+    /** The box was entered with nothing typed (DD-343): browse up to five
+     * candidates, so the picker suggests before anything is typed. */
+    protected onEntered(): void {
+        if (this.text().trim() === "") {
+            this.searchFor("");
+        }
+    }
+
+    /** One debounced round trip (EDT-14 as amended, DD-711): 250 ms, the stock
+     * select2's delay; an empty text browses the target type (limit 5), typed
+     * text searches it (limit 10, the stock contract). The door matches whole
+     * analysed tokens, so the typed text carries a trailing wildcard — the
+     * "beginning of the name" half of the stock contract (AVR-04) — with the
+     * wildcard characters themselves stripped, since the door would read them
+     * as its own syntax. A pending timer or request is dropped — the latest
+     * intent wins. */
+    private searchFor(text: string): void {
         if (this.timer !== null) {
             clearTimeout(this.timer);
             this.timer = null;
@@ -178,18 +183,20 @@ export class EntityRelationshipInput {
         this.pending = null;
         this.timer = setTimeout(() => {
             this.timer = null;
+            const target = this.field().targetType;
             this.pending = this.search
-                .searchUsingAttribute({
-                    typeName: this.field().targetType,
-                    attrName: "name",
-                    attrValuePrefix: prefix,
-                    limit: prefix === "" ? 5 : 10,
+                .search({
+                    // The type-narrowing idiom of the search page (VSR-04):
+                    // the stored documents carry the whole super chain, so a
+                    // sub type's entities answer too.
+                    filters: { any: [{ typeName: [target] }, { superTypeNames: [target] }] },
+                    limit: text === "" ? 5 : 10,
+                    ...(text === "" ? {} : { query: `${text.replace(/[*?]/g, "")}*` }),
                 })
                 .subscribe({
                     next: (answer) => {
                         this.pending = null;
-                        this.found.set(answer.entities ?? []);
-                        this.activeRow.set(0);
+                        this.found.set(answer.cards ?? []);
                     },
                     error: () => {
                         // A failed search leaves the panel as it was (EDT-14):
@@ -201,79 +208,15 @@ export class EntityRelationshipInput {
         }, 250);
     }
 
-    /** The box gained focus (DD-335): the panel opens for the box, and an
-     * empty box browses up to five candidates (DD-343). Moves within the box
-     * (chip → its delete button) do not re-browse — one list per entry. */
-    protected onBoxFocusIn(): void {
-        const entering = !this.focused();
-        this.focused.set(true);
-        this.panelOpen.set(true);
-        this.activeRow.set(0);
-        if (entering && this.text().trim() === "") {
-            this.searchFor("");
-        }
-    }
-
-    /** Focus left the box (DD-335): the panel closes; a tab into it keeps it open. */
-    protected onBoxFocusOut(event: FocusEvent): void {
-        const next = event.relatedTarget as Node | null;
-        if (next !== null && (event.currentTarget as Node).contains(next)) {
+    /** The box picked a row (EDT-14): append its entry and clear the input.
+     * The row's key is the card's guid, so the value keeps the card's own
+     * fields and never the row's trail (EDT-15). */
+    protected onPicked(row: TokenRow): void {
+        const card = this.found().find((candidate) => candidate.guid === row.key);
+        if (card === undefined) {
             return;
         }
-        this.focused.set(false);
-    }
-
-    /** Escape inside the box (DD-335): close the panel only, keep the text. */
-    protected onEscape(event: Event): void {
-        if (!this.panelShown()) {
-            return;
-        }
-        event.stopPropagation();
-        this.panelOpen.set(false);
-    }
-
-    /** Down/Up move the active row (DD-336): the input keeps focus. */
-    protected onRowKeys(event: KeyboardEvent): void {
-        if (event.key !== "ArrowDown" && event.key !== "ArrowUp") {
-            return;
-        }
-        event.preventDefault();
-        const count = this.suggestions().length;
-        if (count === 0) {
-            return;
-        }
-        this.panelOpen.set(true);
-        const step = event.key === "ArrowDown" ? 1 : -1;
-        // A shut panel starts from just before the first row (going down) or
-        // just past the last (going up), so the first keypress lands on the
-        // near end (DD-336).
-        const closedStart = step === 1 ? -1 : count;
-        const from = this.panelShown() ? this.activeRow() : closedStart;
-        this.activeRow.set((from + step + count) % count);
-    }
-
-    /** Enter commits the active row (DD-336); with the panel shut, nothing. */
-    protected onEnter(): void {
-        if (!this.panelShown()) {
-            return;
-        }
-        const row = this.suggestions()[this.activeRow()];
-        if (row !== undefined && !row.disabled) {
-            this.pick(row.entity);
-        }
-    }
-
-    /** A panel click commits (mousedown — the click never lands, DD-335). */
-    protected onRowMousedown(event: MouseEvent, row: SuggestionRow): void {
-        event.preventDefault();
-        if (!row.disabled) {
-            this.pick(row.entity);
-        }
-    }
-
-    /** Commit a pick (EDT-14): append it, clear the input, keep focus in the box. */
-    private pick(entity: AtlasEntityHeader): void {
-        const entry = relationshipEntry(entity);
+        const entry = relationshipEntry(card);
         if (entry === null) {
             return;
         }
@@ -281,21 +224,10 @@ export class EntityRelationshipInput {
         this.changed.emit(current.some((pick) => pick.guid === entry.guid) ? current : [...current, entry]);
         this.text.set("");
         this.found.set([]);
-        this.activeRow.set(0);
     }
 
     /** A chip's delete (EDT-14/UIC-24): the picker answers the full new list. */
-    protected removeAt(index: number): void {
-        this.changed.emit(this.selected().filter((_, at) => at !== index));
-    }
-
-    /** Whether a panel row is the keyboard-active one (DD-336). */
-    protected isActive(index: number): boolean {
-        return this.panelShown() && index === this.activeRow();
-    }
-
-    /** The current text, for the input's value binding. */
-    protected typedText(): string {
-        return this.text();
+    protected onRemoved(chip: TokenChip): void {
+        this.changed.emit(this.selected().filter((pick) => pick.guid !== chip.key));
     }
 }
