@@ -2743,6 +2743,9 @@ Attributes:
 - **`governed_source`** (`str | None`) –
 
   The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).
+- **`hasparent`** (`bool`) –
+
+  Whether the entity holds any parent (RPS-06, DD-758).
 - **`name`** (`str | None`) –
 - **`parentguid`** (`str | None`) –
 - **`referenceablequalifiedname`** (`str`) –
@@ -2955,6 +2958,16 @@ governed_source: str | None = None
 ```
 
 The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).
+
+#### hasparent
+
+```
+hasparent: bool = False
+```
+
+Whether the entity holds any parent (RPS-06, DD-758).
+
+`parentguid` alone cannot answer a search filter for it: an entity with no parent has no `parentguid` in the document, and Elasticsearch reads a missing field as neither true nor false.
 
 #### name
 

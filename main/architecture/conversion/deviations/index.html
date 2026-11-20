@@ -8113,6 +8113,22 @@ each tolerated difference to its entry here; a difference without an entry is a 
 <td>The legacy corpus carried the rules from a metamodel that held those names, and the dictionary dropped them. A dead rule stamps a noncompliant verdict on every entity of its type forever. 15 of the 29 read, so 245 always-fail verdicts leave the read set, and the gates count 1,785 over 66 rules instead of 2,030 over 95. The oracle keeps its 29 documents and 1,612 verdicts, as its 27 verdict rules are not the 29. The 14.6 gates drop the GUIDs, named once in <code>test__app_search_engine.py</code> (DV-173).</td>
 <td>18.3</td>
 </tr>
+<tr>
+<td>DV-186</td>
+<td>Interface</td>
+<td>(View door origin, no Atlas behaviour.) The view door's <code>sections</code> step created a parent edge on a candidate that already held one and cleared nothing, not even an edge of the same relationship, so a child moved by the wire door on the same attribute stayed in two places through the view door.</td>
+<td>The door refuses the save without <code>unsafeReparent</code> (RPS-01) and clears the child's other parent edge of the group with it, so a moved child reads back with exactly one parent (RPS-05, DD-757). The view door is Aurelius's own surface, so this is a fix of Aurelius behaviour, recorded for the change it makes.</td>
+<td>A two-parent child breaks the single-parent read, the governance rule over it, and the lineage page. The wire door never cleared an edge of another relationship either (DV-187), so on Aurelius both doors had to change together.</td>
+<td>18.4</td>
+</tr>
+<tr>
+<td>DV-187</td>
+<td>Interface</td>
+<td>Apache Atlas 2.4.0 moves a child only within the attribute it writes: <code>EntityGraphMapper.addInverseReference</code> replaces the candidate's existing edge of that one relationship when the opposite end is <code>SINGLE</code>, and never looks at a different relationship. Adding a field through <code>datasets</code> when the field already hangs under a <code>parentField</code> keeps both edges, and nothing refuses it; the engine enforces the <code>SINGLE</code> child end nowhere on a parent-side write.</td>
+<td>Aurelius refuses that write with <code>INSTANCE_CRUD_INVALID_PARAMS</code> naming each held candidate and the parent it holds (RPS-01, RPS-03), unless the request carries the query parameter <code>unsafeReparent</code> (RPS-04). With it, both doors clear the family edge first and the child reads back with exactly one parent (RPS-05). An import is exempt, so an export replays unchanged (RPS-08).</td>
+<td>A write that leaves a child under two parents breaks 18.2's <code>SINGLE</code> cardinality silently. The opt-in keeps the Atlas engine (ADR 051) while making the author ask for the move; a client that re-parents through the Atlas wire API now sends the parameter.</td>
+<td>18.4</td>
+</tr>
 </tbody>
 </table>
 

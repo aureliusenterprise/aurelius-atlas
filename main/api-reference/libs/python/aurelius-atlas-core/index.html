@@ -4653,6 +4653,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.stored_entity.StoredAppSearch.hasparent" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hasparent
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#aurelius_atlas_core.stored_entity.StoredAppSearch.name" class="md-nav__link">
     <span class="md-ellipsis">
       <span class="md-typeset">
@@ -14889,6 +14900,17 @@
     <span class="md-ellipsis">
       <span class="md-typeset">
         <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;governed_source
+      </span>
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#aurelius_atlas_core.stored_entity.StoredAppSearch.hasparent" class="md-nav__link">
+    <span class="md-ellipsis">
+      <span class="md-typeset">
+        <code class="doc-symbol doc-symbol-toc doc-symbol-attribute"></code>&nbsp;hasparent
       </span>
     </span>
   </a>
@@ -27596,6 +27618,20 @@ a pair of lists, the other ends' names and, at the same positions, their GUIDs (
           </div>
         </li>
         <li class="doc-section-item field-body">
+          <b><code><a class="autorefs autorefs-internal" title="            hasparent
+
+
+  
+      class-attribute
+      instance-attribute
+   (aurelius_atlas_core.stored_entity.StoredAppSearch.hasparent)" href="./#aurelius_atlas_core.stored_entity.StoredAppSearch.hasparent">hasparent</a></code></b>
+              (<code><span title="bool">bool</span></code>)
+          –
+          <div class="doc-md-description">
+            <p>Whether the entity holds any parent (RPS-06, DD-758).</p>
+          </div>
+        </li>
+        <li class="doc-section-item field-body">
           <b><code><a class="autorefs autorefs-internal" title="            name
 
 
@@ -28437,6 +28473,33 @@ declared the GUID field, its pipeline never filled it (DD-626).</p>
     <div class="doc doc-contents ">
 
         <p>The hash of what the verdicts read on the entity; a write that changes it drops both marks (DD-535).</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h4 id="aurelius_atlas_core.stored_entity.StoredAppSearch.hasparent" class="doc doc-heading">
+<code class="doc-symbol doc-symbol-heading doc-symbol-attribute"></code>            <span class="doc doc-object-name doc-attribute-name">hasparent</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#aurelius_atlas_core.stored_entity.StoredAppSearch.hasparent" class="headerlink" title="Permanent link">&para;</a></h4>
+<div class="doc-signature codehilite"><pre><span></span><code><span class="n">hasparent</span><span class="p">:</span> <span class="n"><span title="bool">bool</span></span> <span class="o">=</span> <span class="kc">False</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Whether the entity holds any parent (RPS-06, DD-758).</p>
+<p><code>parentguid</code> alone cannot answer a search filter for it: an entity with no parent has no
+<code>parentguid</code> in the document, and Elasticsearch reads a missing field as neither true nor false.</p>
 
     </div>
 
