@@ -254,7 +254,9 @@ spec:
                     secret:
                         # The trust root (CHT-25): the proxies verify the
                         # server/collector leaves against this (DD-259's
-                        # chain).
+                        # chain). It defaults to this chart's own Certificate
+                        # Secret, whose ca.crt cert-manager always writes
+                        # (DD-707), or a trust root named in values.
                         secretName: {{ include "atlas-webapp.caSecretName" . }}
                         items:
                             - key: ca.crt

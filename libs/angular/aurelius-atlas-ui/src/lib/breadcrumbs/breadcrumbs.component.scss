@@ -38,12 +38,18 @@
    colour — that one is a darkened link blue, which reads as a link.
    The demo's active crumb is the same ink: rgb(54,54,54) measured, the
    value this token resolves to. */
-.breadcrumb li.is-active > span {
+.breadcrumb li > span {
     align-items: center;
-    color: var(--bulma-text-strong);
     display: flex;
     justify-content: center;
     padding: var(--bulma-breadcrumb-item-padding-vertical) var(--bulma-breadcrumb-item-padding-horizontal);
+}
+
+/* The strong ink belongs to the crumb of the entity being viewed: with
+   `links` off nothing is active, so a printed trail keeps the ink of the
+   control that holds it (DD-714). */
+.breadcrumb li.is-active > span {
+    color: var(--bulma-text-strong);
 }
 
 .breadcrumb li:first-child > span {
@@ -52,6 +58,11 @@
 
 .breadcrumb ul {
     margin-left: 0;
+    /* Bulma wraps a long trail onto another line, which is what a page header
+       wants. A trail printed inside a one-line row cannot grow, so that host
+       may set the custom property to `nowrap` and clip the trail itself —
+       custom properties cross the component boundary by inheritance. */
+    flex-wrap: var(--aurelius-breadcrumbs-wrap, wrap);
 }
 
 .breadcrumb li {

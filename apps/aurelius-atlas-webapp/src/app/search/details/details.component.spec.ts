@@ -1,6 +1,7 @@
 import { ViewportScroller } from "@angular/common";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
 import { ActivatedRoute, ParamMap, Router, convertToParamMap, provideRouter, type UrlTree } from "@angular/router";
 import { By } from "@angular/platform-browser";
@@ -14,6 +15,7 @@ import { Breadcrumbs, PropertiesItem } from "aurelius-atlas-ui";
 import modelFixture from "../../../../tests/fixtures/lineage-graph.extract.json";
 
 import { AlertsService } from "../../alerts/alerts.service";
+import { VersionService } from "../../shell/version.service";
 import { APP_CONFIG } from "../../tokens";
 import { EntitySaved } from "../editor/entity-saved";
 
@@ -80,6 +82,10 @@ function setup(guid = "7a1b", { atlasWrite = true }: { atlasWrite?: boolean } = 
                 provide: Keycloak,
                 useValue: { hasResourceRole: (role: string) => atlasWrite && role === "atlas-write" },
             },
+            // The lineage box's save flow reads the version (VER-01, DD-725);
+            // the screen's own reads are what this spec verifies, so the
+            // version never leaves this stub (its fetch is its service's spec).
+            { provide: VersionService, useValue: { version: signal("7.34.0#abc1234") } },
         ],
     });
     const fixture = TestBed.createComponent(Details);
@@ -299,10 +305,14 @@ describe("Details data spine (DET-08..DET-13)", () => {
     it("routes the details screen when a property link is clicked (DET-11, DET-06)", () => {
         const { fixture, compiled, httpMock } = setup();
         // VDR-04: the section's ends merge into the table as a link array —
-        // the row the Atlas GET's merged relationshipAttributes answered.
+        // the row the Atlas GET's merged relationshipAttributes answered. A read
+        // end carries its type and state (AVS-04), which is what marks it as the
+        // entity's own relationship attribute rather than a card's derived pair.
         arrive(fixture, httpMock, {
             ...ANSWER,
-            sections: [ends("upstreamDatasets", [{ guid: "linked-1", displayText: "Upstream" }])],
+            sections: [
+                ends("upstreamDatasets", [{ guid: "linked-1", displayText: "Upstream", typeName: "m4i_dataset" }]),
+            ],
         });
 
         // Sorted rows: description, owner, upstreamDatasets — the link is
@@ -1149,9 +1159,9 @@ describe("Details m4i sections (DET-15..DET-26)", () => {
         expect(headerIcon).toBeTruthy();
         expect(headerIcon!.classList.contains("business")).toBe(true);
         expect(headerIcon!.querySelector("fa-icon svg")).toBeTruthy();
-        // The card badges (DV-167, DD-616): the shared rich card shows the
-        // type's display name — the card shape carries no `typeAlias`, so
-        // an alias never reaches a card badge anymore.
+        // The card badges (DD-616, MMS-09): the shared rich card badges
+        // the card's own `typeAlias` when it carries one — these fixtures
+        // carry none, so each badge shows the type's display name.
         const badges = [
             ...compiled.querySelectorAll("#related-attributes aurelius-atlas-ui-entity-card .media-right"),
         ].map((badge) => normalize(badge.textContent));

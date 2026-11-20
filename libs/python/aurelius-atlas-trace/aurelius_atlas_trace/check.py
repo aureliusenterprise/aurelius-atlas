@@ -51,11 +51,27 @@ class Findings:
 def collect_project(project: Project) -> ProjectTests:
     """Collect a project's tests, without running them, and read their markers (TRC-10).
 
+    Each test directory is collected by its own pytest run: pytest imports a
+    ``conftest.py`` as the bare module ``conftest``, so one run over ``tests``
+    and ``e2e`` lets the alphabetically first one answer the other's
+    ``from conftest import`` (DD-701). One run per directory keeps each
+    ``conftest.py`` the one pytest loads for its own tests.
+
     Raises:
         CollectionError: pytest failed to collect, for example because a test module does not import.
     """
-    if not project.test_dirs:
-        return ProjectTests(project=project, tests=())
+    tests: list[TracedTest] = []
+    for test_dir in project.test_dirs:
+        tests += _collect_tests(project, test_dir)
+    return ProjectTests(project=project, tests=tuple(tests))
+
+
+def _collect_tests(project: Project, test_dir: Path) -> tuple[TracedTest, ...]:
+    """The collected tests of one test directory of ``project``, without running them.
+
+    Raises:
+        CollectionError: pytest failed to collect the directory.
+    """
     with tempfile.TemporaryDirectory() as work_dir:
         trace_file = Path(work_dir) / "trace.json"
         result = subprocess.run(  # noqa: S603 - fixed arguments and no shell
@@ -69,7 +85,7 @@ def collect_project(project: Project) -> ProjectTests:
                 "no:cacheprovider",
                 "--trace-json",
                 str(trace_file),
-                *(str(path.relative_to(project.root)) for path in project.test_dirs),
+                str(test_dir.relative_to(project.root)),
             ],
             cwd=project.root,
             capture_output=True,
@@ -82,8 +98,7 @@ def collect_project(project: Project) -> ProjectTests:
                     project=project.root.name, code=result.returncode, output=result.stdout + result.stderr
                 )
             )
-        tests = read_trace_file(trace_file).tests if trace_file.exists() else ()
-    return ProjectTests(project=project, tests=tests)
+        return read_trace_file(trace_file).tests if trace_file.exists() else ()
 
 
 def inventory(config: TraceConfig) -> list[PublicFunction]:

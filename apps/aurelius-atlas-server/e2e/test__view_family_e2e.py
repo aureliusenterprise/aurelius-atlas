@@ -15,7 +15,7 @@ SEARCH = "/api/aurelius/v1/search"
 VIEW = "/api/aurelius/v1/entity/guid"
 NIL = "00000000-0000-0000-0000-000000000000"
 
-SHARED = ("guid", "typeName", "superTypeNames", "name", "qualifiedName", "displayText", "status", "labels")
+SHARED = ("guid", "typeName", "superTypeNames", "name", "qualifiedName", "displayText", "typeAlias", "status", "labels")
 """The card's fields both doors answer (AVR-08)."""
 
 
@@ -67,14 +67,21 @@ async def test__a_results_request_answers_cards_facets_and_a_total(
 @pytest.mark.covers(
     "aurelius_atlas_server.routes.view_search.search",
     "aurelius_atlas_server.routes.view_entity.read",
-    rules=["AVR-08", "AVR-10"],
+    rules=["AVR-08", "AVR-10", "MMS-09"],
 )
 async def test__the_details_read_of_a_card_agrees_with_the_search_door(
     client: httpx.AsyncClient, reader_token: Callable[[], str]
 ) -> None:
     """One entity read through both doors: the same shared fields; a GUID of none answers the Atlas 404 (AVR-10)."""
     run = uuid.uuid4().hex
-    guid = await make(client, "m4i_data_entity", run, name=f"view read {run}", definition="read through one door")
+    guid = await make(
+        client,
+        "m4i_data_entity",
+        run,
+        name=f"view read {run}",
+        definition="read through one door",
+        typeAlias="Viewed entity",  # the alias rides both doors (MMS-09, DD-721)
+    )
 
     answer = (await client.post(SEARCH, json={"query": run})).json()
     (card,) = answer["cards"]

@@ -14,7 +14,9 @@ import { Router, provideRouter } from "@angular/router";
 import { AdminService, AtlasSession } from "aurelius-atlas-data-access";
 import { of, throwError } from "rxjs";
 
+import { signal } from "@angular/core";
 import { AppConfig } from "../config";
+import { VersionService } from "../shell/version.service";
 import { APP_CONFIG } from "../tokens";
 import { SettingsPanel } from "./settings-panel.component";
 import { SettingsService } from "./settings.service";
@@ -24,9 +26,10 @@ const config: AppConfig = {
     apiBaseUrl: "/api",
     otelExporterUrl: "/otel/v1/traces",
     appName: "Aurelius Atlas Data Governance",
-    appCopyright: 2022,
-    appVersion: "7.14.0#abc1234",
 };
+
+/** The version About prints: the server's answer, stubbed so the line is known. */
+const versionStub = { provide: VersionService, useValue: { version: signal("7.34.0#abc1234") } };
 
 const session = {
     userName: null,
@@ -47,6 +50,7 @@ function setup() {
             provideRouter([]),
             { provide: APP_CONFIG, useValue: config },
             { provide: AdminService, useValue: { getSession: () => of(session) } },
+            versionStub,
         ],
     });
 }
@@ -311,15 +315,17 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
         expect(buttons().map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true", "false"]);
     });
 
-    it("About shows the build's one version (SPL-12, DD-165)", async () => {
+    it("About shows the build's one version (SPL-12, DD-725)", async () => {
         const { compiled } = await renderOpen();
         const about = [...compiled.querySelectorAll<HTMLElement>(".settings-section")].at(-1);
         const text = about?.textContent?.replace(/\s+/g, " ").trim();
 
         expect(text).toContain(config.appName);
-        expect(text).toContain(config.appVersion);
-        // One release, one number: app and server share it (DD-165) — the
-        // server is not fetched and not listed.
+        // The one number comes from the server's answer (VER-01), read once by
+        // VersionService — the section holds no fetch of its own.
+        expect(text).toContain("7.34.0#abc1234");
+        // One release, one number: app and server share it (DD-165, kept) — the
+        // server is not listed as its own line.
         expect(text).not.toContain("Server");
     });
 
@@ -333,6 +339,7 @@ describe("SettingsPanel (SPL-03, SPL-06..SPL-14)", () => {
                 provideRouter([]),
                 { provide: APP_CONFIG, useValue: config },
                 { provide: AdminService, useValue: { getSession: () => throwError(() => new Error("no session")) } },
+                versionStub,
             ],
         });
 

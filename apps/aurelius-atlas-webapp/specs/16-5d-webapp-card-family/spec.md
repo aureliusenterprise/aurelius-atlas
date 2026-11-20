@@ -27,12 +27,12 @@ the legacy sections read App Search.
 
 Not in scope, with the increment that will:
 
-| Not delivered                                                                    | Lands with |
-| -------------------------------------------------------------------------------- | ---------- |
-| Role labels on the card's people row (DV-167, DD-617)                            | –          |
-| A card badge alias (the card shape has no `typeAlias`, DV-167's second clause)   | –          |
-| The Governance Quality Rules rows (they keep the uniform body on the bulk shape) | –          |
-| The App Search wire retired; `/api/atlas/v2/entity/bulk` left for other callers  | 16.6       |
+| Not delivered                                                                    | Lands with                            |
+| -------------------------------------------------------------------------------- | ------------------------------------- |
+| Role labels on the card's people row (DV-167, DD-617)                            | –                                     |
+| A card badge alias (the card shape has no `typeAlias`, DV-167's second clause)   | 18.1 (MMS-09, DD-721, DV-167 amended) |
+| The Governance Quality Rules rows (they keep the uniform body on the bulk shape) | –                                     |
+| The App Search wire retired; `/api/atlas/v2/entity/bulk` left for other callers  | 16.6                                  |
 
 ## Semantics
 

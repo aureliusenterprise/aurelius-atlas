@@ -105,23 +105,26 @@ def test__the_rows_are_twelve_columns_in_upstream_order() -> None:
     assert rows[1]["to_entity_id"] == E_OUT
 
 
-@pytest.mark.covers("aurelius_atlas_lineage_model.lineage.flatten_relations", rules=["LM-03"])
-def test__the_process_family_is_the_legacy_list() -> None:
-    """The seven m4i_*_process type names, verbatim from the legacy's process_types."""
-    assert (
-        frozenset(
-            {
-                "m4i_generic_process",
-                "m4i_api_operation_process",
-                "m4i_connector_process",
-                "m4i_ingress_controller_process",
-                "m4i_ingress_object_process",
-                "m4i_kubernetes_service_process",
-                "m4i_microservice_process",
-            }
-        )
-        == PROCESS_TYPES
-    )
+@pytest.mark.covers("aurelius_atlas_lineage_model.lineage.flatten_relations", rules=["LM-03", "MMS-05"])
+def test__the_process_family_is_the_metamodel_process_type() -> None:
+    """The legacy's seven-name process_types list shrank to the metamodel's one process type (DD-717)."""
+    assert frozenset({"m4i_generic_process"}) == PROCESS_TYPES
+
+
+@pytest.mark.covers("aurelius_atlas_lineage_model.lineage.flatten_relations", rules=["LM-02", "MMS-05"])
+def test_a_legacy_connector_process_reads_as_an_entity_row() -> None:
+    """A lineage endpoint naming a retired connector process fills its entity slots, not its process ones."""
+    legacy = {
+        "guidEntityMap": {
+            str(E_IN): {"guid": str(E_IN), "typeName": "m4i_dataset", "displayText": "In"},
+            str(P_LOAD): {"guid": str(P_LOAD), "typeName": "m4i_kubernetes_service_process", "displayText": "Sync"},
+        },
+        "relations": [{"fromEntityId": str(E_IN), "relationshipId": "rel-1", "toEntityId": str(P_LOAD)}],
+    }
+    row = flatten_relations(_info(legacy))[0]
+
+    assert row["to_entity_id"] == P_LOAD
+    assert row["to_process_id"] is None
 
 
 # ---------------------------------------------------------------------------

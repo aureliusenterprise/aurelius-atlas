@@ -33,12 +33,15 @@ Part of the template **spine**.
   required help, search button (Aurelius select, minus its search modal)
 - `SortableTable` + `TableColumn`/`TableRow` — header-click sorting, paging, row
   selection; columns and rows declared as `ng-template` blocks
+- `TokenPicker` — chip-and-suggest box: deletable chips inside the bordered box,
+  borderless input, panel of name/type/trail rows with the combobox keyboard and
+  ARIA wiring; the caller answers `typed` with rows and owns the search
 - `TypeName` — type badge: icon, alias-over-name, base-type suffix (Aurelius type-name)
 
 Every component ships a Storybook story (`.stories.ts`); the interactive ones
 (`Accordion`, `Breadcrumbs`, `ClassificationChip`, `DetailsNavigation`, `EntityCard`,
 `FacetList`, `Modal`, `PropertiesItem`, `SearchField`, `SectionStats`, `Select`,
-`SortableTable`) also ship `play()` interaction tests. Shared chrome
+`SortableTable`, `TokenPicker`) also ship `play()` interaction tests. Shared chrome
 strings ("Previous", "Toggle content", …) are `i18n` units keyed by the legacy
 `components.*` dictionary paths; caller text is passed as content nodes.
 

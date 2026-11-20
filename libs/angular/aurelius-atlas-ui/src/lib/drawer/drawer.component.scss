@@ -106,6 +106,14 @@ $aurelius-drawer-motion-duration: 200ms;
     inset-inline-end: 0;
     width: 28rem;
 
+    // UIC-43 (DD-712): the wide panel — the entity editor on a large
+    // screen. Same rules otherwise, and the same viewport cap: below the
+    // wide width it is simply as wide as the screen.
+    &.is-wide {
+        max-width: min(44rem, 100vw);
+        width: 44rem;
+    }
+
     // Focus goes to the panel itself (the dialog); its outline would ring
     // the whole panel — the focusable controls inside carry their own.
     &:focus-visible {

@@ -164,3 +164,43 @@ Badge's problem (its ring, DD-175's note); the header keeps the
 DD-168 slate. The dot is a component, not Bulma's `.badge` idiom (the
 lib has no Bulma DOM assumptions). A future read-model (server events,
 6.x) adds a source to the store, not a new door.
+
+### DD-706. An expired session signs the user in again
+
+- **Status:** Proposed
+- **Increment:** 7.15 (a fix, 2026-11-19)
+- **Date:** 2026-11-19
+
+**Decision.** A `401` from a URL that carries a bearer token (APC-06:
+`/api`, `/lineage-model`, `/validate-entity`) goes to `SessionExpiry`
+(ALR-13). It adds one `warning` alert naming the expired session and calls
+`keycloak.login` with the current page as the redirect. A single flag makes
+the alert and the sign-in fire once, however many calls report the expiry.
+Every other `4xx`, `403` included, stays silent (ALR-05, DD-173).
+
+**Reason.** keycloak-angular refreshes the access token before it sends a
+signed call (APC-07). So a `401` the app sees means the refresh failed too:
+the session is gone, and only an interactive sign-in recovers it. The root
+guard (APC-05) signs a person in on navigation, and a session that dies
+between navigations never reaches that guard. Before this fix such a `401`
+made no alert at all, because DD-173 keeps every `4xx` silent. That silence
+is right for a `400` or a `404`, which the calling feature already handles.
+It is wrong for a `401` on a signed URL, where no feature can fix the
+response. The header offers Account-security and Logout, never a sign-in, so
+the person's only recovery was a reload into the guard.
+
+**Alternatives.** A warning alert with no sign-in (leaves the person stranded
+until they reload and hit the guard). A button in the alert row (the
+`AlertGroup` model has no action field, and adding one reaches across the ui
+lib for one message). `keycloak.updateToken` on the `401` (that refresh runs
+before the call already, so a retry repeats the call the server refused). A
+silent re-auth through the refresh token (there is none left, which is what
+the `401` means).
+
+**Consequences.** One status leaves DD-173's silence, on the signed URLs
+only. The sign-in is a navigation, so a half-filled form is lost. The alert
+names what is happening before it happens. A `401` that is not a session
+loss (a wrong audience) bounces once and then stops, which is what the single
+flag buys. A reload lets the guard start a new attempt. The validate-entity
+URL joins the auth-aware set, although it stays out of the `5xx` reporting
+set.

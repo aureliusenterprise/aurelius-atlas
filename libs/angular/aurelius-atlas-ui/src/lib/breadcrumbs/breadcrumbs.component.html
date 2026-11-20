@@ -13,12 +13,14 @@
     <nav class="breadcrumb is-small has-arrow-separator" [attr.aria-label]="breadcrumbsLabel()">
         <ul>
             @for (item of _items; track item.guid) {
-                <li [class.is-active]="item.guid === _activeGuid">
-                    @if (item.guid === _activeGuid) {
+                <li [class.is-active]="links() && item.guid === _activeGuid">
+                    @if (!isLink(item)) {
                         <!-- The crumb of the entity being viewed cannot be
                              navigated to, so it is plain text, not a dead
-                             link (UIC-11 amended, DD-624). -->
-                        <span class="truncate" aria-current="page">
+                             link (UIC-11 amended, DD-624). With `links` off
+                             that is every crumb, and none carries a current
+                             page: nothing here navigates (DD-714). -->
+                        <span class="truncate" [attr.aria-current]="links() ? 'page' : null">
                             @if (item.icon) {
                                 <span class="icon is-small" [title]="item.typeName">
                                     <fa-icon [ngClass]="item.iconClass" [icon]="item.icon"></fa-icon>

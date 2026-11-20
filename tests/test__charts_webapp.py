@@ -84,6 +84,23 @@ def test__bring_your_own_leaf_renders_no_certificate() -> None:
     assert volumes["leaf"]["secret"]["secretName"] == "my-leaf"
 
 
+@pytest.mark.covers(rules=["CHT-25"])
+def test__trust_root_defaults_to_the_charts_own_certificate(webapp_docs: list[dict[str, Any]]) -> None:
+    """The nginx trust root defaults to this chart's own Certificate Secret (DD-707).
+
+    Its `ca.crt` cert-manager always writes, so the mount never dangles. A named
+    trust root still wins.
+    """
+    volumes = {v["name"]: v for v in pod_spec(find(webapp_docs, "Deployment", "atlas-webapp"))["volumes"]}
+    assert volumes["ca"]["secret"]["secretName"] == volumes["leaf"]["secret"]["secretName"] == "atlas-webapp-tls"
+
+    # A named trust root wins over the own-certificate default, in both keys.
+    for set_key, expected in (("tls.secretName", "my-ca"), ("global.trust.caSecretName", "other-ca")):
+        docs = helm_render(WEBAPP_CHART, value_files=TEST_VALUES, sets=(f"{set_key}={expected}",))
+        vols = {v["name"]: v for v in pod_spec(find(docs, "Deployment", "atlas-webapp"))["volumes"]}
+        assert vols["ca"]["secret"]["secretName"] == expected
+
+
 @pytest.mark.covers(rules=["CHT-23"])
 def test__nginx_uid_with_writable_emptydirs(webapp_docs: list[dict[str, Any]]) -> None:
     """Read-only rootfs; the nginx pid/temp/log paths ride emptyDirs + fsGroup."""
@@ -225,9 +242,13 @@ def test__realip_block_follows_the_values() -> None:
     assert realip == expected
 
 
-@pytest.mark.covers(rules=["CHT-26"])
+@pytest.mark.covers(rules=["CHT-26", "VER-01", "VER-04"])
 def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) -> None:
-    """ApiBaseUrl / keycloak.url / otelExporterUrl, mounted at the SPA's path."""
+    """ApiBaseUrl / keycloak.url / otelExporterUrl, mounted at the SPA's path.
+
+    Neither a version nor a copyright year rides it (7.34, DD-725/DD-726): the
+    SPA reads the version from the server and prints the current year.
+    """
     configmap = find(webapp_docs, "ConfigMap", "atlas-webapp-config")
     config = yaml.safe_load(configmap["data"]["config.json"])
     assert config["apiBaseUrl"] == "/api"
@@ -237,6 +258,8 @@ def test__config_json_rendered_from_values(webapp_docs: list[dict[str, Any]]) ->
     assert config["atlasClientId"] == "aurelius-atlas-server"  # EDT-09, DD-324
     assert config["lineageModelBaseUrl"] == "/lineage-model"  # 7.22a, LDG-07
     assert config["validateEntityBaseUrl"] == "/validate-entity"  # 7.24, EDT-22
+    assert "appVersion" not in config  # VER-01, DD-725
+    assert "appCopyright" not in config  # VER-04, DD-726
     mounts = {
         m["mountPath"]: m for m in container(find(webapp_docs, "Deployment", "atlas-webapp"), "webapp")["volumeMounts"]
     }

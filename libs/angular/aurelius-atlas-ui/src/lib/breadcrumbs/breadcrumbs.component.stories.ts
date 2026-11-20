@@ -12,6 +12,9 @@ import { Breadcrumb, Breadcrumbs } from "./breadcrumbs.component";
 const meta: Meta<Breadcrumbs> = {
     component: Breadcrumbs,
     title: "Breadcrumbs",
+    // The shipped default: crumbs are links. A story flips it for a trail
+    // nested inside a control that owns the activation (DD-714).
+    args: { links: true },
 };
 export default meta;
 
@@ -28,6 +31,7 @@ const template = `
     [items]="items"
     [activeGuid]="activeGuid"
     [warning]="warning"
+    [links]="links"
     (itemClicked)="onCrumb($event)"
 ></aurelius-atlas-ui-breadcrumbs>
 `;
@@ -80,6 +84,29 @@ export const Warning: Story = {
     },
     play: async ({ canvas }) => {
         await expect(canvas.getByText("Breadcrumb path could not be determined")).toBeVisible();
+    },
+    render: host,
+};
+
+/**
+ * The linkless mode (UIC-11 amended, DD-714): every crumb is plain text, for
+ * a trail printed inside a control that already owns the activation — a
+ * picker's suggestion row, whose trail must not nest a link inside the option.
+ */
+export const Plain: Story = {
+    args: {
+        items,
+        links: false,
+    },
+    play: async ({ canvas }) => {
+        const nav = canvas.getByRole("navigation", { name: "breadcrumbs" });
+        // Nothing to click and nothing current: the trail is a printed path.
+        await expect(within(nav).queryAllByRole("link")).toHaveLength(0);
+        const crumbs = within(nav).getAllByText(/Domain|Orders Dataset/);
+        await expect(crumbs).toHaveLength(2);
+        for (const crumb of crumbs) {
+            await expect(crumb.closest("li")).not.toHaveClass("is-active");
+        }
     },
     render: host,
 };

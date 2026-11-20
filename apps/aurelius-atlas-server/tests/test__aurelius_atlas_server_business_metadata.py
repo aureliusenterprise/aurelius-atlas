@@ -5,6 +5,7 @@ from typing import Any
 import httpx2 as httpx
 import pytest
 from fake_issuer import FakeIssuer
+from fastapi import FastAPI
 
 R = "aurelius_atlas_server.routes.entity"
 ENTITY = "/api/atlas/v2/entity"
@@ -156,3 +157,17 @@ async def test__business_attributes_are_imported_from_an_upload(client: httpx.As
     assert (blank.status_code, blank.json()["errorCode"]) == (404, "ATLAS-404-00-014")
     wrong = await client.post(url, files={"file": ("bm.txt", csv)})
     assert (wrong.status_code, wrong.json()["errorCode"]) == (400, "ATLAS-400-00-098")
+
+
+@pytest.mark.covers(f"{R}.import_bm_attributes", "aurelius_atlas_server.uploads.read_upload", rules=["SRV-12"])
+async def test__a_file_past_the_upload_limit_is_refused(app: FastAPI, client: httpx.AsyncClient) -> None:
+    """A CSV past the limit answers the refusal naming the file and the limit, and changes nothing (SRV-12)."""
+    guid = await entity(client)
+    app.state.settings = app.state.settings.model_copy(update={"upload_max_bytes": 1024})
+    csv = b"EntityType,EntityUniqueAttributeValue,BusinessAttributeName,BusinessAttributeValue\nt_bmd,q,bm_a.n,"
+
+    refused = await client.post(f"{ENTITY}/businessmetadata/import", files={"file": ("bm.csv", csv + b"9" * 4096)})
+
+    assert (refused.status_code, refused.json()["errorCode"]) == (413, "AURELIUS-413-00-001")
+    assert refused.json()["errorMessage"] == "The uploaded file is larger than 1024 bytes"
+    assert await business(client, guid) is None

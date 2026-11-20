@@ -1,4 +1,4 @@
-"""The App Search documents kept up to date as the catalogue changes (LAS-08, LAS-09, ASU-02 to ASU-05, ASU-07).
+"""The App Search documents kept up to date as the catalogue changes (LAS-08, LAS-09, ASU-02 to ASU-05, ASU-09).
 
 Each test indexes a small catalogue in the in-memory store, changes it, and runs one round. Then every stored
 document must be the one the indexer derives from scratch (DD-486), nothing stale or unseen is left, and the
@@ -154,7 +154,7 @@ async def test__a_deleted_entity_leaves_every_document_and_those_below_get_their
 
 
 @pytest.mark.covers(f"{X}.run_once", rules=["ASU-04"])
-@pytest.mark.covers("aurelius_atlas_core.relationship_store.RelationshipStore.get_by_id", rules=["ASU-07"])
+@pytest.mark.covers("aurelius_atlas_core.relationship_store.RelationshipStore.get_by_id", rules=["ASU-09"])
 async def test__a_relationship_deleted_on_its_own_leaves_its_ends_and_its_answer_shows_no_record() -> None:
     """Neither end hash changes; the relationship's own listing reaches both, and Atlas's answer is as before."""
     catalogue = await Catalogue.indexed(m4i("m4i_dataset", "s"), m4i("m4i_field", "f", datasets=["s"]))

@@ -29,7 +29,10 @@ export interface Breadcrumb {
  *
  * Clickable crumbs are anchors, so Enter activates them natively; the
  * active crumb — the entity being viewed, which navigates nowhere — is
- * plain text, not a dead link (UIC-11 amended, DD-624).
+ * plain text, not a dead link (UIC-11 amended, DD-624). `links: false` makes
+ * that every crumb: the trail is then printed inside something that already
+ * owns the activation, where a link inside would be a second thing to take
+ * (UIC-11 amended again, DD-714).
  */
 @Component({
     selector: "aurelius-atlas-ui-breadcrumbs",
@@ -43,7 +46,16 @@ export class Breadcrumbs {
      * The trail, oldest first. Empty renders nothing, as the legacy
      * component's length guard did.
      */
-    readonly items = input<Breadcrumb[]>([]);
+    readonly items = input<readonly Breadcrumb[]>([]);
+
+    /**
+     * Whether the crumbs are links. `false` prints every crumb as plain text
+     * and emits nothing (UIC-11 amended, DD-714): for a trail nested inside a
+     * control that owns the activation — a suggestion row picks its entity, so
+     * its trail must not offer links inside the option it shows assistive
+     * technology.
+     */
+    readonly links = input(true);
 
     /**
      * The guid of the entity being viewed: its crumb gets `is-active`.
@@ -82,5 +94,14 @@ export class Breadcrumbs {
     protected onItemClick(event: Event, breadcrumb: Breadcrumb): void {
         event.preventDefault();
         this.itemClicked.emit(breadcrumb.guid);
+    }
+
+    /** Whether a crumb draws as a link: never in a static trail, and never
+     * the crumb of the entity already being viewed (DD-624, DD-714).
+     * @param item The crumb.
+     * @returns Whether to draw the anchor.
+     */
+    protected isLink(item: Breadcrumb): boolean {
+        return this.links() && item.guid !== this.activeGuid();
     }
 }

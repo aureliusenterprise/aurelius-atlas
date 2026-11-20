@@ -18,11 +18,34 @@ function viewOf(
     };
 }
 
-/** One relationship section of ends, each a guid and maybe a name (the door's VDR-02 answer). */
+/**
+ * One relationship section of ends, each a guid and maybe a name (the door's VDR-02 answer).
+ * A read end carries its type and state (AVS-04), so the helper answers them: that is what
+ * separates it from a stored derived pair, which has neither ({@link derivedPair}).
+ */
 function ends(
     attribute: string,
     ...named: [string, string?][]
-): { attribute: string; entities: { guid: string; name?: string | null }[] } {
+): { attribute: string; entities: { guid: string; name?: string | null; typeName?: string; status?: string }[] } {
+    return {
+        attribute,
+        entities: named.map(([guid, name]) => ({
+            guid,
+            ...(name === undefined ? {} : { name }),
+            typeName: "asset",
+            status: "ACTIVE",
+        })),
+    };
+}
+
+/** One stored derived pair (LAS-05, AVS-04): keyed by the end's type, its ends `{guid, name}` only. */
+function derivedPair(
+    attribute: string,
+    ...named: [string, string?][]
+): {
+    attribute: string;
+    entities: { guid: string; name?: string | null }[];
+} {
     return { attribute, entities: named.map(([guid, name]) => ({ guid, ...(name === undefined ? {} : { name }) })) };
 }
 
@@ -112,6 +135,25 @@ describe("viewProperties (DET-11, VDR-04)", () => {
                 ],
             },
         ]);
+    });
+
+    it("answers no row for a stored derived pair, the card's not the entity's (VDR-04, DD-732)", () => {
+        // The door's stored pairs ride the card's derived search fields, keyed by the end's
+        // type (LAS-05). They earn card boxes, never a Properties row: the Atlas GET's merge
+        // answered relationshipAttributes only, and a type name is not one (DET-11, AVS-04).
+        const rows = viewProperties(viewOf({ tableName: "orders" }, [derivedPair("m4i_data_entity", ["g9", "alpha"])]));
+
+        expect(rows).toEqual([{ key: "tableName", value: "orders" }]);
+    });
+
+    it("keeps the read ends beside a stored derived pair naming the same entity (DD-732)", () => {
+        // One GUID can sit under both: the entity's own end earns its row, the card's
+        // derived pair of the same GUID earns none.
+        const rows = viewProperties(
+            viewOf({}, [ends("processes", ["g1", "pipeline"]), derivedPair("m4i_data_entity", ["g1", "pipeline"])]),
+        );
+
+        expect(rows).toEqual([{ key: "processes", value: [{ guid: "g1", displayText: "pipeline" }] }]);
     });
 
     it("answers no row for a stored empty array or a section with no ends (VDR-04)", () => {

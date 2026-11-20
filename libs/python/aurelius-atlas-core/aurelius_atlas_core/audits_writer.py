@@ -4,7 +4,6 @@ The replication is recorded on the server and on the entities that went.
 """
 
 from aurelius_atlas_model import codec
-from aurelius_atlas_model.errors import AtlasError
 from aurelius_atlas_model.impexp import (
     OPERATION_EXPORT,
     OPERATION_IMPORT,
@@ -18,12 +17,10 @@ from aurelius_atlas_model.impexp import (
 )
 
 from aurelius_atlas_core.atlas_server_service import AtlasServerService
-from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityStore
 from aurelius_atlas_core.export_import_audit_service import ExportImportAuditService
 
 DC_SERVER_NAME_SEPARATOR = "$"
-HIVE_DB, HIVE_TABLE, HIVE_COLUMN = "hive_db", "hive_table", "hive_column"
 REPLICATED_TO = "replicatedTo"
 REPLICATED_FROM = "replicatedFrom"
 
@@ -100,13 +97,13 @@ class AuditsWriter:
         attribute: str,
         marker: int,
     ) -> None:
-        """``updateReplicationAttribute``: the server saved with the replication time of the first entity, or of its
-        Hive database, then named by each entity's attribute (REP-04).
+        """``updateReplicationAttribute``: the server saved with the replication time of the first entity's GUID,
+        then named by each entity's attribute (REP-04, MMS-04).
         """  # noqa: D205 - one sentence
         if not replicating or not guids:
             return
         server = await self._servers.get_create_atlas_server(name, full_name)
-        server.set_additional_info_repl(await repl_key_guid(self._store, guids[0]), marker)
+        server.set_additional_info_repl(repl_key_guid(guids[0]), marker)
         saved = await self._servers.save(server)
         await self._servers.update_entities_with_server(saved, guids, attribute)
 
@@ -121,29 +118,10 @@ def server_name_of(full_name: str) -> str:
     return parts[1] if len(parts) >= 2 else parts[0]  # noqa: PLR2004 - <data center>$<server>
 
 
-async def repl_key_guid(store: EntityStore, guid: str) -> str:
-    """``ReplKeyGuidFinder.get``: the GUID of a Hive table's or column's database, else the GUID itself (REP-04).
+def repl_key_guid(guid: str) -> str:
+    """``ReplKeyGuidFinder.get``: the GUID the replication details key on — the entity's own, for every type.
 
-    The database is the ``hive_db`` of the qualified name ``<db>@<cluster>`` that the entity's ``<db>.<rest>@<cluster>``
-    names.
+    Apache Atlas groups a Hive table or column under the GUID of its ``hive_db``; this catalogue bootstraps no
+    Hive type, so the grouping went with the domain models (MMS-04, DV-179, DD-716).
     """
-    try:
-        found = (await EntityRetriever(store).entity_with_ext_info(guid)).entity
-    except AtlasError:
-        return guid
-    db_type = store.registry.entity_type(HIVE_DB)
-    if found is None or found.type_name not in {HIVE_TABLE, HIVE_COLUMN} or db_type is None:
-        return guid
-    database = await store.find_by_unique_attributes(
-        db_type, {"qualifiedName": hive_db_qualified_name(found.get_attribute("qualifiedName"))}
-    )
-    return guid if database is None else str(database.entity.guid)
-
-
-def hive_db_qualified_name(qualified_name: str | None) -> str:
-    """``extractHiveDBQualifiedName``: the part before the first ``.`` and after the first ``@``, joined by ``@``."""
-    if qualified_name is None:
-        return "null@null"  # String.format of StringUtils' nulls
-    before = qualified_name.split(".", 1)[0]
-    after = qualified_name.split("@", 1)[1] if "@" in qualified_name else ""
-    return f"{before}@{after}"
+    return guid

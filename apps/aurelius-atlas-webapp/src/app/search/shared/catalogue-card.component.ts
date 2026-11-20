@@ -25,9 +25,10 @@ const PERSON_ATTRIBUTE = "m4i_person";
  *
  * The results row and the details section card mount this one component
  * (VCF-05): the same entity cannot render differently on the two screens
- * twice. The badge carries no alias (the card shape has no `typeAlias`,
- * DV-167); the loading row is not this component's — DET-18's loading row
- * stays the plain shell's, owned by the sections store's caller.
+ * twice. The badge carries the card's alias alone, no base-type suffix —
+ * the legacy card's shape (7-21a), on the field the card shape gained in
+ * 18.1 (MMS-09, DD-721); the loading row is not this component's — DET-18's
+ * loading row stays the plain shell's, owned by the sections store's caller.
  *
  * The part is dumb (DD-154's split): every title, crumb, and person click
  * emits the guid on `cardClicked` and the screen routes.
@@ -56,6 +57,7 @@ const PERSON_ATTRIBUTE = "m4i_person";
             [guid]="card().guid"
             [name]="card().displayText"
             [typeName]="badgeName()"
+            [typeAlias]="badgeAlias()"
             [typeIcon]="badgeIcon()?.icon"
             [typeIconClass]="badgeIcon()?.classIcon"
             [showQuality]="false"
@@ -119,6 +121,18 @@ export class CatalogueCard {
 
     /** The badge's icon (DET-26, DD-378): the app's type map; an unmapped type renders none. */
     protected readonly badgeIcon = computed(() => typeIcon(this.card().typeName));
+
+    /**
+     * The badge's alias (MMS-09, DD-721): the card's `typeAlias` as a
+     * non-empty string, else nothing. The server already leaves an empty
+     * attribute out (AVS-01 as amended); the guard covers a door that still
+     * answers one. The alias is author text and shows as stored, never
+     * through `nameDisplay` (DET-26's rule).
+     */
+    protected readonly badgeAlias = computed(() => {
+        const alias = this.card().typeAlias;
+        return typeof alias === "string" && alias !== "" ? alias : undefined;
+    });
 
     /** The card's trail (VCF-01): the stored breadcrumb plus its own active crumb (VDR-06's rule). */
     protected readonly trail = computed(() => trailOf(this.card(), (typeName) => typeIcon(typeName)));

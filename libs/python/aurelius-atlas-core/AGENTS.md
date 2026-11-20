@@ -15,8 +15,9 @@ root `AGENTS.md` and `libs/python/AGENTS.md`.
   document of definitions and patch records (`StoredTypedefs`), written with `if_seq_no`/`if_primary_term`
 - `aurelius_atlas_core/model_loader.py` — `ModelLoader` (`AtlasTypeDefStoreInitializer`): the load order of a
   models directory and the nine typedef patch actions
-- `aurelius_atlas_core/models/` — `addons/models` of Atlas 2.4.0, byte for byte: never edit, reformat or
-  re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar)
+- `aurelius_atlas_core/models/0000-Area0/` — the Area0 directory of `addons/models` of Atlas 2.4.0, byte for
+  byte: never edit, reformat or re-save it (`-text` in `.gitattributes`, excluded from the hooks and Sonar).
+  Atlas's five domain model directories do not ship (ADR 068, DD-715)
 - `aurelius_atlas_core/authorization.py` — `AtlasPrivilege`, the `Authorizer` a store is given and `Granted`:
   the stores check where Atlas's stores check, with its action texts; without an authorizer, nothing (DD-301).
   Searches scrub what the user may not read, and type listings filter it (6.2c), instead of refusing

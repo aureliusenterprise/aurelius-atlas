@@ -40,6 +40,7 @@ from aurelius_atlas_server.openapi import (
 from aurelius_atlas_server.openapi import no_content as no_content_response
 from aurelius_atlas_server.routes.entity import Store, notifier, tasks_enabled
 from aurelius_atlas_server.routes.types import validate_param_length
+from aurelius_atlas_server.uploads import read_upload
 
 GLOSSARY = APIRouter(prefix="/api/atlas/v2/glossary", tags=["Glossary"])
 
@@ -138,7 +139,8 @@ async def produce_template() -> Response:
 async def import_glossary_data(request: Request, store: Store) -> AtlasJSONResponse:
     """``importGlossaryData``: the form's ``file``, a CSV or Excel file of terms; no file is no file type (DV-104)."""
     upload = (await request.form()).get("file")
-    file_name, content = (upload.filename, await upload.read()) if isinstance(upload, UploadFile) else (None, b"")
+    file_name = upload.filename if isinstance(upload, UploadFile) else None
+    content = await read_upload(request, "file", "file")
     return _json((await _service(request, store).import_glossary_data(file_name, content)).to_json())
 
 

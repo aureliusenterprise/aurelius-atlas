@@ -106,7 +106,9 @@ export const Empty: Story = {
     },
     play: async ({ canvas, canvasElement }) => {
         expect(canvasElement.querySelectorAll(".notification")).toHaveLength(0);
-        expect(canvas.queryByRole("log")).toBeNull();
+        // LR-002 (7.30): the live region rides from the first render so the
+        // first alert is announced — the empty state keeps the log role.
+        await expect(canvas.getByRole("log")).toBeInTheDocument();
         expect(canvas.getByText("No alerts")).toBeInTheDocument();
     },
 };

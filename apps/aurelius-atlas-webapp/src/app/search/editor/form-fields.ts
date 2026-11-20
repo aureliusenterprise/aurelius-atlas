@@ -2,13 +2,10 @@ import {
     AtlasAttributeDef,
     AtlasEntity,
     AtlasEntityDef,
-    AtlasEntityHeader,
     AtlasEnumDef,
     AtlasRelatedEntity,
     AtlasRelationshipAttributeDef,
 } from "aurelius-atlas-data-access";
-
-import { nameDisplay } from "../meta/type-display";
 
 /** The input one editor field renders. */
 export type EditorFieldKind = "text" | "markdown" | "number" | "boolean" | "date" | "enum" | "multi";
@@ -28,11 +25,12 @@ export type EditorField = {
 };
 
 /**
- * The localized strings for the attributes the catalogue names (EDT-11:
- * `search.components.editor.attribute.name`, `.definition`). The component
- * builds these with `$localize` and passes them in — the helper stays pure.
+ * The localized strings for the attributes the catalogue names (EDT-11, and
+ * every attribute the shipped metamodel renders since 7-33: `name`,
+ * `definition`, and one key per attribute — EDT-33). The component builds
+ * these with `$localize` and passes them in — the helper stays pure.
  */
-export type EditorLabels = Partial<Record<"name" | "definition" | "description", string>>;
+export type EditorLabels = Readonly<Record<string, string>>;
 
 /** The two attribute keys the details box shows as the description (DET-10/DD-320). */
 const DESCRIPTION_KEYS = ["definition", "description"] as const;
@@ -159,7 +157,8 @@ function labelOf(def: AtlasAttributeDef, labels: EditorLabels): string {
 
 /**
  * The editor's form fields for an entity definition, ordered `name`, the
- * description key, then the rest by name (EDT-03).
+ * description key, then the rest by the label the reader sees (EDT-03).
+ * The name only breaks a tie between two identical labels (DD-727).
  * @param entityDef the entity's own definition
  * @param defsByName every entity definition by name (the supertype walk)
  * @param enumsByName every enum definition by name (the enum values + the
@@ -210,7 +209,12 @@ export function buildFields(
         return DESCRIPTION_KEYS.includes(field.name as (typeof DESCRIPTION_KEYS)[number]) ? 1 : 2;
     };
 
-    return fields.sort((a, b) => rank(a) - rank(b) || a.name.localeCompare(b.name));
+    // By label, so a translated field sits where its word sorts — "Business
+    // Data Owner" and "Business Data Steward" stay together even though the
+    // attributes are `businessOwner` and `steward` (EDT-03 as amended, DD-727).
+    // The name breaks a tie, which keeps the order deterministic when two
+    // fields share a label or both fall back to an unmapped name.
+    return fields.sort((a, b) => rank(a) - rank(b) || a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
 /**
@@ -222,7 +226,9 @@ export function buildFields(
 export type RelationshipField = {
     /** The `relationshipAttributes` key this picker owns. */
     readonly name: string;
-    /** The label text: the attribute's `displayName` else its name (EDT-13). */
+    /** The label text: the catalogue string, else the attribute's `displayName`, else
+     * its name (EDT-34, 7.33). The target type is not repeated here — the chips lead
+     * with it (DD-341, DD-724). */
     readonly label: string;
     /** The entity type the picker searches for (the def's, unwrapped). */
     readonly targetType: string;
@@ -256,11 +262,13 @@ function unwrapArrayType(typeName: string): string {
  * carry once keeps the first definition's `relationshipTypeName`.
  * @param entityDef the entity's own definition
  * @param defsByName every entity definition by name (for the supertype links)
- * @returns the picker fields, in name order (the plain fields keep the top)
+ * @param labels the localized strings, shared with the plain fields (EDT-34)
+ * @returns the picker fields, in label order (the plain fields keep the top)
  */
 export function buildRelationshipFields(
     entityDef: AtlasEntityDef,
     defsByName: ReadonlyMap<string, AtlasEntityDef>,
+    labels: EditorLabels = {},
 ): RelationshipField[] {
     const merged = new Map<string, AtlasRelationshipAttributeDef>();
 
@@ -276,21 +284,31 @@ export function buildRelationshipFields(
     for (const def of merged.values()) {
         const typeName = def.typeName ?? "";
         if (typeName !== "") {
-            fields.push(relationshipFieldOf(def, def.name as string, unwrapArrayType(typeName)));
+            fields.push(
+                relationshipFieldOf(def, def.name as string, unwrapArrayType(typeName), labels[def.name as string]),
+            );
         }
     }
 
-    return fields.sort((a, b) => a.name.localeCompare(b.name));
+    // Same rule as the plain fields: the label the reader sorts on, the name
+    // only as the tie-break (EDT-13 as amended, DD-727).
+    return fields.sort((a, b) => a.label.localeCompare(b.label) || a.name.localeCompare(b.name));
 }
 
 /** The picker field one merged relationship definition becomes (EDT-13).
- * The label's parenthesised target is the dictionary display name of the
- * type (DD-379) — the legacy label was a translated catalogue string;
+ * The label is the catalogue string where one exists, else the `displayName`,
+ * else the name — the legacy's translated string alone, with no target-type
+ * bracket (EDT-34, 7.33, DD-724): the chips already lead with the type (DD-341).
  * `targetType` keeps the raw name the search and save ride. */
-function relationshipFieldOf(def: AtlasRelationshipAttributeDef, name: string, target: string): RelationshipField {
+function relationshipFieldOf(
+    def: AtlasRelationshipAttributeDef,
+    name: string,
+    target: string,
+    label?: string,
+): RelationshipField {
     return {
         name,
-        label: `${def.displayName ?? def.name} (${nameDisplay(target)})`,
+        label: label ?? def.displayName ?? name,
         targetType: target,
         single: (def.cardinality ?? "SINGLE") === "SINGLE",
         required: def.isOptional === false,
@@ -298,13 +316,20 @@ function relationshipFieldOf(def: AtlasRelationshipAttributeDef, name: string, t
     };
 }
 
-/** The entry a found entity or a seed row becomes, or null without a guid. */
-function pickFrom(source: {
+/**
+ * What a search answer's row must carry to become a pick: the Atlas header
+ * (EDT-14's old door) and the view family's card (EDT-33, DD-711) both fit
+ * it structurally, so no conversion rides between the picker and the value.
+ */
+export type RelationshipPickSource = {
     guid?: string | null;
     typeName?: string | null;
     displayText?: string | null;
     qualifiedName?: string | null;
-}): RelationshipPick | null {
+};
+
+/** The entry a found entity or a seed row becomes, or null without a guid. */
+function pickFrom(source: RelationshipPickSource): RelationshipPick | null {
     if (typeof source.guid !== "string" || source.guid === "") {
         return null;
     }
@@ -324,10 +349,10 @@ function pickFrom(source: {
 /**
  * The pick entry a search answer contributes (EDT-14's pick path — the
  * component keeps no copy of the wire shape).
- * @param entity the search result's entity header
+ * @param entity the search result's row — an Atlas header or a view card
  * @returns the chip's value, or null when it carries no guid to attach
  */
-export function relationshipEntry(entity: AtlasEntityHeader): RelationshipPick | null {
+export function relationshipEntry(entity: RelationshipPickSource): RelationshipPick | null {
     return pickFrom(entity);
 }
 

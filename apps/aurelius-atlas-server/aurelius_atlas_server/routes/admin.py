@@ -54,7 +54,6 @@ from aurelius_atlas_model.tasks import AtlasTask
 from aurelius_atlas_store_es import ElasticsearchStore, HealthStatus
 from fastapi import APIRouter, Depends, Request, Response
 from fastapi.responses import PlainTextResponse
-from starlette.datastructures import UploadFile
 
 from aurelius_atlas_server.authentication import Session, User, acting_user, csrf_token
 from aurelius_atlas_server.authorization import AtlasPrivilege, authorizer, privileges, verify_access
@@ -74,6 +73,7 @@ from aurelius_atlas_server.routes.types import typedef_store as refreshed_typede
 from aurelius_atlas_server.routes.types import validate_param_length
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenant_stores import stores
+from aurelius_atlas_server.uploads import read_upload
 
 OPERATION_STATUS = "operationStatus"
 """The option an export's or import's admin audit adds its status as (ADA-02)."""
@@ -414,8 +414,7 @@ async def import_data(request: Request, store: Store) -> AtlasJSONResponse:
     form = await request.form()
     text = form.get("request")
     import_request = _import_request(text if isinstance(text, str) else "{}")
-    data = form.get("data")
-    content = await data.read() if isinstance(data, UploadFile) else b""
+    content = await read_upload(request, "data", "data")
     exclusive = import_request is not None and not import_request.is_replication_option_set()
     async with _exclusively(request, exclusive=exclusive):
         try:

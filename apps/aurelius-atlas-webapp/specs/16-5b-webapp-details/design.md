@@ -130,3 +130,38 @@ bodies were only ever read for their `typeName`.
 only, not on the field's; DV-166 says so. The unit pins that read `classifications` re-key to
 `classificationNames`; the e2e chip scenario (EDT-05, a tag added to the entity itself) is
 unaffected.
+
+## DD-732. The Properties table reads the entity's own relationship attributes
+
+- **Status:** Proposed
+- **Increment:** 16.5b
+- **Date:** 2026-11-20
+
+**Decision.** `viewProperties` builds a link row only from a section whose ends carry a type or a
+state. Those are the door's read ends, which AVS-04 answers as the entity's own relationship
+attributes. A stored derived pair answers `{guid, name}` with neither, and earns no row.
+
+**Reason.** A stored pair rides the card's derived search fields and is keyed by the end's type
+name (AVS-02, LAS-05, LAS-06). DET-11 merges the entity's attributes with its relationship
+attributes, and a type name is never one, so such a pair drew a row the Atlas GET never answered.
+An m4i dataset whose field joins a data entity showed a row labelled `m4i_data_entity`, and the
+Properties stat read one too many (DET-24, DET-32). The row hid before 90c4cf2 (#392) made a write
+derive before it answered, because a just-seeded entity then had no document when the screen read.
+Every relationship attribute the dictionary declares already sits on DET-11's blacklist, so a type
+name is the only kind of key this guard can drop. The card's boxes read the pairs by attribute name
+and keep every end they drew before (DET-17..DET-22, VCF-16).
+
+**Alternatives.**
+
+- The door drops the type-keyed pairs from `sections`: it also takes them from the card's boxes,
+  which AVS-02 and VDR-02 pin, so it needs both rules amended.
+- The table blacklists the nine `RELATION_FIELDS` names: it silences today's dictionary, and a new
+  derived type name leaks again.
+- The e2e expectation moves to `properties 1`: the row is visible on every such dataset, so it is a
+  defect, not a test artefact.
+
+**Consequences.** The Properties row count drops by one for an m4i dataset whose field joins a data
+entity, which is what DET-11 and DET-32 ask for (DV-177's scenario returns to `properties 0`). The
+editor's draft keeps the pairs under their type name (DD-608): the store ignores a key the type does
+not declare, so a save cannot write one. A unit pin covers a derived pair on its own and beside a
+read end naming the same GUID.

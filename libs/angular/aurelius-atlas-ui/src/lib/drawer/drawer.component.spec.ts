@@ -271,6 +271,29 @@ describe("Drawer", () => {
         expect(component.active()).toBe(false);
     });
 
+    it("renders the narrow panel by default (UIC-43)", () => {
+        component.open();
+        fixture.detectChanges();
+        const panel = fixture.nativeElement.querySelector(".aurelius-drawer-panel") as HTMLElement;
+
+        expect(panel.classList.contains("is-wide")).toBe(false);
+        // jsdom resolves no layout, so the declared width comes back as
+        // written — the number is what the rule states (DD-712).
+        expect(getComputedStyle(panel).width).toBe("28rem");
+        expect(getComputedStyle(panel).maxWidth).toBe("min(28rem, 100vw)");
+    });
+
+    it("widens the panel when the caller asks for the wide size (UIC-43)", () => {
+        fixture.componentRef.setInput("size", "wide");
+        component.open();
+        fixture.detectChanges();
+        const panel = fixture.nativeElement.querySelector(".aurelius-drawer-panel") as HTMLElement;
+
+        expect(panel.classList.contains("is-wide")).toBe(true);
+        expect(getComputedStyle(panel).width).toBe("44rem");
+        expect(getComputedStyle(panel).maxWidth).toBe("min(44rem, 100vw)");
+    });
+
     it("moves focus into the panel on open and back to the opener on close (SPL-02)", () => {
         const opener = document.createElement("button");
         document.body.append(opener);

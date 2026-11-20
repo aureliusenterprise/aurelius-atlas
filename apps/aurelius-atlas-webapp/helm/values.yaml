@@ -26,9 +26,9 @@ global:
     realm: ""
     trust:
         # The issuer whose root this nginx trusts as a TLS client (DD-259).
-        # caSecretName "" defaults to "<issuerRef.name>-ca", the umbrella's
-        # trust-root Secret (the webapp mounts the CA only — it presents
-        # nothing, CHT-25).
+        # caSecretName "" defaults to this chart's own leaf Secret, whose
+        # ca.crt cert-manager always writes (DD-707, the server chart's
+        # pattern). The webapp mounts the CA only — it presents nothing (CHT-25).
         issuerRef:
             name: aurelius-atlas-selfsigned
             kind: Issuer
@@ -112,13 +112,13 @@ nginx:
         maxAge: 31536000
 
 # /config.json (SHL-02): served at bootstrap, shape in src/app/config.ts.
-# "" values derive in 10.3: keycloak.url from the umbrella's issuer URL,
-# appVersion from the release tag.
+# "" values derive in 10.3: keycloak.url from the umbrella's issuer URL.
+# The version and the copyright year are not here (7.34, VER-01/VER-04,
+# DD-725/DD-726): the SPA reads the version from the server and prints the
+# current year, so no deployment stamps either value.
 config:
     apiBaseUrl: /api
     appName: "Aurelius Atlas Data Governance"
-    appCopyright: 2026
-    appVersion: ""
     # The Keycloak client owning the Atlas privileges (DD-300, DD-324): the
     # write affordances gate on atlas-write in this client's roles. Pairs with
     # the server's auth_client_id (src/app/config.ts).
@@ -179,9 +179,9 @@ collector:
 
 tls:
     # The CA the nginx proxy verifies the API/collector upstreams against
-    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}). "" derives the
-    # umbrella's <issuerRef.name>-ca (DD-259); secretName brings your own
-    # trust root. The dead caConfigMap value of the skeleton is retired
+    # (proxy_ssl_trusted_certificate, ${..._TLS_CA_FILE}). "" defaults to this
+    # chart's own leaf Secret (DD-707); secretName brings your own trust root.
+    # The dead caConfigMap value of the skeleton is retired
     # (DD-294's finding — nothing ever mounted it).
     secretName: ""
     caPath: /etc/aurelius-atlas/tls/ca.crt

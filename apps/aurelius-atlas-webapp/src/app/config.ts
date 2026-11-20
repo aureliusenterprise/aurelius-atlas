@@ -42,20 +42,12 @@ export interface AppConfig {
      * Application name: the shell header's brand and the footer's centre line
      * (SHC-02, SHC-06). The Aurelius `environments/environment.ts`'s
      * `shell.appName` — the runtime config is the settings channel (SHL-10).
+     *
+     * The two values that used to sit beside it — `appCopyright` and
+     * `appVersion` — are gone (7.34, DD-725/DD-726): the footer prints the
+     * current year, and the version is the server's answer (VER-01, VER-04).
      */
     readonly appName: string;
-
-    /**
-     * Copyright year shown in the footer, the Aurelius `shell.appCopyright`.
-     */
-    readonly appCopyright: number;
-
-    /**
-     * Application version shown in the footer, the Aurelius
-     * `VersionService.appVersion` (package version + git hash). The image
-     * label carries the same value; the deployment serves it here.
-     */
-    readonly appVersion: string;
 
     /**
      * The Keycloak client that owns the Atlas privileges (DD-300): the write
@@ -129,8 +121,6 @@ export function parseAppConfig(value: unknown): AppConfig {
         otelExporterUrl,
         otelMetricsExporterUrl,
         appName,
-        appCopyright,
-        appVersion,
         atlasClientId,
         lineageModelBaseUrl,
         validateEntityBaseUrl,
@@ -165,13 +155,6 @@ export function parseAppConfig(value: unknown): AppConfig {
         requireString("validateEntityBaseUrl", validateEntityBaseUrl);
     }
 
-    const requireYear = (name: string, field: unknown): number => {
-        if (typeof field !== "number" || !Number.isInteger(field)) {
-            throw new TypeError(`Invalid app config: "${name}" must be an integer year.`);
-        }
-        return field;
-    };
-
     return {
         keycloak: {
             clientId: requireString("keycloak.clientId", clientId),
@@ -181,8 +164,6 @@ export function parseAppConfig(value: unknown): AppConfig {
         apiBaseUrl: requireString("apiBaseUrl", apiBaseUrl),
         otelExporterUrl: requireString("otelExporterUrl", otelExporterUrl),
         appName: requireString("appName", appName),
-        appCopyright: requireYear("appCopyright", appCopyright),
-        appVersion: requireString("appVersion", appVersion),
         ...(otelMetricsExporterUrl ? { otelMetricsExporterUrl } : {}),
         ...(lineageModelBaseUrl ? { lineageModelBaseUrl } : {}),
         ...(validateEntityBaseUrl ? { validateEntityBaseUrl } : {}),

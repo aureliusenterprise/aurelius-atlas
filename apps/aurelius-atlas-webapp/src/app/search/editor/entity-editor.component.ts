@@ -17,7 +17,7 @@ import { FontAwesomeModule } from "@fortawesome/angular-fontawesome";
 import { faCheckCircle, faExclamationTriangle, faXmark } from "@fortawesome/free-solid-svg-icons";
 import { map, Subscription } from "rxjs";
 
-import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select } from "aurelius-atlas-ui";
+import { ClassificationChip, Drawer, Holdable, MarkdownEditor, Select, TypeName } from "aurelius-atlas-ui";
 import {
     QualityRuleService,
     type EntityValidationResponse,
@@ -26,7 +26,10 @@ import {
 } from "aurelius-atlas-data-access";
 
 import { nameDisplay } from "../meta/type-display";
+import { typeIcon } from "../meta/type-icons";
+import { cardTypeAlias } from "../details/shared/card";
 import { ALERT_CLOCK, AlertsService } from "../../alerts/alerts.service";
+import { attributeLabels } from "./attribute-labels";
 import { canWriteEntities } from "./can-write-entities";
 import { EditorState } from "./editor-state";
 import { EntityRelationshipInput } from "./entity-relationship-input.component";
@@ -102,6 +105,7 @@ const GOV_CARD_KEYS: Readonly<Record<string, readonly string[]>> = {
         NgTemplateOutlet,
         QualityFields,
         Select,
+        TypeName,
     ],
     providers: [EditorState],
     selector: "aurelius-atlas-webapp-entity-editor",
@@ -173,10 +177,9 @@ export class EntityEditor {
      * cannot come from the path anymore. */
     private readonly isCreate = this.route.snapshot.data["editorMode"] === "create";
 
-    private readonly labels: EditorLabels = {
-        name: $localize`:@@search.components.editor.attribute.name:Name*`,
-        definition: $localize`:@@search.components.editor.attribute.definition:Definition`,
-    };
+    /** Every field label the catalogue names (EDT-33): one localized string
+     * per attribute the shipped metamodel can render (7-33, DD-722). */
+    private readonly labels: EditorLabels = attributeLabels();
 
     /** The fields the form renders (EDT-03), from the store's typedefs. */
     protected readonly fields = computed(() => {
@@ -208,7 +211,7 @@ export class EntityEditor {
         const defs = this.state.entityDefsByName();
         const def = typeName ? defs.get(typeName) : undefined;
 
-        return def ? buildRelationshipFields(def, defs) : [];
+        return def ? buildRelationshipFields(def, defs, this.labels) : [];
     });
 
     /** The picker values the form holds (EDT-15's seed, EDT-14's edits). They
@@ -281,14 +284,27 @@ export class EntityEditor {
     protected readonly pickerVisible = computed(() => this.isCreate);
 
     /**
-     * Edit mode's static type text (EDT-04, DD-379): the type never
-     * changes there. The legacy's type select shows the dictionary
-     * display name (`translatedName`, `type-select.component.ts:116`),
-     * so the text is `nameDisplay` of the raw name.
+     * Edit mode's static type badge (EDT-04, DD-330): the type never
+     * changes there. The badge is the shared type-name part in the details
+     * header's shape — the entity's alias when it carries one, the display
+     * name beside the raw type, the icon of the raw type (MMS-09, DD-721).
+     * The legacy's type select shows the dictionary display name
+     * (`translatedName`, `type-select.component.ts:116`), so the name is
+     * `nameDisplay` of the raw name.
      */
-    protected readonly staticType = computed(() =>
-        !this.isCreate ? nameDisplay(this.state.entity()?.typeName ?? "") : "",
-    );
+    protected readonly staticTypeShown = computed(() => !this.isCreate && (this.state.entity()?.typeName ?? "") !== "");
+
+    /** The badge's name: `nameDisplay` of the stored entity's raw type (DD-379). */
+    protected readonly staticTypeName = computed(() => nameDisplay(this.state.entity()?.typeName ?? ""));
+
+    /** The badge's alias (MMS-09): `attributes.typeAlias` of the stored entity (DET-26's reader). */
+    protected readonly staticTypeAlias = computed(() => {
+        const entity = this.state.entity();
+        return this.isCreate || entity === null ? undefined : cardTypeAlias(entity);
+    });
+
+    /** The badge's icon (DD-378): the app's type map, resolved for the raw type name. */
+    protected readonly staticTypeIcon = computed(() => typeIcon(this.state.entity()?.typeName ?? ""));
 
     /** The picker's selected row, read off the route's type (DD-330). The
      * row must be the pickerRows() array's own object — the Select matches

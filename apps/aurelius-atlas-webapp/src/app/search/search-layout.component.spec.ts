@@ -16,8 +16,6 @@ const config: AppConfig = {
     apiBaseUrl: "/api",
     otelExporterUrl: "/otel/v1/traces",
     appName: "Aurelius Atlas Data Governance",
-    appCopyright: 2022,
-    appVersion: "7.11.0#abc1234",
     atlasClientId: "aurelius-atlas-server",
 };
 

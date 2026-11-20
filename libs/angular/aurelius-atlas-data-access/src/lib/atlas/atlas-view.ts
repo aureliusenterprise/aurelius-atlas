@@ -44,7 +44,9 @@ export type EntityRelation = {
 /**
  * One catalogue entity as a result line, chip or badge needs it (`EntityCard`,
  * AVS-01, ADR 064). `displayText` is the name, or the qualified name when there
- * is no name (AVS-03); `stale` is the stored document's mark (AVS-06).
+ * is no name (AVS-03); `typeAlias` is the author's alias of the type, the badge
+ * name in place of `typeName` (AVS-01 as amended by 18.1, MMS-09); `stale` is
+ * the stored document's mark (AVS-06).
  */
 export type EntityCard = {
     guid: string;
@@ -53,6 +55,7 @@ export type EntityCard = {
     name?: string | null;
     qualifiedName?: string | null;
     displayText: string;
+    typeAlias?: string | null;
     definition?: string | null;
     status: AtlasEntityStatus;
     createTime?: number | null;

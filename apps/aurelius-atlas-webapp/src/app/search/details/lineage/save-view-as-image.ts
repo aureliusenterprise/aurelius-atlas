@@ -3,6 +3,7 @@ import html2canvas from "html2canvas";
 
 import { APP_CONFIG } from "../../../tokens";
 import { Session } from "../../../shell/session.service";
+import { VersionService } from "../../../shell/version.service";
 import type { Ar3View } from "./parse-ar3";
 import { addTextMetadata, binaryStringToBytes, bytesToBinaryString } from "./png-metadata";
 
@@ -119,11 +120,14 @@ const domSurface: RasterSurface = {
  * The bytes then gain one `tEXt` chunk per metadata field (LDG-31's writer)
  * and download as `${view name}.png`.
  *
- * The metadata reads this app's runtime values (DD-398): `Software` composes
- * from `/config.json` (`APP_CONFIG`, LDG-07's file) where the legacy baked
- * `git-version.json`, and `Author` is the signed-in user's email claim where
- * the legacy read its authentication store; `Source` is the constant the
+ * The metadata reads this app's runtime values (DD-398): `Software` composes the
+ * app name from `/config.json` (`APP_CONFIG`, LDG-07's file) and the version the
+ * server answers (`VersionService`, VER-01) where the legacy baked
+ * `git-version.json`, and `Author` is the signed-in user's email claim where the
+ * legacy read its authentication store; `Source` is the constant the
  * legacy's lineage page always wrote — it had no repository project/branch.
+ * No version yet means no `Software` chunk, which is LDG-31's empty-field skip
+ * (VER-03, DD-725).
  * Fields with no value ship no chunk (LDG-31's skip).
  *
  * The legacy reset the zoom around the save (LDG-29, held in its component);
@@ -136,6 +140,7 @@ const domSurface: RasterSurface = {
 export class SaveViewAsImage {
     private readonly session = inject(Session);
     private readonly config = inject(APP_CONFIG);
+    private readonly versions = inject(VersionService);
 
     /**
      * Convert the svg and download it under the view's name (the legacy's
@@ -155,13 +160,16 @@ export class SaveViewAsImage {
     ): Promise<void> {
         const png = await this.convert(svg, width, height, surface);
         // LDG-31's field list, in the legacy's order. `Creation Time` is the
-        // epoch-milliseconds value the legacy's lodash `now()` wrote.
+        // epoch-milliseconds value the legacy's lodash `now()` wrote. With no
+        // version yet the `Software` value stays empty, so the writer's skip
+        // drops the chunk rather than shipping a truncated one (VER-03).
+        const version = this.versions.version();
         const metadata = {
             Title: view.name,
             Author: this.session.email(),
             Description: view.description,
             "Creation Time": String(Date.now()),
-            Software: `Aurelius Atlas/${this.config.appName}/${this.config.appVersion}`,
+            Software: version ? `Aurelius Atlas/${this.config.appName}/${version}` : "",
             Source: "Generated model",
         };
         surface.download(addTextMetadata(png, metadata), `${view.name}.png`);

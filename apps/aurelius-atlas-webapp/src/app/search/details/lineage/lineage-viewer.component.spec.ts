@@ -1,9 +1,11 @@
+import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { Router } from "@angular/router";
 import Keycloak from "keycloak-js";
 import { describe, expect, it, vi } from "vitest";
 
 import fixture from "../../../../../tests/fixtures/lineage-graph.extract.json";
+import { VersionService } from "../../../shell/version.service";
 import { APP_CONFIG } from "../../../tokens";
 import { LineageModelState } from "./lineage-state";
 import { parseAr3Model, type Ar3Model } from "./parse-ar3";
@@ -45,12 +47,13 @@ function setup(model: Ar3Model = MODEL): {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
         imports: [LineageViewer],
-        // The toolbar's save flow injects the session (Keycloak) and the
-        // runtime config (LDG-31's fields) — the save itself is the save
-        // spec's; here the viewer only needs the injections to resolve.
+        // The toolbar's save flow injects the session (Keycloak), the runtime
+        // config and the version (LDG-31's fields, VER-01) — the save itself is
+        // the save spec's; here the viewer only needs the injections to resolve.
         providers: [
             { provide: Keycloak, useValue: { tokenParsed: {} } },
-            { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas", appVersion: "0.0.0" } },
+            { provide: APP_CONFIG, useValue: { appName: "Aurelius Atlas" } },
+            { provide: VersionService, useValue: { version: signal("0.0.0") } },
         ],
     });
     const state = TestBed.inject(LineageModelState);

@@ -32,6 +32,7 @@
         <dialog
             #panel
             class="aurelius-drawer-panel"
+            [class.is-wide]="size() === 'wide'"
             open
             aria-modal="true"
             [attr.aria-labelledby]="title() ? headingId : null"

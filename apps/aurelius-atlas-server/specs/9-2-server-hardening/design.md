@@ -146,3 +146,36 @@ Turning jstree's worker off in the vendored dashboards: a patch to the legacy co
 is.
 
 **Consequences.** A same-origin script can start a worker from a `blob:` URL it made, as it can under Atlas.
+
+### DD-708. The server reads an upload up to a setting's limit and refuses the rest with 413
+
+- **Status:** Proposed
+- **Increment:** 9.2 (a fix, 2026-11-19)
+- **Date:** 2026-11-19
+
+**Decision.** `read_upload` in `aurelius_atlas_server/uploads.py` reads a form's file in 64 KiB chunks and
+raises `PAYLOAD_TOO_LARGE` (413, `AURELIUS-413-00-001`) as soon as the file passes `upload_max_bytes`, a
+setting that defaults to 256 MiB. The three endpoints that read an upload call it instead of reading the
+file themselves. The webapp's nginx edge carries `client_max_body_size 1g` on `/api/`, the value the
+standalone gateway already has.
+
+**Reason.** Every upload was read whole into memory before anything asked its size, so a large import ZIP or
+a crafted ZIP held its decompressed entries too. Java Atlas never measured an upload, because Jetty refused
+a body past its own limit before Atlas saw it. Ours has no such layer, so the refusal belongs in the
+endpoint that reads the file, where the answer can be Atlas's error body rather than the edge's or the
+framework's. The limit is a setting because the right size depends on the deployment's biggest export, and
+256 MiB keeps every export the sample and the e2e fixtures make well inside it. The edge allows 1 GiB so a
+browser never meets nginx's HTML page before the server's refusal. The webapp's nginx set no body limit, so
+its default of 1 MiB stopped every real import at the edge.
+
+**Alternatives.** A limit in the edge alone: it cannot answer Atlas's error body, and the server stays
+reachable on its own port where an internal caller has no edge at all. Streaming the ZIP entry by entry
+instead of holding it: it removes the whole-buffer read but leaves the total unbounded, and `ZipSource`
+reads every entry before the import starts, so it is a separate change. Reusing one of Atlas's 400 codes:
+the request is well formed and only too large, and 413 names that.
+
+**Consequences.** An oversized upload answers 413 with the field and the limit in `errorMessage` (DV-177),
+before the import lock is taken, so a refused upload blocks no other import. A refusal holds at most the
+limit plus one chunk. An operator who raises `upload_max_bytes` past 256 MiB must raise
+`client_max_body_size` at the edge too, which the setting's documentation says. The chart exposes the
+setting through `extraEnv`.

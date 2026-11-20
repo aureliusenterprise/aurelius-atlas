@@ -6,8 +6,6 @@ const valid = {
     apiBaseUrl: "/api",
     otelExporterUrl: "/otel/v1/traces",
     appName: "Aurelius Atlas Data Governance",
-    appCopyright: 2022,
-    appVersion: "0.0.0",
     atlasClientId: "aurelius-atlas-server",
 };
 
@@ -32,24 +30,20 @@ describe("parseAppConfig", () => {
         ["apiBaseUrl", { keycloak: valid.keycloak, otelExporterUrl: "/o" }],
         ["otelExporterUrl", { keycloak: valid.keycloak, apiBaseUrl: "/api" }],
         ["appName", { ...valid, appName: "" }],
-        ["appVersion", { ...valid, appVersion: "" }],
     ])("throws when %s is missing or empty", (name, payload) => {
         expect(() => parseAppConfig(payload)).toThrow(new RegExp(`"${name}" must be a non-empty string`));
     });
 
-    it("throws when appCopyright is not an integer year (SHC-06, SHL-02)", () => {
-        expect(() => parseAppConfig({ ...valid, appCopyright: "2022" })).toThrow(/"appCopyright" must be an integer/);
-        expect(() => parseAppConfig({ ...valid, appCopyright: 2022.5 })).toThrow(/"appCopyright" must be an integer/);
-        expect(() => parseAppConfig({ ...valid, appCopyright: undefined })).toThrow(
-            /"appCopyright" must be an integer/,
-        );
+    it("keeps the shell name in the parsed config (SHC-06)", () => {
+        expect(parseAppConfig(valid).appName).toBe("Aurelius Atlas Data Governance");
     });
 
-    it("keeps the shell fields in the parsed config (SHC-06)", () => {
-        const config = parseAppConfig(valid);
-        expect(config.appName).toBe("Aurelius Atlas Data Governance");
-        expect(config.appCopyright).toBe(2022);
-        expect(config.appVersion).toBe("0.0.0");
+    it("ignores a version and a copyright year in the payload (VER-01, VER-04, DD-725/DD-726)", () => {
+        // An old config.json still carrying the keys must not fail bootstrap,
+        // and must not put them back on the parsed shape.
+        const config = parseAppConfig({ ...valid, appVersion: "1.2.3", appCopyright: 2022 });
+        expect("appVersion" in config).toBe(false);
+        expect("appCopyright" in config).toBe(false);
     });
 
     it("keeps the metrics endpoint optional", () => {
