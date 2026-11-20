@@ -630,6 +630,37 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 >       "default": null,
 >       "title": "Tenancy Admin Client Secret"
 >     },
+>     "grafana_url": {
+>       "anyOf": [
+>         {
+>           "type": "string"
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Grafana Url"
+>     },
+>     "grafana_admin_user": {
+>       "default": "admin",
+>       "title": "Grafana Admin User",
+>       "type": "string"
+>     },
+>     "grafana_admin_password": {
+>       "anyOf": [
+>         {
+>           "format": "password",
+>           "type": "string",
+>           "writeOnly": true
+>         },
+>         {
+>           "type": "null"
+>         }
+>       ],
+>       "default": null,
+>       "title": "Grafana Admin Password"
+>     },
 >     "sample_dir": {
 >       "anyOf": [
 >         {
@@ -747,6 +778,9 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > - `tenancy_refresh_seconds` (`float`)
 > - `tenancy_admin_client_id` (`str`)
 > - `tenancy_admin_client_secret` (`SecretStr | None`)
+> - `grafana_url` (`str | None`)
+> - `grafana_admin_user` (`str`)
+> - `grafana_admin_password` (`SecretStr | None`)
 > - `sample_dir` (`Path | None`)
 >
 > ### app\_search\_answer\_seconds
@@ -1140,6 +1174,30 @@ Deploy the image built from the provided Dockerfile. It listens on port 21000 an
 > ```
 >
 > Which peers may rewrite the client address through `X-Forwarded-For` (SRV-10, DD-238), passed to uvicorn. The default trusts only the loopback; behind a proxy the arrangement names the proxy network, so the access log and OTel peer attributes key on the browser's address, not the proxy's. The rate limit itself lives at the webapp's nginx edge, not here (SRV-09, DD-238).
+>
+> ### grafana\_admin\_password
+>
+> ```
+> grafana_admin_password: SecretStr | None = None
+> ```
+>
+> Its password; unset, the command leaves Grafana alone (TGF-11).
+>
+> ### grafana\_admin\_user
+>
+> ```
+> grafana_admin_user: str = 'admin'
+> ```
+>
+> Grafana's local administrator, as whom the command calls its API (TGF-12).
+>
+> ### grafana\_url
+>
+> ```
+> grafana_url: str | None = None
+> ```
+>
+> Grafana's API, which the tenant command keeps each tenant's organization in; none leaves Grafana alone (TGF-11, TGF-12).
 >
 > ### host
 >
