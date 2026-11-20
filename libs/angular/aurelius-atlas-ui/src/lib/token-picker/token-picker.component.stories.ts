@@ -138,7 +138,7 @@ export const SingleFull: Story = {
     },
 };
 
-/** The disabled box (PME-10, DD-749): the caller blocks the control, so the
+/** The disabled box (PME-10, DD-751): the caller blocks the control, so the
  * box takes the input's muted look, the input carries the flag, and the panel
  * never opens. The placeholder is gone — a muted "Select a relationship..."
  * would invite the pick the control refuses. The value stays deletable. */

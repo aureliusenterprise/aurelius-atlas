@@ -629,7 +629,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         vi.useRealTimers();
     });
 
-    it("a filled parent disables its sibling in the same group (PME-10, DD-749)", () => {
+    it("a filled parent disables its sibling in the same group (PME-10, DD-751)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock, parentAnswer(true), parentChain());
 
@@ -714,7 +714,7 @@ describe("EntityEditor (EDT-01..EDT-08, EDT-10, EDT-19, VDE-01..VDE-05)", () => 
         expect(navigate).toHaveBeenCalled();
     });
 
-    it("a blocked mandatory parent never holds the save (PME-10, DD-749)", () => {
+    it("a blocked mandatory parent never holds the save (PME-10, DD-751)", () => {
         const { fixture, compiled, httpMock } = setup();
         arrive(fixture, httpMock, parentAnswer(true), parentChain(true));
         const navigate = vi.spyOn(TestBed.inject(Router), "navigate");

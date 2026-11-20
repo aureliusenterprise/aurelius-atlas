@@ -6,12 +6,12 @@ is never edited except its status line, and a changed decision is a new entry th
 
 ## Entries
 
-### DD-744. The parent choice is a constraint on the relationship end definition
+### DD-746. The parent choice is a constraint on the relationship end definition
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-740 (the `SINGLE` child end builds the attribute), HCA-02, PME-01.
+- **Relates to:** DD-742 (the `SINGLE` child end builds the attribute), HCA-02, PME-01.
 
 **Decision.** `AtlasRelationshipEndDef` gains an optional `constraints` list in the same shape an attribute
 definition already uses (PME-01). The m4i model states the parent choice as one constraint on each child
@@ -42,12 +42,12 @@ The end def is the one place that both survives the store and reaches the built 
   creates a two-parent entity. Increment 12.7's governance banner then reports a shape the model does not
   allow.
 
-### DD-745. The registry copies the end's constraints onto the attribute it builds
+### DD-747. The registry copies the end's constraints onto the attribute it builds
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-744, HCA-03, PME-02, PME-05.
+- **Relates to:** DD-746, HCA-03, PME-02, PME-05.
 
 **Decision.** `RelationshipType._add_to_end` passes `end.constraints` to the `AtlasAttributeDef` it builds
 for a child end that has no entity-declared attribute (PME-02). An entity-declared attribute keeps its own
@@ -71,12 +71,12 @@ change to the read path.
   check there needs the registry's relationship index for every save. The copy keeps one source of truth in
   the built attribute.
 
-### DD-746. One constraint names a group, and both ends of the group carry the same name
+### DD-748. One constraint names a group, and both ends of the group carry the same name
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-744, PME-03, PME-04.
+- **Relates to:** DD-746, PME-03, PME-04.
 
 **Decision.** The constraint's single parameter is `group`, and the group holds the attributes that exclude
 each other. Both ends of one parent choice name the same group id, so
@@ -99,7 +99,7 @@ silently stops enforcing that pair.
 - **A named top-level section of the model, like an Atlas `businessMetadataDefs` block.** The rule then
   lives outside the types that use it, and the type read path needs a join to serve PME-05.
 
-### DD-747. The write check reads the request values and the stored active edges
+### DD-749. The write check reads the request values and the stored active edges
 
 - **Status:** Proposed
 - **Increment:** 18.3
@@ -133,12 +133,12 @@ it because both parent attributes are ordinary optional relationship attributes,
   entity write path already orders validation before any graph write, so a graph check runs later and
   cannot return the attribute names the author must fix.
 
-### DD-748. The constraint goes in at type version 1.2 and needs no migration
+### DD-750. The constraint goes in at type version 1.2 and needs no migration
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-744, DD-742 (18.2 went to `1.1` with a bump and no migration), ADR 058, MDL-02, PME-04,
+- **Relates to:** DD-746, DD-744 (18.2 went to `1.1` with a bump and no migration), ADR 058, MDL-02, PME-04,
   PME-06.
 
 **Decision.** The four m4i relationship definitions that carry the new end constraints go to type version
@@ -160,7 +160,7 @@ file green.
   makes the version useless as a signal of what changed.
 - **Keep `1.1`.** ADR 058 ties the version to the content, and a store that already holds the unconstrained
   `1.1` definitions then holds a definition the server no longer ships.
-- **Declare the change breaking, as 18.2 did for `SINGLE` (HCA-10, DD-742).** It is not breaking in the
+- **Declare the change breaking, as 18.2 did for `SINGLE` (HCA-10, DD-744).** It is not breaking in the
   sense 18.2 meant. 18.2 changes the wire shape of an attribute from a list to an object, which a stored
   entity can contradict. This increment adds a validation no stored sample violates. A probe over
   `data/atlas-sample/` found no entity that fills both parents of its type: of 16 data entities, 13 hold a
@@ -168,12 +168,12 @@ file green.
   parent field. A store that did hold such an entity keeps it readable, and only a later save to that pair
   fails.
 
-### DD-749. The editor disables the sibling picker of a parent group
+### DD-751. The editor disables the sibling picker of a parent group
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-745 (the registry copies the group onto the child attribute), DD-713 (`TokenPicker`,
+- **Relates to:** DD-747 (the registry copies the group onto the child attribute), DD-713 (`TokenPicker`,
   UIC-44), PME-05, PME-10, EDT-17.
 
 **Decision.** The editor reads each parent group off the entity's relationship attribute definitions
@@ -200,9 +200,9 @@ while the sibling is disabled, so the chip's delete button is the escape and sta
 - **Validate on save and point at both fields.** This keeps the mistake possible, and PME-07 already does
   it as the last line of defence for every client.
 - **Enable the sibling and clear the first pick on select.** A silent write deletes a parent the author did
-  not name, which DD-747 already rejects for the server.
+  not name, which DD-749 already rejects for the server.
 
-### DD-750. The corpus words its parent rules for one parent of each kind
+### DD-752. The corpus words its parent rules for one parent of each kind
 
 - **Status:** Proposed
 - **Increment:** 18.3
@@ -235,12 +235,12 @@ other hierarchy rules measure SET attributes, and the rest already read singular
 - **Retire the rule and ship a new one.** A new GUID strands every stored verdict and every saved report
   that names the old rule, for no gain over an edit to the sentences.
 
-### DD-751. The corpus words every governance rule sentence in plain English
+### DD-753. The corpus words every governance rule sentence in plain English
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-750, PME-11, PME-12, GQ-06.
+- **Relates to:** DD-752, PME-11, PME-12, GQ-06.
 
 **Decision.** The sample corpus words each governance rule sentence in plain English (PME-12). A bare
 camel-case field name in a description or a message becomes its words, with the article and the number to
@@ -268,12 +268,12 @@ text counters hold and no deviation record joins this increment.
   (VEV-07) and `atlas-export-order.json` names the GUIDs, so a rename breaks the walk and the import. Only
   the three printed fields change.
 
-### DD-752. The corpus ships only governance rules the m4i model can answer
+### DD-754. The corpus ships only governance rules the m4i model can answer
 
 - **Status:** Proposed
 - **Increment:** 18.3
 - **Date:** 2026-11-20
-- **Relates to:** DD-750, DD-751, ADR 058 (the m4i types ship with the server), ADR 060 (a frozen oracle is
+- **Relates to:** DD-752, DD-753, ADR 058 (the m4i types ship with the server), ADR 060 (a frozen oracle is
   never edited), PME-13, DV-185, DV-173.
 
 **Decision.** The sample corpus deletes the 29 governance rules whose expression names a type, attribute or

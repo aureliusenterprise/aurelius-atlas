@@ -104,7 +104,7 @@ class Catalogue:
         return [by_guid[guid] for guid in guids]
 
     async def legacy_parent(self, rel_type: str, end1_key: str, end1_type: str, end2_key: str, end2_type: str) -> None:
-        """A parent edge added below the writer, as data that predates the parent-group rule (DD-748).
+        """A parent edge added below the writer, as data that predates the parent-group rule (DD-750).
 
         The entity create path rejects two parents of one group (PME-07), but a store that already held both
         keeps them readable, and only a later save to that pair fails. The relationship endpoint is where such

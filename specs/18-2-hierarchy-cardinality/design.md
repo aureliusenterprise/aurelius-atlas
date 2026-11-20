@@ -6,7 +6,7 @@ is never edited except its status line, and a changed decision is a new entry th
 
 ## Entries
 
-### DD-740. The hierarchy child end is SINGLE and the child entity declares no mirrored attribute
+### DD-742. The hierarchy child end is SINGLE and the child entity declares no mirrored attribute
 
 - **Status:** Proposed
 - **Increment:** 18.2
@@ -34,7 +34,7 @@ its own `array<m4i_data_domain>` attribute named `dataDomain`, and an entity-dec
 end def (it becomes a legacy attribute). Setting the end to `SINGLE` alone does nothing while the array
 attribute stays. Removing the mirrored attribute and keeping the `SINGLE` end def is the smallest change that
 makes the child attribute single, and it reuses behaviour Atlas and the port already have rather than adding a
-new validation. No store runs this version, so the breaking shape change costs nothing now (DD-742).
+new validation. No store runs this version, so the breaking shape change costs nothing now (DD-744).
 
 **Alternatives.**
 
@@ -44,15 +44,15 @@ new validation. No store runs this version, so the breaking shape change costs n
 - **Add a runtime "at most one parent" check to the relationship create path.** It duplicates the guard the
   `SINGLE` write path already gives, and Apache Atlas has no such check, so it diverges for no model gain.
 - **Make each hierarchy a COMPOSITION with a mandatory parent.** This also forbids a second parent and is
-  stronger than HCA-04. It forces a decision this increment does not make (DD-741) and changes delete and
+  stronger than HCA-04. It forces a decision this increment does not make (DD-743) and changes delete and
   tag-propagation behaviour across every hierarchy. It is a later increment if a parent must be mandatory.
 
-### DD-741. A hierarchy parent stays optional, not a mandatory composition
+### DD-743. A hierarchy parent stays optional, not a mandatory composition
 
 - **Status:** Proposed
 - **Increment:** 18.2
 - **Date:** 2026-11-20
-- **Relates to:** DD-740, HCA-07.
+- **Relates to:** DD-742, HCA-07.
 
 **Decision.** Every m4i hierarchy stays an `ASSOCIATION` with a non-container parent end. A child's parent
 attribute stays optional. A child holds zero or one parent. The increment does not change
@@ -70,7 +70,7 @@ parent exists, so a composition that validates a mandatory parent on create (EVL
   mandatory parent wrong today, and it changes delete cascades for types that are not yet ready for it. A later
   increment chooses this per relationship if the rule "every child must have a parent" becomes real.
 
-### DD-742. The change is breaking, with a type version bump and no migration
+### DD-744. The change is breaking, with a type version bump and no migration
 
 - **Status:** Proposed
 - **Increment:** 18.2
@@ -98,7 +98,7 @@ keeps its `SET` shape instead of half-upgrading into a shape its stored attribut
 - **Leave `typeVersion` at `1.0`.** Then `MDL-02` skips the file every start and no fresh catalogue gets the
   `SINGLE` shape, which defeats the increment.
 
-### DD-743. The sample bundles and the governance corpus re-baseline to the single value
+### DD-745. The sample bundles and the governance corpus re-baseline to the single value
 
 - **Status:** Proposed
 - **Increment:** 18.2

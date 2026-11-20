@@ -165,7 +165,7 @@ def test__the_own_fields_are_the_legacy_ones_but_dd_485_s() -> None:
     """Name, qualified name, definition, email and source type; the differences of the spec's table only."""
     derived = indexed().derived()
 
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-750: the sample corpus's six pair
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-752: the sample corpus's six pair
     # rules carry new names, so their documents name what the frozen ``atlas-dev`` oracle never held —
     # the one existing difference beside the six renamed rule records.
     assert list(differing("name").values()) == ["m4i_gov_data_quality"] * 7
@@ -298,7 +298,7 @@ def m4i(type_name: str, key: str, **relations: list[str] | str | None) -> AtlasE
 async def legacy_parent(
     catalogue: Catalogue, rel_type: str, end1_key: str, end1_type: str, end2_key: str, end2_type: str
 ) -> None:
-    """A parent edge added below the writer, as data that predates the parent-group rule (DD-748).
+    """A parent edge added below the writer, as data that predates the parent-group rule (DD-750).
 
     The entity create path rejects two parents of one group (PME-07), but a store that already held both
     keeps them readable, and only a later save to that pair fails. The relationship endpoint is where such

@@ -1,8 +1,8 @@
 # 18.3 A child that can sit under two parents picks one
 
-- **Status:** in progress
-- **Pull request:** –
-- **Records:** DD-744 to DD-752 (here), DV-183 to DV-185 (deviations). Relies on
+- **Status:** in review
+- **Pull request:** [#418](https://github.com/aureliusenterprise/aurelius-atlas/pull/418)
+- **Records:** DD-746 to DD-754 (here), DV-183 to DV-185 (deviations). Relies on
   [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship and version with the server), increment 1.5 (MDL, the loader), and
   [increment 18.2](../18-2-hierarchy-cardinality/spec.md) (HCA-01 to HCA-10, the single parent).
@@ -41,7 +41,7 @@ Out of scope:
 - Mutual exclusion between anything other than hierarchical children. The constraint type is generic, but
   only 18.2's child ends use it.
 - A hint sentence in the editor that names the choice. The webapp ships no string outside its vendored
-  legacy catalogue, so the disabled control and the delete affordance on the chip carry the rule (DD-749).
+  legacy catalogue, so the disabled control and the delete affordance on the chip carry the rule (DD-751).
 
 ## Semantics
 

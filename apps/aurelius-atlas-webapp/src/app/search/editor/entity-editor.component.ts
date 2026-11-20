@@ -245,7 +245,7 @@ export class EntityEditor {
     });
 
     /**
-     * The pickers currently blocked by 18.3's parent choice (PME-10, DD-749):
+     * The pickers currently blocked by 18.3's parent choice (PME-10, DD-751):
      * a field of a parent group whose *other* members already hold a value.
      * Filling one member makes the others unfillable — the rule the server
      * enforces on save (PME-07), made impossible in the form instead of

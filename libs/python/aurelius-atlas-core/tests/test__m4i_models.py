@@ -287,7 +287,7 @@ PARENT_RULE_SENTENCES = {
 
 @pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-11"])
 def test__every_bundle_words_its_single_parent_rule_for_one_parent_of_each_kind() -> None:
-    """Each bundle's data-entity parent rule states one data domain or parent entity (PME-11, DD-750).
+    """Each bundle's data-entity parent rule states one data domain or parent entity (PME-11, DD-752).
 
     18.2 made both parent ends `SINGLE`, so the rule no longer counts a set and must not read "at least
     one". The rule is read from each bundle, because the banner prints what the corpus stores (GQ-06).
@@ -333,7 +333,7 @@ _RULE_PROSE = ("ruleDescription", "compliantMessage", "nonCompliantMessage")
 
 @pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-12"])
 def test__no_bundle_words_its_governance_rules_in_camel_case() -> None:
-    """Every governance rule sentence in every bundle is plain English (PME-12, DD-751).
+    """Every governance rule sentence in every bundle is plain English (PME-12, DD-753).
 
     The banner prints what the rule stores (GQ-06), so a field name left in camel case would show a reader
     ``parentDataset`` instead of "parent dataset". A snake-case Atlas type name a relation sentence quotes
@@ -422,7 +422,7 @@ def missing_rule_names(registry: TypeRegistry, rule_type: str, expression: str) 
 def test__every_bundle_ships_only_governance_rules_the_model_can_answer() -> None:
     """Every governance rule of every bundle names only a type, attribute or relationship the model defines.
 
-    PME-13, DD-752. A rule over a name the model lacks is false on every entity of its type forever, so 18.3
+    PME-13, DD-754. A rule over a name the model lacks is false on every entity of its type forever, so 18.3
     drops its 29 records from the corpus (DV-185). The attribute a check names is one the subject type owns
     or gains from a relationship end. The key of a relation rule names a relationship definition, and its
     value a type. ``small.zip`` ships no governance rule, so only the two rules bundles carry it.

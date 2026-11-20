@@ -103,7 +103,7 @@ def test__the_identity_fields_are_the_entity_s_but_the_listed_differences() -> N
         for document in documents
         if document["typename"] == "m4i_person"
     )
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-750: the sample corpus's six pair
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-752: the sample corpus's six pair
     # rules carry new names, so they join the one name the frozen oracle already missed.
     assert list(mismatches("name", names).values()) == ["m4i_gov_data_quality"] * 7
     assert sorted(mismatches("referenceablequalifiedname", qualified).values()) == [
@@ -231,7 +231,7 @@ def test__a_governance_verdict_names_its_entity_and_a_rule_for_its_type() -> Non
     description of the six edited rules differs in 353, text only (DV-171, DV-172, DV-174, DV-184).
     """  # noqa: D205 - one sentence
     verdicts = engine("atlas-dev-gov-quality")
-    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-750: the sample corpus's six edited
+    # DV-171/DD-635 + DV-172/DD-637 + DV-174/DD-639 + DV-184/DD-752: the sample corpus's six edited
     # rules carry their own sentence where the frozen oracle still holds the one it recorded. Only
     # the rule's text moved, and nothing else did.
     edited_rules = {

@@ -1,8 +1,8 @@
 # 18.2 The metamodel gives every hierarchy child one parent
 
-- **Status:** in progress
-- **Pull request:** –
-- **Records:** DD-740 to DD-743 (here). Relies on [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
+- **Status:** in review
+- **Pull request:** [#418](https://github.com/aureliusenterprise/aurelius-atlas/pull/418)
+- **Records:** DD-742 to DD-745 (here). Relies on [ADR 058](../../docs/architecture/adr/058-a-new-catalogue-starts-with-the-m4i-data-dictionary-types.md)
   (the m4i types ship and version with the server), increment 1.5 (MDL, the loader), and increment 18.1 (MMS,
   the metamodel bootstrap).
 
