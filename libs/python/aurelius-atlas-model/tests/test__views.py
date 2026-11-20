@@ -48,6 +48,7 @@ def test__a_card_holds_the_identity_the_derived_trail_the_relations_and_the_qual
         "quality",
         "governed",
         "stale",
+        "hasParent",
     ]
     assert [str(info.alias) for info in CardBreadcrumb.model_fields.values()] == ["guid", "name", "typeName"]
     assert [str(info.alias) for info in CardQuality.model_fields.values()] == [
@@ -116,6 +117,7 @@ def test__a_card_writes_camel_case_names_and_no_null_keys() -> None:
         "relations": [],
         "quality": [],
         "stale": False,
+        "hasParent": False,
     }
     # No alias: the key is absent, as every unset field is (AVS-01, MMS-09).
     assert "typeAlias" not in EntityCard(guid="g", type_name="t").to_json()
