@@ -25,11 +25,6 @@
     "aliases": []
   },
   {
-    "version": "fix-ui-story-play-tests",
-    "title": "fix-ui-story-play-tests",
-    "aliases": []
-  },
-  {
     "version": "fix-header-read-n-plus-one",
     "title": "fix-header-read-n-plus-one",
     "aliases": []
