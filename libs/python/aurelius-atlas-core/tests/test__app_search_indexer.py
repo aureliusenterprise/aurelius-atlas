@@ -359,6 +359,22 @@ async def test__an_entity_already_in_the_chain_ends_it() -> None:
     assert catalogue.keys(documents["y"].breadcrumbguid) == ["x"]
 
 
+@pytest.mark.covers(f"{X}.derive", rules=["LAS-04", "DCP-08"])
+async def test__a_dataset_in_a_collection_is_held_at_the_current_derivation_version() -> None:
+    """The one collection end derives the same held document as any other parent does: ``hasparent`` true, the
+    collection first in the breadcrumb, and the derivation version unmoved at 3 (DCP-08, DD-764).
+    """  # noqa: D205 - one sentence
+    catalogue = await Catalogue.of(m4i("m4i_collection", "c"), m4i("m4i_dataset", "s", collections="c"))
+
+    documents = await catalogue.documents_of()
+
+    dataset = documents["s"]
+    assert dataset.hasparent is True
+    assert dataset.parentguid == catalogue.guids["c"]
+    assert catalogue.keys(dataset.breadcrumbguid) == ["c"]
+    assert dataset.derivation_version == 3
+
+
 @pytest.mark.covers(f"{X}.derive", rules=["LAS-04", "LAS-05"])
 async def test__a_deleted_parent_is_passed_over_and_listed_nowhere() -> None:
     """With its parent entity deleted, an entity's first parent is its domain; no document lists the deleted one."""

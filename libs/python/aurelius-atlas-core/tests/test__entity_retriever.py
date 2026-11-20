@@ -7,6 +7,7 @@ The expected responses are read from ``EntityGraphRetriever`` (``mapVertexToAtla
 from typing import Any
 
 import pytest
+import test__app_search_quality as quality
 from aurelius_atlas_core.entity_retriever import EntityRetriever
 from aurelius_atlas_core.entity_store import EntityChange, EntityStore
 from aurelius_atlas_core.entity_writer import EntityWriter
@@ -281,3 +282,36 @@ async def test__a_hierarchy_child_attribute_reads_as_one_object() -> None:
     assert badge.guid == assigned["-col"]
     assert orphan.entity is not None
     assert (orphan.entity.relationship_attributes or {}).get("badge") is None
+
+
+@pytest.mark.covers(f"{R}.entity_with_ext_info", rules=["DCP-04"])
+async def test__a_dataset_in_a_collection_reads_one_collection() -> None:
+    """The dictionary's dataset ``collections`` end reads one collection, never a list (DCP-04, HCA-05)."""
+    types = await quality.m4i_types()
+    store = EntityStore(types.registry, MemoryEntityDocuments())
+    await store.prepare()
+
+    answer = await EntityWriter(store, user="u").create_or_update(
+        AtlasEntitiesWithExtInfo.model_validate(
+            {
+                "entities": [
+                    {"typeName": "m4i_collection", "guid": "-c", "attributes": {"qualifiedName": "c", "name": "C"}},
+                    {
+                        "typeName": "m4i_dataset",
+                        "guid": "-s",
+                        "attributes": {"qualifiedName": "s", "name": "S"},
+                        "relationshipAttributes": {"collections": {"guid": "-c", "typeName": "m4i_collection"}},
+                    },
+                ]
+            }
+        )
+    )
+    assigned = answer.guid_assignments or {}
+
+    found = await EntityRetriever(store).entity_with_ext_info(assigned["-s"])
+
+    assert found.entity is not None
+    collections = (found.entity.relationship_attributes or {})["collections"]
+    assert isinstance(collections, AtlasObjectId)
+    assert collections.type_name == "m4i_collection"
+    assert collections.guid == assigned["-c"]

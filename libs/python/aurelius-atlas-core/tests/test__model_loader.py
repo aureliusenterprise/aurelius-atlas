@@ -278,6 +278,42 @@ async def test__a_newer_end_constraint_loads_over_the_store_through_the_update_c
     ]
 
 
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["DCP-09"])
+async def test__a_model_that_narrows_a_stored_end_cardinality_is_refused_whole(
+    store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path
+) -> None:
+    """A model that turns a stored `SET` end into `SINGLE` fails the update check, so the whole file is skipped and
+    the catalogue keeps the old shape (DCP-09, HCA-10).
+    """  # noqa: D205 - one sentence
+    child = AtlasEntityDef(name="child")
+    parent = AtlasEntityDef(name="parent")
+    wide = child_relationship(
+        AtlasRelationshipEndDef(type="parent", name="boxed", cardinality=Cardinality.SET),
+        AtlasRelationshipEndDef(type="child", name="box", cardinality=Cardinality.SET),
+    )
+    path = write_json(tmp_path / "1.json", model(child, parent, wide))
+    await ModelLoader(store).load(tmp_path)
+    writes = document.writes
+    stored_wide = stored(store, "boxed", AtlasRelationshipDef)
+    assert stored_wide.end_def1 is not None
+    assert stored_wide.end_def1.cardinality == Cardinality.SET
+
+    narrow = child_relationship(
+        AtlasRelationshipEndDef(type="parent", name="boxed", cardinality=Cardinality.SINGLE),
+        AtlasRelationshipEndDef(type="child", name="box", cardinality=Cardinality.SET),
+        version="1.2",
+    )
+    write_json(path, model(child, parent, narrow))
+    result = await ModelLoader(store).load(tmp_path)
+
+    assert result.failed_files == [path]
+    assert document.writes == writes
+    served = stored(store, "boxed", AtlasRelationshipDef)
+    assert served.type_version == "1.1"
+    assert served.end_def1 is not None
+    assert served.end_def1.cardinality == Cardinality.SET
+
+
 @pytest.mark.covers("aurelius_atlas_core.model_loader.TypedefPatch.record", rules=["MDL-05"])
 async def test__patches_run_once_unknown_actions_are_skipped(
     store: TypedefStore, document: MemoryTypedefDocument, tmp_path: Path

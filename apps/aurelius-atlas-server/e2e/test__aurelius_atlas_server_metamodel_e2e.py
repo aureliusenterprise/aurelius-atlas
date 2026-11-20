@@ -1,8 +1,8 @@
 """The m4i metamodel the running server bootstraps, read over the API (HCA-10, PME-05).
 
 The dev store starts empty of the m4i types, so the server loads them itself at start-up. A new catalogue
-answers every hierarchy child end as ``SINGLE``, the four without a parent group at type version ``1.1`` and
-the four parent choices at ``1.2`` with their ``mutuallyExclusive`` constraint.
+answers every hierarchy child end as ``SINGLE``, the three without a parent group at type version ``1.1`` and
+the six parent choices at ``1.2`` with their ``mutuallyExclusive`` constraint.
 """
 
 import httpx2 as httpx
@@ -14,7 +14,6 @@ HIERARCHIES = {
     "m4i_data_entity_attribute_assignment": "dataEntity",
     "m4i_system_parent_assignment": "parentSystem",
     "m4i_system_process_assignment": "system",
-    "m4i_dataset_parent_assignment": "parentDataset",
 }
 """Each hierarchy relationship without a parent group and the child-end attribute that names its parent
 (HCA-01)."""
@@ -24,9 +23,11 @@ PARENT_GROUPS = {
     "m4i_parent_entity_assignment": ("parentEntity", "m4i_data_entity_parent"),
     "m4i_field_assignment": ("datasets", "m4i_field_parent"),
     "m4i_field_parent_assignment": ("parentField", "m4i_field_parent"),
+    "m4i_dataset_assignment": ("collections", "m4i_dataset_parent"),
+    "m4i_dataset_parent_assignment": ("parentDataset", "m4i_dataset_parent"),
 }
 """Each relationship with a parent group: the child-end attribute and the group its constraint names
-(PME-04, PME-05)."""
+(PME-04, PME-05, DCP-01)."""
 
 
 # impact=severe, likelihood=low (a wrong child cardinality breaks every hierarchy write)
@@ -46,9 +47,9 @@ async def test__the_bootstrapped_metamodel_gives_every_hierarchy_child_one_paren
 
 # impact=severe, likelihood=low (a missing group lets an entity hold two parents again)
 @pytest.mark.critical
-@pytest.mark.covers("aurelius_atlas_server.routes.types.get_typedef_by_name", rules=["PME-04", "PME-05"])
+@pytest.mark.covers("aurelius_atlas_server.routes.types.get_typedef_by_name", rules=["PME-04", "PME-05", "DCP-01"])
 async def test__the_bootstrapped_metamodel_names_the_parent_groups(client: httpx.AsyncClient) -> None:
-    """Each of the four parent-choice ends answers ``SINGLE`` at version ``1.2`` with its group."""
+    """Each of the six parent-choice ends answers ``SINGLE`` at version ``1.2`` with its group."""
     for name, (child, group) in PARENT_GROUPS.items():
         definition = (await client.get(f"{TYPED}/{name}")).json()
 

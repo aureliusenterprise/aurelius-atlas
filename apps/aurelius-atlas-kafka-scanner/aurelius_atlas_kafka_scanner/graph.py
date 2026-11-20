@@ -123,7 +123,8 @@ def build_graph(*, system_name: str, cluster_id: str | None, trees: Sequence[Top
                 type_name=DATASET_TYPE,
                 attributes={"name": tree.topic, "qualifiedName": dataset_qualified},
                 relationship_attributes={
-                    "collections": [{"guid": collection_guid, "typeName": COLLECTION_TYPE}],
+                    # the dataset's one collection end is SINGLE (DCP-04, DD-762)
+                    "collections": {"guid": collection_guid, "typeName": COLLECTION_TYPE},
                     "fields": field_guids,
                 },
             )

@@ -543,6 +543,58 @@ def test__a_built_child_attribute_carries_the_end_s_constraints_and_the_group_is
     assert data_entity.parent_groups() == {"entity_parent": frozenset({"dataDomain", "parentEntity"})}
 
 
+@pytest.mark.covers("aurelius_atlas_typesystem.entity_type.EntityType.parent_groups", rules=["DCP-01"])
+def test__a_dataset_holding_one_group_of_two_single_ends_sees_one_choice() -> None:
+    """18.5's dictionary shape at the typesystem: both dataset ends are `SINGLE` with the group, their opposite
+    ends stay `SET`, and the dataset type sees one choice of two members (DCP-01).
+    """  # noqa: D205 - one sentence
+    registry = resolve(
+        entity("collection"),
+        entity("dataset"),
+        relationship(
+            "dataset_assignment",
+            end("dataset", "collections", cardinality="SINGLE", constraints=group("dataset_parent")),
+            end("collection", "datasets", cardinality="SET"),
+            relationship_category="ASSOCIATION",
+        ),
+        relationship(
+            "dataset_parent_assignment",
+            end("dataset", "parentDataset", cardinality="SINGLE", constraints=group("dataset_parent")),
+            end("dataset", "childDataset", cardinality="SET"),
+            relationship_category="ASSOCIATION",
+        ),
+    )
+    dataset = entity_type(registry, "dataset")
+
+    assignment = relationship_type(registry, "dataset_assignment").relationship_def
+    parent_assignment = relationship_type(registry, "dataset_parent_assignment").relationship_def
+    assert assignment.end_def1 is not None
+    assert assignment.end_def2 is not None
+    assert parent_assignment.end_def1 is not None
+    assert parent_assignment.end_def2 is not None
+    assert (assignment.end_def1.cardinality, assignment.end_def2.cardinality) == (
+        Cardinality.SINGLE,
+        Cardinality.SET,
+    )
+    assert (parent_assignment.end_def1.cardinality, parent_assignment.end_def2.cardinality) == (
+        Cardinality.SINGLE,
+        Cardinality.SET,
+    )
+
+    collections = dataset.relationship_attribute("collections")
+    parent = dataset.relationship_attribute("parentDataset")
+    assert collections is not None
+    assert parent is not None
+    assert (collections.attribute_def.cardinality, parent.attribute_def.cardinality) == (
+        Cardinality.SINGLE,
+        Cardinality.SINGLE,
+    )
+    assert collections.attribute_def.constraints == group("dataset_parent")
+    assert parent.attribute_def.constraints == group("dataset_parent")
+    assert isinstance(collections.attribute_type, ObjectIdType)
+    assert dataset.parent_groups() == {"dataset_parent": frozenset({"collections", "parentDataset"})}
+
+
 @pytest.mark.covers("aurelius_atlas_typesystem.entity_type.EntityType.parent_groups", rules=["PME-02", "PME-03"])
 def test__a_declared_attribute_keeps_its_own_constraints_and_a_lone_group_enforces_nothing() -> None:
     """An entity-declared attribute is reused unchanged (HCA-02's legacy path), and a group of one is dropped."""

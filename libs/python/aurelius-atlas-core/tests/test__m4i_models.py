@@ -174,7 +174,7 @@ async def test__a_sample_export_imports_without_creating_a_type() -> None:
         assert types.registry.typedef_by_name("hive_table") is None, name
 
 
-# The eight hierarchy relationships: the child's end, its attribute and the child's type (HCA-01, HCA-02, HCA-08).
+# The nine hierarchy relationships: the child's end, its attribute and the child's type (HCA-01, HCA-02, HCA-08).
 HIERARCHIES: dict[str, tuple[str, str, str]] = {
     "m4i_data_entity_assignment": ("endDef2", "dataDomain", "m4i_data_entity"),
     "m4i_parent_entity_assignment": ("endDef1", "parentEntity", "m4i_data_entity"),
@@ -183,14 +183,15 @@ HIERARCHIES: dict[str, tuple[str, str, str]] = {
     "m4i_field_parent_assignment": ("endDef1", "parentField", "m4i_field"),
     "m4i_system_parent_assignment": ("endDef1", "parentSystem", "m4i_system"),
     "m4i_system_process_assignment": ("endDef2", "system", "m4i_generic_process"),
+    "m4i_dataset_assignment": ("endDef1", "collections", "m4i_dataset"),
     "m4i_dataset_parent_assignment": ("endDef1", "parentDataset", "m4i_dataset"),
 }
 
 
-@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["HCA-01", "HCA-02"])
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["HCA-01", "HCA-02", "DCP-02"])
 def test__every_hierarchy_child_end_is_single_and_holds_no_mirrored_attribute() -> None:
     """The dictionary names SINGLE on the child end, keeps SET on the parent end, and declares no mirrored
-    attribute on the child entity (HCA-01, HCA-02).
+    attribute on the child entity (HCA-01, HCA-02, DCP-02).
     """  # noqa: D205 - one sentence
     model = json.loads(MODEL.read_text(encoding="utf-8"))
     relationships = {definition["name"]: definition for definition in model["relationshipDefs"]}
@@ -208,19 +209,21 @@ def test__every_hierarchy_child_end_is_single_and_holds_no_mirrored_attribute() 
         assert attribute not in child_attributes, name  # no mirrored attribute (HCA-02)
 
 
-# The four child ends that name a parent group, with the group each belongs to (PME-04).
+# The six child ends that name a parent group, with the group each belongs to (PME-04, DCP-01).
 PARENT_GROUPS = {
     "m4i_data_entity_assignment": ("endDef2", "dataDomain", "m4i_data_entity_parent"),
     "m4i_parent_entity_assignment": ("endDef1", "parentEntity", "m4i_data_entity_parent"),
     "m4i_field_assignment": ("endDef2", "datasets", "m4i_field_parent"),
     "m4i_field_parent_assignment": ("endDef1", "parentField", "m4i_field_parent"),
+    "m4i_dataset_assignment": ("endDef1", "collections", "m4i_dataset_parent"),
+    "m4i_dataset_parent_assignment": ("endDef1", "parentDataset", "m4i_dataset_parent"),
 }
 
 
-@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["PME-04"])
+@pytest.mark.covers("aurelius_atlas_core.model_loader.ModelLoader.load", rules=["PME-04", "DCP-01"])
 def test__the_parent_choice_is_named_on_the_child_ends_of_the_dictionary() -> None:
-    """The four ends of the two parent choices carry one group each, and only their definitions go to ``1.2``
-    (PME-04).
+    """The six ends of the three parent choices carry one group each, and only their definitions go to ``1.2``
+    (PME-04, DCP-01).
     """  # noqa: D205 - one sentence
     model = json.loads(MODEL.read_text(encoding="utf-8"))
     relationships = {definition["name"]: definition for definition in model["relationshipDefs"]}
@@ -237,9 +240,9 @@ def test__the_parent_choice_is_named_on_the_child_ends_of_the_dictionary() -> No
     ) == sorted(grouped)
 
 
-@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-04"])
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["PME-04", "DCP-01"])
 def test__every_bundle_carries_the_parent_groups_of_the_model() -> None:
-    """Each bundle's typedef file answers the same constraints and type version as the model (PME-04)."""
+    """Each bundle's typedef file answers the same constraints and type version as the model (PME-04, DCP-01)."""
     for sample in sorted(SAMPLES.glob("*.zip")):
         types = m4i_of(_typesdef(sample))
         for name, (end, _attribute, group) in PARENT_GROUPS.items():
@@ -251,10 +254,10 @@ def test__every_bundle_carries_the_parent_groups_of_the_model() -> None:
             assert definition["typeVersion"] == "1.2", (sample.name, name)
 
 
-@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["HCA-08"])
+@pytest.mark.covers("aurelius_atlas_core.zip_source.ZipSource.types_def", rules=["HCA-08", "DCP-07"])
 def test__every_bundle_holds_at_most_one_value_per_hierarchy_child() -> None:
     """Each bundle keeps the model's child ends, and every entity holds at most one value per child attribute
-    (HCA-08).
+    (HCA-08, DCP-07).
     """  # noqa: D205 - one sentence
     for sample in sorted(SAMPLES.glob("*.zip")):
         children: dict[str, list[str]] = {}

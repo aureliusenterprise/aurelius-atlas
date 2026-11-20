@@ -27,7 +27,7 @@ def parent_side_children(registry: TypeRegistry, entity_type: EntityType) -> dic
     """The type's parent-side attributes and the child attribute each names (RPS-01, DD-755).
 
     A parent side is a `SET` whose relationship's opposite end is a `SINGLE` child end (HCA-01): the attribute
-    adds children, and each child it adds holds exactly one edge of that attribute back. The eight hierarchy
+    adds children, and each child it adds holds exactly one edge of that attribute back. The nine hierarchy
     ends of HCA-01 are its parent sides.
     """
     found: dict[str, str] = {}
