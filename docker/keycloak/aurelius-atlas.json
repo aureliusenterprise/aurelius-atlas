@@ -858,6 +858,62 @@
             "standardFlowEnabled": false
         },
         {
+            "adminUrl": "",
+            "alwaysDisplayInConsole": false,
+            "attributes": {
+                "backchannel.logout.revoke.offline.tokens": "false",
+                "backchannel.logout.session.required": "true",
+                "display.on.consent.screen": "false",
+                "frontchannel.logout.session.required": "true",
+                "oauth2.device.authorization.grant.enabled": "false",
+                "oidc.ciba.grant.enabled": "false",
+                "pkce.code.challenge.method": "S256",
+                "post.logout.redirect.uris": "https://localhost:9000/grafana/login",
+                "realm_client": "false",
+                "standard.token.exchange.enabled": "false"
+            },
+            "authenticationFlowBindingOverrides": {},
+            "baseUrl": "",
+            "bearerOnly": false,
+            "clientAuthenticatorType": "client-secret",
+            "clientId": "grafana",
+            "consentRequired": false,
+            "defaultClientScopes": ["web-origins", "acr", "roles", "profile", "basic", "email"],
+            "description": "The standalone Grafana's client (15.9, TGF-01, DD-735): its confidential OIDC login at https://localhost:9000/grafana/. Roles and organizations in Grafana are the tenant command's (DD-736), not this client's.",
+            "directAccessGrantsEnabled": false,
+            "enabled": true,
+            "frontchannelLogout": true,
+            "fullScopeAllowed": false,
+            "id": "6a7f0000-0000-4000-8000-000000000001",
+            "implicitFlowEnabled": false,
+            "name": "grafana",
+            "nodeReRegistrationTimeout": -1,
+            "notBefore": 0,
+            "optionalClientScopes": ["address", "phone", "organization", "offline_access", "microprofile-jwt"],
+            "protocol": "openid-connect",
+            "protocolMappers": [
+                {
+                    "config": {
+                        "access.token.claim": "true",
+                        "id.token.claim": "true",
+                        "userinfo.token.claim": "true"
+                    },
+                    "consentRequired": false,
+                    "name": "organization groups",
+                    "protocol": "openid-connect",
+                    "protocolMapper": "oidc-organization-group-membership-mapper"
+                }
+            ],
+            "publicClient": false,
+            "redirectUris": ["https://localhost:9000/grafana/login/generic_oauth"],
+            "rootUrl": "",
+            "secret": "${GRAFANA_CLIENT_SECRET}",
+            "serviceAccountsEnabled": false,
+            "standardFlowEnabled": true,
+            "surrogateAuthRequired": false,
+            "webOrigins": ["https://localhost:9000"]
+        },
+        {
             "clientAuthenticatorType": "client-secret",
             "clientId": "otel-atlas-server",
             "defaultClientScopes": ["basic", "otel-ingest", "roles"],

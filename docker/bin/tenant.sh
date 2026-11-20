@@ -9,6 +9,7 @@
 #   user <tenant> add <username> [--role atlas|steward|scientist] [--email <address>]
 #   user <tenant> remove <username>
 #   samples        the samples you can name with --sample
+#   grafana sync   every tenant's Grafana organization and members in step with Keycloak
 #   list           the tenants, their state, trust and sample
 #   remove <tenant>
 #
@@ -29,7 +30,7 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root="$(cd "$here/../.." && pwd)"
 
 if [ "$#" -eq 0 ]; then
-    sed -n '3,14p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '3,15p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
     exit 2
 fi
 

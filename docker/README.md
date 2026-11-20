@@ -294,11 +294,22 @@ umbrella; the fragments are not a target of their own.
 - `docker/observability/compose.yaml`: the stack's telemetry (DD-675) — `infra/observability`'s
   collector, Prometheus, Loki, Tempo and Grafana, extended with the stack's volumes. The collector
   checks tokens against the stack's issuer, read once from Keycloak into a shared file, and the
-  server, the aux services, Keycloak and the webapp all push to it. Grafana answers on
-  <http://localhost:3000> and Prometheus on <http://localhost:9090>, both pinned to this machine.
-  The dev observability slice publishes the same ports, so stop it
+  server, the aux services, Keycloak and the webapp all push to it. Grafana answers behind the proxy
+  on <https://localhost:9000/grafana/> and signs people in through Keycloak alone (15.9); Prometheus
+  answers on <http://localhost:9090>, pinned to this machine. The dev observability slice publishes
+  the same Prometheus port, so stop it
   (`docker compose -f infra/observability/docker-compose.yaml --env-file infra/observability/.env down`)
   before starting the stack, and bring it back (`npx nx up aurelius-atlas-infra-observability`) after.
+  Each tenant is a Grafana organization of its own, kept by the tenant command (`docker/bin/tenant.sh`):
+  two data sources that read the tenant's indices alone, as the store user `grafana_<tenant>_reader`,
+  and two dashboards: _catalogue_, the entities by type, state, data domain and owner as created over
+  time, and _activity_, the audit events by action and user. The tenant's people are its Viewers and
+  land in it; operators are Viewers of the main organization, which holds the stack's telemetry, and
+  of every tenant that trusts them. Grafana's local administrator signs in to no one's browser: its
+  password, `GRAFANA_ADMIN_PASSWORD` of `infra/keycloak/.env`, is what the command calls the API with.
+  After people are changed in the Keycloak console, `docker/bin/tenant.sh grafana sync` brings Grafana
+  in step and deletes the Grafana users the realm gives no tenant. The governance-quality results, the
+  relationships and the classifications have no time field, so they are not charted yet.
 - `embedder`: the embedding model of search by meaning (ADR 059), `https://embedder:21004` on the stack's network
   with its own certificate. It checks no tokens, so it has no published port (DD-432), and nothing waits for it.
   The server embeds every entity through it in the background (11.3): new and changed ones within its poll

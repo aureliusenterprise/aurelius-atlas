@@ -9,7 +9,7 @@ from typing import Any
 import httpx2 as httpx
 import pytest
 from aurelius_atlas_server import ServerSettings
-from aurelius_atlas_server.provisioning import ProvisioningError, parser, run
+from aurelius_atlas_server.provisioning import NO_GRAFANA, ProvisioningError, parser, run
 from aurelius_atlas_server.realm_tenants import (
     PAGE,
     KeycloakAdmin,
@@ -85,7 +85,7 @@ def command(settings: ServerSettings, fake_es: FakeClient, realm: Realm) -> Any:
             sleep=sleep,
             user="op",
         )
-        return lines
+        return [line for line in lines if line != NO_GRAFANA]
 
     return call
 

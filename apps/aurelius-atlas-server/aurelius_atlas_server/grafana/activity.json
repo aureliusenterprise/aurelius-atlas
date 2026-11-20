@@ -1,0 +1,376 @@
+{
+    "annotations": {
+        "list": []
+    },
+    "description": "What happens in the demo tenant's catalogue: its audit events over time, by action and by user.",
+    "editable": false,
+    "panels": [
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 0,
+                "y": 0
+            },
+            "id": 1,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "timestamp",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "tenant-audits"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "*",
+                    "refId": "A",
+                    "timeField": "timestamp"
+                }
+            ],
+            "title": "Audit events",
+            "type": "stat"
+        },
+        {
+            "description": "Made by a request or by an import.",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 8,
+                "y": 0
+            },
+            "id": 2,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "timestamp",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "tenant-audits"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "action:(ENTITY_CREATE OR ENTITY_IMPORT_CREATE)",
+                    "refId": "A",
+                    "timeField": "timestamp"
+                }
+            ],
+            "title": "Entities created",
+            "type": "stat"
+        },
+        {
+            "description": "Changed by a request or by an import.",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 4,
+                "w": 8,
+                "x": 16,
+                "y": 0
+            },
+            "id": 3,
+            "options": {
+                "colorMode": "value",
+                "graphMode": "none",
+                "reduceOptions": {
+                    "calcs": ["sum"],
+                    "fields": "",
+                    "values": false
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "timestamp",
+                            "id": "3",
+                            "settings": {
+                                "interval": "30d",
+                                "min_doc_count": "1"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "tenant-audits"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "action:(ENTITY_UPDATE OR ENTITY_IMPORT_UPDATE)",
+                    "refId": "A",
+                    "timeField": "timestamp"
+                }
+            ],
+            "title": "Entities updated",
+            "type": "stat"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "custom": {
+                        "barAlignment": 0,
+                        "drawStyle": "bars",
+                        "fillOpacity": 80,
+                        "lineWidth": 1,
+                        "stacking": {
+                            "mode": "normal"
+                        }
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 4
+            },
+            "id": 4,
+            "options": {
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                }
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "action",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "10"
+                            },
+                            "type": "terms"
+                        },
+                        {
+                            "field": "timestamp",
+                            "id": "3",
+                            "settings": {
+                                "interval": "1d",
+                                "min_doc_count": "0"
+                            },
+                            "type": "date_histogram"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "tenant-audits"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "*",
+                    "refId": "A",
+                    "timeField": "timestamp"
+                }
+            ],
+            "title": "Audit events over time, by action",
+            "type": "timeseries"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 0,
+                "y": 14
+            },
+            "id": 5,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "action",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "tenant-audits"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "*",
+                    "refId": "A",
+                    "timeField": "timestamp"
+                }
+            ],
+            "title": "Audit events by action",
+            "type": "barchart"
+        },
+        {
+            "description": "",
+            "fieldConfig": {
+                "defaults": {},
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 10,
+                "w": 12,
+                "x": 12,
+                "y": 14
+            },
+            "id": 6,
+            "options": {
+                "legend": {
+                    "showLegend": false
+                },
+                "orientation": "horizontal",
+                "showValue": "auto",
+                "xTickLabelRotation": 0
+            },
+            "targets": [
+                {
+                    "bucketAggs": [
+                        {
+                            "field": "user",
+                            "id": "2",
+                            "settings": {
+                                "min_doc_count": "1",
+                                "order": "desc",
+                                "orderBy": "_count",
+                                "size": "15"
+                            },
+                            "type": "terms"
+                        }
+                    ],
+                    "datasource": {
+                        "type": "elasticsearch",
+                        "uid": "tenant-audits"
+                    },
+                    "metrics": [
+                        {
+                            "id": "1",
+                            "type": "count"
+                        }
+                    ],
+                    "query": "*",
+                    "refId": "A",
+                    "timeField": "timestamp"
+                }
+            ],
+            "title": "Audit events by user",
+            "type": "barchart"
+        }
+    ],
+    "refresh": "",
+    "schemaVersion": 39,
+    "tags": ["aurelius-atlas", "tenant"],
+    "templating": {
+        "list": []
+    },
+    "time": {
+        "from": "now-30d",
+        "to": "now"
+    },
+    "timezone": "browser",
+    "title": "Activity",
+    "uid": "tenant-activity",
+    "version": 1
+}

@@ -40,7 +40,8 @@ def provision() -> None:
             sys.exit(1)
         if asyncio.run(with_realm(alias)) and main(["admin", alias, "add", f"{alias}_atlas"]) != 0:
             sys.exit(1)
-    if main(["list"]) != 0:
+    # Each tenant's Grafana organization, data sources, dashboards and members, and the platform's (TGF-13).
+    if main(["grafana", "sync"]) != 0 or main(["list"]) != 0:
         sys.exit(1)
 
 

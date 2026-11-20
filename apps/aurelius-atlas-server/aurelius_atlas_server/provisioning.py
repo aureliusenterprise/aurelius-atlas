@@ -23,6 +23,8 @@ from aurelius_atlas_core.request_context import current_user
 from aurelius_atlas_model.impexp import AtlasImportResult, OperationStatus
 from aurelius_atlas_store_es import ElasticsearchStore
 
+from aurelius_atlas_server.grafana_tenants import GrafanaAdmin, GrafanaError, GrafanaTenants
+from aurelius_atlas_server.grafana_tenants import Person as GrafanaPerson
 from aurelius_atlas_server.realm_tenants import KeycloakAdmin, RealmError, RealmOrganization, RealmTenants
 from aurelius_atlas_server.settings import ServerSettings
 from aurelius_atlas_server.tenancy import ALIAS
@@ -36,6 +38,9 @@ PROG = "python -m aurelius_atlas_server.provisioning"
 
 NO_REALM = "The realm is left as it is: tenancy_admin_client_secret is not set"
 """What the command says once when it can't keep the realm in step (TRM-01, DD-603)."""
+
+NO_GRAFANA = "Grafana is left as it is: grafana_url or grafana_admin_password is not set"
+"""What the command says once when it can't keep Grafana in step (TGF-11)."""
 
 REMOVAL_WAITS = 2
 """How many of the servers' refresh intervals removal waits: their next read, then their workers' stop (DD-577)."""
@@ -88,6 +93,8 @@ def parser() -> argparse.ArgumentParser:
     people.add_argument("--role", choices=[role.value for role in Role], default=Role.SCIENTIST.value)
     people.add_argument("--email", help="the person's email; <username>@example.com unless given")
     choices.add_parser("samples", help="the samples of the sample folder (TAD-10)")
+    grafana = choices.add_parser("grafana", help="bring every tenant's Grafana organization in step (TGF-10)")
+    grafana.add_argument("action", choices=["sync"])
     return commands
 
 
@@ -100,6 +107,7 @@ async def run(  # noqa: PLR0913 - the command, its settings, and where it writes
     realm: RealmTenants | None = None,
     sleep: Callable[[float], Awaitable[object]] = asyncio.sleep,
     user: str | None = None,
+    grafana: GrafanaTenants | None = None,
 ) -> None:
     """Carry out the parsed command against the store and, with the client's secret, the realm, writing what it
     did to ``out``; ``realm`` replaces the one the settings make.
@@ -113,13 +121,18 @@ async def run(  # noqa: PLR0913 - the command, its settings, and where it writes
             tenants = TenantsIndex(opened)
             await tenants.prepare()
             who = user if user is not None else current_user()
-            provisioner = Provisioner(settings, opened, tenants, out=out, sleep=sleep, who=who, realm=realm)
+            grafana = grafana if grafana is not None else grafana_of(settings, opened)
+            provisioner = Provisioner(
+                settings, opened, tenants, out=out, sleep=sleep, who=who, realm=realm, grafana=grafana
+            )
             await _dispatch(args, provisioner)
-    except RealmError as error:
+    except (RealmError, GrafanaError) as error:
         raise ProvisioningError(str(error)) from error
     finally:
         if realm is not None:
             await realm.admin.close()
+        if grafana is not None:
+            await grafana.grafana.close()
 
 
 async def _dispatch(args: argparse.Namespace, provisioner: Provisioner) -> None:
@@ -141,7 +154,15 @@ async def _dispatch(args: argparse.Namespace, provisioner: Provisioner) -> None:
         await provisioner.operators()
     elif args.command == "admin":
         await provisioner.admin(args.alias, args.username, add=args.change == "add")
-    elif args.command == "add":
+    elif args.command in {"add", "user", "samples", "grafana"}:
+        await _dispatch_people(args, provisioner)
+    else:
+        await provisioner.remove(args.alias)
+
+
+async def _dispatch_people(args: argparse.Namespace, provisioner: Provisioner) -> None:
+    """Run a command of 15.7's or 15.9's: a tenant with its people, one person, the samples, or Grafana."""
+    if args.command == "add":
         await provisioner.add(args.alias, sample=args.sample, everyone=args.users == "all")
     elif args.command == "user" and args.change == "add":
         await provisioner.user_add(args.alias, args.username, Role(args.role), email=args.email)
@@ -150,7 +171,7 @@ async def _dispatch(args: argparse.Namespace, provisioner: Provisioner) -> None:
     elif args.command == "samples":
         provisioner.samples()
     else:
-        await provisioner.remove(args.alias)
+        await provisioner.grafana_sync()
 
 
 def realm_of(settings: ServerSettings) -> RealmTenants | None:
@@ -171,6 +192,26 @@ def realm_of(settings: ServerSettings) -> RealmTenants | None:
     )
 
 
+def grafana_of(settings: ServerSettings, store: ElasticsearchStore) -> GrafanaTenants | None:
+    """The tenants' Grafana as its local administrator reaches it, or None without its address and password
+    (TGF-11, TGF-12).
+    """  # noqa: D205 - one sentence
+    if settings.grafana_url is None or settings.grafana_admin_password is None:
+        return None
+    admin = GrafanaAdmin(
+        settings.grafana_url,
+        settings.grafana_admin_user,
+        settings.grafana_admin_password.get_secret_value(),
+        http=GrafanaAdmin.http(),
+    )
+    return GrafanaTenants(
+        admin,
+        store.client,
+        store_url=str(settings.elasticsearch_hosts[0]).rstrip("/"),
+        ca_pem=Path(settings.elasticsearch_ca_certs).read_text(),
+    )
+
+
 class Provisioner:
     """The commands on the tenants of ``store``, recorded in ``tenants`` as ``who``; ``out`` hears what was done."""
 
@@ -184,6 +225,7 @@ class Provisioner:
         sleep: Callable[[float], Awaitable[object]],
         who: str,
         realm: RealmTenants | None = None,
+        grafana: GrafanaTenants | None = None,
     ) -> None:
         self._settings = settings
         self._store = store
@@ -194,6 +236,8 @@ class Provisioner:
         self._realm = realm
         self._operators: frozenset[str] | None = None
         self._said_no_realm = False
+        self._grafana = grafana
+        self._said_no_grafana = False
 
     async def provision(
         self,
@@ -276,6 +320,7 @@ class Provisioner:
         for tenant in await self._tenants.list():
             if tenant.state is TenantState.ACTIVE:
                 await self._in_step(tenant, report=True)
+        await self.grafana_sync()
 
     async def admin(self, alias: str, username: str, *, add: bool) -> None:
         """Add or remove one of the tenant's administrators, and their rights in the realm (TRM-06, TRM-07).
@@ -319,6 +364,7 @@ class Provisioner:
             for role in roles
         ]
         await self.admin(alias, standard_username(alias, Role.ATLAS), add=True)
+        await self._grafana_tenant(alias)
         if sample is None:
             loaded = "no sample"
         elif new:
@@ -340,6 +386,7 @@ class Provisioner:
             raise ProvisioningError(msg)
         org = await self._organization(realm, alias)
         person = await ensure_person(realm, org, username, role, email=email or f"{username}@example.com")
+        await self._grafana_tenant(alias)
         self._summary(alias, None, [person])
 
     async def user_remove(self, alias: str, username: str) -> None:
@@ -354,7 +401,47 @@ class Provisioner:
         if user in record.administrators:
             await self.admin(alias, username, add=False)
         await realm.remove_member(await self._organization(realm, alias), user)
+        await self._grafana_tenant(alias)
         self._out(f"{username} is no longer a member of {alias}")
+
+    async def grafana_sync(self) -> None:
+        """Bring every ``active`` tenant's Grafana organization in step with the realm, the platform's organization
+        with the operators, and delete the Grafana users the realm gives no tenant (TGF-09, TGF-10, TGF-14).
+        """  # noqa: D205 - one sentence
+        if self._grafana is None:
+            self._no_grafana()
+            return
+        realm = self._people_realm()
+        keep: set[str] = set()
+        for tenant in await self._tenants.list():
+            if tenant.state is TenantState.ACTIVE:
+                keep |= {person.login for person in await self._grafana_tenant(tenant.alias)}
+        operators = [GrafanaPerson(*await realm.username_and_email(user)) for user in sorted(await realm.operators())]
+        await self._grafana.sync_platform(operators)
+        keep |= {person.login for person in operators}
+        deleted = await self._grafana.cleanup(keep)
+        self._out(f"Grafana: {len(operators)} operators in the platform's organization, {len(deleted)} users deleted")
+
+    async def _grafana_tenant(self, alias: str) -> list[GrafanaPerson]:
+        """The tenant's Grafana organization, data sources, dashboards and members in step with the realm; its
+        members (TGF-04 to TGF-08).
+        """  # noqa: D205 - one sentence
+        if self._grafana is None:
+            self._no_grafana()
+            return []
+        realm = self._people_realm()
+        org = await self._organization(realm, alias)
+        members = [GrafanaPerson(*await realm.username_and_email(user)) for user in sorted(await realm.members(org))]
+        grafana_org = await self._grafana.ensure_tenant(alias)
+        added, removed = await self._grafana.sync_members(grafana_org, members)
+        self._out(f"Grafana {alias}: organization {grafana_org}, {added} members added, {removed} removed")
+        return members
+
+    def _no_grafana(self) -> None:
+        """Say once that Grafana is left as it is (TGF-11)."""
+        if not self._said_no_grafana:
+            self._said_no_grafana = True
+            self._out(NO_GRAFANA)
 
     def samples(self) -> None:
         """Write the samples of the sample folder, one name per line (TAD-10)."""
@@ -452,6 +539,8 @@ class Provisioner:
             await self._realm.delete(alias)
         else:
             self._no_realm()
+        if self._grafana is not None:
+            await self._grafana.remove_tenant(alias)
         await self._tenants.delete(alias)
         self._out(f"Removed {alias}: {len(deleted)} indices deleted")
 

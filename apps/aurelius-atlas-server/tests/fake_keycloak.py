@@ -167,6 +167,11 @@ class FakeKeycloak:
         if path == "/users":
             found = [u for u in self.users.values() if u["username"] == query.get("username")]
             return httpx.Response(200, json=[{"id": u["id"], "username": u["username"]} for u in found])
+        if (match := re.fullmatch(r"/users/([^/]+)", path)) and method == "GET":
+            found = self.users.get(match[1])
+            if found is None:
+                return httpx.Response(404)
+            return httpx.Response(200, json={k: v for k, v in found.items() if k != "roles"})
         if match := re.fullmatch(r"/users/([^/]+)/role-mappings/realm/composite", path):
             return httpx.Response(200, json=[{"name": role} for role in sorted(self.users[match[1]]["roles"])])
         if path == "/clients":
